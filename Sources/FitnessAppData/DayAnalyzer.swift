@@ -34,8 +34,24 @@ import FitnessAppCore
 @MainActor
 public enum DayAnalyzer {
 
+    /// - Parameters:
+    ///   - timeFormat: gesetzt fuer AMRAP/EMOM/Auf-Zeit-Tage (README 2.13).
+    ///     Schaltet auf eine dauerbasierte Berechnung um, da Saetze x Wdh x
+    ///     Pause fuer diese Tage keine Bedeutung hat (die Uhr entscheidet,
+    ///     nicht eine feste Pausen-Angabe).
+    ///   - timeCapMinutes: der Zeit-Deckel, wenn einer gesetzt ist. Bei Auf
+    ///     Zeit meist `nil` - dann bestimmt das Pensum die Dauer, und das
+    ///     Ergebnis ist wieder eine echte Schaetzung (`isEstimated = true`).
+    ///   - circuitRounds/circuitRestSeconds: nur bei `timeFormat == .circuit`
+    ///     gesetzt - Zirkel hat (anders als die anderen drei Formate) eine
+    ///     ECHTE feste Pause zwischen den Runden, die in die Dauer-Schaetzung
+    ///     einfliessen muss.
     public static func analyze(
-        exercises: [Exercise]
+        exercises: [Exercise],
+        timeFormat: WorkoutTimeFormat? = nil,
+        timeCapMinutes: Int? = nil,
+        circuitRounds: Int? = nil,
+        circuitRestSeconds: Int? = nil
     ) -> DayAnalysis? {
         // Nur aktive Working-Sets fliessen in die Analyse — Warmup +
         // Cooldown werden vom User als optional erlebt und sollen die
@@ -44,6 +60,13 @@ public enum DayAnalyzer {
             !$0.isArchived && $0.role == .workingSet
         }
         guard !working.isEmpty else { return nil }
+
+        if let timeFormat {
+            return analyzeTimedFormat(
+                working: working, format: timeFormat, capMinutes: timeCapMinutes,
+                circuitRounds: circuitRounds, circuitRestSeconds: circuitRestSeconds
+            )
+        }
 
         let isCardioOnly = working.allSatisfy { $0.isCardio }
 
@@ -93,11 +116,165 @@ public enum DayAnalyzer {
         )
     }
 
+    // MARK: - Zeitformate (README 2.13)
+
+    /// AMRAP/EMOM/Auf-Zeit-Tage rechnen aus der Dauer statt aus Saetze x
+    /// Wdh x Pause - eine feste Pausen-Angabe existiert bei diesen Formaten
+    /// gar nicht, die Uhr (bzw. das Pensum bei Auf Zeit ohne Deckel)
+    /// entscheidet ueber die Dauer. Muscle-Focus bleibt unveraendert aus den
+    /// Uebungen, unabhaengig vom Format.
+    private static func analyzeTimedFormat(
+        working: [Exercise],
+        format: WorkoutTimeFormat,
+        capMinutes: Int?,
+        circuitRounds: Int? = nil,
+        circuitRestSeconds: Int? = nil
+    ) -> DayAnalysis {
+        let muscleFocus = computeMuscleFocus(working: working, timeFormat: format)
+        let isCardioOnly = working.allSatisfy { $0.isCardio }
+
+        let durationRange: ClosedRange<Int>
+        let isEstimated: Bool
+        if format == .circuit {
+            // Zirkel hat (anders als Auf Zeit) eine ECHTE feste Pause
+            // zwischen den Runden - eigene Schaetzung statt
+            // `computeForTimeDurationEstimate`, die bewusst KEINE Pause
+            // addiert.
+            durationRange = computeCircuitDurationEstimate(
+                working: working,
+                rounds: circuitRounds ?? defaultCircuitRounds(),
+                restSeconds: circuitRestSeconds ?? defaultCircuitRestSeconds()
+            )
+            isEstimated = true
+        } else if let capMinutes {
+            // Ein gesetzter Deckel IST die Dauer, keine Schaetzung.
+            durationRange = capMinutes...capMinutes
+            isEstimated = false
+        } else {
+            // Auf Zeit meist ohne Deckel (README 2.9) - das Pensum
+            // (Runden x Ziel pro Runde) bestimmt die Dauer, wieder als
+            // echte Schaetzung mit Range.
+            durationRange = computeForTimeDurationEstimate(working: working)
+            isEstimated = true
+        }
+
+        let representativeMinutes = (durationRange.lowerBound + durationRange.upperBound) / 2
+        let loadCategory = categorizeByDuration(representativeMinutes)
+        // EMOM ist eine Stufe milder als sein eigener loadCategory - die
+        // Pause steckt bereits in jeder Minute, anders als bei AMRAP/Auf
+        // Zeit, die durchgehend ohne Pause laufen.
+        // Review-Fund (Zirkel-Feature): Zirkel gehoert in dieselbe Kategorie
+        // wie EMOM, nicht wie AMRAP/Auf Zeit - `computeCircuitDurationEstimate`
+        // rechnet die Pause zwischen den Runden bereits explizit in die
+        // Dauer-Schaetzung ein, das Format laeuft also gerade NICHT
+        // durchgehend ohne Pause.
+        let systemicLoad = (format == .emom || format == .circuit) ? stepDown(loadCategory) : loadCategory
+
+        let recoveryRange = recoveryRangeForTopStimulus(
+            muscleFocus: muscleFocus,
+            isCardioOnly: isCardioOnly,
+            systemicLoad: systemicLoad
+        )
+
+        return DayAnalysis(
+            loadScore: Double(representativeMinutes),
+            loadCategory: loadCategory,
+            muscleFocus: muscleFocus,
+            estimatedDurationMinutes: durationRange,
+            localRecoveryHours: recoveryRange,
+            systemicLoad: systemicLoad,
+            coachNote: .metabolicDensity,
+            isEstimated: isEstimated,
+            timeFormat: format
+        )
+    }
+
+    /// Schwellen fuer Zeitformat-Tage (Vorschlag README 2.13, kalibriert auf
+    /// die Dauer statt auf Saetze x Wdh x Pause): "Leicht" wird fuer
+    /// Zeitformate nicht vergeben - selbst ein kurzes AMRAP ist durchgehende
+    /// Belastung ohne Pause, nie ein Leicht-Tag.
+    private static func categorizeByDuration(_ minutes: Int) -> LoadCategory {
+        switch minutes {
+        case ...10:   return .moderate
+        case 11...20: return .high
+        default:      return .veryHigh
+        }
+    }
+
+    /// Eine Stufe milder - fuer EMOMs `systemicLoad` (README 2.13). Anders
+    /// als `loadCategory` darf das hier bis auf "Leicht" absinken: die Pause
+    /// steckt bereits in jeder Minute, das ist eine echte Erleichterung
+    /// gegenueber dem Gesamt-Eindruck des Tages.
+    private static func stepDown(_ category: LoadCategory) -> LoadCategory {
+        switch category {
+        case .veryHigh: return .high
+        case .high:     return .moderate
+        case .moderate: return .low
+        case .low:      return .low
+        }
+    }
+
+    /// README 2.13, "Auf Zeit ohne Deckel": ohne Zeit-Deckel bestimmt das
+    /// Pensum (Runden x Ziel pro Runde) die Dauer. Anders als
+    /// `computeDurationRange` (normale Krafttage) wird KEINE Pause
+    /// addiert - Auf Zeit laeuft durchgehend, das ist gerade der Punkt des
+    /// Formats. Wiederverwendet `workTimePerSet` fuer die Pro-Runde-Zeit,
+    /// `exercise.sets` ist bei Auf Zeit die Rundenzahl.
+    private static func computeForTimeDurationEstimate(working: [Exercise]) -> ClosedRange<Int> {
+        var minSec = 0
+        var maxSec = 0
+        for ex in working {
+            let perRound = workTimePerSet(exercise: ex)
+            let rounds = max(ex.sets, 1)
+            minSec += perRound.lower * rounds
+            maxSec += perRound.upper * rounds
+            // Kurzer Wechsel zur naechsten Uebung, keine echte Pause dazwischen.
+            minSec += 15
+            maxSec += 30
+        }
+        let minMin = max(1, minSec / 60)
+        let maxMin = max(minMin, maxSec / 60 + 1)
+        return minMin...maxMin
+    }
+
+    /// Zirkel: anders als Auf Zeit HAT das Format eine echte feste Pause
+    /// zwischen den Runden - die muss zur reinen Arbeitszeit dazu, sonst
+    /// unterschaetzt die Range die tatsaechliche Dauer systematisch.
+    /// Rundenzahl kommt aus `TrainingDay.circuitRounds` (nicht aus
+    /// `exercise.sets`, das hier nur redundant denselben Wert traegt, siehe
+    /// `timedFormatCircuitLabel` in FitnessAppUI) - `rounds - 1` Pausen fuer
+    /// `rounds` Runden, die letzte Runde endet ohne weitere Pause.
+    private static func computeCircuitDurationEstimate(working: [Exercise], rounds: Int, restSeconds: Int) -> ClosedRange<Int> {
+        var perRoundMinSec = 0
+        var perRoundMaxSec = 0
+        for ex in working {
+            let perRound = workTimePerSet(exercise: ex)
+            perRoundMinSec += perRound.lower
+            perRoundMaxSec += perRound.upper
+        }
+        let roundCount = max(rounds, 1)
+        let restTotal = max(0, roundCount - 1) * max(restSeconds, 0)
+        let minSec = perRoundMinSec * roundCount + restTotal
+        let maxSec = perRoundMaxSec * roundCount + restTotal
+        let minMin = max(1, minSec / 60)
+        let maxMin = max(minMin, maxSec / 60 + 1)
+        return minMin...maxMin
+    }
+
     // MARK: - Muscle Focus
 
     /// Aggregiert Primärmuskel-Stimulus über alle Übungen, sortiert
     /// nach Punktzahl absteigend, klassifiziert in 3 Tiers.
-    private static func computeMuscleFocus(working: [Exercise]) -> [MuscleStimulus] {
+    ///
+    /// README 2.13 Nachtrag: bei AMRAP/EMOM steht `exercise.sets` immer auf 1
+    /// (die Uhr entscheidet ueber die Runden, nicht eine feste Satzzahl) -
+    /// als Mengenfaktor wuerde das jede Uebung auf denselben winzigen Wert
+    /// setzen, alle landen in "Primaer" und `recoveryRangeForTopStimulus`
+    /// faellt immer in den niedrigsten Eimer, unabhaengig von der echten
+    /// Tagesdauer. Bei gesetztem `timeFormat` tritt `repsMin` (Wdh. pro
+    /// Runde) an die Stelle von `sets`; bei Auf Zeit ist `sets` aber
+    /// tatsaechlich die Rundenzahl, dort zaehlt das Produkt aus beidem.
+    private static func computeMuscleFocus(working: [Exercise], timeFormat: WorkoutTimeFormat? = nil) -> [MuscleStimulus] {
         var perMuscle: [MuscleGroup: Double] = [:]
 
         for exercise in working {
@@ -109,7 +286,26 @@ public enum DayAnalyzer {
             // Versagen) verursacht mehr lokalen Reiz.
             let intensityFactor = intensityMultiplier(targetRir: exercise.targetRir)
             let perSet = compoundBonus * intensityFactor
-            let total = Double(exercise.sets) * perSet
+            let quantity: Double
+            switch timeFormat {
+            case nil:
+                quantity = Double(exercise.sets)
+            case .amrap, .emom:
+                // Wdh. pro Runde statt der immer-1 Satzzahl.
+                quantity = Double(exercise.repsMin)
+            case .forTime, .circuit, .enduranceIntervals:
+                // `sets` ist bei Auf Zeit UND Zirkel die echte Rundenzahl -
+                // Produkt aus beidem. Bei einer Ausbelastungs-Runde (Zirkel
+                // .toFailure) ist `repsMin` nur die Reps EINES Durchgangs
+                // der Mini-Sequenz, keine feste Gesamtzahl - als grobe
+                // Naeherung trotzdem besser als eine willkuerliche Konstante.
+                // Paket 2 (`.enduranceIntervals`): strukturell unerreichbar
+                // hier - alle Uebungen eines Ausdauer-Tages sind `isCardio`
+                // und haben bereits KEIN `primaryMuscle` (siehe Guard oben),
+                // dieser Zweig wird fuer sie nie erreicht.
+                quantity = Double(exercise.sets) * Double(exercise.repsMin)
+            }
+            let total = quantity * perSet
             perMuscle[primary, default: 0] += total
         }
         guard let maxPoints = perMuscle.values.max(), maxPoints > 0 else {

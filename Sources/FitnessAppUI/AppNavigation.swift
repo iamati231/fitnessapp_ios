@@ -17,10 +17,12 @@ public final class AppNavigation {
     public var selectedTab: AppTab = .dashboard
     public var workoutPath = NavigationPath()
 
-    /// DEL-212: NavigationPath des Calculators-Tabs. Erlaubt Deep-Pushes aus
-    /// Notification-Routen (Wasser-Erinnerung → direkt in den WaterTracker),
-    /// statt den User nur auf der Tab-Übersicht abzusetzen.
-    public var calculatorsPath = NavigationPath()
+    /// DEL-212, angepasst fuers Signature-Screen-Geruest (Nachtrag 6. August:
+    /// "Werkzeuge"-Tab statt "Start"): NavigationPath des vierten Tabs
+    /// (`CalculatorsView` als Wurzel). Erlaubt den Deep-Push aus der
+    /// Wasser-Erinnerungs-Notification direkt bis zum WaterTracker, ohne den
+    /// User nur auf dem Tab abzusetzen.
+    public var toolsPath = NavigationPath()
 
     public init() {}
 
@@ -32,19 +34,31 @@ public final class AppNavigation {
     }
 }
 
-/// DEL-212: Push-Routen innerhalb des Calculators-Tabs. Wird von der
-/// `navigationDestination(for:)`-Registrierung in RootView aufgelöst.
+/// DEL-212: Push-Route fuer den Wassertracker-Deep-Link. Der normale,
+/// getippte Weg (Werkzeuge → Wassertracker) laeuft ueber eine gewoehnliche
+/// `NavigationLink(destination:)`-Push in `CalculatorsView` und braucht
+/// diesen Typ nicht — er existiert nur fuer den programmatischen
+/// Ein-Tap-Sprung aus der lokalen Erinnerungs-Notification, aufgeloest
+/// von der `navigationDestination(for:)`-Registrierung in RootView.
 @available(iOS 17.0, macOS 14.0, *)
 public enum CalculatorsRoute: Hashable, Sendable {
     case waterTracker
 }
 
+/// Fuenf Tabs (Signature-Screen-Geruest, Nachtrag 6. August: "der Start-Tab
+/// weicht den Werkzeugen"): der vorherige `start`-Tab war die einzige
+/// Tab-"Aktion" statt eines Ziels — dieselbe Aktion liegt bereits als
+/// Hauptknopf auf dem Dashboard und als Banner in der Plan-Liste, ein
+/// eigenes Tab-Symbol dafuer war redundant. Der frei gewordene Platz geht
+/// an `tools` (Label "Werkzeuge", nicht "Rechner" — der Wassertracker misst
+/// nur, rechnet nichts): `CalculatorsView` als eigene Tab-Wurzel mit
+/// eigenem `NavigationStack`, statt eine Ebene tief unter "Mehr" zu haengen.
 @available(iOS 17.0, macOS 14.0, *)
 public enum AppTab: Hashable, Sendable {
     case dashboard
     case plan
     case measurement
-    case calculators
+    case tools
     case settings
 }
 

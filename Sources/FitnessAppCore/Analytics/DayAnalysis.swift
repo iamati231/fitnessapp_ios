@@ -9,10 +9,17 @@ import Foundation
 /// `Exercise`-Instanzen iteriert.
 ///
 /// **Felder** (siehe Ticket-Scope):
-///   * `loadScore` — interner Roh-Score; primaer fuer relative
-///     Vergleiche zwischen Tagen (heute vs. gestern), nicht als
-///     User-facing Wert. Bucketing in `LoadCategory` ist die
-///     UI-relevante Aggregation.
+///   * `loadScore` — interner Roh-Score, nicht User-facing. **Zwei
+///     inkompatible Skalen je nach `timeFormat`** (README 2.13
+///     Nachtrag): bei einem normalen Krafttag ein Punkte-Score der
+///     Groessenordnung 25-85 (`computeLoadScore`); bei einem Zeitformat-
+///     Tag schlicht die Tagesdauer in Minuten (`analyzeTimedFormat`).
+///     Ein Vergleich "heute vs. gestern" ist daher nur INNERHALB
+///     derselben Tagesart aussagekraeftig, nicht ueber `timeFormat`-
+///     Grenzen hinweg. Bucketing in `LoadCategory` (UI-relevant) rechnet
+///     beide Skalen bereits korrekt getrennt (`categorize` vs.
+///     `categorizeByDuration`) und ist von dieser Doppelbedeutung nicht
+///     betroffen.
 ///   * `loadCategory` — semantische Einordnung low/moderate/high/
 ///     veryHigh, mit Farb- + Label-Mapping fuer die Visual-Skala.
 ///   * `muscleFocus` — geordnete Liste der gestimulierten Muskel-
@@ -38,6 +45,11 @@ public struct DayAnalysis: Equatable, Sendable {
     public let systemicLoad: LoadCategory
     public let coachNote: CoachNoteKind
     public let isEstimated: Bool
+    /// README 2.13: gesetzt fuer AMRAP/EMOM/Auf-Zeit-Tage - die Karte
+    /// braucht das, um die Format-Kapsel statt der Schaetzung-Pille zu
+    /// zeigen und den formatspezifischen Coach-Notiz-Satz zu waehlen.
+    /// `nil` fuer normale Krafttage.
+    public let timeFormat: WorkoutTimeFormat?
 
     public init(
         loadScore: Double,
@@ -47,7 +59,8 @@ public struct DayAnalysis: Equatable, Sendable {
         localRecoveryHours: ClosedRange<Int>,
         systemicLoad: LoadCategory,
         coachNote: CoachNoteKind,
-        isEstimated: Bool
+        isEstimated: Bool,
+        timeFormat: WorkoutTimeFormat? = nil
     ) {
         self.loadScore = loadScore
         self.loadCategory = loadCategory
@@ -57,6 +70,7 @@ public struct DayAnalysis: Equatable, Sendable {
         self.systemicLoad = systemicLoad
         self.coachNote = coachNote
         self.isEstimated = isEstimated
+        self.timeFormat = timeFormat
     }
 }
 
@@ -132,6 +146,13 @@ public enum CoachNoteKind: String, Sendable, CaseIterable {
     /// Cardio-only-Tag. Eigene Sprach-Logik (Dauer + Distanz statt
     /// Hypertrophie-Reiz).
     case cardioFocused
+    /// README 2.13: AMRAP/EMOM/Auf-Zeit-Tage - Dichte statt Gewicht ist
+    /// die Belastungsquelle. `DayAnalysisCard` rendert diesen Fall NICHT
+    /// ueber `localizationKey` direkt, sondern waehlt eine von drei
+    /// formatspezifischen, mit der Dauer parametrisierten Varianten
+    /// (siehe `DayAnalysisCard.metabolicDensityText`). Der generische Key
+    /// unten ist nur ein Fallback, falls `timeFormat` je fehlen sollte.
+    case metabolicDensity
 
     public var localizationKey: String {
         "day.analysis.coachNote.\(rawValue)"

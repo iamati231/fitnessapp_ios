@@ -97,6 +97,93 @@ public enum DayIntensity: String, Codable, Sendable, CaseIterable {
     case heavy
 }
 
+/// Zeitformat eines Trainingstags — orthogonal zu `DayType` (das beschreibt
+/// den Muskelfokus, nicht die Struktur). `nil` auf `TrainingDay.timeFormat`
+/// ist der bisherige Normalfall: ganz gewöhnliches Satz/Wiederholungs-
+/// Krafttraining, ungeaendertes Verhalten. Ein gesetzter Case bedeutet,
+/// dass `ActiveWorkoutView` statt der gepagten Uebungs-Navigation den
+/// `TimedWorkoutPlayerView` fuer dieses Format rendert.
+///
+/// String-RawValue, damit SwiftData-Lightweight-Migration + CSV-Export
+/// (siehe `DataExportService`) stabile, lesbare Werte persistieren —
+/// gleiches Muster wie `CardioEquipment`/`EnvironmentType`.
+public enum WorkoutTimeFormat: String, Codable, Sendable, CaseIterable {
+    /// As Many Rounds/Reps As Possible in `timeCapMinutes`.
+    case amrap
+    /// Every Minute On the Minute — eine Uebung pro 60s-Intervall,
+    /// wiederholt ueber `timeCapMinutes`.
+    case emom
+    /// Vorgegebenes Pensum so schnell wie moeglich; `timeCapMinutes`
+    /// optional als Abbruch-Deckel.
+    case forTime
+    /// Nutzer-Feedback (Kettlebell-Komplexe): feste Rundenzahl
+    /// (`TrainingDay.circuitRounds`), zwischen den Runden eine feste,
+    /// konfigurierbare Pause (`circuitRestSeconds`). Anders als AMRAP/EMOM
+    /// keine gemeinsame Uhr fuer den ganzen Tag — jede Runde endet einzeln,
+    /// je nach `circuitMode` entweder automatisch (alle Uebungs-Ziele der
+    /// Runde abgehakt) oder manuell ("Runde beenden"-Knopf bei einer
+    /// Ausbelastungs-Runde ohne festes Wiederholungsziel).
+    case circuit
+    /// Paket 2 (Laufcoach-Konzept, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// Einlaufen (`enduranceWarmupDurationSeconds`) -> N Runden
+    /// Belastung/Erholung (`enduranceIntervalRounds`,
+    /// `enduranceWorkDurationSeconds`/`enduranceWorkDistanceKm` fuer die
+    /// Belastung, `enduranceRestDurationSeconds` fuer die Erholung) ->
+    /// Auslaufen (`enduranceCooldownDurationSeconds`). Fuer Laufen/
+    /// Radfahren, nicht fuer Kraft-Komplexe (dafuer bleibt `.circuit`
+    /// zustaendig). Analog zu `.circuit`s Zwei-Phasen-Modell, aber BEIDE
+    /// Phasen (Belastung UND Erholung) sind hier gezeitet/streckenbasiert
+    /// statt einer ungezeiteten Arbeitsphase.
+    case enduranceIntervals
+}
+
+/// Nur relevant, wenn `TrainingDay.timeFormat == .circuit` — legt fest, wie
+/// eine einzelne Runde als "fertig" erkannt wird.
+public enum CircuitRoundMode: String, Codable, Sendable, CaseIterable {
+    /// Runde endet automatisch, sobald alle Uebungen ihr Wiederholungsziel
+    /// erreicht haben (Checkbox-UI wie bei Auf-Zeit, aber pro Runde
+    /// zurueckgesetzt statt kumulativ ueber die ganze Session).
+    case fixedReps
+    /// Runde endet erst, wenn der User selbst "Runde beenden" antippt -
+    /// fuer Vorgaben wie "wiederholen, bis keine saubere Wiederholung mehr
+    /// moeglich ist".
+    case toFailure
+}
+
+/// Paket 2 (Laufcoach-Konzept): aktueller Abschnitt eines laufenden
+/// strukturierten Ausdauer-Intervall-Laufs - Einlaufen -> N x (Belastung/
+/// Erholung) -> Auslaufen, siehe `WorkoutTimeFormat.enduranceIntervals`.
+/// Auf `WorkoutSession.endurancePhase` zugleich der "schon gestartet"-
+/// Marker (`nil` = Vorlauf noch nicht durchlaufen), analoges Muster zu
+/// `WorkoutSession.circuitRoundsCompleted` beim Zirkel.
+public enum EnduranceIntervalPhase: String, Codable, Sendable, CaseIterable {
+    case warmup
+    case work
+    case rest
+    case cooldown
+}
+
+/// Vorschlagswert fuer die Rundenzahl eines neu angelegten Zirkel-Tages,
+/// solange `circuitRounds` noch `nil` ist. In Core statt in FitnessAppUI,
+/// weil sowohl `DayAnalyzer` (FitnessAppData) als auch `DayEditorView`/
+/// `DashboardView` (FitnessAppUI) denselben Vorschlag brauchen.
+public func defaultCircuitRounds() -> Int { 5 }
+
+/// Vorschlagswert fuer die Pause zwischen zwei Runden in Sekunden, solange
+/// `circuitRestSeconds` noch `nil` ist - 90s ist der Wert, den jeder
+/// Kettlebell-Komplex aus der Nutzer-Vorlage durchgehend verwendet.
+public func defaultCircuitRestSeconds() -> Int { 90 }
+
+/// Paket 2: Vorschlagswerte fuer einen neu angelegten Ausdauer-Intervall-Tag,
+/// solange das jeweilige Feld noch `nil` ist - entsprechen dem Beispiel aus
+/// dem Laufcoach-Konzept (Einlaufen 10 Min, 5 Runden, 2 Min Belastung, 2 Min
+/// Erholung, Auslaufen 5 Min), docs/DELTIQ_DEVICE_ACCEPTANCE.md.
+public func defaultEnduranceWarmupSeconds() -> Int { 600 }
+public func defaultEnduranceCooldownSeconds() -> Int { 300 }
+public func defaultEnduranceIntervalRounds() -> Int { 5 }
+public func defaultEnduranceWorkDurationSeconds() -> Int { 120 }
+public func defaultEnduranceRestDurationSeconds() -> Int { 120 }
+
 /// Difficulty classification for exercise templates — used by the library filter (F99).
 public enum DifficultyLevel: String, Codable, Sendable, CaseIterable {
     case beginner

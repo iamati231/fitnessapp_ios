@@ -14,6 +14,19 @@ public final class Exercise {
     /// Catalog-Eintrag faellt.
     public var name: String
 
+    /// Settings-Epic Phase 6 (EXLIB-07/09): stabile Rueckreferenz auf die
+    /// `ExerciseTemplate`, von der diese Plan-Uebung adoptiert wurde. Wird
+    /// beim Adoptieren gesetzt (`DayEditorView.addExercise(from:)`,
+    /// `ActiveWorkoutView.addAdHocExercise(from:)`) und bleibt stabil, auch
+    /// wenn der User die Vorlage spaeter umbenennt — anders als `name`, das
+    /// nur ein Snapshot zum Adopt-Zeitpunkt ist. `nil` fuer Alt-Eintraege vor
+    /// diesem Feld (unkritisch: Lookups fallen dann auf den Namens-Snapshot
+    /// zurueck, exakt das bisherige Verhalten) oder wenn die Vorlage seither
+    /// geloescht wurde. Bewusst ein `UUID`-Scalar statt `@Relationship` —
+    /// siehe `ExerciseTemplate.id`-Dokumentation fuer die Begruendung
+    /// (Loeschen einer Vorlage darf Logs/PRs strukturell nie mitloeschen).
+    public var exerciseTemplateID: UUID?
+
     /// DEL-125: User-Custom-Override des Anzeigenamens.
     /// Nil = User hat den Namen NICHT geaendert, Display zeigt den lokalisierten
     /// System-Namen (via `name` -> Library-Lookup -> Catalog-Key).
@@ -101,6 +114,18 @@ public final class Exercise {
         set { cardioEquipmentRaw = newValue.rawValue }
     }
 
+    /// Paket 2 (Sportart-Unterscheidung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// nur fuer `isCardio`-Uebungen relevant, nur `.running`/`.cycling`
+    /// gueltig. `nil` = nicht festgelegt - wird NIE automatisch aus `name`
+    /// zurueckgeraten (anders als `cardioEquipment` nicht auf `.none`
+    /// defaulted, da es hier keinen sinnvollen neutralen Wert gibt).
+    public var enduranceSportKindRaw: String? = nil
+
+    public var enduranceSportKind: TrainingTypeKind? {
+        get { enduranceSportKindRaw.flatMap(TrainingTypeKind.init(rawValue:)) }
+        set { enduranceSportKindRaw = newValue?.rawValue }
+    }
+
     // MARK: - DEL-159 Custom-Exercise-Metadaten
 
     /// DEL-159: Primaer-Muskel-Override pro Uebung. Vorher lag der Muskel NUR
@@ -177,6 +202,35 @@ public final class Exercise {
 
     public var day: TrainingDay?
 
+    /// P8 Stufe-2 (Session-Inhaltsvertrag, Wiederaufnahme-Isolation):
+    /// stabile Instanz-Identitaet DIESER EINEN Exercise-Zeile — unabhaengig
+    /// von Position (`orderIndex`, aendert sich durch Umsortieren) oder
+    /// Vorlage (`exerciseTemplateID`, von mehreren Instanzen geteilt, z. B.
+    /// Hauptsatz + Finisher derselben Uebung). Einziger Zweck:
+    /// `SessionContentResolver` kann eine `TrainingDayContentSnapshot.
+    /// ExerciseEntry` nach einer EXTERNEN Umsortierung des Tages waehrend
+    /// einer offenen Session trotzdem auf GENAU dieses Live-Objekt
+    /// zurueckfuehren, statt sich auf den inzwischen verschobenen
+    /// `orderIndex` zu verlassen. Immer frisch per `UUID()` im `init`
+    /// erzeugt, nie vom Aufrufer gesetzt oder nachtraeglich veraendert.
+    /// `nil` nur fuer Alt-Zeilen vor diesem Feld — `SessionContentResolver`
+    /// faellt dort auf die bisherige `exerciseTemplateID`+`orderIndex`-
+    /// Bestmoeglichkeit zurueck.
+    public var instanceID: UUID?
+
+    /// swiftui-pro-Review (Deltiq-Abnahme): stabile `ForEach`/`List`-Identitaet.
+    /// `persistentModelID` ist NICHT ueber eine Objekt-Lebenszeit hinweg
+    /// `==`-stabil (ein frisch inserierter, noch nicht gespeicherter
+    /// Datensatz hat eine temporaere ID, die sich beim naechsten Save gegen
+    /// eine permanente austauscht — empirisch bestaetigt, siehe
+    /// `DayEditorPersistenceTests`-Typ-Doku). `instanceID` ist dagegen ab
+    /// dem `init` fix und wird nie veraendert — exakt dafuer gebaut (siehe
+    /// oben). Nur fuer Alt-Zeilen ohne `instanceID` faellt dies auf
+    /// `persistentModelID` zurueck.
+    public var forEachIdentity: AnyHashable {
+        instanceID.map(AnyHashable.init) ?? AnyHashable(persistentModelID)
+    }
+
     /// DEL-051: HEILIGE HISTORIE. Frueher `.cascade` — beim Loeschen einer
     /// Plan-Uebung (manuell oder via Day/Plan-Cascade) gingen die ExerciseLog-
     /// Eintraege gleich mit weg, was Bestleistungen vernichtet hat. Jetzt
@@ -190,6 +244,7 @@ public final class Exercise {
 
     public init(
         name: String,
+        exerciseTemplateID: UUID? = nil,
         customName: String? = nil,
         sets: Int = 3,
         repsMin: Int = 8,
@@ -224,6 +279,7 @@ public final class Exercise {
         day: TrainingDay? = nil
     ) {
         self.name = name
+        self.exerciseTemplateID = exerciseTemplateID
         self.customName = customName
         self.sets = sets
         self.repsMin = repsMin
@@ -254,6 +310,7 @@ public final class Exercise {
         self.primaryMuscleRaw = primaryMuscle?.rawValue
         self.equipmentRaw = equipment?.rawValue
         self.day = day
+        self.instanceID = UUID()
     }
 }
 #endif

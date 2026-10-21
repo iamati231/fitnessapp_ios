@@ -9,14 +9,23 @@ import FitnessAppData
 /// die letzten Sätze. Bisher gab es Trend-Charts nur für die 5 Compounds
 /// (Dashboard); hier bekommt jede Übung ihre eigene Historie.
 ///
-/// **Identität über Snapshot-Namen** (DEL-051-Pattern): Logs identifizieren
-/// sich über `resolvedExerciseName`, nicht über Live-Referenzen — so zählt
-/// die Historie auch nach Plan-Löschungen/Equipment-Swaps vollständig.
+/// **Identität ID-first** (Settings-Epic Phase 6, EXLIB-07/09, baut auf dem
+/// DEL-051-Snapshot-Pattern auf): Logs/PRs mit aufgeloester
+/// `exerciseTemplateID` identifizieren sich darueber — stabil auch nach
+/// einem Umbenennen der Vorlage. Nur Alt-Eintraege ohne aufloesbare ID
+/// fallen weiterhin auf `resolvedExerciseName`/`exerciseName` zurueck, exakt
+/// wie vor Phase 6 — so zählt die Historie auch nach Plan-Löschungen/
+/// Equipment-Swaps/Umbenennungen vollständig.
 @available(iOS 17.0, macOS 14.0, *)
 struct ExerciseDetailView: View {
 
     /// System-Name (deutscher Library-Anker) — matcht die Log-Snapshots.
+    /// Fallback-Identitaet fuer Logs/PRs ohne aufloesbare `exerciseTemplateID`
+    /// (Settings-Epic Phase 6, EXLIB-07/09).
     let systemName: String
+    /// Stabile Vorlagen-ID — primaere Identitaet seit Phase 6. Ueberlebt ein
+    /// Umbenennen der Vorlage, anders als `systemName`.
+    let exerciseTemplateID: UUID
     /// Lokalisierter Anzeige-Name für den Titel.
     let displayName: String
     /// True für Cardio-Übungen — schaltet Stats auf Distanz/Zeit um.
@@ -27,9 +36,19 @@ struct ExerciseDetailView: View {
     private var allPRs: [PersonalRecordEntry]
 
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ScrollView {
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: erreicht ueber den Leading-Swipe
+            // "Verlauf" in ExerciseLibraryView - Eyebrow zeigt den Tab
+            // (Mehr), nicht die Bibliothek, siehe OFFENE-VIEWS.md.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: displayName,
+                onBack: { dismiss() }
+            )
+
             VStack(alignment: .leading, spacing: 18) {
                 if logs.isEmpty {
                     emptyState
@@ -44,25 +63,44 @@ struct ExerciseDetailView: View {
                     recentSetsSection
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .deltiqScreen()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
-        .navigationTitle(displayName)
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
     }
 
     // MARK: - Daten
 
-    /// Alle Logs dieser Übung, Snapshot-first aufgelöst, chronologisch.
+    /// Alle Logs dieser Übung, chronologisch. Settings-Epic Phase 6
+    /// (EXLIB-07/09): ID-first — ein Log mit aufgeloester `exerciseTemplateID`
+    /// zaehlt nur bei ID-Treffer (ueberlebt Umbenennen); nur Logs OHNE
+    /// aufloesbare ID fallen weiterhin auf den Namens-Snapshot zurueck
+    /// (unveraendertes Alt-Verhalten fuer nicht per Backfill aufloesbare
+    /// Bestandsdaten — nie beides gemischt, sonst koennte ein zufaelliger
+    /// Namens-Treffer eine andere Uebung faelschlich mit-anzeigen).
     private var logs: [ExerciseLog] {
-        allLogs.filter { $0.resolvedExerciseName == systemName }
+        allLogs.filter { log in
+            if let logTemplateID = log.resolvedExerciseTemplateID {
+                return logTemplateID == exerciseTemplateID
+            }
+            return log.resolvedExerciseName == systemName
+        }
     }
 
     private var prs: [PersonalRecordEntry] {
-        allPRs.filter { $0.exerciseName == systemName }
+        allPRs.filter { entry in
+            if let entryTemplateID = entry.exerciseTemplateID {
+                return entryTemplateID == exerciseTemplateID
+            }
+            return entry.exerciseName == systemName
+        }
     }
 
     /// Bestes e1RM pro Session — gleiche Aggregation wie der Compound-Chart
@@ -131,7 +169,7 @@ struct ExerciseDetailView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(String(localized: labelKey, bundle: .module))
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
             Text(value)
                 .font(.title3.weight(.bold))
                 .fitnessNumberStyle()
@@ -181,7 +219,7 @@ struct ExerciseDetailView: View {
                             .font(.subheadline.weight(.medium))
                         Text(pr.date.formatted(date: .abbreviated, time: .omitted))
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                     }
                     Spacer()
                     Text(formatWeight(pr.value))
@@ -211,7 +249,7 @@ struct ExerciseDetailView: View {
                 HStack {
                     Text(log.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                     Spacer()
                     if isCardio {
                         Text(cardioLogText(log))
@@ -221,7 +259,7 @@ struct ExerciseDetailView: View {
                             .font(.subheadline.monospacedDigit())
                         Text("RIR \(log.rir.formatted(.number.precision(.fractionLength(0...1))))")
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(Color.Deltiq.textTertiary)
                     }
                 }
             }
@@ -233,10 +271,10 @@ struct ExerciseDetailView: View {
         VStack(spacing: 10) {
             Image(systemName: "chart.xyaxis.line")
                 .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Color.Deltiq.textTertiary)
             Text("exercise.detail.empty", bundle: .module)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

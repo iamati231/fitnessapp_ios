@@ -13,6 +13,15 @@ public struct DayEditorView: View {
     @Bindable public var day: TrainingDay
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var navigation
+    @Environment(\.dismiss) private var dismiss
+
+    // `editMode` ist auf macOS/watchOS unavailable (SwiftUI.EnvironmentValues.
+    // editMode). Das Package deklariert macOS 14 als Mindestversion, damit
+    // `swift test` auf dem macOS-CI-Runner baut - eine echte macOS-Deployment
+    // dieser View gibt es nicht. Guard reicht daher als reiner Compile-Fix.
+    #if os(iOS)
+    @Environment(\.editMode) private var editMode
+    #endif
 
     @State private var showingPicker = false
     @State private var exerciseToEdit: Exercise?
@@ -46,12 +55,58 @@ public struct DayEditorView: View {
     @State private var comebackAssessment: AbsenceDeload.Assessment?
     @State private var pendingComebackStart: (() -> Void)?
 
+    /// README 2.35: schuetzt einen Ad-Hoc-Zeitformat-Tag (`day.plan == nil`)
+    /// vor `sweepAbandonedAdHocDayIfNeeded()`, sobald `actuallyStartNewSession()`
+    /// tatsaechlich eine Session angelegt hat - analog zu
+    /// `ActiveWorkoutView.sweepEmptyAdHocSession()`s `!session.isCompleted`-
+    /// Check: `.onDisappear` feuert auch dann, wenn dieser Editor nur von
+    /// `TimedWorkoutPlayerView` UEBERDECKT (nicht wirklich vom Stack
+    /// entfernt) wird - dieses Flag unterscheidet "erfolgreich gestartet"
+    /// von "abgebrochen".
+    @State private var didStartSessionForAdHocDay = false
+
+    /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
+    /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
+    /// wird, statt sofort zu schliessen.
+    @State private var showingDiscardConfirm = false
+
+    /// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): Zustand der
+    /// `metaSection`-Felder beim Oeffnen — siehe `TrainingDaySnapshot`. Die
+    /// Uebungsliste (Hinzufuegen/Loeschen/Reorder/Training starten) bleibt
+    /// bewusst ausserhalb: das sind eigene, sofort wirksame Aktionen ohne
+    /// Save/Cancel-Konzept, kein Teil dieses "Formulars".
+    @State private var snapshot: TrainingDaySnapshot
+
+    /// UI-Refactor (Korrektur V1): `orderIndex` pro Uebung beim Oeffnen, NUR
+    /// fuer die Reihenfolge-Erkennung — analog zu `PlanEditorView.
+    /// dayWeekdayAtOpen`. `day.activeExercises` ist ueber den direkten
+    /// `day`-Init-Parameter (kein `@Query`) schon in `init` verfuegbar.
+    /// Intersection-basiert: neu hinzugefuegte/geloeschte Uebungen haben
+    /// keinen Eintrag und werden beim Verwerfen nicht angefasst — Hinzufuegen/
+    /// Loeschen bleiben eigene, sofort wirksame Aktionen ohne Save/Cancel-
+    /// Konzept (siehe `snapshot`-Doc oben).
+    @State private var exerciseOrderIndexAtOpen: [PersistentIdentifier: Int]
+
     public init(day: TrainingDay) {
         self.day = day
+        _snapshot = State(initialValue: TrainingDaySnapshot.capture(from: day))
+        _exerciseOrderIndexAtOpen = State(initialValue: Dictionary(
+            uniqueKeysWithValues: day.activeExercises.map { ($0.persistentModelID, $0.orderIndex) }
+        ))
     }
 
     public var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: aus dem Plan-Tab gepusht - "alles im
+            // Plan-Tab bekommt tab.plan" (OFFENE-VIEWS.md), auch wenn der
+            // unmittelbare Aufrufer PlanEditorView ist.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
+                title: day.name.isEmpty ? String(localized: "day.editor.untitled", bundle: .module) : day.displayName,
+                onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                actions: headerActions
+            )
+
             if isRestDay {
                 // Ruhetag bekommt eine drastisch reduzierte Layout-Variante
                 // (DEL-015) — keine Picker, keine Übungen-Section, nur Hero-
@@ -59,7 +114,12 @@ public struct DayEditorView: View {
                 // und "Intensität: Keine"-Eintraege.
                 restDayLayout
             } else {
-                Form {
+                // Signature-Geruest: `List` bleibt Container - .onMove/.onDelete
+                // fuer die Uebungs-Reihenfolge sowie die Superset-Swipe-Action
+                // brauchen ihn (siehe PlanEditorView/WorkoutSummaryView, gleiches
+                // Prinzip). .scrollContentBackground(.hidden) + .listRowBackground
+                // je Zeile machen daraus optisch eine Deltiq-Karten-Reihe.
+                List {
                     metaSection
                     startSection
                     exercisesSection
@@ -72,23 +132,25 @@ public struct DayEditorView: View {
                     // Pass mit aktualisierten Werten.
                     dayAnalysisSection
                 }
+                .scrollContentBackground(.hidden)
             }
         }
-        .navigationTitle(day.name.isEmpty ? String(localized: "day.editor.untitled", bundle: .module) : day.displayName)
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        // DEL-095: EditButton macht den nativen Edit-Mode an, in dem die
-        // Drag-Handles fuer Reorder + Delete sichtbar werden. Bei
-        // readOnly-Templates blenden wir den Button aus — dort ist Editing
-        // ohnehin gesperrt.
-        .toolbar {
-            if !isReadOnly && !day.activeExercises.isEmpty {
-                ToolbarItem(placement: .deltiqTrailing) {
-                    EditButton()
-                }
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        // UI-Refactor (Korrektur, Punkt 4): bei Aenderungen bleibt die Geste
+        // bewusst AUS — die Wisch-Geste ist sonst ein ungesicherter
+        // Verlassen-Weg, der am Discard-Dialog vorbeigeht. Ohne Aenderungen
+        // (`!isDirty`) funktioniert sie weiter normal (direktes Schliessen).
+        .deltiqSwipeBackEnabled(!isDirty)
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+            revertToSnapshot()
+        }
         .sheet(isPresented: $showingPicker) {
             // DEL-210: einheitliche Übungs-Auswahl — dieselbe View wie die
             // Bibliothek unter Einstellungen, im Picker-Modus.
@@ -203,6 +265,115 @@ public struct DayEditorView: View {
                 Text("session.recovery.message.fallback", bundle: .module)
             }
         }
+        // Nutzer-Feedback (README 2.35): der Ad-Hoc-Zeitformat-Start
+        // (`DashboardView.beginTimedAdHocWorkout`) legt den Tag OHNE Session
+        // an und navigiert direkt hierher - anders als jeder bisherige Weg
+        // zu diesem Editor (immer ein bereits bestehender Plan-Tag).
+        // Verlaesst der User diesen Editor, BEVOR "Training starten"
+        // erfolgreich lief (Zurueck-Chevron, Swipe-Back, App-Beendigung),
+        // bliebe der eingefuegte Tag sonst fuer immer verwaist im Store - er
+        // taucht in keiner PlansListView/keinem PlanEditor auf, es gibt
+        // keinen anderen Weg zurueck zu ihm. Gleiches Muster wie
+        // `ActiveWorkoutView.sweepEmptyAdHocSession()`.
+        .onDisappear {
+            sweepAbandonedAdHocDayIfNeeded()
+        }
+    }
+
+    /// UI-Refactor (Korrektur): der Save-Checkmark muss auf jedem
+    /// bearbeitbaren Formular immer ganz rechts erreichbar sein — er darf
+    /// weder durch den 2-Action-Cap von `DeltiqHeader` verdraengt werden
+    /// noch (waehrend des Reorder-Modus) dasselbe Icon/dieselbe Position
+    /// wie ein "Reorder fertig"-Haekchen teilen (eindeutige Bedeutung,
+    /// stabile Position). Deshalb wandert der bisherige Top-Level-Reorder-
+    /// Toggle (DEL-095, Ersatz fuer EditButton()) in ein Ellipsis-Menu —
+    /// Start UND Ende des Reorder-Modus sind beides Menu-Eintraege, nie der
+    /// Save-Slot selbst. `saveAction` ist dadurch immer genau 1 der
+    /// hoechstens 2 Actions und immer die LETZTE (= am weitesten rechts,
+    /// `ForEach(actions)` rendert in Array-Reihenfolge, siehe Theme.swift).
+    private var headerActions: [DeltiqHeaderAction] {
+        var actions: [DeltiqHeaderAction] = []
+        #if os(iOS)
+        if !isReadOnly, !day.activeExercises.isEmpty, !isRestDay {
+            actions.append(reorderMenuAction)
+        }
+        #endif
+        actions.append(saveAction)
+        return actions
+    }
+
+    #if os(iOS)
+    /// UI-Refactor (Korrektur): Reorder-Start/-Ende als EIN stabiler
+    /// Ellipsis-Menu-Eintrag statt eines eigenen Top-Level-Icons — das
+    /// Menu selbst traegt immer dasselbe `"ellipsis"`-Icon (Konvention
+    /// dieses Repos, siehe z.B. `WorkoutSummaryView`/`PRHistoryView`),
+    /// nur der Eintrag darin wechselt Label/Icon je nach `editMode`.
+    private var reorderMenuAction: DeltiqHeaderAction {
+        let isEditing = editMode?.wrappedValue.isEditing == true
+        return DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+            Button {
+                withAnimation {
+                    editMode?.wrappedValue = isEditing ? .inactive : .active
+                }
+            } label: {
+                Label {
+                    Text(isEditing
+                         ? "editor.reorder.done"
+                         : "editor.reorder.start",
+                         bundle: .module)
+                } icon: {
+                    Image(systemName: isEditing ? "checkmark" : "arrow.up.arrow.down")
+                }
+            }
+        })
+    }
+    #endif
+
+    /// UI-Refactor (DeltiqHeader-Muster): Autosave-Screen (siehe
+    /// `ExerciseEditorView`). Kein Validitaets-Gate auf diesem Screen → kein
+    /// `isDisabled`. Ruft seit dem Day-Editor-Persistenzbugfix `saveAndDismiss()`
+    /// auf (siehe dortige Dokumentation) — vorher war das ein reines "Fertig"
+    /// ohne eigenen Speicher-Schritt.
+    private var saveAction: DeltiqHeaderAction {
+        DeltiqHeaderAction(
+            systemImage: "checkmark",
+            accessibilityLabel: String(localized: "common.done", bundle: .module)
+        ) {
+            saveAndDismiss()
+        }
+    }
+
+    /// Bugfix (Day-Editor-Persistenzbug, Tag-Level-Stepper/Picker): die
+    /// `metaSection`-Felder (u.a. `timeFormat`/`circuitRounds`/
+    /// `circuitRestSeconds`, siehe `TrainingDaySnapshot`) galten laut
+    /// Typ-Doku als "autosaved direkt in SwiftData" ueber `@Bindable` —
+    /// tatsaechlich mutiert `@Bindable` nur den LIVE-Objektgraphen im
+    /// Speicher, ohne selbst `context.save()` aufzurufen. Ein reines
+    /// `dismiss()` verliess sich bislang komplett auf SwiftDatas impliziten
+    /// Autosave, der nach einem direkt anschliessenden App-Kaltstart nicht
+    /// zuverlaessig schon gelaufen sein muss (derselbe Musterfehler wie bei
+    /// `deleteExercises`, siehe dortige Dokumentation). Ein fehlgeschlagener
+    /// Save dismisst jetzt NICHT mehr — der User soll nicht glauben, seine
+    /// Aenderung sei gesichert, waehrend sie es nicht ist (sichtbarer
+    /// Fehlerhinweis statt irrefuehrendem "Fertig").
+    private func saveAndDismiss() {
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
+        }
+    }
+
+    /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention.
+    /// `.textCase(nil)` verhindert, dass List den bereits grossgeschriebenen
+    /// String noch einmal automatisch transformiert.
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .heavy))
+            .tracking(1.5)
+            .foregroundStyle(Color.deltiqOrange)
+            .textCase(nil)
     }
 
     /// Hero-Card-Layout fuer Ruhetage: grosses Sofa-Icon, klare Botschaft,
@@ -217,7 +388,7 @@ public struct DayEditorView: View {
                 .font(.system(size: 96))
                 .foregroundStyle(.white)
                 .frame(width: 140, height: 140)
-                .background(Color.purple.gradient)
+                .background(Color.deltiqOrange.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 28))
 
             VStack(spacing: 8) {
@@ -225,7 +396,7 @@ public struct DayEditorView: View {
                     .font(.title.weight(.bold))
                 Text("day.restDay.heroMessage", bundle: .module)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
             }
@@ -235,27 +406,18 @@ public struct DayEditorView: View {
             Button {
                 markRestDaySkipped()
             } label: {
-                HStack {
-                    Spacer()
-                    Label {
-                        Text("day.restDay.complete.button", bundle: .module)
-                    } icon: {
-                        Image(systemName: "checkmark.circle.fill")
-                    }
-                        .font(.headline)
-                    Spacer()
+                Label {
+                    Text("day.restDay.complete.button", bundle: .module)
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
                 }
-                .padding(.vertical, 14)
-                .background(Color.purple.gradient)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             .buttonStyle(.plain)
+            .deltiqButtonStyle()
             .padding(.horizontal)
             .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.secondary.opacity(0.05))
     }
 
     // MARK: Sections
@@ -276,6 +438,37 @@ public struct DayEditorView: View {
         day.type == .rest
     }
 
+    /// UI-Refactor (DeltiqHeader-Muster): Vergleich gegen `TrainingDaySnapshot`
+    /// vom Oeffnen des Sheets — nur die `metaSection`-Felder, siehe dort. Plus
+    /// (Korrektur V1) die Uebungs-Reihenfolge, die ein reiner Feld-Vergleich
+    /// nicht sieht.
+    private var isDirty: Bool {
+        snapshot != TrainingDaySnapshot.capture(from: day) || isExerciseOrderDirty
+    }
+
+    /// UI-Refactor (Korrektur V1): true, wenn mindestens eine beim Oeffnen
+    /// vorhandene Uebung seitdem einen anderen `orderIndex` bekommen hat
+    /// (Drag&Drop-Reorder, siehe `moveExercises`). Neue/geloeschte Uebungen
+    /// zaehlen bewusst nicht mit (siehe `exerciseOrderIndexAtOpen`-Doc).
+    /// Live-Property reicht nur `exerciseOrderIndexAtOpen` durch — die
+    /// eigentliche Pruefung steckt in der `internal` Funktion darunter, die
+    /// ohne `@State`-Zugriff direkt testbar ist (siehe Tests/FitnessAppUITests).
+    private var isExerciseOrderDirty: Bool {
+        exerciseOrderIsDirty(comparedTo: exerciseOrderIndexAtOpen)
+    }
+
+    /// UI-Refactor (Korrektur V1): reine Pruef-Logik mit explizitem
+    /// `orderIndexAtOpen`-Parameter statt direktem `@State`-Zugriff — testbar
+    /// ohne lebende SwiftUI-Umgebung. Bewusst NICHT `isExerciseOrderDirty`
+    /// genannt (anderer Name als die Property direkt darueber), um jede
+    /// Zweideutigkeit zwischen Property- und Funktionsreferenz zu vermeiden.
+    internal func exerciseOrderIsDirty(comparedTo orderIndexAtOpen: [PersistentIdentifier: Int]) -> Bool {
+        day.activeExercises.contains { exercise in
+            guard let original = orderIndexAtOpen[exercise.persistentModelID] else { return false }
+            return original != exercise.orderIndex
+        }
+    }
+
     private var metaSection: some View {
         Section {
             // DEL-125: customName + localizedSystemName-Placeholder.
@@ -289,6 +482,7 @@ public struct DayEditorView: View {
                 Text("day.editor.field.name", bundle: .module)
             }
                 .disabled(isReadOnly)
+                .listRowBackground(Color.Deltiq.surface)
 
             Picker(selection: $day.weekday) {
                 ForEach(weekdayOptions, id: \.self) { weekday in
@@ -298,6 +492,7 @@ public struct DayEditorView: View {
                 Text("day.editor.field.weekday", bundle: .module)
             }
             .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
 
             Picker(selection: $day.type) {
                 ForEach(DayType.allCases, id: \.self) { type in
@@ -307,6 +502,7 @@ public struct DayEditorView: View {
                 Text("day.editor.field.type", bundle: .module)
             }
             .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
 
             Picker(selection: $day.nextIntensity) {
                 Text("day_intensity.light", bundle: .module).tag(DayIntensity.light)
@@ -315,14 +511,281 @@ public struct DayEditorView: View {
             } label: {
                 Text("day.editor.field.nextIntensity", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
+
+            // README 2.35 (43a): eigene Trainings konnten `timeFormat` bisher
+            // gar nicht setzen - nur die kuratierten Templates (Cindy,
+            // CrossFit/Kettlebell) tragen es. Gleiches Picker-Muster wie Typ/
+            // Intensitaet direkt darueber, inklusive derselben (in der Praxis
+            // wirkungslosen) `isReadOnly`-Sperre: `day.plan?.isTemplate` ist
+            // seit `ProgramInstantiator.instantiate` durchgehend `false`,
+            // auch fuer adoptierte kuratierte Plaene (siehe `isReadOnly`-
+            // Kommentar in `PlanEditorView.swift`) - kein neues Problem
+            // dieses Pickers, nur keine echte Sperre, obwohl der Name das
+            // suggeriert. Die Dauer-/Zeit-Deckel-Zeile direkt darunter
+            // reagiert bereits automatisch auf `day.timeFormat`.
+            Picker(selection: $day.timeFormat) {
+                Text("day.editor.field.structure.sets", bundle: .module).tag(nil as WorkoutTimeFormat?)
+                ForEach(WorkoutTimeFormat.allCases, id: \.self) { format in
+                    Text(timedFormatDisplayName(format)).tag(format as WorkoutTimeFormat?)
+                }
+            } label: {
+                Text("day.editor.field.structure", bundle: .module)
+            }
+            .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
+
+            // Feature (Dauer/Time-Cap konfigurierbar): AMRAP/EMOM brauchen
+            // eine feste Dauer fuer den Countdown, Auf Zeit dagegen nur ein
+            // OPTIONALES Abbruch-Cap (0 = kein Limit, der bisherige
+            // Bestandsfall fuer alle bisherigen Auf-Zeit-Tage).
+            if let format = day.timeFormat {
+                switch format {
+                case .amrap, .emom:
+                    Stepper(value: Binding(
+                        get: { day.timeCapMinutes ?? defaultTimedFormatDurationMinutes(for: format) },
+                        set: { day.timeCapMinutes = $0 }
+                    ), in: 5...60) {
+                        LabeledContent {
+                            Text("\(day.timeCapMinutes ?? defaultTimedFormatDurationMinutes(for: format)) " + String(localized: "unit.minutes.short", bundle: .module))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.duration", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+                case .forTime:
+                    Stepper(value: Binding(
+                        get: { day.timeCapMinutes ?? 0 },
+                        set: { day.timeCapMinutes = $0 > 0 ? $0 : nil }
+                    ), in: 0...60, step: 5) {
+                        LabeledContent {
+                            Text(day.timeCapMinutes.map { "\($0) " + String(localized: "unit.minutes.short", bundle: .module) }
+                                ?? String(localized: "day.editor.field.timeCap.noLimit", bundle: .module))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.timeCap", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+                case .circuit:
+                    // Zirkel hat kein Minuten-Dauer-Konzept - stattdessen
+                    // Rundenzahl, Pause zwischen den Runden, und der Modus
+                    // (feste Wdh. je Runde vs. bis zur Ausbelastung).
+                    Stepper(value: Binding(
+                        get: { day.circuitRounds ?? defaultCircuitRounds() },
+                        set: { day.circuitRounds = $0 }
+                    ), in: 1...20) {
+                        LabeledContent {
+                            Text("\(day.circuitRounds ?? defaultCircuitRounds())")
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.circuitRounds", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+
+                    Stepper(value: Binding(
+                        get: { day.circuitRestSeconds ?? defaultCircuitRestSeconds() },
+                        set: { day.circuitRestSeconds = $0 }
+                    ), in: 10...300, step: 5) {
+                        LabeledContent {
+                            Text("\(day.circuitRestSeconds ?? defaultCircuitRestSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        } label: {
+                            Text("day.editor.field.circuitRest", bundle: .module)
+                        }
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+
+                    Picker(selection: Binding(
+                        get: { day.circuitMode ?? .fixedReps },
+                        set: { day.circuitMode = $0 }
+                    )) {
+                        Text("day.editor.field.circuitMode.fixedReps", bundle: .module).tag(CircuitRoundMode.fixedReps)
+                        Text("day.editor.field.circuitMode.toFailure", bundle: .module).tag(CircuitRoundMode.toFailure)
+                    } label: {
+                        Text("day.editor.field.circuitMode", bundle: .module)
+                    }
+                    .disabled(isReadOnly)
+                    .listRowBackground(Color.Deltiq.surface)
+                case .enduranceIntervals:
+                    enduranceIntervalsFields
+                }
+            }
         } header: {
-            Text("day.editor.section.info", bundle: .module)
+            sectionHeader(String(localized: "day.editor.section.info", bundle: .module))
         } footer: {
             if isReadOnly {
                 Text("day.editor.templateLocked.footer", bundle: .module)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
+        }
+        .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Paket 2: reine UI-Auswahl, nicht persistiert - leitet sich aus
+    /// `day.enduranceWorkDurationSeconds`/`enduranceWorkDistanceKm` ab.
+    /// Genau eines der beiden Felder ist je Modus gesetzt (nie beide, siehe
+    /// `TrainingDay`-Doku) - das Setzen eines neuen Modus loescht das jeweils
+    /// andere Feld, statt einen veralteten Wert stehen zu lassen.
+    private enum EnduranceWorkTargetMode { case time, distance, open }
+
+    private var enduranceWorkTargetModeBinding: Binding<EnduranceWorkTargetMode> {
+        Binding(
+            get: {
+                if day.enduranceWorkDurationSeconds != nil { return .time }
+                if day.enduranceWorkDistanceKm != nil { return .distance }
+                return .open
+            },
+            set: { newMode in
+                switch newMode {
+                case .time:
+                    day.enduranceWorkDistanceKm = nil
+                    day.enduranceWorkDurationSeconds = defaultEnduranceWorkDurationSeconds()
+                case .distance:
+                    day.enduranceWorkDurationSeconds = nil
+                    day.enduranceWorkDistanceKm = 1.0
+                case .open:
+                    day.enduranceWorkDurationSeconds = nil
+                    day.enduranceWorkDistanceKm = nil
+                }
+            }
+        )
+    }
+
+    // Paket 2: in eigene @ViewBuilder-Properties ausgelagert statt inline im
+    // grossen `switch format`-Block - sechs zusaetzliche Views in einem
+    // einzigen Switch-Case ueberforderte den Swift-Typchecker auf dem
+    // CI-Runner (Build haengt bei "Swift-Package bauen" statt in
+    // angemessener Zeit durchzulaufen, siehe docs/DELTIQ_DEVICE_ACCEPTANCE.md).
+    @ViewBuilder
+    private var enduranceIntervalsFields: some View {
+        // Paket 2 (Sportart-Unterscheidung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+        // bewusst OHNE stillen Default (`?? .running`) - ein nil-Wert zeigt
+        // den eigenen "nicht festgelegt"-Eintrag, statt beim blossen Oeffnen
+        // des Editors unbemerkt auf eine Sportart festzulegen. Bei
+        // Erstellung aus dem Generator-Pfad ist der Wert hier bereits
+        // gesetzt (siehe `PlanGenerator.cardioCandidates`) und wird nur
+        // angezeigt, nicht erneut abgefragt.
+        Picker(selection: $day.enduranceSportKind) {
+            if day.enduranceSportKind == nil {
+                Text("day.editor.field.enduranceSportKind.notSet", bundle: .module).tag(TrainingTypeKind?.none)
+            }
+            Text(String(localized: String.LocalizationValue(TrainingTypeKind.running.titleKey), bundle: .module))
+                .tag(TrainingTypeKind?.some(.running))
+            Text(String(localized: String.LocalizationValue(TrainingTypeKind.cycling.titleKey), bundle: .module))
+                .tag(TrainingTypeKind?.some(.cycling))
+        } label: {
+            Text("day.editor.field.enduranceSportKind", bundle: .module)
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
+        Stepper(value: Binding(
+            get: { (day.enduranceWarmupDurationSeconds ?? defaultEnduranceWarmupSeconds()) / 60 },
+            set: { day.enduranceWarmupDurationSeconds = $0 * 60 }
+        ), in: 0...30) {
+            LabeledContent {
+                Text("\((day.enduranceWarmupDurationSeconds ?? defaultEnduranceWarmupSeconds()) / 60) " + String(localized: "unit.minutes.short", bundle: .module))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            } label: {
+                Text("day.editor.field.enduranceWarmup", bundle: .module)
+            }
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
+        Stepper(value: Binding(
+            get: { day.enduranceIntervalRounds ?? defaultEnduranceIntervalRounds() },
+            set: { day.enduranceIntervalRounds = $0 }
+        ), in: 1...20) {
+            LabeledContent {
+                Text("\(day.enduranceIntervalRounds ?? defaultEnduranceIntervalRounds())")
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            } label: {
+                Text("day.editor.field.enduranceRounds", bundle: .module)
+            }
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
+        Picker(selection: enduranceWorkTargetModeBinding) {
+            Text("day.editor.field.enduranceWorkTarget.time", bundle: .module).tag(EnduranceWorkTargetMode.time)
+            Text("day.editor.field.enduranceWorkTarget.distance", bundle: .module).tag(EnduranceWorkTargetMode.distance)
+            Text("day.editor.field.enduranceWorkTarget.open", bundle: .module).tag(EnduranceWorkTargetMode.open)
+        } label: {
+            Text("day.editor.field.enduranceWorkTarget", bundle: .module)
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
+        enduranceWorkTargetFields
+
+        Stepper(value: Binding(
+            get: { day.enduranceRestDurationSeconds ?? defaultEnduranceRestDurationSeconds() },
+            set: { day.enduranceRestDurationSeconds = $0 }
+        ), in: 15...300, step: 15) {
+            LabeledContent {
+                Text("\(day.enduranceRestDurationSeconds ?? defaultEnduranceRestDurationSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            } label: {
+                Text("day.editor.field.enduranceRest", bundle: .module)
+            }
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
+        Stepper(value: Binding(
+            get: { (day.enduranceCooldownDurationSeconds ?? defaultEnduranceCooldownSeconds()) / 60 },
+            set: { day.enduranceCooldownDurationSeconds = $0 * 60 }
+        ), in: 0...30) {
+            LabeledContent {
+                Text("\((day.enduranceCooldownDurationSeconds ?? defaultEnduranceCooldownSeconds()) / 60) " + String(localized: "unit.minutes.short", bundle: .module))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            } label: {
+                Text("day.editor.field.enduranceCooldown", bundle: .module)
+            }
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+    }
+
+    @ViewBuilder
+    private var enduranceWorkTargetFields: some View {
+        switch enduranceWorkTargetModeBinding.wrappedValue {
+        case .time:
+            Stepper(value: Binding(
+                get: { day.enduranceWorkDurationSeconds ?? defaultEnduranceWorkDurationSeconds() },
+                set: { day.enduranceWorkDurationSeconds = $0 }
+            ), in: 15...600, step: 15) {
+                LabeledContent {
+                    Text("\(day.enduranceWorkDurationSeconds ?? defaultEnduranceWorkDurationSeconds())" + String(localized: "unit.seconds.short", bundle: .module))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                } label: {
+                    Text("day.editor.field.enduranceWorkDuration", bundle: .module)
+                }
+            }
+            .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
+        case .distance:
+            TextField(String(localized: "day.editor.field.enduranceWorkDistance", bundle: .module),
+                      value: Binding(
+                        get: { day.enduranceWorkDistanceKm },
+                        set: { day.enduranceWorkDistanceKm = $0 }
+                      ),
+                      format: .number,
+                      prompt: Text("editor.exercise.field.distanceExample", bundle: .module))
+                .decimalKeyboard()
+                .disabled(isReadOnly)
+                .listRowBackground(Color.Deltiq.surface)
+        case .open:
+            EmptyView()
         }
     }
 
@@ -344,10 +807,13 @@ public struct DayEditorView: View {
                         Spacer()
                     }
                 }
+                .listRowBackground(Color.Deltiq.surface)
             } footer: {
                 Text("day.restDay.complete.footer", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         } else {
             // DEL-127: Adaptive Start-CTA. Wenn fuer diesen Day bereits eine
             // offene Session existiert (App-Crash, vergessenes Speichern,
@@ -368,6 +834,10 @@ public struct DayEditorView: View {
     private var adaptiveStartSection: some View {
         let openForThisDay = openSessionForCurrentDay
         Section {
+            // Handoff 1.9: Primaerer Hero-CTA statt gruen-hinterlegter Row -
+            // .deltiqButtonStyle() bringt Gradient/Glow/Rundung schon mit,
+            // listRowBackground/-Insets werden geleert, damit Listens eigenes
+            // Zeilen-Chrome die Button-Optik nicht doppelt umrahmt.
             Button {
                 // UX-204: Medium-Impact-Haptik — der "Training starten"-
                 // Klick ist ein bewusster Commitment-Schritt, das verdient
@@ -379,32 +849,34 @@ public struct DayEditorView: View {
                     startSession()
                 }
             } label: {
-                HStack {
-                    Spacer()
-                    Label {
-                        Text(openForThisDay != nil
-                             ? "day.editor.start.resume"
-                             : "day.editor.start.button",
-                             bundle: .module)
-                    } icon: {
-                        Image(systemName: openForThisDay != nil
-                            ? "play.circle.fill"
-                            : "play.fill")
-                    }
-                        .font(.headline)
-                    Spacer()
+                Label {
+                    Text(openForThisDay != nil
+                         ? "day.editor.start.resume"
+                         : "day.editor.start.button",
+                         bundle: .module)
+                } icon: {
+                    Image(systemName: openForThisDay != nil
+                        ? "play.circle.fill"
+                        : "play.fill")
                 }
             }
+            .buttonStyle(.plain)
+            .deltiqButtonStyle()
             .disabled(day.activeExercises.isEmpty)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
         } footer: {
             if day.activeExercises.isEmpty {
                 Text("day.editor.start.hintEmpty", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             } else if openForThisDay != nil {
                 Text("day.editor.start.resumeHint", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// DEL-127: liefert die offene Session, deren `.day` mit dem aktuell
@@ -422,8 +894,9 @@ public struct DayEditorView: View {
                      ? "day.editor.exercises.restDayEmpty"
                      : "day.editor.exercises.empty",
                      bundle: .module)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                     .font(.callout)
+                    .listRowBackground(Color.Deltiq.surface)
             } else if isReadOnly {
                 // Template — Reorder/Delete deaktiviert. Einzelne Übung tappen
                 // führt weiterhin in den ExerciseEditor (der seinerseits read-
@@ -435,15 +908,17 @@ public struct DayEditorView: View {
                         ExerciseRow(exercise: exercise)
                     }
                     .buttonStyle(.plain)
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             } else {
-                ForEach(Array(orderedExercises.enumerated()), id: \.element.persistentModelID) { idx, exercise in
+                ForEach(Array(orderedExercises.enumerated()), id: \.element.forEachIdentity) { idx, exercise in
                     Button {
                         exerciseToEdit = exercise
                     } label: {
                         ExerciseRow(exercise: exercise, isInSuperset: exercise.supersetId != nil)
                     }
                     .buttonStyle(.plain)
+                    .listRowBackground(Color.Deltiq.surface)
                     // DEL-083: Swipe-Action "Mit oberer verbinden" / "Trennen".
                     // Nur sinnvoll ab Index 1 (es muss eine Uebung darueber
                     // existieren). Toggle-Verhalten: angeklickt → verbinden,
@@ -473,7 +948,13 @@ public struct DayEditorView: View {
             }
         } header: {
             HStack {
-                Text("day.editor.section.exercises", bundle: .module)
+                sectionHeader(String(localized: "day.editor.section.exercises", bundle: .module))
+                // README 2.10/19c-19d: Format + Deckel als neutrale Kapsel
+                // neben dem Section-Header, statt dass die Zeilen darunter
+                // eine erfundene Pausen-Angabe zeigen.
+                if let format = day.timeFormat {
+                    DeltiqPill(timedFormatPillText(format), style: .neutral)
+                }
                 Spacer()
                 if !isReadOnly {
                     Button {
@@ -486,17 +967,30 @@ public struct DayEditorView: View {
                         }
                             .labelStyle(.iconOnly)
                     }
+                    .foregroundStyle(Color.deltiqOrange)
                 }
             }
         } footer: {
-            if isReadOnly {
-                Text("day.editor.templateLocked.exercises", bundle: .module)
-                    .font(.footnote)
-            } else if !day.activeExercises.isEmpty {
-                Text("day.editor.exercises.editHint", bundle: .module)
-                    .font(.footnote)
+            VStack(alignment: .leading, spacing: 4) {
+                // README 2.10/19c-19d: ersetzt die (bei Zeitformaten
+                // erfundene) Pausen-Angabe durch einen ehrlichen Fusshinweis.
+                if let format = day.timeFormat {
+                    Text(String(localized: String.LocalizationValue(timedFormatHintKey(for: format)), bundle: .module))
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+                if isReadOnly {
+                    Text("day.editor.templateLocked.exercises", bundle: .module)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                } else if !day.activeExercises.isEmpty {
+                    Text("day.editor.exercises.editHint", bundle: .module)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
             }
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: - DEL-142 Tagesanalyse
@@ -510,11 +1004,23 @@ public struct DayEditorView: View {
     /// Section-Header bleibt leer — die Card hat ihren eigenen Header
     /// mit Icon + Titel. listRowInsets removed so the Bento-Card-Look
     /// dasselbe Padding-System hat wie auf dem Dashboard.
+    ///
+    /// README 2.13 (hebt README 2.10/19f auf): `DayAnalyzer` rechnet fuer
+    /// Zeitformat-Tage aus der Dauer statt aus Saetzen × Wdh × Pause - die
+    /// Karte war deshalb frueher fuer diese Tage komplett unterdrueckt
+    /// (falsche Aussage schlimmer als keine), das ist mit der dauer-
+    /// basierten Berechnung nicht mehr noetig.
     @ViewBuilder
     private var dayAnalysisSection: some View {
         Section {
             let exercises = day.activeExercises
-            let analysis = DayAnalyzer.analyze(exercises: exercises)
+            let analysis = DayAnalyzer.analyze(
+                exercises: exercises,
+                timeFormat: day.timeFormat,
+                timeCapMinutes: day.timeCapMinutes,
+                circuitRounds: day.circuitRounds,
+                circuitRestSeconds: day.circuitRestSeconds
+            )
 
             if let analysis {
                 DayAnalysisCard(mode: .analysis(analysis))
@@ -655,6 +1161,9 @@ public struct DayEditorView: View {
         // `displayName` (Extension) wieder lokalisiert.
         let exercise = Exercise(
             name: template.name,
+            // Settings-Epic Phase 6 (EXLIB-07/09): stabile Rueckreferenz,
+            // ueberlebt ein spaeteres Umbenennen der Vorlage.
+            exerciseTemplateID: template.id,
             // DEL-157: Cardio- + Time-Based-Uebungen starten mit genau 1 Satz
             // (eine Distanz-/Dauer- bzw. Halte-Zeile). Die Standard-3-Saetze
             // ergeben fuer einen Lauf/Plank keinen Sinn. Strength bleibt 3.
@@ -720,6 +1229,29 @@ public struct DayEditorView: View {
         modelContext.insert(exercise)
     }
 
+    /// UI-Refactor (Korrektur V1): Name/Struktur analog zu
+    /// `PlanEditorView.revertToSnapshot()` — rollt die `metaSection`-Felder
+    /// UND (neu) die Uebungs-Reihenfolge zurueck.
+    private func revertToSnapshot() {
+        snapshot.apply(to: day)
+        revertExerciseOrder(usingSnapshot: exerciseOrderIndexAtOpen)
+        dismiss()
+    }
+
+    /// UI-Refactor (Korrektur V1): reine Rueckschreib-Logik mit explizitem
+    /// `orderIndexAtOpen`-Parameter statt direktem `@State`-Zugriff — testbar
+    /// ohne lebende SwiftUI-Umgebung (siehe Tests/FitnessAppUITests).
+    /// Uebungen, die beim Oeffnen schon da waren, zurueck auf ihren
+    /// urspruenglichen Platz — ignoriert seitdem neu hinzugefuegte/geloeschte
+    /// Uebungen (siehe `exerciseOrderIndexAtOpen`-Doc).
+    internal func revertExerciseOrder(usingSnapshot orderIndexAtOpen: [PersistentIdentifier: Int]) {
+        for exercise in day.activeExercises {
+            if let original = orderIndexAtOpen[exercise.persistentModelID] {
+                exercise.orderIndex = original
+            }
+        }
+    }
+
     /// DEL-095: Reorder via Drag&Drop. Per `Array.move` umschichten, dann
     /// alle `orderIndex` neu kontinuierlich 0..n-1 vergeben — sonst entstehen
     /// Luecken, die nach dem naechsten Delete unstable sortieren.
@@ -753,6 +1285,46 @@ public struct DayEditorView: View {
     /// DEL-049: Loescht eine aktive Uebung UND ihren archivierten Urlaubs-
     /// Modus-Snapshot (`swappedFromOriginal`), sonst bleibt ein toter
     /// Eintrag in der Datenbank zurueck, den der User nirgendwo mehr sieht.
+    ///
+    /// Bugfix (Day-Editor-Persistenzbug, Swipe-Loeschen): Loeschen/Reorder
+    /// sind bewusst "sofort wirksame Aktionen ohne Save/Cancel-Konzept"
+    /// (siehe `snapshot`-Typ-Doku) — sie haengen deshalb NICHT am
+    /// "Fertig"-Checkmark (`saveAndDismiss()`), sondern muessen SOFORT
+    /// selbst dauerhaft werden, da weder "Fertig" noch der Zurueck-Chevron
+    /// (`isDirty` ignoriert Loeschen/Reorder ausdruecklich) danach noch
+    /// garantiert ausgeloest werden. Ohne diesen expliziten Save verliess
+    /// sich die Loeschung bislang auf SwiftDatas impliziten Context-
+    /// Autosave — ein App-Kaltstart kurz danach konnte die Loeschung
+    /// dadurch verlieren (derselbe, bereits an anderer Stelle TestingBot-
+    /// bestaetigte Musterfehler, siehe `TrainingDayContentSnapshotWriter-
+    /// Tests.testCapturePersistsWithoutAnyAdditionalCallerSave`).
+    ///
+    /// Scheitert der Save: KEIN automatischer Wiederaufbau der geloeschten
+    /// Uebung(en). Ein `context.rollback()` ist in dieser App bewusst
+    /// ausgeschlossen (wirkt auf den GESAMTEN, geteilten Context und wuerde
+    /// unabhaengige, anderswo bereits bestaetigte Aenderungen mit zerstoeren
+    /// — siehe `PlanGeneratorInstantiator`-Typ-Doku). Eine manuell neu
+    /// angelegte Ersatz-Uebung waere ebenfalls KEINE echte Wiederherstellung
+    /// — sie bekaeme eine neue `instanceID` und wuerde damit die ueber P8
+    /// Stufe-2 abgesicherte Resume-Identitaet einer eventuell gerade
+    /// offenen Session brechen. Stattdessen nur sichtbarer Fehlerhinweis
+    /// (bestehende `swapResultToast`-Konvention) — der User sieht die
+    /// geloeschte Uebung weiterhin als entfernt und kann sie bei Bedarf wie
+    /// jede andere Uebung ueber den Bibliotheks-Picker erneut hinzufuegen.
+    /// Pure-Logic-Helfer fuer den Crash-Fix (Block C, TestingBot, 2/2
+    /// reproduziert): liefert die nach dem Loeschen verbleibenden Uebungen,
+    /// berechnet AUSSCHLIESSLICH aus der uebergebenen Momentaufnahme
+    /// `snapshot` (vor dem `modelContext.delete(...)` erfasst). `internal`
+    /// und ohne `modelContext`-Zugriff, daher direkt testbar — siehe
+    /// `DayEditorDeleteReindexTests`.
+    internal static func remainingAfterDeletion(
+        _ snapshot: [Exercise], removing offsets: IndexSet
+    ) -> [Exercise] {
+        snapshot.enumerated()
+            .filter { !offsets.contains($0.offset) }
+            .map(\.element)
+    }
+
     private func deleteExercises(at offsets: IndexSet) {
         let arr = orderedExercises
         for index in offsets {
@@ -767,8 +1339,37 @@ public struct DayEditorView: View {
             modelContext.delete(exercise)
         }
         // Re-index remaining exercises so orderIndex stays a contiguous 0..n-1.
-        for (i, exercise) in orderedExercises.enumerated() {
+        // Bugfix (Crash DEL-Day-Editor-Swipe): NICHT erneut `orderedExercises`
+        // (liest `day.activeExercises` live) abfragen — SwiftData aktualisiert
+        // die In-Memory-Relationship nach `delete()` nicht garantiert synchron
+        // vor dem `save()`, wodurch die gerade geloeschte(n) Uebung(en) hier
+        // nochmal auftauchen konnten. Das Setzen von `orderIndex` auf einem
+        // bereits zum Loeschen vorgemerkten Objekt crasht den Prozess sofort
+        // (reproduziert 2/2 auf TestingBot, Block C). Stattdessen aus der
+        // bereits VOR dem Loeschen erfassten Momentaufnahme `arr` rechnen.
+        let remaining = Self.remainingAfterDeletion(arr, removing: offsets)
+        for (i, exercise) in remaining.enumerated() {
             exercise.orderIndex = i
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            showTransientToast(String(localized: "day.editor.exercise.delete.saveFailed", bundle: .module))
+        }
+    }
+
+    /// Bugfix (Day-Editor-Persistenzbug): gemeinsamer Helfer fuer die
+    /// bestehende `swapResultToast`-Konvention (siehe `switchPlanEnvAndAdd`)
+    /// — vermeidet doppelten Animations-/Dispatch-Code an den zwei neuen
+    /// Fehler-Aufrufstellen (`deleteExercises`, `saveAndDismiss`).
+    private func showTransientToast(_ message: String) {
+        withAnimation(.easeOut(duration: 0.2)) {
+            swapResultToast = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                swapResultToast = nil
+            }
         }
     }
 
@@ -789,7 +1390,13 @@ public struct DayEditorView: View {
         // DEL-239: Rueckfrage nach langer Pause, VOR dem Insert. Derselbe
         // Abfang wie in DashboardView — sonst waere das Verhalten davon
         // abhaengig, von welchem Screen aus gestartet wird.
-        if deloadEnabled, comebackAssessment == nil,
+        // Bugfix (Comeback-Advisor bei Zeitformat-Sessions): reine
+        // Zeitformat-Tage (AMRAP/EMOM/Auf Zeit) haben keine Zielgewichte,
+        // die eine Reduktion betreffen koennte — die Rueckfrage waere hier
+        // irrefuehrend. `timeFormat` ist ein einzelnes Feld pro TrainingDay,
+        // ein Tag ist also nie "gemischt": entweder komplett Zeitformat
+        // oder komplett normales Satz/Wiederholungs-Training.
+        if day.timeFormat == nil, deloadEnabled, comebackAssessment == nil,
            let assessment = AbsenceDeload.assess(in: modelContext) {
             pendingComebackStart = { actuallyStartNewSession() }
             comebackAssessment = assessment
@@ -801,11 +1408,39 @@ public struct DayEditorView: View {
             durationMinutes: 0,
             exerciseCount: day.activeExercises.count,
             isCompleted: false,
+            // Bugfix (README 2.35, Ad-Hoc-Zeitformat-Start ueber diesen Editor):
+            // `isAdHoc` galt bisher als stabiler Marker mit GENAU einem
+            // Erzeugungspfad (`startAdHocWorkout`, siehe Kommentar in
+            // `WorkoutSession+DisplayName.swift`) - das stimmt seit dem Ad-Hoc-
+            // Zeitformat-Start nicht mehr, der ebenfalls einen planlosen Tag
+            // hier her navigiert. Ohne dieses Flag wuerde z.B.
+            // `TimedWorkoutPlayerView.discardTimedSession` den verwaisten Tag
+            // beim Abbrechen nicht mitloeschen (die Bedingung dort prueft
+            // `session.isAdHoc`, nicht `day.plan == nil`).
+            isAdHoc: day.plan == nil,
             dayName: day.name,
             day: day
         )
         modelContext.insert(session)
+        // P8 Stufe-2: Initial-Snapshot bei Erzeugung (Plan-Tag ODER
+        // Ad-hoc-Zeitformat-Tag ueber diesen Editor-Pfad).
+        TrainingDayContentSnapshotWriter.capture(for: session, in: modelContext)
+        // README 2.35: schuetzt den Ad-Hoc-Tag jetzt endgueltig vor
+        // `sweepAbandonedAdHocDayIfNeeded()` - siehe Doc-Kommentar bei
+        // `didStartSessionForAdHocDay`.
+        didStartSessionForAdHocDay = true
         navigation.workoutPath.append(ActiveSessionRoute(session: session))
+    }
+
+    /// README 2.35: siehe Doc-Kommentar bei `didStartSessionForAdHocDay` und
+    /// beim `.onDisappear`-Aufruf in `body`. Loescht NUR einen planlosen Tag,
+    /// fuer den nie erfolgreich eine Session angelegt wurde - egal wie viele
+    /// Uebungen ueber den Bibliotheks-Picker schon hinzugefuegt wurden, ohne
+    /// Session ist davon nichts "echt" (kein anderer Weg fuehrt je wieder zu
+    /// diesem Tag zurueck).
+    private func sweepAbandonedAdHocDayIfNeeded() {
+        guard day.plan == nil, !didStartSessionForAdHocDay else { return }
+        modelContext.delete(day)
     }
 
     /// DEL-042 "Fortsetzen": navigiere in die existing offene Session ohne
@@ -837,6 +1472,8 @@ public struct DayEditorView: View {
         // hier absichtlich unangetastet — die Session traegt den Wert, den sie
         // beim Start bekommen hat.
         open.recomputeTotals()
+        // P8 Stufe-2: kein erneuter capture-Aufruf — siehe
+        // ActiveWorkoutView.finishWorkout für die Begründung.
         open.isCompleted = true
         try? modelContext.save()
         actuallyStartNewSession()
@@ -898,6 +1535,23 @@ public struct DayEditorView: View {
     private func typeLabel(_ type: DayType) -> String {
         String(localized: type.localizedName)
     }
+
+    /// README 2.10/19c-19d: "AMRAP · 20 MIN"-Kapsel neben dem Uebungen-
+    /// Section-Header. `DeltiqPill` grossschreibt nicht selbst (siehe dessen
+    /// Doc-Kommentar), darum hier explizit `.uppercased()`.
+    private func timedFormatPillText(_ format: WorkoutTimeFormat) -> String {
+        var parts = [timedFormatDisplayName(format)]
+        if let cap = day.timeCapMinutes {
+            parts.append("\(cap) " + String(localized: "unit.minutes.short", bundle: .module))
+        }
+        // Zirkel hat kein `timeCapMinutes` - die Rundenzahl uebernimmt hier
+        // dieselbe Rolle als knapper Kontext-Zusatz.
+        if format == .circuit, let rounds = day.circuitRounds {
+            parts.append("\(rounds)×")
+        }
+        return parts.joined(separator: " · ").uppercased()
+    }
+
 }
 
 // MARK: - Subviews
@@ -919,18 +1573,34 @@ private struct ExerciseRow: View {
 
             Text("\(exercise.orderIndex + 1)")
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .frame(width: 22, alignment: .trailing)
 
             VStack(alignment: .leading, spacing: 2) {
-                // DEL-124: displayName resolved via Exercise+DisplayName-
-                // Library-Lookup (DEL-118). Plan-Detail-Row zeigt jetzt
-                // multilinguale Namen statt das deutsche `name`-Snapshot.
-                Text(exercise.displayName)
-                    .font(.body)
+                HStack(spacing: 6) {
+                    // DEL-124: displayName resolved via Exercise+DisplayName-
+                    // Library-Lookup (DEL-118). Plan-Detail-Row zeigt jetzt
+                    // multilinguale Namen statt das deutsche `name`-Snapshot.
+                    Text(exercise.displayName)
+                        .font(.body)
+                    // P5.3: gleiche Pill wie im aktiven Workout (`ExerciseCard`)
+                    // — vorher sah man im Editor nicht, dass eine Uebung
+                    // Warmup/Cooldown ist (keine Referenz auf `ExerciseRole`
+                    // in dieser Datei).
+                    if let pillText = exercise.role.localizedPillText {
+                        Text(pillText)
+                            .font(.caption2.weight(.bold))
+                            .tracking(0.8)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.18))
+                            .foregroundStyle(.secondary)
+                            .clipShape(Capsule())
+                    }
+                }
                 Text(detailLine)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
             Spacer()
             if isInSuperset {
@@ -940,14 +1610,16 @@ private struct ExerciseRow: View {
                     .accessibilityLabel("Superset")
             }
             if exercise.isCardio {
-                Image(systemName: "heart.fill").foregroundStyle(.pink)
+                // Handoff: kein echter Apple-Health-Bezug (nur dekoratives
+                // "Cardio"-Symbol) - Akzent-Orange statt .pink.
+                Image(systemName: "heart.fill").foregroundStyle(Color.deltiqOrange)
             }
             if exercise.isTimeBased {
-                Image(systemName: "stopwatch").foregroundStyle(.purple)
+                Image(systemName: "stopwatch").foregroundStyle(Color.deltiqOrange)
             }
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Color.Deltiq.textTertiary)
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
@@ -958,21 +1630,82 @@ private struct ExerciseRow: View {
     //   * Cardio → "workout.detail.cardio"
     //   * Time-based (Plank, Wall Sit) → "workout.detail.seconds"
     //   * Standard Strength → "workout.detail.reps"
+    //
+    // README 2.10/19c-19d: Zeitformat-Tage (`exercise.day?.timeFormat`)
+    // zeigen stattdessen nur das Ziel pro Runde (`timedFormatCircuitLabel`,
+    // TimedWorkoutPlayerView.swift - dieselbe Fassung wie im Player und in
+    // WorkoutSummaryView/TemplatePreviewView).
     private var detailLine: String {
+        if let format = exercise.day?.timeFormat {
+            return timedFormatCircuitLabel(
+                repsMin: exercise.repsMin, isTimeBased: exercise.isTimeBased,
+                sets: exercise.sets, format: format
+            )
+        }
         if exercise.isCardio {
             return String(format: String(localized: "workout.detail.cardio", bundle: .module), exercise.restSeconds)
         }
         let repsText = exercise.repsMin == exercise.repsMax
             ? "\(exercise.repsMin)"
             : "\(exercise.repsMin)-\(exercise.repsMax)"
-        let key: String.LocalizationValue = exercise.isTimeBased
-            ? "workout.detail.seconds"
-            : "workout.detail.reps"
-        let template = String(localized: key, bundle: .module)
+        // DEL-118-Nachtrag (README 2.10): manuelle .one/.other-Auswahl statt
+        // eines einzelnen Format-Strings - sonst bleibt "Sätze"/"Sek" (DE)
+        // fuer exercise.sets == 1 stehen (replacingOccurrences loest keine
+        // echten Plurals auf, siehe PlanRow.pluralized fuer dasselbe Muster).
+        let baseKey = exercise.isTimeBased ? "workout.detail.seconds" : "workout.detail.reps"
+        let key = exercise.sets == 1 ? "\(baseKey).one" : "\(baseKey).other"
+        let template = String(localized: String.LocalizationValue(key), bundle: .module)
         return template
             .replacingOccurrences(of: "%1$lld", with: "\(exercise.sets)")
             .replacingOccurrences(of: "%2$@",   with: repsText)
             .replacingOccurrences(of: "%3$lld", with: "\(exercise.restSeconds)")
+    }
+}
+
+/// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): `TrainingDay` ist
+/// `@Bindable` und autosaved direkt in SwiftData. Haelt nur die `metaSection`-
+/// Felder fest (Name/Wochentag/Typ/Intensitaet/Zeitformat + dessen Unterfelder)
+/// — NICHT die Uebungsliste, deren Hinzufuegen/Loeschen/Reorder/Training-
+/// Starten eigene, sofort wirksame Aktionen ohne Save/Cancel-Konzept sind.
+/// `internal` statt `private`, damit gezielte Tests (siehe
+/// `Tests/FitnessAppUITests`) die Capture/Apply-Logik per `@testable
+/// import` direkt pruefen koennen.
+@available(iOS 17.0, macOS 14.0, *)
+struct TrainingDaySnapshot: Equatable {
+    var customName: String?
+    var weekday: Int
+    var type: DayType
+    var nextIntensity: DayIntensity
+    var timeFormat: WorkoutTimeFormat?
+    var timeCapMinutes: Int?
+    var circuitRounds: Int?
+    var circuitRestSeconds: Int?
+    var circuitMode: CircuitRoundMode?
+
+    static func capture(from day: TrainingDay) -> TrainingDaySnapshot {
+        TrainingDaySnapshot(
+            customName: day.customName,
+            weekday: day.weekday,
+            type: day.type,
+            nextIntensity: day.nextIntensity,
+            timeFormat: day.timeFormat,
+            timeCapMinutes: day.timeCapMinutes,
+            circuitRounds: day.circuitRounds,
+            circuitRestSeconds: day.circuitRestSeconds,
+            circuitMode: day.circuitMode
+        )
+    }
+
+    func apply(to day: TrainingDay) {
+        day.customName = customName
+        day.weekday = weekday
+        day.type = type
+        day.nextIntensity = nextIntensity
+        day.timeFormat = timeFormat
+        day.timeCapMinutes = timeCapMinutes
+        day.circuitRounds = circuitRounds
+        day.circuitRestSeconds = circuitRestSeconds
+        day.circuitMode = circuitMode
     }
 }
 #endif

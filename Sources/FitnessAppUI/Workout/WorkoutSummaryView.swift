@@ -72,68 +72,27 @@ public struct WorkoutSummaryView: View {
     }
 
     public var body: some View {
-        List {
-            heroSection
-            // UX-202: Achievements ueber den Stats — der User soll erst den
-            // Reward sehen, dann die Zahlen analysieren. Read-Only-Replay
-            // ueberspringt die Sektion, weil die Achievements zum Frisch-
-            // Finish-Moment gehoeren (heaviestOfWeek waere im Replay stale
-            // sobald die naechste Session in derselben Woche kommt).
-            if !isReadOnly, !achievements.isEmpty {
-                achievementsSection
-            }
-            if isEditingSets {
-                editMetaSection
-            }
-            if !personalRecords.isEmpty {
-                prSection
-            }
-            // DEL-052/053: Smart-Progression-Celebration nur im New-Mode, nicht
-            // in History-Replays. Im History-Replay wuerden die Outcomes stale
-            // sein (suggestedWeight wurde seither evtl. mehrfach weiter-geupdated).
-            if !isReadOnly, !progressionOutcomes.isEmpty {
-                progressionSection
-            }
-            statsSection
-            gearSection
-            notesSection
-            breakdownSections
-            if !isReadOnly {
-                finishSection
-            }
-        }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #endif
-        .navigationTitle(navigationTitleText)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .navigationBarBackButtonHidden(!isReadOnly)
-        // DEL-223: Sicherheitsnetz gegen dauerhaft falsche Summen. Der
-        // Edit-Mode rechnete `totalSets`/`totalVolumeKg` NUR im "Fertig"-
-        // Toolbar-Button neu — im History-Mode ist der System-Back-Button aber
-        // sichtbar (siehe `navigationBarBackButtonHidden(!isReadOnly)` direkt
-        // darueber). Wer den Edit-Mode ueber Zurueck oder die Back-Swipe-Gestur
-        // verliess, behielt fuer immer die Summen von VOR seiner Aenderung — in
-        // Dashboard, Wochenvolumen und History.
-        //
-        // Bewusst nur ein Recompute und KEIN Platzhalter-Sweep: Recompute ist
-        // idempotent und damit unkritisch, falls SwiftUI onDisappear
-        // unerwartet feuert. Geloescht wird nur auf die explizite
-        // "Fertig"-Aktion.
-        .onDisappear {
-            guard isReadOnly else { return }
-            recalculateSessionTotals()
-            try? modelContext.save()
-        }
-        .toolbar {
-            // DEL-032: History-Mode bekommt einen Edit-Toggle. Im New-Mode
-            // unsichtbar (Edit dort macht keinen Sinn — totals werden gerade
-            // erst geschrieben).
-            if isReadOnly {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
+        // Signature-Geruest: eigene Kopfzone statt navigationTitle/Toolbar.
+        // `List` bleibt Container - der History-Edit-Mode braucht .onDelete
+        // fuer Saetze/Uebungen. Kein `onBack` im New-Mode (frisch beendete
+        // Session): der User soll ueber den expliziten "Fertig"-Button statt
+        // ueber Zurueck-Wischen zum Dashboard - identisch zum vorherigen
+        // `.navigationBarBackButtonHidden(!isReadOnly)`.
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "summary.eyebrow", bundle: .module).uppercased(),
+                title: navigationTitleText,
+                onBack: isReadOnly ? { dismiss() } : nil,
+                // DEL-032/DEL-136 Part A: History-Mode bekommt einen Edit-
+                // Toggle + ein "..."-Loesch-Menu. Im New-Mode (post-finish)
+                // unsichtbar - Edit macht dort keinen Sinn (totals werden
+                // gerade erst geschrieben) und eine gerade gespeicherte
+                // Session sofort wieder zu loeschen gibt's keinen Use-Case.
+                actions: isReadOnly ? [
+                    DeltiqHeaderAction(
+                        systemImage: isEditingHistory ? "checkmark" : "pencil",
+                        isHighlighted: isEditingHistory
+                    ) {
                         if isEditingHistory {
                             // Beim Beenden vom Edit-Mode: leere Platzhalter-
                             // Zeilen aufraeumen (DEL-223), totals neu berechnen
@@ -141,21 +100,21 @@ public struct WorkoutSummaryView: View {
                             sweepEmptyPlaceholderLogs()
                             recalculateSessionTotals()
                             try? modelContext.save()
+                            // Bugfix (Audit): ohne dies blieb die Trophy Room
+                            // nach einer History-Korrektur (z.B. ein falsch
+                            // getipptes Gewicht oder eine falsche AMRAP-
+                            // Rundenzahl) auf dem alten, jetzt fabrizierten
+                            // PR-Stand stehen - PersonalRecordEntry wurde nur
+                            // beim urspruenglichen Speichern geschrieben, nie
+                            // erneut. `rebuild` ist die bereits vorhandene,
+                            // korrekte "alles neu berechnen"-Operation (siehe
+                            // "Aus History neu berechnen" im Trophy Room).
+                            PersonalRecordSync.rebuild(in: modelContext)
+                            try? modelContext.save()
                         }
                         isEditingHistory.toggle()
-                    } label: {
-                        Text(isEditingHistory
-                             ? "summary.toolbar.done"
-                             : "summary.toolbar.edit",
-                             bundle: .module)
-                    }
-                }
-                // DEL-136 Part A: "..." Menu mit destructive Delete-Workout-
-                // Action. Nur im History-Mode (isReadOnly) sichtbar — im
-                // New-Mode (post-finish) gibt's keine Notwendigkeit, eine
-                // gerade erst gespeicherte Session sofort wieder zu loeschen.
-                ToolbarItem(placement: .deltiqTrailing) {
-                    Menu {
+                    },
+                    DeltiqHeaderAction(systemImage: "ellipsis", menu: {
                         Button(role: .destructive) {
                             showingDeleteSessionConfirm = true
                         } label: {
@@ -165,11 +124,80 @@ public struct WorkoutSummaryView: View {
                                 Image(systemName: "trash")
                             }
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
+                    })
+                ] : []
+            )
+
+            List {
+                heroSection
+                // UX-202: Achievements ueber den Stats — der User soll erst den
+                // Reward sehen, dann die Zahlen analysieren. Read-Only-Replay
+                // ueberspringt die Sektion, weil die Achievements zum Frisch-
+                // Finish-Moment gehoeren (heaviestOfWeek waere im Replay stale
+                // sobald die naechste Session in derselben Woche kommt).
+                if !isReadOnly, !achievements.isEmpty {
+                    achievementsSection
+                }
+                if isEditingSets {
+                    editMetaSection
+                }
+                // Nutzer-Feedback (7. August): Datum + Dauer liessen sich im
+                // History-Edit-Mode bereits korrigieren, das Zeitformat-
+                // ERGEBNIS selbst (Runden/Restwdh. bei AMRAP, geschaffte
+                // Minuten bei EMOM, Zielzeit bei Auf Zeit) aber nicht -
+                // `timedFormatCircuitSection` in breakdownSections blieb
+                // unabhaengig vom Edit-Mode rein lesend.
+                if isEditingSets, let format = session.timeFormatSnapshot {
+                    editTimedResultSection(format)
+                }
+                if !personalRecords.isEmpty {
+                    prSection
+                }
+                // DEL-052/053: Smart-Progression-Celebration nur im New-Mode, nicht
+                // in History-Replays. Im History-Replay wuerden die Outcomes stale
+                // sein (suggestedWeight wurde seither evtl. mehrfach weiter-geupdated).
+                if !isReadOnly, !progressionOutcomes.isEmpty {
+                    progressionSection
+                }
+                statsSection
+                gearSection
+                notesSection
+                breakdownSections
+                if !isReadOnly {
+                    finishSection
                 }
             }
+            .scrollContentBackground(.hidden)
+        }
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift. NUR im
+        // History-Mode aktiviert (isReadOnly), damit der frische Post-
+        // Finish-Modus weiterhin zwingend ueber den "Fertig"-Button laeuft
+        // und nicht per Wegwischen umgangen werden kann - identisch zum
+        // `onBack: isReadOnly ? ... : nil` oben.
+        .deltiqSwipeBackEnabled(isReadOnly)
+        // DEL-223: Sicherheitsnetz gegen dauerhaft falsche Summen. Der
+        // Edit-Mode rechnete `totalSets`/`totalVolumeKg` NUR im "Fertig"-
+        // Toolbar-Button neu — im History-Mode ist der Zurueck-Chevron aber
+        // sichtbar (siehe `onBack: isReadOnly ? ... : nil` oben). Wer den
+        // Edit-Mode ueber Zurueck oder die Back-Swipe-Gestur verliess, behielt
+        // fuer immer die Summen von VOR seiner Aenderung — in Dashboard,
+        // Wochenvolumen und History.
+        //
+        // Bewusst nur ein Recompute und KEIN Platzhalter-Sweep: Recompute ist
+        // idempotent und damit unkritisch, falls SwiftUI onDisappear
+        // unerwartet feuert. Geloescht wird nur auf die explizite
+        // "Fertig"-Aktion.
+        .onDisappear {
+            guard isReadOnly else { return }
+            recalculateSessionTotals()
+            try? modelContext.save()
         }
         // DEL-136 Part A: Confirmation-Dialog vor dem destruktiven Delete.
         // Default-Branch ist Cancel — User kann nicht versehentlich Workout-
@@ -223,7 +251,17 @@ public struct WorkoutSummaryView: View {
             // DEL-210: einheitliche Übungs-Auswahl (= Bibliothek im
             // Picker-Modus).
             ExerciseLibraryPickerSheet(
-                planEnvironment: session.day?.plan?.targetEnvironment,
+                // Task #252 (TestFlight-Crash-Audit): `session` kann hier
+                // eine BELIEBIGE, ggf. laengst vergangene Historien-Session
+                // sein (`WorkoutHistoryView`/`PRHistoryView` oeffnen diese
+                // Sheet-Variante u.a. im History-Edit-Modus, siehe
+                // `isReadOnly && isEditingHistory` weiter unten) — exakt die
+                // Art Objekt, die auf einem Bestandsgeraet eine laengst
+                // verwaiste `.day`-Referenz tragen kann (siehe
+                // `docs/TESTFLIGHT_CRASH_164.md`). Deshalb vorwaerts ueber
+                // alle Plaene gesucht statt rueckwaerts `session.day?.plan`
+                // gelesen — wie in `DashboardView.resumeOpenSession`.
+                planEnvironment: owningPlanTargetEnvironment(for: session),
                 onSelect: { template in
                     addExerciseToSession(from: template, isCustom: false)
                     showingAddExercisePicker = false
@@ -245,6 +283,17 @@ public struct WorkoutSummaryView: View {
         return String(localized: "summary.title", bundle: .module)
     }
 
+    /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention.
+    /// `.textCase(nil)` verhindert, dass List den bereits grossgeschriebenen
+    /// String noch einmal automatisch transformiert.
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .heavy))
+            .tracking(1.5)
+            .foregroundStyle(Color.deltiqOrange)
+            .textCase(nil)
+    }
+
     /// Im Edit-Mode bekommt der User Datum + Dauer als editierbare Felder.
     /// Wird oben in der List eingeblendet, ueber statsSection.
     private var editMetaSection: some View {
@@ -252,20 +301,185 @@ public struct WorkoutSummaryView: View {
             DatePicker(selection: $session.startTime,
                        displayedComponents: [.date, .hourAndMinute]) {
                 Text("summary.date", bundle: .module)
+                    .font(.system(size: 15))
             }
+            .listRowBackground(Color.Deltiq.surface)
             Stepper(value: $session.durationMinutes, in: 0...600, step: 5) {
                 LabeledContent {
                     Text(String(format: String(localized: "summary.durationMinutes", bundle: .module), session.durationMinutes))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 } label: {
                     Text("summary.duration", bundle: .module)
+                        .font(.system(size: 15))
                 }
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            Text("summary.editMeta.header", bundle: .module)
+            sectionHeader(String(localized: "summary.editMeta.header", bundle: .module))
         } footer: {
             Text("summary.editMeta.footer", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Nutzer-Feedback (7. August): Zeitformat-ERGEBNIS im History-Edit-Mode
+    /// editierbar machen - vorher liess sich nur Datum/Dauer (editMetaSection)
+    /// korrigieren, `timedFormatCircuitSection` in breakdownSections blieb
+    /// unabhaengig vom Edit-Mode rein lesend. Eigene Section statt Erweiterung
+    /// von editMetaSection, weil sie nur bei Zeitformat-Sessions erscheint.
+    @ViewBuilder
+    private func editTimedResultSection(_ format: WorkoutTimeFormat) -> some View {
+        Section {
+            switch format {
+            case .amrap:
+                Stepper(value: roundsCompletedBinding, in: 0...999) {
+                    LabeledContent {
+                        Text(roundsCompletedValueText)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.rounds", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            case .emom:
+                // Nachtrag (Verifikation): reiner Fallback fuers geloeschte
+                // Tag (`day == nil`) - existiert der Tag noch, gilt IMMER
+                // sein echtes Minuten-Ziel als Obergrenze, nicht ein
+                // kuenstlicher 60-Min-Mindestwert, der einen kurzen EMOM-
+                // Deckel (z.B. 12 Min) sonst aushebeln wuerde.
+                Stepper(value: completedMinuteCountBinding, in: 0...(session.contentSnapshotTimeCapMinutes ?? 60)) {
+                    LabeledContent {
+                        Text(String(format: String(localized: "summary.durationMinutes", bundle: .module),
+                                    completedMinuteCountBinding.wrappedValue))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.completedMinutes", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            case .forTime:
+                Stepper(value: finishTimeSecondsBinding, in: 0...7200, step: 5) {
+                    LabeledContent {
+                        Text(PaceCalculator.formatDuration(finishTimeSecondsBinding.wrappedValue))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.finishTime", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            case .circuit:
+                // Gleiche Obergrenze wie EMOM oben: existiert der Tag noch,
+                // ist seine tatsaechliche Rundenzahl die sinnvolle Grenze,
+                // sonst ein grosszuegiger Fallback.
+                Stepper(value: circuitRoundsCompletedBinding, in: 0...(session.contentSnapshotCircuitRounds ?? 20)) {
+                    LabeledContent {
+                        Text(circuitRoundsCompletedValueText)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.circuitRounds", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            case .enduranceIntervals:
+                // Paket 2: einzige sinnvoll manuell korrigierbare Groesse
+                // ist die Anzahl abgeschlossener Runden - Phase/Skip-Flags
+                // sind Ablaufzustand, keine nachtraeglich editierbaren
+                // Ergebniswerte (anders als bei Zirkel/EMOM gibt es hier
+                // keine kontinuierliche Groesse wie "Minuten"/"Rundenzahl
+                // bei beliebiger Obergrenze").
+                Stepper(value: enduranceRoundsCompletedBinding, in: 0...(session.contentSnapshotEnduranceIntervalRounds ?? 20)) {
+                    LabeledContent {
+                        Text(enduranceRoundsCompletedValueText)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    } label: {
+                        Text("summary.editResult.enduranceRounds", bundle: .module)
+                            .font(.system(size: 15))
+                    }
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            }
+        } header: {
+            sectionHeader(String(localized: "summary.editResult.header", bundle: .module))
+        } footer: {
+            Text("summary.editResult.footer", bundle: .module)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+        }
+        .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    private var roundsCompletedBinding: Binding<Int> {
+        Binding(
+            get: { session.roundsCompleted ?? 0 },
+            set: { session.roundsCompleted = $0 }
+        )
+    }
+
+    private var roundsCompletedValueText: String {
+        let rounds = session.roundsCompleted ?? 0
+        let suffix = rounds == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "timedWorkout.amrap.rounds.\(suffix)")
+        return String(localized: key, bundle: .module).replacingOccurrences(of: "%lld", with: "\(rounds)")
+    }
+
+    private var completedMinuteCountBinding: Binding<Int> {
+        Binding(
+            get: { session.completedMinuteCount ?? 0 },
+            set: { session.completedMinuteCount = $0 }
+        )
+    }
+
+    private var circuitRoundsCompletedBinding: Binding<Int> {
+        Binding(
+            get: { session.circuitRoundsCompleted ?? 0 },
+            set: { session.circuitRoundsCompleted = $0 }
+        )
+    }
+
+    private var circuitRoundsCompletedValueText: String {
+        let rounds = session.circuitRoundsCompleted ?? 0
+        guard let target = session.contentSnapshotCircuitRounds else { return "\(rounds)" }
+        return "\(rounds) / \(target)"
+    }
+
+    private var enduranceRoundsCompletedBinding: Binding<Int> {
+        Binding(
+            get: { session.enduranceRoundsCompleted ?? 0 },
+            set: { session.enduranceRoundsCompleted = $0 }
+        )
+    }
+
+    private var enduranceRoundsCompletedValueText: String {
+        let rounds = session.enduranceRoundsCompleted ?? 0
+        guard let target = session.contentSnapshotEnduranceIntervalRounds else { return "\(rounds)" }
+        return "\(rounds) / \(target)"
+    }
+
+    private var finishTimeSecondsBinding: Binding<Int> {
+        Binding(
+            get: { session.finishTimeSeconds ?? 0 },
+            set: { session.finishTimeSeconds = $0 }
+        )
+    }
+
+    /// Task #252 (TestFlight-Crash-Audit): liefert `targetEnvironment` des
+    /// Plans, der `session` (ueber dessen Tag) tatsaechlich gehoert — OHNE
+    /// `session.day?.plan` rueckwaerts zu lesen. `session` kann hier eine
+    /// beliebige Historien-Session sein (siehe Aufrufer-Kommentar), fuer die
+    /// `.day` auf einem Bestandsgeraet eine laengst verwaiste Referenz sein
+    /// kann; `nil` (kein Treffer in `plan.days` irgendeines existierenden
+    /// Plans) wird identisch zu einem echten Ad-hoc-Training behandelt — wie
+    /// zuvor bei `day.plan == nil`, nur jetzt auch sicher bei einer
+    /// verwaisten statt einer echten nil-Referenz.
+    private func owningPlanTargetEnvironment(for session: WorkoutSession) -> EnvironmentType? {
+        let allPlans = (try? modelContext.fetch(FetchDescriptor<TrainingPlan>())) ?? []
+        return DashboardView.owningPlan(forSessionID: session.persistentModelID, in: allPlans)?.targetEnvironment
     }
 
     /// DEL-136 Part B: Loescht ALLE Logs einer bestimmten Uebung aus dieser
@@ -448,31 +662,39 @@ public struct WorkoutSummaryView: View {
                     } label: {
                         LabeledContent {
                             Text(session.gear?.name ?? String(localized: "summary.gear.none", bundle: .module))
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(Color.primary)
+                                .font(.system(size: 15))
                         } label: {
                             Label {
                                 Text("summary.gear.header", bundle: .module)
+                                    .font(.system(size: 15))
                             } icon: {
                                 Image(systemName: gearIcon(session.gear))
                                     .foregroundStyle(Color.deltiqOrange)
                             }
                         }
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 } else if let gear = session.gear {
                     LabeledContent {
                         Text(gear.name)
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                     } label: {
                         Label {
                             Text("summary.gear.header", bundle: .module)
+                                .font(.system(size: 15))
                         } icon: {
                             Image(systemName: gearIcon(gear))
                                 .foregroundStyle(Color.deltiqOrange)
                         }
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             } header: {
-                Text("summary.gear.header", bundle: .module)
+                sectionHeader(String(localized: "summary.gear.header", bundle: .module))
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 
@@ -621,6 +843,11 @@ public struct WorkoutSummaryView: View {
             guard let name = log.resolvedExerciseName else { return nil }
             return LiftAttempt(
                 exerciseName: name,
+                // Settings-Epic Phase 6 (EXLIB-07/09): stabile ID durchreichen,
+                // damit diese Vorschau-Detection mit PersonalRecordSync
+                // konsistent gruppiert (sonst koennte das Summary-Badge einem
+                // spaeter persistierten Trophy-Room-Eintrag widersprechen).
+                exerciseTemplateID: log.resolvedExerciseTemplateID,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,
@@ -644,6 +871,7 @@ public struct WorkoutSummaryView: View {
             else { return nil }
             return LiftAttempt(
                 exerciseName: name,
+                exerciseTemplateID: log.resolvedExerciseTemplateID,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,
@@ -660,16 +888,20 @@ public struct WorkoutSummaryView: View {
             ForEach(personalRecords) { record in
                 PRBadge(record: record)
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            HStack(spacing: 6) {
-                Image(systemName: "trophy.fill")
-                    .foregroundStyle(.yellow)
-                Text("summary.section.personalRecords", bundle: .module)
-            }
+            // Handoff 1.10 (ein Akzent): Trophaeen-Icon war Gelb, Section-
+            // Header traegt jetzt ohnehin kein Icon mehr (kein anderer
+            // Header im Geruest tut das) - die einzelnen PRBadges bleiben
+            // ueber Icon-Form + Text unterscheidbar, siehe PRBadge.kindIcon
+            // / .kindLabel.
+            sectionHeader(String(localized: "summary.section.personalRecords", bundle: .module))
         } footer: {
             Text("summary.prFooter", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: - DEL-052/053 Smart Auto-Progression
@@ -687,16 +919,15 @@ public struct WorkoutSummaryView: View {
             ForEach(progressionOutcomes) { outcome in
                 ProgressionBadge(outcome: outcome)
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.up.right.circle.fill")
-                    .foregroundStyle(Color.deltiqOrange)
-                Text("summary.section.progression", bundle: .module)
-            }
+            sectionHeader(String(localized: "summary.section.progression", bundle: .module))
         } footer: {
             Text("summary.progressionFooter", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: - UX-202 Achievements (Workout-of-Week, Volume-of-Week, Streak)
@@ -729,13 +960,11 @@ public struct WorkoutSummaryView: View {
             ForEach(achievements) { ach in
                 AchievementBadge(achievement: ach)
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            HStack(spacing: 6) {
-                Image(systemName: "sparkles")
-                    .foregroundStyle(Color.deltiqOrange)
-                Text("summary.achievements.section", bundle: .module)
-            }
+            sectionHeader(String(localized: "summary.achievements.section", bundle: .module))
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: -
@@ -746,34 +975,49 @@ public struct WorkoutSummaryView: View {
         //     Render (0.4 -> 1.0 in einer dampedDamping=0.55 Feder).
         //   * Subtle Glow via `.shadow` mit DeltiqOrange-Tint — gibt dem Icon
         //     den "leuchtenden Trophaeen"-Look ohne in Confetti zu verfallen.
-        //   * Title-Typo eine Stufe groesser (.title.weight(.bold)) damit die
+        //   * Title-Typo eine Stufe groesser (24pt/bold/rounded) damit die
         //     Hierarchie unten in den Stat-Hero-Numbers fortgesetzt wirkt.
         // Read-Only-Replay (History-Detail) ueberspringt das Spring, weil
         // die Anim nur zum frischen Finish gehoert — beim Replay wuerde es
         // jedes Mal triggern und nervt.
         Section {
             VStack(spacing: 12) {
-                Image(systemName: "checkmark.seal.fill")
+                // README 2.11: ein vorzeitig gespeicherter Zeitformat-Lauf
+                // feiert nicht wie ein vollstaendiger - gestrichelte Uhr statt
+                // gruenem Siegel, kein Glow, `textSecondary` statt Erfolgsfarbe.
+                Image(systemName: isEarlySaveTimedFormat ? "clock.badge.exclamationmark" : "checkmark.seal.fill")
                     .font(.system(size: 88))
                     .symbolRenderingMode(.hierarchical)   // DEL-059
-                    .foregroundStyle(.green)
-                    .shadow(color: Color.deltiqOrange.opacity(0.35),
-                            radius: hasAppeared ? 18 : 0,
+                    // Handoff 1.10: bleibt Gruen - echtes Erfolgs-/Valenz-
+                    // Signal (Completion), keine zweite Akzentfarbe. Ueber
+                    // den Deltiq.success-Token statt hartem .green, damit
+                    // eine spaetere Token-Praezisierung hier mitzieht.
+                    .foregroundStyle(isEarlySaveTimedFormat ? Color.Deltiq.textSecondary : Color.Deltiq.success)
+                    .shadow(color: Color.deltiqOrange.opacity(isEarlySaveTimedFormat ? 0 : 0.35),
+                            radius: (hasAppeared && !isEarlySaveTimedFormat) ? 18 : 0,
                             x: 0, y: 0)
                     .scaleEffect(hasAppeared ? 1.0 : 0.4)
                     .opacity(hasAppeared ? 1.0 : 0.0)
-                Text("summary.hero.title", bundle: .module)
-                    .font(.title.weight(.bold))
+                Text(isEarlySaveTimedFormat ? "summary.hero.title.early" : "summary.hero.title", bundle: .module)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.primary)
                     .multilineTextAlignment(.center)
+                if isEarlySaveTimedFormat {
+                    DeltiqPill(
+                        (session.displayDayName + " · " + earlySaveStatusText).uppercased(),
+                        style: .neutral
+                    )
+                }
                 // DEL-129: Day-Subtitle via Extension. Hier nur rendern wenn
                 // session WIRKLICH einen Day-Bezug hat (entweder live-ref
                 // oder Snapshot) — sonst wuerde der generische "Training"-
                 // Fallback aus history.session.fallback erscheinen, was im
-                // Summary-Hero unschoen wirkt.
-                if session.day != nil || session.dayName != nil {
+                // Summary-Hero unschoen wirkt. Bei vorzeitigem Speichern
+                // steht der Tag schon in der Kapsel darueber.
+                if !isEarlySaveTimedFormat, session.day != nil || session.dayName != nil {
                     Text(session.displayDayName)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -781,8 +1025,12 @@ public struct WorkoutSummaryView: View {
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
             .onAppear {
-                if isReadOnly {
-                    // Replay: skip the celebration spring, render final state.
+                // README 2.11: kein Spring, kein zweiter Feier-Haptik-Impuls
+                // fuer einen vorzeitig gespeicherten Lauf - der erste Impuls
+                // aus dem Speichern-Pfad bleibt, aber die Praesentation hier
+                // ist bewusst nuechtern statt feiernd.
+                if isReadOnly || isEarlySaveTimedFormat {
+                    // Replay bzw. vorzeitig gespeichert: kein Spring, finaler Stand direkt.
                     hasAppeared = true
                     return
                 }
@@ -826,7 +1074,10 @@ public struct WorkoutSummaryView: View {
         Section {
             VStack(spacing: 20) {
                 heroStatView
-                Divider().opacity(0.6)
+                // DEL-137: gleiche Divider-Konvention wie das statsCard-
+                // Pendant in ActiveWorkoutView (bare Divider(), keine Custom-
+                // Rectangle) - identische UI-Sprache fuer Live + Replay.
+                Divider()
                 HStack(spacing: 0) {
                     SummaryStat(label: String(localized: "active.stats.duration", bundle: .module),
                                 value: formattedDuration)
@@ -835,27 +1086,106 @@ public struct WorkoutSummaryView: View {
                 }
             }
             .padding(.vertical, 6)
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
-            Text("summary.section.stats", bundle: .module)
+            sectionHeader(String(localized: "summary.section.stats", bundle: .module))
+        } footer: {
+            // README 2.11: ordnet die Kennzahl ein, damit "4 Runden" nicht
+            // faelschlich als Bestleistung gelesen wird.
+            if isEarlySaveTimedFormat {
+                Text("summary.early.footnote", bundle: .module)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// DEL-137: zweite Sekundaer-Stat-Spalte. Drei-Wege-Branch identisch
     /// zum aktiven `statsCard` in ActiveWorkoutView — selbe UI-Sprache
     /// fuer Live + Replay.
+    ///
+    /// README 2.9: Zeitformat-Sessions haben keine `sessionCategory` (die
+    /// liest aus `logs`, und Zeitformat-Tage loggen nie ExerciseLogs) -
+    /// eigener Branch VOR dem Switch, sonst kippt das faelschlich auf
+    /// `.pureStrength` (0 Saetze, siehe DEL-093-Praezedenzfall bei Ad-Hoc-
+    /// Cardio fuer dasselbe Muster).
     @ViewBuilder
     private var secondarySummaryStat: some View {
-        switch session.sessionCategory {
-        case .pureCardio:
-            SummaryStat(label: String(localized: "active.stats.avgPace", bundle: .module),
-                        value: formattedAvgPace)
-        case .mixed:
-            SummaryStat(label: String(localized: "active.stats.distance", bundle: .module),
-                        value: formattedTotalDistance)
-        case .pureStrength:
-            SummaryStat(label: String(localized: "active.stats.sets", bundle: .module),
-                        value: "\(session.totalSets)")
+        if let format = session.timeFormatSnapshot {
+            timedFormatSecondaryStat(format)
+        } else {
+            switch session.sessionCategory {
+            case .pureCardio:
+                SummaryStat(label: String(localized: "active.stats.avgPace", bundle: .module),
+                            value: formattedAvgPace)
+            case .mixed:
+                SummaryStat(label: String(localized: "active.stats.distance", bundle: .module),
+                            value: formattedTotalDistance)
+            case .pureStrength:
+                SummaryStat(label: String(localized: "active.stats.sets", bundle: .module),
+                            value: "\(session.totalSets)")
+            }
         }
+    }
+
+    /// README 2.9: dritte Zeitformat-Metrik neben Dauer (Spalte 1, bleibt
+    /// unveraendert) und dem Hero-Stat unten. AMRAP hat mit den Restwieder-
+    /// holungen eine echte zweite Zahl; EMOM/Auf-Zeit haben das nicht (das
+    /// Ergebnis IST schon der Hero-Stat) - EMOM zeigt darum den Minuten-
+    /// Deckel als Kontext, Auf-Zeit die Anzahl Uebungen im Zirkel.
+    @ViewBuilder
+    private func timedFormatSecondaryStat(_ format: WorkoutTimeFormat) -> some View {
+        switch format {
+        case .amrap:
+            // Nutzer-Feedback 6. August: "wie schnell pro Runde" ist die
+            // eigentliche Leistungskennzahl bei AMRAP, nicht nur die
+            // Rundenzahl selbst - dieselbe Pace-Denke wie beim Cardio-
+            // Ø-Pace-Stat oben (`formattedAvgPace`), nur Runden statt km.
+            SummaryStat(label: String(localized: "summary.amrap.avgPace", bundle: .module),
+                        value: amrapAvgPaceText)
+        case .emom:
+            // P8 Stufe-2: Minuten-Deckel jetzt snapshot-first — der Tages-
+            // Snapshot (`TrainingDayContentSnapshot.timeCapMinutes`) trägt
+            // diesen Wert. Degradiert auf "—" nur noch, wenn für diese
+            // Session gar nie ein Snapshot erfasst wurde UND der Tag
+            // inzwischen gelöscht ist (Altbestand-Grenzfall).
+            let target = session.contentSnapshotTimeCapMinutes
+            SummaryStat(label: String(localized: "summary.stat.minuteTarget", bundle: .module),
+                        value: target.map { "\($0)" } ?? "—")
+        case .forTime:
+            SummaryStat(label: String(localized: "summary.stat.exercises", bundle: .module),
+                        value: "\(session.exerciseCount)")
+        case .circuit:
+            // P8 Stufe-2: siehe EMOM-Fall oben — jetzt snapshot-first.
+            let restSeconds = session.contentSnapshotCircuitRestSeconds
+            SummaryStat(label: String(localized: "summary.stat.circuitRest", bundle: .module),
+                        value: restSeconds.map { "\($0)s" } ?? "—")
+        case .enduranceIntervals:
+            // Paket 2: wie der Zirkel-Fall oben - die konfigurierte
+            // Erholungsdauer zwischen den Runden als Kontext.
+            let restSeconds = session.contentSnapshotEnduranceRestDurationSeconds
+            SummaryStat(label: String(localized: "summary.stat.circuitRest", bundle: .module),
+                        value: restSeconds.map { "\($0)s" } ?? "—")
+        }
+    }
+
+    /// Nutzer-Feedback 6. August: durchschnittliche Rundenzeit - wie
+    /// schnell ein Athlet tatsaechlich pro Runde wird, nicht nur "wie viele
+    /// Runden". Bezieht sich bewusst nur auf VOLLSTAENDIGE Runden (nicht
+    /// anteilig auf eine angebrochene) - Standardkonvention beim Reporten
+    /// von AMRAP-Rundenzeiten. `durationMinutes` (persistiert, ganzzahlig)
+    /// ist die einzige verfuegbare Zeitbasis fuer eine gespeicherte Session
+    /// - der Live-`elapsedSeconds`-Zaehler im Player wird nirgends
+    /// persistiert. Verliert dadurch bis zu 59s Praezision, was bei
+    /// ueblichen 10-20-Minuten-Laeufen ueber viele Runden vernachlaessigbar
+    /// ist.
+    private var amrapAvgPaceText: String {
+        guard let rounds = session.roundsCompleted, rounds > 0 else { return "—:——" }
+        let totalSeconds = session.durationMinutes * 60
+        guard totalSeconds > 0 else { return "—:——" }
+        let perRound = Int((Double(totalSeconds) / Double(rounds)).rounded())
+        return String(format: "%d:%02d", perRound / 60, perRound % 60)
     }
 
     /// DEL-137: Gesamtdistanz aller Cardio-Sets in dieser Session. Format:
@@ -891,25 +1221,59 @@ public struct WorkoutSummaryView: View {
         VStack(spacing: 4) {
             Text(hero.value)
                 .font(.system(size: 56, weight: .bold, design: .rounded).monospacedDigit())
-                .foregroundStyle(Color.deltiqOrange)
+                // README 2.11: bei einem vorzeitig gespeicherten Zeitformat-
+                // Lauf traegt die Zahl nicht die Akzentfarbe - "4 Runden"
+                // liest sich sonst als Ergebnis statt als Zwischenstand.
+                .foregroundStyle(isEarlySaveTimedFormat ? Color.Deltiq.textSecondary : Color.deltiqOrange)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-            Text(hero.unitKey, bundle: .module)
+            Text(hero.unit)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .textCase(.uppercase)
                 .tracking(1.2)
         }
         .frame(maxWidth: .infinity)
     }
 
-    /// Repräsentiert den Hero-Wert + sein Unit-Label (lokalisiert).
+    /// README 2.11: `completedTarget` wird geschrieben und von der PR-
+    /// Erkennung gelesen, aber vorher nirgends angezeigt - ein vorzeitig
+    /// gespeicherter Lauf feierte wie ein vollstaendiger.
+    private var isEarlySaveTimedFormat: Bool {
+        session.timeFormatSnapshot != nil && !session.completedTarget
+    }
+
+    /// Praezise (sekundengenaue) Laufzeit aus den Zeitstempeln - anders als
+    /// `session.durationMinutes` (auf ganze Minuten gerundet) reicht das fuer
+    /// eine "8:37"-Anzeige, ohne ein neues Feld einzufuehren.
+    private var elapsedTimeText: String {
+        PaceCalculator.formatDuration(max(0, Int(session.endTime.timeIntervalSince(session.startTime))))
+    }
+
+    /// README 2.11: Kurzfassung "Tag · Stand" fuer die neutrale Kapsel im
+    /// Vorzeitig-gespeichert-Hero, z.B. "8:37 VON 20:00" bei einem Zeit-
+    /// Deckel bzw. nur die gelaufene Zeit ohne Deckel (Auf Zeit meist ohne).
+    private var earlySaveStatusText: String {
+        guard let capMinutes = session.contentSnapshotTimeCapMinutes else { return elapsedTimeText }
+        return String(
+            format: String(localized: "summary.early.progress", bundle: .module),
+            elapsedTimeText, PaceCalculator.formatDuration(capMinutes * 60)
+        )
+    }
+
+    /// Repräsentiert den Hero-Wert + sein Unit-Label. Als bereits aufgeloester
+    /// `String` statt `LocalizedStringKey`, weil der vorzeitig-gespeichert-
+    /// Fall die verstrichene Zeit dynamisch ins Unit-Label einsetzt (README
+    /// 2.11) - das laesst sich mit einem reinen Catalog-Key nicht komponieren.
     private struct HeroStat {
         let value: String
-        let unitKey: LocalizedStringKey
+        let unit: String
     }
 
     private var heroStat: HeroStat {
+        if let format = session.timeFormatSnapshot {
+            return timedFormatHeroStat(format)
+        }
         switch session.sessionCategory {
         case .pureCardio:
             let km = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
@@ -917,13 +1281,66 @@ public struct WorkoutSummaryView: View {
                 let str = km == km.rounded()
                     ? "\(Int(km))"
                     : km.truncated(to: 2).formattedTwoDecimals
-                return HeroStat(value: str, unitKey: "summary.hero.unit.km")
+                return HeroStat(value: str, unit: String(localized: "summary.hero.unit.km", bundle: .module))
             }
             return HeroStat(value: "\(session.durationMinutes)",
-                            unitKey: "summary.hero.unit.minutes")
+                            unit: String(localized: "summary.hero.unit.minutes", bundle: .module))
         case .mixed, .pureStrength:
-            return HeroStat(value: formattedVolume, unitKey: "summary.hero.unit.volumeKg")
+            return HeroStat(value: formattedVolume, unit: String(localized: "summary.hero.unit.volumeKg", bundle: .module))
         }
+    }
+
+    /// README 2.9: das Ergebnis selbst ist der Hero-Stat, analog zu Volumen-
+    /// kg bei Strength bzw. km bei Cardio. Auf-Zeit nutzt `pillLabel` als
+    /// Unit-Text ("Auf Zeit"/"For Time") statt eines eigenen Keys - identisch
+    /// zur Kontextzeile im Player.
+    ///
+    /// README 2.11: bei einem vorzeitig gespeicherten AMRAP/EMOM wandert die
+    /// verstrichene Zeit zusaetzlich ins Unit-Label ("RUNDEN GESCHAFFT IN
+    /// 8:37") - "4 Runden" allein liest sich sonst als Ergebnis, nicht als
+    /// Zwischenstand. Bei Auf Zeit ist die Hero-Zahl selbst schon die Zeit,
+    /// eine zweite Zeitangabe waere redundant.
+    private func timedFormatHeroStat(_ format: WorkoutTimeFormat) -> HeroStat {
+        switch format {
+        case .amrap:
+            var unit = timedFormatHeroUnit("summary.hero.unit.rounds")
+            // Nutzer-Feedback (13. August, zweite Runde): Teil-Wiederholungen
+            // der angebrochenen Runde sind im Player wieder eingebbar
+            // (`AMRAPPlayerView.finishBar`) - ohne diesen Zusatz wuerde der
+            // eingetragene Wert hier kommentarlos verschwinden, obwohl er
+            // korrekt gespeichert wurde (sichtbar bleibt er sonst nur in
+            // `PRHistoryView`, und nur falls die Session ein PR war).
+            if let partialReps = session.partialReps, partialReps > 0 {
+                unit += " + \(partialReps) " + String(localized: "unit.reps.short", bundle: .module)
+            }
+            return HeroStat(value: "\(session.roundsCompleted ?? 0)", unit: unit)
+        case .emom:
+            return HeroStat(value: "\(session.completedMinuteCount ?? 0)", unit: timedFormatHeroUnit("summary.hero.unit.minutesDone"))
+        case .forTime:
+            return HeroStat(value: PaceCalculator.formatDuration(session.finishTimeSeconds ?? 0),
+                            unit: String(localized: "timedWorkout.forTime.pillLabel", bundle: .module))
+        case .circuit:
+            // Anders als AMRAP (offene Rundenzahl) hat Zirkel ein festes
+            // Rundenziel - "3/5" liest sich als Fortschritt, nicht nur als
+            // Ergebnis, gerade beim vorzeitigen Speichern.
+            let completed = session.circuitRoundsCompleted ?? 0
+            let value = session.contentSnapshotCircuitRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
+            return HeroStat(value: value, unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
+        case .enduranceIntervals:
+            // Paket 2: wie Zirkel oben - "3/5" liest sich als Fortschritt.
+            // Reuse desselben Unit-Texts ("RUNDEN") statt eines eigenen Keys -
+            // bedeutet hier dasselbe (abgeschlossene Belastungs-/Erholungs-
+            // Wiederholungen).
+            let completed = session.enduranceRoundsCompleted ?? 0
+            let value = session.contentSnapshotEnduranceIntervalRounds.map { "\(completed)/\($0)" } ?? "\(completed)"
+            return HeroStat(value: value, unit: timedFormatHeroUnit("summary.hero.unit.circuitRounds"))
+        }
+    }
+
+    private func timedFormatHeroUnit(_ key: String) -> String {
+        let base = String(localized: String.LocalizationValue(key), bundle: .module)
+        guard isEarlySaveTimedFormat else { return base }
+        return String(format: String(localized: "summary.early.unitWithTime", bundle: .module), base, elapsedTimeText)
     }
 
     @ViewBuilder
@@ -938,12 +1355,14 @@ public struct WorkoutSummaryView: View {
             if let notes = session.notes, !notes.isEmpty {
                 Section {
                     Text(notes)
-                        .font(.body)
-                        .foregroundStyle(.primary)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .listRowBackground(Color.Deltiq.surface)
                 } header: {
-                    Text("summary.note.label", bundle: .module)
+                    sectionHeader(String(localized: "summary.note.label", bundle: .module))
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
             }
         } else {
             Section {
@@ -957,29 +1376,48 @@ public struct WorkoutSummaryView: View {
                 ) {
                     Text("summary.note.label", bundle: .module)
                 }
+                .font(.system(size: 15))
                 .lineLimit(3...8)
+                .listRowBackground(Color.Deltiq.surface)
             } header: {
-                Text("summary.note.label", bundle: .module)
+                sectionHeader(String(localized: "summary.note.label", bundle: .module))
             } footer: {
                 Text("summary.note.footer", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 
     @ViewBuilder
     private var breakdownSections: some View {
-        if exercisesWithLogs.isEmpty {
+        // README 2.9: Zeitformat-Sessions loggen nie ExerciseLogs (das
+        // Ergebnis lebt in roundsCompleted/finishTimeSeconds/... statt
+        // Set-Historie) - `exercisesWithLogs.isEmpty` waere hier IMMER
+        // true und wuerde faelschlich "Keine Saetze geloggt." zeigen, als
+        // waere etwas schiefgelaufen. Eigener Read-Only-Zirkel-Branch statt
+        // des Leer-Zustands.
+        if let format = session.timeFormatSnapshot {
+            timedFormatCircuitSection(format)
+        } else if exercisesWithLogs.isEmpty {
             Section {
                 Text("summary.setsEmpty", bundle: .module)
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .font(.system(size: 13))
+                    .listRowBackground(Color.Deltiq.surface)
             } header: {
-                Text("summary.setsHeader", bundle: .module)
+                sectionHeader(String(localized: "summary.setsHeader", bundle: .module))
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         } else {
-            ForEach(exercisesWithLogs, id: \.exercise.persistentModelID) { entry in
-                exerciseSection(for: entry.exercise, logs: entry.logs)
+            ForEach(exercisesWithLogs) { group in
+                switch group {
+                case .live(let exercise, let logs):
+                    exerciseSection(for: exercise, logs: logs)
+                case .orphaned(_, let logs):
+                    orphanedExerciseSection(logs: logs)
+                }
             }
         }
         // DEL-136 Part C: "+ Übung hinzufügen" Section nur im History-Edit-
@@ -987,7 +1425,10 @@ public struct WorkoutSummaryView: View {
         // gerade fertig und soll nicht zurueck zu mehr Volumen geprompted
         // werden. Tap → ExercisePicker Sheet → onSelect erstellt eine
         // orphan Exercise (day=nil, kein Plan-Polluting) + N Default-Logs.
-        if isReadOnly && isEditingHistory {
+        // README 2.9: bei Zeitformaten ausgeblendet - es gibt kein Set-
+        // basiertes Log, in das sich eine hinzugefuegte Uebung einreihen
+        // koennte.
+        if isReadOnly && isEditingHistory && session.timeFormatSnapshot == nil {
             Section {
                 Button {
                     showingAddExercisePicker = true
@@ -998,12 +1439,220 @@ public struct WorkoutSummaryView: View {
                         Image(systemName: "plus.circle.fill")
                             .foregroundStyle(Color.deltiqOrange)
                     }
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.deltiqOrange)
                 }
+                .listRowBackground(Color.Deltiq.surface)
             } footer: {
                 Text("summary.addExercise.hint", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
+    }
+
+    // P8 Stufe-2-Nachbesserung: `contentSnapshotFirst`/
+    // `contentSnapshotTimeCapMinutes`/`contentSnapshotCircuitRounds`/
+    // `contentSnapshotCircuitRestSeconds` sind jetzt eine geteilte
+    // `WorkoutSession`-Extension (`FitnessAppData/
+    // WorkoutSessionContentSnapshotFirst.swift`) — auch die Zeitformat-/
+    // Zirkel-Player brauchen sie für die Wiederaufnahme-Isolation.
+
+    /// P8 Stufe-2: einheitliche, leseseitige Sicht auf eine Zeitformat-/
+    /// Zirkel-Übung für `timedFormatCircuitSection`. `orderIndex` ist der
+    /// Identitäts-Schlüssel (nicht der Name) — zwei gleichnamige Übungen
+    /// (z. B. zwei Zirkel-Stationen mit demselben Lift) bleiben dadurch
+    /// unterscheidbar, genau wie im Snapshot selbst
+    /// (`TrainingDayContentSnapshot.ExerciseEntry`-Dokumentation).
+    private struct TimedFormatDisplayExercise {
+        let orderIndex: Int
+        let displayName: String
+        let repsMin: Int
+        let isTimeBased: Bool
+        let sets: Int
+    }
+
+    /// P8 Stufe-2: liefert die Übungsliste für `timedFormatCircuitSection`.
+    /// Bevorzugt IMMER den eingefrorenen Tages-Snapshot dieser Session —
+    /// Reihenfolge/Namen/Ziele zum Zeitpunkt der Session, nicht den
+    /// eventuell seither bearbeiteten oder gelöschten Live-Tag. Nur wenn
+    /// für diese Session NIE ein Snapshot erfasst wurde (Altbestand vor
+    /// diesem Feature), fällt es auf den Live-Tag zurück — unverändertes
+    /// Verhalten von vorher für genau diesen Altbestand-Fall, aber
+    /// `contentSnapshotUnverifiedNotice` macht das in der UI sichtbar.
+    /// Ein BESCHÄDIGTER/nicht unterstützter Snapshot liefert explizit
+    /// `nil` — wird NIE stillschweigend durch den Live-Tag ersetzt.
+    private var timedFormatDisplayExercises: [TimedFormatDisplayExercise]? {
+        switch session.contentSnapshotState {
+        case .available(let snapshot):
+            return snapshot.exercises
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map { entry in
+                    let name: String
+                    if let custom = entry.customNameSnapshot, !custom.isEmpty {
+                        name = custom
+                    } else {
+                        name = Exercise.resolvedDisplayName(forStoredName: entry.nameSnapshot)
+                    }
+                    return TimedFormatDisplayExercise(
+                        orderIndex: entry.orderIndex, displayName: name,
+                        repsMin: entry.repsMin, isTimeBased: entry.isTimeBased, sets: entry.sets
+                    )
+                }
+        case .notCaptured:
+            return (session.day?.activeExercises ?? [])
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map {
+                    TimedFormatDisplayExercise(
+                        orderIndex: $0.orderIndex, displayName: $0.displayName,
+                        repsMin: $0.repsMin, isTimeBased: $0.isTimeBased, sets: $0.sets
+                    )
+                }
+        case .unreadable:
+            return nil
+        }
+    }
+
+    /// Sichtbarer Hinweis, wenn die gezeigte Übungsliste NICHT der
+    /// verifizierte historische Stand ist (Auftrag: "fehlende Historie
+    /// sichtbar kennzeichnen" / "aktuelle Planinhalte niemals als
+    /// historischen Stand ausgeben"). Greift nur für Altbestand vor P8
+    /// (`.notCaptured`) — `.available` ist per Definition verifiziert,
+    /// `.unreadable` zeigt stattdessen `contentSnapshotUnreadableNotice`.
+    @ViewBuilder
+    private var contentSnapshotUnverifiedNotice: some View {
+        if case .notCaptured = session.contentSnapshotState {
+            Text("summary.content.noHistoricalSnapshot", bundle: .module)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+        }
+    }
+
+    /// README 2.9: Read-only Referenzliste der Zirkel-Uebungen (Name +
+    /// Wdh./Runden), damit man Wochen spaeter noch sieht, WAS man gemacht
+    /// hat - ohne eine Set-Historie zu erfinden, die es fuer Zeitformate
+    /// nie gab. Quelle ist der P8-Snapshot (siehe
+    /// `timedFormatDisplayExercises`), NICHT mehr der Live-Tag — eine
+    /// spätere Tag-Bearbeitung/-Löschung ändert diese Liste jetzt nicht
+    /// mehr rückwirkend.
+    @ViewBuilder
+    private func timedFormatCircuitSection(_ format: WorkoutTimeFormat) -> some View {
+        if case .unreadable = session.contentSnapshotState {
+            Section {
+                Text("summary.content.unreadable", bundle: .module)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            } header: {
+                sectionHeader(String(localized: "summary.stat.exercises", bundle: .module))
+            }
+            .listRowSeparatorTint(Color.Deltiq.divider)
+        } else if let exercises = timedFormatDisplayExercises, !exercises.isEmpty {
+            // Nutzer-Feedback 6. August: "15 Runden" allein beantwortet nicht
+            // "wie viele Klimmzuege waren das insgesamt" - fuer AMRAP zeigt
+            // die Zeile jetzt Gesamt-Wiederholungen statt nur dem Pro-Runde-
+            // Ziel. EMOM/Auf-Zeit bleiben unveraendert (dort gibt es kein
+            // sinnvolles "Gesamt" - EMOM ist pass/fail pro Minute, Auf Zeit
+            // hat schon eine feste Rundenzahl als Ziel selbst).
+            let amrapTotals = format == .amrap ? amrapExerciseTotals(exercises) : nil
+            Section {
+                ForEach(exercises, id: \.orderIndex) { exercise in
+                    if let amrapTotals {
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(exercise.displayName)
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(Color.primary)
+                                Text(
+                                    String(
+                                        format: String(localized: "summary.amrap.perRound", bundle: .module),
+                                        timedFormatTargetLabel(repsMin: exercise.repsMin, isTimeBased: exercise.isTimeBased)
+                                    )
+                                )
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                            }
+                            Spacer()
+                            Text(amrapTotalValueText(exercise, totals: amrapTotals))
+                                .font(.system(size: 15))
+                                .fitnessNumberStyle()
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        .listRowBackground(Color.Deltiq.surface)
+                    } else {
+                        HStack(spacing: 8) {
+                            Text(exercise.displayName)
+                                .font(.system(size: 15))
+                                .foregroundStyle(Color.primary)
+                            Spacer()
+                            Text(circuitValueLabel(exercise, format: format))
+                                .font(.system(size: 15))
+                                .fitnessNumberStyle()
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        .listRowBackground(Color.Deltiq.surface)
+                    }
+                }
+            } header: {
+                sectionHeader(String(localized: "summary.stat.exercises", bundle: .module))
+            } footer: {
+                contentSnapshotUnverifiedNotice
+            }
+            .listRowSeparatorTint(Color.Deltiq.divider)
+        }
+    }
+
+    /// README (Nutzer-Feedback 6. August): Gesamt-Wiederholungen pro Uebung
+    /// ueber die komplette Session - "15 Runden Cindy" heisst 75 Klimmzuege +
+    /// 150 Liegestuetze + 225 Kniebeugen, nicht nur "15 Runden". `nil` wenn es
+    /// nichts zu zeigen gibt (noch keine volle Runde geschafft und keine
+    /// angebrochene Station).
+    /// Wiederhergestellt (13. August, zweite Runde): `finishBar` befuellt
+    /// `partialReps`/`partialRepsExerciseName` wieder - ohne diesen Zusatz
+    /// wuerden die Uebungen VOR der angebrochenen Station in derselben Runde
+    /// (schon fertig, bevor die Zeit ablief) und die angebrochene Station
+    /// selbst hier stillschweigend unterzaehlt, waehrend die Hero-Zahl direkt
+    /// darueber (`timedFormatHeroStat`) den vollen Stand korrekt zeigt.
+    /// Namens- statt ID-Abgleich fuer `currentIndex`, weil
+    /// `partialRepsExerciseName` ein Snapshot ist (gleiches Muster wie
+    /// `dayName`), keine live Relationship.
+    private func amrapExerciseTotals(_ exercises: [TimedFormatDisplayExercise]) -> [Int: Int]? {
+        let rounds = session.roundsCompleted ?? 0
+        let partial = session.partialReps ?? 0
+        guard rounds > 0 || partial > 0 || session.partialRepsExerciseName != nil else { return nil }
+        let currentIndex = session.partialRepsExerciseName.flatMap { name in
+            exercises.firstIndex { $0.displayName == name }
+        }
+        var totals: [Int: Int] = [:]
+        for (index, exercise) in exercises.enumerated() {
+            var total = rounds * exercise.repsMin
+            if let currentIndex {
+                if index < currentIndex {
+                    total += exercise.repsMin
+                } else if index == currentIndex {
+                    total += partial
+                }
+            }
+            totals[exercise.orderIndex] = total
+        }
+        return totals
+    }
+
+    private func amrapTotalValueText(_ exercise: TimedFormatDisplayExercise, totals: [Int: Int]) -> String {
+        let total = totals[exercise.orderIndex] ?? 0
+        let unit = exercise.isTimeBased
+            ? String(localized: "unit.seconds.short", bundle: .module)
+            : String(localized: "unit.reps.short", bundle: .module)
+        return "\(total) \(unit)"
+    }
+
+    /// Duenner Wrapper um das geteilte `timedFormatCircuitLabel`
+    /// (TimedWorkoutPlayerView.swift) - siehe dort fuer die Begruendung.
+    private func circuitValueLabel(_ exercise: TimedFormatDisplayExercise, format: WorkoutTimeFormat) -> String {
+        timedFormatCircuitLabel(
+            repsMin: exercise.repsMin, isTimeBased: exercise.isTimeBased,
+            sets: exercise.sets, format: format
+        )
     }
 
     private func exerciseSection(for exercise: Exercise, logs: [ExerciseLog]) -> some View {
@@ -1014,11 +1663,15 @@ public struct WorkoutSummaryView: View {
             let editable = !isReadOnly || isEditingHistory
             if editable {
                 ForEach(logs) { log in
-                    SetSummaryRow(log: log, exercise: exercise, isEditable: isEditingSets)
+                    SetSummaryRow(log: log, isEditable: isEditingSets)
                 }
+                // .onDelete braucht DynamicViewContent (ForEach) - muss VOR
+                // .listRowBackground stehen, sonst erased letzteres bereits
+                // auf ein generisches View, das kein .onDelete mehr hat.
                 .onDelete { offsets in
                     deleteSets(of: exercise, indices: offsets)
                 }
+                .listRowBackground(Color.Deltiq.surface)
                 // DEL-136 Part C-Iteration: "+ Satz hinzufügen"-Row im
                 // History-Edit-Mode. Nur isEditingHistory, NICHT im
                 // New-Mode (post-finish) — dort gibt's keinen Use-Case
@@ -1034,16 +1687,18 @@ public struct WorkoutSummaryView: View {
                             Text("summary.addSet.button", bundle: .module)
                         } icon: {
                             Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(Color.deltiqOrange)
                         }
-                        .font(.callout)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.deltiqOrange)
                     }
                     .buttonStyle(.plain)
+                    .listRowBackground(Color.Deltiq.surface)
                 }
             } else {
                 ForEach(logs) { log in
-                    SetSummaryRow(log: log, exercise: exercise, isEditable: false)
+                    SetSummaryRow(log: log, isEditable: false)
                 }
+                .listRowBackground(Color.Deltiq.surface)
             }
 
             // DEL-155: Cardio-Equipment pro Cardio-Uebung — unabhaengig davon,
@@ -1059,19 +1714,32 @@ public struct WorkoutSummaryView: View {
             // Zeile oben. Der Picker erscheint nur, wenn KEIN Gear gesetzt
             // ist (also Indoor/Maschine, wo Laufband vs Fahrrad relevant
             // für die PR-/Trend-Trennung ist).
+            //
+            // CardioEquipmentPicker/-DisplayRow bleiben unangetastet - ein
+            // gemeinsam mit dem (out-of-scope) ExerciseEditorView genutztes
+            // Shared-Component, analog zur DeltiqFormSection-Entscheidung.
             if exercise.isCardio && session.gear == nil {
                 if editable {
                     CardioEquipmentPicker(selection: Binding(
                         get: { exercise.cardioEquipment },
                         set: { exercise.cardioEquipment = $0 }
                     ))
+                    .listRowBackground(Color.Deltiq.surface)
                 } else if exercise.cardioEquipment != .none {
                     CardioEquipmentDisplayRow(equipment: exercise.cardioEquipment)
+                        .listRowBackground(Color.Deltiq.surface)
                 }
             }
         } header: {
             HStack {
+                // Handoff 1.5/1.6: Uebungsname bleibt Karten-Titel-prominent
+                // statt Eyebrow-Stil - anders als kategorische Section-
+                // Header (PRs, Achievements, ...) identifiziert er ein
+                // konkretes Item, kein Themen-Cluster. Gleiche Gewichtung
+                // wie ExerciseCard.header in ActiveWorkoutView.
                 Text(exercise.displayName)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(Color.primary)
                 Spacer()
                 // DEL-136 Part B: Im History-Edit-Mode bekommt jede Section
                 // einen kleinen "..." Menu-Button, ueber den die ganze
@@ -1089,21 +1757,62 @@ public struct WorkoutSummaryView: View {
                             }
                         }
                     } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundStyle(.secondary)
+                        Image(systemName: "ellipsis")
+                            .foregroundStyle(Color.deltiqOrange)
                     }
                     .textCase(nil)
                 } else if let best = bestSet(in: logs) {
-                    Text("\(String(localized: "summary.exercise.bestPrefix", bundle: .module)): \(formatSetSummary(best, exercise: exercise))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text("\(String(localized: "summary.exercise.bestPrefix", bundle: .module)): \(formatSetSummary(best))")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                         .textCase(nil)
                 }
             }
         } footer: {
             Text(formatBreakdownFooter(setsCount: logs.count, volume: formatVolume(logs)))
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// P8 Stufe-2: Darstellung für Logs, deren `Exercise` inzwischen
+    /// gelöscht wurde (orphan). Read-only, UNABHÄNGIG vom History-Edit-
+    /// Mode — es gibt kein lebendes Objekt mehr, an das ein Satz-Delete,
+    /// ein "+ Satz"-Insert oder der Cardio-Equipment-Picker sicher binden
+    /// könnte. Das ist eine bewusste, kleine Einschränkung gegenüber dem
+    /// lebenden Pfad: dieser Auftrag deckt die KORREKTE Zuordnung/Anzeige
+    /// verwaister Sätze ab (sie verschwinden nicht mehr unsichtbar), nicht
+    /// ihre nachträgliche Editierbarkeit.
+    private func orphanedExerciseSection(logs: [ExerciseLog]) -> some View {
+        let name = Exercise.resolvedDisplayName(forStoredName: logs.first?.resolvedExerciseName ?? "?")
+        return Section {
+            ForEach(logs) { log in
+                SetSummaryRow(log: log, isEditable: false)
+            }
+            .listRowBackground(Color.Deltiq.surface)
+        } header: {
+            HStack {
+                Text(name)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(Color.primary)
+                Spacer()
+                if let best = bestSet(in: logs) {
+                    Text("\(String(localized: "summary.exercise.bestPrefix", bundle: .module)): \(formatSetSummary(best))")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .textCase(nil)
+                }
+            }
+        } footer: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(formatBreakdownFooter(setsCount: logs.count, volume: formatVolume(logs)))
+                Text("summary.exercise.originalDeleted", bundle: .module)
+            }
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+        }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     /// DEL-126: i18n-Footer "X Satz/Sätze • Y kg Volumen". Plural-Branch wird
@@ -1122,42 +1831,45 @@ public struct WorkoutSummaryView: View {
 
     private var finishSection: some View {
         Section {
+            // Handoff 1.9: Primaerer Hero-CTA statt gruen-hinterlegter
+            // Row - .deltiqButtonStyle() bringt Gradient/Glow/Rundung schon
+            // mit, listRowBackground/-Insets werden geleert, damit Listens
+            // eigenes Zeilen-Chrome die Button-Optik nicht doppelt umrahmt.
             Button {
                 navigation.returnToDashboard()
             } label: {
-                HStack {
-                    Spacer()
-                    Label {
-                        Text("summary.action.finish", bundle: .module)
-                    } icon: {
-                        Image(systemName: "house.fill")
-                    }
-                    .font(.headline)
-                    Spacer()
+                Label {
+                    Text("summary.action.finish", bundle: .module)
+                } icon: {
+                    Image(systemName: "house.fill")
                 }
-                .padding(.vertical, 6)
-                .foregroundStyle(.white)
             }
-            .listRowBackground(Color.green)
+            .buttonStyle(.plain)
+            .deltiqButtonStyle()
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
         } footer: {
             Text("summary.finishFooter", bundle: .module)
-                .font(.footnote)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
     // MARK: Derived
 
-    /// Logs grouped by exercise, ordered by `Exercise.orderIndex` (matches the plan).
-    private var exercisesWithLogs: [(exercise: Exercise, logs: [ExerciseLog])] {
-        let grouped = Dictionary(grouping: session.logs) { $0.exercise?.persistentModelID }
-        return grouped.compactMap { (_, logs) -> (Exercise, [ExerciseLog])? in
-            guard let exercise = logs.first?.exercise else { return nil }
-            return (exercise, logs.sorted { $0.setIndex < $1.setIndex })
-        }
-        .sorted { $0.0.orderIndex < $1.0.orderIndex }
+    /// Logs grouped by exercise, ordered by `Exercise.orderIndex` (matches
+    /// the plan). Gruppierlogik ausgelagert nach `FitnessAppData.
+    /// ExerciseLogGrouping` (Apple-CI-testbar, unabhängig von dieser View) —
+    /// siehe dort für orphane Logs (gelöschte `Exercise`) und die
+    /// Duplikat-Namen-Absicherung.
+    private var exercisesWithLogs: [ExerciseLogGroup] {
+        ExerciseLogGrouping.group(session.logs)
     }
 
     private var formattedDuration: String {
+        // Genau auf die Sekunde ("25:56"), solange Beginn und Ende zur Dauer
+        // passen; nach einer im Verlauf geaenderten Dauer nur die Minuten.
+        if let exact = session.exactDurationText { return exact }
         let mins = session.durationMinutes
         if mins >= 60 {
             return "\(mins / 60)h \(mins % 60)m"
@@ -1171,9 +1883,7 @@ public struct WorkoutSummaryView: View {
     }
 
     private var statDivider: some View {
-        Rectangle()
-            .fill(Color.secondary.opacity(0.25))
-            .frame(width: 1, height: 32)
+        Divider().frame(height: 32)
     }
 
     // MARK: Best-set / volume helpers — delegate to Core's WorkoutAnalytics
@@ -1197,13 +1907,18 @@ public struct WorkoutSummaryView: View {
             .formattedTwoDecimals
     }
 
-    private func formatSetSummary(_ log: ExerciseLog, exercise: Exercise) -> String {
+    /// P8 Stufe-2: braucht keine `Exercise` mehr — `log.resolvedIsCardio`/
+    /// `resolvedIsTimeBased` sind snapshot-first und liefern denselben Wert
+    /// wie vorher `exercise.isCardio`/`isTimeBased`, solange die Übung noch
+    /// lebt, und bleiben auch nach ihrem Löschen korrekt (siehe
+    /// `exercisesWithLogs`).
+    private func formatSetSummary(_ log: ExerciseLog) -> String {
         let secUnit = String(localized: "unit.seconds.short", bundle: .module)
         let repUnit = String(localized: "unit.reps.short", bundle: .module)
-        if exercise.isCardio {
-            return "\(log.reps) \(exercise.isTimeBased ? secUnit : repUnit)"
+        if log.resolvedIsCardio {
+            return "\(log.reps) \(log.resolvedIsTimeBased ? secUnit : repUnit)"
         }
-        if exercise.isTimeBased {
+        if log.resolvedIsTimeBased {
             return "\(log.reps) \(secUnit)"
         }
         return "\(formatWeight(log.weight)) kg × \(log.reps)"
@@ -1296,7 +2011,7 @@ private struct PRBadge: View {
             // teilen jetzt eine Single Source of Truth fuer das Icon-
             // Layout — vorher war derselbe 6-Zeiler 3x dupliziert.
             Image(systemName: kindIcon)
-                .deltiqIconBadge(tint: kindColor)
+                .deltiqIconBadge(tint: Color.deltiqOrange)
 
             VStack(alignment: .leading, spacing: 2) {
                 // DEL-149: Snapshot-resolver — rendert den DE-Base ODER
@@ -1304,36 +2019,42 @@ private struct PRBadge: View {
                 // (z.B. "Koşu Bandı") via Reverse-Lookup in der aktuellen
                 // Sprache.
                 Text(Exercise.resolvedDisplayName(forStoredName: record.exerciseName))
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                 Text(kindLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                 Text(detailLine)
-                    .font(.callout.monospacedDigit())
-                    .foregroundStyle(.primary)
+                    .font(.system(size: 14))
+                    .fitnessNumberStyle()
+                    .foregroundStyle(Color.primary)
             }
             Spacer()
             // DEL-064: fastestPace ist lower-is-better — die Verbesserung
             // ist ein negativer Delta. Wir zeigen sie als positiv-formatiertes
             // Improvement, sonst sieht der Trophy-Pill aus wie ein Rueckschritt.
             Text(improvementPill)
-                .font(.subheadline.weight(.bold))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Color.Deltiq.success)
-                .monospacedDigit()
+                .fitnessNumberStyle()
         }
         .padding(.vertical, 4)
         .badgeAppearEffect()   // UX-204: subtiles Spring-In auf Badge-Erscheinen
     }
 
     /// DEL-064: kind-aware Improvement-Prozent. Lower-is-better-Kinds
-    /// (`.fastestPace`) invertieren den Delta-Vorzug.
+    /// (`.fastestPace`, `.fastestTime`) invertieren den Delta-Vorzug.
     private var improvementPill: String {
-        let isLowerBetter: Bool = (record.kind == .fastestPace)
+        let isLowerBetter: Bool = (record.kind == .fastestPace || record.kind == .fastestTime)
         let raw = record.deltaPercent
         let improvement = isLowerBetter ? -raw : raw
         return "+\(formatDelta(improvement))"
     }
 
+    /// Handoff 1.10 (ein Akzent): unterscheidet die PR-Art jetzt allein ueber
+    /// Icon-Form + `kindLabel`-Text - die fruehere `kindColor` (7 eigene
+    /// Farben pro Art) ist entfallen, alle Badges teilen sich das Orange
+    /// von `.deltiqIconBadge`.
     private var kindIcon: String {
         switch record.kind {
         case .estimated1RM:     "bolt.fill"
@@ -1344,18 +2065,9 @@ private struct PRBadge: View {
         // DEL-064 Cardio-PRs
         case .longestDistance:  "figure.run.circle.fill"
         case .fastestPace:      "hare.fill"
-        }
-    }
-
-    private var kindColor: Color {
-        switch record.kind {
-        case .estimated1RM:     .orange
-        case .heaviestWeight:   .red
-        case .bestSet:          .blue
-        case .maxReps:          .purple
-        case .maxHoldSeconds:   .yellow
-        case .longestDistance:  Color.deltiqOrange
-        case .fastestPace:      .green
+        // Zeitformate (README 2.9)
+        case .mostRounds:       "repeat.circle.fill"
+        case .fastestTime:      "stopwatch.fill"
         }
     }
 
@@ -1368,6 +2080,8 @@ private struct PRBadge: View {
         case .maxHoldSeconds:   String(localized: "pr.kind.maxHoldSeconds",  bundle: .module)
         case .longestDistance:  String(localized: "pr.kind.longestDistance", bundle: .module)
         case .fastestPace:      String(localized: "pr.kind.fastestPace",     bundle: .module)
+        case .mostRounds:       String(localized: "pr.kind.mostRounds",      bundle: .module)
+        case .fastestTime:      String(localized: "pr.kind.fastestTime",     bundle: .module)
         }
     }
 
@@ -1412,7 +2126,26 @@ private struct PRBadge: View {
             return "\(formatKm(record.newValue)) km (\(prev) \(formatKm(record.previousValue)) km)"
         case .fastestPace:
             return "\(formatPace(record.newValue)) (\(prev) \(formatPace(record.previousValue)))"
+
+        // Zeitformate (README 2.9)
+        case .mostRounds:
+            let prevRounds = Int(record.previousValue.rounded())
+            // Bugfix (Teil-Wiederholungen entfernt): siehe PRHistoryView.swift
+            // fuer die Begruendung des reps > 0-Gates.
+            guard record.reps > 0 else {
+                return "\(Int(record.newValue)) Runden (\(prev) \(prevRounds) Runden)"
+            }
+            return "\(Int(record.newValue)) Runden + \(record.reps) \(repUnit) (\(prev) \(prevRounds) Runden)"
+        case .fastestTime:
+            return "\(formatDuration(record.newValue)) (\(prev) \(formatDuration(record.previousValue)))"
         }
+    }
+
+    /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet
+    /// `PaceCalculator.formatDuration` statt eines eigenen mm:ss-Formatters
+    /// (dieselbe Funktion ruft die Datei bereits an anderer Stelle, Z. 1923).
+    private func formatDuration(_ totalSeconds: Double) -> String {
+        PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
     }
 
     /// DEL-064: km-Formatter — Integer wenn ganzzahlig, sonst 2 Nachkommastellen.
@@ -1452,14 +2185,15 @@ private struct AchievementBadge: View {
         HStack(spacing: 12) {
             // UX-205: 36×36 Icon via geteiltem Modifier.
             Image(systemName: icon)
-                .deltiqIconBadge(tint: tint)
+                .deltiqIconBadge(tint: Color.deltiqOrange)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                 Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
             Spacer()
         }
@@ -1467,23 +2201,15 @@ private struct AchievementBadge: View {
         .badgeAppearEffect()   // UX-204: subtiles Spring-In auf Badge-Erscheinen
     }
 
+    /// Handoff 1.10 (ein Akzent): unterscheidet die Achievement-Art jetzt
+    /// allein ueber Icon-Form + `title`/`subtitle` - die fruehere `tint`
+    /// (4 verschiedene Semantic-Token-Farben) ist entfallen.
     private var icon: String {
         switch achievement.kind {
         case .weeklyMilestone:           return "flame.fill"
         case .heaviestOfWeek:            return "scalemass.fill"
         case .longestOfWeek:             return "clock.badge.checkmark"
         case .longestDistanceOfWeek:     return "figure.run"
-        }
-    }
-
-    /// UX-205: Tint-Mapping nutzt Semantic-Color-Tokens — wenn die Palette
-    /// jemals shifts, lesen Achievements das automatisch nach.
-    private var tint: Color {
-        switch achievement.kind {
-        case .weeklyMilestone:           return .orange
-        case .heaviestOfWeek:            return Color.Deltiq.primary
-        case .longestOfWeek:             return Color.Deltiq.info
-        case .longestDistanceOfWeek:     return Color.Deltiq.success
         }
     }
 
@@ -1532,20 +2258,22 @@ private struct ProgressionBadge: View {
         HStack(spacing: 12) {
             // UX-205: 36×36 Icon via geteiltem Modifier.
             Image(systemName: icon)
-                .deltiqIconBadge(tint: tint)
+                .deltiqIconBadge(tint: Color.deltiqOrange)
 
             VStack(alignment: .leading, spacing: 2) {
                 // DEL-149: lokalisierter Display-Name via Snapshot-Resolver —
                 // outcome.exerciseName ist ein DE-Base-Snapshot aus dem
                 // ProgressionApplicator.
                 Text(Exercise.resolvedDisplayName(forStoredName: outcome.exerciseName))
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
                 Text(headlineText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                 Text(detailText)
-                    .font(.callout.monospacedDigit())
-                    .foregroundStyle(.primary)
+                    .font(.system(size: 14))
+                    .fitnessNumberStyle()
+                    .foregroundStyle(Color.primary)
             }
             Spacer()
             deltaPill
@@ -1554,19 +2282,15 @@ private struct ProgressionBadge: View {
         .badgeAppearEffect()   // UX-204: subtiles Spring-In auf Badge-Erscheinen
     }
 
+    /// Handoff 1.10 (ein Akzent): Icon-Tint war Orange(increase)/
+    /// Grau(deload) - beide Faelle teilen sich jetzt dasselbe Orange;
+    /// "runter" bleibt trotzdem eindeutig ueber Icon-Richtung (Pfeil runter)
+    /// + das Minus-Vorzeichen in `deltaPill`.
     private var icon: String {
         switch outcome.action {
         case .increaseWeight: return "arrow.up.right.circle.fill"
         case .deload:         return "arrow.down.right.circle.fill"
         case .hold:           return "minus.circle.fill"   // unreachable
-        }
-    }
-
-    private var tint: Color {
-        switch outcome.action {
-        case .increaseWeight: return Color.deltiqOrange
-        case .deload:         return .gray
-        case .hold:           return .secondary
         }
     }
 
@@ -1591,9 +2315,9 @@ private struct ProgressionBadge: View {
 
     private var deltaPill: some View {
         Text(deltaString)
-            .font(.subheadline.weight(.bold))
-            .foregroundStyle(outcome.action.weightDelta >= 0 ? Color.deltiqOrange : .secondary)
-            .monospacedDigit()
+            .font(.system(size: 15, weight: .bold))
+            .foregroundStyle(outcome.action.weightDelta >= 0 ? Color.deltiqOrange : Color.Deltiq.textSecondary)
+            .fitnessNumberStyle()
     }
 
     private var deltaString: String {
@@ -1628,9 +2352,15 @@ private struct SummaryStat: View {
 }
 
 @available(iOS 17.0, macOS 14.0, *)
+/// P8 Stufe-2: braucht keine live `Exercise`-Referenz mehr — alle
+/// internen Verzweigungen (Cardio/TimeBased/Strength-Layout) laufen über
+/// `log.resolvedIsCardio`/`resolvedIsTimeBased` (DEL-051, snapshot-first,
+/// identisch zum vorherigen `exercise.isCardio`/`isTimeBased` solange die
+/// Übung noch lebt). Das macht diese Row auch für Logs korrekt
+/// darstellbar, deren `Exercise` inzwischen gelöscht wurde (orphan, siehe
+/// `exercisesWithLogs`).
 private struct SetSummaryRow: View {
     @Bindable var log: ExerciseLog
-    let exercise: Exercise
     /// DEL-032: im History-Edit-Mode wird die Row zu editierbaren TextFields.
     let isEditable: Bool
 
@@ -1646,12 +2376,14 @@ private struct SetSummaryRow: View {
     private var readOnlyRow: some View {
         HStack(spacing: 8) {
             Text(String(format: String(localized: "set.numberLabel", bundle: .module), log.setIndex + 1))
-                .font(.subheadline.weight(.semibold))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .frame(width: 64, alignment: .leading)
 
             Text(rowText)
-                .font(.callout)
-                .monospacedDigit()
+                .font(.system(size: 15))
+                .fitnessNumberStyle()
+                .foregroundStyle(Color.primary)
 
             Spacer()
         }
@@ -1672,14 +2404,15 @@ private struct SetSummaryRow: View {
     private var editRow: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(String(format: String(localized: "set.numberLabel", bundle: .module), log.setIndex + 1))
-                .font(.subheadline.weight(.semibold))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.Deltiq.textSecondary)
             HStack(spacing: 8) {
-                if exercise.isCardio {
+                if log.resolvedIsCardio {
                     cardioDistanceField
                     Divider().frame(height: 24)
                     cardioDurationFields
                     Spacer(minLength: 4)
-                } else if exercise.isTimeBased {
+                } else if log.resolvedIsTimeBased {
                     repsField   // labeled "Sek" via unit.seconds.short
                     Spacer(minLength: 12)
                     rirBlock
@@ -1716,11 +2449,12 @@ private struct SetSummaryRow: View {
                       format: .number)
                 .frame(width: 60)
                 .multilineTextAlignment(.leading)
-                .font(.title3.monospacedDigit())
+                .font(.system(size: 18, weight: .semibold))
+                .fitnessNumberStyle()
                 #if os(iOS)
                 .keyboardType(.decimalPad)
                 #endif
-            Text("km").font(.caption2).foregroundStyle(.secondary)
+            Text("km").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
@@ -1744,15 +2478,16 @@ private struct SetSummaryRow: View {
                           format: .number)
                     .frame(width: 40)
                     .multilineTextAlignment(.leading)
-                    .font(.title3.monospacedDigit())
+                    .font(.system(size: 18, weight: .semibold))
+                    .fitnessNumberStyle()
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
-                Text("min").font(.caption2).foregroundStyle(.secondary)
+                Text("min").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
             }
             Text(":")
-                .font(.title3.weight(.medium))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .offset(y: -8)   // optisch zur Minuten-Zahl ausgerichtet, nicht zur Caption
             VStack(alignment: .leading, spacing: 2) {
                 TextField("sec",
@@ -1768,11 +2503,12 @@ private struct SetSummaryRow: View {
                           format: .number)
                     .frame(width: 36)
                     .multilineTextAlignment(.leading)
-                    .font(.title3.monospacedDigit())
+                    .font(.system(size: 18, weight: .semibold))
+                    .fitnessNumberStyle()
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
-                Text("sec").font(.caption2).foregroundStyle(.secondary)
+                Text("sec").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
     }
@@ -1782,11 +2518,12 @@ private struct SetSummaryRow: View {
             TextField("kg", value: $log.weight, format: .number)
                 .frame(width: 56)
                 .multilineTextAlignment(.leading)
-                .font(.title3.monospacedDigit())
+                .font(.system(size: 18, weight: .semibold))
+                .fitnessNumberStyle()
                 #if os(iOS)
                 .keyboardType(.decimalPad)
                 #endif
-            Text("kg").font(.caption2).foregroundStyle(.secondary)
+            Text("kg").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
@@ -1794,25 +2531,27 @@ private struct SetSummaryRow: View {
         // DEL-126: i18n-Sek/Wdh-Labels.
         let secUnit = String(localized: "unit.seconds.short", bundle: .module)
         let repUnit = String(localized: "unit.reps.short", bundle: .module)
-        let unit = exercise.isTimeBased ? secUnit : repUnit
+        let unit = log.resolvedIsTimeBased ? secUnit : repUnit
         return VStack(alignment: .leading, spacing: 2) {
             TextField(unit, value: $log.reps, format: .number)
                 .frame(width: 48)
                 .multilineTextAlignment(.leading)
-                .font(.title3.monospacedDigit())
+                .font(.system(size: 18, weight: .semibold))
+                .fitnessNumberStyle()
                 #if os(iOS)
                 .keyboardType(.numberPad)
                 #endif
-            Text(unit).font(.caption2).foregroundStyle(.secondary)
+            Text(unit).font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
     /// RIR-Block: Label oben, Stepper darunter — kein Overlay-Trick mehr.
     private var rirBlock: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            Text("RIR \(formatRIR(log.rir))")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+            Text("RIR \(log.rir.formattedRIR)")
+                .font(.system(size: 12))
+                .fitnessNumberStyle()
+                .foregroundStyle(Color.Deltiq.textSecondary)
             Stepper(value: $log.rir, in: 0...10, step: 0.5) {
                 EmptyView()
             }
@@ -1821,7 +2560,7 @@ private struct SetSummaryRow: View {
     }
 
     private var rowText: String {
-        if exercise.isCardio {
+        if log.resolvedIsCardio {
             // DEL-058: Cardio-Set zeigt Distance / Duration / Pace statt
             // kg × reps. Auslassbar wenn keiner der Felder gefuellt.
             var parts: [String] = []
@@ -1837,19 +2576,15 @@ private struct SetSummaryRow: View {
             }
             return parts.isEmpty ? "—" : parts.joined(separator: " · ")
         }
-        if exercise.isTimeBased {
+        if log.resolvedIsTimeBased {
             let secUnit = String(localized: "unit.seconds.short", bundle: .module)
-            return "\(log.reps) \(secUnit) (RIR \(formatRIR(log.rir)))"
+            return "\(log.reps) \(secUnit) (RIR \(log.rir.formattedRIR))"
         }
-        return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(formatRIR(log.rir)))"
+        return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(log.rir.formattedRIR))"
     }
 
     private func formatWeight(_ w: Double) -> String {
         w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
-    }
-
-    private func formatRIR(_ rir: Float) -> String {
-        rir == rir.rounded() ? String(format: "%.0f", rir) : String(format: "%.1f", rir)
     }
 }
 

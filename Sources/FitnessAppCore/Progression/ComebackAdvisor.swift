@@ -94,7 +94,7 @@ public enum ComebackAdvisor {
     /// Rampen-Mechanik daneben waere ein widerspruechlicher zweiter Schreiber
     /// gewesen. Gebaut-aber-nicht-verdrahtet ist die schlimmste Sorte Code: es
     /// liest sich wie eine Zusicherung, die es nicht gibt.
-    public struct Prescription: Sendable, Equatable {
+    public struct Prescription: Sendable, Equatable, Codable {
         /// Faktor auf das Arbeitsgewicht bei Verbund-Uebungen (1.0 = keine
         /// Reduktion).
         public let compoundFactor: Double
@@ -243,8 +243,15 @@ public enum ComebackAdvisor {
         let steps = (target / increment).rounded(.down)
         let snapped = steps * increment
 
+        // Bugfix (Audit): der Boden selbst muss ebenfalls gerastet sein, sonst
+        // kann `max()` ihn gegen `snapped` gewinnen lassen und ein Gewicht
+        // liefern, das mit der Schrittweite gar nicht ladbar ist (z.B. current
+        // = 6, increment = 2.5 -> Boden 3.0 statt eines Vielfachen von 2.5).
+        // Aufwaerts gerastet (nicht abwaerts wie `snapped`), damit der Boden
+        // nie UNTERSCHRITTEN wird - das ist hier die staerkere Garantie.
         let relativeFloor = current * 0.5
-        return max(snapped, increment, relativeFloor > increment ? relativeFloor : increment)
+        let snappedFloor = (relativeFloor / increment).rounded(.up) * increment
+        return max(snapped, increment, snappedFloor > increment ? snappedFloor : increment)
     }
 
     // DEL-242: `changesAnything` entfernt — ohne Aufrufer. Die wirksame Regel

@@ -17,9 +17,16 @@ import FitnessAppData
 public struct PRHistoryView: View {
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \PersonalRecordEntry.date, order: .reverse)
     private var entries: [PersonalRecordEntry]
+
+    /// Settings-Epic Phase 6 (EXLIB-07/09): fuer die ID-first-Aufloesung des
+    /// aktuellen Anzeige-Namens pro Trophy-Gruppe (`grouped`). ~Hunderte
+    /// Zeilen — ein `Dictionary`-Aufbau pro Render ist vernachlaessigbar,
+    /// gleiches Performance-Argument wie `ExerciseTemplate+DisplayName.swift`.
+    @Query private var allTemplates: [ExerciseTemplate]
 
     /// Used by the empty-state CTA to know whether a backfill would actually
     /// produce anything.
@@ -38,35 +45,45 @@ public struct PRHistoryView: View {
     public init() {}
 
     public var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: direkt vom Dashboard gepusht (kein
+            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
+            // WorkoutHistoryView.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.dashboard", bundle: .module).uppercased(),
+                title: String(localized: "dashboard.trophy.title", bundle: .module),
+                onBack: { dismiss() },
+                actions: [
+                    DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+                        Button {
+                            showRebuildConfirm = true
+                        } label: {
+                            Label {
+                                Text("trophy.rebuild.menu", bundle: .module)
+                            } icon: {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                        }
+                        .disabled(completedSessions.isEmpty)
+                    })
+                ]
+            )
+
             if entries.isEmpty {
                 emptyState
             } else {
                 content
             }
         }
-        .navigationTitle(Text("dashboard.trophy.title", bundle: .module))
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Button {
-                        showRebuildConfirm = true
-                    } label: {
-                        Label {
-                            Text("trophy.rebuild.menu", bundle: .module)
-                        } icon: {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                    }
-                    .disabled(completedSessions.isEmpty)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
-            }
-        }
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .alert(Text("trophy.rebuild.confirm.title", bundle: .module), isPresented: $showRebuildConfirm) {
             Button(role: .cancel) { } label: {
                 Text("common.cancel", bundle: .module)
@@ -94,38 +111,31 @@ public struct PRHistoryView: View {
     // MARK: Empty + main content
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            ContentUnavailableView {
-                Label {
-                    Text("trophy.empty.title", bundle: .module)
-                } icon: {
-                    Image(systemName: "trophy")
-                }
-            } description: {
-                Text(completedSessions.isEmpty
-                     ? "trophy.empty.description.firstWorkout"
-                     : "trophy.empty.description.hasWorkouts",
-                     bundle: .module)
-            } actions: {
-                if !completedSessions.isEmpty {
-                    Button {
-                        showRebuildConfirm = true
-                    } label: {
-                        Label {
-                            Text("trophy.empty.cta.detect", bundle: .module)
-                        } icon: {
-                            Image(systemName: "sparkles")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
+        VStack(alignment: .leading, spacing: 18) {
+            if completedSessions.isEmpty {
+                DashboardEmptyState(
+                    icon: "trophy",
+                    title: "trophy.empty.title",
+                    description: "trophy.empty.description.firstWorkout"
+                )
+                .deltiqCardStyle()
+            } else {
+                DashboardEmptyState(
+                    icon: "trophy",
+                    title: "trophy.empty.title",
+                    description: "trophy.empty.description.hasWorkouts",
+                    ctaTitle: "trophy.empty.cta.detect",
+                    ctaAction: { showRebuildConfirm = true }
+                )
+                .deltiqCardStyle()
             }
         }
+        .deltiqScreen()
     }
 
     private var content: some View {
-        List {
-            kindFilterSection
+        VStack(alignment: .leading, spacing: 18) {
+            kindFilterCard
             ForEach(grouped) { group in
                 ExerciseTrophySection(
                     group: group,
@@ -133,15 +143,16 @@ public struct PRHistoryView: View {
                 )
             }
         }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #endif
+        .deltiqScreen()
     }
 
     // MARK: Filter chips
 
-    private var kindFilterSection: some View {
-        Section {
+    private var kindFilterCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(format: String(localized: "trophy.totalRecords", bundle: .module), filteredCount))
+                .font(.caption)
+                .foregroundStyle(Color.Deltiq.textSecondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     KindChip(kind: nil, isSelected: selectedKind == nil) {
@@ -155,17 +166,6 @@ public struct PRHistoryView: View {
                 }
                 .padding(.vertical, 4)
             }
-            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-        } header: {
-            HStack {
-                Text(String(format: String(localized: "trophy.totalRecords", bundle: .module), filteredCount))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-            .textCase(nil)
         }
     }
 
@@ -184,25 +184,44 @@ public struct PRHistoryView: View {
 
     // MARK: Grouping
 
-    /// Entries grouped by exerciseName, with the headline kind chosen per
-    /// exercise. Sorted by most-recent-PR first so the Trophy Room "tells a
-    /// story" — what the user has set lately bubbles up.
+    /// Entries grouped by exercise identity, with the headline kind chosen
+    /// per exercise. Sorted by most-recent-PR first so the Trophy Room
+    /// "tells a story" — what the user has set lately bubbles up.
     private var grouped: [ExerciseTrophyGroup] {
         let filtered = selectedKind.map { kind in
             entries.filter { $0.kind == kind }
         } ?? entries
 
-        // DEL-156: Gruppierung nach (Name, Cardio-Equipment). Non-Cardio-PRs
-        // tragen .none → effektiv "nur nach Name". Cardio-PRs splitten nach
-        // Modalitaet (Laufband ≠ Fahrrad) in eigene Trophy-Reihen.
+        // DEL-156: Gruppierung nach (Identitaet, Cardio-Equipment). Non-
+        // Cardio-PRs tragen .none → effektiv "nur nach Identitaet". Cardio-
+        // PRs splitten nach Modalitaet (Laufband ≠ Fahrrad) in eigene
+        // Trophy-Reihen.
+        //
+        // Settings-Epic Phase 6 (EXLIB-07/09): Identitaet ist bevorzugt die
+        // stabile `exerciseTemplateID` (ueberlebt ein Umbenennen); nur
+        // Eintraege ohne aufloesbare ID gruppieren weiterhin per Name
+        // (unveraendertes Alt-Verhalten).
         let byExercise = Dictionary(grouping: filtered) { entry in
-            TrophyGroupKey(name: entry.exerciseName, equipment: entry.cardioEquipment)
+            TrophyGroupKey(
+                identity: entry.exerciseTemplateID.map(TrophyGroupKey.Identity.id) ?? .name(entry.exerciseName),
+                equipment: entry.cardioEquipment
+            )
         }
+        let templatesByID = Dictionary(uniqueKeysWithValues: allTemplates.map { ($0.id, $0) })
         return byExercise.compactMap { (key, rows) -> ExerciseTrophyGroup? in
             guard !rows.isEmpty else { return nil }
             let sorted = rows.sorted { $0.date > $1.date }
+            let fallbackName = sorted.first?.exerciseName ?? ""
+            let templateID: UUID? = if case .id(let id) = key.identity { id } else { nil }
+            // ID aufloesbar + Vorlage noch vorhanden → deren LIVE-Name
+            // (ueberlebt Umbenennen). Sonst: bisherige Snapshot-Namens-
+            // Aufloesung (Sprachfest ueber Reverse-Lookup), unveraendert.
+            let resolvedName = templateID.flatMap { templatesByID[$0] }?.displayName
+                ?? Exercise.resolvedDisplayName(forStoredName: fallbackName)
             return ExerciseTrophyGroup(
-                exerciseName: key.name,
+                exerciseTemplateID: templateID,
+                exerciseName: fallbackName,
+                displayName: resolvedName,
                 cardioEquipment: key.equipment,
                 entries: sorted,
                 latestDate: sorted.first?.date ?? .distantPast
@@ -229,19 +248,36 @@ public struct PRHistoryView: View {
 
 // MARK: - Exercise group container
 
-/// DEL-156: Composite-Gruppierungs-Schluessel fuer den Trophy-Room.
+/// DEL-156 / Settings-Epic Phase 6 (EXLIB-07/09): Composite-Gruppierungs-
+/// Schluessel fuer den Trophy-Room. Identitaet ist ID-first — siehe
+/// `PRHistoryView.grouped` fuer die Begruendung (nie ID und Name gemischt,
+/// sonst koennte ein zufaelliger Namens-Treffer zwei Uebungen zusammenlegen).
 @available(iOS 17.0, macOS 14.0, *)
 struct TrophyGroupKey: Hashable {
-    let name: String
+    enum Identity: Hashable {
+        case id(UUID)
+        case name(String)
+    }
+    let identity: Identity
     let equipment: CardioEquipment
 }
 
 @available(iOS 17.0, macOS 14.0, *)
 struct ExerciseTrophyGroup: Identifiable {
-    /// DEL-156: Composite-ID, damit Laufband- und Fahrrad-Reihen derselben
-    /// Uebung als getrennte DisclosureGroups erscheinen.
-    var id: String { "\(exerciseName)|\(cardioEquipment.rawValue)" }
+    /// Composite-ID, damit Laufband- und Fahrrad-Reihen derselben Uebung als
+    /// getrennte DisclosureGroups erscheinen (DEL-156). Nutzt die stabile
+    /// `exerciseTemplateID`, wenn vorhanden, sonst den Namens-Snapshot.
+    var id: String { "\(exerciseTemplateID?.uuidString ?? exerciseName)|\(cardioEquipment.rawValue)" }
+    /// Settings-Epic Phase 6 (EXLIB-07/09): stabile Vorlagen-ID, falls
+    /// aufloesbar — `nil` fuer Alt-Gruppen ohne Backfill-Treffer.
+    let exerciseTemplateID: UUID?
+    /// Snapshot-Name der juengsten PR-Zeile — Fallback-Anzeige, wenn sich
+    /// `exerciseTemplateID` nicht (mehr) zu einer lebenden Vorlage aufloesen
+    /// laesst (z.B. geloescht).
     let exerciseName: String
+    /// Bereits aufgeloester Anzeige-Name (live Vorlagen-Name bei ID-Treffer,
+    /// sonst sprachfeste Snapshot-Aufloesung) — siehe `PRHistoryView.grouped`.
+    let displayName: String
     let cardioEquipment: CardioEquipment
     let entries: [PersonalRecordEntry]
     let latestDate: Date
@@ -259,13 +295,16 @@ private struct ExerciseTrophySection: View {
     @State private var chartKind: PersonalRecord.Kind = .estimated1RM
 
     var body: some View {
-        Section {
-            DisclosureGroup(isExpanded: $isExpanded) {
-                expansionContent
-            } label: {
-                headerLabel
-            }
+        DisclosureGroup(isExpanded: $isExpanded) {
+            expansionContent
+                .padding(.horizontal, 14)
+                .padding(.bottom, 14)
+        } label: {
+            headerLabel
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .deltiqCardStyle(padding: 0)
     }
 
     // MARK: Header
@@ -281,7 +320,7 @@ private struct ExerciseTrophySection: View {
                 // wir das Equipment-Label an, damit Laufband-/Fahrrad-Reihen
                 // unterscheidbar sind.
                 HStack(spacing: 6) {
-                    Text(Exercise.resolvedDisplayName(forStoredName: group.exerciseName))
+                    Text(group.displayName)
                         .font(.body.weight(.semibold))
                     if group.cardioEquipment != .none {
                         Label {
@@ -299,15 +338,18 @@ private struct ExerciseTrophySection: View {
                 }
                 Text("\(group.entries.count) PR\(group.entries.count == 1 ? "" : "s") • zuletzt \(group.latestDate.formatted(date: .abbreviated, time: .omitted))")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
             Spacer()
+            // Handoff 1.10 (ein Akzent): alle Kind-Icons teilen sich jetzt
+            // dasselbe Orange (wie PRBadge in WorkoutSummaryView) statt einer
+            // Sieben-Farben-Skala — Unterscheidung laeuft ueber die Icon-Form.
             ForEach(uniqueKinds.prefix(3), id: \.self) { kind in
                 Image(systemName: PRKindStyle.icon(kind))
                     .font(.caption)
                     .foregroundStyle(.white)
                     .frame(width: 22, height: 22)
-                    .background(PRKindStyle.color(kind).gradient)
+                    .background(Color.deltiqOrange.gradient)
                     .clipShape(RoundedRectangle(cornerRadius: 5))
             }
         }
@@ -320,10 +362,12 @@ private struct ExerciseTrophySection: View {
         VStack(alignment: .leading, spacing: 12) {
             kindPicker
             chartView
-            Divider()
+            Rectangle()
+                .fill(Color.Deltiq.divider)
+                .frame(height: 1)
             entriesList
         }
-        .padding(.vertical, 4)
+        .padding(.top, 4)
         .onAppear {
             // Default the chart to the most-impressive kind we have.
             // Reihenfolge: PersonalRecord.Kind.displayOrder (DEL-218).
@@ -334,12 +378,12 @@ private struct ExerciseTrophySection: View {
     @ViewBuilder
     private var kindPicker: some View {
         if uniqueKinds.count > 1 {
-            Picker("Kind", selection: $chartKind) {
-                ForEach(uniqueKinds, id: \.self) { kind in
-                    Text(PRKindStyle.shortLabel(kind)).tag(kind)
-                }
-            }
-            .pickerStyle(.segmented)
+            DeltiqSegmentedPicker(
+                options: uniqueKinds.map { kind in
+                    DeltiqSegmentedOption(kind, label: PRKindStyle.shortLabel(kind))
+                },
+                selection: $chartKind
+            )
         }
     }
 
@@ -350,7 +394,7 @@ private struct ExerciseTrophySection: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(PRKindStyle.shortLabel(chartKind)) - Verlauf")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                 Chart {
                     ForEach(series) { point in
                         LineMark(
@@ -358,13 +402,13 @@ private struct ExerciseTrophySection: View {
                             y: .value(PRKindStyle.yAxisLabel(chartKind), point.value)
                         )
                         .interpolationMethod(.monotone)
-                        .foregroundStyle(PRKindStyle.color(chartKind))
+                        .foregroundStyle(Color.deltiqOrange)
 
                         PointMark(
                             x: .value("Datum", point.date),
                             y: .value(PRKindStyle.yAxisLabel(chartKind), point.value)
                         )
-                        .foregroundStyle(PRKindStyle.color(chartKind))
+                        .foregroundStyle(Color.deltiqOrange)
                         .symbolSize(50)
                     }
                 }
@@ -384,7 +428,7 @@ private struct ExerciseTrophySection: View {
                 Image(systemName: "info.circle")
             }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
@@ -393,7 +437,7 @@ private struct ExerciseTrophySection: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Alle Rekorde")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .padding(.bottom, 4)
             ForEach(visibleEntries) { entry in
                 // NavigationLink only when the originating session still exists
@@ -411,7 +455,9 @@ private struct ExerciseTrophySection: View {
                     PRHistoryRow(entry: entry)
                 }
                 if entry.id != visibleEntries.last?.id {
-                    Divider().opacity(0.4)
+                    Rectangle()
+                        .fill(Color.Deltiq.divider)
+                        .frame(height: 1)
                 }
             }
         }
@@ -469,23 +515,51 @@ private struct PRHistoryRow: View {
                 .font(.footnote)
                 .foregroundStyle(.white)
                 .frame(width: 26, height: 26)
-                .background(PRKindStyle.color(entry.kind ?? .heaviestWeight).gradient)
+                .background(Color.deltiqOrange.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(PRKindStyle.shortLabel(entry.kind ?? .heaviestWeight))
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                 Text(detailLine)
                     .font(.callout.monospacedDigit())
             }
             Spacer()
-            Text(entry.date.formatted(date: .abbreviated, time: .omitted))
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .monospacedDigit()
+            VStack(alignment: .trailing, spacing: 2) {
+                // Handoff 1.10: Gruen bleibt reserviert fuer "Rekord" - hier die
+                // Verbesserung ggue. dem vorherigen Bestwert, statt einer der
+                // sieben Kind-Farben. Spiegelt PRBadge.improvementPill 1:1.
+                if let improvementText {
+                    Text(improvementText)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.Deltiq.success)
+                        .fitnessNumberStyle()
+                }
+                Text(entry.date.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textTertiary)
+                    .monospacedDigit()
+            }
         }
         .padding(.vertical, 6)
+    }
+
+    /// DEL-064: fastestPace ist lower-is-better — die Verbesserung ist ein
+    /// negativer Delta, daher invertiertes Vorzeichen (siehe
+    /// PRBadge.improvementPill in WorkoutSummaryView). fastestTime (README
+    /// 2.9) ist aus demselben Grund ebenfalls lower-is-better.
+    private var improvementText: String? {
+        guard entry.previousValue > 0, let kind = entry.kind else { return nil }
+        let isLowerBetter = (kind == .fastestPace || kind == .fastestTime)
+        let raw = (entry.value - entry.previousValue) / entry.previousValue
+        let improvement = isLowerBetter ? -raw : raw
+        guard improvement > 0 else { return nil }
+        return "+\(formatDelta(improvement))"
+    }
+
+    private func formatDelta(_ percent: Double) -> String {
+        "\(Int((percent * 100).rounded())) %"
     }
 
     private var detailLine: String {
@@ -506,7 +580,28 @@ private struct PRHistoryRow: View {
             return "\(formatKm(entry.value)) km (vorher \(formatKm(entry.previousValue)) km)"
         case .fastestPace:
             return "\(formatPace(entry.value)) (vorher \(formatPace(entry.previousValue)))"
+        // Zeitformate (README 2.9) — Xcode-26-strict braucht alle Cases.
+        case .mostRounds:
+            // Nutzer-Feedback (13. August, zweite Runde): `partialReps` wird
+            // seit `AMRAPPlayerView.finishBar` wieder befuellt (Ticket A hatte
+            // die Eingabe entfernt, das Feld selbst blieb aber immer im
+            // Modell) - der "+ N Wdh."-Zusatz gilt also wieder fuer neue PRs,
+            // nicht nur fuer aeltere Bestandsdaten. `entry.reps == 0` bleibt
+            // trotzdem der richtige Guard, sonst stuende bei jeder Session
+            // ohne angebrochene Runde faelschlich "+ 0 Wdh" dabei.
+            guard entry.reps > 0 else {
+                return "\(Int(entry.value)) Runden (vorher \(Int(entry.previousValue)) Runden)"
+            }
+            return "\(Int(entry.value)) Runden + \(entry.reps) Wdh (vorher \(Int(entry.previousValue)) Runden)"
+        case .fastestTime:
+            return "\(formatDuration(entry.value)) (vorher \(formatDuration(entry.previousValue)))"
         }
+    }
+
+    /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet
+    /// `PaceCalculator.formatDuration` statt eines eigenen mm:ss-Formatters.
+    private func formatDuration(_ totalSeconds: Double) -> String {
+        PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
     }
 
     /// DEL-064: km-Formatter (Spiegelung von WorkoutSummaryView.formatKm).
@@ -551,7 +646,7 @@ private struct KindChip: View {
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(isSelected ? Color.clear : Color.secondary.opacity(0.3), lineWidth: 1)
+                    .stroke(isSelected ? Color.clear : Color.Deltiq.divider, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -562,26 +657,31 @@ private struct KindChip: View {
         return PRKindStyle.shortLabel(kind)
     }
 
-    /// `AnyGradient` is a `ShapeStyle`, not a `View` — wrapping it in a Rectangle
-    /// (clipped by the parent's Capsule) is the canonical workaround. Returning
-    /// the gradient directly trips a `buildExpression` error in macOS 14's
-    /// stricter ViewBuilder.
+    /// Handoff 1.10 (ein Akzent): alle Kinds teilen sich denselben Akzent —
+    /// die fruehere Sieben-Farben-Skala pro Kind ist entfallen.
+    /// `AnyGradient` ist ein `ShapeStyle`, kein `View` — Wrapping in ein
+    /// Rectangle (geclippt vom Capsule-Parent) bleibt trotzdem noetig, weil
+    /// diese Property `@ViewBuilder`/`some View` ist.
     @ViewBuilder
     private var background: some View {
         if isSelected {
-            Rectangle()
-                .fill((kind.map(PRKindStyle.color) ?? .accentColor).gradient)
+            Rectangle().fill(Color.deltiqOrange.gradient)
         } else {
-            Color.secondary.opacity(0.10)
+            Color.Deltiq.fill
         }
     }
 }
 
 // MARK: - Style mapping (single source of truth, shared with PRBadge)
 
-/// Maps `PersonalRecord.Kind` to icon / color / labels for the Trophy Room.
-/// Mirrors the `PRBadge` mapping in `WorkoutSummaryView` — keep in sync if you
-/// change one, change the other (or refactor into Core if it grows).
+/// Maps `PersonalRecord.Kind` to icon / labels for the Trophy Room. Mirrors
+/// the `PRBadge` mapping in `WorkoutSummaryView` — keep in sync if you change
+/// one, change the other (or refactor into Core if it grows).
+///
+/// Handoff 1.10 (ein Akzent): die fruehere `color(_:)`-Funktion (sieben
+/// eigene Farben pro PR-Art) ist entfallen — alle Icon-Badges teilen sich
+/// jetzt `Color.deltiqOrange`, genau wie `PRBadge.kindIcon` es bereits tut.
+/// Unterscheidung laeuft nur noch ueber Icon-Form + `shortLabel`.
 @available(iOS 17.0, macOS 14.0, *)
 enum PRKindStyle {
     static func icon(_ kind: PersonalRecord.Kind) -> String {
@@ -594,18 +694,9 @@ enum PRKindStyle {
         // DEL-064 Cardio-PRs (Spiegelung von WorkoutSummaryView's PRBadge).
         case .longestDistance: "figure.run.circle.fill"
         case .fastestPace:     "hare.fill"
-        }
-    }
-
-    static func color(_ kind: PersonalRecord.Kind) -> Color {
-        switch kind {
-        case .estimated1RM:    .orange
-        case .heaviestWeight:  .red
-        case .bestSet:         .blue
-        case .maxReps:         .purple
-        case .maxHoldSeconds:  .yellow
-        case .longestDistance: Color.deltiqOrange
-        case .fastestPace:     .green
+        // Zeitformate (README 2.9) — Spiegelung von PRBadge.kindIcon.
+        case .mostRounds:      "repeat.circle.fill"
+        case .fastestTime:     "stopwatch.fill"
         }
     }
 
@@ -625,6 +716,9 @@ enum PRKindStyle {
         case .maxHoldSeconds:  String(localized: "trophy.kind.short.maxHoldSeconds", bundle: .module)
         case .longestDistance: String(localized: "trophy.kind.short.longestDistance", bundle: .module)
         case .fastestPace:     String(localized: "trophy.kind.short.fastestPace", bundle: .module)
+        // Zeitformate (README 2.9) — dieselben Keys wie PRBadge.kindLabel.
+        case .mostRounds:      String(localized: "pr.kind.mostRounds", bundle: .module)
+        case .fastestTime:     String(localized: "pr.kind.fastestTime", bundle: .module)
         }
     }
 
@@ -642,6 +736,9 @@ enum PRKindStyle {
         case .maxHoldSeconds:                return String(localized: "trophy.axis.seconds", bundle: .module)
         case .longestDistance:               return String(localized: "trophy.axis.distance", bundle: .module)
         case .fastestPace:                   return String(localized: "trophy.axis.pace", bundle: .module)
+        // Zeitformate (README 2.9).
+        case .mostRounds:                    return String(localized: "trophy.axis.rounds", bundle: .module)
+        case .fastestTime:                   return String(localized: "trophy.axis.seconds", bundle: .module)
         }
     }
 }

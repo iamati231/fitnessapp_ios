@@ -34,9 +34,11 @@ struct FilterSheet: View {
                             )
                         )
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 } header: {
                     Text("picker.exercise.filter.section.equipment", bundle: .module)
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
 
                 Section {
                     ForEach(MuscleGroup.allCases, id: \.self) { muscle in
@@ -51,9 +53,11 @@ struct FilterSheet: View {
                             )
                         )
                     }
+                    .listRowBackground(Color.Deltiq.surface)
                 } header: {
                     Text("picker.exercise.filter.section.muscle", bundle: .module)
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
 
                 // Reset-Button am Ende. Disabled wenn schon nichts ausgewaehlt.
                 Section {
@@ -69,8 +73,12 @@ struct FilterSheet: View {
                         }
                     }
                     .disabled(selectedEquipment.isEmpty && selectedMuscles.isEmpty)
+                    .listRowBackground(Color.Deltiq.surface)
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(Text("picker.exercise.filter.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -107,7 +115,7 @@ struct FilterToggleRow: View {
                 Spacer()
                 Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(isOn ? Color.deltiqOrange : Color.secondary)
+                    .foregroundStyle(isOn ? Color.deltiqOrange : Color.Deltiq.textSecondary)
             }
         }
         .buttonStyle(.plain)

@@ -35,7 +35,11 @@ public enum SettingsPortability {
         // Timer-Feedback (DEL-018/078)
         ("pref_timer_sound",                  .bool),
         ("pref_timer_haptics",                .bool),
+        // Zeitformate im Hintergrund weiterlaufen lassen (stilles Audio): eine
+        // Praeferenz wie die uebrigen Timer-Schalter, nicht geraetegebunden.
+        ("pref_timer_background_audio",       .bool),
         ("pref_pr_celebrations",              .bool),
+        ("pref_preroll_seconds",              .int),
         // Erinnerungen (DEL-018/028)
         ("pref_water_reminder",               .bool),
         ("pref_water_reminder_hours",         .int),

@@ -149,4 +149,28 @@ final class PRCelebrationTests: XCTestCase {
         // Bankdruecken comes alphabetically before Kniebeuge.
         XCTAssertTrue(cel!.body.contains("Bankdruecken"))
     }
+
+    // MARK: README 2.16 (28c) — Emoji sind eine Eigenschaft der Tonlage
+
+    func testDefaultToneKeepsEmoji() {
+        let pr = record(.heaviestWeight, new: 100)
+        let cel = PRCelebration.make(from: [pr])!
+        XCTAssertTrue(cel.title.contains("💪"))
+        XCTAssertTrue(cel.activityLine.contains("🏆"))
+    }
+
+    func testAnalyticalToneOmitsEmoji() {
+        let pr = record(.heaviestWeight, new: 100)
+        let cel = PRCelebration.make(from: [pr], tone: .analytical)!
+        XCTAssertTrue(cel.title.contains("Maximalgewicht"))
+        XCTAssertFalse(cel.title.contains("💪"))
+        XCTAssertFalse(cel.activityLine.contains("🏆"))
+    }
+
+    func testStrictToneOmitsEmoji() {
+        let pr = record(.estimated1RM, new: 150)
+        let cel = PRCelebration.make(from: [pr], tone: .strict)!
+        XCTAssertFalse(cel.title.contains("🏆"))
+        XCTAssertFalse(cel.activityLine.contains("🏆"))
+    }
 }

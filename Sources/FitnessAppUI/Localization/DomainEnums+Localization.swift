@@ -44,6 +44,46 @@ public extension Equipment {
     }
 }
 
+/// Smart-Onboarding-Epic Phase 3: lokalisierte Namen + SF-Symbole fuer die
+/// neue, feingranulare Nutzer-Inventar-Erfassung (`EquipmentProfileEditor`).
+/// Eigener Key-Namespace `equipmentItem.*`, getrennt von `equipment.*`
+/// (das bleibt die aeltere, grobe `Equipment`-Klassifikation oben).
+public extension EquipmentItem {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .dumbbell:       LocalizedStringResource("equipmentItem.dumbbell",       bundle: .fitnessAppUI)
+        case .kettlebell:     LocalizedStringResource("equipmentItem.kettlebell",     bundle: .fitnessAppUI)
+        case .barbell:        LocalizedStringResource("equipmentItem.barbell",        bundle: .fitnessAppUI)
+        case .resistanceBand: LocalizedStringResource("equipmentItem.resistanceBand", bundle: .fitnessAppUI)
+        case .pullUpBar:      LocalizedStringResource("equipmentItem.pullUpBar",      bundle: .fitnessAppUI)
+        case .flatBench:      LocalizedStringResource("equipmentItem.flatBench",      bundle: .fitnessAppUI)
+        case .adjustableBench: LocalizedStringResource("equipmentItem.adjustableBench", bundle: .fitnessAppUI)
+        case .rack:           LocalizedStringResource("equipmentItem.rack",           bundle: .fitnessAppUI)
+        case .cableStation:   LocalizedStringResource("equipmentItem.cableStation",   bundle: .fitnessAppUI)
+        case .machineStation: LocalizedStringResource("equipmentItem.machineStation", bundle: .fitnessAppUI)
+        }
+    }
+
+    /// Bewusst konservativ gewaehlte, lange bekannte SF-Symbole — Gewichte
+    /// spiegeln `Equipment.iconName` (gleiches physisches Ding), Zubehoer
+    /// nutzt einfache, garantiert vorhandene Basis-Symbole statt exotischer
+    /// Namen, die auf dieser Linux-Sandbox nicht visuell verifizierbar sind.
+    var iconName: String {
+        switch self {
+        case .dumbbell:        return "dumbbell"
+        case .kettlebell:      return "circle.grid.cross"
+        case .barbell:         return "scalemass"
+        case .resistanceBand:  return "infinity"
+        case .pullUpBar:       return "figure.climbing"
+        case .flatBench:       return "rectangle"
+        case .adjustableBench: return "slider.horizontal.3"
+        case .rack:            return "square.grid.3x3"
+        case .cableStation:    return "cable.connector"
+        case .machineStation:  return "gearshape"
+        }
+    }
+}
+
 public extension CardioEquipment {
     /// DEL-155: lokalisierter Anzeigename fuer den Cardio-Equipment-Picker
     /// im Verlauf + ExerciseEditor.
@@ -127,6 +167,23 @@ public extension DifficultyLevel {
     }
 }
 
+/// README 2.20: beide Enums leben in `FitnessAppCore` OHNE eigenes
+/// `Bundle.module` (siehe `PlanGenerator.swift`-Datei-Kommentar) und exposen
+/// deshalb nur den rohen `titleKey`/`titleKey`-String statt eines vollen
+/// Switches wie oben - hier wird der Key nur noch in eine
+/// `LocalizedStringResource` gehuellt, kein zweiter Switch noetig.
+public extension TrainingTypeKind {
+    var localizedName: LocalizedStringResource {
+        LocalizedStringResource(String.LocalizationValue(titleKey), bundle: .fitnessAppUI)
+    }
+}
+
+public extension PlanLoadLevel {
+    var localizedName: LocalizedStringResource {
+        LocalizedStringResource(String.LocalizationValue(titleKey), bundle: .fitnessAppUI)
+    }
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // DEL-120: Enum-Localization fuer alle UI-rendered Model-Daten-Enums.
 //
@@ -162,6 +219,8 @@ public extension TrainingGoal {
         case .strength:    LocalizedStringResource("coaching.goal.strength.label",    bundle: .fitnessAppUI)
         case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.label",      bundle: .fitnessAppUI)
         case .weightLoss:  LocalizedStringResource("coaching.goal.weightLoss.label",  bundle: .fitnessAppUI)
+        case .functional:  LocalizedStringResource("coaching.goal.functional.label",  bundle: .fitnessAppUI)
+        case .endurance:   LocalizedStringResource("coaching.goal.endurance.label",   bundle: .fitnessAppUI)
         }
     }
 
@@ -171,6 +230,45 @@ public extension TrainingGoal {
         case .strength:    LocalizedStringResource("coaching.goal.strength.blurb",    bundle: .fitnessAppUI)
         case .hybrid:      LocalizedStringResource("coaching.goal.hybrid.blurb",      bundle: .fitnessAppUI)
         case .weightLoss:  LocalizedStringResource("coaching.goal.weightLoss.blurb",  bundle: .fitnessAppUI)
+        case .functional:  LocalizedStringResource("coaching.goal.functional.blurb",  bundle: .fitnessAppUI)
+        case .endurance:   LocalizedStringResource("coaching.goal.endurance.blurb",   bundle: .fitnessAppUI)
+        }
+    }
+
+}
+
+/// P2.5: Ausdauerform-Auswahl fuer ein `TrainingGoal.endurance`-Profil
+/// (`PlanningContext.swift`, Core) — unabhaengig von `CardioGoal`
+/// (DEL-250, bestehendes Renn-Ziel-/Coaching-Feature) direkt darunter.
+public extension EnduranceModality {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .running: LocalizedStringResource("enduranceModality.running", bundle: .fitnessAppUI)
+        case .cycling: LocalizedStringResource("enduranceModality.cycling", bundle: .fitnessAppUI)
+        case .both:    LocalizedStringResource("enduranceModality.both",    bundle: .fitnessAppUI)
+        }
+    }
+
+    /// P4.1: fuer den neuen Onboarding-Ausdauerform-Schritt (`coachingCard`
+    /// braucht Titel+Beschreibung, gleiches Muster wie `TrainingGoal.
+    /// localizedBlurb`).
+    var localizedBlurb: LocalizedStringResource {
+        switch self {
+        case .running: LocalizedStringResource("enduranceModality.running.blurb", bundle: .fitnessAppUI)
+        case .cycling: LocalizedStringResource("enduranceModality.cycling.blurb", bundle: .fitnessAppUI)
+        case .both:    LocalizedStringResource("enduranceModality.both.blurb",    bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension CardioGoal {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .generalFitness: LocalizedStringResource("cardioGoal.generalFitness", bundle: .fitnessAppUI)
+        case .fiveK:           LocalizedStringResource("cardioGoal.fiveK",           bundle: .fitnessAppUI)
+        case .tenK:            LocalizedStringResource("cardioGoal.tenK",            bundle: .fitnessAppUI)
+        case .halfMarathon:    LocalizedStringResource("cardioGoal.halfMarathon",    bundle: .fitnessAppUI)
+        case .marathon:        LocalizedStringResource("cardioGoal.marathon",        bundle: .fitnessAppUI)
         }
     }
 }
@@ -185,14 +283,44 @@ public extension ExperienceLevel {
     }
 }
 
-public extension GoalType {
+// Fix "doppeltes Onboarding": Trainingshistorie-Frage, ersetzt die
+// fruehere ExperienceLevel-Selbsteinschaetzung im entfernten Quiz.
+public extension TrainingHistoryAnswer {
     var localizedName: LocalizedStringResource {
         switch self {
-        case .hypertrophy: LocalizedStringResource("goalType.hypertrophy", bundle: .fitnessAppUI)
-        case .strength:    LocalizedStringResource("goalType.strength",    bundle: .fitnessAppUI)
-        case .fatloss:     LocalizedStringResource("goalType.fatloss",     bundle: .fitnessAppUI)
-        case .hybrid:      LocalizedStringResource("goalType.hybrid",      bundle: .fitnessAppUI)
-        case .functional:  LocalizedStringResource("goalType.functional",  bundle: .fitnessAppUI)
+        case .neverTrained:           LocalizedStringResource("onboarding.history.neverTrained.label",           bundle: .fitnessAppUI)
+        case .longBreakAfterTraining: LocalizedStringResource("onboarding.history.longBreakAfterTraining.label", bundle: .fitnessAppUI)
+        case .trainingIrregularly:    LocalizedStringResource("onboarding.history.trainingIrregularly.label",    bundle: .fitnessAppUI)
+        case .trainingRegularly:      LocalizedStringResource("onboarding.history.trainingRegularly.label",      bundle: .fitnessAppUI)
+        }
+    }
+
+    var localizedBlurb: LocalizedStringResource {
+        switch self {
+        case .neverTrained:           LocalizedStringResource("onboarding.history.neverTrained.blurb",           bundle: .fitnessAppUI)
+        case .longBreakAfterTraining: LocalizedStringResource("onboarding.history.longBreakAfterTraining.blurb", bundle: .fitnessAppUI)
+        case .trainingIrregularly:    LocalizedStringResource("onboarding.history.trainingIrregularly.blurb",    bundle: .fitnessAppUI)
+        case .trainingRegularly:      LocalizedStringResource("onboarding.history.trainingRegularly.blurb",      bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension PauseLength {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .sixToTwelveWeeks:    LocalizedStringResource("onboarding.history.pauseLength.sixToTwelveWeeks",    bundle: .fitnessAppUI)
+        case .threeToTwelveMonths: LocalizedStringResource("onboarding.history.pauseLength.threeToTwelveMonths", bundle: .fitnessAppUI)
+        case .overOneYear:         LocalizedStringResource("onboarding.history.pauseLength.overOneYear",         bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension PriorExperienceDuration {
+    var localizedName: LocalizedStringResource {
+        switch self {
+        case .underOneYear:    LocalizedStringResource("onboarding.history.priorExperience.underOneYear",    bundle: .fitnessAppUI)
+        case .oneToThreeYears: LocalizedStringResource("onboarding.history.priorExperience.oneToThreeYears", bundle: .fitnessAppUI)
+        case .overThreeYears:  LocalizedStringResource("onboarding.history.priorExperience.overThreeYears",  bundle: .fitnessAppUI)
         }
     }
 }
@@ -205,6 +333,20 @@ public extension SessionFeeling {
         case .okay:      LocalizedStringResource("feeling.okay",      bundle: .fitnessAppUI)
         case .hard:      LocalizedStringResource("feeling.hard",      bundle: .fitnessAppUI)
         case .destroyed: LocalizedStringResource("feeling.destroyed", bundle: .fitnessAppUI)
+        }
+    }
+}
+
+public extension ExerciseRole {
+    /// P5.3: ersetzt die bisher hartkodierten, nicht lokalisierten
+    /// "WARM-UP"/"COOL-DOWN"-Strings (vormals privat in `ExerciseCard`) durch
+    /// eine geteilte, lokalisierte Quelle — `nil` fuer `.workingSet`, da der
+    /// Normalfall keine Pill zeigt.
+    var localizedPillText: LocalizedStringResource? {
+        switch self {
+        case .warmup:     LocalizedStringResource("exercise.role.warmup.pill",   bundle: .fitnessAppUI)
+        case .cooldown:   LocalizedStringResource("exercise.role.cooldown.pill", bundle: .fitnessAppUI)
+        case .workingSet: nil
         }
     }
 }

@@ -59,9 +59,11 @@ struct NewCustomExerciseSheet: View {
                         String(localized: "picker.exercise.namePlaceholder", bundle: .module),
                         text: $name
                     )
+                    .listRowBackground(Color.Deltiq.surface)
                 } header: {
                     Text("customExercise.section.name", bundle: .module)
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
 
                 Section {
                     Picker(selection: $primaryMuscle) {
@@ -71,6 +73,7 @@ struct NewCustomExerciseSheet: View {
                     } label: {
                         Text("customExercise.field.muscle", bundle: .module)
                     }
+                    .listRowBackground(Color.Deltiq.surface)
 
                     Picker(selection: $equipment) {
                         ForEach(Equipment.allCases, id: \.self) { equip in
@@ -79,16 +82,22 @@ struct NewCustomExerciseSheet: View {
                     } label: {
                         Text("customExercise.field.equipment", bundle: .module)
                     }
+                    .listRowBackground(Color.Deltiq.surface)
 
                     Toggle(isOn: $isCompound) {
                         Text("customExercise.field.compound", bundle: .module)
                     }
+                    .tint(Color.deltiqOrange)
+                    .listRowBackground(Color.Deltiq.surface)
                 } header: {
                     Text("customExercise.section.metadata", bundle: .module)
                 } footer: {
                     Text("customExercise.section.metadataFooter", bundle: .module)
                 }
+                .listRowSeparatorTint(Color.Deltiq.divider)
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(Text("customExercise.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

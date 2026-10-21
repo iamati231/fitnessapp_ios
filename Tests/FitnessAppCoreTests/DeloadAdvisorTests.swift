@@ -3,6 +3,37 @@ import XCTest
 
 final class DeloadAdvisorTests: XCTestCase {
 
+    // MARK: Ablauf der Deload-Woche
+
+    private let now = Date(timeIntervalSince1970: 1_800_000_000)
+
+    func testDeloadWithFutureEndDateIsNotExpired() {
+        XCTAssertFalse(DeloadAdvisor.hasExpired(
+            untilTimestamp: now.timeIntervalSince1970 + 3_600, now: now
+        ))
+    }
+
+    func testDeloadWithPastEndDateIsExpired() {
+        XCTAssertTrue(DeloadAdvisor.hasExpired(
+            untilTimestamp: now.timeIntervalSince1970 - 3_600, now: now
+        ))
+    }
+
+    func testDeloadEndingExactlyNowIsExpired() {
+        // Komplement zu `isDeloadActive` (`deloadUntil > jetzt`): zum
+        // Enddatum selbst ist die Woche vorbei.
+        XCTAssertTrue(DeloadAdvisor.hasExpired(
+            untilTimestamp: now.timeIntervalSince1970, now: now
+        ))
+    }
+
+    /// 0 = kein Timer (Neuinstallation/Restore). Ohne Enddatum darf nichts
+    /// automatisch beendet werden.
+    func testMissingTimerNeverCountsAsExpired() {
+        XCTAssertFalse(DeloadAdvisor.hasExpired(untilTimestamp: 0, now: now))
+        XCTAssertFalse(DeloadAdvisor.hasExpired(untilTimestamp: -1, now: now))
+    }
+
     // MARK: Trigger case
 
     func testRisingLoadPlusHardSessionsRecommends() {

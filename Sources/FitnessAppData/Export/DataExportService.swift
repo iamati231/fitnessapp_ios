@@ -51,8 +51,51 @@ public enum DataExportService {
     /// additiv-rückwärtskompatible Feldergänzungen.
     public static let formatVersion = "1.0.0"
 
-    /// Hauptentry — sammelt alles, baut das ZIP, gibt es zurück.
+    /// Hauptentry — sammelt alles, baut das ZIP, gibt es zurück. Komplett
+    /// synchron auf dem Actor von `context` (auch die ZIP-Kompression) — fuer
+    /// den automatischen Hintergrund-Backup-Lauf (`BackupService.
+    /// runAutomaticBackupIfDue`, beim App→Background-Wechsel) ist das
+    /// gewollt: dort konkurriert nichts mit dem Main-Thread um Aufmerksamkeit,
+    /// ein kurzer synchroner Schreibvorgang ist unkritisch. Fuer
+    /// User-initiierte Export-/Backup-Taps siehe `makeExportAsync` unten.
     public static func makeExport(context: ModelContext, appVersion: String = "—") throws -> DataExportBundle {
+        let snapshot = try makeFilesSnapshot(context: context)
+        return try buildBundle(from: snapshot, appVersion: appVersion)
+    }
+
+    /// Settings-Epic Phase 5 (Befund DX-02c): derselbe Export, aber mit der
+    /// ZIP-Kompression off-Main — fuer UI-Aufrufe (Settings-Export,
+    /// "Jetzt sichern", Vorab-Sicherung vor Import/Reset), bei denen der
+    /// Main-Thread waehrend des Exports responsiv bleiben soll.
+    ///
+    /// **Warum nur die ZIP-Kompression wandert:** Fetch + CSV-Bau muessen auf
+    /// dem Actor von `context` bleiben — `ModelContext` ist nicht `Sendable`,
+    /// lebende SwiftData-Objekte duerfen den Actor nicht verlassen (`id(_:)`
+    /// braucht ausserdem die lebenden Objekt-Referenzen fuer die FK-Map). Das
+    /// ist zugleich der schnelle Teil: Property-Lesezugriffe + String-
+    /// Formatierung sind O(n) ueber die gefetchten Zeilen, aber kein I/O und
+    /// keine Kompression. Die eigentliche DEFLATE-Kompression (der
+    /// dominante Kostenfaktor bei grosser Historie, siehe Teil 5 der
+    /// Vorgabe) laeuft auf den bereits fertigen, Sendable CSV-/JSON-Bytes in
+    /// einem `Task.detached` — dort steckt kein `ModelContext` und kein
+    /// lebendes SwiftData-Objekt mehr drin.
+    public static func makeExportAsync(context: ModelContext, appVersion: String = "—") async throws -> DataExportBundle {
+        let snapshot = try makeFilesSnapshot(context: context)
+        return try await Task.detached {
+            try buildBundle(from: snapshot, appVersion: appVersion)
+        }.value
+    }
+
+    /// Sendable Zwischenstand nach dem Fetch: fertige CSV-Bytes pro Datei +
+    /// Gesamt-Zeilenzahl. Ab hier ist kein SwiftData-Zugriff mehr noetig.
+    private struct FilesSnapshot: Sendable {
+        let files: [(name: String, data: Data)]
+        let totalRows: Int
+    }
+
+    /// Fetch + CSV-Bau — der Teil, der zwingend auf dem Actor von `context`
+    /// laufen muss.
+    private static func makeFilesSnapshot(context: ModelContext) throws -> FilesSnapshot {
         // 1) ID-Map. Für jedes SwiftData-Objekt erzeugen wir eine UUID, die
         //    durch alle CSVs hindurch stabil bleibt. Cross-File-Referenzen
         //    nutzen diese UUIDs als FKs. ObjectIdentifier ist innerhalb
@@ -85,6 +128,7 @@ public enum DataExportService {
         let prs         = try context.fetch(FetchDescriptor<PersonalRecordEntry>())
         let measurements = try context.fetch(FetchDescriptor<BodyMeasurement>())
         let waters      = try context.fetch(FetchDescriptor<WaterEntry>())
+        let checkIns    = try context.fetch(FetchDescriptor<PeriodicCheckIn>())
         // Custom-Exercises: alle ExerciseTemplates mit isCustom=true. Die System-
         // Library wird vom App-Bundle bei jedem Start neu seedet, exportieren wir
         // nicht.
@@ -97,6 +141,7 @@ public enum DataExportService {
         files.append(("profile.csv",          buildProfile(profiles, id: id)))
         files.append(("measurements.csv",     buildMeasurements(measurements, id: id)))
         files.append(("water_log.csv",        buildWaterLog(waters, id: id)))
+        files.append(("periodic_checkins.csv", buildPeriodicCheckIns(checkIns, id: id)))
         files.append(("plans.csv",            buildPlans(plans, id: id)))
         files.append(("plan_days.csv",        buildDays(days, id: id)))
         files.append(("plan_exercises.csv",   buildExercises(exercises, id: id)))
@@ -109,6 +154,20 @@ public enum DataExportService {
         // Whitelist-basiert aus UserDefaults, siehe SettingsPortability.
         files.append(("settings.csv",         buildSettings()))
 
+        let totalRows = profiles.count + measurements.count + waters.count
+            + checkIns.count
+            + plans.count + days.count + exercises.count
+            + sessions.count + logs.count + prs.count
+            + gears.count + customExercises.count
+
+        return FilesSnapshot(files: files, totalRows: totalRows)
+    }
+
+    /// meta.json + ZIP-Erstellung — reine Byte-Arbeit auf dem bereits
+    /// fertigen `FilesSnapshot`, kein SwiftData-Zugriff mehr.
+    private static func buildBundle(from snapshot: FilesSnapshot, appVersion: String) throws -> DataExportBundle {
+        var files = snapshot.files
+
         // meta.json bewusst NEBEN den CSVs (kein _meta in CSV — sauberere
         // Trennung Schema-Metadata vs. Daten).
         let meta = MetaPayload(
@@ -120,8 +179,8 @@ public enum DataExportService {
         let metaData = try JSONEncoder.prettyEncoder.encode(meta)
         files.append(("meta.json", metaData))
 
-        // 4) ZIP-Erstellung via ZIPFoundation. In-memory Archive: kein
-        //    temporäres Disk-File, weniger Cleanup-Pflicht, schneller.
+        // ZIP-Erstellung via ZIPFoundation. In-memory Archive: kein
+        // temporäres Disk-File, weniger Cleanup-Pflicht, schneller.
         //
         // Throwing-Variante des Init (ZIPFoundation 0.9.x bietet die
         // failable Variante deprecated, die throwing-Variante als neu
@@ -151,18 +210,14 @@ public enum DataExportService {
             throw ExportError.zipCreationFailed
         }
 
-        // 5) Filename. ISO-Datum + Stunde, damit zwei Exporte am selben Tag
-        //    unterscheidbar bleiben. Slashes verboten in Files-App.
+        // Filename. ISO-Datum + Stunde, damit zwei Exporte am selben Tag
+        // unterscheidbar bleiben. Slashes verboten in Files-App.
         let filename = "deltiq-export-\(Self.filenameStamp(Date())).zip"
-        let totalRows = profiles.count + measurements.count + waters.count
-            + plans.count + days.count + exercises.count
-            + sessions.count + logs.count + prs.count
-            + gears.count + customExercises.count
 
         return DataExportBundle(
             data: zipData,
             suggestedFilename: filename,
-            totalRows: totalRows
+            totalRows: snapshot.totalRows
         )
     }
 
@@ -211,11 +266,51 @@ public enum DataExportService {
         // lesen Spalten per Name und ignorieren Unbekanntes, ältere ZIPs
         // ohne die Spalte fallen beim Import auf Default 1. Kein
         // formatVersion-Bump nötig (additiv-rückwärtskompatibel).
+        // DEL-250: sechs weitere additive Spalten fürs Cardio-Profil, gleiches
+        // Prinzip — ältere Importer ignorieren sie, ältere ZIPs liefern beim
+        // Import row.optionalString/.date/.int/.double == nil bzw. den
+        // dokumentierten Default.
+        // Handoff "Lauf-Coaching - Machbarkeits-Check": siebte additive
+        // Spalte, gleiches Prinzip.
         var w = CSVWriter(headers: [
             "id", "birth_date", "height_cm", "profile", "goal_weight_kg",
             "environment", "first_name", "coaching_tone", "training_goal",
             "equipment_preferences", "dashboard_widgets", "hero_metric_slots",
-            "weekly_workout_goal"
+            "weekly_workout_goal", "cardio_coaching_enabled", "cardio_goal",
+            "cardio_race_date", "current_5k_reference_seconds",
+            "weekly_base_volume_km", "max_heart_rate_bpm",
+            "cardio_feasibility_dismissed_fingerprint",
+            // Smart-Onboarding-Epic: achte additive Spalte — aeltere
+            // Importer ignorieren sie, aeltere ZIPs liefern beim Import nil
+            // (= "noch nicht hergeleitet", der Backfill greift dann erneut).
+            "experience_track",
+            // Start-Check-Epic: 18 weitere additive Spalten fuer den
+            // optionalen Baseline-Check. Gleiches Prinzip — jedes Feld ist
+            // unabhaengig optional, ein aelterer Import liefert ueberall nil
+            // (= "noch nicht durchgefuehrt").
+            "baseline_date", "baseline_source", "baseline_safety_status", "baseline_version",
+            "baseline_push_up_variant", "baseline_push_up_clean_reps",
+            "baseline_chair_squat_clean_reps", "baseline_chair_squat_duration_seconds",
+            "baseline_pull_variant", "baseline_pull_clean_reps", "baseline_pull_load_kg", "baseline_pull_rir",
+            "baseline_plank_seconds", "baseline_cardio_answer",
+            "baseline_push_self_assessment", "baseline_legs_self_assessment", "baseline_pull_self_assessment",
+            "baseline_desired_first_week_intensity",
+            // Smart-Onboarding-Epic Phase 2: drei weitere additive Spalten
+            // fuer die dreiwertige Equipment-Erfassung — aeltere Importer
+            // ignorieren sie, aeltere ZIPs liefern beim Import ueberall ""
+            // (= alles unbekannt, siehe `UserBodyProfile.equipmentProfile`).
+            "equipment_available_items", "equipment_unavailable_items", "equipment_item_counts",
+            // Smart-Onboarding-Epic Phase 3: vierte additive Spalte, gleiches
+            // Prinzip — aeltere Importer ignorieren sie, aeltere ZIPs liefern
+            // beim Import "" = false (noch nicht bestaetigt).
+            "equipment_profile_confirmed_complete",
+            // Korrektur V5: fuenfte additive Spalte fuer explizit auf
+            // "Weiß ich nicht" gesetzte Items (siehe
+            // `UserBodyProfile.equipmentUnknownItemsRaw`-Doc) — aeltere
+            // Importer ignorieren sie, aeltere ZIPs liefern beim Import ""
+            // (kein explizites Unknown aus dieser Zeile, identisch zum
+            // Vorher-Verhalten).
+            "equipment_unknown_items"
         ])
         for p in profiles {
             w.appendRow([
@@ -231,7 +326,38 @@ public enum DataExportService {
                 p.equipmentPreferencesRaw.joined(separator: ";"),
                 p.activeDashboardWidgetsRaw.joined(separator: ";"),
                 p.heroMetricSlotsRaw.joined(separator: ";"),
-                String(p.weeklyWorkoutGoal)
+                String(p.weeklyWorkoutGoal),
+                CSVWriter.bool(p.cardioCoachingEnabled),
+                p.cardioGoalRaw,
+                p.cardioRaceDate.map(CSVWriter.iso8601) ?? "",
+                p.current5kReferenceSeconds.map(String.init) ?? "",
+                CSVWriter.decimal(p.weeklyBaseVolumeKm),
+                p.maxHeartRateBpm.map(String.init) ?? "",
+                p.cardioFeasibilityDismissedFingerprint ?? "",
+                p.experienceTrackRaw ?? "",
+                p.baselineDate.map(CSVWriter.iso8601) ?? "",
+                p.baselineSourceRaw ?? "",
+                p.baselineSafetyStatusRaw ?? "",
+                p.baselineVersion.map(String.init) ?? "",
+                p.baselinePushUpVariantRaw ?? "",
+                p.baselinePushUpCleanReps.map(String.init) ?? "",
+                p.baselineChairSquatCleanReps.map(String.init) ?? "",
+                p.baselineChairSquatDurationSeconds.map(String.init) ?? "",
+                p.baselinePullVariantRaw ?? "",
+                p.baselinePullCleanReps.map(String.init) ?? "",
+                CSVWriter.decimal(p.baselinePullLoadKg),
+                CSVWriter.decimal(p.baselinePullRir),
+                p.baselinePlankSeconds.map(String.init) ?? "",
+                p.baselineCardioAnswerRaw ?? "",
+                p.baselinePushSelfAssessmentRaw ?? "",
+                p.baselineLegsSelfAssessmentRaw ?? "",
+                p.baselinePullSelfAssessmentRaw ?? "",
+                p.baselineDesiredFirstWeekIntensityRaw ?? "",
+                p.equipmentAvailableItemsRaw.joined(separator: ";"),
+                p.equipmentUnavailableItemsRaw.joined(separator: ";"),
+                p.equipmentItemCountsRaw.joined(separator: ";"),
+                CSVWriter.bool(p.equipmentProfileConfirmedComplete),
+                p.equipmentUnknownItemsRaw.joined(separator: ";")
             ])
         }
         return w.data()
@@ -297,14 +423,66 @@ public enum DataExportService {
         return w.data()
     }
 
+    private static func buildPeriodicCheckIns(
+        _ items: [PeriodicCheckIn],
+        id: (AnyObject) -> String
+    ) -> Data {
+        // Nachbesserung: `exertion_feedback` additiv angehaengt (gleiches
+        // Rueckwaertskompatibilitaets-Muster wie `activated_at_utc` bei
+        // Plans) - ein Export von vor dieser Aenderung hat die Spalte
+        // nicht, der Import liest dann `nil`, nie einen erratenen Wert.
+        var w = CSVWriter(headers: [
+            "id", "date_utc", "frequency_feedback", "duration_feedback",
+            "had_complaints", "complaints_note", "goal_still_current",
+            "exertion_feedback"
+        ])
+        for c in items {
+            w.appendRow([
+                id(c),
+                CSVWriter.iso8601(c.date),
+                c.frequencyFeedbackRaw.map(String.init) ?? "",
+                c.durationFeedbackRaw.map(String.init) ?? "",
+                c.hadComplaints.map(CSVWriter.bool) ?? "",
+                c.complaintsNote ?? "",
+                c.goalStillCurrent.map(CSVWriter.bool) ?? "",
+                c.exertionFeedbackRaw.map(String.init) ?? ""
+            ])
+        }
+        return w.data()
+    }
+
     private static func buildPlans(
         _ items: [TrainingPlan],
         id: (AnyObject) -> String
     ) -> Data {
+        // Bugfix (Audit): `generator_input_raw` als additive Spalte - ohne sie
+        // war "neu rechnen" nach jedem Export/Import-Roundtrip (Backup-
+        // Restore eingeschlossen) fuer JEDEN Wizard-generierten Plan
+        // stillschweigend deaktiviert (`plan.generatorInput` kam als `nil`
+        // zurueck). Gleiches additiv-rueckwaertskompatibles Muster wie DEL-203
+        // (`weekly_workout_goal`): aeltere Importer/aeltere ZIPs kennen die
+        // Spalte nicht, kein formatVersion-Bump noetig.
+        // P6.1: `activated_at_utc` additiv (gleiches Muster wie
+        // `generator_input_raw` oben) - ein Backup von vor P6.1 hat die
+        // Spalte nicht, der Import liest dann `nil` (unbekannt), NIE ein
+        // erfundenes "jetzt".
+        // P7.3: `review_completed_at_utc`/`review_decision`/
+        // `review_observation_started_at_utc` additiv, gleiches Prinzip -
+        // ein Backup von vor P7.3 hat die Spalten nicht, der Import liest
+        // dann `nil` (noch nie abgeschlossen bzw. kein Beobachtungs-
+        // Fallback), NIE ein erfundenes Datum/Ergebnis.
+        // P8 Stufe 3: `block_review_history_json` additiv, gleiches Prinzip -
+        // ein Backup von vor diesem Feld hat die Spalte nicht, der Import
+        // liest dann `nil` (die drei Altfelder oben bleiben die einzige
+        // bekannte Historie, siehe `FourWeekReviewDueStatus.history(for:)`),
+        // NIE eine erfundene Blockhistorie.
         var w = CSVWriter(headers: [
             "id", "name", "custom_name", "program_type", "description",
             "weeks", "is_active", "target_environment", "is_template",
-            "progression_target_rir_override", "localization_key"
+            "progression_target_rir_override", "localization_key",
+            "generator_input_raw", "generation_source", "activated_at_utc",
+            "review_completed_at_utc", "review_decision", "review_observation_started_at_utc",
+            "block_review_history_json"
         ])
         for p in items {
             w.appendRow([
@@ -318,7 +496,14 @@ public enum DataExportService {
                 p.targetEnvironment.rawValue,
                 CSVWriter.bool(p.isTemplate),
                 p.progressionTargetRIROverride.map { CSVWriter.decimal(Double($0)) } ?? "",
-                p.localizationKey ?? ""
+                p.localizationKey ?? "",
+                p.generatorInputRaw ?? "",
+                p.generationSourceRaw,
+                p.activatedAt.map(CSVWriter.iso8601) ?? "",
+                p.reviewCompletedAt.map(CSVWriter.iso8601) ?? "",
+                p.reviewDecisionRaw ?? "",
+                p.reviewObservationStartedAt.map(CSVWriter.iso8601) ?? "",
+                p.blockReviewHistoryJSON ?? ""
             ])
         }
         return w.data()
@@ -328,9 +513,41 @@ public enum DataExportService {
         _ items: [TrainingDay],
         id: (AnyObject) -> String
     ) -> Data {
+        // Bugfix (Audit): `time_format`/`time_cap_minutes` als additive
+        // Spalten - ohne sie verlor ein AMRAP/EMOM/Auf-Zeit-Tag nach jedem
+        // Export/Import-Roundtrip sein Zeitformat komplett und wurde beim
+        // naechsten Start faelschlich in ActiveWorkoutView statt
+        // TimedWorkoutPlayerView geroutet.
+        //
+        // Bugfix (Audit): `generation_fingerprint`/`generator_sequence_index`
+        // fehlten hier komplett - jeder mit "Plan bauen" erzeugte Plan
+        // verlor nach einem Export/Import-Roundtrip (inkl. jedem
+        // BackupService-Restore) stillschweigend seinen sequenceIndex.
+        // `PlanGeneratorInstantiator.recalculate` ueberspringt Tage ohne
+        // `generatorSequenceIndex` komplett (`guard let ... else { continue }`)
+        // - "Neu rechnen" tat danach fuer den ganzen Plan dauerhaft nichts
+        // mehr, ohne jeden Fehler.
+        // Nutzer-Feedback (13. August, zweite Runde): `circuit_rounds`/
+        // `circuit_rest_seconds`/`circuit_mode` als additive Spalten -
+        // gleiches Bugfix-Muster wie `time_format`/`time_cap_minutes` oben,
+        // sonst verliert ein Zirkel-Tag diese drei Felder nach jedem
+        // Export/Import-Roundtrip.
+        // Paket 2 (Komponente 4, Persistenz/Kompatibilität): gleiches
+        // additive-Spalten-Muster für die sechs `endurance*`-Felder -
+        // sonst verliert ein strukturierter Ausdauertag seine Konfiguration
+        // nach jedem Export/Import-Roundtrip.
         var w = CSVWriter(headers: [
             "id", "plan_id", "name", "custom_name", "weekday",
-            "type", "next_intensity", "localization_key"
+            "type", "next_intensity", "localization_key",
+            "time_format", "time_cap_minutes",
+            "circuit_rounds", "circuit_rest_seconds", "circuit_mode",
+            "endurance_warmup_seconds", "endurance_cooldown_seconds",
+            "endurance_interval_rounds", "endurance_work_duration_seconds",
+            "endurance_work_distance_km", "endurance_rest_duration_seconds",
+            "generation_fingerprint", "generator_sequence_index",
+            // Paket 2 (Sportart-Unterscheidung): additive Spalte, gleiches
+            // Muster wie oben.
+            "endurance_sport_kind"
         ])
         for d in items {
             w.appendRow([
@@ -341,7 +558,21 @@ public enum DataExportService {
                 String(d.weekday),
                 d.type.rawValue,
                 d.nextIntensity.rawValue,
-                d.localizationKey ?? ""
+                d.localizationKey ?? "",
+                d.timeFormat?.rawValue ?? "",
+                d.timeCapMinutes.map(String.init) ?? "",
+                d.circuitRounds.map(String.init) ?? "",
+                d.circuitRestSeconds.map(String.init) ?? "",
+                d.circuitMode?.rawValue ?? "",
+                d.enduranceWarmupDurationSeconds.map(String.init) ?? "",
+                d.enduranceCooldownDurationSeconds.map(String.init) ?? "",
+                d.enduranceIntervalRounds.map(String.init) ?? "",
+                d.enduranceWorkDurationSeconds.map(String.init) ?? "",
+                CSVWriter.decimal(d.enduranceWorkDistanceKm),
+                d.enduranceRestDurationSeconds.map(String.init) ?? "",
+                d.generationFingerprint ?? "",
+                d.generatorSequenceIndex.map(String.init) ?? "",
+                d.enduranceSportKind?.rawValue ?? ""
             ])
         }
         return w.data()
@@ -353,6 +584,10 @@ public enum DataExportService {
     ) -> Data {
         var w = CSVWriter(headers: [
             "id", "day_id", "name", "custom_name",
+            // Settings-Epic Phase 6 (EXLIB-07/09): stabile Rueckreferenz auf
+            // custom_exercises.csv's "template_id" — ueberlebt ein
+            // Umbenennen der Vorlage, anders als "name" (reiner Snapshot).
+            "exercise_template_id",
             "sets", "reps_min", "reps_max", "rest_seconds",
             "notes", "suggested_weight_kg", "order_index",
             "target_rir", "weight_reduced_note",
@@ -373,7 +608,10 @@ public enum DataExportService {
             // Übung. Ohne die Spalte war das Original nach einem Restore nicht
             // mehr herleitbar — der User konnte den Tausch nicht
             // zurücknehmen. Enthält die Export-ID der Original-Übung.
-            "swapped_from_original"
+            "swapped_from_original",
+            // Paket 2 (Sportart-Unterscheidung): additive Spalte, gleiches
+            // Muster wie bei den Tagen.
+            "endurance_sport_kind"
         ])
         for e in items {
             // Imperatives Append statt großem Array-Literal — Swift's
@@ -385,6 +623,7 @@ public enum DataExportService {
             row.append(e.day.map { id($0) } ?? "")
             row.append(e.name)
             row.append(e.customName ?? "")
+            row.append(e.exerciseTemplateID?.uuidString ?? "")
             row.append(String(e.sets))
             row.append(String(e.repsMin))
             row.append(String(e.repsMax))
@@ -416,6 +655,7 @@ public enum DataExportService {
             row.append(CSVWriter.decimal(e.deloadOriginalWeight))
             // DEL-225: Referenz auf die Original-Übung als Export-ID.
             row.append(e.swappedFromOriginal.map { id($0) } ?? "")
+            row.append(e.enduranceSportKindRaw ?? "")
             w.appendRow(row)
         }
         return w.data()
@@ -425,12 +665,47 @@ public enum DataExportService {
         _ items: [WorkoutSession],
         id: (AnyObject) -> String
     ) -> Data {
+        // Bugfix (Audit): die sieben Zeitformat-Ergebnisfelder fehlten
+        // komplett als additive Spalten - eine abgeschlossene AMRAP/EMOM/
+        // Auf-Zeit-Session (Runden, Restwdh., Zielzeit, ...) verlor ihr
+        // Ergebnis vollstaendig bei jedem Export/Import-Roundtrip bzw.
+        // Backup-Restore, obwohl Dauer/Volumen korrekt erhalten blieben.
+        // Bugfix (Nutzer-Feedback, Resume-Fix): additive Spalte
+        // `for_time_checked_rounds_raw` - sonst wuerde ein Backup/Restore
+        // waehrend einer laufenden Auf-Zeit-Session denselben Fortschritt
+        // verlieren, den `ForTimePlayerView` jetzt bei "Training
+        // fortsetzen" korrekt erhaelt.
+        // Nutzer-Feedback (13. August, zweite Runde): gleiches Muster fuer
+        // die drei Zirkel-Resume-Felder.
         var w = CSVWriter(headers: [
             "id", "start_time_utc", "end_time_utc", "duration_minutes",
             "exercise_count", "total_sets", "total_volume_kg",
             "notes", "is_completed", "is_rest_day", "is_ad_hoc",
             "day_name_snapshot", "session_feeling",
-            "gear_id", "day_id"
+            "gear_id", "day_id",
+            "time_format_snapshot", "rounds_completed", "partial_reps",
+            "partial_reps_exercise_name", "finish_time_seconds",
+            "for_time_checked_rounds_raw",
+            "completed_minute_count",
+            "circuit_rounds_completed", "circuit_rest_end_date_utc",
+            "circuit_current_round_checked_raw",
+            "completed_target",
+            // Paket 2 (Komponente 4): additive Spalten fuer die sieben
+            // Ausdauer-Intervall-Ergebnisfelder, gleiches Muster wie die
+            // Zirkel-Resume-Felder direkt darueber.
+            "endurance_phase", "endurance_current_round_number",
+            "endurance_rounds_completed", "endurance_phase_end_date_utc",
+            "endurance_paused_remaining_seconds",
+            "endurance_warmup_skipped", "endurance_cooldown_skipped",
+            "import_source_name", "healthkit_sample_uuid",
+            // P8 Stufe-2: additive Spalten fuer den eingefrorenen
+            // Tagesinhalts-Snapshot. `content_snapshot_json` traegt die
+            // komplette, bereits versionierte Payload 1:1 weiter (inkl.
+            // `schemaVersion`) - der Export entscheidet/interpretiert
+            // nichts, er sichert nur. Fehlt die Spalte in einem Altbackup,
+            // liefert der Import `nil` (= "nie erfasst"), niemals ein
+            // nachtraeglich erfundener Startzustand.
+            "content_snapshot_json", "content_snapshot_captured_at_utc"
         ])
         for s in items {
             w.appendRow([
@@ -448,7 +723,29 @@ public enum DataExportService {
                 s.dayName ?? "",
                 s.sessionFeeling.map(String.init) ?? "",
                 s.gear.map { id($0) } ?? "",
-                s.day.map { id($0) } ?? ""
+                s.day.map { id($0) } ?? "",
+                s.timeFormatSnapshot?.rawValue ?? "",
+                s.roundsCompleted.map(String.init) ?? "",
+                s.partialReps.map(String.init) ?? "",
+                s.partialRepsExerciseName ?? "",
+                s.finishTimeSeconds.map(String.init) ?? "",
+                s.forTimeCheckedRoundsRaw ?? "",
+                s.completedMinuteCount.map(String.init) ?? "",
+                s.circuitRoundsCompleted.map(String.init) ?? "",
+                s.circuitRestEndDate.map { CSVWriter.iso8601($0) } ?? "",
+                s.circuitCurrentRoundCheckedRaw ?? "",
+                CSVWriter.bool(s.completedTarget),
+                s.endurancePhase?.rawValue ?? "",
+                s.enduranceCurrentRoundNumber.map(String.init) ?? "",
+                s.enduranceRoundsCompleted.map(String.init) ?? "",
+                s.endurancePhaseEndDate.map { CSVWriter.iso8601($0) } ?? "",
+                s.endurancePausedRemainingSeconds.map(String.init) ?? "",
+                CSVWriter.bool(s.enduranceWarmupSkipped),
+                CSVWriter.bool(s.enduranceCooldownSkipped),
+                s.importSourceName ?? "",
+                s.healthKitSampleUUID ?? "",
+                s.contentSnapshotJSON ?? "",
+                s.contentSnapshotCapturedAt.map { CSVWriter.iso8601($0) } ?? ""
             ])
         }
         return w.data()
@@ -463,6 +760,9 @@ public enum DataExportService {
             "date_utc", "set_index",
             "weight_kg", "reps", "rpe", "rir", "comment",
             "exercise_name_snapshot",
+            // Settings-Epic Phase 6 (EXLIB-07/09): Snapshot der stabilen
+            // Vorlagen-ID, analog zu exercise_name_snapshot.
+            "exercise_template_id_snapshot",
             "exercise_is_cardio_snapshot", "exercise_is_time_based_snapshot",
             "exercise_cardio_equipment_snapshot",
             "distance_km", "duration_seconds"
@@ -481,6 +781,7 @@ public enum DataExportService {
             row.append(CSVWriter.decimal(Double(l.rir), fractionDigits: 1))
             row.append(l.comment ?? "")
             row.append(l.exerciseNameSnapshot ?? "")
+            row.append(l.exerciseTemplateIDSnapshot?.uuidString ?? "")
             row.append(CSVWriter.bool(l.exerciseIsCardioSnapshot))
             row.append(CSVWriter.bool(l.exerciseIsTimeBasedSnapshot))
             row.append(l.exerciseCardioEquipmentSnapshot ?? "")
@@ -496,7 +797,12 @@ public enum DataExportService {
         id: (AnyObject) -> String
     ) -> Data {
         var w = CSVWriter(headers: [
-            "id", "date_utc", "exercise_name", "kind",
+            "id", "date_utc", "exercise_name",
+            // Settings-Epic Phase 6 (EXLIB-07/09): stabile Vorlagen-ID, leer
+            // fuer WOD-Zeitformat-PRs (exercise_name traegt dort den
+            // WOD-Namen) sowie fuer nicht per Backfill aufloesbare Alt-PRs.
+            "exercise_template_id",
+            "kind",
             "value", "previous_value", "weight_kg", "reps",
             "cardio_equipment", "session_id"
         ])
@@ -505,6 +811,7 @@ public enum DataExportService {
                 id(p),
                 CSVWriter.iso8601(p.date),
                 p.exerciseName,
+                p.exerciseTemplateID?.uuidString ?? "",
                 p.kindRaw,
                 CSVWriter.decimal(p.value),
                 CSVWriter.decimal(p.previousValue),
@@ -553,7 +860,7 @@ public enum DataExportService {
         id: (AnyObject) -> String
     ) -> Data {
         var w = CSVWriter(headers: [
-            "id", "name", "equipment", "primary_muscle",
+            "id", "template_id", "name", "equipment", "primary_muscle",
             "is_custom", "difficulty_level",
             "is_system_compound", "is_time_based", "is_cardio",
             "localization_key", "is_system_provided",
@@ -564,6 +871,12 @@ public enum DataExportService {
         for t in items {
             w.appendRow([
                 id(t),
+                // Settings-Epic Phase 6 (EXLIB-07/09): die STABILE Vorlagen-ID
+                // (anders als die obige "id"-Spalte, die nur ein pro Export-
+                // Lauf frisch generierter Cross-CSV-Schluessel ist). Wird beim
+                // Import 1:1 wiederhergestellt, damit exercise_template_id auf
+                // Exercise/ExerciseLog/PersonalRecordEntry weiter aufloest.
+                t.id.uuidString,
                 t.name,
                 t.equipment.rawValue,
                 t.primaryMuscle.rawValue,

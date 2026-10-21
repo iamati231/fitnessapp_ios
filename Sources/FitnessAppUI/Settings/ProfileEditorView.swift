@@ -18,9 +18,41 @@ public struct ProfileEditorView: View {
     @Bindable public var profile: UserBodyProfile
     @Environment(HealthKitController.self) private var healthKit
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @State private var healthKitFetchInProgress: Bool = false
     @State private var healthKitFilledFields: Set<String> = []
+
+    /// Settings-Epic Phase 4 (docs/SETTINGS_UX_AUDIT.md, Befund PE-H1):
+    /// haelt den geladenen, noch UNBESTAETIGTEN Health-Snapshot. Non-nil
+    /// zeigt die Bestaetigungs-Frage; vor dem Bestaetigen findet KEINE
+    /// Profil-Mutation statt (reiner Lese-Fetch in `requestHealthPull()`).
+    @State private var pendingHealthPull: OnboardingHealthSnapshot?
+    /// Kurzlebiger Hinweis, wenn Health verbunden ist, aber kein einziges der
+    /// drei Felder (Geburtsdatum/Geschlecht/Groesse) liefert — dann gibt es
+    /// nichts zu bestaetigen, aber auch keinen stillen No-Op ohne Rueckmeldung.
+    @State private var healthPullFoundNothing = false
+
+    /// Settings-Epic Phase 3: Re-Entry-Punkte fuer die kombinierten
+    /// Koerperdaten-/Trainingsort-Editoren (siehe `bodyDataCard`/
+    /// `trainingLocationCard`).
+    @State private var showingBodyDataEditor = false
+    @State private var showingTrainingLocationEditor = false
+    /// Deltiq-Geräteabnahme (C01): gleiches Re-Entry-Muster fuer die
+    /// Cardio-/Laufziel-Felder, siehe `cardioCard`/`CardioGoalEditorView`.
+    @State private var showingCardioGoalEditor = false
+    @State private var showingCoachAdjustmentPreview = false
+
+    /// Settings-Epic Phase 3: fuer die Gewicht-mit-Datum-Zeile in
+    /// `bodyDataCard`s Zusammenfassung — derselbe Query wie in
+    /// `BodyDataEditorView`.
+    @Query(sort: \BodyMeasurement.date, order: .reverse)
+    private var bodyMeasurements: [BodyMeasurement]
+
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// `bodyDataSummaryText` zeigte Gewicht/Zielgewicht hart als " kg", auch
+    /// nach Umstellung auf Imperial.
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
 
     // DEL-047: aktive Plaene laden, damit wir bei einer Trainingsort-Aenderung
     // einen Sync-Prompt anbieten koennen. Wir laden alle Plaene (auch
@@ -29,6 +61,46 @@ public struct ProfileEditorView: View {
     // Plan.
     @Query(sort: \TrainingPlan.name)
     private var allPlans: [TrainingPlan]
+
+    /// Nachtrag "Plan anpassen": `PlanBuilderView` als Sheet, vorbefuellt
+    /// mit dem aktuellen Machbarkeits-Vorschlag.
+    @State private var showingPlanAdjustSheet: Bool = false
+
+    /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
+    /// Bestaetigung"): schuetzt NUR den direkten "Uebernehmen"-Button in
+    /// `feasibilitySection` — der Pfad ueber `PlanBuilderView` ("Plan
+    /// anpassen") ist bereits durch dessen eigenen `isAdopting`-Schutz
+    /// abgedeckt. Gleiches Muster wie `PlansListView.isAcceptingCardioFeasibility`.
+    @State private var isAcceptingCardioFeasibility = false
+
+    /// Nachbesserung (Task #197, zweite Runde): gleiches Muster wie
+    /// `PlansListView.cardioAcceptErrorMessage` — ein Speicherfehler von
+    /// `accept`/`acceptCustom` wird sichtbar gemacht statt (wie vorher) in
+    /// einem `_ = ...`-Discard vollstaendig zu verschwinden.
+    @State private var cardioAcceptErrorMessage: String?
+
+    /// Nachbesserung (zweite Korrekturrunde, Punkt B): gleiches Muster wie
+    /// `PlansListView.cardioAcceptErrorIsCreatedButUnresolved` — steuert den Alert-Titel, wenn
+    /// `accept` nach einem ERFOLGREICHEN Speichervorgang nur an der Rueckbindung scheitert.
+    @State private var cardioAcceptErrorIsCreatedButUnresolved = false
+
+    /// Nachbesserung (Task #197, dritte Korrekturrunde): gleiches Muster wie
+    /// `PlansListView.acceptOperation`/`.acceptCustomOperation` — der tatsaechliche
+    /// Operationszustand, der verhindert, dass ein erneuter Tap nach `.committedButUnresolved`
+    /// jemals ein zweites Mal `model.accept`/`.acceptCustom` aufruft (siehe
+    /// `PlanCreationOperation`-Typ-Doku). `acceptCustomOperation` wird beim OEFFNEN des "Plan
+    /// anpassen"-Sheets bewusst neu erzeugt (siehe Aufrufstelle unten).
+    @State private var acceptOperation = PlanCreationOperation()
+    @State private var acceptCustomOperation = PlanCreationOperation()
+    /// Task #197 (Verifikationsrunde): gleiches Muster wie
+    /// `PlansListView.acceptOperationFingerprint` — `acceptOperation` ist laut ihrer eigenen
+    /// Typ-Doku PERMANENT fuer ihre Lebensdauer committed, braucht also bei jeder ANDEREN
+    /// Ziel/Renndatum/Volumen-Kombination (`CardioFeasibilityCardModel.fingerprint`) eine
+    /// frische Instanz — sonst zeigt eine spaetere, unabhaengige Cardio-Karte faelschlich
+    /// "Erneut versuchen" und ein Tap darauf wuerde nur den laengst aufgeloesten alten Plan
+    /// erneut aufzuloesen versuchen statt den neuen Vorschlag anzulegen (auf echtem Geraet in
+    /// `PlansListView` reproduziert; dieselbe Stelle hier war strukturell identisch betroffen).
+    @State private var acceptOperationFingerprint: String?
 
     /// DEL-047: gehaltete `oldEnv`-Referenz fuer den Confirmation-Dialog. Wenn
     /// non-nil, wird der Dialog angezeigt; alle drei Dialog-Aktionen setzen
@@ -49,47 +121,93 @@ public struct ProfileEditorView: View {
         let newEnv: EnvironmentType
     }
 
+    /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
+    /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
+    /// wird, statt sofort zu schliessen.
+    @State private var showingDiscardConfirm = false
+
+    /// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): Zustand der
+    /// einfachen, lokalen Profil-Felder beim Oeffnen — siehe
+    /// `ProfileMetaSnapshot`. Bewusst NICHT Teil davon: `heightCm`/
+    /// `goalWeightKg`/Gewichtsmessungen (eigener Save/Cancel-Flow in
+    /// `BodyDataEditorView`), `environment`/`equipmentProfile` (eigener Flow
+    /// in `TrainingLocationEquipmentEditorView`), `cardioCoachingEnabled`/
+    /// `cardioGoal`/`cardioRaceDate`/`weeklyBaseVolumeKm`/`maxHeartRateBpm`/
+    /// `current5kReferenceSeconds`/`enduranceModality` (eigener Save/Cancel-
+    /// Flow in `CardioGoalEditorView`, Deltiq-Geräteabnahme C01 — siehe
+    /// dessen Typ-Doku), sowie alles, was `feasibilitySection`s
+    /// accept/dismiss/acceptCustom anfasst (eigene, bereits explizit
+    /// bestaetigte Aktionen mit Seiteneffekten auf andere Plaene/Tage,
+    /// analog `targetEnvironment` in `PlanEditorView`).
+    /// `baselineAssessment` selbst bleibt unangetastet — nur der Wieder-
+    /// Einstieg DAFUER aus diesem Screen wurde entfernt (Korrektur V6), der
+    /// gespeicherte Wert und sein `BaselineCheckFlowView`-Flow im Onboarding
+    /// existieren unveraendert weiter.
+    @State private var snapshot: ProfileMetaSnapshot
+
     public init(profile: UserBodyProfile) {
         self.profile = profile
+        _snapshot = State(initialValue: ProfileMetaSnapshot.capture(from: profile))
     }
 
     public var body: some View {
-        Form {
-            personSection
-            bodySection
-            goalSection
-            weeklyGoalSection
-            equipmentSection
-            coachingSection
-            healthKitSection
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: direkt von SettingsView gepusht (kein
+            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
+            // BackupListView/GearListView.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "profile.editor.title", bundle: .module),
+                onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                actions: [saveAction]
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                personCard
+                bodyDataCard
+                trainingLocationCard
+                cardioCard
+                weeklyGoalCard
+                coachingCard
+                healthCard
+            }
+            .deltiqScreen()
         }
-        .navigationTitle("Profil bearbeiten")
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        // UI-Refactor (Korrektur, Punkt 4): bei Aenderungen bleibt die Geste
+        // bewusst AUS — ein ungesicherter Verlassen-Weg wuerde am Discard-
+        // Dialog vorbei. Ohne Aenderungen funktioniert sie weiter normal.
+        .deltiqSwipeBackEnabled(!isDirty)
         .keyboardDismissToolbar()
-        // DEL-047 + DEL-049 + DEL-050: Trainingsort-Aenderung im Profil
-        // triggert zwei sequentielle Schritte:
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+            revertToSnapshot()
+            dismiss()
+        }
+        // DEL-047 + DEL-049: Trainingsort-Aenderung im Profil triggert einen
+        // Adapt- oder Restore-Prompt ueber die Uebungen. Adapt bei "frischer"
+        // Aenderung, Restore wenn irgendein Plan archivierte Originale hat,
+        // die im neuen Env wieder passen.
         //
-        //   * SCHRITT 1 (DEL-050 Top-Down-Sync): Plan-Metadaten unbedingt
-        //     mit-aktualisieren, BEVOR der User die "anpassen?"-Frage
-        //     beantwortet. Sonst koennte er "Nein, so lassen" sagen und es
-        //     entstuende ein Mismatch (Profil = BW, Plan = Gym). Dies passiert
-        //     ohne Prompt — Profil ist die Source of Truth fuer alle Plaene.
-        //
-        //   * SCHRITT 2 (DEL-047/049): Adapt- oder Restore-Prompt
-        //     ueber die Uebungen. Adapt bei "frischer" Aenderung, Restore wenn
-        //     irgendein Plan archivierte Originale hat, die im neuen Env wieder
-        //     passen.
+        // Settings-Epic Phase 2 (docs/SETTINGS_UX_AUDIT.md, Befund PE-G2):
+        // es gab hier zusaetzlich einen unbedingten, promptlosen
+        // "Top-Down-Sync" (DEL-050), der `targetEnvironment` auf JEDEM Plan —
+        // auch archivierten, auch ohne jede Uebung — sofort umschrieb, noch
+        // bevor der User die Frage unten ueberhaupt sieht. Effekt: "Nein, so
+        // lassen" stellte den Ursprungszustand NICHT wieder her, es gab
+        // keinen Undo-Pfad. Entfernt wie von der Vorgabe verlangt — die
+        // Uebungs-Anpassung unten bleibt die einzige Stelle, die
+        // `targetEnvironment` tatsaechlich aendert, und tut das nur nach
+        // expliziter Bestaetigung.
         .onChange(of: profile.environment) { oldValue, newValue in
             guard oldValue != newValue else { return }
 
-            // ── SCHRITT 1: DEL-050 Top-Down-Sync (immer, ohne Prompt). ──
-            for plan in allPlans where plan.targetEnvironment != newValue {
-                plan.targetEnvironment = newValue
-            }
-
-            // ── SCHRITT 2: Adapt-oder-Restore-Frage (nur wenn relevant). ──
             guard allPlans.contains(where: { plan in
                 plan.days.contains(where: { !$0.activeExercises.isEmpty })
             }) else { return }
@@ -150,6 +268,50 @@ public struct ProfileEditorView: View {
             }
         } message: { swap in
             Text("profile.envRestore.message", bundle: .module)
+        }
+        // Settings-Epic Phase 4 (Befund PE-H1): zeigt NUR die tatsaechlich
+        // verfuegbaren Felder mit ihrem konkreten Wert, bevor Geburtsdatum/
+        // Geschlecht/Groesse ueberschrieben werden. "Abbrechen" (bzw. Wegtippen)
+        // verwirft den geladenen Snapshot vollstaendig — keine Mutation.
+        .confirmationDialog(
+            Text("profile.health.pullConfirm.title", bundle: .module),
+            isPresented: Binding(
+                get: { pendingHealthPull != nil },
+                set: { if !$0 { pendingHealthPull = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingHealthPull
+        ) { snapshot in
+            Button {
+                applyHealthPull(snapshot)
+                pendingHealthPull = nil
+            } label: {
+                Text("profile.health.pullConfirm.apply", bundle: .module)
+            }
+            Button(role: .cancel) {
+                pendingHealthPull = nil
+            } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: { snapshot in
+            Text(healthPullPreviewMessage(snapshot))
+        }
+        // Nachbesserung (Task #197, zweite Runde): sichtbarer Fehler statt
+        // stillem Discard, siehe `cardioAcceptErrorMessage`-Doku.
+        // Nachbesserung (zweite Korrekturrunde, Punkt B): Titel haengt vom Fehlerfall ab, siehe
+        // `cardioAcceptErrorIsCreatedButUnresolved`-Doku.
+        .alert(
+            Text(cardioAcceptErrorIsCreatedButUnresolved
+                 ? "cardioFeasibility.error.createdButUnresolved.title"
+                 : "cardioFeasibility.error.saveFailed.title", bundle: .module),
+            isPresented: Binding(
+                get: { cardioAcceptErrorMessage != nil },
+                set: { if !$0 { cardioAcceptErrorMessage = nil } }
+            )
+        ) {
+            Button("OK") { cardioAcceptErrorMessage = nil }
+        } message: {
+            Text(cardioAcceptErrorMessage ?? "")
         }
         .overlay(alignment: .bottom) {
             if let msg = profileSwapToast {
@@ -212,88 +374,167 @@ public struct ProfileEditorView: View {
         String(localized: env.localizedName)
     }
 
+    // MARK: - UI-Refactor (DeltiqHeader-Muster)
+
+    /// Vergleich gegen `ProfileMetaSnapshot` vom Oeffnen des Sheets — siehe
+    /// dessen Scope-Begruendung bei `snapshot` oben.
+    private var isDirty: Bool {
+        snapshot != ProfileMetaSnapshot.capture(from: profile)
+    }
+
+    /// Autosave-Screen (siehe `ExerciseEditorView`) — kein echter Speicher-
+    /// Schritt, reines "Fertig". Kein Validitaets-Gate auf diesem Screen →
+    /// kein `isDisabled`.
+    private var saveAction: DeltiqHeaderAction {
+        DeltiqHeaderAction(
+            systemImage: "checkmark",
+            accessibilityLabel: String(localized: "common.done", bundle: .module)
+        ) {
+            dismiss()
+        }
+    }
+
+    /// Schreibt die Snapshot-Felder zurueck — `internal` (statt `private`)
+    /// macht die Funktion direkt per `ProfileEditorView(profile:)`-
+    /// Konstruktion testbar (siehe Tests/FitnessAppUITests) — beruehrt kein
+    /// `@Environment`/`@Query`.
+    internal func revertToSnapshot() {
+        snapshot.apply(to: profile)
+    }
+
+    // MARK: - Health
+
     @ViewBuilder
-    private var healthKitSection: some View {
-        Section {
+    private var healthCard: some View {
+        DeltiqSection(String(localized: "profile.section.health", bundle: .module).uppercased()) {
             if !healthKit.isAvailable {
-                Label {
-                    Text("onboarding.health.unavailable", bundle: .module)
-                } icon: {
-                    Image(systemName: "heart.slash")
+                HStack {
+                    Label {
+                        Text("onboarding.health.unavailable", bundle: .module)
+                    } icon: {
+                        Image(systemName: "heart.slash")
+                    }
+                    Spacer()
                 }
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                .font(.callout)
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
             } else {
                 switch healthKit.authorizationStatus {
                 case .sharingAuthorized:
                     Button {
-                        Task { await pullProfileFromHealthKit() }
+                        Task { await requestHealthPull() }
                     } label: {
-                        if healthKitFetchInProgress {
-                            HStack { ProgressView(); Text("onboarding.health.loading", bundle: .module) }
-                        } else {
-                            Label {
-                                Text("profile.health.pull", bundle: .module)
-                            } icon: {
-                                Image(systemName: "arrow.down.circle")
+                        HStack {
+                            if healthKitFetchInProgress {
+                                ProgressView()
+                                Text("onboarding.health.loading", bundle: .module)
+                            } else {
+                                Label {
+                                    Text("profile.health.pull", bundle: .module)
+                                } icon: {
+                                    Image(systemName: "arrow.down.circle")
+                                }
                             }
+                            Spacer()
                         }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .frame(minHeight: 44)
                     }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
                     .disabled(healthKitFetchInProgress)
+
+                    if healthPullFoundNothing {
+                        hintRow(String(localized: "profile.health.pullConfirm.nothingFound", bundle: .module))
+                    }
                     if !healthKitFilledFields.isEmpty {
-                        Label {
-                            Text(String(format: String(localized: "profile.health.pulled", bundle: .module), healthKitFilledFields.sorted().joined(separator: ", ")))
-                        } icon: {
-                            Image(systemName: "heart.fill")
+                        HStack {
+                            Label {
+                                Text(String(format: String(localized: "profile.health.pulled", bundle: .module), healthKitFilledFields.sorted().joined(separator: ", ")))
+                            } icon: {
+                                Image(systemName: "heart.fill")
+                            }
+                            Spacer()
                         }
-                            .font(.caption)
-                            .foregroundStyle(.pink)
+                        // Handoff-Ausnahme: echter Apple-Health-Bezug (Daten
+                        // wurden von dort uebernommen) - Color.Deltiq.health
+                        // statt Akzent-Orange, siehe .pink-Regel im Handoff.
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.health)
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 12)
                     }
                 case .notDetermined:
                     Button {
                         Task {
                             await healthKit.requestAuthorization()
                             if healthKit.authorizationStatus == .sharingAuthorized {
-                                await pullProfileFromHealthKit()
+                                await requestHealthPull()
                             }
                         }
                     } label: {
-                        Label {
-                            Text("onboarding.health.title", bundle: .module)
-                        } icon: {
-                            Image(systemName: "heart.fill")
+                        HStack {
+                            Label {
+                                Text("onboarding.health.title", bundle: .module)
+                            } icon: {
+                                Image(systemName: "heart.fill")
+                            }
+                            Spacer()
                         }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .frame(minHeight: 44)
                     }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
                 case .sharingDenied:
-                    Label {
-                        Text("profile.health.denied", bundle: .module)
-                    } icon: {
-                        Image(systemName: "heart.slash")
+                    HStack {
+                        Label {
+                            Text("profile.health.denied", bundle: .module)
+                        } icon: {
+                            Image(systemName: "heart.slash")
+                        }
+                        Spacer()
                     }
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    .font(.caption)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
                 case .unavailable:
                     EmptyView()
                 }
             }
-        } header: {
-            Text("profile.section.health", bundle: .module)
-        } footer: {
-            Text("profile.health.footer", bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: "profile.health.footer", bundle: .module))
         }
     }
 
-    private func pullProfileFromHealthKit() async {
+    /// Settings-Epic Phase 4 (Befund PE-H1): reiner Lese-Schritt — holt den
+    /// Snapshot und zeigt ihn zur Bestaetigung, OHNE das Profil anzufassen.
+    /// Die eigentliche Mutation passiert ausschliesslich in
+    /// `applyHealthPull(_:)`, ausgeloest durch den expliziten "Uebernehmen"-
+    /// Tap im `confirmationDialog` unten.
+    private func requestHealthPull() async {
         healthKitFetchInProgress = true
         defer { healthKitFetchInProgress = false }
 
         let snapshot = await healthKit.loadOnboardingSnapshot()
-        var filled: Set<String> = []
+        guard snapshot.hasApplicableProfileFields else {
+            healthPullFoundNothing = true
+            return
+        }
+        healthPullFoundNothing = false
+        pendingHealthPull = snapshot
+    }
 
-        // Conservative: nur ersetzen, wenn der existierende Wert "default-haft"
-        // aussieht (zB Geburtsdatum vor 1900 oder Höhe == 0). Andernfalls
-        // koennte ein versehentlicher Pull die Manuelle-Eingabe ueberschreiben.
+    /// Mutiert das Profil — nur mit den Feldern, die der Snapshot tatsaechlich
+    /// liefert. Fehlende Health-Werte bleiben unberuehrt (keine Loeschung
+    /// vorhandener Profilwerte); Gewicht wird bewusst NIE gelesen (lebt
+    /// ausschliesslich in `BodyMeasurement`, siehe `BodyDataEditorView`).
+    private func applyHealthPull(_ snapshot: OnboardingHealthSnapshot) {
+        var filled: Set<String> = []
         if let dob = snapshot.dateOfBirth {
             profile.birthDate = dob
             filled.insert("Geburtsdatum")
@@ -312,165 +553,419 @@ public struct ProfileEditorView: View {
             profile.heightCm = h
             filled.insert("Größe")
         }
-
         healthKitFilledFields = filled
     }
 
-    private var personSection: some View {
-        // All inner widgets use trailing-closure Label forms — same pattern as
-        // OnboardingView. The positional `Picker(_ titleKey:)` / `DatePicker(_ titleKey:)` /
-        // `TextField(_ titleKey:value:format:)` forms confuse the type checker on macOS
-        // toolchains when nested inside Section + footer + multiple statements.
-        Section {
-            Picker(selection: $profile.profile) {
-                Text("sex.male", bundle: .module).tag(BodyFormulaProfile.male)
-                Text("sex.female", bundle: .module).tag(BodyFormulaProfile.female)
-            } label: {
-                Text("onboarding.field.sex", bundle: .module)
-            }
-            .pickerStyle(.segmented)
+    /// Baut die Vorschau-Nachricht fuer den Bestaetigungsdialog — zeigt NUR
+    /// die Felder, die tatsaechlich verfuegbar sind, mit ihrem konkreten Wert.
+    private func healthPullPreviewMessage(_ snapshot: OnboardingHealthSnapshot) -> String {
+        var lines: [String] = []
+        if let dob = snapshot.dateOfBirth {
+            lines.append(String(
+                format: String(localized: "profile.health.pullConfirm.fieldBirthdate", bundle: .module),
+                dob.formatted(date: .abbreviated, time: .omitted)
+            ))
+        }
+        let sexLabel: String?
+        switch snapshot.sex {
+        case .male:   sexLabel = String(localized: "sex.male", bundle: .module)
+        case .female: sexLabel = String(localized: "sex.female", bundle: .module)
+        case .other, .notSet: sexLabel = nil
+        }
+        if let sexLabel {
+            lines.append(String(
+                format: String(localized: "profile.health.pullConfirm.fieldSex", bundle: .module),
+                sexLabel
+            ))
+        }
+        if let h = snapshot.heightCm, h > 0 {
+            lines.append(String(
+                format: String(localized: "profile.health.pullConfirm.fieldHeight", bundle: .module),
+                h.formattedTwoDecimals
+            ))
+        }
+        return lines.joined(separator: "\n")
+    }
 
-            DatePicker(
-                selection: $profile.birthDate,
-                in: Self.minBirthDate ... Date(),
-                displayedComponents: .date
+    // MARK: - Sections
+
+    private var personCard: some View {
+        DeltiqSection(String(localized: "profile.section.person", bundle: .module).uppercased()) {
+            DeltiqSegmentedPicker(
+                options: [
+                    DeltiqSegmentedOption(BodyFormulaProfile.male, label: String(localized: "sex.male", bundle: .module)),
+                    DeltiqSegmentedOption(BodyFormulaProfile.female, label: String(localized: "sex.female", bundle: .module))
+                ],
+                selection: $profile.profile
+            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            Rectangle()
+                .fill(Color.Deltiq.divider)
+                .frame(height: 1)
+
+            DeltiqControlRow(label: String(localized: "onboarding.field.birthdate", bundle: .module), showsDivider: false) {
+                DatePicker(
+                    selection: $profile.birthDate,
+                    in: Self.minBirthDate ... Date(),
+                    displayedComponents: .date
+                ) {
+                    EmptyView()
+                }
+                .labelsHidden()
+            }
+            hintRow(String(localized: "profile.person.footer", bundle: .module))
+        }
+    }
+
+    /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Befunde `PE-B1`/
+    /// `PE-G1`): kombinierte Koerperdaten-Zeile — Groesse, aktuelles Gewicht
+    /// (mit Datum) und Zielgewicht an einem Ort statt auf `bodyCard`/
+    /// `goalCard` verteilt. Oeffnet `BodyDataEditorView` als Draft-Sheet mit
+    /// explizitem Speichern/Abbrechen; die Zeile selbst zeigt nur den
+    /// aktuellen Stand, nie editierbar direkt hier.
+    private var bodyDataCard: some View {
+        DeltiqSection(String(localized: "profile.bodyData.title", bundle: .module).uppercased()) {
+            DeltiqRow(
+                icon: "ruler",
+                label: String(localized: "profile.bodyData.title", bundle: .module),
+                value: bodyDataSummaryText,
+                showsChevron: true,
+                showsDivider: false
             ) {
-                Text("onboarding.field.birthdate", bundle: .module)
+                showingBodyDataEditor = true
             }
-        } header: {
-            Text("profile.section.person", bundle: .module)
-        } footer: {
-            Text("profile.person.footer", bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: "profile.bodyData.summary.footer", bundle: .module))
+        }
+        .sheet(isPresented: $showingBodyDataEditor) {
+            BodyDataEditorView(profile: profile)
         }
     }
 
-    private var bodySection: some View {
-        Section {
-            TextField(value: $profile.heightCm, format: .number,
-                      prompt: Text("profile.body.heightPlaceholder", bundle: .module)) {
-                Text("onboarding.field.heightCm", bundle: .module)
+    private var bodyDataSummaryText: String {
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        let unitLabel = weightUnitRaw == "lbs" ? "lbs" : "kg"
+        var parts = [profile.heightCm.formattedTwoDecimals + " cm"]
+        if let latest = bodyMeasurements.first {
+            parts.append(unit.fromKg(latest.weightKg).formattedWeightInput() + " \(unitLabel)")
+        }
+        if let goal = profile.goalWeightKg {
+            parts.append(String(format: String(localized: "settings.profile.goal", bundle: .module), unit.fromKg(goal).formattedWeightInput() + " \(unitLabel)"))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Settings-Epic Phase 3: kombinierter Trainingsort+Ausstattung-Editor
+    /// ersetzt die getrennte Umgebungs-Picker-Zeile (vormals in `goalCard`)
+    /// und das eigenstaendige `equipmentCard`-Sheet. Oeffnet
+    /// `TrainingLocationEquipmentEditorView` als Draft-Sheet — Details dort.
+    private var trainingLocationCard: some View {
+        DeltiqSection(String(localized: "profile.trainingLocation.title", bundle: .module).uppercased()) {
+            DeltiqRow(
+                icon: "dumbbell",
+                label: String(localized: "profile.trainingLocation.title", bundle: .module),
+                value: "\(environmentLabel(profile.environment)) · \(equipmentStatusText)",
+                showsChevron: true,
+                showsDivider: false
+            ) {
+                showingTrainingLocationEditor = true
             }
-            .decimalKeyboard()
-        } header: {
-            Text("profile.section.body", bundle: .module)
-        } footer: {
-            if !Self.heightRange.contains(profile.heightCm) {
-                let template = String(localized: "profile.body.plausible", bundle: .module)
-                Text(template
-                    .replacingOccurrences(of: "%1$lld", with: "\(Int(Self.heightRange.lowerBound))")
-                    .replacingOccurrences(of: "%2$lld", with: "\(Int(Self.heightRange.upperBound))"))
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-            } else {
-                Text("profile.body.footerOk", bundle: .module)
-                    .font(.footnote)
+            hintRow(String(localized: "profile.equipment.footer", bundle: .module))
+        }
+        .sheet(isPresented: $showingTrainingLocationEditor) {
+            TrainingLocationEquipmentEditorView(profile: profile)
+        }
+    }
+
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1): ein nicht individuell eingerichtetes Gym-Profil zeigt NIE
+    /// "nicht erfasst" — dort gilt die Standard-Gym-Planungsannahme
+    /// (`EquipmentPlanningContext`), kein echtes "noch nichts angegeben".
+    private var equipmentStatusText: String {
+        guard profile.equipmentProfileConfirmedComplete else {
+            let hasAnySelection = EquipmentItem.allCases.contains { profile.equipmentProfile.availability(for: $0) == .available }
+            if hasAnySelection {
+                return String(localized: "profile.equipment.status.inProgress", bundle: .module)
+            }
+            if profile.environment == .gym {
+                return String(localized: "profile.equipment.status.gymAssumption", bundle: .module)
+            }
+            return String(localized: "profile.equipment.status.notSet", bundle: .module)
+        }
+        let isBodyweightOnly = EquipmentItem.allCases.allSatisfy { profile.equipmentProfile.availability(for: $0) == .unavailable }
+        return String(localized: isBodyweightOnly ? "profile.equipment.status.bodyweightOnly" : "profile.equipment.status.confirmed", bundle: .module)
+    }
+
+    /// DEL-250: Cardio-/Lauf-Ziele nachtraeglich editierbar (Post-Onboarding).
+    /// Deltiq-Geräteabnahme (C01): die Felder lagen frueher direkt hier,
+    /// live an `profile` gebunden — die gebuendelte Anpassungsvorschau
+    /// (`feasibilitySection` unten) erschien dadurch nachweislich bei JEDEM
+    /// Tastenanschlag statt wie von Dok. 01 §6 gefordert "einmalig gebuendelt
+    /// nach einem gespeicherten Update" (siehe docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+    /// C01). Fix: gleiches Re-Entry-Muster wie `bodyDataCard`/
+    /// `trainingLocationCard` — nur eine Zusammenfassungs-Zeile hier, die
+    /// eigentlichen Felder (inkl. Retro-Sync) leben jetzt mit eigenem
+    /// lokalem Draft + explizitem Speichern in `CardioGoalEditorView`.
+    /// `feasibilitySection` bleibt unveraendert an das live `profile`
+    /// gebunden und aendert sich darum erst, NACHDEM dort gespeichert wurde.
+    private var cardioCard: some View {
+        DeltiqSection(String(localized: "profile.section.cardio", bundle: .module).uppercased()) {
+            DeltiqRow(
+                icon: "figure.run",
+                label: String(localized: "profile.section.cardio", bundle: .module),
+                value: cardioGoalSummaryText,
+                showsChevron: true,
+                showsDivider: false
+            ) {
+                showingCardioGoalEditor = true
+            }
+            if let adjustmentModel = coachAdjustmentModel {
+                coachAdjustmentSection(adjustmentModel)
+            } else if let model = feasibilityModel {
+                feasibilitySection(model)
+            }
+            hintRow(String(localized: "profile.cardio.footer", bundle: .module))
+        }
+        .sheet(isPresented: $showingCardioGoalEditor) {
+            CardioGoalEditorView(profile: profile)
+        }
+        .sheet(isPresented: $showingCoachAdjustmentPreview) {
+            if let activePlan {
+                CoachAdjustmentPreviewView(profile: profile, activePlan: activePlan)
             }
         }
     }
 
-    private var goalSection: some View {
-        Section {
-            TextField(value: $profile.goalWeightKg, format: .number,
-                      prompt: Text("profile.goal.weightPlaceholder", bundle: .module)) {
-                Text("onboarding.field.goalWeightKg", bundle: .module)
-            }
-            .decimalKeyboard()
-
-            Picker(selection: $profile.environment) {
-                Text("environment.gym", bundle: .module).tag(EnvironmentType.gym)
-                Text("environment.home_gym", bundle: .module).tag(EnvironmentType.homeGym)
-                Text("environment.no_equipment", bundle: .module).tag(EnvironmentType.noEquipment)
-            } label: {
-                Text("onboarding.field.environment", bundle: .module)
-            }
-        } header: {
-            Text("onboarding.section.goals", bundle: .module)
-        } footer: {
-            Text("profile.goal.footer", bundle: .module)
-                .font(.footnote)
-        }
+    /// Paket 1 (Laufcoach-Plananpassung): der erste aktive Plan, falls
+    /// einer existiert - reuse der bereits geladenen `allPlans` (DEL-047),
+    /// keine zweite Query noetig.
+    private var activePlan: TrainingPlan? {
+        allPlans.first { $0.isActive }
     }
 
-    /// DEL-170: Equipment-Präferenzen (Multi-Select). Steuert die Auswahl
-    /// von `EquipmentVariant` bei Templates mit mehreren Implement-Varianten
-    /// (z.B. Hybrid-Pläne: Barbell-Gym vs. Dumbbell-Only). Default leer →
-    /// Plan-Matcher behandelt das wie "nicht gepflegt" und nimmt die
-    /// Standard-Variante; sobald der User mindestens eine Box ankreuzt,
-    /// wirken die Präferenzen sofort beim nächsten Plan-Adopt.
+    /// Leitplanke 6: hat Vorrang vor `feasibilityModel`, sobald ein aktiver
+    /// Plan existiert - siehe `feasibilityModel`s Guard unten und
+    /// `CoachAdjustmentCardModel`s Typ-Doku fuer den vollen Vertrag.
+    private var coachAdjustmentModel: CoachAdjustmentCardModel? {
+        CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
+    }
+
     @ViewBuilder
-    private var equipmentSection: some View {
-        Section {
-            ForEach(Equipment.allCases, id: \.self) { equip in
-                Toggle(isOn: equipmentBinding(for: equip)) {
-                    Label {
-                        Text(equip.localizedName)
-                    } icon: {
-                        Image(systemName: equipmentIcon(equip))
-                            .foregroundStyle(Color.deltiqOrange)
+    private func coachAdjustmentSection(_ model: CoachAdjustmentCardModel) -> some View {
+        Rectangle()
+            .fill(Color.Deltiq.divider)
+            .frame(height: 1)
+        Button {
+            showingCoachAdjustmentPreview = true
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(model.isAlreadyApplied
+                     ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
+                     : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text(model.verdict.feasible
+                     ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                     : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var cardioGoalSummaryText: String {
+        guard profile.cardioCoachingEnabled else {
+            return String(localized: "profile.cardioGoal.summary.off", bundle: .module)
+        }
+        return String(localized: profile.cardioGoal.localizedName)
+    }
+
+    // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"
+
+    /// Live gerechnet bei jedem Render - keine gespeicherte "ausstehende
+    /// Empfehlung" (2.30): Profil, Dashboard und Plan-Tab rufen alle
+    /// denselben `CardioFeasibilityCardModel.make(for:)` auf.
+    private var feasibilityModel: CardioFeasibilityCardModel? {
+        // Leitplanke 6: nicht gleichzeitig mit `coachAdjustmentModel` zeigen
+        // - die neue Karte hat Vorrang, sobald ein aktiver Plan existiert.
+        guard coachAdjustmentModel == nil else { return nil }
+        return CardioFeasibilityCardModel.make(for: profile)
+    }
+
+    @ViewBuilder
+    private func feasibilitySection(_ model: CardioFeasibilityCardModel) -> some View {
+        Rectangle()
+            .fill(Color.Deltiq.divider)
+            .frame(height: 1)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(model.verdict.feasible
+                 ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                 : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(model.detailText)
+                .font(.caption)
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if model.hasPlan, let days = model.planResult?.days {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(days.enumerated()), id: \.offset) { _, day in
+                        CardioFeasibilityDayRow(day: day)
                     }
                 }
             }
-        } header: {
-            Text("profile.equipment.header", bundle: .module)
-        } footer: {
-            Text("profile.equipment.footer", bundle: .module)
-                .font(.footnote)
+            // Nachtrag "Plan anpassen", Layout-Hinweis: die primaere Aktion
+            // steht allein in voller Staerke, "Plan anpassen" und "Ziel
+            // behalten" folgen als gleichrangiges, leiseres Paar darunter -
+            // drei Text-Knoepfe in einer Zeile waeren auf Kartenbreite eng.
+            if model.hasPlan {
+                Button {
+                    // `cardioGoal` ist seit der Cardio-Editor-Auslagerung
+                    // (siehe `CardioGoalEditorView`) kein `ProfileMetaSnapshot`-
+                    // Feld mehr — ein Rebaseline nach `accept` ist darum nicht
+                    // mehr noetig, der Haupt-Screen bleibt davon unberuehrt.
+                    guard !isAcceptingCardioFeasibility else { return }
+                    // Siehe `acceptOperationFingerprint`-Doku: eine Karte fuer eine ANDERE
+                    // Kombination als die, fuer die `acceptOperation` zuletzt stand, braucht
+                    // zwingend eine frische Instanz.
+                    if acceptOperationFingerprint != model.fingerprint {
+                        acceptOperation = PlanCreationOperation()
+                        acceptOperationFingerprint = model.fingerprint
+                    }
+                    isAcceptingCardioFeasibility = true
+                    // `nil` bedeutet, dass bereits `accept`s eigene
+                    // Vorbedingungen (z.B. `hasPlan`) nicht erfuellt sind.
+                    withAnimation {
+                        switch model.accept(profile: profile, in: modelContext, using: acceptOperation) {
+                        case .success:
+                            // Geraete-Fund (TestingBot, Task #197 UI-Pruefumfang, identisches Muster
+                            // wie PlansListView): ohne dieses Zuruecksetzen blieb der Button nach
+                            // JEDEM erfolgreichen Uebernehmen fuer den Rest der View-Lebensdauer
+                            // dauerhaft deaktiviert.
+                            isAcceptingCardioFeasibility = false
+                        case nil:
+                            isAcceptingCardioFeasibility = false
+                        case .nothingToCreate:
+                            isAcceptingCardioFeasibility = false
+                        case .committedButUnresolved:
+                            // Der Plan WURDE bereits gespeichert - "Speicherfehler" waere falsch,
+                            // Button zeigt ab jetzt "Erneut versuchen" (siehe Label unten).
+                            isAcceptingCardioFeasibility = false
+                            cardioAcceptErrorIsCreatedButUnresolved = true
+                            cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.createdButUnresolved.message", bundle: .module)
+                        case .failedBeforeCommit:
+                            isAcceptingCardioFeasibility = false
+                            cardioAcceptErrorIsCreatedButUnresolved = false
+                            cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
+                        }
+                    }
+                } label: {
+                    // Nachbesserung (dritte Korrekturrunde, Punkt 5): im "bereits erstellt, nur
+                    // nicht aufgeloest"-Zustand kein irrefuehrendes erneutes "Uebernehmen".
+                    Text((acceptOperation.committedPlanID != nil && acceptOperationFingerprint == model.fingerprint)
+                         ? String(localized: "profile.cardio.feasibility.retryResolve", bundle: .module)
+                         : (model.verdict.feasible
+                            ? String(localized: "profile.cardio.feasibility.apply", bundle: .module)
+                            : String(localized: "profile.cardio.feasibility.acceptSuggestion", bundle: .module)))
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.deltiqOrange)
+                .disabled(isAcceptingCardioFeasibility)
+            }
+            HStack(spacing: 20) {
+                if model.hasPlan {
+                    Button {
+                        // Nachbesserung (Task #197, dritte Korrekturrunde): frische Instanz pro
+                        // Bearbeitungssitzung, siehe `acceptCustomOperation`-Doku.
+                        acceptCustomOperation = PlanCreationOperation()
+                        showingPlanAdjustSheet = true
+                    } label: {
+                        Text("profile.cardio.feasibility.adjustPlan", bundle: .module)
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+                if !model.verdict.feasible {
+                    Button {
+                        // `dismiss` aendert nur `cardioFeasibilityDismissed-
+                        // Fingerprint`, kein Snapshot-Feld — kein Rebaseline
+                        // noetig, ein offener Coaching-Ton-Edit muss per
+                        // "Verwerfen" weiterhin ruecknehmbar bleiben.
+                        withAnimation { model.dismiss(profile: profile) }
+                    } label: {
+                        Text("profile.cardio.feasibility.keepGoal", bundle: .module)
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .sheet(isPresented: $showingPlanAdjustSheet) {
+            if let input = model.planInput {
+                PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
+                    // `acceptCustom` aendert ebenfalls nur `cardioFeasibility-
+                    // DismissedFingerprint`, nicht `cardioGoal`.
+                    // Keine Navigation bei Erfolg: dieser Screen haelt (anders
+                    // als `PlansListView`) gar keine `AppNavigation`-Referenz,
+                    // der direkte "Uebernehmen"-Button oben navigiert aus
+                    // demselben Grund ebenfalls nicht.
+                    //
+                    // Nachbesserung (Task #197, dritte Korrekturrunde): `acceptCustomOperation`
+                    // (frisch pro Sheet-Oeffnung, siehe Aufrufstelle oben) ersetzt das vorherige
+                    // direkte `do/catch` - einmal `.committedButUnresolved`, ruft diese Instanz
+                    // `model.acceptCustom(...)` NIE WIEDER auf. `PlanBuilderView` leitet ihre
+                    // eigene lokalisierte Nachricht selbst aus dem zurueckgegebenen
+                    // `PlanBuilderHandoffOutcome` ab - hier wird kein fertiger Text mehr
+                    // uebergeben.
+                    switch model.acceptCustom(
+                        input: adjustedInput, result: adjustedResult, profile: profile,
+                        in: modelContext, using: acceptCustomOperation
+                    ) {
+                    case .success, .nothingToCreate:
+                        return .success
+                    case nil:
+                        return .success
+                    case .committedButUnresolved:
+                        return .committedButUnresolved
+                    case .failedBeforeCommit:
+                        return .failedBeforeCommit
+                    }
+                }
+            }
         }
     }
 
     /// DEL-203: Wochenziel für den Trainings-Streak. Stepper 1-7 —
     /// der Kalender-Streak zählt nur Wochen, die das Ziel erfüllen.
-    @ViewBuilder
-    private var weeklyGoalSection: some View {
-        Section {
-            Stepper(value: Binding(
-                get: { profile.weeklyWorkoutGoal },
-                set: { profile.weeklyWorkoutGoal = min(7, max(1, $0)) }
-            ), in: 1...7) {
-                HStack {
-                    Label {
-                        Text("profile.weeklyGoal.label", bundle: .module)
-                    } icon: {
-                        Image(systemName: "flame")
-                            .foregroundStyle(Color.deltiqOrange)
-                    }
-                    Spacer()
+    private var weeklyGoalCard: some View {
+        DeltiqSection(String(localized: "profile.weeklyGoal.header", bundle: .module).uppercased()) {
+            DeltiqControlRow(
+                icon: "flame",
+                label: String(localized: "profile.weeklyGoal.label", bundle: .module),
+                showsDivider: false
+            ) {
+                Stepper(value: Binding(
+                    get: { profile.weeklyWorkoutGoal },
+                    set: { profile.weeklyWorkoutGoal = min(7, max(1, $0)) }
+                ), in: 1...7) {
                     Text("\(profile.weeklyWorkoutGoal)×")
-                        .font(.body.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                        .fitnessNumberStyle()
                 }
             }
-        } header: {
-            Text("profile.weeklyGoal.header", bundle: .module)
-        } footer: {
-            Text("profile.weeklyGoal.footer", bundle: .module)
-                .font(.footnote)
-        }
-    }
-
-    private func equipmentBinding(for equipment: Equipment) -> Binding<Bool> {
-        Binding(
-            get: { profile.equipmentPreferences.contains(equipment) },
-            set: { isOn in
-                var current = profile.equipmentPreferences
-                if isOn { current.insert(equipment) } else { current.remove(equipment) }
-                profile.equipmentPreferences = current
-            }
-        )
-    }
-
-    /// Spiegelung von `ExercisePickerView.equipmentIcon` für visuelle
-    /// Konsistenz mit dem Picker (gleiche SF-Symbole).
-    private func equipmentIcon(_ e: Equipment) -> String {
-        switch e {
-        case .barbell:     return "scalemass"
-        case .dumbbell:    return "dumbbell"
-        case .bodyweight:  return "figure.walk"
-        case .machine:     return "gearshape"
-        case .cable:       return "cable.connector"
-        case .kettlebell:  return "circle.grid.cross"
-        case .band:        return "infinity"
+            hintRow(String(localized: "profile.weeklyGoal.footer", bundle: .module))
         }
     }
 
@@ -478,54 +973,108 @@ public struct ProfileEditorView: View {
     /// auf die Computed-Properties von `UserBodyProfile` (die sich um das
     /// rawValue-Mapping kuemmern). Picker-Style "menu" damit beide Werte
     /// kompakt in eine Zeile passen.
-    @ViewBuilder
-    private var coachingSection: some View {
-        Section {
-            Picker(selection: Binding(
-                get: { profile.trainingGoal },
-                set: { profile.trainingGoal = $0 }
-            )) {
-                ForEach(TrainingGoal.allCases, id: \.self) { goal in
-                    Label {
-                        Text(goal.localizedName)
-                    } icon: {
-                        Image(systemName: goal.symbol)
+    ///
+    /// Korrektur V6: der Start-Check-Wiedereinstieg (UX-Fix P3 §6) wurde aus
+    /// diesem Screen entfernt ("Profil bearbeiten" ausserhalb des
+    /// Onboardings). `profile.baselineAssessment` selbst und sein Flow im
+    /// Onboarding (`OnboardingView.baselineCheckStep`/`BaselineCheckFlowView`)
+    /// sind davon unberuehrt — nur dieser zusaetzliche Re-Entry-Punkt faellt
+    /// weg.
+    private var coachingCard: some View {
+        DeltiqSection(String(localized: "profile.section.coach", bundle: .module).uppercased()) {
+            DeltiqControlRow(label: String(localized: "profile.coaching.goal", bundle: .module)) {
+                Picker(selection: Binding(
+                    get: { profile.trainingGoal },
+                    set: { profile.trainingGoal = $0 }
+                )) {
+                    // Nachbesserung (P2.3-Review): `selectableInUI(current:)`
+                    // statt `currentlySelectableInUI` — ein bereits
+                    // gespeichertes `.endurance` (P2.2-Zwischenstand) bleibt
+                    // sichtbar/erhalten, auch wenn es fuer eine NEUE Auswahl
+                    // gesperrt ist. Siehe Kommentar dort.
+                    ForEach(TrainingGoal.selectableInUI(current: profile.trainingGoal), id: \.self) { goal in
+                        Label {
+                            Text(goal.localizedName)
+                        } icon: {
+                            Image(systemName: goal.symbol)
+                        }
+                        .tag(goal)
                     }
-                    .tag(goal)
+                } label: {
+                    EmptyView()
                 }
-            } label: {
-                Text("profile.coaching.goal", bundle: .module)
+                .pickerStyle(.menu)
             }
-            .pickerStyle(.menu)
-
-            Picker(selection: Binding(
-                get: { profile.coachingTone },
-                set: { profile.coachingTone = $0 }
-            )) {
-                ForEach(CoachingTone.allCases, id: \.self) { tone in
-                    Label {
-                        Text(tone.localizedName)
-                    } icon: {
-                        Image(systemName: tone.symbol)
+            DeltiqControlRow(label: String(localized: "profile.coaching.tone", bundle: .module), showsDivider: false) {
+                Picker(selection: Binding(
+                    get: { profile.coachingTone },
+                    set: { profile.coachingTone = $0 }
+                )) {
+                    ForEach(CoachingTone.allCases, id: \.self) { tone in
+                        Label {
+                            Text(tone.localizedName)
+                        } icon: {
+                            Image(systemName: tone.symbol)
+                        }
+                        .tag(tone)
                     }
-                    .tag(tone)
+                } label: {
+                    EmptyView()
                 }
-            } label: {
-                Text("profile.coaching.tone", bundle: .module)
+                .pickerStyle(.menu)
             }
-            .pickerStyle(.menu)
-        } header: {
-            Text("profile.section.coach", bundle: .module)
-        } footer: {
-            Text("profile.coaching.footer", bundle: .module)
-                .font(.footnote)
+            hintRow(String(localized: "profile.coaching.footer", bundle: .module))
         }
     }
 
-    private static let heightRange: ClosedRange<Double> = 100...250
+    // MARK: - Row helpers
+
+    /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
+    private func hintRow(_ text: String, color: Color = Color.Deltiq.textSecondary) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(color)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
+    }
 
     private static var minBirthDate: Date {
         Calendar.current.date(byAdding: .year, value: -125, to: Date()) ?? Date.distantPast
+    }
+}
+
+/// UI-Refactor (DeltiqHeader-Muster fuer Autosave-Screens): `UserBodyProfile`
+/// ist `@Bindable` und autosaved direkt in SwiftData. Haelt bewusst NUR die
+/// einfachen, rein lokalen Profil-Felder fest — siehe die Scope-Begruendung
+/// bei `ProfileEditorView.snapshot`. `internal` statt `private`, damit
+/// gezielte Tests (siehe `Tests/FitnessAppUITests`) die Capture/Apply-Logik
+/// per `@testable import` direkt pruefen koennen.
+@available(iOS 17.0, macOS 14.0, *)
+struct ProfileMetaSnapshot: Equatable {
+    var profile: BodyFormulaProfile
+    var birthDate: Date
+    var weeklyWorkoutGoal: Int
+    var trainingGoal: TrainingGoal
+    var coachingTone: CoachingTone
+
+    static func capture(from profile: UserBodyProfile) -> ProfileMetaSnapshot {
+        ProfileMetaSnapshot(
+            profile: profile.profile,
+            birthDate: profile.birthDate,
+            weeklyWorkoutGoal: profile.weeklyWorkoutGoal,
+            trainingGoal: profile.trainingGoal,
+            coachingTone: profile.coachingTone
+        )
+    }
+
+    func apply(to profile: UserBodyProfile) {
+        profile.profile = self.profile
+        profile.birthDate = birthDate
+        profile.weeklyWorkoutGoal = weeklyWorkoutGoal
+        profile.trainingGoal = trainingGoal
+        profile.coachingTone = coachingTone
     }
 }
 

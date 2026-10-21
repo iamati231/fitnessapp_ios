@@ -6,6 +6,13 @@ import Foundation
 /// on every platform.
 public struct LiftAttempt: Sendable, Hashable {
     public let exerciseName: String
+    /// Stabile `ExerciseTemplate.id`-Referenz, falls aufloesbar (Settings-Epic
+    /// Phase 6, EXLIB-07/09). `nil` fuer Alt-Daten ohne Backfill-Treffer oder
+    /// WOD-Zeitformat-Attempts ohne Uebungs-Bezug. `PRDetector` gruppiert
+    /// bevorzugt hierueber, damit ein Umbenennen der Uebung die Verlaufs-
+    /// Kontinuitaet (Bestleistungs-Erkennung) nicht mehr bricht — Name bleibt
+    /// nur noch der Fallback fuer nicht-aufloesbare Alt-Eintraege.
+    public let exerciseTemplateID: UUID?
     public let weightKg: Double
     public let reps: Int
     public let date: Date
@@ -26,6 +33,7 @@ public struct LiftAttempt: Sendable, Hashable {
 
     public init(
         exerciseName: String,
+        exerciseTemplateID: UUID? = nil,
         weightKg: Double,
         reps: Int,
         date: Date,
@@ -36,6 +44,7 @@ public struct LiftAttempt: Sendable, Hashable {
         cardioEquipment: CardioEquipment = .none
     ) {
         self.exerciseName = exerciseName
+        self.exerciseTemplateID = exerciseTemplateID
         self.weightKg = weightKg
         self.reps = reps
         self.date = date

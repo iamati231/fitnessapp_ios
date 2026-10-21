@@ -48,6 +48,14 @@ public extension View {
             .font(.caption2.weight(.bold))
             .tracking(1.5)
             .foregroundStyle(.secondary)
+            // Geraete-Abnahme (Runde 8, docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+            // E04): bei maximaler Bedienungshilfen-Textgroesse (AX5) brach
+            // "SATZ" in SetRow.SetRowColumns' festbreitem Spalten-Header
+            // buchstabenweise um (S/a/t/z untereinander), weil .caption2
+            // als Dynamic-Type-Textstil ungebremst mitskaliert. Gleiches
+            // Muster wie der bereits gefixte SetRow.weightInput (Runde 3).
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
     }
 }
 

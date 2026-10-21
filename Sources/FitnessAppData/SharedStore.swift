@@ -66,9 +66,18 @@ public enum SharedStore {
         case fellBackAfterGroupStoreFailure(String)
     }
 
-    /// Nur schreibend aus `makeAppContainer()`. Kein Concurrency-Schutz noetig:
-    /// gesetzt genau einmal beim App-Start, bevor irgendetwas anderes laeuft.
-    public private(set) static var health: Health = .legacyStoreOnly
+    /// Produktiv nur schreibend aus `makeAppContainer()`. Kein Concurrency-
+    /// Schutz noetig: gesetzt genau einmal beim App-Start, bevor irgendetwas
+    /// anderes laeuft.
+    ///
+    /// Settings-Epic Phase 6 (DI-Seam fuer BL-03/"fehlgeschlagene Sicherung"):
+    /// `internal(set)` statt `private(set)` — `@testable import FitnessAppData`
+    /// kann `health` damit gezielt auf `.fellBackAfterGroupStoreFailure`
+    /// setzen, um `BackupService.store`s `BackupError.storeUnhealthy`-Pfad zu
+    /// testen, ohne echten App-Group-Fehler provozieren zu muessen. Bleibt
+    /// ausserhalb des Moduls weiterhin nicht von aussen beschreibbar (kein
+    /// `public(set)`) — kein globaler Architekturumbau, nur ein gezielter Test-Zugriff.
+    public internal(set) static var health: Health = .legacyStoreOnly
 
     public static func makeAppContainer() -> ModelContainer {
         let schema = Schema(AppSchema.types)

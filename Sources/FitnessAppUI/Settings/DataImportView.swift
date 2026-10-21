@@ -10,9 +10,13 @@
 //   6. Result: Zähler für Imported / Skipped / Errors pro Datei
 //   7. Wenn errors > 0: "Fehlerprotokoll teilen"-Button (errors.csv)
 //
-// **Wichtig**: Der Import läuft auf dem ModelContext des Main-Actors —
-// SwiftData ist nicht Sendable. Heavy parsing+insert kann mehrere Sekunden
-// dauern; in der Zwischenzeit zeigen wir eine ProgressView.
+// **Wichtig**: die SwiftData-Schreibphase laeuft auf dem ModelContext des
+// Main-Actors — SwiftData ist nicht Sendable. Settings-Epic Phase 5 (Befund
+// DI-03/DI-09): das vorgelagerte Entpacken/Parsen (Vorschau UND echter
+// Import) laeuft off-Main (`Task.detached`, beruehrt kein `ModelContext`);
+// die anschliessende Schreibphase bleibt `@MainActor`, yielded aber nach
+// jeder Datei-Phase, damit die ProgressView bei grosser Historie tatsaechlich
+// sichtbar mitlaeuft statt erst am Ende zu "springen".
 
 #if canImport(SwiftUI) && canImport(SwiftData)
 import SwiftUI
@@ -32,6 +36,7 @@ import WidgetKit
 public struct DataImportView: View {
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @State private var phase: Phase = .ready
     @State private var pickedURL: URL?
@@ -72,7 +77,16 @@ public struct DataImportView: View {
     public init() {}
 
     public var body: some View {
-        ScrollView {
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: direkt von SettingsView gepusht (kein
+            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
+            // DashboardSettingsView/ExerciseLibraryView.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "settings.dataImport.title", bundle: .module),
+                onBack: { dismiss() }
+            )
+
             VStack(alignment: .leading, spacing: 18) {
                 introCard
                 strategyCard
@@ -87,13 +101,18 @@ public struct DataImportView: View {
                 if let errorMessage {
                     errorBanner(message: errorMessage)
                 }
-                Spacer(minLength: 24)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .deltiqScreen()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
-        .navigationTitle(Text("settings.dataImport.title", bundle: .module))
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .fileImporter(
             isPresented: $showFilePicker,
             allowedContentTypes: [UTType.zip],
@@ -151,27 +170,26 @@ public struct DataImportView: View {
     // MARK: - Sections
 
     private var introCard: some View {
-        DeltiqFormSection(header: String(localized: "settings.dataImport.intro.header", bundle: .module)) {
-            DeltiqFormFullRow {
-                Text("settings.dataImport.intro.body", bundle: .module)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        } footer: {
-            Text("settings.dataImport.intro.footer", bundle: .module)
+        DeltiqSection(String(localized: "settings.dataImport.intro.header", bundle: .module).uppercased()) {
+            Text("settings.dataImport.intro.body", bundle: .module)
+                .font(.callout)
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            hintRow(String(localized: "settings.dataImport.intro.footer", bundle: .module))
         }
     }
 
     private var strategyCard: some View {
-        DeltiqFormSection(header: String(localized: "settings.dataImport.strategy.header", bundle: .module)) {
-            DeltiqFormFullRow {
-                VStack(alignment: .leading, spacing: 6) {
-                    bullet("settings.dataImport.strategy.appendOnly")
-                    bullet("settings.dataImport.strategy.duplicates")
-                    bullet("settings.dataImport.strategy.errorsLog")
-                }
+        DeltiqSection(String(localized: "settings.dataImport.strategy.header", bundle: .module).uppercased()) {
+            VStack(alignment: .leading, spacing: 6) {
+                bullet("settings.dataImport.strategy.appendOnly")
+                bullet("settings.dataImport.strategy.duplicates")
+                bullet("settings.dataImport.strategy.errorsLog")
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
         }
     }
 
@@ -181,35 +199,38 @@ public struct DataImportView: View {
     /// Warning-Look bei Auswahl.
     @ViewBuilder
     private var strategyPickerCard: some View {
-        DeltiqFormSection(header: String(localized: "settings.dataImport.strategyPicker.header", bundle: .module)) {
-            DeltiqFormFullRow {
-                Picker(selection: $strategy) {
-                    Text("settings.dataImport.strategyPicker.appendOnly", bundle: .module)
-                        .tag(DataImportStrategy.appendOnly)
-                    Text("settings.dataImport.strategyPicker.replace", bundle: .module)
-                        .tag(DataImportStrategy.replace)
-                } label: { EmptyView() }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            }
-            DeltiqFormFullRow {
-                if strategy == .replace {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                        Text("settings.dataImport.strategyPicker.replaceWarning", bundle: .module)
-                            .font(.caption)
-                            .foregroundStyle(.primary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(8)
-                    .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                } else {
-                    Text("settings.dataImport.strategyPicker.appendOnlyDescription", bundle: .module)
+        DeltiqSection(String(localized: "settings.dataImport.strategyPicker.header", bundle: .module).uppercased()) {
+            DeltiqSegmentedPicker(
+                options: [
+                    DeltiqSegmentedOption(
+                        DataImportStrategy.appendOnly,
+                        label: String(localized: "settings.dataImport.strategyPicker.appendOnly", bundle: .module)
+                    ),
+                    DeltiqSegmentedOption(
+                        DataImportStrategy.replace,
+                        label: String(localized: "settings.dataImport.strategyPicker.replace", bundle: .module)
+                    )
+                ],
+                selection: $strategy
+            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            if strategy == .replace {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Color.Deltiq.error)
+                    Text("settings.dataImport.strategyPicker.replaceWarning", bundle: .module)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.primary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(10)
+                .background(Color.Deltiq.error.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                .padding(.horizontal, 14)
+                .padding(.bottom, 12)
+            } else {
+                hintRow(String(localized: "settings.dataImport.strategyPicker.appendOnlyDescription", bundle: .module))
             }
         }
     }
@@ -222,7 +243,7 @@ public struct DataImportView: View {
                 .font(.caption.weight(.bold))
             Text(String(localized: key, bundle: .module))
                 .font(.subheadline)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.primary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
         }
@@ -235,87 +256,94 @@ public struct DataImportView: View {
             pickButton
 
         case .picked(let filename):
-            DeltiqFormSection(header: String(localized: "settings.dataImport.picked.header", bundle: .module)) {
-                DeltiqFormFullRow {
-                    HStack(spacing: 8) {
-                        Image(systemName: "doc.zipper")
-                            .foregroundStyle(.secondary)
-                        Text(filename)
-                            .font(.callout.monospaced())
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Spacer()
+            DeltiqSection(String(localized: "settings.dataImport.picked.header", bundle: .module).uppercased()) {
+                HStack(spacing: 8) {
+                    Image(systemName: "doc.zipper")
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                    Text(filename)
+                        .font(.callout.monospaced())
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+
+                Button {
+                    // DEL-175: je nach Strategy einen anderen
+                    // Confirm-Dialog präsentieren. Replace bekommt den
+                    // destruktiven Warning-Dialog.
+                    if strategy == .replace {
+                        showReplaceConfirmDialog = true
+                    } else {
+                        showConfirmDialog = true
+                    }
+                } label: {
+                    Label {
+                        Text(strategy == .replace
+                             ? "settings.dataImport.action.startReplace"
+                             : "settings.dataImport.action.start",
+                             bundle: .module)
+                    } icon: {
+                        Image(systemName: strategy == .replace
+                              ? "arrow.triangle.2.circlepath"
+                              : "square.and.arrow.down")
                     }
                 }
-                DeltiqFormFullRow {
-                    Button {
-                        // DEL-175: je nach Strategy einen anderen
-                        // Confirm-Dialog präsentieren. Replace bekommt den
-                        // destruktiven Warning-Dialog.
-                        if strategy == .replace {
-                            showReplaceConfirmDialog = true
-                        } else {
-                            showConfirmDialog = true
-                        }
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Label {
-                                Text(strategy == .replace
-                                     ? "settings.dataImport.action.startReplace"
-                                     : "settings.dataImport.action.start",
-                                     bundle: .module)
-                            } icon: {
-                                Image(systemName: strategy == .replace
-                                      ? "arrow.triangle.2.circlepath"
-                                      : "square.and.arrow.down")
-                            }
-                            .font(.body.weight(.semibold))
-                            Spacer()
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(strategy == .replace ? .red : Color.deltiqOrange)
-                    // DEL-226: Nicht startbar, solange der Trockenlauf laeuft
-                    // oder die Datei als unlesbar erkannt wurde. Vorher fuehrte
-                    // ein kaputtes ZIP erst nach dem Tap in einen Fehler —
-                    // beim Replace-Pfad war das der Moment maximaler Nervosität.
-                    .disabled(previewFailed || preview == nil)
-                }
+                .buttonStyle(.plain)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                // Replace ist destruktiv -> Rot statt Akzent-Orange, gleiche
+                // Ausnahme wie SettingsView.dangerZoneSection (Color.Deltiq.error
+                // ist echte, nicht-redundante Warn-Info, kein Marken-Akzent).
+                .background(strategy == .replace ? Color.Deltiq.error : Color.deltiqOrange)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(14)
+                // DEL-226: Nicht startbar, solange der Trockenlauf laeuft
+                // oder die Datei als unlesbar erkannt wurde. Vorher fuehrte
+                // ein kaputtes ZIP erst nach dem Tap in einen Fehler —
+                // beim Replace-Pfad war das der Moment maximaler Nervosität.
+                .disabled(previewFailed || preview == nil)
             }
 
         case .importing:
             // DEL-176: Live-Progress-Card statt nur Spinner. Bei großen
             // Backups (Jahre History) braucht der Import sichtbar Sekunden
             // — der User soll sehen, dass die App nicht hängt.
-            DeltiqFormSection(header: String(localized: "settings.dataImport.importing.header", bundle: .module)) {
-                DeltiqFormFullRow {
-                    VStack(alignment: .leading, spacing: 10) {
-                        // Phase-Text (lokalisiert) + N / M Counter
-                        HStack {
-                            Text(progressPhaseLabel)
-                                .font(.callout)
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if let p = importProgress, p.filesTotal > 0 {
-                                Text("\(p.filesCompleted) / \(p.filesTotal)")
-                                    .font(.caption.monospacedDigit())
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        // Linear-Progress: animiert sich smooth auf die
-                        // neue fraction. Bei unbekanntem Total (wipe-Phase)
-                        // zeigen wir indeterminate.
+            DeltiqSection(String(localized: "settings.dataImport.importing.header", bundle: .module).uppercased()) {
+                VStack(alignment: .leading, spacing: 10) {
+                    // Phase-Text (lokalisiert) + N / M Counter
+                    HStack {
+                        Text(progressPhaseLabel)
+                            .font(.callout)
+                            .foregroundStyle(Color.primary)
+                        Spacer()
                         if let p = importProgress, p.filesTotal > 0 {
-                            ProgressView(value: p.fraction)
-                                .tint(Color.deltiqOrange)
-                        } else {
-                            ProgressView()
-                                .progressViewStyle(.linear)
-                                .tint(Color.deltiqOrange)
+                            Text("\(p.filesCompleted) / \(p.filesTotal)")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(Color.Deltiq.textSecondary)
                         }
                     }
+                    // Linear-Progress: animiert sich smooth auf die
+                    // neue fraction. Bei unbekanntem Total (wipe-Phase)
+                    // zeigen wir indeterminate.
+                    if let p = importProgress, p.filesTotal > 0 {
+                        ProgressView(value: p.fraction)
+                            .tint(Color.deltiqOrange)
+                    } else {
+                        ProgressView()
+                            .progressViewStyle(.linear)
+                            .tint(Color.deltiqOrange)
+                    }
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
             }
 
         case .finished(let result):
@@ -324,94 +352,97 @@ public struct DataImportView: View {
     }
 
     private var pickButton: some View {
-        DeltiqFormSection(header: nil) {
-            DeltiqFormFullRow {
-                Button {
-                    showFilePicker = true
-                } label: {
-                    HStack {
-                        Spacer()
-                        Label {
-                            Text("settings.dataImport.action.pick", bundle: .module)
-                        } icon: {
-                            Image(systemName: "folder.badge.plus")
-                        }
-                        .font(.body.weight(.semibold))
-                        Spacer()
-                    }
+        DeltiqSection {
+            Button {
+                showFilePicker = true
+            } label: {
+                Label {
+                    Text("settings.dataImport.action.pick", bundle: .module)
+                } icon: {
+                    Image(systemName: "folder.badge.plus")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Color.deltiqOrange)
             }
+            .buttonStyle(.plain)
+            .deltiqButtonStyle()
+            .padding(14)
         }
     }
 
     @ViewBuilder
     private func resultSection(result: DataImportResult) -> some View {
-        DeltiqFormSection(header: String(localized: "settings.dataImport.result.header", bundle: .module)) {
-            DeltiqFormFullRow {
-                VStack(alignment: .leading, spacing: 8) {
+        DeltiqSection(String(localized: "settings.dataImport.result.header", bundle: .module).uppercased()) {
+            VStack(alignment: .leading, spacing: 8) {
+                resultLine(
+                    labelKey: "settings.dataImport.result.imported",
+                    countText: String(result.totalImported),
+                    color: Color.Deltiq.success,
+                    icon: "checkmark.circle.fill"
+                )
+                resultLine(
+                    labelKey: "settings.dataImport.result.skipped",
+                    countText: String(result.totalSkipped),
+                    color: Color.Deltiq.textSecondary,
+                    icon: "minus.circle.fill"
+                )
+                if result.errorRows > 0 {
                     resultLine(
-                        labelKey: "settings.dataImport.result.imported",
-                        countText: String(result.totalImported),
-                        color: .green,
-                        icon: "checkmark.circle.fill"
+                        labelKey: "settings.dataImport.result.errors",
+                        countText: String(result.errorRows),
+                        color: Color.Deltiq.error,
+                        icon: "exclamationmark.triangle.fill"
                     )
-                    resultLine(
-                        labelKey: "settings.dataImport.result.skipped",
-                        countText: String(result.totalSkipped),
-                        color: .secondary,
-                        icon: "minus.circle.fill"
-                    )
-                    if result.errorRows > 0 {
-                        resultLine(
-                            labelKey: "settings.dataImport.result.errors",
-                            countText: String(result.errorRows),
-                            color: .red,
-                            icon: "exclamationmark.triangle.fill"
-                        )
-                    }
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            Rectangle()
+                .fill(Color.Deltiq.divider)
+                .frame(height: 1)
+
             // Pro-File-Breakdown (klein, monospaced — debugging-freundlich,
             // aber unaufdringlich). DEL-199: Byte-Größen-Anzeige aus der
             // DEL-185-Debug-Phase wieder entfernt.
-            DeltiqFormFullRow {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(filesInResult(result), id: \.self) { file in
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Text(file).font(.caption2.monospaced()).foregroundStyle(.secondary)
-                            Spacer()
-                            Text(String(
-                                format: String(localized: "settings.dataImport.result.fileSummary", bundle: .module),
-                                result.imported[file] ?? 0,
-                                result.skipped[file] ?? 0
-                            ))
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.tertiary)
-                        }
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(filesInResult(result), id: \.self) { file in
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(file).font(.caption2.monospaced()).foregroundStyle(Color.Deltiq.textSecondary)
+                        Spacer()
+                        Text(String(
+                            format: String(localized: "settings.dataImport.result.fileSummary", bundle: .module),
+                            result.imported[file] ?? 0,
+                            result.skipped[file] ?? 0
+                        ))
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(Color.Deltiq.textTertiary)
                     }
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
             if result.errorsCSV != nil {
-                DeltiqFormFullRow {
-                    Button {
-                        prepareAndShareErrorsCSV(result: result)
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Label {
-                                Text("settings.dataImport.action.shareErrors", bundle: .module)
-                            } icon: {
-                                Image(systemName: "square.and.arrow.up")
-                            }
-                            .font(.body.weight(.semibold))
-                            Spacer()
-                        }
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+
+                Button {
+                    prepareAndShareErrorsCSV(result: result)
+                } label: {
+                    Label {
+                        Text("settings.dataImport.action.shareErrors", bundle: .module)
+                    } icon: {
+                        Image(systemName: "square.and.arrow.up")
                     }
-                    .buttonStyle(.bordered)
-                    .tint(.red)
                 }
+                .buttonStyle(.plain)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(Color.Deltiq.error)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.Deltiq.error.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(14)
             }
 
             // DEL-199: Das DEL-187-Inline-Diagnose-Panel ist wieder ausgebaut
@@ -430,21 +461,32 @@ public struct DataImportView: View {
             }
             .font(.callout)
             Spacer()
-            Text(countText).font(.callout.bold()).foregroundStyle(.primary)
+            Text(countText).font(.callout.bold()).foregroundStyle(Color.primary)
         }
     }
 
     private func errorBanner(message: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.Deltiq.error)
             Text(message)
                 .font(.callout)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.primary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
-        .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Color.Deltiq.error.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
+    private func hintRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
     }
 
     // MARK: - Logic
@@ -497,7 +539,7 @@ public struct DataImportView: View {
             if previewFailed {
                 Text("import.preview.unreadable", bundle: .module)
                     .font(.subheadline)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.Deltiq.error)
                     .fixedSize(horizontal: false, vertical: true)
             } else if let preview {
                 Text(String(
@@ -505,7 +547,7 @@ public struct DataImportView: View {
                     preview.exportedAt
                 ))
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
 
                 Text(String(
                     format: String(localized: "import.preview.comparison", bundle: .module),
@@ -522,11 +564,11 @@ public struct DataImportView: View {
                         HStack {
                             Text(fileLabel(entry.name))
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
                             Spacer()
                             Text("\(entry.rows)")
                                 .font(.caption.monospacedDigit())
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(Color.primary)
                         }
                     }
                 }
@@ -539,7 +581,7 @@ public struct DataImportView: View {
                         Image(systemName: "info.circle")
                     }
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -550,7 +592,7 @@ public struct DataImportView: View {
                     Image(systemName: "clock.arrow.circlepath")
                 }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             } else {
                 ProgressView()
@@ -595,17 +637,27 @@ public struct DataImportView: View {
     /// DEL-226: Trockenlauf. Nutzt exakt dieselbe Entpack- und
     /// Validierungs-Strecke wie der echte Import (`DataImportService.preview`
     /// und `performImport` teilen `extractAndValidate`), schreibt aber nichts.
+    ///
+    /// Settings-Epic Phase 5 (Befund DI-03): Lesen + Entpacken + Parsen
+    /// beruehren kein `ModelContext`/SwiftData-Objekt (`preview(zipData:)`
+    /// nimmt gar keinen Context entgegen) — sicher per `Task.detached`, haelt
+    /// den Main-Thread bei jeder Dateiauswahl responsiv statt bei einer
+    /// grossen Historie kurz einzufrieren.
     private func loadPreview(from url: URL) {
         preview = nil
         previewFailed = false
-        do {
-            let data = try Data(contentsOf: url)
-            preview = try DataImportService.preview(zipData: data)
-            currentRecordCount = countCurrentRecords()
-        } catch {
-            // Kein Fehler-Banner: die Vorschau-Karte sagt selbst, dass die
-            // Datei nicht lesbar ist, und der Import-Button bleibt gesperrt.
-            previewFailed = true
+        currentRecordCount = countCurrentRecords()
+        Task {
+            do {
+                let result = try await Task.detached {
+                    try DataImportService.preview(zipData: try Data(contentsOf: url))
+                }.value
+                await MainActor.run { self.preview = result }
+            } catch {
+                // Kein Fehler-Banner: die Vorschau-Karte sagt selbst, dass die
+                // Datei nicht lesbar ist, und der Import-Button bleibt gesperrt.
+                await MainActor.run { self.previewFailed = true }
+            }
         }
     }
 
@@ -681,17 +733,22 @@ public struct DataImportView: View {
                 // blockieren soll — dann steht in der Vorschau-Notiz zwar ein
                 // Versprechen, das nicht eingehalten wurde, aber ein
                 // erzwungener Abbruch waere fuer den User schlimmer als ein
-                // Import ohne Netz.
-                _ = try? BackupService.createBackup(context: ctx, reason: .preImport)
+                // Import ohne Netz. Settings-Epic Phase 5: `createBackupAsync`
+                // haelt den Main-Thread waehrend ZIP-Kompression responsiv.
+                _ = try? await BackupService.createBackupAsync(context: ctx, reason: .preImport)
 
-                let zipData = try Data(contentsOf: url)
+                // Reines Datei-I/O auf der bereits lokal kopierten ZIP —
+                // sicher per `Task.detached`.
+                let zipData = try await Task.detached { try Data(contentsOf: url) }.value
                 // DEL-176: progressHandler ist @Sendable; wir reichen
                 // Updates über einen MainActor-Hop an unseren @State weiter.
-                // Der Service läuft synchron auf demselben Actor wie ctx
-                // (Main bei SwiftData iOS-17), aber wir nehmen den
-                // MainActor.run-Wrap als Defensive — falls Apple den Actor
-                // mal explizit macht.
-                let result = try DataImportService.performImport(
+                // Settings-Epic Phase 5 (Befund DI-09): der Service ist jetzt
+                // echt `async` — das Entpacken laeuft off-Main
+                // (`Task.detached`), die SwiftData-Schreibphase bleibt
+                // explizit `@MainActor` mit `Task.yield()` zwischen den
+                // Datei-Phasen, damit die Fortschrittsanzeige tatsaechlich
+                // sichtbar mitlaeuft statt erst am Ende zu "springen".
+                let result = try await DataImportService.performImport(
                     zipData: zipData,
                     context: ctx,
                     strategy: strategy,
@@ -701,13 +758,20 @@ public struct DataImportView: View {
                         }
                     }
                 )
+                // Nachgetragene Laeufe aus einer Sicherung vor dem Dauer-Fix
+                // (1-2 Min statt der eingetragenen Laufzeit) nachziehen.
+                SessionDurationRepair.repairAfterImport(in: ctx)
                 // DEL-209: Importierte Reminder-Präferenzen sofort beim
-                // System anmelden — sonst greifen sie erst, wenn der User
-                // zufällig die Settings öffnet (deren .task re-schedulet).
-                // Spiegelt SettingsView.rescheduleReminders; der Scheduler
-                // prüft die Notification-Permission selbst.
+                // System anmelden — sonst greifen sie erst beim naechsten
+                // App-Start (RootView gleicht dann ab). Der Scheduler prüft
+                // die Notification-Permission selbst.
                 await rescheduleImportedReminders()
                 await MainActor.run {
+                    // Ersetzen loescht alle Trainings: Ein noch laufender Zeitformat-Lauf
+                    // (stilles Hintergrund-Audio + Live Activity) hat danach keine Session.
+                    if strategy == .replace {
+                        TimedWorkoutBackground.shared.endAll()
+                    }
                     self.phase = .finished(result: result)
                     self.importProgress = nil
                     // DEL-216: Import kann heutige Wasser-Einträge geändert
@@ -731,24 +795,10 @@ public struct DataImportView: View {
     /// System an (Wasser + Messung). Liest direkt aus UserDefaults — die
     /// settings.csv-Werte sind zu diesem Zeitpunkt bereits geschrieben.
     private func rescheduleImportedReminders() async {
-        let defaults = UserDefaults.standard
-        if defaults.bool(forKey: "pref_water_reminder") {
-            let hours = max(1, defaults.integer(forKey: "pref_water_reminder_hours"))
-            await ReminderScheduler.scheduleWaterReminders(everyHours: hours)
-        } else {
-            await ReminderScheduler.cancelWaterReminders()
-        }
-        if defaults.bool(forKey: "pref_measurement_reminder") {
-            let weekday = defaults.integer(forKey: "pref_measurement_reminder_weekday")
-            let hour = defaults.integer(forKey: "pref_measurement_reminder_hour")
-            await ReminderScheduler.scheduleMeasurementReminder(
-                weekday: (1...7).contains(weekday) ? weekday : 1,
-                hour: (0...23).contains(hour) ? hour : 8,
-                minute: 0
-            )
-        } else {
-            await ReminderScheduler.cancelMeasurementReminder()
-        }
+        // Gemeinsame Logik (inkl. Vorgabewerte fuer fehlende Keys) liegt in
+        // `ReminderPreferencesApplier` — dieselbe wird nach dem Onboarding
+        // und bei jedem App-Start benutzt.
+        await ReminderPreferencesApplier.applyStoredSchedules()
     }
 
     private func prepareAndShareErrorsCSV(result: DataImportResult) {

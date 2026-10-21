@@ -138,16 +138,10 @@ struct ChartTimeRangePicker: View {
     @Binding var selection: ChartTimeRange
 
     var body: some View {
-        Picker(selection: $selection) {
-            ForEach(ChartTimeRange.allCases) { range in
-                Text(range.label).tag(range)
-            }
-        } label: {
-            // Label leer — der Picker sitzt unter einem eigenen Card-Header.
-            EmptyView()
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
+        DeltiqSegmentedPicker(
+            options: ChartTimeRange.allCases.map { DeltiqSegmentedOption($0, label: $0.label) },
+            selection: $selection
+        )
     }
 }
 

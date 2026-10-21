@@ -64,6 +64,17 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
     /// propagiert.
     public let localizationKey: String?
 
+    /// Smart-Onboarding-Epic Phase 2 (PLAN_EQUIPMENT_MATCHING_AUDIT.md
+    /// Abschnitt 4): feingranulare AND/OR/Anzahl-Voraussetzung fuer DIESE
+    /// konkrete Variante, zusaetzlich zum groben `equipment`-Feld oben
+    /// (das bleibt unveraendert die Pro-Uebung-Klassifikation). `nil` =
+    /// noch nicht erfasst — KEIN Hinweis auf "keine Voraussetzung",
+    /// sondern "fuer dieses Katalog-Phase noch nicht modelliert" (nur ein
+    /// kleiner, explizit verifizierter Teil der 229 Uebungen traegt diese
+    /// Struktur bereits; die vollstaendige Katalog-Erfassung ist ein
+    /// separater, spaeterer Schritt — Audit Abschnitt 9).
+    public let equipmentRequirement: ExerciseRequirement?
+
     public init(
         name: String,
         equipment: Equipment,
@@ -80,7 +91,8 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         axialLoadFactor: Double = 0.20,
         technicalComplexityFactor: Double = 0.30,
         recoveryClass: ExerciseRecoveryClass = .medium,
-        localizationKey: String? = nil
+        localizationKey: String? = nil,
+        equipmentRequirement: ExerciseRequirement? = nil
     ) {
         self.name = name
         self.equipment = equipment
@@ -96,5 +108,6 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         self.technicalComplexityFactor = technicalComplexityFactor
         self.recoveryClass = recoveryClass
         self.localizationKey = localizationKey
+        self.equipmentRequirement = equipmentRequirement
     }
 }

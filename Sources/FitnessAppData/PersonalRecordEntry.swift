@@ -25,6 +25,14 @@ public final class PersonalRecordEntry {
 
     public var date: Date
     public var exerciseName: String
+    /// Settings-Epic Phase 6 (EXLIB-07/09): stabile Rueckreferenz auf die
+    /// `ExerciseTemplate`, aus der dieser PR entstand (ueber `LiftAttempt` /
+    /// `PersonalRecord.exerciseTemplateID` propagiert). `nil` fuer
+    /// WOD-Zeitformat-PRs (`exerciseName` traegt dort den WOD-Namen, keine
+    /// Uebungs-Vorlage) sowie fuer Alt-Eintraege ohne Backfill-Treffer — der
+    /// Trophy-Room faellt dann auf `exerciseName` zurueck, exakt das
+    /// Verhalten vor dieser Phase.
+    public var exerciseTemplateID: UUID?
 
     /// `PersonalRecord.Kind.rawValue`. Exposed via the typed `kind` accessor below.
     public var kindRaw: String
@@ -63,6 +71,7 @@ public final class PersonalRecordEntry {
     public init(
         date: Date,
         exerciseName: String,
+        exerciseTemplateID: UUID? = nil,
         kindRaw: String,
         value: Double,
         previousValue: Double,
@@ -73,6 +82,7 @@ public final class PersonalRecordEntry {
     ) {
         self.date = date
         self.exerciseName = exerciseName
+        self.exerciseTemplateID = exerciseTemplateID
         self.kindRaw = kindRaw
         self.value = value
         self.previousValue = previousValue
@@ -96,6 +106,7 @@ public final class PersonalRecordEntry {
         self.init(
             date: record.achievedAt,
             exerciseName: record.exerciseName,
+            exerciseTemplateID: record.exerciseTemplateID,
             kindRaw: record.kind.rawValue,
             value: record.newValue,
             previousValue: record.previousValue,

@@ -16,7 +16,7 @@ public enum ProgramTemplates {
         localizationKey: "plan.template.fullBody3x.name",
         tagline: "3 Tage · Anfänger & Re-Einstieg",
         taglineKey: "plan.template.fullBody3x.tagline",
-        descriptionText: "Höchste Trainingsfrequenz pro Muskelgruppe. Laut Forschung optimal für Anfänger und Wiedereinstieg — maximales Signal für Muskelwachstum.",
+        descriptionText: "Hohe Trainingsfrequenz pro Muskelgruppe — ein bewährter Ansatz für den Einstieg. Enthält freie Kniebeuge, Kreuzheben und Schulterdrücken: plane in den ersten Wochen Zeit für die Technik ein.",
         descriptionKey: "plan.template.fullBody3x.description",
         focus: "Anfänger / Allgemein",
         focusKey: "plan.template.fullBody3x.focus",
@@ -104,7 +104,7 @@ public enum ProgramTemplates {
         targetEnvironment: .gym,
         iconSystemName: "flame.fill",
         targetExperience: [.beginner, .intermediate],
-        targetGoals: [.fatloss, .hypertrophy]
+        targetGoals: [.weightLoss, .hypertrophy]
     )
 
     // MARK: - 3. Home Gym Hero (Dumbbell-only)
@@ -115,7 +115,7 @@ public enum ProgramTemplates {
         localizationKey: "plan.template.homeGymHero.name",
         tagline: "3 Tage · Muskelaufbau mit Kurzhanteln",
         taglineKey: "plan.template.homeGymHero.tagline",
-        descriptionText: "Effektiver Ganzkörperplan komplett mit Kurzhanteln. Ideal für das Training zuhause — kein Fitnessstudio nötig.",
+        descriptionText: "Effektiver Ganzkörperplan mit Kurzhanteln. Für einige Übungen ist zusätzlich eine Flach-/Schrägbank hilfreich — sonst reicht das Training zuhause ohne Fitnessstudio.",
         descriptionKey: "plan.template.homeGymHero.description",
         focus: "Hypertrophie",
         focusKey: "plan.template.homeGymHero.focus",
@@ -159,7 +159,7 @@ public enum ProgramTemplates {
         localizationKey: "plan.template.bodyweightMastery.name",
         tagline: "3 Tage · Funktionelles Training ohne Geräte",
         taglineKey: "plan.template.bodyweightMastery.tagline",
-        descriptionText: "Komplettes Körpergewichtstraining ohne ein einziges Gerät. Kürzere Pausen und isometrische Übungen sorgen für maximalen Trainingsreiz.",
+        descriptionText: "Komplettes Körpergewichtstraining – die meisten Übungen brauchen kein Gerät. Für Rudern nutzt du einen stabilen Türrahmen, für Dips idealerweise Barren oder zwei stabile Erhöhungen.",
         descriptionKey: "plan.template.bodyweightMastery.description",
         focus: "Funktionelle Fitness",
         focusKey: "plan.template.bodyweightMastery.focus",
@@ -190,7 +190,7 @@ public enum ProgramTemplates {
         targetEnvironment: .noEquipment,
         iconSystemName: "figure.run",
         targetExperience: [.beginner, .intermediate],
-        targetGoals: [.functional, .fatloss]
+        targetGoals: [.functional, .weightLoss]
     )
 
     // MARK: - 5. Push-Pull-Legs (6 days)
@@ -201,7 +201,7 @@ public enum ProgramTemplates {
         localizationKey: "plan.template.pushPullLegs.name",
         tagline: "6 Tage · Hypertrophie + Kraft",
         taglineKey: "plan.template.pushPullLegs.tagline",
-        descriptionText: "Wissenschaftlich optimierter Split. Jede Muskelgruppe wird 2x pro Woche trainiert – ideal für intermediäre Sportler laut Meta-Analysen.",
+        descriptionText: "Klassischer 6-Tage-Split: jede Muskelgruppe wird 2x pro Woche trainiert. Hohes Wochenvolumen — für Fortgeschrittene mit vorhandener Trainingsbasis gedacht.",
         descriptionKey: "plan.template.pushPullLegs.description",
         focus: "Hypertrophie",
         focusKey: "plan.template.pushPullLegs.focus",
@@ -269,7 +269,7 @@ public enum ProgramTemplates {
         localizationKey: "plan.template.upperLower.name",
         tagline: "4 Tage · Kraft & Hypertrophie",
         taglineKey: "plan.template.upperLower.tagline",
-        descriptionText: "Optimale Balance zwischen Frequenz und Volumen. Laut Studienlage der effektivste Split für Kraft- und Muskelaufbau bei Intermediären.",
+        descriptionText: "Balance aus Frequenz und Volumen: Kraft- und Aufbau-Tage wechseln sich ab. Ein bewährter Split für Fortgeschrittene mit vorhandener Technik in den Grundübungen.",
         descriptionKey: "plan.template.upperLower.description",
         focus: "Kraft + Hypertrophie",
         focusKey: "plan.template.upperLower.focus",
@@ -458,7 +458,7 @@ public enum ProgramTemplates {
         localizationKey: "plan.template.powerlifting5x5.name",
         tagline: "3 Tage · Kraft & Masse",
         taglineKey: "plan.template.powerlifting5x5.tagline",
-        descriptionText: "Das bewährteste Kraft-Programm für Anfänger & Fortgeschrittene. Progressive Überlastung mit den Grundübungen — wissenschaftlich und praktisch belegt.",
+        descriptionText: "Einfaches, lineares Kraftprogramm mit den Grundübungen. Progressive Überlastung macht Fortschritt leicht nachvollziehbar — ein klassischer Einstieg ins Krafttraining.",
         descriptionKey: "plan.template.powerlifting5x5.description",
         focus: "Kraft",
         focusKey: "plan.template.powerlifting5x5.focus",
@@ -589,7 +589,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Plank",                        sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
             ]),
             DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30)
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
@@ -598,7 +598,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Bizeps-Curl (KH)",                      sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50)
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50, enduranceSportKind: .running)
             ])
         ],
         targetEnvironment: .gym,
@@ -616,7 +616,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Plank",                         sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30)
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
@@ -625,7 +625,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Bizeps-Curl (KH)",              sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50, enduranceSportKind: .running)
                 ])
             ]),
             // DEL-171: Kettlebell-Only-Variante. Cardio-Tage unverändert.
@@ -637,7 +637,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Plank",                         sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30)
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Kettlebell RDL",                sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
@@ -646,7 +646,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Halo",               sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.5)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50, enduranceSportKind: .running)
                 ])
             ])
         ]
@@ -675,7 +675,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35)
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 5,  repsMax: 6,  restSeconds: 180, targetRir: 3.0),
@@ -684,7 +684,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Bizeps-Curl (KH)",                      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70)
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
                 ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
@@ -696,7 +696,20 @@ public enum ProgramTemplates {
         targetEnvironment: .gym,
         iconSystemName: "figure.mixed.cardio",
         targetExperience: [.intermediate, .advanced],
-        targetGoals: [.hybrid],
+        // P2.2: `.endurance` ergänzt (additiv, `.hybrid` bleibt unverändert
+        // Haupt-Tag) — dieses Template hat als einziges im Katalog bereits
+        // echte Lauf-Tage mit Distanz/Dauer-Zielen ("Easy Run"/"Long Run"),
+        // deshalb hier statt bei einem neu erfundenen Inhalt angehängt.
+        // Verhindert, dass `TrainingGoal.endurance` im Template-Picker eine
+        // tote Auswahl ohne jeden Treffer ist (siehe
+        // `ProgramTemplatesTests.testEveryTrainingGoalHasAtLeastOneTemplate`).
+        // `PlanMatchmaker.rankPlansDetailed` behandelt `targetGoals` als
+        // Scoring-Bonus, keinen harten Filter — andere Kandidaten bleiben
+        // für `.endurance`-Nutzer weiterhin sichtbar. Ob `.endurance`
+        // stattdessen (auch) über den Generator-Pfad geroutet werden soll,
+        // ist eine bewusst noch offene P3-Entscheidung (siehe
+        // docs/PLANUNG_BEGLEITUNG_AUDIT.md, "Goal→Generierung-Zuordnungsregeln").
+        targetGoals: [.hybrid, .endurance],
         // DEL-170: Equipment-Varianten. Cardio-Tage bleiben unverändert (gleiche
         // Distanzen/Dauer). Strength-Tage werden auf die jeweilige Implement-
         // Familie umgemappt. RIR-Puffer + Volumen bleiben strukturell identisch
@@ -711,7 +724,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)",  sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35)
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",     sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
@@ -720,7 +733,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Bizeps-Curl (KH)",                sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
                     ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
@@ -741,7 +754,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Halo",                 sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35)
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
@@ -750,7 +763,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Suitcase Carry",       sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
                     ExerciseSpec(name: "Kettlebell Goblet Squat",         sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
@@ -788,8 +801,16 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup),
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
+                ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup, enduranceSportKind: .running),
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45, enduranceSportKind: .running),
+                // P5.3: erster real erzeugter `.cooldown`-Eintrag im gesamten
+                // Katalog (vorher existierte der `ExerciseRole`-Case nur im
+                // Datenmodell + UI-Handling, aber kein Generator-/Template-Pfad
+                // erzeugte ihn je). Dieselbe Uebung wie der Warmup oben
+                // ("Gehen / Einlaufen") — ein Ausklang-Spaziergang nach dem
+                // Lauf ist physiologisch dieselbe Bewegung wie das Einlaufen
+                // davor, braucht also keinen neuen Katalog-Eintrag.
+                ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .cooldown, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 4,  repsMax: 6,  restSeconds: 210, targetRir: 3.0),
@@ -798,7 +819,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Bizeps-Curl (KH)",                      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Intervalle", localizationKey: "plan.day.intervals", type: .cardio, sequenceIndex: 4, exercises: [
-                ExerciseSpec(name: "Intervalle",                   sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30)
+                ExerciseSpec(name: "Intervalle",                   sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 5, exercises: [
                 ExerciseSpec(name: "Kniebeuge",                    sets: 4, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
@@ -807,7 +828,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 2.0)
             ]),
             DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 6, exercises: [
-                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85)
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85, enduranceSportKind: .running)
             ])
         ],
         targetEnvironment: .gym,
@@ -828,8 +849,8 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)", sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup),
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
+                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup, enduranceSportKind: .running),
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 180, targetRir: 2.5),
@@ -838,7 +859,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Bizeps-Curl (KH)",              sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Intervalle", localizationKey: "plan.day.intervals", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30)
+                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 5, exercises: [
                     ExerciseSpec(name: "Goblet Squat",                 sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 150, targetRir: 2.5),
@@ -847,7 +868,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Farmer's Walk",                 sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 6, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85, enduranceSportKind: .running)
                 ])
             ]),
             // ── Kettlebell-Only (DEL-171) ─────────────────────────────────
@@ -863,8 +884,8 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Halo",                 sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.5)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup),
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
+                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup, enduranceSportKind: .running),
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
@@ -873,7 +894,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Suitcase Carry",       sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Intervalle", localizationKey: "plan.day.intervals", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30)
+                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 5, exercises: [
                     ExerciseSpec(name: "Kettlebell Goblet Squat",         sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 150, targetRir: 2.5),
@@ -882,10 +903,314 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Suitcase Carry",       sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 6, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85, enduranceSportKind: .running)
                 ])
             ])
         ]
+    )
+
+    // MARK: - 15. CrossFit Bodyweight (Rx)
+    //
+    // README 2.9 / Nachtrag "Komplette Trainingsplaene Crossfit Kettlebell".
+    // Rx + Scaled sind als ZWEI eigenstaendige Templates abgebildet statt
+    // eines In-Workout-Toggles (Datenmodell/UI dafuer existiert nicht -
+    // Umfang waere ein eigenes Feature, kein Teil dieser Phase).
+    //
+    // Tag 3 (Auf Zeit): Original-Leiter 50-40-30-20-10 - das Datenmodell
+    // kennt nur gleichmaessige Runden (`Exercise.sets` × `repsMin`), darum
+    // approximiert als 5 Runden × 30 Wdh. (gleiche Gesamt-Wiederholungszahl
+    // 150 wie die Original-Leiter).
+
+    private static let crossfitBodyweightRx = ProgramTemplate(
+        id: "crossfit_bodyweight_rx",
+        name: "CrossFit Bodyweight (Rx)",
+        localizationKey: "plan.template.crossfitBodyweightRx.name",
+        tagline: "3 Tage · Klassische Bodyweight-WODs",
+        taglineKey: "plan.template.crossfitBodyweightRx.tagline",
+        descriptionText: "Benchmark-WODs nur mit Körpergewicht: ein 20-Minuten-AMRAP, ein Intensitäts-EMOM und eine Auf-Zeit-Rundenleiter. Volle Rx-Bewegungen — Klimmzüge, Liegestütze, Air Squats.",
+        descriptionKey: "plan.template.crossfitBodyweightRx.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.crossfitBodyweightRx.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Cindy", localizationKey: "plan.day.cindyRx", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Klimmzüge",        sets: 1, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Liegestütze",      sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kniebeuge (BW)",   sets: 1, repsMin: 15, repsMax: 15)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 20),
+            DaySpec(name: "EMOM Intensität", localizationKey: "plan.day.emomIntensityRx", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Burpees",                       sets: 1, repsMin: 15, repsMax: 15),
+                        ExerciseSpec(name: "Gesprungene Ausfallschritte",   sets: 1, repsMin: 20, repsMax: 20)
+                    ],
+                    timeFormat: .emom, timeCapMinutes: 12),
+            DaySpec(name: "Auf Zeit: Sit-ups & Squats", localizationKey: "plan.day.forTimeSitupsSquatsRx", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Sit-ups",          sets: 5, repsMin: 30, repsMax: 30),
+                        ExerciseSpec(name: "Kniebeuge (BW)",   sets: 5, repsMin: 30, repsMax: 30)
+                    ],
+                    timeFormat: .forTime)
+        ],
+        targetEnvironment: .noEquipment,
+        iconSystemName: "figure.mixed.cardio",
+        targetExperience: [.advanced],
+        targetGoals: [.functional, .weightLoss]
+    )
+
+    // MARK: - 16. CrossFit Bodyweight (Scaled)
+
+    private static let crossfitBodyweightScaled = ProgramTemplate(
+        id: "crossfit_bodyweight_scaled",
+        name: "CrossFit Bodyweight (Scaled)",
+        localizationKey: "plan.template.crossfitBodyweightScaled.name",
+        tagline: "3 Tage · Bodyweight-WODs, Einsteiger-Varianten",
+        taglineKey: "plan.template.crossfitBodyweightScaled.tagline",
+        descriptionText: "Dieselben Benchmark-WODs wie Rx, mit Einsteiger-Bewegungen: Handtuch-Rudern statt Klimmzüge, Liegestütze auf den Knien und eine kürzere Rundenleiter.",
+        descriptionKey: "plan.template.crossfitBodyweightScaled.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.crossfitBodyweightScaled.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Cindy (Scaled)", localizationKey: "plan.day.cindyScaled", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Handtuch-Rudern (Türrahmen)",  sets: 1, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Liegestütze (Knie)",           sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kniebeuge (BW)",               sets: 1, repsMin: 15, repsMax: 15)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 20),
+            DaySpec(name: "EMOM Intensität (Scaled)", localizationKey: "plan.day.emomIntensityScaled", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Burpees",              sets: 1, repsMin: 8,  repsMax: 8),
+                        ExerciseSpec(name: "Ausfallschritte (BW)", sets: 1, repsMin: 12, repsMax: 12)
+                    ],
+                    timeFormat: .emom, timeCapMinutes: 12),
+            DaySpec(name: "Auf Zeit: Sit-ups & Squats (Scaled)", localizationKey: "plan.day.forTimeSitupsSquatsScaled", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Sit-ups",        sets: 3, repsMin: 20, repsMax: 20),
+                        ExerciseSpec(name: "Kniebeuge (BW)", sets: 3, repsMin: 20, repsMax: 20)
+                    ],
+                    timeFormat: .forTime)
+        ],
+        targetEnvironment: .noEquipment,
+        iconSystemName: "figure.mixed.cardio",
+        targetExperience: [.beginner],
+        targetGoals: [.functional, .weightLoss]
+    )
+
+    // MARK: - 17. CrossFit mit Gewichten
+
+    private static let crossfitWeighted = ProgramTemplate(
+        id: "crossfit_weighted",
+        name: "CrossFit mit Gewichten",
+        localizationKey: "plan.template.crossfitWeighted.name",
+        tagline: "3 Tage · Funktionelle WODs mit Kurzhantel/Kettlebell",
+        taglineKey: "plan.template.crossfitWeighted.tagline",
+        descriptionText: "Metcon-Workouts mit Zusatzgewicht statt reinem Körpergewicht — die Schwierigkeit steuerst du über das Gewicht, nicht über die Bewegung. Für Einsteiger und Fortgeschrittene.",
+        descriptionKey: "plan.template.crossfitWeighted.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.crossfitWeighted.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Grundlagen-AMRAP", localizationKey: "plan.day.crossfitWeightedAmrap", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Goblet Squat",       sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Liegestütze",        sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kreuzheben (KH)",    sets: 1, repsMin: 10, repsMax: 10)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 12),
+            DaySpec(name: "EMOM Ganzkörper", localizationKey: "plan.day.crossfitWeightedEmom", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Swing",  sets: 1, repsMin: 12, repsMax: 12),
+                        ExerciseSpec(name: "Push Press (KH)",   sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Plank",              sets: 1, repsMin: 40, repsMax: 40)
+                    ],
+                    timeFormat: .emom, timeCapMinutes: 15),
+            // Original-Leiter 15-12-9 approximiert als 3 Runden × 12 Wdh.
+            // (gleiche Gesamt-Wiederholungszahl 36) — selbe Begründung wie
+            // bei Cindys Auf-Zeit-Tag oben.
+            DaySpec(name: "Auf Zeit: Thruster & Burpees", localizationKey: "plan.day.crossfitWeightedForTime", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Thruster (KH)", sets: 3, repsMin: 12, repsMax: 12),
+                        ExerciseSpec(name: "Burpees",        sets: 3, repsMin: 12, repsMax: 12)
+                    ],
+                    timeFormat: .forTime)
+        ],
+        targetEnvironment: .homeGym,
+        iconSystemName: "dumbbell.fill",
+        // README 2.19: .intermediate ergaenzt - der Quiz-Default (.intermediate)
+        // gab diesem Template sonst 0 statt +2 Erfahrungspunkte, obwohl die
+        // Beschreibung "Einsteiger und Fortgeschrittene" beide Enden schon nennt.
+        targetExperience: [.beginner, .intermediate, .advanced],
+        targetGoals: [.functional, .weightLoss]
+    )
+
+    // MARK: - 18. Kettlebell Grundlagen (Anfänger)
+
+    private static let kettlebellBeginner = ProgramTemplate(
+        id: "kettlebell_beginner",
+        name: "Kettlebell Grundlagen",
+        localizationKey: "plan.template.kettlebellBeginner.name",
+        tagline: "3 Tage · Technik, Kraftausdauer, Stabilität",
+        taglineKey: "plan.template.kettlebellBeginner.tagline",
+        descriptionText: "Einstieg ins Kettlebell-Training: saubere Grundtechnik bei Deadlift, Goblet Squat und Swing, ergänzt von einem AMRAP-Finisher zum Rundenaufbau.",
+        descriptionKey: "plan.template.kettlebellBeginner.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.kettlebellBeginner.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Grundlagen-Zirkel", localizationKey: "plan.day.kbFoundationsCircuit", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Kreuzheben",       sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
+                        ExerciseSpec(name: "Kettlebell Goblet Squat",     sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
+                        ExerciseSpec(name: "Plank",                       sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60)
+                    ]),
+            DaySpec(name: "Push, Pull & Core", localizationKey: "plan.day.kbPushPullCore", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Row einarmig",      sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 60),
+                        ExerciseSpec(name: "Kettlebell Overhead Press",    sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 60),
+                        ExerciseSpec(name: "Sit-ups",                      sets: 3, repsMin: 15, repsMax: 15, restSeconds: 60)
+                    ]),
+            DaySpec(name: "Schwung & Ausdauer", localizationKey: "plan.day.kbSwingEndurance", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Swing",        sets: 1, repsMin: 15, repsMax: 15),
+                        ExerciseSpec(name: "Kettlebell Goblet Squat", sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Liegestütze",             sets: 1, repsMin: 5,  repsMax: 5)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 15)
+        ],
+        targetEnvironment: .homeGym,
+        iconSystemName: "figure.strengthtraining.functional",
+        // README 2.19: .intermediate ergaenzt - saubere Grundtechnik ist
+        // auch fuer Kettlebell-Einsteiger mit anderweitiger Trainingserfahrung
+        // relevant, nicht nur fuer komplette Anfaenger.
+        targetExperience: [.beginner, .intermediate],
+        targetGoals: [.functional, .weightLoss]
+    )
+
+    // MARK: - 19. Kettlebell Fortgeschritten
+    //
+    // Tag 1 (Quelle: "Heavy Pull & Core") kombiniert laut Dokument einen
+    // Kraft-Block (Turkish Get-Up, 5×2/Seite) MIT einem separaten EMOM-WOD
+    // (Snatch links/rechts) - ein Tag hat in diesem Datenmodell aber
+    // entweder normale Sätze ODER genau ein Zeitformat, nicht beides. Der
+    // WOD-Teil gewinnt (zeigt das neue Feature), der Kraft-Teil entfällt
+    // hier bewusst. Tag 3 der Quelle ("Aktive Erholung") ist kein
+    // Trainingstag und wird wie jeder andere Rest-Day nicht als eigener
+    // DaySpec abgebildet (DEL-088) - der Instantiator füllt ihn beim Adopt
+    // automatisch; `daysPerWeek` zählt darum 3 statt der 4 Tage aus der Quelle.
+
+    private static let kettlebellAdvanced = ProgramTemplate(
+        id: "kettlebell_advanced",
+        name: "Kettlebell Fortgeschritten",
+        localizationKey: "plan.template.kettlebellAdvanced.name",
+        tagline: "3 Trainingstage · Maximalkraft, Explosivität, Metcon",
+        taglineKey: "plan.template.kettlebellAdvanced.tagline",
+        descriptionText: "Komplexe Kettlebell-Lifts (Snatch, Clean & Press) für erfahrene Trainierende, ergänzt von einem 20-Minuten-Metcon. Plane zwischen den Einheiten einen Tag aktiver Erholung ein.",
+        descriptionKey: "plan.template.kettlebellAdvanced.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.kettlebellAdvanced.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Heavy Pull: EMOM Snatch", localizationKey: "plan.day.kbHeavyPullEmom", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Snatch (Links)",   sets: 1, repsMin: 6, repsMax: 8),
+                        ExerciseSpec(name: "Kettlebell Snatch (Rechts)",  sets: 1, repsMin: 6, repsMax: 8)
+                    ],
+                    timeFormat: .emom, timeCapMinutes: 10),
+            DaySpec(name: "Heavy Push & Squat", localizationKey: "plan.day.kbHeavyPushSquat", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Clean & Press",  sets: 6, repsMin: 8,  repsMax: 8,  restSeconds: 120),
+                        ExerciseSpec(name: "Kettlebell Front Squat",    sets: 4, repsMin: 10, repsMax: 10, restSeconds: 90),
+                        ExerciseSpec(name: "Renegade Row",               sets: 4, repsMin: 12, repsMax: 12, restSeconds: 90)
+                    ]),
+            DaySpec(name: "Metabolic Conditioning", localizationKey: "plan.day.kbMetcon", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Swing",        sets: 1, repsMin: 20, repsMax: 20),
+                        ExerciseSpec(name: "Kettlebell Goblet Squat", sets: 1, repsMin: 15, repsMax: 15),
+                        ExerciseSpec(name: "Liegestütze",             sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Burpees",                  sets: 1, repsMin: 5,  repsMax: 5)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 20)
+        ],
+        targetEnvironment: .homeGym,
+        iconSystemName: "flame.fill",
+        targetExperience: [.advanced],
+        targetGoals: [.functional, .weightLoss]
+    )
+
+    // MARK: - 20. Kettlebell Komplexe (Zirkel-Zeitformat)
+    //
+    // Nutzer-Upload (13. August, zweite Runde): "Athletik beginnt hier - 5
+    // Kettlebell-Komplexe". Fuenf eigenstaendige Komplexe statt eines
+    // klassischen 3er-Splits, darum `daysPerWeek: 5` statt der ueblichen 3.
+    // Vier der fuenf nutzen das neue `.circuit`-Zeitformat (feste
+    // Rundenzahl, feste Pause dazwischen) - Komplex 4 ("Seated Control")
+    // ist im Original schon ein waschechtes 15-Minuten-AMRAP und braucht
+    // keine Uebersetzung. `ExerciseSpec.sets` spiegelt hier ueberall
+    // `circuitRounds` (gleiche Konvention wie bei Auf-Zeit, siehe
+    // `timedFormatCircuitLabel`), `restSeconds` bleibt unbenutzter Default -
+    // die tatsaechliche Pause lebt in `circuitRestSeconds`.
+    private static let kettlebellComplexes = ProgramTemplate(
+        id: "kettlebell_complexes",
+        name: "Kettlebell Komplexe",
+        localizationKey: "plan.template.kettlebellComplexes.name",
+        tagline: "5 Tage · Ganzkörper-Komplexe für Athletik & Kraftausdauer",
+        taglineKey: "plan.template.kettlebellComplexes.tagline",
+        descriptionText: "Fünf eigenständige Kettlebell-Komplexe für Ganzkörper-Athletik - von rundenbasierten Ganzkörper- und Explosivitäts-Komplexen bis zu einem AMRAP-Finisher für die Körpermitte. Moderates Gewicht wählen, saubere Technik vor Tempo.",
+        descriptionKey: "plan.template.kettlebellComplexes.description",
+        focus: "CrossFit & Kettlebell",
+        focusKey: "plan.template.kettlebellComplexes.focus",
+        daysPerWeek: 5,
+        days: [
+            DaySpec(name: "Ganzkörper-Komplex", localizationKey: "plan.day.kbComplexFullBody", type: .fullBody, sequenceIndex: 1,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Clean to Front Squat", sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Kettlebell Thruster einarmig",   sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Kettlebell Swing",               sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Kettlebell Row einarmig",        sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Liegestütze auf Kettlebell",     sets: 5, repsMin: 14, repsMax: 14)
+                    ],
+                    timeFormat: .circuit, circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps),
+            DaySpec(name: "Schulter & Core", localizationKey: "plan.day.kbComplexShoulderCore", type: .fullBody, sequenceIndex: 2,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Halo",     sets: 10, repsMin: 2, repsMax: 2),
+                        ExerciseSpec(name: "Kettlebell Pullover",  sets: 10, repsMin: 2, repsMax: 2),
+                        ExerciseSpec(name: "Kettlebell Halo",     sets: 10, repsMin: 2, repsMax: 2)
+                    ],
+                    timeFormat: .circuit, circuitRounds: 10, circuitRestSeconds: 90, circuitMode: .toFailure),
+            DaySpec(name: "Explosivität", localizationKey: "plan.day.kbComplexExplosive", type: .fullBody, sequenceIndex: 3,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Snatch",         sets: 5, repsMin: 20, repsMax: 20),
+                        ExerciseSpec(name: "Kettlebell Clean & Press",  sets: 5, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Goblet Squat",   sets: 5, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Swing",          sets: 5, repsMin: 20, repsMax: 20)
+                    ],
+                    timeFormat: .circuit, circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps),
+            // Einziger Komplex ohne Zirkel - im Original schon ein normales
+            // 15-Minuten-AMRAP, exakt das bestehende Zeitformat.
+            DaySpec(name: "Seated Control", localizationKey: "plan.day.kbComplexSeatedControl", type: .fullBody, sequenceIndex: 4,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Uppercut Rotation",     sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Halo",                 sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Overhead Press",       sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Sit-Up (Overhead Hold)", sets: 1, repsMin: 10, repsMax: 10)
+                    ],
+                    timeFormat: .amrap, timeCapMinutes: 15),
+            DaySpec(name: "Kraftausdauer", localizationKey: "plan.day.kbComplexEndurance", type: .fullBody, sequenceIndex: 5,
+                    exercises: [
+                        ExerciseSpec(name: "Kettlebell Row einarmig",      sets: 5, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Kettlebell Swing",             sets: 5, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Kettlebell Thruster einarmig", sets: 5, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Liegestütze",                  sets: 5, repsMin: 10, repsMax: 10)
+                    ],
+                    timeFormat: .circuit, circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps)
+        ],
+        targetEnvironment: .homeGym,
+        iconSystemName: "figure.highintensity.intervaltraining",
+        targetExperience: [.intermediate, .advanced],
+        targetGoals: [.functional, .weightLoss]
     )
 
     // MARK: - Display order
@@ -907,6 +1232,15 @@ public enum ProgramTemplates {
         // sodass die Picker-UI sie als eigene Section rendern kann.
         hybridBeginner,
         hybridBalanced,
-        hybridPerformance
+        hybridPerformance,
+        // README 2.9 / Nachtrag Crossfit+Kettlebell. Gruppiert via
+        // `focus = "CrossFit & Kettlebell"`, gleiches Section-Muster wie
+        // die Hybrid-Familie oben.
+        crossfitBodyweightRx,
+        crossfitBodyweightScaled,
+        crossfitWeighted,
+        kettlebellBeginner,
+        kettlebellAdvanced,
+        kettlebellComplexes
     ]
 }

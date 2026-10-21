@@ -32,8 +32,11 @@ extension WorkoutSession {
         // griff nicht zuverlässig (Day nil, Key nicht gesetzt, Pre-DEL-150-
         // Bestand) → im Verlauf blieb "Spontanes Training/Workout" deutsch
         // stehen, obwohl die TR-Übersetzung existiert. `isAdHoc` ist der
-        // stabile Marker (einziger Erzeugungspfad: startAdHocWorkout), plus
-        // ein Name-Guard für ganz alten Bestand, dem das Flag evtl. fehlt.
+        // stabile Marker — seit README 2.35 (Ad-Hoc-Zeitformat-Start via
+        // DayEditorView.actuallyStartNewSession) NICHT mehr einziger
+        // Erzeugungspfad `startAdHocWorkout`, aber jeder Pfad setzt das Flag
+        // korrekt (`isAdHoc: day.plan == nil`) —, plus ein Name-Guard für
+        // ganz alten Bestand, dem das Flag evtl. fehlt.
         if isAdHoc || isLegacyAdHocName {
             return String(localized: "session.adHoc.dayName", bundle: .module)
         }

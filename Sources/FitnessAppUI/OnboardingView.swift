@@ -33,13 +33,35 @@ public struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(HealthKitController.self) private var healthKit
     @Environment(PRNotificationCenter.self) private var prNotifications
+    /// UX-Fix "Umbrueche und Badge-Saettigung": steuert, ob Plan-Zeilen bei
+    /// grosser Schrift (Accessibility-Groessen) auf ein vertikales,
+    /// fuehrend ausgerichtetes Layout umschalten statt Icon und Text in
+    /// einer engen HStack zu quetschen.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     enum Step: Int, CaseIterable {
         case healthConnect
         case personalInfo
         case coachingStyle           // DEL-101: Goal + Tone in einem Schritt
+        // P4.1 (Doc01 "gemeinsames Onboarding mit Hybrid-Ausdauerwahl und
+        // optionalem Laufcoach"): NUR gezeigt wenn `trainingGoal` (direkt
+        // oberhalb auf `.coachingStyle` gewaehlt) `.hybrid`/`.endurance`
+        // ist - `goToNextStep`/`goToPreviousStep` ueberspringen ihn sonst.
+        // Vorher wurde diese Frage NUR gestellt, wenn der User zusaetzlich
+        // den eingebetteten Builder (`preferencesAndPlanStep`) nutzte - ein
+        // Template-waehlender Hybrid-/Ausdauer-User bekam sie nie gestellt.
+        case enduranceModality
+        case trainingHistory         // Fix "doppeltes Onboarding": ExperienceTrack-Herleitung
         case equipmentPreferences    // DEL-170b: Multi-Select Equipment
+        case baselineCheck           // Start-Check-Epic: optionaler "Wo stehst du heute?"-Check
         case preferencesAndPlan
+    }
+
+    /// P4.1: ob der neue Ausdauerform-/Laufcoach-Schritt ueberhaupt
+    /// angezeigt werden muss - reiner Kraft-/Allgemeine-Fitness-Fall hat
+    /// nichts zu klaeren (Doc02 §2: nur Hybrid/Laufen brauchen die Frage).
+    private var needsEnduranceModalityStep: Bool {
+        trainingGoal == .hybrid || trainingGoal == .endurance
     }
 
     @State private var step: Step = .healthConnect
@@ -75,27 +97,121 @@ public struct OnboardingView: View {
     /// DEL-207: Wochenziel (DEL-203) jetzt schon im Onboarding wählbar —
     /// der Kalender-Streak zählt ab Tag 1 gegen dieses Ziel. Default 3 =
     /// realistischer Median; der ProfileEditor kann es später ändern.
+    ///
+    /// Fix "doppeltes Onboarding": dient zusätzlich als `preferredDays` für
+    /// `PlanMatchmaker` — eine zweite "wie oft willst du trainieren"-Frage
+    /// nur für die Plan-Auswahl wäre exakt die Redundanz, die dieser Fix
+    /// beseitigt.
     @State private var weeklyGoal: Int = 3
 
-    // DEL-170b — Equipment-Präferenzen (Multi-Select). Wird beim ersten
-    // Betreten des Steps mit sinnvollen Defaults aus `environment` befüllt,
-    // sodass der User direkt eine Vor-Auswahl sieht und nur korrigieren muss.
-    @State private var equipmentPreferences: Set<Equipment> = []
-    @State private var equipmentPrefilledForEnv: EnvironmentType? = nil
+    // Fix "doppeltes Onboarding": Trainingshistorie-Schritt. Ersetzt die
+    // bisherige, separate ExperienceLevel-Selbsteinschätzung im Quiz —
+    // `ExperienceTrack` wird aus Verhalten/Pausenlänge hergeleitet statt
+    // erfragt zu werden (siehe `ExperienceTrackResolver`).
+    @State private var trainingHistoryAnswer: TrainingHistoryAnswer?
+    @State private var pauseLength: PauseLength = .sixToTwelveWeeks
+    @State private var priorExperienceDuration: PriorExperienceDuration = .underOneYear
+
+    // Start-Check-Epic: optionaler "Wo stehst du heute?"-Check. `nil` =
+    // weder getestet noch selbst eingeschaetzt noch bewusst uebersprungen —
+    // `finishOnboarding()` schreibt nur bei einem Nicht-nil-Ergebnis in
+    // `UserBodyProfile.baselineAssessment`, sonst bleibt es dort ebenfalls
+    // `nil` (identisch zum Bestandsnutzer-Zustand, siehe Epic: "Alte Nutzer:
+    // keine Baseline = unknown").
+    @State private var baselineAssessmentResult: BaselineAssessment?
+    @State private var showingBaselineCheck: Bool = false
+    @State private var baselineEntryMode: BaselineCheckFlowView.EntryMode = .guidedTest
+
+    // Smart-Onboarding-Epic Phase 3 (PLAN_EQUIPMENT_MATCHING_AUDIT.md):
+    // dreiwertige Equipment-Erfassung. Bewusst OHNE Environment-Prefill —
+    // "Ort ist nicht Ausstattung" (Audit 5.1): "Gym"/"Home-Gym" duerfen nie
+    // automatisch Equipment als vorhanden markieren. Kein Profil existiert
+    // hier noch, daher lokaler State statt direkt `UserBodyProfile` —
+    // `finishOnboarding()` uebertraegt beides auf das neu angelegte Profil.
+    @State private var equipmentProfile: UserEquipmentProfile = UserEquipmentProfile()
+    @State private var equipmentProfileConfirmedComplete: Bool = false
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1): steuert das optionale "Ausstattung anpassen"-Sheet im Gym-Pfad —
+    /// dort gibt es KEINEN Pflichtschritt, der Editor ist nur bei Bedarf
+    /// erreichbar.
+    @State private var showingGymEquipmentSheet: Bool = false
+
+    /// Rueckwaerts-Kompatibilitaets-Bruecke zur aelteren `Equipment`-Menge
+    /// (DEL-170, weiterhin von `PlanMatchmaker`/`ProgramInstantiator`/
+    /// `BaselineCheckFlowView` konsumiert). Liefert `[]` ("nicht gepflegt",
+    /// bestehendes Verhalten) solange der Nutzer die Erfassung NICHT
+    /// bestaetigt hat — sonst wuerde eine unvollstaendige Zwischenauswahl
+    /// (z.B. "erst 2 von 10 Kategorien angetippt") den bestehenden
+    /// Equipment-Hartfilter verfrueht scharf schalten, obwohl der Nutzer die
+    /// Erfassung noch gar nicht abgeschlossen hat (Audit-Vorgabe: "kein
+    /// pauschales 'Equipment passend' aus den neuen Angaben ableiten,
+    /// solange Katalog-Erfassung und Planpruefung unvollstaendig sind").
+    private var derivedLegacyEquipment: Set<Equipment> {
+        equipmentProfileConfirmedComplete ? equipmentProfile.legacyEquipmentPreferences : []
+    }
+
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1/§4): EINE Berechnung des effektiven Planungskontexts — Vorschau
+    /// (`previewingTemplate`-Sheet) UND `finishOnboarding()` verwenden
+    /// exakt diesen, nie das rohe `equipmentProfile` direkt, sobald der Ort
+    /// Gym ist und keine individuelle Erfassung abgeschlossen wurde.
+    private var equipmentPlanningContext: EquipmentPlanningContext {
+        EquipmentPlanningResolver.resolve(
+            environment: environment, individualProfile: equipmentProfile,
+            confirmedComplete: equipmentProfileConfirmedComplete
+        )
+    }
 
     // Step 4 — Präferenzen + Plan
     @State private var enableWaterReminder: Bool = true
     @State private var enableMeasurementReminder: Bool = true
     @State private var selectedTemplate: ProgramTemplate?
 
+    /// Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md Abschnitt
+    /// 4): die exakte, in der Vorschau gezeigte Auswahl (Basis/Variante,
+    /// ggf. mit Substitutionen) — `finishOnboarding()` instanziiert GENAU
+    /// das hier, nie eine neu abgeleitete Variante.
+    @State private var resolvedPlanSelection: ResolvedPlanSelection?
+
     /// DEL-056: Tap auf einen Template-Row oeffnet eine Detail-Vorschau in
     /// einem Sheet. Erst der "Diesen Plan waehlen"-Button im Detail finalisiert
     /// die Auswahl (`selectedTemplate = ...` + Onboarding-Finish).
     @State private var previewingTemplate: ProgramTemplate?
 
-    // DEL-090: Smart Onboarding Quiz. Wenn aktiv, oeffnet sich der Quiz statt
-    // der manuellen Plan-Liste. Quiz-Result fuehrt zum DayPicker.
-    @State private var showingQuiz: Bool = false
+    // DEL-243: dritte Alternative
+    // neben Template-Liste und Quiz. `PlanBuilderView(onGenerated:)`
+    // liefert Input + Ergebnis nur zurueck, statt selbst zu instanziieren
+    // (siehe dortige Typ-Doku) - `finishOnboarding()` baut den Plan dann
+    // ZUSAMMEN mit dem UserBodyProfile, exakt wie beim Template-Pfad.
+    // `selectedTemplate` und dieses Paar schliessen sich gegenseitig aus
+    // (siehe `clearCustomPlan()`/`clearSelectedTemplate()`).
+    @State private var showingPlanBuilder: Bool = false
+    @State private var customPlanInput: PlanGeneratorInput?
+    @State private var customPlanResult: PlanGenerator.Result?
+    /// P3.1: nur gesetzt, wenn der eingebettete Builder im neuen
+    /// zielorientierten Pfad (Doc01 §3) eine Ausdauerform-/Laufcoach-
+    /// Entscheidung FUER DIESEN EINEN, GERADE GEBAUTEN PLAN getroffen hat -
+    /// siehe `PlanBuilderView.onEnduranceModalityChosen`-Doku. Bewusst
+    /// GETRENNT von `enduranceModality`/`runCoachWanted` (P4.1, siehe dort) -
+    /// diese beiden hier werden von `clearCustomPlan()` zurueckgesetzt,
+    /// sobald der User STATTDESSEN ein Template waehlt (beide Plan-Pfade
+    /// schliessen sich aus). Die P4.1-Antwort ist dagegen eine dauerhafte
+    /// PROFIL-Praeferenz, unabhaengig vom gewaehlten Plan-Pfad, und darf
+    /// durch einen Template-Wechsel NICHT mit verworfen werden - eine
+    /// gemeinsame Variable fuer beide Zwecke wuerde genau das tun.
+    @State private var customPlanEnduranceModality: EnduranceModality?
+    @State private var customPlanRunCoachWanted = false
+
+    /// P4.1 (Doc01 "gemeinsames Onboarding mit Hybrid-Ausdauerwahl und
+    /// optionalem Laufcoach"): die Antwort des NEUEN, fruehen
+    /// `.enduranceModality`-Schritts - eine dauerhafte Profil-Praeferenz,
+    /// unabhaengig davon, ob der User anschliessend ein Template oder den
+    /// Builder waehlt (siehe `customPlanEnduranceModality`-Doku fuer die
+    /// Abgrenzung). `finishOnboarding()` bevorzugt `customPlanEnduranceModality`,
+    /// FALLS der Builder fuer den tatsaechlich gebauten Plan eine eigene,
+    /// abweichende Wahl getroffen hat - sonst gilt diese hier.
+    @State private var enduranceModality: EnduranceModality?
+    @State private var runCoachWanted = false
 
     // DEL-088: Tag-Auswahl-Sheet, das nach Plan-Adopt erscheint. Sobald
     // `dayPickerTemplate != nil`, oeffnet sich das DayPickerSheet mit dem
@@ -117,7 +233,22 @@ public struct OnboardingView: View {
     @State private var backupImportError: String?
     @State private var backupImportRunning = false
 
-    public init() {}
+    /// Settings-Epic Phase 4 (docs/SETTINGS_UX_AUDIT.md, Befund REM-02):
+    /// seedet die Reminder-Toggles aus bereits gespeicherten Praeferenzen
+    /// statt sie hart auf `true` zu setzen. Bei einem GENUINEN Erst-
+    /// Onboarding liefert `ReminderPreferences.load()` exakt dieselben
+    /// Vorgabewerte (keine Keys vorhanden) — unveraendertes Verhalten. Bei
+    /// einem ERZWUNGENEN Re-Onboarding (z.B. nach "App zuruecksetzen", das
+    /// diese Keys bewusst NICHT loescht) wuerde `finishOnboarding()` weiter
+    /// unten sonst die erhaltene Praeferenz mit dem hartkodierten
+    /// Vorgabewert ueberschreiben, sobald der User die Toggles hier
+    /// unveraendert laesst — genau der Bruch, den die Reset-Zusage
+    /// ausschliesst.
+    public init() {
+        let existingReminderPreferences = ReminderPreferences.load()
+        _enableWaterReminder = State(initialValue: existingReminderPreferences.waterEnabled)
+        _enableMeasurementReminder = State(initialValue: existingReminderPreferences.measurementEnabled)
+    }
 
     public var body: some View {
         NavigationStack {
@@ -133,7 +264,10 @@ public struct OnboardingView: View {
                     case .healthConnect:        healthConnectStep
                     case .personalInfo:         personalInfoStep
                     case .coachingStyle:        coachingStyleStep
+                    case .enduranceModality:    enduranceModalityStep
+                    case .trainingHistory:      trainingHistoryStep
                     case .equipmentPreferences: equipmentPreferencesStep
+                    case .baselineCheck:        baselineCheckStep
                     case .preferencesAndPlan:   preferencesAndPlanStep
                     }
                 }
@@ -151,6 +285,18 @@ public struct OnboardingView: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
             .keyboardDismissToolbar()
+            // Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_
+            // ONBOARDING.md §1, Abschnitt 4): bei einem Ortswechsel bleibt
+            // `equipmentProfile` selbst unangetastet ("nicht automatisch
+            // loeschen oder ueberschreiben" — bisherige Angaben bleiben
+            // vorausgefuellt), aber eine bereits abgeschlossene Bestaetigung
+            // gilt NICHT automatisch fuer den neuen Ort weiter ("klaeren, ob
+            // diese auch am neuen Ort gelten") — der jeweilige Equipment-
+            // Schritt (Gym-Hinweis/Home-Gym-Editor/Kein-Equipment-Kurzfrage)
+            // verlangt dadurch eine frische Bestaetigung fuer den neuen Ort.
+            .onChange(of: environment) { _, _ in
+                equipmentProfileConfirmedComplete = false
+            }
             // DEL-056: Plan-Detail-Sheet. Wird auf Step 3 geoeffnet, wenn der
             // User einen Template-Row antippt. Adopt-Button finalisiert die
             // Auswahl und triggert direkt das Onboarding-Finish — sonst
@@ -159,14 +305,28 @@ public struct OnboardingView: View {
                 NavigationStack {
                     TemplatePreviewView(
                         template: template,
-                        adoptButtonTitle: "Diesen Plan wählen"
-                    ) {
+                        adoptButtonTitle: "Diesen Plan wählen",
+                        userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
+                        goal: trainingGoal,
+                        experienceTrack: resolvedExperienceTrack,
+                        isEquipmentAssumption: equipmentPlanningContext.isAssumption
+                    ) { selection in
                         // DEL-088: Adopt finalisiert die Plan-Wahl noch nicht
                         // direkt — stattdessen oeffnet sich der DayPicker,
                         // damit der User die Trainings-Wochentage festlegt.
+                        // Smart-Onboarding-Epic Phase 5.4: die exakte
+                        // Vorschau-Auswahl (ggf. substituiert) wird fuer
+                        // `finishOnboarding()` gemerkt statt dort erneut
+                        // hergeleitet (PLAN_SUBSTITUTION_ENGINE.md Abschnitt 4).
                         selectedTemplate = template
+                        resolvedPlanSelection = selection
                         previewingTemplate = nil
                         dayPickerTemplate = template
+                        // DEL-243: ein
+                        // zuvor gebauter Custom-Plan wird verworfen, sobald
+                        // sich der User stattdessen fuer ein Template
+                        // entscheidet - beide Wege schliessen sich aus.
+                        clearCustomPlan()
                     }
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -178,25 +338,6 @@ public struct OnboardingView: View {
                         }
                     }
                 }
-            }
-            // DEL-090: Smart Onboarding Quiz. Vier kompakte Fragen +
-            // Result-Screen, der via `PlanMatchmaker` die 14 Templates ranked.
-            .sheet(isPresented: $showingQuiz) {
-                OnboardingQuizView(
-                    preselectedEnvironment: environment,
-                    // DEL-207: Ziel aus Step 3 in den Quiz reichen.
-                    preselectedGoal: mappedQuizGoal,
-                    onPlanSelected: { template in
-                        selectedTemplate = template
-                        showingQuiz = false
-                        // Quiz-Result direkt weiter in den DayPicker — das
-                        // ist der naechste Pflicht-Step im Wave-14-Flow.
-                        dayPickerTemplate = template
-                    },
-                    onCancel: {
-                        showingQuiz = false
-                    }
-                )
             }
             // DEL-088: DayPickerSheet — nach Plan-Wahl muss der User exakt
             // `template.daysPerWeek` Wochentage ankreuzen. Submit ruft direkt
@@ -216,10 +357,113 @@ public struct OnboardingView: View {
                     }
                 )
             }
+            // DEL-243: dritte
+            // Alternative zu Template-Liste/Quiz. `onGenerated` liefert
+            // Input+Result nur zurueck (siehe Typ-Doku in PlanBuilderView) —
+            // finishOnboarding() instanziiert den Plan zusammen mit dem
+            // UserBodyProfile, kein DayPicker noetig (Step 2 des Builders
+            // deckt Wochentage/Equipment bereits ab).
+            //
+            // P0-Audit (neue Spezifikation): vorher musste der User nach dem
+            // Schliessen dieses Sheets zusaetzlich noch separat den Footer-
+            // Button "Fertig" treffen — ein zweiter, uneinheitlicher
+            // Finish-Trigger gegenueber `DayPickerSheet.onConfirm` (siehe
+            // unten), das `finishOnboarding()` direkt in seinem `onConfirm`
+            // aufruft. `finishOnboarding()` jetzt ebenso direkt HIER
+            // aufzurufen vereinheitlicht beide Pfade auf eine Hauptaktion;
+            // `heightCm`/`currentWeightKg` sind an dieser Stelle immer
+            // gesetzt, da der Builder nur vom letzten Schritt
+            // (`.preferencesAndPlan`) aus erreichbar ist, dessen Vorschritt
+            // (`.personalInfo`) `canAdvance` bereits erzwungen hat.
+            .sheet(isPresented: $showingPlanBuilder) {
+                // Nachbesserung (dritte Korrekturrunde, Punkt 4): `onGenerated` liefert
+                // `PlanBuilderHandoffOutcome` zurueck (siehe PlanBuilderView-Typ-Doku). Reines
+                // `@State`-Zwischenspeichern kann strukturell nicht fehlschlagen - immer `.success`.
+                //
+                // Korrektur (vierte Korrekturrunde, Punkt 1): diese Aufrufstelle wurde beim
+                // Wechsel von `String?` auf `PlanBuilderHandoffOutcome` uebersehen - `return nil`
+                // kompiliert auf Linux trotzdem, weil die gesamte Datei hinter
+                // `#if canImport(SwiftUI)` liegt (auf Linux `false`) und ein inaktiver `#if`-Zweig
+                // dort nur noch syntaktisch, nie mehr semantisch/typgeprueft wird (empirisch
+                // verifiziert, siehe Typ-Doku-Praezisierung in docs/PLANUNG_BEGLEITUNG_AUDIT.md).
+                // Alle vier `PlanBuilderView(`-Aufrufstellen im Repo wurden daraufhin erneut
+                // per Grep geprueft - dies war die einzige verbleibende.
+                //
+                // P0-Audit (neue Spezifikation, Dok02 §1 "kein eigener
+                // Onboarding-Generator, keine doppelte Abfrage"): `selections`
+                // bleibt leer (Onboarding fragt keine Trainingsarten/Tage/
+                // Dauer ab - das bleibt Schritt 1 des Builders vorbehalten),
+                // aber `equipmentPreferences` wird aus den bereits erfassten
+                // Onboarding-Antworten vorbefuellt, damit Schritt 2 des
+                // eingebetteten Builders die Ausstattung nicht ein zweites
+                // Mal von Null abfragt.
+                //
+                // Geraete-Abnahme (A01, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+                // dieselbe Vorbefuellung fehlte bisher fuer `trainingGoal`
+                // (Coaching-Step) und `weeklyGoal` ("wie oft pro Woche") -
+                // der Builder fragte Ziel UND Tage nochmal komplett von Null
+                // ab, obwohl beide Antworten hier bereits vorliegen.
+                PlanBuilderView(initialInput: PlanGeneratorInput(
+                    selections: [],
+                    equipmentPreferences: derivedLegacyEquipment,
+                    usesFixedWeekdays: false
+                ), preseededEnduranceModality: enduranceModality,
+                preseededRunCoachWanted: runCoachWanted,
+                preseededGoal: trainingGoal,
+                preseededDaysPerWeek: weeklyGoal,
+                onGenerated: { input, result in
+                    // Paket 1 (Laufcoach-Konzept, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+                    // der eingebettete Builder uebernimmt nur den Entwurf und
+                    // kehrt zur Wochenvorschau (`.preferencesAndPlan`) zurueck
+                    // - GENAU wie A10 es fuer den eingebetteten Editor ohnehin
+                    // vorschreibt ("nur Onboarding-Entwurf geaendert"). Das
+                    // "Build Plan"-Kaertchen zeigt dort bereits einen Haken,
+                    // sobald `customPlanInput != nil` ist; das gesamte
+                    // Onboarding endet weiterhin AUSSCHLIESSLICH ueber die
+                    // eigene, eindeutige Fertig-Aktion (`handlePrimaryAction()`
+                    // fuer `.preferencesAndPlan`, ruft `finishOnboarding()`
+                    // selbst auf) - der vorherige direkte Aufruf hier war ein
+                    // zweiter, impliziter Finish-Trigger und ist entfallen.
+                    customPlanInput = input
+                    customPlanResult = result
+                    clearSelectedTemplate()
+                    return .success
+                }, onEnduranceModalityChosen: { modality, runCoachWanted in
+                    // P3.1: feuert synchron VOR `onGenerated` (siehe
+                    // `PlanBuilderView.adoptPlan()`) - `finishOnboarding()`
+                    // oben liest beide Zwischenspeicher deshalb bereits
+                    // befuellt.
+                    customPlanEnduranceModality = modality
+                    customPlanRunCoachWanted = runCoachWanted
+                })
+            }
+            // Start-Check-Epic: Sheet fuer den optionalen "Wo stehst du
+            // heute?"-Check. `onFinish(nil)` (Abbruch/Sheet weggewischt)
+            // laesst ein vorhandenes `baselineAssessmentResult` bewusst
+            // unangetastet statt es zu loeschen.
+            .sheet(isPresented: $showingBaselineCheck) {
+                BaselineCheckFlowView(
+                    entryMode: baselineEntryMode,
+                    goal: trainingGoal,
+                    equipmentPreferences: derivedLegacyEquipment
+                ) { result in
+                    if let result {
+                        baselineAssessmentResult = result
+                    }
+                }
+            }
         }
     }
 
     // MARK: - Progress indicator
+
+    /// P4.1: `.enduranceModality` zaehlt nur mit, wenn er fuer das aktuelle
+    /// Ziel ueberhaupt erreichbar ist (siehe `goToNextStep`/`goToPreviousStep`)
+    /// - sonst zeigte der Balken ein Segment fuer einen Schritt, den der
+    /// User nie betreten wird.
+    private var visibleSteps: [Step] {
+        Step.allCases.filter { $0 != .enduranceModality || needsEnduranceModalityStep }
+    }
 
     private var progressIndicator: some View {
         HStack(spacing: 8) {
@@ -229,12 +473,6 @@ public struct OnboardingView: View {
                     .frame(height: 4)
             }
         }
-    }
-
-    /// DEL-207: bei "Kein Equipment" wird der Equipment-Step übersprungen —
-    /// der Indikator zeigt dann ehrlich 4 statt 5 Kapseln.
-    private var visibleSteps: [Step] {
-        Step.allCases.filter { $0 != .equipmentPreferences || environment != .noEquipment }
     }
 
     // MARK: - Step 1: HealthKit-Connect
@@ -363,15 +601,38 @@ public struct OnboardingView: View {
                         // FK-/Snapshot-Lookups greifen — RootView seedet beim
                         // Launch, hier defensiv nochmal anstoßen.
                         LibrarySeeder.seedIfNeeded(in: ctx)
-                        _ = try DataImportService.performImport(
+                        // Settings-Epic Phase 5 (Befund DI-03/DI-09): der
+                        // Service ist jetzt `async` — Entpacken/Parsen laeuft
+                        // off-Main, die SwiftData-Schreibphase bleibt
+                        // `@MainActor`.
+                        let importResult = try await DataImportService.performImport(
                             zipData: zipData,
                             context: ctx,
                             strategy: .appendOnly
                         )
+                        // Nachgetragene Laeufe aus einer Sicherung vor dem Dauer-Fix
+                        // (1-2 Min statt der eingetragenen Laufzeit) nachziehen.
+                        SessionDurationRepair.repairAfterImport(in: ctx)
                         // Kein expliziter Navigations-Schritt nötig:
                         // RootView.@Query<UserBodyProfile> ist nach dem
                         // Profil-Insert nicht mehr leer → MainTabView.
                         await MainActor.run { backupImportRunning = false }
+
+                        // Die importierten Erinnerungs-Schalter (settings.csv)
+                        // wirksam machen: wie am Ende des normalen Onboardings
+                        // erst die Berechtigung klaeren, dann planen. Auf einem
+                        // frisch installierten Geraet existieren die geplanten
+                        // Benachrichtigungen des alten nicht mehr. Nur wenn das
+                        // Backup ein Profil mitgebracht hat - sonst bleibt der
+                        // Nutzer im Onboarding, und `finishOnboarding` plant
+                        // nach seiner eigenen Auswahl (ein Berechtigungsdialog
+                        // mitten in Schritt 1 waere dort fehl am Platz).
+                        guard (importResult.imported["profile.csv"] ?? 0) > 0 else { return }
+                        let reminders = ReminderPreferences.load()
+                        if reminders.waterEnabled || reminders.measurementEnabled {
+                            await prNotifications.requestAuthorization()
+                        }
+                        await ReminderPreferencesApplier.applyStoredSchedules()
                     } catch {
                         await MainActor.run {
                             backupImportRunning = false
@@ -520,7 +781,7 @@ public struct OnboardingView: View {
 
             Section {
                 decimalField(String(localized: "onboarding.field.heightCm", bundle: .module), value: $heightCm)
-                decimalField(String(localized: "onboarding.field.weightCurrentKg", bundle: .module), value: $currentWeightKg)
+                decimalField(String(localized: "onboarding.field.weightCurrentKg", bundle: .module), value: $currentWeightKg, roundsToWeightPrecision: true)
             } header: {
                 Text("onboarding.section.body", bundle: .module)
             } footer: {
@@ -537,7 +798,7 @@ public struct OnboardingView: View {
             }
 
             Section {
-                decimalField(String(localized: "onboarding.field.goalWeightKg", bundle: .module), value: $goalWeightKg)
+                decimalField(String(localized: "onboarding.field.goalWeightKg", bundle: .module), value: $goalWeightKg, roundsToWeightPrecision: true)
                 Picker(selection: $environment) {
                     ForEach(EnvironmentType.allCases, id: \.self) { env in
                         Text(env.localizedName).tag(env)
@@ -583,7 +844,10 @@ public struct OnboardingView: View {
                             .foregroundStyle(.secondary)
                     }
                     VStack(spacing: 10) {
-                        ForEach(TrainingGoal.allCases, id: \.self) { goal in
+                        // Review-Korrektur nach P2.2: `.endurance` ist noch
+                        // nicht ueber die UI waehlbar, siehe
+                        // `TrainingGoal.currentlySelectableInUI`.
+                        ForEach(TrainingGoal.currentlySelectableInUI, id: \.self) { goal in
                             coachingCard(
                                 title: String(localized: goal.localizedName),
                                 description: String(localized: goal.localizedBlurb),
@@ -652,14 +916,280 @@ public struct OnboardingView: View {
         }
     }
 
-    // MARK: - Step 4: Equipment-Präferenzen (DEL-170b)
+    // MARK: - P4.1: Ausdauerform + Laufcoach (nur bei Hybrid/Ausdauer-Ziel)
 
-    /// Multi-Select-Step für Equipment. Defaults werden anhand der aus Step 2
-    /// gewählten `environment` vor-befüllt — der User sieht eine sinnvolle
-    /// Auswahl und kann nur korrigieren. Pflegt sich gegenseitig mit dem
-    /// Profil-Editor (gleiches Datenmodell).
+    /// P4.1 (Doc01 "gemeinsames Onboarding mit Hybrid-Ausdauerwahl und
+    /// optionalem Laufcoach"): fragt die Ausdauerform direkt nach der
+    /// Ziel-Auswahl (`coachingStyleStep`) ab - UNABHAENGIG davon, ob der
+    /// User anschliessend ein Template oder den Builder waehlt. Gleiche
+    /// Zeilen-Komponente (`coachingCard`) wie die Ziel-/Tone-Auswahl
+    /// oberhalb, fuer visuelle Konsistenz innerhalb des Onboardings - KEIN
+    /// Duplikat von `PlanBuilderView.enduranceModalitySubflow` (andere
+    /// Zeilen-Optik dort), aber dieselben xcstrings-Schluessel fuer die
+    /// Laufcoach-Unterfrage (eine Frage, ein Wortlaut, zwei Bildschirme).
+    @ViewBuilder
+    private var enduranceModalityStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("onboarding.enduranceModality.title", bundle: .module)
+                            .font(.title2.weight(.bold))
+                        Text("onboarding.enduranceModality.subtitle", bundle: .module)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    VStack(spacing: 10) {
+                        ForEach(EnduranceModality.allCases, id: \.self) { modality in
+                            coachingCard(
+                                title: String(localized: modality.localizedName),
+                                description: String(localized: modality.localizedBlurb),
+                                iconName: modality.symbol,
+                                isSelected: enduranceModality == modality
+                            ) {
+                                enduranceModality = modality
+                                if !modality.supportsRunCoach { runCoachWanted = false }
+                            }
+                        }
+                    }
+                }
+
+                if let enduranceModality, enduranceModality.supportsRunCoach {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("planBuilder.goal.runCoach.question", bundle: .module)
+                                .font(.title2.weight(.bold))
+                        }
+                        VStack(spacing: 10) {
+                            coachingCard(
+                                title: String(localized: String.LocalizationValue("planBuilder.goal.runCoach.withoutCoach.title"), bundle: .module),
+                                description: String(localized: String.LocalizationValue("planBuilder.goal.runCoach.withoutCoach.blurb"), bundle: .module),
+                                iconName: "flag.checkered",
+                                isSelected: !runCoachWanted
+                            ) {
+                                runCoachWanted = false
+                            }
+                            coachingCard(
+                                title: String(localized: String.LocalizationValue("planBuilder.goal.runCoach.withCoach.title"), bundle: .module),
+                                description: String(localized: String.LocalizationValue("planBuilder.goal.runCoach.withCoach.blurb"), bundle: .module),
+                                iconName: "person.fill.checkmark",
+                                isSelected: runCoachWanted
+                            ) {
+                                runCoachWanted = true
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    // MARK: - Trainingshistorie (Fix "doppeltes Onboarding")
+
+    /// Ersetzt die fruehere separate ExperienceLevel-Selbsteinschaetzung im
+    /// entfernten Quiz: statt "wie erfahren bist du" (Technik-Selbstauskunft)
+    /// fragt dieser Schritt nach Verhalten/Pausenlaenge — genau die Achse,
+    /// die `ExperienceTrackResolver` in `ExperienceTrack` (starter/returner/
+    /// experienced) uebersetzt. Diese Antwort speist sowohl den Coaching-
+    /// Track (`UserBodyProfile.experienceTrack`) als auch, ueber
+    /// `asExperienceLevel`, den Plan-Matching-Score — keine zweite, separate
+    /// Erfahrungs-Frage mehr noetig.
+    @ViewBuilder
+    private var trainingHistoryStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("onboarding.history.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text("onboarding.history.subtitle", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                VStack(spacing: 10) {
+                    ForEach(TrainingHistoryAnswer.allCases, id: \.self) { answer in
+                        coachingCard(
+                            title: String(localized: answer.localizedName),
+                            description: String(localized: answer.localizedBlurb),
+                            iconName: answer.symbol,
+                            isSelected: trainingHistoryAnswer == answer
+                        ) {
+                            trainingHistoryAnswer = answer
+                        }
+                    }
+                }
+
+                // Folgefrage A: nur bei "lange Pause" — kalibriert spaeter
+                // die Wiedereinstiegs-Rampe (nicht Teil dieser Phase).
+                if trainingHistoryAnswer == .longBreakAfterTraining {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("onboarding.history.pauseLength.title", bundle: .module)
+                            .font(.headline)
+                        Picker(selection: $pauseLength) {
+                            ForEach(PauseLength.allCases, id: \.self) { length in
+                                Text(length.localizedName).tag(length)
+                            }
+                        } label: {
+                            EmptyView()
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+
+                // Folgefrage B: nur bei "unregelmaessig" — unterscheidet
+                // "noch keine 3 Monate am Stueck geschafft" (eher Starter)
+                // von "jahrelange Erfahrung, nur gerade unregelmaessig".
+                if trainingHistoryAnswer == .trainingIrregularly {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("onboarding.history.priorExperience.title", bundle: .module)
+                            .font(.headline)
+                        Picker(selection: $priorExperienceDuration) {
+                            ForEach(PriorExperienceDuration.allCases, id: \.self) { duration in
+                                Text(duration.localizedName).tag(duration)
+                            }
+                        } label: {
+                            EmptyView()
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    /// Hergeleiteter Coaching-Track aus der Trainingshistorie-Antwort. `nil`
+    /// nur, solange der User die Hauptfrage noch nicht beantwortet hat
+    /// (`canAdvance` blockt den Schritt dafuer) — ab dem Plan-Schritt also
+    /// praktisch immer gesetzt.
+    private var resolvedExperienceTrack: ExperienceTrack? {
+        guard let trainingHistoryAnswer else { return nil }
+        return ExperienceTrackResolver.track(for: trainingHistoryAnswer, priorExperience: priorExperienceDuration)
+    }
+
+    // MARK: - Step 4: Equipment-Erfassung (Smart-Onboarding-Epic Phase 3/6)
+
+    /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §1): der Inhalt dieses Schritts haengt jetzt vom gewaehlten
+    /// Trainingsort ab — Gym bekommt KEINEN Pflichtschritt mehr (nur einen
+    /// Hinweis + optionales Sheet), Home-Gym den vollen Editor, Kein
+    /// Equipment eine kurze Frage. "Ort ist nicht Ausstattung" bleibt in
+    /// allen drei Faellen gueltig: kein Pfad leitet aus dem Ort allein eine
+    /// BESTAETIGTE Verfuegbarkeit her.
     @ViewBuilder
     private var equipmentPreferencesStep: some View {
+        switch environment {
+        case .gym:         gymEquipmentStep
+        case .homeGym:      homeGymEquipmentStep
+        case .noEquipment: noEquipmentQuickStep
+        }
+    }
+
+    /// Kein Pflichtschritt: Hinweis auf die Standard-Gym-Planungsannahme
+    /// (`EquipmentPlanningResolver`, PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
+    /// §2/§4) + optionales Sheet mit dem vollen Editor. NIE "Equipment
+    /// bestätigt" zeigen, solange `equipmentProfileConfirmedComplete ==
+    /// false` — das waere eine vom Ort hergeleitete, nicht vom User
+    /// bestaetigte Aussage.
+    @ViewBuilder
+    private var gymEquipmentStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("onboarding.equipment.gym.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text("onboarding.equipment.gym.subtitle", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                if equipmentProfileConfirmedComplete {
+                    gymEquipmentConfirmedCard
+                } else {
+                    Button {
+                        showingGymEquipmentSheet = true
+                    } label: {
+                        Label {
+                            Text("onboarding.equipment.gym.adjustButton", bundle: .module)
+                        } icon: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                Text("onboarding.equipment.gym.footer", bundle: .module)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+        }
+        .sheet(isPresented: $showingGymEquipmentSheet) {
+            gymEquipmentSheet
+        }
+    }
+
+    /// Nach einer abgeschlossenen individuellen Erfassung (via Sheet) —
+    /// identischer Stil zur bestehenden `baselineCapturedSummary` (Start-
+    /// Check-Epic), damit "erfasst/bestaetigt"-Karten app-weit gleich aussehen.
+    private var gymEquipmentConfirmedCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label {
+                Text("onboarding.equipment.gym.confirmedTitle", bundle: .module)
+            } icon: {
+                Image(systemName: "checkmark.circle.fill")
+            }
+            .font(.headline)
+            .foregroundStyle(.green)
+
+            Button {
+                showingGymEquipmentSheet = true
+            } label: {
+                Text("onboarding.equipment.gym.editButton", bundle: .module)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.green.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var gymEquipmentSheet: some View {
+        NavigationStack {
+            ScrollView {
+                EquipmentProfileEditor(equipmentProfile: $equipmentProfile)
+                    .padding()
+            }
+            .navigationTitle(String(localized: "onboarding.equipment.gym.sheetTitle", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "common.close", bundle: .module)) {
+                        showingGymEquipmentSheet = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common.done", bundle: .module)) {
+                        confirmEquipmentStepIfNeeded()
+                        showingGymEquipmentSheet = false
+                    }
+                }
+            }
+        }
+    }
+
+    /// Unveraendertes Phase-3-Verhalten: voller Editor, "Später
+    /// einrichten"-Link laesst alles `.unknown`. Die "vollstaendige
+    /// Bestaetigung" (nicht ausgewaehlte Items werden zu `.unavailable`)
+    /// passiert NICHT hier, sondern wenn der User unten auf "Weiter" tippt
+    /// (`handlePrimaryAction`).
+    @ViewBuilder
+    private var homeGymEquipmentStep: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -670,99 +1200,227 @@ public struct OnboardingView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                VStack(spacing: 10) {
-                    ForEach(Equipment.allCases, id: \.self) { equip in
-                        equipmentChoiceRow(equip)
-                    }
-                }
+                EquipmentProfileEditor(equipmentProfile: $equipmentProfile)
 
                 Text("onboarding.equipment.footer", bundle: .module)
                     .font(.footnote)
                     .foregroundStyle(.tertiary)
+
+                laterLinkButton
             }
             .padding()
         }
-        // Beim ersten Betreten des Steps Defaults aus `environment` ziehen.
-        // Gate über `equipmentPrefilledForEnv`: wenn der User in Step 2
-        // nachträglich die Environment ändert, prefill'en wir erneut —
-        // bestehende User-Auswahl überschreiben wir aber nicht, sondern
-        // mergen die zusätzlichen Defaults (Union).
-        .onAppear { prefillEquipmentIfNeeded() }
-        .onChange(of: environment) { _, _ in
-            // Neue Environment → neue Defaults vorschlagen (mergen).
-            prefillEquipmentIfNeeded(force: true)
+    }
+
+    /// Smart-Onboarding-Epic Phase 6 §1: kurze Frage statt des vollen
+    /// Editors — "Nein, nur Körpergewicht" bleibt Teil der Dateneingabe
+    /// (`NoEquipmentQuickEquipmentPicker`), "Später entscheiden" bleibt eine
+    /// Navigations-Entscheidung dieses Schritts (identisches Prinzip wie
+    /// beim Home-Gym-Editor).
+    @ViewBuilder
+    private var noEquipmentQuickStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("onboarding.equipment.noEquipment.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text("onboarding.equipment.noEquipment.subtitle", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                NoEquipmentQuickEquipmentPicker(equipmentProfile: $equipmentProfile)
+
+                Text("onboarding.equipment.footer", bundle: .module)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+
+                laterLinkButton
+            }
+            .padding()
         }
+    }
+
+    /// "Später einrichten"/"Später entscheiden" — identisch fuer Home-Gym
+    /// und Kein-Equipment, ruft `goToNextStep()` bewusst DIREKT auf (siehe
+    /// `confirmEquipmentStepIfNeeded` Dokumentation), damit die Erfassung
+    /// wirklich `.unknown` bleibt statt stillschweigend bestaetigt zu werden.
+    private var laterLinkButton: some View {
+        Button {
+            goToNextStep()
+        } label: {
+            Text("onboarding.equipment.laterLink", bundle: .module)
+                .font(.callout.weight(.medium))
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .padding(.top, 4)
+    }
+
+    /// Smart-Onboarding-Epic Phase 3: die "vollstaendige Bestaetigung" fuer
+    /// den regulaeren "Weiter"-Pfad (siehe `handlePrimaryAction`) — alles,
+    /// was der Nutzer nicht aktiv ausgewaehlt hat, wird jetzt explizit
+    /// `.unavailable`. Der separate "Später einrichten"-Link im Step oben
+    /// ruft das bewusst NICHT auf (`goToNextStep()` direkt), damit dort
+    /// wirklich alles `.unknown` bleibt.
+    private func confirmEquipmentStepIfNeeded() {
+        equipmentProfile.confirmRemainingAsUnavailable()
+        equipmentProfileConfirmedComplete = true
+    }
+
+    // MARK: - Start-Check (Optionaler "Wo stehst du heute?"-Check)
+
+    /// Platzierung laut Epic: nach Trainingshistorie/Equipment, vor
+    /// Zeitbudget/Plan-Ergebnis. Starter/Wiedereinsteiger sehen den vollen,
+    /// gleichwertigen 3-Wege-Einstieg ("Kurz testen" / "Selbst einschaetzen" /
+    /// "Spaeter entscheiden" — UX-Fix "Einladung statt Pruefung", keiner der
+    /// drei Wege optisch hervorgehoben), Erfahrene nur einen kompakten
+    /// optionalen Link OHNE gefuehrten
+    /// Test-Track (Epic: Erfahrene bekommen keinen Test-Track vorgesetzt) —
+    /// der Link oeffnet `BaselineCheckFlowView` direkt mit
+    /// `entryMode: .selfAssessment`, derselben Weiche wie der "Selbst
+    /// einschaetzen"-Pfad der Starter/Wiedereinsteiger. Nie ein Gate:
+    /// `canAdvance` ist fuer diesen Schritt immer `true`.
+    @ViewBuilder
+    private var baselineCheckStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("baseline.step.title", bundle: .module)
+                        .font(.title2.weight(.bold))
+                    Text(isFullBaselineTrack ? "baseline.step.subtitle" : "baseline.step.subtitle.compact", bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let baselineAssessmentResult {
+                    baselineCapturedSummary(baselineAssessmentResult)
+                } else if isFullBaselineTrack {
+                    VStack(spacing: 10) {
+                        baselineChoiceRow(
+                            icon: "figure.strengthtraining.traditional",
+                            title: String(localized: "baseline.step.cta.test", bundle: .module),
+                            subtitle: String(localized: "baseline.step.cta.test.subtitle", bundle: .module)
+                        ) {
+                            baselineEntryMode = .guidedTest
+                            showingBaselineCheck = true
+                        }
+                        baselineChoiceRow(
+                            icon: "hand.point.up.left",
+                            title: String(localized: "baseline.step.cta.selfAssess", bundle: .module),
+                            subtitle: String(localized: "baseline.step.cta.selfAssess.subtitle", bundle: .module)
+                        ) {
+                            baselineEntryMode = .selfAssessment
+                            showingBaselineCheck = true
+                        }
+                        baselineChoiceRow(
+                            icon: "arrow.right.circle",
+                            title: String(localized: "baseline.step.cta.later", bundle: .module),
+                            subtitle: String(localized: "baseline.step.cta.later.subtitle", bundle: .module)
+                        ) {
+                            goToNextStep()
+                        }
+                    }
+                } else {
+                    Button {
+                        baselineEntryMode = .selfAssessment
+                        showingBaselineCheck = true
+                    } label: {
+                        Label {
+                            Text("baseline.step.cta.compactLink", bundle: .module)
+                        } icon: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                Text("baseline.step.disclaimer", bundle: .module)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+
+    /// Starter/Wiedereinsteiger bekommen den vollen gefuehrten Test-Track
+    /// angeboten; Erfahrene nur den kompakten Link (Epic-Vorgabe). Ohne
+    /// Antwort auf dem Trainingshistorie-Schritt (sollte durch `canAdvance`
+    /// dort praktisch nie vorkommen) faellt dies konservativ auf den vollen
+    /// Track zurueck statt Erfahrenen-Verhalten zu unterstellen.
+    private var isFullBaselineTrack: Bool {
+        resolvedExperienceTrack != .experienced
     }
 
     @ViewBuilder
-    private func equipmentChoiceRow(_ equip: Equipment) -> some View {
-        let isSelected = equipmentPreferences.contains(equip)
-        Button {
-            if isSelected { equipmentPreferences.remove(equip) }
-            else          { equipmentPreferences.insert(equip) }
-        } label: {
-            HStack(alignment: .center, spacing: 14) {
-                Image(systemName: equipmentIcon(equip))
-                    .font(.title3)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(isSelected ? Color.deltiqOrange : .secondary)
-                    .frame(width: 32, height: 32)
-                Text(equip.localizedName)
-                    .font(.body)
-                    .foregroundStyle(.primary)
-                Spacer()
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(isSelected ? Color.deltiqOrange : .secondary)
+    private func baselineCapturedSummary(_ result: BaselineAssessment) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label {
+                Text("baseline.step.done.title", bundle: .module)
+            } icon: {
+                Image(systemName: "checkmark.circle.fill")
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .font(.headline)
+            .foregroundStyle(.green)
+
+            Button {
+                baselineEntryMode = isFullBaselineTrack ? .guidedTest : .selfAssessment
+                showingBaselineCheck = true
+            } label: {
+                Text("baseline.step.done.redo", bundle: .module)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.green.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    /// Einmalige Action-Zeile im selben visuellen Stil wie `coachingCard`,
+    /// aber ohne persistente Selektion — jeder Tap oeffnet direkt das Sheet
+    /// bzw. springt weiter, es gibt keinen "ausgewaehlten" Zustand.
+    /// UX-Fix "Einladung statt Pruefung": alle drei Einstiegswege sind
+    /// gleichwertig (kein `prominent`-Flag mehr, das einen Weg optisch als
+    /// Pflicht ueber die Alternativen stellen wuerde) — siehe
+    /// `docs/BASELINE_CHECK_UX.md` §1.
+    private func baselineChoiceRow(
+        icon: String,
+        title: String,
+        subtitle: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, height: 32)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(14)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.deltiqOrange.opacity(0.08) : Color.secondary.opacity(0.06))
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.secondary.opacity(0.06))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.deltiqOrange : Color.secondary.opacity(0.25),
-                            lineWidth: isSelected ? 1.5 : 1)
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.secondary.opacity(0.25), lineWidth: 1)
             )
-            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    /// Spiegelung der SF-Symbole aus dem Picker — visuelle Konsistenz.
-    private func equipmentIcon(_ e: Equipment) -> String {
-        switch e {
-        case .barbell:     return "scalemass"
-        case .dumbbell:    return "dumbbell"
-        case .bodyweight:  return "figure.walk"
-        case .machine:     return "gearshape"
-        case .cable:       return "cable.connector"
-        case .kettlebell:  return "circle.grid.cross"
-        case .band:        return "infinity"
-        }
-    }
-
-    /// Prefill-Logik: schlägt sinnvolle Defaults vor, basierend auf der
-    /// gewählten Trainings-Umgebung (`environment`). Defaults werden nur
-    /// einmal pro Environment-Wert vorgeschlagen (idempotent) und überschreiben
-    /// keine vom User explizit getroffene Auswahl — `Set.formUnion` merged.
-    private func prefillEquipmentIfNeeded(force: Bool = false) {
-        if !force, equipmentPrefilledForEnv == environment { return }
-        let suggestion = defaultEquipment(for: environment)
-        equipmentPreferences.formUnion(suggestion)
-        equipmentPrefilledForEnv = environment
-    }
-
-    /// Sinnvolle Equipment-Defaults pro Trainings-Umgebung. Gym = "hat alles";
-    /// Home-Gym = freie Gewichte ohne Maschinen; No-Equipment = Body + Band.
-    private func defaultEquipment(for env: EnvironmentType) -> Set<Equipment> {
-        switch env {
-        case .gym:         return [.barbell, .dumbbell, .machine, .cable, .kettlebell, .bodyweight]
-        case .homeGym:     return [.dumbbell, .kettlebell, .band, .bodyweight]
-        case .noEquipment: return [.bodyweight, .band]
-        }
     }
 
     /// DEL-101: Reusable SelectableCard im Deltiq-Stil — DeltiqOrange-
@@ -840,156 +1498,403 @@ public struct OnboardingView: View {
                     .font(.footnote)
             }
 
-            // DEL-090: Hero-Card "Plan finden lassen" — startet den
-            // Smart-Onboarding-Quiz, der die 14 Templates fuer den User
-            // ranked, statt ihn manuell aus einer 14er-Liste raten zu lassen.
-            Section {
-                Button {
-                    showingQuiz = true
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "sparkles")
-                            .font(.title2)
-                            .foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.deltiqOrange.gradient)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("onboarding.plan.quizCard.title", bundle: .module)
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(.primary)
-                            Text("onboarding.plan.quizCard.subtitle", bundle: .module)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.tertiary)
-                    }
+            // Fix "doppeltes Onboarding": EIN Flow. Die Onboarding-Antworten
+            // (Ziel, Track, Tage, Ort, Equipment) gehen direkt in
+            // PlanMatchmaker.rankPlans — kein zweites Quiz mehr. Top-Match
+            // zuerst als grosse Karte, dann 2-3 Alternativen, der Rest
+            // eingeklappt.
+            if let top = rankedTemplates.first {
+                Section {
+                    recommendedPlanCard(top)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                } header: {
+                    // UX-Fix "Empfehlung wirkt immer gleich" Punkt 5: eine
+                    // reine Fallback-Notloesung (Hard-Filter haben ALLES
+                    // rausgefiltert, siehe `PlanMatchmaker.rankPlansDetailed`)
+                    // heisst ehrlich "beste verfuegbare Option" statt sich
+                    // als "Empfehlung" auszugeben.
+                    Text(rankedPlanResult.isFallback ? "onboarding.plan.fallbackRecommended" : "onboarding.plan.recommended", bundle: .module)
+                } footer: {
+                    Text(rankedPlanResult.isFallback ? "onboarding.plan.fallbackRecommendedFootnote" : "onboarding.plan.recommendedFootnote", bundle: .module)
+                        .font(.footnote)
                 }
-                .buttonStyle(.plain)
-            } header: {
-                Text("onboarding.plan.recommended", bundle: .module)
-            } footer: {
-                Text("onboarding.plan.quizCard.footnote", bundle: .module)
-                    .font(.footnote)
             }
 
-            Section {
-                if filteredTemplates.isEmpty {
-                    Text(String(format: String(localized: "onboarding.plan.noTemplates", bundle: .module), environmentLabel))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(filteredTemplates) { template in
+            let alternatives = Array(rankedTemplates.dropFirst().prefix(3))
+            if !alternatives.isEmpty {
+                Section {
+                    ForEach(alternatives) { template in
                         Button {
-                            // DEL-056: Tap oeffnet die Detail-Vorschau,
-                            // KEIN stilles Selektieren mehr. Erst der Adopt-
-                            // Button im Detail wahlt den Plan und triggert
-                            // den DayPicker.
                             previewingTemplate = template
                         } label: {
                             templateRow(template)
                         }
                         .buttonStyle(.plain)
                     }
+                } header: {
+                    Text("onboarding.plan.alternatives", bundle: .module)
                 }
+            }
+
+            let morePlans = Array(rankedTemplates.dropFirst(1 + alternatives.count))
+            if !morePlans.isEmpty {
+                Section {
+                    DisclosureGroup {
+                        ForEach(morePlans) { template in
+                            Button {
+                                previewingTemplate = template
+                            } label: {
+                                templateRow(template)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } label: {
+                        Text("onboarding.plan.morePlans", bundle: .module)
+                    }
+                }
+            }
+
+            // DEL-243: dritte
+            // Alternative - oeffnet denselben 3-Schritte-Wizard wie der
+            // Plus-Button in PlansListView (siehe PlanBuilderView.onGenerated-
+            // Doku). Eigene Section statt Teil von "Empfohlen" oben, weil
+            // "bauen" bewusst kein Vorschlag ist, sondern der Gegenentwurf dazu.
+            Section {
+                Button {
+                    showingPlanBuilder = true
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.title2)
+                            .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.accentColor.gradient)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("onboarding.plan.builderCard.title", bundle: .module)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.primary)
+                            Text("onboarding.plan.builderCard.subtitle", bundle: .module)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if customPlanInput != nil {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                                .font(.title3)
+                        } else {
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
             } header: {
-                Text(String(format: String(localized: "onboarding.plan.section", bundle: .module), environmentLabel))
+                Text("onboarding.plan.builderSection", bundle: .module)
             } footer: {
-                Text(String(format: String(localized: "onboarding.plan.footnote", bundle: .module), environmentLabel))
+                Text("onboarding.plan.builderCard.footnote", bundle: .module)
                     .font(.footnote)
             }
         }
     }
 
-    /// String-Repraesentation des aktuellen Environments fuer Section-Header/
-    /// Footer-Interpolation. `LocalizedStringResource` direkt in einen
-    /// String-Interpolation-Context zu stecken faellt auf macOS-strict
-    /// Toolchain durch — `String(localized:)` ist der Cast.
-    private var environmentLabel: String {
-        String(localized: environment.localizedName)
+    /// Fix "doppeltes Onboarding": die Antworten, mit denen der
+    /// Plan-Schritt direkt `PlanMatchmaker.rankPlans` aufruft — `weeklyGoal`
+    /// dient zugleich als `preferredDays`, eine zweite "wie oft"-Frage nur
+    /// fuers Matching gaebe es sonst doppelt.
+    private var planMatchAnswers: QuizAnswers {
+        QuizAnswers(
+            goal: trainingGoal,
+            experience: (resolvedExperienceTrack ?? .experienced).asExperienceLevel,
+            preferredDays: weeklyGoal,
+            environment: environment,
+            equipmentPreferences: derivedLegacyEquipment,
+            // Smart-Onboarding-Epic Phase 4: das volle, lebende Profil geht
+            // IMMER mit — auch vor der vollstaendigen Bestaetigung. Eine
+            // unvollstaendige Erfassung liefert dadurch korrekt `.unknown`
+            // (siehe PlanEquipmentChecker), nie einen verfruehten Ausschluss
+            // UND nie ein stillschweigendes "passt schon".
+            equipmentProfile: equipmentProfile
+        )
     }
 
-    /// Templates passend zum gewaehlten Trainingsort.
-    ///   - `.gym`: alle Templates (Vollgym hat alles, was alle anderen brauchen)
-    ///   - `.homeGym`: homeGym + noEquipment (Bodyweight-Sachen gehen ueberall)
-    ///   - `.noEquipment`: strikt nur noEquipment-Templates (sonst landet der
-    ///     User in einem Plan, fuer den ihm das Equipment fehlt)
-    ///
-    /// DEL-207: zusätzlich goal-aware sortiert — Templates, deren
-    /// `targetGoals` das in Step 3 gewählte Trainingsziel enthalten, stehen
-    /// oben (stabile Partition, Reihenfolge innerhalb der Gruppen bleibt).
-    /// Vorher zeigte Step 5 alle 14 Templates unsortiert, obwohl der User
-    /// sein Ziel gerade erst angegeben hatte.
-    private var filteredTemplates: [ProgramTemplate] {
-        let byEnvironment = ProgramTemplates.all.filter { template in
-            switch environment {
-            case .gym:
-                return true
-            case .homeGym:
-                return template.targetEnvironment == .homeGym
-                    || template.targetEnvironment == .noEquipment
-            case .noEquipment:
-                return template.targetEnvironment == .noEquipment
-            }
-        }
-        let matching = byEnvironment.filter { templateMatchesGoal($0) }
-        let rest = byEnvironment.filter { !templateMatchesGoal($0) }
-        return matching + rest
+    /// Komplettes Matcher-Ergebnis samt Fallback-Kennzeichnung (UX-Fix
+    /// "Empfehlung wirkt immer gleich" Punkt 5) fuer die aktuellen
+    /// Onboarding-Antworten. `experienceTrack` filtert zusaetzlich reine
+    /// Expertenplaene fuer Starter/Wiedereinsteiger komplett raus (siehe
+    /// `PlanMatchmaker`).
+    private var rankedPlanResult: PlanMatchmaker.RankedPlanResult {
+        PlanMatchmaker.rankPlansDetailed(
+            for: planMatchAnswers,
+            templates: ProgramTemplates.all,
+            experienceTrack: resolvedExperienceTrack
+        )
     }
 
-    /// DEL-207: Brücke zwischen der Coaching-Achse (TrainingGoal, Step 3)
-    /// und der Plan-Matching-Achse (GoalType, Templates/Quiz).
-    private var mappedQuizGoal: GoalType {
-        switch trainingGoal {
-        case .hypertrophy: return .hypertrophy
-        case .strength:    return .strength
-        case .hybrid:      return .hybrid
-        case .weightLoss:  return .fatloss
-        }
+    /// Nach Score sortierte Templates — reine Bequemlichkeits-Projektion auf
+    /// `rankedPlanResult.templates` fuer die bestehenden Aufrufstellen.
+    private var rankedTemplates: [ProgramTemplate] {
+        rankedPlanResult.templates
     }
 
-    private func templateMatchesGoal(_ template: ProgramTemplate) -> Bool {
-        template.targetGoals.contains(mappedQuizGoal)
-    }
-
-    private func templateRow(_ template: ProgramTemplate) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: template.iconSystemName)
-                .font(.title3)
-                .foregroundStyle(.white)
-                .frame(width: 38, height: 38)
-                .background(Color.accentColor.gradient)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(template.displayName)
-                        .font(.body.weight(.semibold))
-                    // DEL-207: Badge für Templates, die zum in Step 3
-                    // gewählten Trainingsziel passen.
-                    if templateMatchesGoal(template) {
-                        Text("onboarding.plan.goalMatch", bundle: .module)
-                            .font(.caption2.weight(.bold))
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(Color.deltiqOrange.opacity(0.15))
-                            .foregroundStyle(Color.deltiqOrange)
-                            .clipShape(Capsule())
+    /// Grosse Hero-Karte fuer den Top-Match: Name/Tagline + 2-3 einzelne
+    /// Checkmark-Begruendungszeilen (UX-Fix "Umbrueche und Badge-Saettigung":
+    /// vorher EINE kommagetrennte Zeile — jetzt klar lesbare Einzelzeilen
+    /// statt eines langen Fliesstexts), tippbar wie jede andere Plan-Zeile.
+    @ViewBuilder
+    private func recommendedPlanCard(_ template: ProgramTemplate) -> some View {
+        let reasons = PlanMatchmaker.matchReasons(for: template, answers: planMatchAnswers)
+        Button {
+            previewingTemplate = template
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 12) {
+                    Image(systemName: template.iconSystemName)
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .frame(width: 48, height: 48)
+                        .background(Color.deltiqOrange.gradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(template.displayName)
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                        Text(template.displayTagline)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                    if selectedTemplate?.id == template.id {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.title3)
                     }
                 }
-                Text(template.displayTagline)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                recommendationReasonLines(reasons, template: template)
+                firstWeekPreview(template)
             }
-            Spacer()
-            if selectedTemplate?.id == template.id {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .font(.title3)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.deltiqOrange.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.deltiqOrange.opacity(0.3), lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// P4.2 (Doc01 "kompakte 'Deine erste Trainingswoche'-Vorschau direkt nach
+    /// den Onboarding-Fragen"): `preferencesAndPlanStep` IST bereits der
+    /// Schritt direkt nach allen Fragen — bisher zeigte die empfohlene Karte
+    /// aber nur Name/Tagline/Begruendung; die tatsaechliche Wochenstruktur sah
+    /// der User erst nach einem zusaetzlichen Tap in `TemplatePreviewView`
+    /// (volle Tag-fuer-Tag-Uebungsliste, bewusst NICHT "kompakt"). Diese
+    /// Zeile zeigt ALLE Trainingstage auf einen Blick, OHNE Uebungen — nur
+    /// Tag-Nummer + Tagtyp (`DaySpec.displayName`, bereits lokalisiert). Nutzt
+    /// `template.days` (Basis-Variante) statt der equipment-aufgeloesten
+    /// `ResolvedPlanSelection`: eine Substitution ersetzt ausschliesslich
+    /// Uebungen INNERHALB eines Tages, nie dessen Typ/Reihenfolge — fuer eine
+    /// reine Tagtyp-Vorschau macht das keinen Unterschied, spart hier aber den
+    /// vollen Substitutions-Resolve nur fuers Teaser-Rendering. `LazyVGrid`
+    /// statt horizontalem `ScrollView`, damit keine verschachtelte
+    /// Scroll-Geste innerhalb des tappbaren Karten-`Button` entsteht.
+    @ViewBuilder
+    private func firstWeekPreview(_ template: ProgramTemplate) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("onboarding.plan.firstWeek.title", bundle: .module)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .padding(.top, 6)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 68), spacing: 6)], alignment: .leading, spacing: 6) {
+                ForEach(template.days, id: \.sequenceIndex) { day in
+                    VStack(spacing: 2) {
+                        Text("\(day.sequenceIndex)")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 18, height: 18)
+                            .background(Color.deltiqOrange)
+                            .clipShape(Circle())
+                        Text(day.displayName)
+                            .font(.caption2)
+                            .foregroundStyle(Color.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(Color.Deltiq.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .accessibilityElement(children: .combine)
+                }
             }
         }
+    }
+
+    /// Bis zu 3 einzelne Checkmark-Zeilen aus den tatsaechlichen Treffern —
+    /// nie pauschal, nie eine Zeile wenn nichts zutrifft. Reihenfolge
+    /// Ziel/Tage/Level folgt dem Spec-Beispiel ("Passt zu deinem Ziel: ...",
+    /// "3 Trainingstage pro Woche", "Geeignet fuer deinen Wiedereinstieg").
+    @ViewBuilder
+    private func recommendationReasonLines(_ reasons: PlanMatchReasons, template: ProgramTemplate) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if reasons.goalMatch {
+                reasonLine(String(localized: "onboarding.plan.reason.goal", bundle: .module))
+            }
+            if reasons.daysMatch {
+                reasonLine(String(format: String(localized: "onboarding.plan.reason.days", bundle: .module), template.daysPerWeek))
+            }
+            if reasons.levelMatch {
+                reasonLine(String(localized: "onboarding.plan.reason.level", bundle: .module))
+            }
+        }
+    }
+
+    private func reasonLine(_ text: String) -> some View {
+        Label {
+            Text(text)
+        } icon: {
+            Image(systemName: "checkmark.circle.fill")
+        }
+        .font(.footnote.weight(.medium))
+        .foregroundStyle(Color.deltiqOrange)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// Alternative-Zeile (UX-Fix "Umbrueche und Badge-Saettigung"): 48x48-
+    /// Icon, Titel/Tagline je max. 2 Zeilen, eine kompakte Metadatenzeile
+    /// ("3 Tage · Einsteiger") und hoechstens EIN Highlight-Badge statt der
+    /// fruehen festen Vier-Chip-HStack. Bei grosser Schrift (Accessibility-
+    /// Groessen) schaltet die Zeile auf ein vertikales, fuehrend
+    /// ausgerichtetes Layout um, damit Icon und zweizeiliger Text nicht in
+    /// eine zu schmale HStack gequetscht werden.
+    @ViewBuilder
+    private func templateRow(_ template: ProgramTemplate) -> some View {
+        let reasons = PlanMatchmaker.matchReasons(for: template, answers: planMatchAnswers)
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    templateRowIcon(template)
+                    Spacer(minLength: 0)
+                    templateRowCheckmark(template)
+                }
+                templateRowTextBlock(template, reasons: reasons)
+            }
+        } else {
+            HStack(alignment: .top, spacing: 12) {
+                templateRowIcon(template)
+                templateRowTextBlock(template, reasons: reasons)
+                Spacer(minLength: 0)
+                templateRowCheckmark(template)
+            }
+        }
+    }
+
+    private func templateRowIcon(_ template: ProgramTemplate) -> some View {
+        Image(systemName: template.iconSystemName)
+            .font(.title3)
+            .foregroundStyle(.white)
+            .frame(width: 48, height: 48)
+            .background(Color.accentColor.gradient)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    @ViewBuilder
+    private func templateRowCheckmark(_ template: ProgramTemplate) -> some View {
+        if selectedTemplate?.id == template.id {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .font(.title3)
+        }
+    }
+
+    @ViewBuilder
+    private func templateRowTextBlock(_ template: ProgramTemplate, reasons: PlanMatchReasons) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(template.displayName)
+                .font(.body.weight(.semibold))
+                .lineLimit(2)
+            Text(template.displayTagline)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            Text(templateMetadataLine(template))
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            // UX-Fix "Umbrueche und Badge-Saettigung": hoechstens EIN
+            // Highlight-Badge statt vier gleichwertiger Chips — Prioritaet
+            // Ziel > Level > Equipment > Tage (Epic-Vorgabe).
+            if let reason = highlightReason(for: reasons) {
+                matchBadge(highlightBadgeText(reason))
+            }
+        }
+    }
+
+    /// "3 Tage · Einsteiger" — Trainingstage + der niedrigste (am wenigsten
+    /// voraussetzungsreiche) Erfahrungs-Tag des Templates, damit die Zeile
+    /// ehrlich die am leichtesten erreichbare Einstiegshuerde zeigt statt
+    /// pauschal den hoechsten Tag.
+    private func templateMetadataLine(_ template: ProgramTemplate) -> String {
+        let level: ExperienceLevel = template.targetExperience.contains(.beginner) ? .beginner
+            : template.targetExperience.contains(.intermediate) ? .intermediate
+            : .advanced
+        let fmt = String(localized: "onboarding.plan.metadataLine", bundle: .module)
+        return String(format: fmt, template.daysPerWeek, String(localized: level.localizedName))
+    }
+
+    private enum PlanHighlightReason {
+        case goal, level, equipment, days
+    }
+
+    /// Die EINE staerkste zutreffende Begruendung, Prioritaet Ziel > Level >
+    /// Equipment > Tage (Epic-Vorgabe) — `nil` wenn nichts zutrifft, dann
+    /// zeigt die Zeile gar kein Badge.
+    private func highlightReason(for reasons: PlanMatchReasons) -> PlanHighlightReason? {
+        if reasons.goalMatch { return .goal }
+        if reasons.levelMatch { return .level }
+        if reasons.equipmentMatch { return .equipment }
+        if reasons.daysMatch { return .days }
+        return nil
+    }
+
+    private func highlightBadgeText(_ reason: PlanHighlightReason) -> Text {
+        switch reason {
+        case .goal:      Text("onboarding.plan.goalMatch", bundle: .module)
+        case .level:     Text("onboarding.plan.levelMatch", bundle: .module)
+        case .equipment: Text("onboarding.plan.equipmentMatch", bundle: .module)
+        case .days:      Text("onboarding.plan.daysMatch", bundle: .module)
+        }
+    }
+
+    private func matchBadge(_ text: Text) -> some View {
+        text
+            .font(.caption.weight(.bold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.deltiqOrange.opacity(0.15))
+            .foregroundStyle(Color.deltiqOrange)
+            .clipShape(Capsule())
+    }
+
+    // DEL-243: Template-Pfad und
+    // Custom-Plan-Pfad schliessen sich gegenseitig aus - jede Bestaetigung
+    // des einen Pfads verwirft den bereits begonnenen anderen Pfad.
+    private func clearCustomPlan() {
+        customPlanInput = nil
+        customPlanResult = nil
+        customPlanEnduranceModality = nil
+        customPlanRunCoachWanted = false
+    }
+
+    private func clearSelectedTemplate() {
+        selectedTemplate = nil
     }
 
     // MARK: - Navigation buttons
@@ -1014,7 +1919,7 @@ public struct OnboardingView: View {
                 Label(primaryActionTitle, systemImage: primaryActionIcon)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(!canAdvance)
+            .disabled(!canAdvance || isFinishingOnboarding)
         }
     }
 
@@ -1042,9 +1947,26 @@ public struct OnboardingView: View {
             // Tone + Goal haben Defaults und Cards sind tap-stateful, also
             // nie wirklich "ungeloest" — immer weiter.
             return true
+        case .enduranceModality:
+            // P4.1 (Doc02 §2 "keine stille Default-Auswahl"): die
+            // Ausdauerform selbst hat KEINEN Default und blockiert -
+            // identische Regel wie `PlanBuilderView.canAdvanceFromGoalStep`.
+            // Die Laufcoach-Unterfrage hat dagegen einen gueltigen Default
+            // ("ohne Coach") und blockiert bewusst NICHT zusaetzlich.
+            return enduranceModality != nil
+        case .trainingHistory:
+            // Anders als Goal/Tone hat die Hauptfrage bewusst KEINEN
+            // stillen Default — ohne eine Antwort gibt es kein sinnvolles
+            // ExperienceTrack. Die beiden Folgefragen haben Defaults und
+            // blockieren nicht zusaetzlich.
+            return trainingHistoryAnswer != nil
         case .equipmentPreferences:
-            // DEL-170b: leer ist erlaubt (= "Standard-Variante" beim Plan-
-            // Adopt). User darf bewusst skippen, deshalb keine Pflicht.
+            // Phase 3: nie ein Gate — "Später einrichten" ist eine
+            // gleichwertig gueltige Antwort, keine Luecke.
+            return true
+        case .baselineCheck:
+            // Start-Check-Epic: "nie ein Gate" — Test, Selbsteinschaetzung
+            // und "Spaeter" sind alle gleichwertig gueltige Abschluesse.
             return true
         case .preferencesAndPlan:
             // Plan + Reminder sind beide optional — immer fertig erlaubt.
@@ -1054,29 +1976,43 @@ public struct OnboardingView: View {
 
     private func handlePrimaryAction() {
         switch step {
-        case .healthConnect, .personalInfo, .coachingStyle, .equipmentPreferences:
+        case .equipmentPreferences:
+            // Smart-Onboarding-Epic Phase 6: im Gym-Pfad gibt es keinen
+            // Pflichtschritt — "Weiter" ohne das optionale Sheet darf NICHT
+            // automatisch `equipmentProfileConfirmedComplete = true` setzen
+            // (das waere eine vom Ort hergeleitete, nicht vom User
+            // bestaetigte Aussage). Die Bestaetigung passiert dort
+            // ausschliesslich ueber das Sheet selbst (`gymEquipmentSheet`).
+            if environment != .gym {
+                confirmEquipmentStepIfNeeded()
+            }
+            goToNextStep()
+        case .healthConnect, .personalInfo, .coachingStyle, .enduranceModality, .trainingHistory, .baselineCheck:
             goToNextStep()
         case .preferencesAndPlan:
             finishOnboarding()
         }
     }
 
+    /// P4.1: `.enduranceModality` wird uebersprungen, wenn
+    /// `needsEnduranceModalityStep` falsch ist (reiner Kraft-/Allgemeine-
+    /// Fitness-Fall) - in BEIDE Richtungen, damit "Zurueck" von
+    /// `.trainingHistory` aus nicht auf einem fuer das aktuelle Ziel
+    /// irrelevanten Schritt landet.
     private func goToNextStep() {
         guard var next = Step(rawValue: step.rawValue + 1) else { return }
-        // DEL-207: Equipment-Step bei "Kein Equipment" überspringen —
-        // wer ohne Geräte trainiert, hat dort nichts auszuwählen, und
-        // die Equipment-Varianten der Pläne sind für ihn irrelevant.
-        if next == .equipmentPreferences && environment == .noEquipment {
-            next = .preferencesAndPlan
+        if next == .enduranceModality, !needsEnduranceModalityStep {
+            guard let skipped = Step(rawValue: next.rawValue + 1) else { return }
+            next = skipped
         }
         step = next
     }
 
     private func goToPreviousStep() {
         guard var prev = Step(rawValue: step.rawValue - 1) else { return }
-        // DEL-207: Skip auch rückwärts symmetrisch.
-        if prev == .equipmentPreferences && environment == .noEquipment {
-            prev = .coachingStyle
+        if prev == .enduranceModality, !needsEnduranceModalityStep {
+            guard let skipped = Step(rawValue: prev.rawValue - 1) else { return }
+            prev = skipped
         }
         step = prev
     }
@@ -1124,8 +2060,36 @@ public struct OnboardingView: View {
 
     // MARK: - Finish + save
 
+    /// Nachbesserung (P2.3): Doppel-Tap-/Doppel-Ausloesung-Schutz fuer
+    /// `finishOnboarding()`, siehe dortige Doku.
+    @State private var isFinishingOnboarding = false
+
+    /// Welcher Plan bei „Fertig" übernommen wird. Eine explizite Auswahl
+    /// gewinnt immer — über die Vorschau+„Diesen Plan wählen" (`explicit`)
+    /// oder den Builder (`hasCustomPlan`). Nur wenn beides fehlt, wird die
+    /// bereits als große Karte gezeigte Top-Empfehlung (`recommended`)
+    /// übernommen, statt „Fertig" stillschweigend ohne jeden Plan
+    /// abzuschließen. `nil` (keine Empfehlung verfügbar, z. B. leerer
+    /// `PlanMatchmaker`-Fallback) bleibt der bestehende „Fertig ohne Plan"-
+    /// Fall.
+    static func templateToAdopt(
+        explicit: ProgramTemplate?, hasCustomPlan: Bool, recommended: ProgramTemplate?
+    ) -> ProgramTemplate? {
+        explicit ?? (hasCustomPlan ? nil : recommended)
+    }
+
     private func finishOnboarding() {
         guard let heightCm, let currentWeightKg else { return }
+        // Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
+        // Bestaetigung"): `finishOnboarding()` ist synchron (Profil +
+        // Messung + optionaler Plan, alles ohne `await`) und hat ZWEI
+        // Ausloeser — den Haupt-Button (`handlePrimaryAction`, dort zusaetzlich
+        // ueber `.disabled` gesperrt) UND `DayPickerSheet.onConfirm`. Der
+        // Schutz sitzt deshalb HIER, nicht nur an einem der beiden Buttons,
+        // damit wirklich jede doppelte Ausloesung abgefangen wird, egal
+        // welcher Pfad sie ausloest.
+        guard !isFinishingOnboarding else { return }
+        isFinishingOnboarding = true
         let age = Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0
 
         // 1) UserBodyProfile. DEL-101: Coaching-Style + TrainingGoal werden
@@ -1146,19 +2110,66 @@ public struct OnboardingView: View {
             environment: environment,
             coachingTone: coachingTone,
             trainingGoal: trainingGoal,
-            // DEL-170b: User-Equipment aus dem Multi-Select-Step. Leer =
-            // Standard-Variante beim ersten Plan-Adopt (Backward-Compat-Pfad).
-            equipmentPreferences: equipmentPreferences
+            // DEL-170b, ab Phase 3 aus `derivedLegacyEquipment` hergeleitet:
+            // `[]` solange nicht bestaetigt (Backward-Compat-Pfad), sonst aus
+            // dem neuen, reicheren Modell projiziert.
+            equipmentPreferences: derivedLegacyEquipment
         )
+        // Smart-Onboarding-Epic Phase 3: das reichere Modell wird UNABHAENGIG
+        // vom Bestaetigungsstatus gespeichert — auch eine unvollstaendige
+        // Teil-Auswahl ("später einrichten" nach 2 von 10 Kategorien) geht
+        // nicht verloren, nur die aeltere `equipmentPreferences`-Spalte oben
+        // bleibt bis zur Bestaetigung bewusst leer.
+        profile.equipmentProfile = equipmentProfile
+        profile.equipmentProfileConfirmedComplete = equipmentProfileConfirmedComplete
         // DEL-207: Wochenziel aus dem Coaching-Step — der Kalender-Streak
         // (DEL-203) zählt ab Tag 1 gegen dieses Ziel.
         profile.weeklyWorkoutGoal = weeklyGoal
+        // Fix "doppeltes Onboarding": aus der Trainingshistorie-Antwort
+        // hergeleiteter Coaching-Track. `canAdvance` erzwingt eine Antwort
+        // auf dem Schritt, resolvedExperienceTrack ist hier also so gut wie
+        // immer gesetzt — ein spaeterer echter Onboarding-Flow (dieser
+        // Schritt IST bereits der echte Flow) ueberschreibt nichts, das
+        // nicht aus genau dieser Antwort stammt.
+        if let track = resolvedExperienceTrack {
+            profile.experienceTrack = track
+        }
+        // Start-Check-Epic: nur bei echtem Ergebnis schreiben (Test,
+        // Selbsteinschaetzung ODER bewusst "uebersprungen" mit Sicherheits-
+        // Flag) — bei "Spaeter machen" bleibt `baselineAssessmentResult`
+        // `nil` und damit `profile.baselineAssessment` ebenfalls `nil`,
+        // identisch zum Bestandsnutzer-Zustand ohne Check.
+        if let baselineAssessmentResult {
+            profile.baselineAssessment = baselineAssessmentResult
+        }
         modelContext.insert(profile)
+
+        // P4.1: Ausdauerform-/Laufcoach-Antwort unabhaengig vom gewaehlten
+        // Plan-Pfad (Template ODER Builder) anwenden - vorher geschah das
+        // nur im Builder-Zweig (siehe Git-History), ein Template-waehlender
+        // Hybrid-/Ausdauer-User bekam nie etwas gespeichert. `customPlanEnduranceModality`
+        // gewinnt, FALLS der Builder fuer den tatsaechlich gebauten Plan
+        // eine eigene Wahl getroffen hat (siehe dortige Feld-Doku) - sonst
+        // gilt die fruehere Antwort aus `.enduranceModality` (P4.1-Schritt).
+        // `nil`/kein Effekt, wenn das aktuelle Ziel gar keine Ausdauerform
+        // braucht (reiner Kraft-/Allgemeine-Fitness-Fall).
+        if needsEnduranceModalityStep {
+            let finalModality = customPlanEnduranceModality ?? enduranceModality
+            let finalRunCoachWanted = customPlanEnduranceModality != nil ? customPlanRunCoachWanted : runCoachWanted
+            profile.setEnduranceModality(finalModality, runCoachEnabled: finalRunCoachWanted)
+        }
 
         // 2) Initial BodyMeasurement — keeps the "first weight" visible in the
         //    Trend-Chart right after onboarding, instead of an empty dashboard
         //    until the user adds another measurement manually.
-        let measurement = BodyMeasurement.makeDerived(
+        //
+        // Settings-Epic Phase 2 (docs/SETTINGS_UX_AUDIT.md, Befund PE-FFM):
+        // Onboarding erfasst nie Umfaenge, daher `makeWeightOnly` statt
+        // `makeDerived` — sonst erbt jede Tag-1-Messung einen erfundenen
+        // KFA/FFM/FFMI-Wert aus dem BMI-Naeherungsfallback. FFMI/Lean-Mass
+        // zeigen bis zur ersten echten Umfang-Messung bewusst "–" statt
+        // eines Schaetzwerts.
+        let measurement = BodyMeasurement.makeWeightOnly(
             ageYears: age,
             weightKg: currentWeightKg,
             heightCm: heightCm,
@@ -1171,24 +2182,122 @@ public struct OnboardingView: View {
         // DEL-088: `selectedWeekdays` kommt aus dem DayPickerSheet. Wenn der
         //    User direkt "Fertig" ohne Plan drueckt, ist die Liste leer und
         //    der Instantiator nutzt seine Defaults (defaultWeekdays(for:)).
-        if let template = selectedTemplate {
-            // DEL-170b: User-Equipment direkt aus dem Onboarding-State —
-            // greift sofort beim ersten Plan-Adopt (Hybrid → DB-Variante etc.).
+        //
+        // TestingBot-Regressionscheck (Deltiq-Abnahme): zweimal unabhängig
+        // reproduziert — „Fertig" auf dem Plan-Vorschlag-Screen getippt,
+        // OHNE zuvor die Vorschau zu öffnen und „Diesen Plan wählen" zu
+        // bestätigen (die einzige bisherige Stelle, die `selectedTemplate`
+        // setzt, siehe deren Doku oben). Ergebnis: Profil wird angelegt,
+        // der sichtbar empfohlene Plan aber nie — Dashboard zeigt „No
+        // active plan" ohne jeden Hinweis. `templateToAdopt(...)` schließt
+        // die Lücke: eine explizite Auswahl (Vorschau-Adopt ODER Builder)
+        // gewinnt immer, nur wenn WEDER noch NICHT passiert ist, wird die
+        // ohnehin schon als große Karte gezeigte Top-Empfehlung
+        // (`rankedTemplates.first`) übernommen — kein neuer Empfehlungsweg,
+        // dieselbe Berechnung, die der Screen längst anzeigt.
+        if let template = Self.templateToAdopt(
+            explicit: selectedTemplate, hasCustomPlan: customPlanInput != nil, recommended: rankedTemplates.first
+        ) {
+            // Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md
+            // Abschnitt 4): "Before saving, recheck against the current
+            // equipment snapshot and reject stale/incompatible selection."
+            // Zwischen Vorschau und hier liegt nur der DayPickerSheet (keine
+            // Equipment-Aenderung moeglich) — die Pruefung ist defensiv,
+            // nie beobachtet als erreichbarer Fall. Bei Veraltung (oder
+            // fehlender Vorschau-Auswahl) wird still frisch aufgeloest statt
+            // eine moeglicherweise falsche, veraltete Auswahl zu instanziieren.
+            // Phase 6 (PLAN_LOCATION_EQUIPMENT_ONBOARDING.md §1/§4): Vergleich
+            // UND eine eventuelle Neuaufloesung laufen gegen denselben
+            // effektiven Planungskontext wie die gerade geschlossene Vorschau
+            // — sonst wuerde eine reine Gym-Annahme hier faelschlich als
+            // "veraltet" gelten (das rohe `equipmentProfile` enthaelt die
+            // Annahme nicht, nur `equipmentPlanningContext.effectiveProfile`).
+            let currentEffectiveProfile = equipmentPlanningContext.effectiveProfile
+            let freshSelection: ResolvedPlanSelection
+            if let resolvedPlanSelection, !resolvedPlanSelection.isStale(comparedTo: currentEffectiveProfile) {
+                freshSelection = resolvedPlanSelection
+            } else {
+                freshSelection = PlanSelectionResolver.resolve(
+                    template: template, profile: currentEffectiveProfile,
+                    context: SubstitutionContext(goal: trainingGoal, experienceTrack: resolvedExperienceTrack)
+                )
+            }
             ProgramInstantiator.instantiate(
                 template,
                 in: modelContext,
                 selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
-                userEquipment: equipmentPreferences
+                resolvedSelection: freshSelection
             )
+        } else if let customPlanInput, let customPlanResult {
+            // DEL-243: der im Builder-
+            // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu
+            // gerechnet) — sonst wiche der instanziierte Plan von der im
+            // Wizard zuletzt gezeigten Vorschau ab (siehe PlanGeneratorInstantiatorTests).
+            // Nachbesserung (P2.3): `createPlan(for:)` statt der vorher hier
+            // separat stehenden Resolve+Build-Sequenz. `profile` ist exakt
+            // hier bereits mit `environment`/`equipmentProfile`/
+            // `equipmentProfileConfirmedComplete` befuellt (siehe oben,
+            // Schritt 1) — identische Werte wie das vorherige
+            // `equipmentPlanningContext.effectiveProfile`, nur einmalig statt
+            // separat aufgeloest.
+            // Nachbesserung (Task #197): `createPlan` wirft jetzt bei einem
+            // fehlgeschlagenen Speichervorgang. Profil + Messung (Schritt 1/2
+            // oben) sind zu diesem Zeitpunkt bereits inserted und MUESSEN
+            // den Onboarding-Abschluss unabhängig vom optionalen Plan
+            // erreichen (`RootView`s Query auf `UserBodyProfile` haengt
+            // ausschliesslich daran) - ein Plan ist an dieser Stelle schon
+            // immer optional (siehe `if let`/`else if let` oben: ohne
+            // Template/Builder-Ergebnis passiert hier ohnehin nichts). Ein
+            // Speicherfehler wird deshalb bewusst NICHT blockierend
+            // behandelt: der Nutzer landet mit Profil, aber ohne initialen
+            // Plan, in der App - identisch zum bereits unterstuetzten "Fertig
+            // ohne Plan"-Fall - und kann einen Plan jederzeit ueber
+            // `PlansListView`s "+" nachholen.
+            //
+            // Nachbesserung (Task #197, zweite Runde): "Onboarding nicht mit
+            // leerem catch abschliessen" - kein Alert HIER (siehe Begruendung
+            // unten, unveraendert), aber auch kein stilles Verschwinden mehr.
+            // `OnboardingPlanCreationNotice.markFailed()` ist reines
+            // `UserDefaults`, unabhaengig von dieser View/ihrem Lebenszyklus -
+            // `DashboardView` liest ihn beim naechsten Erscheinen aus und
+            // erklaert die Situation im sichtbaren Folgekontext (statt
+            // "konsistent abbrechen/erneut versuchen" - das wuerde bedeuten,
+            // den bereits abgeschlossenen Profil-Insert wieder zu verwerfen,
+            // nur weil der NACHGELAGERTE, optionale Plan-Schritt scheiterte).
+            do {
+                try PlanGeneratorInstantiator.createPlan(
+                    from: customPlanInput, result: customPlanResult,
+                    for: profile, generationSource: .planBuilder, in: modelContext
+                )
+            } catch {
+                // Bewusst kein Alert HIER: der Profil-Insert oben hat
+                // `RootView` moeglicherweise schon zur MainTabView
+                // umschalten lassen, ein neuer Alert-State auf dieser View
+                // koennte nie mehr sichtbar werden.
+                OnboardingPlanCreationNotice.markFailed()
+            }
         }
 
         // 4) Notification-Präferenzen persistieren. Permission wird angefordert,
         //    wenn mindestens einer der Toggles aktiv ist.
-        UserDefaults.standard.set(enableWaterReminder, forKey: "pref_water_reminder")
-        UserDefaults.standard.set(enableMeasurementReminder, forKey: "pref_measurement_reminder")
+        UserDefaults.standard.set(enableWaterReminder, forKey: ReminderPreferences.waterEnabledKey)
+        UserDefaults.standard.set(enableMeasurementReminder, forKey: ReminderPreferences.measurementEnabledKey)
 
-        if enableWaterReminder || enableMeasurementReminder {
-            Task { await prNotifications.requestAuthorization() }
+        // Vor dem Task lesen: @State-Werte nicht aus der Task-Closure heraus anfassen.
+        let asksForNotifications = enableWaterReminder || enableMeasurementReminder
+        Task {
+            if asksForNotifications {
+                await prNotifications.requestAuthorization()
+            }
+            // Bugfix: Die Schalter wurden nur gespeichert, geplant wurde
+            // nichts — Erinnerungen kamen erst, wenn der Nutzer in den
+            // Einstellungen einen Schalter aus- und wieder anmachte. Erst
+            // NACH der Berechtigungsabfrage planen (ohne Erlaubnis ist der
+            // Scheduler ein No-Op). Immer abgleichen, auch wenn beide Schalter
+            // aus sind: Nach "App zuruecksetzen" bleiben Einstellungen UND
+            // geplante Benachrichtigungen im System stehen, die dann hier
+            // abgeraeumt werden muessen.
+            await ReminderPreferencesApplier.applyStoredSchedules()
         }
 
         // RootView's @Query auf [UserBodyProfile] beobachtet die Insert
@@ -1197,9 +2306,19 @@ public struct OnboardingView: View {
 
     // MARK: - Helpers + constants
 
+    /// Fix "70,050003"-Bug: `roundsToWeightPrecision` ist NUR fuer die
+    /// Gewichtsfelder `true` (Hoehe bleibt unveraendert). Rundet den
+    /// geschriebenen Wert sofort auf 2 Nachkommastellen statt nur kosmetisch
+    /// anzuzeigen, und zeigt nie unnoetige Nachkommastellen.
     @ViewBuilder
-    private func decimalField(_ label: String, value: Binding<Double?>) -> some View {
-        TextField(value: value, format: .number, prompt: Text(label)) {
+    private func decimalField(_ label: String, value: Binding<Double?>, roundsToWeightPrecision: Bool = false) -> some View {
+        let displayValue: Binding<Double?> = roundsToWeightPrecision
+            ? Binding(get: { value.wrappedValue }, set: { value.wrappedValue = $0?.rounded(toDecimals: 2) })
+            : value
+        let style: FloatingPointFormatStyle<Double> = roundsToWeightPrecision
+            ? .number.precision(.fractionLength(0...2))
+            : .number
+        TextField(value: displayValue, format: style, prompt: Text(label)) {
             Text(label)
         }
         .decimalKeyboard()

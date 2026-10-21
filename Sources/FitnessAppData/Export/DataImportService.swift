@@ -5,10 +5,14 @@
 // und merged die Daten in den aktiven SwiftData-Container.
 //
 // **Konflikt-Strategie**: Append-only mit Duplikat-Erkennung. Wir löschen
-// niemals bestehende Daten — der User behält jede Trainings-Session, jeden
-// PR, jedes Profil. Doppelte Zeilen (gleicher natürlicher Schlüssel) werden
-// übersprungen, nicht überschrieben:
-//   - UserBodyProfile: existiert → skip ganzer Import-Block (Singleton)
+// im Modus `appendOnly` niemals bestehende Daten — der User behält jede
+// Trainings-Session und jeden PR. Doppelte Zeilen (gleicher natürlicher
+// Schlüssel) werden übersprungen, nicht überschrieben. Ausnahmen sind die
+// Singletons, die ein Restore bewusst zurückbringen soll:
+//   - UserBodyProfile: existiert → wird IN-PLACE mit den Backup-Werten
+//     überschrieben (DEL-191, siehe `importProfile`)
+//   - App-Einstellungen (settings.csv): Whitelist-Keys überschreiben die
+//     aktuellen Werte (`SettingsPortability.apply`)
 //   - BodyMeasurement: skip wenn `date` + `weightKg` matchen
 //   - WaterEntry: skip wenn `date` + `amountMl` matchen
 //   - Gear: skip wenn `name` + `type` matchen
@@ -34,8 +38,11 @@ import ZIPFoundation
 /// Welche Strategie der ImportService beim Mergen anwendet.
 public enum DataImportStrategy: String, Sendable, CaseIterable {
     /// Default. Fügt fehlende Zeilen hinzu, erkennt Duplikate über
-    /// natürliche Schlüssel (date+name etc.) und überspringt sie — nichts
-    /// Bestehendes wird je angetastet. Sicher für jedes Szenario.
+    /// natürliche Schlüssel (date+name etc.) und überspringt sie — keine
+    /// bestehenden Workouts, Rekorde, Messungen oder Pläne werden gelöscht
+    /// oder verändert. Ausnahmen: Profil und App-Einstellungen werden mit den
+    /// Werten aus dem Archiv überschrieben, und Pläne werden immer als neue
+    /// Pläne angelegt.
     case appendOnly
 
     /// Destruktiv. Löscht ALLE User-Daten (Profile, Workouts, Logs, Maße,
@@ -140,15 +147,20 @@ public enum DataImportService {
     /// Handler MUSS thread-safe sein (er läuft auf dem ImportService-Actor,
     /// nicht zwingend Main); UI-Code im Handler also via `Task { @MainActor }`
     /// oder analog dispatchen.
-    /// Hauptentry. Wirft bei strukturellen Fehlern (kaputtes ZIP, fehlendes
-    /// meta.json, falsche formatVersion). Reihen-lokale Fehler landen im
-    /// Result.
+    ///
+    /// Settings-Epic Phase 5 (Befund DI-03/DI-09): `async`, damit zwei Dinge
+    /// off-Main laufen koennen: das Entpacken/Parsen (`extractAndValidate` —
+    /// reine Byte-/Foundation-Arbeit, kein `ModelContext`, sicher per
+    /// `Task.detached`) UND, innerhalb von `runImport` (`@MainActor`, da dort
+    /// SwiftData geschrieben wird), ein `Task.yield()` je Datei-Phase, damit
+    /// die UI den `progressHandler`-Tick tatsaechlich noch rendern kann,
+    /// bevor der naechste (synchrone) Insert-Batch laeuft.
     public static func performImport(
         zipData: Data,
         context: ModelContext,
         strategy: DataImportStrategy = .appendOnly,
         progressHandler: (@Sendable (ImportProgress) -> Void)? = nil
-    ) throws -> DataImportResult {
+    ) async throws -> DataImportResult {
 
         // 1) ZIP entpacken.
         //
@@ -175,8 +187,14 @@ public enum DataImportService {
         // der Dry-Run (`preview`) EXAKT dieselben Pruefungen durchlaeuft. Eine
         // zweite Kopie waere genau die Art Divergenz, bei der die Vorschau
         // "sieht gut aus" sagt und der Import danach scheitert.
-        let (files, meta) = try extractAndValidate(zipData: zipData)
-        return try runImport(
+        //
+        // `extractAndValidate` beruehrt kein `ModelContext`/SwiftData-Objekt —
+        // sicher per `Task.detached`, haelt den Main-Thread waehrend des
+        // potenziell teuren Entpackens (grosse Historie) responsiv.
+        let (files, meta) = try await Task.detached {
+            try extractAndValidate(zipData: zipData)
+        }.value
+        return try await runImport(
             files: files,
             meta: meta,
             context: context,
@@ -298,20 +316,43 @@ public enum DataImportService {
     /// Fuehrt den eigentlichen Import auf bereits validierten Dateien aus.
     /// Getrennt von `extractAndValidate`, damit der Dry-Run dieselbe
     /// Validierung nutzen kann, ohne diesen schreibenden Teil zu beruehren.
+    ///
+    /// Settings-Epic Phase 5 (Befund DI-09): explizit `@MainActor` — hier wird
+    /// `context` (SwiftData) geschrieben, das muss auf dessen Actor bleiben.
+    /// `async`, damit `tick(_:_:)` nach jedem Fortschritts-Tick per
+    /// `Task.yield()` den Main-Thread kurz freigibt; sonst kommt der
+    /// `progressHandler`-Tick zwar an, aber SwiftUI bekommt nie die Chance,
+    /// ihn vor dem naechsten (synchronen) Insert-Batch zu rendern — der
+    /// Fortschrittsbalken "springt" erst nach komplettem Abschluss.
+    @MainActor
     private static func runImport(
         files: [String: Data],
         meta: MetaPayload,
         context: ModelContext,
         strategy: DataImportStrategy,
         progressHandler: (@Sendable (ImportProgress) -> Void)?
-    ) throws -> DataImportResult {
+    ) async throws -> DataImportResult {
 
         // 4) ERST JETZT — nach voll-validiertem ZIP — dürfen wir die
         //    bestehenden Daten anfassen.
+        //
+        // Settings-Epic Phase 5 (Befund: ungesicherter Zwischenzustand beim
+        // destruktiven Replace): das fruehere `try context.save()` direkt
+        // nach dem Wipe ist ENTFERNT — es widersprach dem eigenen
+        // Doc-Kommentar auf `wipeAllUserData` ("Save passiert NICHT hier...
+        // ein einziges save(), das den Wipe und den Merge atomisch
+        // committet") und schuf genau die Luecke, die dieser Kommentar
+        // ausschliessen wollte: wird der Import zwischen Wipe und dem
+        // Merge-Ende abgebrochen (Crash, Force-Quit, Speicherdruck), waere
+        // der Wipe bereits dauerhaft committet, der Merge aber nicht — der
+        // Bestand waere leer UND der Import nicht abgeschlossen. Jetzt
+        // committet GENAU EIN `context.save()` (Schritt 7 unten) Wipe und
+        // Merge atomisch zusammen; schlaegt irgendetwas davor fehl, ist auf
+        // der Platte nach wie vor der alte Stand.
         if strategy == .replace {
             progressHandler?(ImportProgress(phase: "wipe", filesCompleted: 0, filesTotal: 0))
+            await Task.yield()
             try wipeAllUserData(context: context)
-            try context.save()
         }
 
         // 3) Pro-Zeile-Fehler werden hier gesammelt.
@@ -333,6 +374,7 @@ public enum DataImportService {
             "plans.csv",
             "measurements.csv",
             "water_log.csv",
+            "periodic_checkins.csv",
             "plan_days.csv",
             "workouts.csv",
             "plan_exercises.csv",
@@ -342,25 +384,31 @@ public enum DataImportService {
         var completed = 0
         let totalFiles = allFiles.count
 
-        func tick(_ filename: String, _ body: () throws -> Void) throws {
+        // Settings-Epic Phase 5 (Befund DI-09): `async` + `Task.yield()` NACH
+        // dem Tick-Signal — gibt dem Main-Thread eine echte Chance, den neuen
+        // `importProgress`-Wert zu rendern, bevor der (synchrone) Insert für
+        // diese Datei laeuft. Vorher lief alles in einem Zug durch, der
+        // Balken aktualisierte sich erst sichtbar nach dem kompletten Import.
+        func tick(_ filename: String, _ body: () throws -> Void) async throws {
             progressHandler?(ImportProgress(
                 phase: filename,
                 filesCompleted: completed,
                 filesTotal: totalFiles
             ))
+            await Task.yield()
             try body()
             completed += 1
         }
 
         // 4) PASS 1 — Roots ohne FK-Abhängigkeiten.
-        try tick("profile.csv") {
+        try await tick("profile.csv") {
             if let csv = files["profile.csv"] {
                 let (ok, dup, errs) = try importProfile(csv: csv, context: context)
                 imported["profile.csv"] = ok; skipped["profile.csv"] = dup
                 errorBuffer.append(file: "profile.csv", errors: errs)
             }
         }
-        try tick("settings.csv") {
+        try await tick("settings.csv") {
             if let csv = files["settings.csv"] {
                 // DEL-209: App-Einstellungen (Reminder, kg/lbs, Theme, ...).
                 // Whitelist-gefiltert in SettingsPortability — unbekannte
@@ -369,51 +417,58 @@ public enum DataImportService {
                 imported["settings.csv"] = ok; skipped["settings.csv"] = dup
             }
         }
-        try tick("gear.csv") {
+        try await tick("gear.csv") {
             if let csv = files["gear.csv"] {
                 let (ok, dup, errs) = try importGear(csv: csv, context: context, idMap: &idMap)
                 imported["gear.csv"] = ok; skipped["gear.csv"] = dup
                 errorBuffer.append(file: "gear.csv", errors: errs)
             }
         }
-        try tick("custom_exercises.csv") {
+        try await tick("custom_exercises.csv") {
             if let csv = files["custom_exercises.csv"] {
                 let (ok, dup, errs) = try importCustomExercises(csv: csv, context: context, idMap: &idMap)
                 imported["custom_exercises.csv"] = ok; skipped["custom_exercises.csv"] = dup
                 errorBuffer.append(file: "custom_exercises.csv", errors: errs)
             }
         }
-        try tick("plans.csv") {
+        try await tick("plans.csv") {
             if let csv = files["plans.csv"] {
                 let (ok, dup, errs) = try importPlans(csv: csv, context: context, idMap: &idMap)
                 imported["plans.csv"] = ok; skipped["plans.csv"] = dup
                 errorBuffer.append(file: "plans.csv", errors: errs)
             }
         }
-        try tick("measurements.csv") {
+        try await tick("measurements.csv") {
             if let csv = files["measurements.csv"] {
                 let (ok, dup, errs) = try importMeasurements(csv: csv, context: context)
                 imported["measurements.csv"] = ok; skipped["measurements.csv"] = dup
                 errorBuffer.append(file: "measurements.csv", errors: errs)
             }
         }
-        try tick("water_log.csv") {
+        try await tick("water_log.csv") {
             if let csv = files["water_log.csv"] {
                 let (ok, dup, errs) = try importWaterLog(csv: csv, context: context)
                 imported["water_log.csv"] = ok; skipped["water_log.csv"] = dup
                 errorBuffer.append(file: "water_log.csv", errors: errs)
             }
         }
+        try await tick("periodic_checkins.csv") {
+            if let csv = files["periodic_checkins.csv"] {
+                let (ok, dup, errs) = try importPeriodicCheckIns(csv: csv, context: context)
+                imported["periodic_checkins.csv"] = ok; skipped["periodic_checkins.csv"] = dup
+                errorBuffer.append(file: "periodic_checkins.csv", errors: errs)
+            }
+        }
 
         // 5) PASS 2 — Objekte mit FKs in Pass-1.
-        try tick("plan_days.csv") {
+        try await tick("plan_days.csv") {
             if let csv = files["plan_days.csv"] {
                 let (ok, dup, errs) = try importPlanDays(csv: csv, context: context, idMap: &idMap)
                 imported["plan_days.csv"] = ok; skipped["plan_days.csv"] = dup
                 errorBuffer.append(file: "plan_days.csv", errors: errs)
             }
         }
-        try tick("workouts.csv") {
+        try await tick("workouts.csv") {
             if let csv = files["workouts.csv"] {
                 let (ok, dup, errs) = try importWorkouts(csv: csv, context: context, idMap: &idMap)
                 imported["workouts.csv"] = ok; skipped["workouts.csv"] = dup
@@ -422,21 +477,21 @@ public enum DataImportService {
         }
 
         // 6) PASS 3 — Children mit FKs in Pass-2.
-        try tick("plan_exercises.csv") {
+        try await tick("plan_exercises.csv") {
             if let csv = files["plan_exercises.csv"] {
                 let (ok, dup, errs) = try importPlanExercises(csv: csv, context: context, idMap: &idMap)
                 imported["plan_exercises.csv"] = ok; skipped["plan_exercises.csv"] = dup
                 errorBuffer.append(file: "plan_exercises.csv", errors: errs)
             }
         }
-        try tick("workout_sets.csv") {
+        try await tick("workout_sets.csv") {
             if let csv = files["workout_sets.csv"] {
                 let (ok, dup, errs) = try importLogs(csv: csv, context: context, idMap: idMap)
                 imported["workout_sets.csv"] = ok; skipped["workout_sets.csv"] = dup
                 errorBuffer.append(file: "workout_sets.csv", errors: errs)
             }
         }
-        try tick("personal_records.csv") {
+        try await tick("personal_records.csv") {
             if let csv = files["personal_records.csv"] {
                 let (ok, dup, errs) = try importPRs(csv: csv, context: context, idMap: idMap)
                 imported["personal_records.csv"] = ok; skipped["personal_records.csv"] = dup
@@ -445,8 +500,12 @@ public enum DataImportService {
         }
 
         progressHandler?(ImportProgress(phase: "save", filesCompleted: totalFiles, filesTotal: totalFiles))
+        await Task.yield()
 
-        // 7) Persist all changes atomically.
+        // 7) Persist all changes atomically — committet bei `.replace` den
+        // Wipe (Schritt 4 oben) UND den Merge in einem einzigen Save: schlug
+        // irgendetwas dazwischen fehl, ist das hier der einzige Punkt, an dem
+        // ueberhaupt etwas dauerhaft wird.
         try context.save()
 
         let errorsCSV: Data? = errorBuffer.totalCount > 0 ? errorBuffer.toCSV() : nil
@@ -471,33 +530,21 @@ public enum DataImportService {
     /// löschen würde nur die Custom-Eintragsdaten und User-Renames der
     /// System-Lifts beeinflussen, was wir nicht wollen.
     ///
-    /// **Cascade-Regel-konform**: per-instance delete statt
-    /// `delete(model:)`-Batch (NSBatchDeleteRequest umgeht
-    /// `@Relationship`-Cascades und löst "mandatory OTO nullify"-
-    /// Violations aus). Children-first ordering. Save passiert NICHT
-    /// hier — der eigentliche Import sammelt seine Inserts an und ruft
-    /// am Ende ein einziges `save()`, das den Wipe und den Merge atomisch
-    /// committet.
+    /// Settings-Epic Phase 5 (Befund RS-03a): die 10 Typen, deren
+    /// Loeschumfang mit `SettingsView.resetApp` identisch ist, kommen jetzt
+    /// aus der gemeinsamen `UserDataWipe.deleteSharedUserData` — nur
+    /// `ExerciseTemplate` bleibt hier (Custom-only-Filter unterscheidet sich
+    /// tatsaechlich vom reset-spezifischen Alle-loeschen-und-reseeden).
+    ///
+    /// Save passiert NICHT hier — der eigentliche Import sammelt seine
+    /// Inserts an und ruft am Ende ein einziges `save()`, das den Wipe und
+    /// den Merge atomisch committet (siehe Call-Site in `runImport`).
     private static func wipeAllUserData(context: ModelContext) throws {
-        try deleteEach(of: PersonalRecordEntry.self, in: context)
-        try deleteEach(of: ExerciseLog.self,         in: context)
-        try deleteEach(of: WorkoutSession.self,      in: context)
-        try deleteEach(of: Exercise.self,            in: context)
-        try deleteEach(of: TrainingDay.self,         in: context)
-        try deleteEach(of: TrainingPlan.self,        in: context)
+        try UserDataWipe.deleteSharedUserData(in: context)
         // Nur Custom-Templates wegräumen — System-Library kommt vom Seeder.
         let customTemplates = try context.fetch(FetchDescriptor<ExerciseTemplate>())
             .filter { $0.isCustom }
         for t in customTemplates { context.delete(t) }
-        try deleteEach(of: WaterEntry.self,          in: context)
-        try deleteEach(of: BodyMeasurement.self,     in: context)
-        try deleteEach(of: Gear.self,                in: context)
-        try deleteEach(of: UserBodyProfile.self,     in: context)
-    }
-
-    private static func deleteEach<T: PersistentModel>(of type: T.Type, in context: ModelContext) throws {
-        let items = try context.fetch(FetchDescriptor<T>())
-        for item in items { context.delete(item) }
     }
 
     // MARK: - Format version check
@@ -586,6 +633,7 @@ public enum DataImportService {
         // inserten wie bisher.
         let existing = try context.fetch(FetchDescriptor<UserBodyProfile>())
         let target = existing.first
+        let headerSet = Set(reader.headers)
 
         var errors: [RowError] = []
         var imported = 0
@@ -603,7 +651,11 @@ public enum DataImportService {
                 birthDate: birthDate,
                 heightCm: height,
                 profile: profileEnum,
-                goalWeightKg: row.double("goal_weight_kg"),
+                // Fix "70,050003"-Bug: aeltere Exports koennen noch einen
+                // ungerundeten Wert enthalten (vor diesem Fix wurde nirgends
+                // gerundet) — beim Import auf 2 Nachkommastellen runden statt
+                // die Verunreinigung weiterzutragen.
+                goalWeightKg: row.double("goal_weight_kg")?.rounded(toDecimals: 2),
                 environment: envEnum
             )
             // Bei einem existierenden Profil die Kern-Felder explizit
@@ -612,19 +664,92 @@ public enum DataImportService {
                 p.birthDate = birthDate
                 p.heightCm = height
                 p.profile = profileEnum
-                p.goalWeightKg = row.double("goal_weight_kg")
+                p.goalWeightKg = row.double("goal_weight_kg")?.rounded(toDecimals: 2)
                 p.environment = envEnum
             }
             p.firstName = row.optionalString("first_name")
             p.coachingToneRaw = row.optionalString("coaching_tone") ?? CoachingTone.analytical.rawValue
             p.trainingGoalRaw = row.optionalString("training_goal") ?? TrainingGoal.hybrid.rawValue
             p.equipmentPreferencesRaw = splitMulti(row["equipment_preferences"])
-            let dashboardRaw = splitMulti(row["dashboard_widgets"])
-            if !dashboardRaw.isEmpty { p.activeDashboardWidgetsRaw = dashboardRaw }
-            let heroRaw = splitMulti(row["hero_metric_slots"])
-            if !heroRaw.isEmpty { p.heroMetricSlotsRaw = heroRaw }
+            // Smart-Onboarding-Epic Phase 2: additive Spalten, gleiches
+            // Prinzip wie `equipment_preferences` direkt darueber — kein
+            // headerSet-Guard noetig, weil "Spalte fehlt" (aelterer Export)
+            // und "Spalte vorhanden, aber leer" hier auf denselben Wert
+            // fuehren (alles unbekannt), anders als bei dashboard_widgets/
+            // hero_metric_slots mit ihrem abweichenden Nicht-leer-Default.
+            p.equipmentAvailableItemsRaw = splitMulti(row["equipment_available_items"])
+            p.equipmentUnavailableItemsRaw = splitMulti(row["equipment_unavailable_items"])
+            p.equipmentItemCountsRaw = splitMulti(row["equipment_item_counts"])
+            // Korrektur V5: fuenfte additive Spalte, gleiches Prinzip wie die
+            // drei direkt darueber — fehlt sie (aelteres ZIP), liefert
+            // splitMulti("") == [] (kein explizites Unknown aus dieser
+            // Zeile), identisch zum Vorher-Verhalten.
+            p.equipmentUnknownItemsRaw = splitMulti(row["equipment_unknown_items"])
+            // Phase 3, vierte additive Spalte: fehlend oder leer -> false
+            // (noch nicht bestaetigt), identisches Muster wie
+            // cardio_coaching_enabled oben.
+            p.equipmentProfileConfirmedComplete = row.bool("equipment_profile_confirmed_complete") ?? false
+            // Bugfix (Audit): Spalten-PRAESENZ statt Wert-Leerheit pruefen.
+            // Eine leere Liste ist ein gueltiger, bewusst vom User gewaehlter
+            // Zustand ("alle Hero-Metriken/Dashboard-Widgets ausgeblendet",
+            // siehe DashboardSettingsView) - kein Zeichen fuer "alter Export
+            // kannte diese Spalte noch nicht". `row["..."]` liefert fuer
+            // BEIDE Faelle `""` (CSVRow.subscript kennt den Unterschied
+            // nicht), `splitMulti("")` also fuer beide `[]` - der alte
+            // "nur ueberschreiben wenn nicht leer"-Guard konnte die Faelle
+            // deshalb nie unterscheiden und hat ein bewusstes Leeren nach
+            // jedem Restore stillschweigend auf den Konstruktor-Default
+            // (3 Hero-Slots / alle Widgets sichtbar) zurueckgesetzt.
+            if headerSet.contains("dashboard_widgets") {
+                p.activeDashboardWidgetsRaw = splitMulti(row["dashboard_widgets"])
+            }
+            if headerSet.contains("hero_metric_slots") {
+                p.heroMetricSlotsRaw = splitMulti(row["hero_metric_slots"])
+            }
             // DEL-203: additive Spalte — ältere ZIPs ohne sie → Default 1.
             p.weeklyWorkoutGoal = row.int("weekly_workout_goal") ?? 1
+
+            // DEL-250: sechs additive Cardio-Profil-Spalten. `cardio_coaching_
+            // enabled` braucht keinen headerSet-Check wie dashboard_widgets/
+            // hero_metric_slots (dort war "Spalte fehlt" vs. "Wert bewusst
+            // leer" nicht unterscheidbar) — `row.bool` liefert fuer eine
+            // fehlende Spalte UND einen leeren Wert identisch `false`, und
+            // `false` ist in beiden Faellen exakt der gewuenschte Default.
+            p.cardioCoachingEnabled = row.bool("cardio_coaching_enabled") ?? false
+            p.cardioGoalRaw = row.optionalString("cardio_goal") ?? CardioGoal.generalFitness.rawValue
+            p.cardioRaceDate = row.date("cardio_race_date")
+            p.current5kReferenceSeconds = row.int("current_5k_reference_seconds")
+            p.weeklyBaseVolumeKm = row.double("weekly_base_volume_km")
+            p.maxHeartRateBpm = row.int("max_heart_rate_bpm")
+            p.cardioFeasibilityDismissedFingerprint = row.optionalString("cardio_feasibility_dismissed_fingerprint")
+            // Smart-Onboarding-Epic: additive Spalte, gleiches Prinzip wie
+            // oben — fehlt sie (aelterer Export) oder ist sie leer, liefert
+            // optionalString nil und ExperienceTrackBackfill greift erneut.
+            p.experienceTrackRaw = row.optionalString("experience_track")
+
+            // Start-Check-Epic: 18 additive Spalten, gleiches Prinzip —
+            // fehlt eine (aelterer Export) oder ist sie leer, liefert der
+            // jeweilige Row-Accessor nil, was hier ueberall exakt "Check
+            // noch nicht durchgefuehrt" bedeutet (kein Sonderfall wie bei
+            // dashboard_widgets/hero_metric_slots noetig).
+            p.baselineDate = row.date("baseline_date")
+            p.baselineSourceRaw = row.optionalString("baseline_source")
+            p.baselineSafetyStatusRaw = row.optionalString("baseline_safety_status")
+            p.baselineVersion = row.int("baseline_version")
+            p.baselinePushUpVariantRaw = row.optionalString("baseline_push_up_variant")
+            p.baselinePushUpCleanReps = row.int("baseline_push_up_clean_reps")
+            p.baselineChairSquatCleanReps = row.int("baseline_chair_squat_clean_reps")
+            p.baselineChairSquatDurationSeconds = row.int("baseline_chair_squat_duration_seconds")
+            p.baselinePullVariantRaw = row.optionalString("baseline_pull_variant")
+            p.baselinePullCleanReps = row.int("baseline_pull_clean_reps")
+            p.baselinePullLoadKg = row.double("baseline_pull_load_kg")
+            p.baselinePullRir = row.double("baseline_pull_rir")
+            p.baselinePlankSeconds = row.int("baseline_plank_seconds")
+            p.baselineCardioAnswerRaw = row.optionalString("baseline_cardio_answer")
+            p.baselinePushSelfAssessmentRaw = row.optionalString("baseline_push_self_assessment")
+            p.baselineLegsSelfAssessmentRaw = row.optionalString("baseline_legs_self_assessment")
+            p.baselinePullSelfAssessmentRaw = row.optionalString("baseline_pull_self_assessment")
+            p.baselineDesiredFirstWeekIntensityRaw = row.optionalString("baseline_desired_first_week_intensity")
 
             if target == nil {
                 context.insert(p)
@@ -735,6 +860,12 @@ public enum DataImportService {
 
         for row in reader.rows() {
             let exportID = row["id"]
+            // Settings-Epic Phase 6 (EXLIB-07/09): die stabile Vorlagen-ID,
+            // getrennt von der obigen Export-Lauf-lokalen `exportID`. `nil`
+            // bei einem Backup von vor dieser Phase (Spalte fehlt) — dann
+            // bleibt die neue Vorlage ohne wiederhergestellte ID (bekommt
+            // beim Insert unten per Default eine frische).
+            let templateIDString = row.optionalString("template_id")
             let name = row.optionalString("name") ?? ""
             guard !name.isEmpty,
                   let equipment = Equipment(rawValue: row["equipment"]),
@@ -744,12 +875,19 @@ public enum DataImportService {
             }
             if let dup = existingIndex[name.lowercased()] {
                 if !exportID.isEmpty { idMap[exportID] = dup }
+                // Dedup-Fall: die bereits vorhandene Vorlage behaelt IHRE
+                // eigene ID — die importierte `template_id` wird trotzdem auf
+                // sie gemappt, damit exercise_template_id-Spalten weiter
+                // unten (Exercise/ExerciseLog/PersonalRecordEntry) korrekt
+                // auf die wiederverwendete Vorlage aufloesen.
+                if let templateIDString { idMap[templateIDString] = dup }
                 skipped += 1
                 continue
             }
             let difficulty = DifficultyLevel(rawValue: row["difficulty_level"]) ?? .intermediate
             let recovery = ExerciseRecoveryClass(rawValue: row["recovery_class"]) ?? .medium
             let t = ExerciseTemplate(
+                id: templateIDString.flatMap(UUID.init(uuidString:)) ?? UUID(),
                 name: name,
                 equipment: equipment,
                 primaryMuscle: muscle,
@@ -770,6 +908,7 @@ public enum DataImportService {
             context.insert(t)
             existingIndex[name.lowercased()] = t
             if !exportID.isEmpty { idMap[exportID] = t }
+            if let templateIDString { idMap[templateIDString] = t }
             imported += 1
         }
         return (imported, skipped, errors)
@@ -839,6 +978,42 @@ public enum DataImportService {
             if let override = row.double("progression_target_rir_override") {
                 plan.progressionTargetRIROverride = Float(override)
             }
+            // Bugfix (Audit): additive Spalte, siehe DataExportService.buildPlans.
+            // Aeltere ZIPs ohne die Spalte -> nil, "neu rechnen" bleibt fuer sie
+            // einfach deaktiviert (unveraendertes Verhalten von vorher), statt
+            // dass diese Zeile crasht oder eine leere Zeichenkette als "echtes"
+            // JSON missversteht.
+            if let raw = row.optionalString("generator_input_raw") {
+                plan.generatorInputRaw = raw
+            }
+            // Handoff "Lauf-Coaching - Machbarkeits-Check": additive Spalte,
+            // gleiches Prinzip wie generator_input_raw - aeltere ZIPs ohne die
+            // Spalte fallen auf den Default `.manual` zurueck statt zu
+            // crashen.
+            plan.generationSourceRaw = row.optionalString("generation_source") ?? GenerationSource.manual.rawValue
+            // P6.1: additive Spalte, siehe DataExportService.buildPlans.
+            // Explizit ueberschreiben statt dem Init-Default zu vertrauen —
+            // dessen Auto-"jetzt"-Stempel (greift, wenn `isActive == true`
+            // und kein `activatedAt` explizit uebergeben wurde) waere hier
+            // falsch: ein importierter Plan kann laut Backup laengst vorher
+            // aktiviert worden sein. Fehlt die Spalte (Backup von vor P6.1)
+            // oder ist sie leer, bleibt es bewusst `nil` ("unbekannt"), nie
+            // ein erfundenes historisches Datum.
+            plan.activatedAt = row.date("activated_at_utc")
+            // P7.3: additive Spalten, siehe DataExportService.buildPlans.
+            // Fehlen sie (Backup von vor P7.3) oder sind sie leer, bleibt es
+            // bewusst `nil` — "noch nie abgeschlossen" bzw. kein
+            // Beobachtungs-Fallback, NIE ein erfundenes Datum/Ergebnis.
+            plan.reviewCompletedAt = row.date("review_completed_at_utc")
+            plan.reviewDecisionRaw = row.optionalString("review_decision")
+            plan.reviewObservationStartedAt = row.date("review_observation_started_at_utc")
+            // P8 Stufe 3: additive Spalte, siehe DataExportService.buildPlans.
+            // Fehlt sie (Backup von vor diesem Feld) oder ist sie leer,
+            // bleibt es bewusst `nil` — die drei Altfelder oben bleiben dann
+            // die einzige bekannte Historie (siehe
+            // `FourWeekReviewDueStatus.history(for:)`), NIE eine erfundene
+            // Blockhistorie.
+            plan.blockReviewHistoryJSON = row.optionalString("block_review_history_json")
             // DEL-225: Sobald ein Plan aktiv gesetzt wurde, darf kein weiterer
             // folgen — ein Backup mit mehreren aktiven Plaenen soll nicht in
             // zwei gleichzeitig aktiven Plaenen resultieren.
@@ -871,7 +1046,11 @@ public enum DataImportService {
 
         for row in reader.rows() {
             guard let date = row.date("date_utc"),
-                  let weight = row.double("weight_kg") else {
+                  // Fix "70,050003"-Bug: aeltere Exports koennen noch einen
+                  // ungerundeten Wert enthalten — beim Import runden statt
+                  // die Verunreinigung weiterzutragen (fliesst auch in den
+                  // Dedup-Key ein, der bleibt dadurch konsistent).
+                  let weight = row.double("weight_kg")?.rounded(toDecimals: 2) else {
                 errors.append(.init(line: row.lineNumber, reason: "missing date_utc or weight_kg"))
                 continue
             }
@@ -954,6 +1133,70 @@ public enum DataImportService {
         return (imported, skipped, errors)
     }
 
+    /// `CSVRow.bool(_:)` liest eine leere Spalte als `false` (etabliertes
+    /// Verhalten für bestehende Felder, deren Default historisch "false"
+    /// ist). Für eine echte, übersprungbare Ja/Nein-Frage (P6.3) wäre das
+    /// eine stille Fehlinterpretation — "übersprungen" würde zu "Nein"
+    /// werden. Deshalb ein eigener, strikt dreiwertiger Parser: leer/trimmt-
+    /// leer → `nil`, sonst wie `CSVRow.bool`.
+    private static func optionalSkippableBool(_ row: CSVRow, _ key: String) -> Bool? {
+        guard let raw = row.optionalString(key) else { return nil }
+        switch raw.lowercased() {
+        case "true", "1": return true
+        case "false", "0": return false
+        default: return nil
+        }
+    }
+
+    /// P6.3: `periodic_checkins.csv` — jede Antwortspalte ist nil-sicher
+    /// (fehlende/alte Spalte oder übersprungene Frage lesen als `nil`, nie
+    /// als ein "negativer" Default). Dedup-Key über Datum + alle Antworten,
+    /// nicht nur Datum, damit zwei inhaltlich unterschiedliche Rückblicke
+    /// am selben Tag (z.B. Backup-Merge zweier Geräte) beide erhalten bleiben.
+    private static func importPeriodicCheckIns(csv: Data, context: ModelContext) throws -> (Int, Int, [RowError]) {
+        let text = String(data: csv, encoding: .utf8) ?? ""
+        let reader: CSVReader
+        do { reader = try CSVReader(text) } catch { return (0, 0, []) }
+
+        let existing = try context.fetch(FetchDescriptor<PeriodicCheckIn>())
+        func key(for c: PeriodicCheckIn) -> String {
+            "\(Int(c.date.timeIntervalSince1970))|\(c.frequencyFeedbackRaw.map(String.init) ?? "-")|"
+                + "\(c.durationFeedbackRaw.map(String.init) ?? "-")|\(c.hadComplaints.map(String.init) ?? "-")|"
+                + "\(c.complaintsNote ?? "-")|\(c.goalStillCurrent.map(String.init) ?? "-")|"
+                + "\(c.exertionFeedbackRaw.map(String.init) ?? "-")"
+        }
+        var dupSet = Set(existing.map(key(for:)))
+
+        var errors: [RowError] = []
+        var imported = 0
+        var skipped  = 0
+
+        for row in reader.rows() {
+            guard let date = row.date("date_utc") else {
+                errors.append(.init(line: row.lineNumber, reason: "missing date_utc"))
+                continue
+            }
+            let checkIn = PeriodicCheckIn(
+                date: date,
+                frequencyFeedback: row.int("frequency_feedback").flatMap(FrequencyFeedback.init(rawValue:)),
+                durationFeedback: row.int("duration_feedback").flatMap(DurationFeedback.init(rawValue:)),
+                hadComplaints: optionalSkippableBool(row, "had_complaints"),
+                complaintsNote: row.optionalString("complaints_note"),
+                goalStillCurrent: optionalSkippableBool(row, "goal_still_current"),
+                exertionFeedback: row.int("exertion_feedback").flatMap(ExertionFeedback.init(rawValue:))
+            )
+            let rowKey = key(for: checkIn)
+            if dupSet.contains(rowKey) {
+                skipped += 1
+                continue
+            }
+            context.insert(checkIn)
+            dupSet.insert(rowKey)
+            imported += 1
+        }
+        return (imported, skipped, errors)
+    }
+
     // MARK: - Pass 2: Plan Days
 
     private static func importPlanDays(
@@ -989,6 +1232,33 @@ public enum DataImportService {
             }
             let type = DayType(rawValue: row["type"]) ?? .custom
             let intensity = DayIntensity(rawValue: row["next_intensity"]) ?? .normal
+            // Bugfix (Audit): additive Spalten, siehe DataExportService.buildDays.
+            // Aeltere ZIPs ohne sie -> beide nil, exakt der schon immer
+            // bestehende "normaler Satz/Wiederholungs-Tag"-Bestandsfall.
+            let timeFormat = row.optionalString("time_format").flatMap(WorkoutTimeFormat.init(rawValue:))
+            // Nutzer-Feedback (13. August, zweite Runde): additive Spalten,
+            // siehe DataExportService.buildDays - aeltere ZIPs ohne sie ->
+            // alle drei nil, der Bestandsfall "kein Zirkel-Tag".
+            let circuitMode = row.optionalString("circuit_mode").flatMap(CircuitRoundMode.init(rawValue:))
+            // Paket 2 (Komponente 4): additive Spalten, siehe
+            // DataExportService.buildDays - aeltere ZIPs ohne sie -> alle
+            // sechs nil, der Bestandsfall "kein Ausdauer-Intervall-Tag".
+            let enduranceWarmupDurationSeconds = row.int("endurance_warmup_seconds")
+            let enduranceCooldownDurationSeconds = row.int("endurance_cooldown_seconds")
+            let enduranceIntervalRounds = row.int("endurance_interval_rounds")
+            let enduranceWorkDurationSeconds = row.int("endurance_work_duration_seconds")
+            let enduranceWorkDistanceKm = row.double("endurance_work_distance_km")
+            let enduranceRestDurationSeconds = row.int("endurance_rest_duration_seconds")
+            // Bugfix (Audit): `generation_fingerprint`/`generator_sequence_index`
+            // fehlten hier komplett, siehe DataExportService.buildDays. Aeltere
+            // ZIPs ohne die Spalten -> beide nil, exakt der Bestandsfall
+            // "kein Wizard-Tag" (siehe Feld-Dokumentation auf TrainingDay).
+            let generationFingerprint = row.optionalString("generation_fingerprint")
+            let generatorSequenceIndex = row.int("generator_sequence_index")
+            // Paket 2 (Sportart-Unterscheidung): additive Spalte, siehe
+            // DataExportService.buildDays - aeltere ZIPs ohne sie -> nil,
+            // der Bestandsfall "nicht festgelegt".
+            let enduranceSportKind = row.optionalString("endurance_sport_kind").flatMap(TrainingTypeKind.init(rawValue:))
 
             let day = TrainingDay(
                 name: name,
@@ -997,7 +1267,21 @@ public enum DataImportService {
                 type: type,
                 nextIntensity: intensity,
                 plan: plan,
-                localizationKey: row.optionalString("localization_key")
+                localizationKey: row.optionalString("localization_key"),
+                timeFormat: timeFormat,
+                timeCapMinutes: row.int("time_cap_minutes"),
+                circuitRounds: row.int("circuit_rounds"),
+                circuitRestSeconds: row.int("circuit_rest_seconds"),
+                circuitMode: circuitMode,
+                enduranceWarmupDurationSeconds: enduranceWarmupDurationSeconds,
+                enduranceCooldownDurationSeconds: enduranceCooldownDurationSeconds,
+                enduranceIntervalRounds: enduranceIntervalRounds,
+                enduranceWorkDurationSeconds: enduranceWorkDurationSeconds,
+                enduranceWorkDistanceKm: enduranceWorkDistanceKm,
+                enduranceRestDurationSeconds: enduranceRestDurationSeconds,
+                enduranceSportKind: enduranceSportKind,
+                generationFingerprint: generationFingerprint,
+                generatorSequenceIndex: generatorSequenceIndex
             )
             context.insert(day)
             if !exportID.isEmpty { idMap[exportID] = day }
@@ -1047,6 +1331,17 @@ public enum DataImportService {
                 skipped += 1
                 continue
             }
+            // Bugfix (Audit): additive Spalten, siehe DataExportService.
+            // buildWorkouts. Aeltere ZIPs ohne sie -> `timeFormatSnapshot`
+            // bleibt nil (normale Krafteinheit), die restlichen Felder ihre
+            // Modell-Defaults (nil/false) - unveraendertes Verhalten von vorher.
+            let timeFormatSnapshot = row.optionalString("time_format_snapshot").flatMap(WorkoutTimeFormat.init(rawValue:))
+            // Paket 2 (Komponente 4): additive Spalten, siehe
+            // DataExportService.buildWorkouts - aeltere ZIPs ohne sie ->
+            // alle sieben Modell-Defaults (nil/false), der Bestandsfall
+            // "keine Ausdauer-Intervall-Session".
+            let endurancePhase = row.optionalString("endurance_phase").flatMap(EnduranceIntervalPhase.init(rawValue:))
+
             let s = WorkoutSession(
                 startTime: start,
                 endTime: end,
@@ -1058,11 +1353,44 @@ public enum DataImportService {
                 isCompleted: row.bool("is_completed") ?? true,
                 isRestDay: row.bool("is_rest_day") ?? false,
                 isAdHoc: row.bool("is_ad_hoc") ?? false,
-                dayName: row.optionalString("day_name_snapshot")
+                dayName: row.optionalString("day_name_snapshot"),
+                timeFormatSnapshot: timeFormatSnapshot,
+                roundsCompleted: row.int("rounds_completed"),
+                partialReps: row.int("partial_reps"),
+                partialRepsExerciseName: row.optionalString("partial_reps_exercise_name"),
+                finishTimeSeconds: row.int("finish_time_seconds"),
+                forTimeCheckedRoundsRaw: row.optionalString("for_time_checked_rounds_raw"),
+                completedMinuteCount: row.int("completed_minute_count"),
+                circuitRoundsCompleted: row.int("circuit_rounds_completed"),
+                circuitRestEndDate: row.date("circuit_rest_end_date_utc"),
+                circuitCurrentRoundCheckedRaw: row.optionalString("circuit_current_round_checked_raw"),
+                completedTarget: row.bool("completed_target") ?? false,
+                endurancePhase: endurancePhase,
+                enduranceCurrentRoundNumber: row.int("endurance_current_round_number"),
+                enduranceRoundsCompleted: row.int("endurance_rounds_completed"),
+                endurancePhaseEndDate: row.date("endurance_phase_end_date_utc"),
+                endurancePausedRemainingSeconds: row.int("endurance_paused_remaining_seconds"),
+                enduranceWarmupSkipped: row.bool("endurance_warmup_skipped") ?? false,
+                enduranceCooldownSkipped: row.bool("endurance_cooldown_skipped") ?? false,
+                importSourceName: row.optionalString("import_source_name"),
+                healthKitSampleUUID: row.optionalString("healthkit_sample_uuid")
             )
             if let feeling = row.int("session_feeling") {
                 s.sessionFeeling = feeling
             }
+            // P8 Stufe-2: Snapshot-Payload 1:1 uebernehmen, NICHT ueber
+            // `TrainingDayContentSnapshotWriter.capture` neu erzeugen — das
+            // wuerde den damaligen Stand durch den HEUTIGEN Stand des (per
+            // idMap gleich unten verknuepften) Tages ersetzen, also genau
+            // den nachtraeglich erfundenen historischen Startzustand
+            // erzeugen, den dieses Feature verhindern soll. Eine
+            // beschaedigte oder zukuenftig-versionierte Payload wird hier
+            // bewusst NICHT geprueft/repariert — das entscheidet erst der
+            // Lesezugriff (`contentSnapshotState`), nie der Import.
+            // Fehlende Spalte (Altbackup) -> `optionalString`/`date` liefern
+            // nil -> "nie erfasst", niemals rueckwirkend aufgefuellt.
+            s.contentSnapshotJSON = row.optionalString("content_snapshot_json")
+            s.contentSnapshotCapturedAt = row.date("content_snapshot_captured_at_utc")
             // Gear/Day-Backref via idMap (lookup nur, kein Fehler wenn nicht da).
             if let gear = idMap[row["gear_id"]] as? Gear { s.gear = gear }
             if let day = idMap[row["day_id"]] as? TrainingDay { s.day = day }
@@ -1111,9 +1439,21 @@ public enum DataImportService {
             let supersetId = UUID(uuidString: row["superset_id"])
             let primaryMuscle = MuscleGroup(rawValue: row["primary_muscle"])
             let equipment = Equipment(rawValue: row["equipment"])
+            // Settings-Epic Phase 6 (EXLIB-07/09): "exercise_template_id"
+            // traegt die STABILE Vorlagen-ID (siehe importCustomExercises),
+            // aufgeloest ueber idMap auf die tatsaechlich in DIESEM Import
+            // verwendete Vorlage (neu angelegt ODER per Dedup wiederverwendet
+            // — beide Faelle sind in idMap hinterlegt). Fehlt custom_exercises.csv
+            // im ZIP (sollte nicht vorkommen) oder ist die Spalte leer
+            // (Backup von vor dieser Phase), bleibt es defensiv beim rohen
+            // UUID-Parse bzw. `nil` — nie geraten.
+            let exerciseTemplateID: UUID? = row.optionalString("exercise_template_id").flatMap { raw in
+                (idMap[raw] as? ExerciseTemplate)?.id ?? UUID(uuidString: raw)
+            }
 
             let e = Exercise(
                 name: name,
+                exerciseTemplateID: exerciseTemplateID,
                 customName: row.optionalString("custom_name"),
                 sets: row.int("sets") ?? 3,
                 repsMin: row.int("reps_min") ?? 8,
@@ -1146,6 +1486,12 @@ public enum DataImportService {
             )
             if let cardioEquipRaw = row.optionalString("cardio_equipment") {
                 e.cardioEquipmentRaw = cardioEquipRaw
+            }
+            // Paket 2 (Sportart-Unterscheidung): additive Spalte, aeltere
+            // ZIPs ohne sie -> bleibt nil, der Bestandsfall "nicht
+            // festgelegt".
+            if let sportKindRaw = row.optionalString("endurance_sport_kind") {
+                e.enduranceSportKindRaw = sportKindRaw
             }
             // DEL-208: Deload-Zustand normalisieren. Wurde das Backup mitten
             // in einer Deload-Woche (DEL-200) erstellt, enthält
@@ -1281,6 +1627,12 @@ public enum DataImportService {
             // (manuell gepflegte oder migrierte Snapshots dürfen nicht
             // verlorengehen).
             log.exerciseNameSnapshot = nameSnap
+            // Settings-Epic Phase 6 (EXLIB-07/09): wie bei exercise_template_id
+            // auf Exercise (importPlanExercises) — ueber idMap auf die in
+            // DIESEM Import tatsaechlich verwendete Vorlage aufloesen.
+            log.exerciseTemplateIDSnapshot = row.optionalString("exercise_template_id_snapshot").flatMap { raw in
+                (idMap[raw] as? ExerciseTemplate)?.id ?? UUID(uuidString: raw)
+            }
             log.exerciseIsCardioSnapshot = row.bool("exercise_is_cardio_snapshot") ?? false
             log.exerciseIsTimeBasedSnapshot = row.bool("exercise_is_time_based_snapshot") ?? false
             log.exerciseCardioEquipmentSnapshot = row.optionalString("exercise_cardio_equipment_snapshot")
@@ -1369,10 +1721,17 @@ public enum DataImportService {
                 continue
             }
             let session = idMap[row["session_id"]] as? WorkoutSession
+            // Settings-Epic Phase 6 (EXLIB-07/09): wie bei exercise_template_id
+            // auf Exercise/ExerciseLog — leer bei WOD-Zeitformat-PRs und bei
+            // Backups von vor dieser Phase.
+            let exerciseTemplateID: UUID? = row.optionalString("exercise_template_id").flatMap { raw in
+                (idMap[raw] as? ExerciseTemplate)?.id ?? UUID(uuidString: raw)
+            }
 
             let p = PersonalRecordEntry(
                 date: date,
                 exerciseName: name,
+                exerciseTemplateID: exerciseTemplateID,
                 kindRaw: kind,
                 value: row.double("value") ?? 0,
                 previousValue: row.double("previous_value") ?? 0,

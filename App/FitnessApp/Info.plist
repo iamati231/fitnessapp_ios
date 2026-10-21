@@ -38,9 +38,22 @@
         <string>tr</string>
     </array>
 
-    <!-- Live Activities (rest timer Lock Screen / Dynamic Island). -->
+    <!-- Live Activities (rest timer + Zeitformate Lock Screen / Dynamic Island). -->
     <key>NSSupportsLiveActivities</key>
     <true/>
+
+    <!-- Zeitformate (AMRAP/EMOM/Auf Zeit/Zirkel) im Hintergrund: Die Signaltoene
+         (kurze Piepser vor dem Wechsel, langer Ton beim Wechsel/Ende) muessen bei
+         gesperrtem Bildschirm oder in einer anderen App erklingen. Dafuer spielt die
+         App waehrend eines Laufs unhoerbares Audio ab (BackgroundAudioKeepAlive), das
+         sie am Leben haelt - nur solange ein Signal anstehen kann (AMRAP, EMOM, Auf
+         Zeit mit Limit, Zirkel-Pause) und der Nutzer es nicht in den Einstellungen
+         ausgeschaltet hat. Audio-Session: .playback mit .mixWithOthers (Musik
+         anderer Apps laeuft weiter). -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>audio</string>
+    </array>
 
     <!-- DEL-237: Backups in der Dateien-App sichtbar machen.
          Beide Keys zusammen lassen den Documents-Ordner der App unter
@@ -67,11 +80,16 @@
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
 
-    <!-- HealthKit usage descriptions. iOS shows these in the permission dialog. -->
+    <!-- HealthKit usage descriptions. iOS shows these in the permission dialog.
+         The values here are the English fallback (development language); the
+         German and Turkish texts live in InfoPlist.xcstrings next to this
+         file. Keep both in sync with what HealthKitService really reads and
+         writes (requestAuthorization / requestWorkoutReadAuthorization /
+         requestWorkoutWriteAuthorization(includeDistance:)). -->
     <key>NSHealthShareUsageDescription</key>
-    <string>Liest dein Gewicht und Koerperfett aus Apple Health, damit du Werte nicht doppelt eintragen musst.</string>
+    <string>Deltiq reads your weight, body fat, lean mass, height, date of birth, sex, resting heart rate and steps from Apple Health, so you don't have to enter values twice and your profile and dashboard stay up to date. Deltiq also reads workouts recorded by other apps – to import them if you turn on workout import, and to avoid duplicates when you export past workouts.</string>
     <key>NSHealthUpdateUsageDescription</key>
-    <string>Schreibt jede neue Messung zurueck nach Apple Health, damit deine Daten in einer Quelle leben.</string>
+    <string>Deltiq writes your measurements (weight, body fat, lean mass) and your completed workouts to Apple Health: strength training by default, cardio only if you turn it on, and both can be switched off in Settings. Optionally with walking and running distance and for past workouts. That way your data lives in one place.</string>
 
     <!-- Custom URL scheme for Live Activity / Widget deep-links. -->
     <key>CFBundleURLTypes</key>

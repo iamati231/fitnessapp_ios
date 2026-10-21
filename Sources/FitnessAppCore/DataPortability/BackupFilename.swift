@@ -25,6 +25,12 @@ public enum BackupFilename {
         /// Sicherung unmittelbar VOR einem Import — der Rueckweg, falls der
         /// Import nicht das gebracht hat, was der User erwartete.
         case preImport
+        /// Settings-Epic Phase 5 (Befund RS-02): Sicherung unmittelbar VOR
+        /// einem "App zuruecksetzen" — derselbe Rueckweg-Gedanke wie
+        /// `preImport`, aber als eigener Grund sichtbar gemacht, statt den
+        /// deutlich folgenreicheren Reset unter "vor einem Import" zu
+        /// verstecken.
+        case preReset
     }
 
     public static let prefix = "deltiq-backup_"

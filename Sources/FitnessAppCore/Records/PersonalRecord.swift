@@ -31,6 +31,14 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         /// = besser). Nur valide ueber Sessions mit `totalKm >=` Mindestdistanz —
         /// PRDetector guarded gegen Sprint-Outlier.
         case fastestPace
+        /// Zeitformate (README 2.9): meiste Runden in einem AMRAP-WOD.
+        /// `exerciseName` traegt hier den WOD-/Tagesnamen (z.B. "Cindy")
+        /// statt eines Uebungsnamens — siehe `PRDetector.detectTimedFormatPR`.
+        case mostRounds
+        /// Zeitformate: schnellste Zeit in einem Auf-Zeit-WOD (Sekunden,
+        /// niedriger = besser). Kein Kind fuer EMOM - "alle Minuten
+        /// geschafft" ist pass/fail, kein maximierbarer Wert.
+        case fastestTime
 
         /// DEL-218: EINZIGE Quelle der Anzeige-Reihenfolge. Vorher existierte
         /// diese Liste vierfach: `PRDetector.kindOrder` und
@@ -55,6 +63,8 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
             .maxHoldSeconds,
             .longestDistance,
             .fastestPace,
+            .mostRounds,
+            .fastestTime,
         ]
 
         /// Rang in `displayOrder` — niedriger = beeindruckender. Cases, die
@@ -69,6 +79,11 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
     public let id: UUID
     public let kind: Kind
     public let exerciseName: String
+    /// Stabile `ExerciseTemplate.id`-Referenz, falls die Session- und
+    /// Historien-Attempts eine gemeinsame aufloesbare ID trugen (Settings-
+    /// Epic Phase 6, EXLIB-07/09). `nil` fuer WOD-Zeitformat-PRs
+    /// (`detectTimedFormatPR`) und nicht-aufloesbare Alt-Eintraege.
+    public let exerciseTemplateID: UUID?
     /// DEL-156: Cardio-Equipment des PRs. `.none` fuer Strength/Bodyweight/
     /// TimeBased. Trennt Cardio-PRs nach Modalitaet (Laufband ≠ Fahrrad).
     public let cardioEquipment: CardioEquipment
@@ -87,6 +102,7 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         id: UUID = UUID(),
         kind: Kind,
         exerciseName: String,
+        exerciseTemplateID: UUID? = nil,
         weightKg: Double,
         reps: Int,
         previousValue: Double,
@@ -97,6 +113,7 @@ public struct PersonalRecord: Sendable, Hashable, Identifiable {
         self.id = id
         self.kind = kind
         self.exerciseName = exerciseName
+        self.exerciseTemplateID = exerciseTemplateID
         self.weightKg = weightKg
         self.reps = reps
         self.previousValue = previousValue

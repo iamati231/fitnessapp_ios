@@ -7,6 +7,19 @@ import FitnessAppCore
 /// Backs the Exercise Library and the "swap exercise" flow.
 @Model
 public final class ExerciseTemplate {
+    /// Settings-Epic Phase 6 (EXLIB-07/09): stabile Identitaet, unabhaengig
+    /// vom (beim Custom-Template umbenennbaren) `name`. `Exercise`,
+    /// `ExerciseLog` und `PersonalRecordEntry` referenzieren diese ID statt
+    /// (nur) den Namen zu kopieren, damit ein Umbenennen Verlauf/PRs nicht
+    /// mehr von der Bibliothek trennt. Bewusst ein einfacher `UUID`-Scalar,
+    /// KEIN `@Relationship` — ein SwiftData-Relationship koennte eine
+    /// Delete-Rule erzwingen; die harte Anforderung "Loeschen einer Vorlage
+    /// darf niemals Logs/PRs mitloeschen" bleibt so strukturell garantiert,
+    /// nicht nur per Konvention. Default-Literal `UUID()` sorgt dafuer, dass
+    /// Lightweight-Migration jeder Bestandszeile ihre EIGENE, zufaellige ID
+    /// zuweist (nicht allen dieselbe) — siehe `ExerciseTemplateIDBackfill`
+    /// fuer den Ruecklink von Alt-Exercises/-Logs/-PRs auf diese IDs.
+    public var id: UUID = UUID()
     public var name: String
     public var equipment: Equipment
     public var primaryMuscle: MuscleGroup
@@ -64,6 +77,7 @@ public final class ExerciseTemplate {
     }
 
     public init(
+        id: UUID = UUID(),
         name: String,
         equipment: Equipment,
         primaryMuscle: MuscleGroup,
@@ -81,6 +95,7 @@ public final class ExerciseTemplate {
         localizationKey: String? = nil,
         isSystemProvided: Bool = true
     ) {
+        self.id = id
         self.name = name
         self.equipment = equipment
         self.primaryMuscle = primaryMuscle

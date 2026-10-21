@@ -1,0 +1,21 @@
+{
+  "enabledPlugins": {
+    "feature-dev@anthropic-plugin-directory": true,
+    "superpowers@superpowers-dev": true,
+    "ponytail@ponytail": true
+  },
+  "extraKnownMarketplaces": {
+    "superpowers-dev": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    }
+  }
+}

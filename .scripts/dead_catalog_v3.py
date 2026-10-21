@@ -65,10 +65,14 @@ for m in re.finditer(
 ):
     dynamic_prefixes.append((m.group(1), None))
 
-# B6: pluralized(baseKey, ...) → baseKey.one + baseKey.other
-plural_bases: set[str] = set()
-for m in re.finditer(r'pluralized\(\s*"([a-z][a-zA-Z0-9_.]+)"', swift_text):
-    plural_bases.add(m.group(1))
+# B6: Plural-Paare `foo.one` + `foo.other` (CONTRIBUTING: "Plural-Branches via
+# .one / .other"). Die Halb-Keys stehen NIE als Literal im Code — der Code
+# haengt `.one`/`.other` zur Laufzeit an einen Basis-Key an (Helfer wie
+# `pluralized(...)` / `pluralizedCount(...)` oder `let baseKey = cond ?
+# "a" : "b"`). Gemeinsamer Nenner aller Varianten: der Basis-Key `foo` steht
+# irgendwo als String-Literal. Das Paar gilt daher als referenziert, sobald
+# `"foo"` im Code vorkommt (siehe Plural-Check unten).
+plural_key = re.compile(r"(.+)\.(?:one|other)")
 
 # Apply dynamic-prefix logic
 for k in catalog_keys:
@@ -85,11 +89,10 @@ for k in catalog_keys:
         break
     if k in referenced:
         continue
-    # Plural-base check
-    for base in plural_bases:
-        if k == f"{base}.one" or k == f"{base}.other":
-            referenced.add(k)
-            break
+    # Plural-Paar-Check (B6)
+    m = plural_key.fullmatch(k)
+    if m and f'"{m.group(1)}"' in swift_text:
+        referenced.add(k)
 
 # Special-case: localizationKey assignments in ExerciseLibraryData /
 # ProgramTemplates / DaySpec — the build-time-set string is a key

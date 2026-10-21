@@ -24,7 +24,20 @@ public struct WorkoutRootView: View {
                     DayEditorView(day: day)
                 }
                 .navigationDestination(for: ActiveSessionRoute.self) { route in
-                    ActiveWorkoutView(session: route.session)
+                    // Nachtrag 6. August (README 2.9): Zeitformat-Tage
+                    // (AMRAP/EMOM/Auf Zeit) bekommen einen eigenen Player
+                    // statt der gepagten Uebungs-Navigation + RestTimerBar -
+                    // Peer zu ActiveWorkoutView, nicht ein Modus darin.
+                    // P8 Stufe-2-Nachbesserung (Geräteabnahme Block D):
+                    // `contentSnapshotTimeFormat` statt `day?.timeFormat` —
+                    // ein externer Formatwechsel am Tag darf bei einer
+                    // offenen/wiederaufgenommenen Session nicht den
+                    // falschen Player öffnen.
+                    if route.session.contentSnapshotTimeFormat != nil {
+                        TimedWorkoutPlayerView(session: route.session)
+                    } else {
+                        ActiveWorkoutView(session: route.session)
+                    }
                 }
                 .navigationDestination(for: SummaryRoute.self) { route in
                     WorkoutSummaryView(session: route.session, isReadOnly: route.isReadOnly)

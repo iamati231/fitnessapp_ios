@@ -26,8 +26,75 @@ public final class TrainingDay {
     /// zurueck. Lightweight-Migration kompatibel.
     public var localizationKey: String?
 
+    /// Zeitformat dieses Tags (AMRAP/EMOM/Auf Zeit) — `nil` fuer normales
+    /// Satz/Wiederholungs-Training (unveraenderter Bestandsfall). Additive,
+    /// optionale Felder: bestehende Rows migrieren lightweight auf `nil`.
+    public var timeFormat: WorkoutTimeFormat?
+    /// AMRAP-Deckel bzw. EMOM-Gesamtdauer in Minuten. Siehe `DaySpec.timeCapMinutes`.
+    public var timeCapMinutes: Int?
+
+    /// Nur bei `timeFormat == .circuit`. Siehe `DaySpec.circuitRounds`.
+    public var circuitRounds: Int?
+    /// Nur bei `timeFormat == .circuit`. Siehe `DaySpec.circuitRestSeconds`.
+    public var circuitRestSeconds: Int?
+    /// Nur bei `timeFormat == .circuit`. Siehe `DaySpec.circuitMode`.
+    public var circuitMode: CircuitRoundMode?
+
+    /// Paket 2: nur bei `timeFormat == .enduranceIntervals`. Siehe
+    /// `DaySpec`/`WorkoutTimeFormat.enduranceIntervals`-Doku.
+    public var enduranceWarmupDurationSeconds: Int?
+    public var enduranceCooldownDurationSeconds: Int?
+    public var enduranceIntervalRounds: Int?
+    public var enduranceWorkDurationSeconds: Int?
+    public var enduranceWorkDistanceKm: Double?
+    public var enduranceRestDurationSeconds: Int?
+    /// Paket 2 (Sportart-Unterscheidung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// nur die beiden Cardio-Faelle (`.running`/`.cycling`) sind gueltig.
+    /// `nil` = nicht festgelegt (Altbestand vor dieser Ergaenzung, oder
+    /// manuell angelegt ohne Auswahl) - wird NIE automatisch aus `name`
+    /// zurueckgeraten, nur ueber eine bewusste Auswahl im Editor oder beim
+    /// Generator-Handoff gesetzt. Wiederverwendet `TrainingTypeKind` statt
+    /// einer dritten Enum - identisch zu `PlanGeneratorTypeSelection.kind`.
+    public var enduranceSportKind: TrainingTypeKind?
+
+    /// README 2.20: Fingerprint des Tagesinhalts unmittelbar NACH der
+    /// Erzeugung durch den "Plan bauen"-Assistenten. Nil = kein Wizard-Tag
+    /// (oder noch nicht generiert). "Neu rechnen" vergleicht diesen
+    /// gespeicherten Wert mit `currentContentFingerprint`: stimmen sie
+    /// ueberein, hat der User seit der Generierung nichts an diesem Tag
+    /// geaendert und der Assistent darf ihn ueberschreiben. Weicht der
+    /// Live-Wert ab (User hat Uebungen editiert/verschoben/geloescht), wird
+    /// der Tag beim Neu-Rechnen uebersprungen. Bewusst KEIN reaktives
+    /// Dirty-Flag an den Editor-Mutationsstellen — ein Fingerprint-Vergleich
+    /// kann keinen Mutationspfad "vergessen" und dadurch still Daten
+    /// ueberschreiben.
+    public var generationFingerprint: String?
+
+    /// README 2.20: 1-basierter `DaySpec.sequenceIndex`, wie er bei der
+    /// Erzeugung durch den "Plan bauen"-Assistenten vergeben wurde. Nil =
+    /// kein Wizard-Tag. Stabiler Anker fuer "neu rechnen": `weekday` und
+    /// `type` sind in `DayEditorView` frei editierbar (Wochentag tauschen,
+    /// Tag zu Ruhetag machen) - danach stimmt die Montag-first-sortierte
+    /// Position eines Tages nicht mehr mit seinem urspruenglichen
+    /// `sequenceIndex` ueberein. `PlanGeneratorInstantiator.recalculate`
+    /// matcht deshalb ueber DIESEN Wert statt ueber die Listenposition.
+    public var generatorSequenceIndex: Int?
+
     @Relationship(deleteRule: .cascade, inverse: \Exercise.day)
     public var exercises: [Exercise] = []
+
+    /// P8-Fund: ohne diese explizite inverse Relationship wendet SwiftData
+    /// den `.nullify`-Delete-Rule auf `WorkoutSession.day` nicht zuverlässig
+    /// an — ein bereits im Speicher gehaltenes `WorkoutSession`-Objekt behielt
+    /// auf Apple-CI nach `context.delete(day)` weiterhin seine `day`-Referenz
+    /// (reproduziert in `TrainingDayContentSnapshotWriterTests`). Ohne
+    /// deklarierte inverse Relationship kann der Objektgraph beim Löschen
+    /// nicht konsistent gehalten werden — Standardverhalten laut Apple-
+    /// Dokumentation zu Core Data/SwiftData-Relationships. Nirgends sonst im
+    /// Code direkt gelesen; existiert ausschließlich, damit SwiftData die
+    /// Nullifizierung korrekt ausführt.
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutSession.day)
+    public var sessions: [WorkoutSession] = []
 
     // MARK: - DEL-049 Archive-aware accessors
 
@@ -48,6 +115,56 @@ public final class TrainingDay {
         exercises.filter { $0.isArchived }
     }
 
+    /// README 2.20: deterministischer Live-Fingerprint des sichtbaren
+    /// Tagesinhalts — siehe `generationFingerprint`. Nutzt bewusst
+    /// `activeExercises` (nicht `exercises`): ein automatischer Equipment-
+    /// Swap (Urlaubs-Modus) archiviert/reaktiviert Eintraege, ohne dass der
+    /// User selbst etwas editiert hat, und soll "neu rechnen" nicht
+    /// blockieren. Sortiert nach `orderIndex`, damit die reine SwiftData-
+    /// Relationship-Reihenfolge (nicht garantiert stabil) keinen falschen
+    /// Unterschied erzeugt; `orderIndex` selbst ist Teil des Strings, damit
+    /// ein reines Umsortieren (`moveExercises`) trotzdem als Aenderung zaehlt.
+    ///
+    /// Deckt JEDES Feld ab, das `DayEditorView`/`ExerciseEditorView`
+    /// tatsaechlich editierbar machen: Tag-`customName`, `weekday`, `type`
+    /// (Wochentag tauschen bzw. zu Ruhetag machen ist genauso ein Edit wie
+    /// eine Uebungs-Aenderung), sowie pro Uebung `customName`, `targetRir`,
+    /// `targetDistanceKm`, `targetDurationMinutes` — gerade die beiden
+    /// Cardio-Ziel-Felder sind der wahrscheinlichste Edit an einem
+    /// generierten Lauf-/Rad-Tag und muessen erkannt werden, sonst
+    /// verwirft "neu rechnen" sie kommentarlos. `timeFormat`/`timeCapMinutes`
+    /// sowie die neuen `circuitRounds`/`circuitRestSeconds`/`circuitMode`
+    /// fliessen ebenfalls ein — ein Struktur-Wechsel im Tag-Editor ist
+    /// genauso ein Edit. Paket 2: die `endurance*`-Felder ebenso, gleiches
+    /// Prinzip.
+    public var currentContentFingerprint: String {
+        let exercisePart = activeExercises
+            .sorted { $0.orderIndex < $1.orderIndex }
+            .map {
+                [
+                    $0.name, $0.customName ?? "-", "\($0.orderIndex)",
+                    "\($0.sets)", "\($0.repsMin)", "\($0.repsMax)", "\($0.restSeconds)",
+                    "\($0.targetRir)",
+                    $0.targetDistanceKm.map { "\($0)" } ?? "-",
+                    $0.targetDurationMinutes.map { "\($0)" } ?? "-",
+                    $0.enduranceSportKindRaw ?? "-"
+                ].joined(separator: "|")
+            }
+            .joined(separator: ";")
+        let timeFormatPart = timeFormat?.rawValue ?? "-"
+        let timeCapPart = timeCapMinutes.map(String.init) ?? "-"
+        let customNamePart = customName ?? "-"
+        let circuitPart = "\(circuitRounds.map(String.init) ?? "-")|\(circuitRestSeconds.map(String.init) ?? "-")|\(circuitMode?.rawValue ?? "-")"
+        // Als Zeichenketten-Interpolation statt Array-Literal mit gemischten
+        // `.map`-Closures aufgebaut (gleiches Muster wie `circuitPart` oben)
+        // - ein Array-Literal mit sechs verschiedenen `.map`-Ausdruecken
+        // ueberforderte den Swift-Typchecker (CI-Fund: "unable to type-check
+        // this expression in reasonable time").
+        let enduranceWorkDistancePart = enduranceWorkDistanceKm.map { "\($0)" } ?? "-"
+        let endurancePart = "\(enduranceWarmupDurationSeconds.map(String.init) ?? "-")|\(enduranceCooldownDurationSeconds.map(String.init) ?? "-")|\(enduranceIntervalRounds.map(String.init) ?? "-")|\(enduranceWorkDurationSeconds.map(String.init) ?? "-")|\(enduranceWorkDistancePart)|\(enduranceRestDurationSeconds.map(String.init) ?? "-")|\(enduranceSportKind?.rawValue ?? "-")"
+        return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)#\(weekday)#\(type.rawValue)#\(circuitPart)#\(endurancePart)"
+    }
+
     public init(
         name: String,
         customName: String? = nil,
@@ -55,7 +172,21 @@ public final class TrainingDay {
         type: DayType = .custom,
         nextIntensity: DayIntensity = .normal,
         plan: TrainingPlan? = nil,
-        localizationKey: String? = nil
+        localizationKey: String? = nil,
+        timeFormat: WorkoutTimeFormat? = nil,
+        timeCapMinutes: Int? = nil,
+        circuitRounds: Int? = nil,
+        circuitRestSeconds: Int? = nil,
+        circuitMode: CircuitRoundMode? = nil,
+        enduranceWarmupDurationSeconds: Int? = nil,
+        enduranceCooldownDurationSeconds: Int? = nil,
+        enduranceIntervalRounds: Int? = nil,
+        enduranceWorkDurationSeconds: Int? = nil,
+        enduranceWorkDistanceKm: Double? = nil,
+        enduranceRestDurationSeconds: Int? = nil,
+        enduranceSportKind: TrainingTypeKind? = nil,
+        generationFingerprint: String? = nil,
+        generatorSequenceIndex: Int? = nil
     ) {
         self.name = name
         self.customName = customName
@@ -64,6 +195,20 @@ public final class TrainingDay {
         self.nextIntensity = nextIntensity
         self.plan = plan
         self.localizationKey = localizationKey
+        self.timeFormat = timeFormat
+        self.timeCapMinutes = timeCapMinutes
+        self.circuitRounds = circuitRounds
+        self.circuitRestSeconds = circuitRestSeconds
+        self.circuitMode = circuitMode
+        self.enduranceWarmupDurationSeconds = enduranceWarmupDurationSeconds
+        self.enduranceCooldownDurationSeconds = enduranceCooldownDurationSeconds
+        self.enduranceIntervalRounds = enduranceIntervalRounds
+        self.enduranceWorkDurationSeconds = enduranceWorkDurationSeconds
+        self.enduranceWorkDistanceKm = enduranceWorkDistanceKm
+        self.enduranceRestDurationSeconds = enduranceRestDurationSeconds
+        self.enduranceSportKind = enduranceSportKind
+        self.generationFingerprint = generationFingerprint
+        self.generatorSequenceIndex = generatorSequenceIndex
     }
 }
 

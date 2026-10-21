@@ -12,6 +12,8 @@ import FitnessAppData
 @available(iOS 17.0, macOS 14.0, *)
 public struct TDEEView: View {
 
+    @Environment(\.dismiss) private var dismiss
+
     @Query private var profiles: [UserBodyProfile]
 
     @Query(sort: \BodyMeasurement.date, order: .reverse)
@@ -23,23 +25,40 @@ public struct TDEEView: View {
     public init() {}
 
     public var body: some View {
-        Form {
-            if let profile = profiles.first {
-                profileSummarySection(profile)
-                inputsSection(profile)
-                resultsSection(profile)
-            } else {
-                ContentUnavailableView(
-                    String(localized: "calc.tdee.noProfile.title", bundle: .module),
-                    systemImage: "person.crop.circle.badge.exclamationmark",
-                    description: Text("calc.tdee.noProfile.message", bundle: .module)
-                )
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: Eyebrow zeigt den Elternscreen (Rechner-Hub),
+            // nicht den Tab - selbes Muster wie WaterTrackerView.
+            DeltiqHeader(
+                eyebrow: String(localized: "calc.index.title", bundle: .module).uppercased(),
+                title: String(localized: "calc.tdee.title", bundle: .module),
+                onBack: { dismiss() }
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                if let profile = profiles.first {
+                    profileSummaryCard(profile)
+                    inputsCard(profile)
+                    resultsCard(profile)
+                } else {
+                    DashboardEmptyState(
+                        icon: "person.crop.circle.badge.exclamationmark",
+                        title: "calc.tdee.noProfile.title",
+                        description: "calc.tdee.noProfile.message"
+                    )
+                    .deltiqCardStyle()
+                }
             }
+            .deltiqScreen()
         }
-        .navigationTitle(Text("calc.tdee.title", bundle: .module))
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .keyboardDismissToolbar()
         .onAppear {
             // Prefill with latest measured weight when the user lands on the screen.
@@ -51,53 +70,53 @@ public struct TDEEView: View {
 
     // MARK: Sections
 
-    private func profileSummarySection(_ profile: UserBodyProfile) -> some View {
-        Section {
-            LabeledContent {
-                Text(profile.profile == .male ? "sex.male" : "sex.female", bundle: .module)
-            } label: {
-                Text("onboarding.field.sex", bundle: .module)
-            }
-            LabeledContent {
-                Text(String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile)))
-            } label: {
-                Text("calc.tdee.age", bundle: .module)
-            }
-            LabeledContent {
-                Text("\(profile.heightCm.truncated(to: 2).formattedTwoDecimals) cm")
-            } label: {
-                Text("calc.tdee.height", bundle: .module)
-            }
-        } header: {
-            Text("calc.tdee.section.profile", bundle: .module)
+    private func profileSummaryCard(_ profile: UserBodyProfile) -> some View {
+        DeltiqSection(String(localized: "calc.tdee.section.profile", bundle: .module).uppercased()) {
+            DeltiqRow(
+                label: String(localized: "onboarding.field.sex", bundle: .module),
+                value: profile.profile == .male
+                    ? String(localized: "sex.male", bundle: .module)
+                    : String(localized: "sex.female", bundle: .module)
+            )
+            DeltiqRow(
+                label: String(localized: "calc.tdee.age", bundle: .module),
+                value: String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile))
+            )
+            DeltiqRow(
+                label: String(localized: "calc.tdee.height", bundle: .module),
+                value: "\(profile.heightCm.truncated(to: 2).formattedTwoDecimals) cm",
+                showsDivider: false
+            )
         }
     }
 
-    private func inputsSection(_ profile: UserBodyProfile) -> some View {
-        Section {
-            TextField(value: $weightKg, format: .number,
-                      prompt: Text(String(format: String(localized: "calc.tdee.weightPlaceholder", bundle: .module), profile.goalWeightKg.map { "\(Int($0))" } ?? "80"))) {
-                Text("calc.tdee.weightLabel", bundle: .module)
+    private func inputsCard(_ profile: UserBodyProfile) -> some View {
+        DeltiqSection(String(localized: "calc.tdee.section.input", bundle: .module).uppercased()) {
+            let weightLabel = String(localized: "calc.tdee.weightLabel", bundle: .module)
+            DeltiqControlRow(label: weightLabel) {
+                decimalField(
+                    weightLabel,
+                    value: $weightKg,
+                    placeholder: String(
+                        format: String(localized: "calc.tdee.weightPlaceholder", bundle: .module),
+                        profile.goalWeightKg.map { "\(Int($0))" } ?? "80"
+                    )
+                )
             }
-            .decimalKeyboard()
-
-            Picker(selection: $activity) {
-                ForEach(ActivityLevel.allCases, id: \.self) { level in
-                    Text(level.localizedName).tag(level)
-                }
-            } label: {
-                Text("calc.tdee.activity", bundle: .module)
+            DeltiqControlRow(label: String(localized: "calc.tdee.activity", bundle: .module), showsDivider: false) {
+                Picker(selection: $activity) {
+                    ForEach(ActivityLevel.allCases, id: \.self) { level in
+                        Text(level.localizedName).tag(level)
+                    }
+                } label: { EmptyView() }
+                .pickerStyle(.menu)
             }
-        } header: {
-            Text("calc.tdee.section.input", bundle: .module)
-        } footer: {
-            Text(activity.localizedDescription)
-                .font(.footnote)
+            hintRow(String(localized: activity.localizedDescription))
         }
     }
 
-    private func resultsSection(_ profile: UserBodyProfile) -> some View {
-        Section {
+    private func resultsCard(_ profile: UserBodyProfile) -> some View {
+        DeltiqSection(String(localized: "calc.tdee.section.results", bundle: .module).uppercased()) {
             if let weightKg, weightKg > 0 {
                 let bmrMifflin = BodyCalculations.bmrMifflinStJeor(
                     weightKg: weightKg,
@@ -107,27 +126,94 @@ public struct TDEEView: View {
                 )
                 let tdee = BodyCalculations.tdee(bmr: bmrMifflin, activityFactor: activity.factor)
 
-                row(String(localized: "calc.tdee.bmrMifflin", bundle: .module), value: bmrMifflin)
+                VStack(spacing: 4) {
+                    Text(String(localized: "calc.tdee.tdee", bundle: .module).uppercased())
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(1.5)
+                        .foregroundStyle(Color.deltiqOrange)
+                    Text("\(tdee.truncated(to: 0).formattedTwoDecimals) kcal")
+                        .font(.system(size: 26, weight: .heavy))
+                        .fitnessNumberStyle()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+
+                resultRow(String(localized: "calc.tdee.bmrMifflin", bundle: .module), value: bmrMifflin)
 
                 if let katch = katchBmr(weightKg: weightKg) {
-                    row(String(localized: "calc.tdee.bmrKatch", bundle: .module), value: katch)
+                    resultRow(String(localized: "calc.tdee.bmrKatch", bundle: .module), value: katch)
                 }
 
-                row(String(localized: "calc.tdee.tdee", bundle: .module), value: tdee, highlight: true)
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+                    .padding(.vertical, 4)
 
-                Divider().padding(.vertical, 4)
-
-                row(String(localized: "calc.tdee.cut", bundle: .module),         value: tdee - 500, secondary: true)
-                row(String(localized: "calc.tdee.maintenance", bundle: .module), value: tdee,       secondary: true)
-                row(String(localized: "calc.tdee.bulk", bundle: .module),        value: tdee + 300, secondary: true)
+                resultRow(String(localized: "calc.tdee.cut", bundle: .module), value: tdee - 500, secondary: true)
+                resultRow(String(localized: "calc.tdee.maintenance", bundle: .module), value: tdee, secondary: true)
+                resultRow(String(localized: "calc.tdee.bulk", bundle: .module), value: tdee + 300, secondary: true, showsDivider: false)
             } else {
                 Text("calc.tdee.weightRequired", bundle: .module)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
                     .font(.callout)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
             }
-        } header: {
-            Text("calc.tdee.section.results", bundle: .module)
         }
+    }
+
+    // MARK: Row helpers
+
+    /// DEL-106-Muster (siehe MeasurementView.decimalField): TextField mit Decimal-Keyboard,
+    /// rechtsbuendig, `fitnessNumberStyle()`. Kein FocusState/Feld-Enum noetig — dieser
+    /// Screen hat keine Previous/Next-Tastatur-Navigation zwischen Feldern.
+    @ViewBuilder
+    private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String) -> some View {
+        TextField(label, value: value, format: .number, prompt: Text(placeholder))
+            .decimalKeyboard()
+            .multilineTextAlignment(.trailing)
+            .font(.system(size: 15))
+            .fitnessNumberStyle()
+            .frame(maxWidth: 140)
+    }
+
+    private func resultRow(_ label: String, value: Double, secondary: Bool = false, showsDivider: Bool = true) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(label)
+                    .font(.system(size: 15))
+                    .foregroundStyle(secondary ? Color.Deltiq.textSecondary : Color.primary)
+                Spacer()
+                Text("\(value.truncated(to: 0).formattedTwoDecimals) kcal")
+                    .font(.system(size: 15))
+                    .foregroundStyle(secondary ? Color.Deltiq.textSecondary : Color.primary)
+                    .monospacedDigit()
+                    .fitnessNumberStyle()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(minHeight: 44)
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+            }
+        }
+    }
+
+    /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
+    private func hintRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .lineSpacing(4)
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
     }
 
     // MARK: Helpers
@@ -145,24 +231,6 @@ public struct TDEEView: View {
               abs(latest.weightKg - currentWeight) < 1.0
         else { return nil }
         return BodyCalculations.bmrKatchMcArdle(fatFreeMassKg: ffm)
-    }
-
-    private func row(
-        _ label: String,
-        value: Double,
-        highlight: Bool = false,
-        secondary: Bool = false
-    ) -> some View {
-        LabeledContent {
-            Text("\(value.truncated(to: 0).formattedTwoDecimals) kcal")
-                .fontWeight(highlight ? .semibold : .regular)
-                .foregroundStyle(secondary ? .secondary : .primary)
-                .monospacedDigit()
-        } label: {
-            Text(label)
-                .fontWeight(highlight ? .semibold : .regular)
-                .foregroundStyle(secondary ? .secondary : .primary)
-        }
     }
 }
 

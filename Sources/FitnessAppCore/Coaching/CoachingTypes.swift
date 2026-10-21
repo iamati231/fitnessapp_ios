@@ -39,10 +39,24 @@ public enum CoachingTone: String, Codable, Sendable, CaseIterable {
     }
 }
 
-/// DEL-100: Trainings-Hauptziel fuer die Coaching-Engine. **Separat** vom
-/// `GoalType` aus DEL-090 (Onboarding-Quiz fuer Plan-Matching), weil das
-/// hier eine LANGFRISTIGE Praeferenz ist — der Quiz-Goal kann pro Cycle
-/// abweichen (z.B. Bodybuilder, der vor einem Meet auf Strength umstellt).
+/// DEL-100: Trainings-Hauptziel fuer die Coaching-Engine UND (seit dem
+/// Smart-Onboarding-Epic) fuer das Quiz-/Template-Matching
+/// (`ProgramTemplate.targetGoals`, `QuizAnswers.goal`). Bis dahin gab es
+/// hier zwei getrennte Enums (`TrainingGoal` + `GoalType` aus DEL-090) mit
+/// einem verlustbehafteten Mapper dazwischen (`OnboardingView.mappedQuizGoal`,
+/// jetzt entfernt) — konsolidiert auf dieses eine Enum.
+///
+/// **Abnehmen hat genau EINEN Fall: `.weightLoss`.** Eine erste Phase-2-
+/// Fassung hatte zusaetzlich ein `.fatloss` (ehemals `GoalType.fatloss`)
+/// als vermeintlich eigenstaendige Intensitaets-Achse angelegt — das
+/// erzeugte zwei konkurrierende "Abnehmen"-Bedeutungen nebeneinander: alle
+/// 20 Templates taggten `.fatloss`, aber Quiz-Auswahl/Persistenz nutzten
+/// `.weightLoss`, wodurch Abnehmen-Nutzer nie einen Ziel-Matchbonus
+/// bekamen. `.fatloss` wurde deshalb wieder entfernt, BEVOR es uebers
+/// Quiz waehlbar war — betrifft also nur Template-Tags, nicht
+/// `UserBodyProfile.trainingGoalRaw`. Trotzdem toleriert der Getter dort
+/// den alten Rohwert "fatloss" (siehe Kommentar an `trainingGoal`), falls
+/// ein bereits auf diesem Branch gelaufener Build ihn doch geschrieben hat.
 public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
     case hypertrophy
     case strength
@@ -53,6 +67,34 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
     /// RawValue-Stabilität: neue Cases NUR anhängen, nie umbenennen —
     /// der String persistiert in UserBodyProfile.trainingGoalRaw.
     case weightLoss
+    /// Smart-Onboarding-Epic: ehemals `GoalType.functional`, hierher
+    /// konsolidiert.
+    case functional
+    /// Planung-&-Trainingsbegleitung-Epic, P2.2 (docs/PLANUNG_BEGLEITUNG_AUDIT.md,
+    /// Konflikt 1, ENTSCHIEDEN) als eigenständige Zielkarte — unabhängig vom
+    /// optionalen Laufcoach (`cardioCoachingEnabled`/`CardioGoal`) und von
+    /// reinen Laufeinheiten im Plan (`TrainingTypeKind.running`/`.cycling`,
+    /// bereits bestehend). Additiv ans Ende angehängt (RawValue-Stabilität,
+    /// siehe Dateikommentar oben) — KEINE Migration, bestehende
+    /// `trainingGoalRaw`-Werte bleiben unverändert lesbar.
+    ///
+    /// Review-Korrektur nach P2.2: `label`/`blurb` nennen bewusst WEDER
+    /// "Laufen" NOCH "Radfahren" — welche Ausdauerform (Laufen/Radfahren/
+    /// beides, `EnduranceModality` in `PlanningContext.swift`) gilt, ist
+    /// eine eigene, spätere Entscheidung (Audit §5-Zustandstabelle), die
+    /// dieses Ziel nicht vorwegnehmen darf. Ebenso KEINE automatische
+    /// Kopplung an den Laufcoach — dieser Fall bleibt ausdrücklich optional
+    /// und getrennt.
+    ///
+    /// Zusätzlich: diese Zielkarte ist aktuell NUR im Core/in Tests
+    /// vorhanden — `TrainingGoal.currentlySelectableInUI` (unten in dieser
+    /// Datei) blendet sie bewusst aus neuen UI-Picker-Auswahlen aus, bis ein
+    /// tragfähiger Ziel→Plan-Pfad existiert. Ein BEREITS gespeichertes
+    /// `.endurance`-Profil (aus dem kurzen P2.2-Zwischenstand, in dem es
+    /// waehlbar war) bleibt davon unberuehrt: `selectableInUI(current:)`
+    /// zeigt einen solchen Bestandswert weiterhin an, siehe dortiger
+    /// Kommentar — kein Auto-Rewrite auf `.hybrid`.
+    case endurance
 
     public var label: String {
         switch self {
@@ -60,6 +102,8 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .strength:    return "Maximalkraft"
         case .hybrid:      return "Funktionell / Hybrid"
         case .weightLoss:  return "Abnehmen / Fettabbau"
+        case .functional:  return "Funktionelle Fitness"
+        case .endurance:   return "Ausdauer"
         }
     }
 
@@ -69,6 +113,8 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .strength:    return "scalemass.fill"
         case .hybrid:      return "figure.mixed.cardio"
         case .weightLoss:  return "flame.fill"
+        case .functional:  return "figure.cooldown"
+        case .endurance:   return "figure.run"
         }
     }
 
@@ -78,7 +124,46 @@ public enum TrainingGoal: String, Codable, Sendable, CaseIterable {
         case .strength:    return "Maximales 1RM, niedrige Reps, schwere Hauptlifts."
         case .hybrid:      return "Kraft + Ausdauer + Mobilität — alles fließt zusammen."
         case .weightLoss:  return "Kaloriendefizit, Muskelerhalt, Alltagsbewegung."
+        case .functional:  return "Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus."
+        case .endurance:   return "Aerobe Leistungsfähigkeit und Grundlagenausdauer steigern, lange ruhige Einheiten plus gezielte Tempoarbeit."
         }
+    }
+}
+
+public extension TrainingGoal {
+    /// Review-Korrektur nach P2.2: `.endurance` existiert im Core
+    /// (RawValue-Vertrag, Katalog-Anbindung, Lokalisierung) und ist ab
+    /// sofort GUELTIG, aber NOCH NICHT ueber die UI waehlbar — ein
+    /// tragfaehiger Ziel→Plan-Pfad (Ausdauerform Laufen/Radfahren/beides,
+    /// Laufcoach-Trennung, siehe docs/PLANUNG_BEGLEITUNG_AUDIT.md §5) ist
+    /// weder implementiert noch getestet. `OnboardingView`s Coaching-Style-
+    /// Schritt UND `ProfileEditorView`s Zielauswahl verwenden BEIDE diese
+    /// EINE Liste statt je einer eigenen Filterbedingung, die haetten
+    /// auseinanderlaufen koennen — ein Schalter an einer Stelle, sobald P3
+    /// den Pfad liefert.
+    ///
+    /// Lebt bewusst HIER im Core statt im SwiftUI-gated
+    /// `DomainEnums+Localization.swift` (frueherer Ort) — reine
+    /// `CaseIterable`-Filterung ohne jede SwiftUI-Abhaengigkeit, dadurch
+    /// echt auf Linux testbar statt nur syntaktisch geprueft.
+    static var currentlySelectableInUI: [TrainingGoal] {
+        allCases.filter { $0 != .endurance }
+    }
+
+    /// Nachbesserung (P2.3-Review): fuer einen Picker, der einen BEREITS
+    /// gespeicherten Wert anzeigen muss. Ein gespeichertes `.endurance` ist
+    /// KEIN hypothetischer Fall — der Wert war im P2.2-Zwischenstand kurz
+    /// waehlbar und bleibt unabhaengig davon ein gueltiger Core-/Importwert
+    /// (`UserBodyProfile.trainingGoal` decodiert jeden bekannten RawValue
+    /// verlustfrei, kein Auto-Rewrite auf `.hybrid`). Haengt `current` an
+    /// `currentlySelectableInUI` an, wenn er dort NICHT enthalten ist —
+    /// sonst zeigt ein `.menu`-Picker ohne passenden Tag-Eintrag keine
+    /// sinnvolle Auswahl statt des tatsaechlich gespeicherten Werts. Neue
+    /// Auswahl bleibt trotzdem gesperrt: nur der BEREITS gesetzte Wert wird
+    /// ergaenzt, nicht jeder sonst gesperrte Fall pauschal freigegeben.
+    static func selectableInUI(current: TrainingGoal) -> [TrainingGoal] {
+        let base = currentlySelectableInUI
+        return base.contains(current) ? base : base + [current]
     }
 }
 
@@ -164,12 +249,61 @@ public enum CoachingContext: String, Sendable {
     /// jedes Post-Workout-Kompliment. Entscheidung via `DeloadAdvisor`.
     case deloadRecommended
 
+    // MARK: - DEL-248 (Phase 4): Cardio-Coaching-Trigger
+
+    /// Lauf-Kilometer dieser Woche > 120% der Vorwoche — direktes
+    /// Cardio-Pendant zu `deloadRecommended` (dort bewusst nur Kraft,
+    /// Laufvolumen braucht eine eigene Rechnung). Rangiert seit DEL-249 VOR
+    /// `deloadRecommended`, nicht danach: anders als `reEntry`/
+    /// `deloadRecommended` (die sich durch ihre Bedingungen praktisch
+    /// gegenseitig ausschliessen) koennen beide bei einem Hybrid-Athleten
+    /// gleichzeitig zutreffen - struktureller Schaden durch zu schnell
+    /// gesteigertes Laufvolumen (Sehnen/Baender) braucht Wochen zum Heilen,
+    /// ZNS-Ermuedung durch Krafttraining nur 1-2 Tage. Entscheidung via
+    /// `CardioCoachingAdvisor.isVolumeSpike`.
+    case cardioVolumeSpike
+
     // MARK: - DEL-198 Coach-Ausbau (mehr Dialog-Anlässe)
 
     /// Die letzte VOLLE Trainingswoche war die volumenstärkste der
     /// gesamten Historie (>= 4 Wochen Daten). Positiver Meilenstein —
     /// rangiert vor den generischen Post-Workout-Komplimenten.
     case volumeRecord
+
+    /// Der Plan sieht einen langen Lauf vor, aber in den letzten 7 Tagen
+    /// wurde keiner geloggt. Rangiert vor den generischen Post-Workout-
+    /// Komplimenten. Entscheidung via `CardioCoachingAdvisor.isLongRunOverdue`.
+    case cardioMissedLongRun
+    /// Letzter lockerer Lauf war deutlich schneller als seine Zielpace
+    /// (Tages-Ziel, nicht Profil-weit). Entscheidung via
+    /// `CardioCoachingAdvisor.isJunkMiles`.
+    ///
+    /// **NICHT loeschen, obwohl aktuell kein Emitter existiert** (Review-
+    /// Fund nach dem initialen DEL-248-Phase-4-Ship, analog zu `newPR`/
+    /// `plateauDetected` oben): `PlanGenerator.cardioCandidates` setzt fuer
+    /// Easy-/Tempo-Zonen nur `targetDurationMinutes`, nie `targetDistanceKm`
+    /// - ohne Zieldistanz gibt es keine Zielpace zum Vergleich, der Trigger
+    /// haette bei generierten Plaenen also praktisch nie eine Grundlage.
+    /// Bewusst aus der Prioritaetskette entfernt statt mit einer pauschalen
+    /// Pace-Annahme im Generator "gefixt" - das waere die falsche Abkuerzung.
+    /// Die drei Catalog-Keys (`coaching.soft.cardioJunkMiles.*`) bleiben
+    /// dreisprachig fertig liegen. Wieder verdrahten, sobald Phase 1
+    /// (`current5kReferenceSeconds` + Pace-Zonen) echte, personalisierte
+    /// Pace-Daten liefert.
+    case cardioJunkMiles
+
+    /// Paket 3a (Laufversäumnis-Hinweis, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// wiederholt verfehlte/übersprungene geplante Lauf-Tage in einem
+    /// rollierenden Fenster (`CardioCoachingAdvisor.missedRunWindowDays`).
+    /// Reine Beobachtung ("wurde nicht protokolliert"), KEINE Aussage zur
+    /// Ursache ("überfordert"/"untrainiert"/Erholung) und KEINE automatische
+    /// Planänderung — der zugehörige CTA öffnet ausschließlich den
+    /// bestehenden Paket-1-Pfad (`CoachAdjustmentCardModel`/
+    /// `CoachAdjustmentPreviewView`). Entscheidung via
+    /// `CardioCoachingAdvisor.isRecurringMissedRunDays`, zusammengebaut vom
+    /// Core/Data-Projektionslayer `MissedRunDayEvaluator`.
+    case cardioMissedRunDays
+
     /// Letzte Körpermessung > 14 Tage her, obwohl der User das Feature
     /// aktiv nutzt (>= 2 Messungen vorhanden). Sanfter Mess-Reminder.
     case measurementOverdue

@@ -15,10 +15,24 @@ import FitnessAppCore
 /// angekreuzten Wochentage mit `DayType.rest` automatisch auf.
 ///
 /// Side-effects:
-///   1. Deactivates ALL existing TrainingPlans (`isActive = false`).
-///   2. Creates a new active `TrainingPlan` from the template metadata.
-///   3. Creates `TrainingDay` rows pro Workout-Tag + Auto-Rest-Days.
-///   4. Creates `Exercise` rows fuer jeden `ExerciseSpec`.
+///   1. Creates a new active `TrainingPlan` from the template metadata.
+///   2. Creates `TrainingDay` rows pro Workout-Tag + Auto-Rest-Days.
+///   3. Creates `Exercise` rows fuer jeden `ExerciseSpec`.
+///
+/// User-Entscheidung (P0-Audit neue Spezifikation): mehrere gleichzeitig
+/// aktive Plaene sind ein gewolltes Zielbild (z.B. Kraft- + Cardio-Plan
+/// parallel) - Vorbild ist der Cardio-Accept-Pfad
+/// (`PlanGeneratorInstantiator.createPlan`/`build`), der bereits ueber
+/// diese Funktion laeuft und NIE andere Plaene deaktiviert hat. Frueher
+/// deaktivierte dieser Instantiator ungefragt ALLE bestehenden Plaene -
+/// das widersprach Dok01 §5 ("Bestehenden aktiven Plan nicht ungefragt
+/// ersetzen") und war inkonsistent zum Cardio-Pfad. Der Rest der App ist
+/// bereits auf mehrere aktive Plaene vorbereitet: `DashboardView`/
+/// `PlanEditorView` fragen `isActive == true` als Array ab (DEL-050 kennt
+/// bereits einen "Multi-Plan-Sync-Prompt"), `DashboardView` liest defensiv
+/// `activePlans.first`. Ein bewusstes Ersetzen eines einzelnen aktiven
+/// Plans bleibt moeglich ueber `PlanEditorView.setActive(_:)`, wo der User
+/// explizit einen bestimmten Plan aktiviert/deaktiviert.
 @MainActor
 public enum ProgramInstantiator {
 
@@ -52,32 +66,44 @@ public enum ProgramInstantiator {
         selectedWeekdays: [Int]? = nil,
         // DEL-170: User-Equipment-Präferenzen. Steuert die Auswahl der
         // `EquipmentVariant`. Leer = keine Variant-Auswahl, Caller bekommt
-        // die Standard-Variante (`template.days`).
-        userEquipment: Set<Equipment> = []
+        // die Standard-Variante (`template.days`). Legacy-Pfad — wird
+        // ignoriert, sobald `userEquipmentProfile` gesetzt ist.
+        userEquipment: Set<Equipment> = [],
+        // Smart-Onboarding-Epic Phase 4: die praezise, dreiwertige
+        // Equipment-Pruefung. `nil` (z.B. der synthetische Template-Pfad aus
+        // `PlanGeneratorInstantiator`, der nie `equipmentVariants` hat) =
+        // Legacy-Verhalten ueber `userEquipment` oben. Gesetzt = EINZIGE
+        // Quelle der Wahrheit fuer die Variantenwahl, identisch zu der, die
+        // `TemplatePreviewView` fuer dieselbe Vorschau verwendet (Punkt 6:
+        // Vorschau und Instanziierung duerfen nie auseinanderlaufen). Wird
+        // ignoriert, sobald `resolvedSelection` gesetzt ist.
+        userEquipmentProfile: UserEquipmentProfile? = nil,
+        // Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md
+        // Abschnitt 4): die vom User tatsaechlich FREIGEGEBENE, ggf. bereits
+        // substituierte Auswahl — EINZIGE Quelle der Wahrheit, sobald
+        // gesetzt. Verhindert genau den Fehler, den die Vorgabe explizit
+        // nennt: "Do NOT preview adaptedDays and then call an instantiator
+        // that reselects bestEquipmentCheckedVariant and loses
+        // substitutions." Caller MUSS vorher `isStale(comparedTo:)` gegen
+        // das aktuelle Profil geprueft haben — der Instantiator selbst
+        // validiert das nicht erneut (reine Materialisierung einer bereits
+        // getroffenen, freigegebenen Entscheidung).
+        resolvedSelection: ResolvedPlanSelection? = nil
     ) -> TrainingPlan {
-        // 1) Deactivate every existing plan.
-        let allPlans = (try? context.fetch(FetchDescriptor<TrainingPlan>())) ?? []
-        for plan in allPlans {
-            plan.isActive = false
+        if let resolvedSelection {
+            precondition(resolvedSelection.templateID == template.id,
+                         "ResolvedPlanSelection.templateID (\(resolvedSelection.templateID)) muss zum instanziierten Template (\(template.id)) passen")
         }
-
-        // 2) Library-Lookups fuer isTimeBased + isCompound.
-        let timeBasedNames: Set<String> = Set(
-            ExerciseLibraryData.all.filter { $0.isTimeBased }.map { $0.name }
-        )
-        let compoundNames: Set<String> = Set(
-            ExerciseLibraryData.all.filter { $0.isSystemCompound }.map { $0.name }
-        )
+        // 1) Library-Lookups fuer isTimeBased + isCompound.
+        let (timeBasedNames, compoundNames) = libraryLookupNames()
 
         // DEL-098: Library-Spec-Lookup nach Namen, damit wir die statischen
         // Belastungsfaktoren auf die neu instanziierten Plan-Uebungen ziehen
         // koennen. Uebungen ohne Library-Match (z.B. ungewoehnliche Custom-
         // Namen in Templates) bekommen die Default-Faktoren von `Exercise.init`.
-        let specByName: [String: ExerciseTemplateSpec] = Dictionary(
-            uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) }
-        )
+        let specByName = libraryLookupSpecs()
 
-        // 3) Create new active plan.
+        // 2) Create new active plan.
         // DEL-123: localizationKey aus dem Template-Spec propagieren, damit
         // die SwiftData-Plan-Row beim Display via TrainingPlan.displayName
         // multilingual rendert (statt das deutsche `name`-Feld zu zeigen).
@@ -93,32 +119,22 @@ public enum ProgramInstantiator {
         )
         context.insert(plan)
 
-        // 4) Wochentag-Sequenz aufloesen.
+        // 3) Wochentag-Sequenz aufloesen.
         //    - Caller liefert die User-Auswahl ODER wir fallen auf Defaults.
         //    - Sortieren in chronologischer Mo→So-Reihenfolge, damit
         //      sequenceIndex 1 immer auf den ersten ausgewaehlten Wochentag faellt.
         let rawWeekdays = selectedWeekdays ?? defaultWeekdays(for: template.daysPerWeek)
         let normalized = normalize(weekdays: rawWeekdays, expectedCount: template.daysPerWeek)
 
-        // 5) Workout-Tage mappen (sequenceIndex → realer Wochentag).
-        // DEL-170: Variant-Auswahl. Wenn das Template Equipment-Variants hat
-        // UND der User Equipment-Präferenzen gepflegt hat, wählen wir die
-        // beste passende Variante. Sonst: Standard `template.days` (das ist
-        // die implizite Barbell-Gym-Variante).
-        let resolvedDays: [DaySpec] = {
-            guard let variants = template.equipmentVariants, !userEquipment.isEmpty else {
-                return template.days
-            }
-            // Base-Variante (template.days = barbellGym-implizit) bevorzugen,
-            // wenn der User Barbell + Dumbbell hat.
-            let baseRequires = EquipmentProfile.barbellGym.requiredEquipment
-            if baseRequires.isSubset(of: userEquipment) {
-                return template.days
-            }
-            // Sonst die priorisierte beste Variante; Fallback auf base.
-            return EquipmentVariant.bestMatch(in: variants, userOwns: userEquipment)?.days
-                ?? template.days
-        }()
+        // 4) Workout-Tage mappen (sequenceIndex → realer Wochentag).
+        // PLAN_SUBSTITUTION_ENGINE.md Abschnitt 4 / PLAN_EQUIPMENT_MATCHING_
+        // AUDIT.md 5.4/13: `resolvedSelection` (Phase 5, ggf. substituiert)
+        // > `bestEquipmentCheckedVariant` (Phase 4) > `resolvedDays`
+        // (Legacy) — dieselbe Prioritaet wie in `TemplatePreviewView`, damit
+        // Vorschau und Instanziierung nie auseinanderlaufen koennen.
+        let resolvedDays = resolvedSelection?.days
+            ?? userEquipmentProfile.map { template.bestEquipmentCheckedVariant(against: $0).days }
+            ?? template.resolvedDays(forUserEquipment: userEquipment)
         let sortedDays = resolvedDays.sorted { $0.sequenceIndex < $1.sequenceIndex }
         var workoutDayWeekdays = Set<Int>()
         for (idx, daySpec) in sortedDays.enumerated() {
@@ -133,7 +149,19 @@ public enum ProgramInstantiator {
                 weekday: targetWeekday,
                 type: daySpec.type,
                 plan: plan,
-                localizationKey: daySpec.localizationKey
+                localizationKey: daySpec.localizationKey,
+                timeFormat: daySpec.timeFormat,
+                timeCapMinutes: daySpec.timeCapMinutes,
+                circuitRounds: daySpec.circuitRounds,
+                circuitRestSeconds: daySpec.circuitRestSeconds,
+                circuitMode: daySpec.circuitMode,
+                enduranceWarmupDurationSeconds: daySpec.enduranceWarmupDurationSeconds,
+                enduranceCooldownDurationSeconds: daySpec.enduranceCooldownDurationSeconds,
+                enduranceIntervalRounds: daySpec.enduranceIntervalRounds,
+                enduranceWorkDurationSeconds: daySpec.enduranceWorkDurationSeconds,
+                enduranceWorkDistanceKm: daySpec.enduranceWorkDistanceKm,
+                enduranceRestDurationSeconds: daySpec.enduranceRestDurationSeconds,
+                enduranceSportKind: daySpec.enduranceSportKind
             )
             context.insert(day)
 
@@ -141,34 +169,19 @@ public enum ProgramInstantiator {
                 // DEL-098: Wenn der Name in der Library bekannt ist, nehmen
                 // wir die handgepflegten Faktoren. Sonst greifen die
                 // Defaults aus `Exercise.init` ("moderate Isolation").
-                let librarySpec = specByName[exerciseSpec.name]
-                let exercise = Exercise(
-                    name: exerciseSpec.name,
-                    sets: exerciseSpec.sets,
-                    repsMin: exerciseSpec.repsMin,
-                    repsMax: exerciseSpec.repsMax,
-                    restSeconds: exerciseSpec.restSeconds,
+                let exercise = makeExercise(
+                    from: exerciseSpec,
                     orderIndex: orderIndex,
-                    targetRir: exerciseSpec.targetRir,
-                    isCardio: exerciseSpec.isCardio,
-                    isTimeBased: timeBasedNames.contains(exerciseSpec.name),
-                    isCompound: compoundNames.contains(exerciseSpec.name),
-                    targetDistanceKm: exerciseSpec.targetDistanceKm,
-                    targetDurationMinutes: exerciseSpec.targetDurationMinutes,
-                    role: exerciseSpec.role,
-                    systemicFatigueFactor: librarySpec?.systemicFatigueFactor ?? 0.35,
-                    localMuscleDamageFactor: librarySpec?.localMuscleDamageFactor ?? 0.35,
-                    cnsDemandFactor: librarySpec?.cnsDemandFactor ?? 0.25,
-                    axialLoadFactor: librarySpec?.axialLoadFactor ?? 0.20,
-                    technicalComplexityFactor: librarySpec?.technicalComplexityFactor ?? 0.30,
-                    recoveryClass: librarySpec?.recoveryClass ?? .medium,
+                    timeBasedNames: timeBasedNames,
+                    compoundNames: compoundNames,
+                    librarySpecByName: specByName,
                     day: day
                 )
                 context.insert(exercise)
             }
         }
 
-        // 6) Restliche Wochentage mit Auto-Rest-Days auffuellen, damit der
+        // 5) Restliche Wochentage mit Auto-Rest-Days auffuellen, damit der
         //    Plan eine vollstaendige Wochen-Ansicht hat (Plan-Editor, Dashboard-
         //    Day-Card, Calendar-Navigation alle auf 7 Tagen).
         for weekday in 1...7 where !workoutDayWeekdays.contains(weekday) {
@@ -208,6 +221,68 @@ public enum ProgramInstantiator {
         let weightA = a == 1 ? 8 : a
         let weightB = b == 1 ? 8 : b
         return weightA < weightB
+    }
+
+    /// Materialisiert einen einzelnen `ExerciseSpec` in eine `Exercise`
+    /// inklusive DEL-098-Bibliotheks-Anreicherung — extrahiert aus der
+    /// Schleife oben, damit `PlanGeneratorInstantiator` (README 2.20 "neu
+    /// rechnen") sie ohne Duplikation wiederverwenden kann statt die
+    /// Anreicherungs-Logik ein zweites Mal abzutippen (Risiko: die beiden
+    /// Kopien laufen bei einer spaeteren DEL-098-Aenderung auseinander).
+    /// Nimmt die Lookup-Tabellen als Parameter entgegen statt sie selbst zu
+    /// bauen, damit `instantiate`s bestehende Einmal-Berechnung vor der
+    /// Tage-Schleife (siehe oben) ihren Performance-Vorteil behaelt.
+    public static func makeExercise(
+        from spec: ExerciseSpec,
+        orderIndex: Int,
+        timeBasedNames: Set<String>,
+        compoundNames: Set<String>,
+        librarySpecByName: [String: ExerciseTemplateSpec],
+        day: TrainingDay?
+    ) -> Exercise {
+        let librarySpec = librarySpecByName[spec.name]
+        let exercise = Exercise(
+            name: spec.name,
+            sets: spec.sets,
+            repsMin: spec.repsMin,
+            repsMax: spec.repsMax,
+            restSeconds: spec.restSeconds,
+            orderIndex: orderIndex,
+            targetRir: spec.targetRir,
+            isCardio: spec.isCardio,
+            isTimeBased: timeBasedNames.contains(spec.name),
+            isCompound: compoundNames.contains(spec.name),
+            targetDistanceKm: spec.targetDistanceKm,
+            targetDurationMinutes: spec.targetDurationMinutes,
+            role: spec.role,
+            systemicFatigueFactor: librarySpec?.systemicFatigueFactor ?? 0.35,
+            localMuscleDamageFactor: librarySpec?.localMuscleDamageFactor ?? 0.35,
+            cnsDemandFactor: librarySpec?.cnsDemandFactor ?? 0.25,
+            axialLoadFactor: librarySpec?.axialLoadFactor ?? 0.20,
+            technicalComplexityFactor: librarySpec?.technicalComplexityFactor ?? 0.30,
+            recoveryClass: librarySpec?.recoveryClass ?? .medium,
+            day: day
+        )
+        // Paket 2 (Sportart-Unterscheidung): nach der Konstruktion gesetzt
+        // statt als weiterer Init-Parameter, um die bestehende, bereits sehr
+        // lange Aufrufliste nicht an allen Call-Sites anzufassen.
+        exercise.enduranceSportKind = spec.enduranceSportKind
+        return exercise
+    }
+
+    /// Baut die beiden Namens-Lookup-Sets, die `makeExercise` braucht -
+    /// gleiche Berechnung wie in `instantiate` oben, herausgezogen damit
+    /// `PlanGeneratorInstantiator` sie nicht duplizieren muss.
+    public static func libraryLookupNames() -> (timeBased: Set<String>, compound: Set<String>) {
+        let timeBased = Set(ExerciseLibraryData.all.filter { $0.isTimeBased }.map { $0.name })
+        let compound = Set(ExerciseLibraryData.all.filter { $0.isSystemCompound }.map { $0.name })
+        return (timeBased, compound)
+    }
+
+    /// Namens-Lookup fuer die DEL-098-Faktoren - gleiche Berechnung wie in
+    /// `instantiate` oben, herausgezogen fuer `PlanGeneratorInstantiator`.
+    public static func libraryLookupSpecs() -> [String: ExerciseTemplateSpec] {
+        Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
     }
 }
 #endif

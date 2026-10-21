@@ -10,6 +10,15 @@ import FitnessAppData
 @available(iOS 17.0, macOS 14.0, *)
 struct ExerciseCard: View {
     let exercise: Exercise
+    /// P8 Stufe-2 (Session-Inhaltsvertrag, Wiederaufnahme-Isolation): der
+    /// zum Session-Start (bzw. durch In-Session-Edits) eingefrorene Stand
+    /// dieser Übung — Quelle für Name/Rolle/Cardio-Zeitbasiert-Klassifikation/
+    /// Satzvorgaben (Sets/Reps/Pause/RIR/Distanz/Dauer). `exercise` bleibt
+    /// für Logging-Identität und Felder außerhalb des Snapshot-Vertrags
+    /// (Equipment/Barbell-Erkennung, `suggestedWeight`, GIF-Lookup)
+    /// maßgeblich. Siehe `ActiveWorkoutView.resolvedExercises`/
+    /// `SessionContentResolver` für die Auflösung.
+    let content: TrainingDayContentSnapshot.ExerciseEntry
     let session: WorkoutSession
     /// DEL-097 + DEL-108: Session-weiter Time-Set-Lock (Exercise × setIndex).
     /// Reicht durch zur SetRow, die den Lock claimt bzw. den eigenen
@@ -41,7 +50,31 @@ struct ExerciseCard: View {
     // (DEL-092) — wer Warmups global abschaltet, will auch keine Ramp-Hints.
     @AppStorage("pref_show_warmups") private var showWarmups: Bool = true
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    /// Runde 10 (Settings → Training): identischer Key/Default wie
+    /// `SetRow.setDisplayModeRaw` — der gemeinsame Spaltenkopf ergibt nur im
+    /// "column"-Modus Sinn, "classic" beschriftet jedes Feld stattdessen
+    /// direkt in der Satzzeile selbst (siehe `SetRow.labeledField`).
+    @AppStorage("pref_set_display_mode") private var setDisplayModeRaw: String = "column"
     @State private var rampExpanded = false
+
+    /// Bugfix "Workout-GIF-Overlay": frueher war hier ein animiertes
+    /// `ExerciseGifView` fix im Header eingebettet — je nach GIF-
+    /// Seitenverhaeltnis hat dessen `UIImageView`-Bruecke die vorgegebene
+    /// 44x44-Frame durchbrochen und das GIF ueber Name/Satzzeilen gelegt
+    /// (Root-Cause-Fix: `GifImageView.sizeThatFits`). Im aktiven Workout
+    /// zeigt die Karte jetzt gar kein GIF mehr inline, nur noch einen
+    /// kleinen Play-Button (`gifButton`), der `ExerciseGifSheet` oeffnet.
+    @State private var showingGifSheet = false
+
+    /// Korrektur post-Review (Dynamic Type): identische Deklaration (gleiche
+    /// Basis, gleiches `relativeTo`) wie `SetRow.checkmarkIconSize` — beide
+    /// werden von SwiftUI im selben Environment (gleiche Dynamic-Type-Stufe)
+    /// ausgewertet und liefern dadurch GARANTIERT denselben skalierten Wert,
+    /// statt einer statischen Zahl, die bei groesseren Schriftstufen vom
+    /// tatsaechlichen Checkmark-Icon abweichen wuerde. `SetRowColumns` kann
+    /// das nicht selbst halten, da `@ScaledMetric` Live-Environment-Zugriff
+    /// braucht (ein `enum` mit `static let` hat keinen).
+    @ScaledMetric(relativeTo: .title2) private var checkmarkColumnPlaceholderWidth: CGFloat = 28
 
     var body: some View {
         // UX-203: berechne EINMAL pro Render den aktiven Satz — der erste
@@ -50,24 +83,40 @@ struct ExerciseCard: View {
         // weitergereicht, damit die Row nicht selber nach activeIndex
         // suchen muss (vermeidet O(n²) in der For-Each).
         let active = activeSetIndex
+        // Signature-Geruest 2.2: Grau-8%/Radius-16-Karte -> Surface/Radius-20.
+        // accentEdge ist bewusst immer an (nicht an isActiveSet-artige Logik
+        // gekoppelt): auf iOS zeigt die TabView.page-Pagination immer nur
+        // EINE ExerciseCard gleichzeitig, es gibt also keine "kommenden"
+        // Karten zum Abdunkeln (siehe Ruecksprache) - die eine sichtbare
+        // Karte ist immer die aktive.
+        DeltiqCard(accentEdge: true) {
         VStack(alignment: .leading, spacing: 10) {
             header
-            Divider()
+            Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
             // DEL-195: Aufwärm-Rampe (collapsed by default) — nur für
             // Barbell-Working-Sets mit bekanntem Zielgewicht.
             if let ramp = warmupRamp, !ramp.isEmpty {
                 warmupRampSection(ramp)
-                Divider().opacity(0.2)
+                Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
             }
-            ForEach(0..<exercise.sets, id: \.self) { setIndex in
+            // Korrektur post-Review (RIR strukturell statt komprimiert):
+            // Spalten-Beschriftung einmal pro Uebung statt "KG"/"WDH" in
+            // jeder einzelnen SetRow. Nur fuer Strength/Bodyweight sinnvoll
+            // (Cardio/TimeBased haben ein eigenes Zeilenlayout ohne diese
+            // Spalten).
+            if !content.isCardio && !content.isTimeBased && setDisplayModeRaw != "classic" {
+                setRowColumnHeader
+            }
+            ForEach(0..<content.sets, id: \.self) { setIndex in
                 SetRow(
                     setIndex: setIndex,
                     exercise: exercise,
+                    content: content,
                     session: session,
                     existingLog: existingLog(forSetIndex: setIndex),
                     previousLog: previousLog(forSetIndex: setIndex),
                     seedLog: seedLog(forSetIndex: setIndex),
-                    onRequestDelete: exercise.sets > 1 ? { removeSet(at: setIndex) } : nil,
+                    onRequestDelete: content.sets > 1 ? { removeSet(at: setIndex) } : nil,
                     activeTimedSet: $activeTimedSet,
                     isActiveSet: setIndex == active,
                     onLogged: { values in
@@ -79,15 +128,15 @@ struct ExerciseCard: View {
                 )
                 // DEL-157: id mit structureToken → frisches Re-Seed nach Delete.
                 .id("set-\(setIndex)-\(structureToken)")
-                if setIndex < exercise.sets - 1 {
-                    // UX-203: Divider noch ruhiger (0.4 → 0.2), weil die
-                    // Active-Set-Background-Tint jetzt die primaere
-                    // visuelle Trennung uebernimmt.
-                    Divider().opacity(0.2)
+                if setIndex < content.sets - 1 {
+                    // Signature-Geruest 1.6: Trennlinie einheitlich 6% statt
+                    // der bisherigen 20% - die Active-Set-Background-Tint
+                    // uebernimmt weiterhin die primaere visuelle Trennung.
+                    Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
                 }
             }
 
-            if completedSetCount >= exercise.sets {
+            if completedSetCount >= content.sets {
                 Label {
                     Text("workout.allSetsDone", bundle: .module)
                 } icon: {
@@ -117,12 +166,99 @@ struct ExerciseCard: View {
             .buttonStyle(.plain)
             .padding(.top, 4)
         }
-        .padding(14)
-        .background(Color.secondary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        // DEL-059: subtile Licht-Kante — gibt dem Card das premium-erhabene
-        // Gefuehl auf Dark-Mode, no-op auf Light-Mode.
-        .innerLightStroke(cornerRadius: 16, opacity: 0.08)
+        }
+    }
+
+    // MARK: Set-Spalten-Header
+
+    /// Korrektur post-Review (RIR strukturell statt komprimiert): einmalige
+    /// Spaltenbeschriftung oberhalb der Satzzeilen. Nutzt dieselben
+    /// `SetRow.SetRowColumns`-Breiten wie `SetRow.singleLineInputRow`, damit
+    /// Header und Satzzeilen spaltengenau ausgerichtet sind.
+    ///
+    /// Korrektur post-Review (Nachbesserung): eigener `ViewThatFits` statt
+    /// starrem Ein-Zeilen-Layout — faellt `SetRow.compactSetRow` bei
+    /// schmalem Display/grosser Dynamic-Type-Stufe auf sein zweizeiliges
+    /// `twoLineInputRow` zurueck, zeigt dieser Header analog
+    /// `reducedSetRowColumnHeader` (nur noch Satz/kg/Wdh, exakt was auf
+    /// Zeile 1 des Fallbacks steht). "RIR" wird in diesem reduzierten
+    /// Zustand bewusst NICHT hier oben beschriftet (stuende ueber der
+    /// leeren ersten Zeile, waehrend die Kapsel auf Zeile 2 gewandert ist)
+    /// — stattdessen traegt `twoLineInputRow`s zweite Zeile dort ein
+    /// eigenes Inline-"RIR"-Label direkt neben der Kapsel. Beide Varianten
+    /// nutzen exakt dieselben Spaltenbreiten/Abstaende wie die jeweilige
+    /// Satzzeilen-Variante, wodurch `ViewThatFits` bei GLEICHER verfuegbarer
+    /// Breite auch zur GLEICHEN Entscheidung kommt wie die Satzzeile selbst
+    /// — zwei unabhaengige `ViewThatFits`-Aufrufe, aber mit identischen
+    /// Eingabegroessen statt zweier nur zufaellig uebereinstimmender Werte.
+    private var setRowColumnHeader: some View {
+        ViewThatFits(in: .horizontal) {
+            fullSetRowColumnHeader
+            reducedSetRowColumnHeader
+        }
+    }
+
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// der Spaltenkopf stand hart auf "KG", obwohl `SetRow.weightInput`
+    /// darunter seit dieser Runde die gewaehlte Einheit respektiert.
+    private var weightColumnHeaderKey: LocalizedStringKey {
+        weightUnitRaw == "lbs" ? "unit.lbs.upper" : "unit.kg.upper"
+    }
+
+    private var fullSetRowColumnHeader: some View {
+        HStack(spacing: SetRow.SetRowColumns.spacing) {
+            Text("set.column.setLabel", bundle: .module)
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.setNumberWidth, alignment: .leading)
+            Color.clear.frame(width: SetRow.SetRowColumns.weightGroupLeadingInset, height: 1)
+            Text(weightColumnHeaderKey, bundle: .module)
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.weightWidth, alignment: .center)
+            Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.repsWidth, alignment: .center)
+            Color.clear.frame(width: SetRow.SetRowColumns.plateWidth, height: 1)
+            Spacer(minLength: 6)
+            // Korrektur post-Review (Dynamic Type): `RIRValueTextStyle`
+            // statt eigenem Font/Padding/Frame — exakt dieselbe Breiten-
+            // vorgabe wie `rirCapsule` selbst nutzt, damit beide bei JEDER
+            // Dynamic-Type-Stufe exakt gleich breit bleiben (geteilter Code
+            // statt zweier Zahlen, die haetten auseinanderlaufen koennen).
+            Text("set.column.rirLabel", bundle: .module)
+                .modifier(SetRow.RIRValueTextStyle())
+                .foregroundStyle(.secondary)
+            Color.clear.frame(width: checkmarkColumnPlaceholderWidth, height: 1)
+        }
+        .padding(.horizontal, 8)
+        // Jedes Eingabefeld traegt sein eigenes Accessibility-Label bereits
+        // (siehe SetRow); der Header ist eine rein visuelle Spaltenangabe,
+        // wird VoiceOver-Nutzern aber als EIN zusammengefasstes Element
+        // einmalig vorgelesen statt als vier separate Stopps.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("set.column.header.accessibilityLabel", bundle: .module))
+    }
+
+    /// Reduzierte Variante fuer `SetRow.twoLineInputRow` — exakt dieselben
+    /// Spalten wie dessen erste Zeile (Satz/kg/Wdh, kein Plate-/RIR-/
+    /// Checkmark-Platzhalter mehr), damit `ViewThatFits` hier bei der
+    /// gleichen Breite kippt wie die Satzzeile selbst.
+    private var reducedSetRowColumnHeader: some View {
+        HStack(spacing: SetRow.SetRowColumns.spacing) {
+            Text("set.column.setLabel", bundle: .module)
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.setNumberWidth, alignment: .leading)
+            Color.clear.frame(width: SetRow.SetRowColumns.weightGroupLeadingInset, height: 1)
+            Text(weightColumnHeaderKey, bundle: .module)
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.weightWidth, alignment: .center)
+            Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
+                .deltiqLabel()
+                .frame(width: SetRow.SetRowColumns.repsWidth, alignment: .center)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("set.column.header.reducedAccessibilityLabel", bundle: .module))
     }
 
     // MARK: Header
@@ -132,11 +268,13 @@ struct ExerciseCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     // DEL-124: Active-Workout Card-Header via displayName.
-                    Text(exercise.displayName)
+                    // P8 Stufe-2: eingefrorener Name — ein externes Umbenennen
+                    // waehrend die Session laeuft darf den Kartentitel nicht aendern.
+                    Text(displayName)
                         .font(.headline)
                     // DEL-087: Pill markiert Warmup/Cooldown-Uebungen optisch.
-                    if exercise.role != .workingSet {
-                        Text(rolePillText)
+                    if let pillText = content.role.localizedPillText {
+                        Text(pillText)
                             .font(.caption2.weight(.bold))
                             .tracking(0.8)
                             .padding(.horizontal, 6)
@@ -157,6 +295,7 @@ struct ExerciseCard: View {
             }
             Spacer()
             progressPill
+            gifButton
             // DEL-154: Edit/Delete-Menu — nur wenn der Parent Hooks liefert
             // (Ad-Hoc-Workout). In der paginierten TabView gibt es keine
             // List-Swipe-Actions, daher ein Ellipsis-Menu im Header.
@@ -194,15 +333,46 @@ struct ExerciseCard: View {
                 .accessibilityLabel(Text("active.exercise.menuAccessibility", bundle: .module))
             }
         }
+        // Bugfix "Workout-GIF-Overlay": Sheet lebt am Header, nicht an der
+        // ganzen Karte — `exercise` ist ein stabiles `let` pro Card-Instanz,
+        // das Sheet zeigt also auch bei schnellem Seitenwechsel nie das GIF
+        // einer anderen Uebung (jede Praesentation erzeugt zudem ein frisches
+        // `ExerciseGifSheet`/`GifImageView`, kein geteilter Zustand zwischen
+        // Oeffnen-Vorgaengen). Sets/Timer/aktuelle Seite bleiben unberuehrt,
+        // weil `ExerciseCard` waehrenddessen einfach weiter gemountet bleibt.
+        .sheet(isPresented: $showingGifSheet) {
+            ExerciseGifSheet(exerciseName: exercise.name, displayName: exercise.displayName)
+        }
     }
 
-    /// DEL-087: Label-Text fuer die Role-Pill im Header.
-    private var rolePillText: String {
-        switch exercise.role {
-        case .warmup:     return "WARM-UP"
-        case .cooldown:   return "COOL-DOWN"
-        case .workingSet: return ""
+    /// Kleiner Play-Button statt des frueheren Inline-GIFs (siehe
+    /// `showingGifSheet`-Kommentar). Nur sichtbar, wenn `ExerciseMediaProvider`
+    /// ueberhaupt ein GIF fuer diese Uebung kennt — kein leerer Button, kein
+    /// Platzhalter-Icon fuer eine nicht vorhandene Ressource.
+    @ViewBuilder
+    private var gifButton: some View {
+        if hasGif {
+            Button {
+                showingGifSheet = true
+            } label: {
+                Image(systemName: "play.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel(Text(gifButtonAccessibilityText))
         }
+    }
+
+    private var hasGif: Bool {
+        ExerciseMediaProvider.gifFileName(forExerciseName: exercise.name) != nil
+    }
+
+    private var gifButtonAccessibilityText: String {
+        let format = String(localized: "exercise.gif.button.a11y", bundle: .module)
+        return String(format: format, exercise.displayName)
     }
 
     /// DEL-128: vollstaendige i18n der Card-Subtitle-Zeile.
@@ -216,30 +386,53 @@ struct ExerciseCard: View {
     /// Format-Strings sind im Catalog als `exercise.target.cardioFormat` /
     /// `.strengthFormat` mit positionellen %1$/%2$/...-Placeholders
     /// definiert; Swift macht die Substitution via `String(format:)`.
+    /// P8 Stufe-2: eingefrorener Anzeigename — custom-first wie
+    /// `Exercise.displayName`, aber aus `content` statt der Live-Übung
+    /// gespeist (siehe `TimedFormatDisplayExercise` in `WorkoutSummaryView`
+    /// für dasselbe Muster in der Historie).
+    private var displayName: String {
+        if let custom = content.customNameSnapshot, !custom.isEmpty { return custom }
+        return Exercise.resolvedDisplayName(forStoredName: content.nameSnapshot)
+    }
+
     private var targetText: String {
         let pauseLabel = String(localized: "exercise.rest.label", bundle: .module)
-        if exercise.isCardio {
+        // Signature-Geruest 2.16: mm:ss statt reiner Sekundenzahl ("150s" ->
+        // "2:30") - gleicher Formatter, den der Rest der App fuer Dauern
+        // schon nutzt (siehe TimedWorkoutPlayerView/WorkoutSummaryView etc.).
+        // `restSeconds == 0` ist ein bewusst gueltiger Wert (Drop-Sets,
+        // Supersets, Rest-Pause, siehe Kommentar bei ActiveWorkoutView's
+        // Timer-Start) - `PaceCalculator.formatDuration(0)` liefert dafuer
+        // "—" (gedacht fuer "keine Dauer vorhanden"), was hier faelschlich
+        // nach fehlendem statt nach bewusst leerem Wert aussehen wuerde.
+        // P8 Stufe-2: Satzvorgaben kommen aus `content` (eingefroren), nicht
+        // aus der Live-Übung — eine externe Änderung während die Session
+        // offen ist darf diese Anzeige nicht beeinflussen.
+        let restText = content.restSeconds > 0
+            ? PaceCalculator.formatDuration(content.restSeconds)
+            : "0:00"
+        if content.isCardio {
             let cardioLabel = String(localized: "exercise.kind.cardio", bundle: .module)
             let fmt = String(localized: "exercise.target.cardioFormat", bundle: .module)
-            return String(format: fmt, cardioLabel, exercise.restSeconds, pauseLabel)
+            return String(format: fmt, cardioLabel, restText, pauseLabel)
         }
-        let unit = exercise.isTimeBased
+        let unit = content.isTimeBased
             ? String(localized: "unit.seconds.short", bundle: .module)
             : String(localized: "unit.reps.short", bundle: .module)
-        let range = exercise.repsMin == exercise.repsMax
-            ? "\(exercise.repsMin)"
-            : "\(exercise.repsMin)-\(exercise.repsMax)"
+        let range = content.repsMin == content.repsMax
+            ? "\(content.repsMin)"
+            : "\(content.repsMin)-\(content.repsMax)"
         let fmt = String(localized: "exercise.target.strengthFormat", bundle: .module)
-        return String(format: fmt, exercise.sets, range, unit, exercise.restSeconds, pauseLabel)
+        return String(format: fmt, content.sets, range, unit, restText, pauseLabel)
     }
 
     private var progressPill: some View {
-        Text("\(completedSetCount) / \(exercise.sets)")
+        Text("\(completedSetCount) / \(content.sets)")
             .font(.caption.weight(.bold).monospacedDigit())
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(progressFillColor)
-            .foregroundStyle(completedSetCount >= exercise.sets ? .green : .primary)
+            .foregroundStyle(completedSetCount >= content.sets ? .green : .primary)
             .clipShape(Capsule())
             // DEL-059: feine Lichtkante auf der Pill
             .overlay(
@@ -251,7 +444,7 @@ struct ExerciseCard: View {
     }
 
     private var progressFillColor: Color {
-        completedSetCount >= exercise.sets
+        completedSetCount >= content.sets
             ? Color.green.opacity(0.18)
             : Color.secondary.opacity(0.18)
     }
@@ -278,7 +471,7 @@ struct ExerciseCard: View {
     private var activeSetIndex: Int? {
         // Set der Logs ueber setIndex bilden — O(n) Lookup statt n×n.
         let completed = Set(sessionLogs.map(\.setIndex))
-        for i in 0..<exercise.sets where !completed.contains(i) {
+        for i in 0..<content.sets where !completed.contains(i) {
             return i
         }
         return nil
@@ -402,6 +595,15 @@ struct ExerciseCard: View {
     /// DEL-058: nimmt jetzt das `LoggedSetValues`-Bundle und uebernimmt
     /// auch Cardio-Felder (distanceKm/durationSeconds) in den persistierten
     /// `ExerciseLog`.
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs-
+    /// Nachtest): fehlender `context.save()` nach dem Insert hier selbst -
+    /// derselbe Musterfehler wie bereits zwoelf Mal zuvor in dieser App
+    /// gefunden und gefixt (zuletzt `CardioGoalEditorView.save()`), diesmal
+    /// im eigentlichen Satz-Logging. Auf dem Geraet reproduziert: ein gerade
+    /// geloggter Satz (gruener Haken, Volumen-Anzeige aktualisiert) ging bei
+    /// einem Kaltstart kurz danach verloren - unabhaengig von kg/lbs, betraf
+    /// auch das bereits bestehende Kaltstart-sichere `unlogSet` direkt
+    /// darunter als Gegenbeispiel (siehe dessen Doku-Kommentar).
     private func logSet(setIndex: Int, values: LoggedSetValues) {
         let log = ExerciseLog(
             date: Date(),
@@ -417,6 +619,7 @@ struct ExerciseCard: View {
             durationSeconds: values.durationSeconds
         )
         modelContext.insert(log)
+        try? modelContext.save()
         onSetLogged(setIndex)
     }
 
@@ -426,9 +629,17 @@ struct ExerciseCard: View {
     /// der Rest-Timer wird *nicht* zurueckgesetzt, weil der User vermutlich
     /// nur einen Tippfehler korrigieren will, nicht die ganze Pause-Logik
     /// neu starten.
+    /// TestingBot-Regressionscheck (Block A, Deltiq-Abnahme, siehe
+    /// `PlansListView.deletePlans`-Doku): ohne sofortigen `context.save()`
+    /// verlaesst sich die Loeschung auf SwiftDatas impliziten Autosave — ein
+    /// kurz danach folgender Kaltstart konnte den Satz wieder als
+    /// abgeschlossen anzeigen. `removeSet` (unten) ist sicher, weil darauf
+    /// stets `TrainingDayContentSnapshotWriter.recordSetCountChange` folgt,
+    /// der selbst speichert — `unlogSet` hat keinen solchen Folgeaufruf.
     private func unlogSet(setIndex: Int) {
         guard let log = existingLog(forSetIndex: setIndex) else { return }
         modelContext.delete(log)
+        try? modelContext.save()
     }
 
     // MARK: - DEL-157 Dynamisches Set-Management
@@ -448,6 +659,11 @@ struct ExerciseCard: View {
     /// was der ExerciseEditor taete, nur ohne den Umweg.
     private func addSet() {
         exercise.sets += 1
+        // P8 Stufe-2: "+ Satz" ist eine ausdrückliche Aktion DIESER laufenden
+        // Session (gilt für jede Session, nicht nur Ad-hoc) — hält den
+        // eigenen Inhaltsstand synchron, statt beim nächsten Resolve auf den
+        // alten, eingefrorenen `sets`-Wert zurückzufallen.
+        TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: session, context: modelContext)
     }
 
     /// Entfernt den Satz an `index`: loescht dessen Log (falls vorhanden),
@@ -466,6 +682,7 @@ struct ExerciseCard: View {
                 log.setIndex -= 1
             }
             exercise.sets -= 1
+            TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: session, context: modelContext)
             structureToken = UUID()
         }
     }

@@ -20,6 +20,9 @@ public struct DashboardView: View {
     /// nicht vorhanden (extrem unwahrscheinlich), bleiben die HK-Cards
     /// auf "—" stehen.
     @Environment(HealthKitController.self) private var healthKit
+    /// Fuer den Auto-Ablauf der Deload-Woche beim Fortsetzen der App
+    /// (siehe `.onChange(of: scenePhase)` unten).
+    @Environment(\.scenePhase) private var scenePhase
 
     /// Reverse-chronological so `.first` is the latest measurement.
     @Query(sort: \BodyMeasurement.date, order: .reverse)
@@ -64,6 +67,27 @@ public struct DashboardView: View {
     @State private var showingActiveSessionConflict = false
     @State private var pendingNewStart: (() -> Void)?
 
+    /// README 2.35 (43b): Ad-Hoc-Zeitformat-Start. Kein eigener Picker/
+    /// Bestaetigungs-Sheet mehr (Nutzer-Feedback: nur eine Uebung waehlbar,
+    /// keine Bearbeitung von Wiederholungen/Zeit moeglich) - `beginTimedAdHocWorkout`
+    /// legt stattdessen einen leeren Tag mit gesetztem `timeFormat` an und
+    /// navigiert direkt in `DayEditorView`. Der bietet bereits alles, was
+    /// hier fehlte: beliebig viele Uebungen ueber den bestehenden Bibliotheks-
+    /// Picker hinzufuegen, jede einzeln ueber `ExerciseEditorView` bearbeiten
+    /// (Wiederholungen/Sekunden je nach `isTimeBased`), die Struktur-Wahl
+    /// (README 2.35, 43a) aendern, und "Training starten" ist ohnehin schon
+    /// deaktiviert, solange keine Uebung existiert (`day.activeExercises.isEmpty`).
+    /// Der "Training starten"-Knopf dort liefert auch den bewusst
+    /// zu bestaetigenden Start-Moment, den ein separates Sheet zuvor extra
+    /// nachbilden musste.
+
+    /// Nachtrag 6. August (README 2.1): Umschaltzustand fuer die
+    /// aufklappbare Uebungsliste der Plan-Karte. View-lokal und bewusst
+    /// nicht persistiert - faellt beim Verlassen des Dashboards zurueck
+    /// auf zugeklappt. Nur eine Plan-Karte ist je Dashboard sichtbar
+    /// (`activePlans.first`), ein einzelner Bool reicht.
+    @State private var isExercisesExpanded = false
+
     /// DEL-132 (Phase 3): Async-fetched HealthKit-Werte fuer die
     /// entsprechenden Hero-Slots. Werden in `.task(id:)` auf Slot-
     /// Aenderung neu gezogen, sind nil solange noch nicht geholt /
@@ -96,10 +120,25 @@ public struct DashboardView: View {
     /// Absenz-Rueckfrage — nie einen laufenden Deload.
     @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
 
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// das Gewichts-Hero-Tile (`heroMetricCard(for: .weight, ...)`) zeigte
+    /// bisher immer kg, unabhaengig vom Einheiten-Setting.
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    private var dashboardWeightUnit: WeightUnit { WeightUnit(rawSetting: weightUnitRaw) }
+
     /// DEL-239: Bewertung der Trainingspause, solange die Rueckfrage offen ist.
     @State private var comebackAssessment: AbsenceDeload.Assessment?
     /// Fortsetzung des abgefangenen Trainingsstarts.
     @State private var pendingComebackStart: (() -> Void)?
+
+    /// Nachbesserung (Task #197, zweite Runde): "Onboarding nicht mit leerem
+    /// catch abschliessen" - `OnboardingView.finishOnboarding()` markiert
+    /// einen gescheiterten initialen Plan nur noch ueber
+    /// `OnboardingPlanCreationNotice`, OHNE selbst einen Alert zu zeigen
+    /// (siehe dortige Begruendung: RootView kann zu diesem Zeitpunkt schon
+    /// auf MainTabView umgeschaltet haben). Das Dashboard ist der erste
+    /// Screen danach und konsumiert den Hinweis GENAU EINMAL.
+    @State private var showingOnboardingPlanCreationFailedAlert = false
 
     /// DEL-202: getappter Kalender-Tag fürs Tages-Detail-Sheet. Identifiable-
     /// Wrapper, weil `Date` selbst kein Identifiable ist und sheet(item:)
@@ -111,69 +150,115 @@ public struct DashboardView: View {
         var id: Date { day }
     }
 
+    /// Signature-Geruest: die Kopfzone hat keine native Toolbar mehr, der
+    /// Plus-Knopf pusht daher programmatisch statt ueber einen
+    /// NavigationLink im `.toolbar`.
+    @State private var showingNewMeasurement = false
+
+    /// Paket 3a (Laufversäumnis-Hinweis): CTA der `coachingInsightCard`
+    /// öffnet ausschließlich diesen bestehenden Paket-1-Pfad — kein neues
+    /// Sheet/keine neue Card-Komponente.
+    @State private var showingMissedRunAdjustmentPreview = false
+
     public init() {}
 
     public var body: some View {
-        // DEL-214: Achse explizit vertikal — und der Content wird unten via
-        // containerRelativeFrame hart auf die Container-Breite geklemmt.
-        ScrollView(.vertical) {
-            // DEL-103: Konsistentes 16pt-Spacing zwischen allen Bento-Cards.
-            // VStack-spacing + uniformes horizontales 16pt-Padding sind die
-            // einzige geometrische Quelle der Wahrheit — nicht mehr pro-Card
-            // .padding(.horizontal) etc.
-            VStack(alignment: .leading, spacing: 16) {
-                // DEL-109: heroMetrics bleibt statisch ueber den
-                // konfigurierbaren Widgets — zu zentral fuer das Brand,
-                // nicht via Toggle abschaltbar.
-                heroMetrics
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: eigene Kopfzone statt Navigationsleiste
+            // + dynamischer Begruessung als navigationTitle. Sitzt ausserhalb
+            // der ScrollView, scrollt nicht mit.
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.dashboard", bundle: .module).uppercased(),
+                title: dashboardGreeting,
+                actions: [
+                    DeltiqHeaderAction(systemImage: "plus") {
+                        showingNewMeasurement = true
+                    }
+                ]
+            )
 
-                // DEL-215: Prominente Resume-Tile fuer offene Sessions, die
-                // die PlanDayCard NICHT abdeckt (Ad-hoc-Workouts, Sessions
-                // auf inaktiven Plaenen, oder nextWorkout-Widget vom User
-                // deaktiviert). Statisch ueber den konfigurierbaren Widgets —
-                // ein laufendes Training schlaegt jede Card-Reihenfolge.
-                if let open = unrepresentedOpenSession {
-                    resumeSessionTile(open)
-                }
+            // DEL-214: Achse explizit vertikal — und der Content wird unten via
+            // containerRelativeFrame hart auf die Container-Breite geklemmt.
+            ScrollView(.vertical) {
+                // Signature-Geruest 1.1: Sektionsabstand 18 statt 16.
+                VStack(alignment: .leading, spacing: 18) {
+                    // Signature-Geruest 1.3: Kontextzeile mit aktivem Plan
+                    // (Marke) + Wochen-Streak (neutral), plus Haarlinie.
+                    dashboardContextRow
 
-                // DEL-109: Dynamisches Widget-Rendering. Reihenfolge +
-                // Sichtbarkeit kommen aus dem User-Profil; jeder Case
-                // mappt auf den entsprechenden Card-View. Neue Widget-
-                // Typen: hier den switch erweitern UND den enum-Case
-                // anhaengen. Conditional-Rendering (z.B. cardioPaceChart
-                // wird nur sichtbar wenn `shouldShowCardioChart`) bleibt
-                // in den Card-Views selber — der Switch ruft sie nur auf.
-                ForEach(activeDashboardWidgets, id: \.self) { widget in
-                    switch widget {
-                    case .nextWorkout:     planDayCard
-                    case .coachingInsight: coachingInsightCard
-                    case .trophyRoom:      trophyRoomCard
-                    case .workoutHistory:  historyCard
-                    case .weeklyVolume:    weeklySummaryCard
-                    case .muscleHeatmap:   muscleHeatmapCard
-                    case .weightTrend:     trendChart
-                    case .compoundLifts:   compoundLiftChart
-                    case .cardioPace:      cardioPaceChart
-                    case .recentWorkouts:  recentWorkoutsCard
-                    case .volumeOverTime:  volumeOverTimeChart
-                    case .trainingCalendar: trainingCalendarCard
+                    // DEL-109: heroMetrics bleibt statisch ueber den
+                    // konfigurierbaren Widgets — zu zentral fuer das Brand,
+                    // nicht via Toggle abschaltbar.
+                    heroMetrics
+
+                    // DEL-215: Prominente Resume-Tile fuer offene Sessions, die
+                    // die PlanDayCard NICHT abdeckt (Ad-hoc-Workouts, Sessions
+                    // auf inaktiven Plaenen, oder nextWorkout-Widget vom User
+                    // deaktiviert). Statisch ueber den konfigurierbaren Widgets —
+                    // ein laufendes Training schlaegt jede Card-Reihenfolge.
+                    if let open = unrepresentedOpenSession {
+                        resumeSessionTile(open)
+                    }
+
+                    // Handoff "Lauf-Coaching - Machbarkeits-Check" (2.30):
+                    // statisch ueber den konfigurierbaren Widgets, gleiche
+                    // Prioritaet wie unrepresentedOpenSession - kein
+                    // gespeicherter Zustand, jeder Aufruf rechnet live neu
+                    // (siehe CardioFeasibilityCardModel).
+                    if let model = cardioFeasibilityModel {
+                        cardioFeasibilityDashboardCard(model)
+                    }
+
+                    // DEL-109: Dynamisches Widget-Rendering. Reihenfolge +
+                    // Sichtbarkeit kommen aus dem User-Profil; jeder Case
+                    // mappt auf den entsprechenden Card-View. Neue Widget-
+                    // Typen: hier den switch erweitern UND den enum-Case
+                    // anhaengen. Conditional-Rendering (z.B. cardioPaceChart
+                    // wird nur sichtbar wenn `shouldShowCardioChart`) bleibt
+                    // in den Card-Views selber — der Switch ruft sie nur auf.
+                    ForEach(activeDashboardWidgets, id: \.self) { widget in
+                        switch widget {
+                        case .nextWorkout:     planDayCard
+                        case .coachingInsight: coachingInsightCard
+                        case .trophyRoom:      trophyRoomCard
+                        case .workoutHistory:  historyCard
+                        case .weeklyVolume:    weeklySummaryCard
+                        case .muscleHeatmap:   muscleHeatmapCard
+                        case .weightTrend:     trendChart
+                        case .compoundLifts:   compoundLiftChart
+                        case .cardioPace:      cardioPaceChart
+                        case .recentWorkouts:  recentWorkoutsCard
+                        case .volumeOverTime:  volumeOverTimeChart
+                        case .trainingCalendar: trainingCalendarCard
+                        }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 100)
+                // DEL-214: Bugfix "Dashboard laesst sich horizontal wischen" —
+                // ein zu breites Child (z.B. Chart-Label/monospaced Text) machte
+                // den ScrollView-Content breiter als den Viewport, wodurch die
+                // vertikale ScrollView horizontal pannte. containerRelativeFrame
+                // proposed dem Content exakt die Container-Breite; zu breite
+                // Children werden damit eingebremst statt den Canvas zu dehnen.
+                .containerRelativeFrame(.horizontal)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-            // DEL-214: Bugfix "Dashboard laesst sich horizontal wischen" —
-            // ein zu breites Child (z.B. Chart-Label/monospaced Text) machte
-            // den ScrollView-Content breiter als den Viewport, wodurch die
-            // vertikale ScrollView horizontal pannte. containerRelativeFrame
-            // proposed dem Content exakt die Container-Breite; zu breite
-            // Children werden damit eingebremst statt den Canvas zu dehnen.
-            .containerRelativeFrame(.horizontal)
+            .scrollContentBackground(.hidden)
         }
         // DEL-102: Off-Weiss / Off-Schwarz-Background, gegen den die
         // Bento-Cards (Surface) abheben. Im Light-Mode identisch zu
         // systemGroupedBackground, im Dark-Mode warmer (#0A0A0A statt #000).
         .background(Color.Deltiq.background.ignoresSafeArea())
+        // Signature-Geruest 1.2: native Navigationsleiste versteckt, die
+        // eigene DeltiqHeader uebernimmt Titel + Aktionen.
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $showingNewMeasurement) {
+            MeasurementView()
+        }
         // DEL-132 (Phase 3): HealthKit-Werte fuer aktive Hero-Slots
         // ziehen. `.task(id:)` schiesst neu, sobald sich die Slot-Liste
         // aendert (z.B. nach Settings-Toggle), zusaetzlich beim ersten
@@ -188,26 +273,35 @@ public struct DashboardView: View {
         .task {
             autoEndDeloadIfExpired()
         }
-        // DEL-141: Dynamische Begrüßung statt statischem "Dashboard"-Title.
-        // Tageszeit-aware (Morgen/Tag/Abend) + Vorname-aware. Wenn der
-        // User im Onboarding einen Vornamen angegeben hat, erscheint
-        // "Guten Morgen, Atakan" / "Günaydın, Atakan" / etc. Sonst
-        // Fallback auf die generische Tageszeit-Begrüßung — immer noch
-        // persoenlicher als das alte "Dashboard".
-        .navigationTitle(Text(dashboardGreeting))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
-        #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                NavigationLink(destination: MeasurementView()) {
-                    Label {
-                        Text("dashboard.newMeasurement", bundle: .module)
-                    } icon: {
-                        Image(systemName: "plus.circle.fill")
-                    }
-                }
+        // Nachbesserung (Task #197, zweite Runde): siehe
+        // `showingOnboardingPlanCreationFailedAlert`-Doku. `.task` ohne
+        // `id:` laeuft wie `autoEndDeloadIfExpired()` oben bei jedem
+        // Dashboard-Erscheinen - unschaedlich, weil `consumeIfPending()`
+        // nach dem ersten `true` dauerhaft `false` liefert.
+        .task {
+            if OnboardingPlanCreationNotice.consumeIfPending() {
+                showingOnboardingPlanCreationFailedAlert = true
             }
+        }
+        .alert(
+            Text("dashboard.onboardingPlanCreationFailed.title", bundle: .module),
+            isPresented: $showingOnboardingPlanCreationFailedAlert
+        ) {
+            Button {
+                navigation.selectedTab = .plan
+            } label: {
+                Text("dashboard.onboardingPlanCreationFailed.goToPlan", bundle: .module)
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("dashboard.onboardingPlanCreationFailed.message", bundle: .module)
+        }
+        // `.task` laeuft nur, wenn das Dashboard erscheint - die App bleibt aber
+        // oft tagelang im Speicher und wird nur fortgesetzt. Ohne diesen Hook
+        // blieben Banner und halbierte Gewichte nach Ablauf stehen, bis die App
+        // neu gestartet oder der Tab gewechselt wird.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { autoEndDeloadIfExpired() }
         }
         // DEL-239: Rueckfrage nach langer Pause. `sheet(item:)`, damit das
         // Assessment beim Praesentieren feststeht. Die Entscheidung laeuft
@@ -216,6 +310,14 @@ public struct DashboardView: View {
         .sheet(item: $comebackAssessment) { assessment in
             ComebackPromptSheet(assessment: assessment) { factor in
                 resolveComeback(factor: factor)
+            }
+        }
+        // Paket 3a: der CTA des Laufversäumnis-Hinweises öffnet exakt
+        // dieselbe View wie der Paket-1-Pfad in `ProfileEditorView` — kein
+        // neuer Anpassungs-Mechanismus.
+        .sheet(isPresented: $showingMissedRunAdjustmentPreview) {
+            if let profile = profiles.first, let plan = activePlans.first {
+                CoachAdjustmentPreviewView(profile: profile, activePlan: plan)
             }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
@@ -289,7 +391,10 @@ public struct DashboardView: View {
                         .font(.title2)
                         .foregroundStyle(.white)
                         .frame(width: 38, height: 38)
-                        .background(Color.yellow.gradient)
+                        // Signature-Geruest 2.16: war Color.yellow - einziger
+                        // Ausreisser gegen 1.7 (ein Akzent), in der
+                        // Zusammenfassung war das schon behoben, hier nicht.
+                        .background(Color.deltiqOrange.gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("dashboard.trophy.title", bundle: .module)
@@ -465,6 +570,40 @@ public struct DashboardView: View {
         }
     }
 
+    /// Signature-Geruest 1.3: Marken-Kapsel (aktiver Plan-Name) + neutrale
+    /// Kapsel (Wochen-Streak). Beide leer → keine Zeile (Erst-Start ohne
+    /// Plan/Historie).
+    ///
+    /// Der Handoff schlaegt woertlich "WOCHE 3 · PPL 6×" vor — einen
+    /// Wochenzaehler im aktuellen Planzyklus. Dafuer gibt es keine
+    /// Datenquelle: `TrainingPlan` hat kein Startdatum, und `programType`
+    /// ist eine interne Template-ID (bei manuell angelegten Plaenen leer),
+    /// keine anzeigefertige Kurzform. Verwendet wird stattdessen der
+    /// tatsaechliche, immer vorhandene Plan-Name.
+    @ViewBuilder
+    private var dashboardContextRow: some View {
+        let streakWeeks = TrainingCalendarAggregator.weekStreak(
+            workoutDates: completedSessions.filter(\.isRealWorkout).map(\.startTime),
+            goalPerWeek: profiles.first?.weeklyWorkoutGoal ?? 1
+        )
+        let planName = activePlans.first?.displayName
+
+        if planName != nil || streakWeeks > 0 {
+            DeltiqContextRow([
+                planName.map { DeltiqContextItem($0.uppercased(), style: .accent) },
+                streakWeeks > 0
+                    ? DeltiqContextItem(
+                        String(
+                            format: String(localized: "dashboard.calendar.streakFormat", bundle: .module),
+                            streakWeeks
+                        ).uppercased(),
+                        style: .neutral
+                      )
+                    : nil
+            ].compactMap { $0 })
+        }
+    }
+
     /// DEL-132 (Phase 1): Hero-Reihe iteriert jetzt ueber die User-
     /// gewaehlten Slots (vorher hartcodierte 3-Card-HStack). Length-0
     /// versteckt die Reihe komplett — Power-User die "nur Training,
@@ -522,38 +661,55 @@ public struct DashboardView: View {
                            bundle: .module)
         switch slot {
         case .weight:
+            // Signature-Geruest 2.16: eine Nachkommastelle statt zwei -
+            // "70,00 kg" taeuschte eine Praezision vor, die eine
+            // Personenwaage (100g-Aufloesung) gar nicht liefert.
+            //
+            // Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+            // kg/lbs): Kachel-Wert UND Wochen-Delta zeigten bisher immer kg,
+            // unabhaengig vom Einheiten-Setting. Beide konvertieren jetzt
+            // vom kanonischen kg-Wert - das Delta ist eine reine Differenz
+            // ohne Offset, die lineare kg<->lbs-Konvertierung ist dafuer
+            // exakt genauso gueltig wie fuer einen Absolutwert.
             MetricCard(
                 label: label,
-                value: latest.weightKg.truncated(to: 2).formattedTwoDecimals,
-                unit: "kg",
-                delta: weeklyWeightDelta()
+                value: dashboardWeightUnit.fromKg(latest.weightKg).truncated(to: 1).formattedOneDecimal,
+                unit: weightUnitRaw == "lbs" ? "lbs" : "kg",
+                delta: weeklyWeightDelta().map(dashboardWeightUnit.fromKg),
+                deltaUnit: weightUnitRaw == "lbs" ? "lbs" : "kg"
             )
         case .bodyFatNavy:
+            let source = fallbackMeasurement(latest: latest) { $0.navyBodyFatPct != nil }
             MetricCard(
                 label: label,
-                value: latest.navyBodyFatPct?.truncated(to: 2).formattedTwoDecimals ?? "—",
-                unit: latest.navyBodyFatPct != nil ? "%" : nil,
-                delta: nil
+                value: source?.navyBodyFatPct?.truncated(to: 1).formattedOneDecimal ?? "—",
+                unit: source?.navyBodyFatPct != nil ? "%" : nil,
+                delta: nil,
+                asOfDate: fallbackDate(source: source, latest: latest)
             )
         case .ffmi:
+            let source = fallbackMeasurement(latest: latest) { $0.ffmi != nil }
             MetricCard(
                 label: label,
-                value: latest.ffmi?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                value: source?.ffmi?.truncated(to: 1).formattedOneDecimal ?? "—",
                 unit: nil,
-                delta: nil
+                delta: nil,
+                asOfDate: fallbackDate(source: source, latest: latest)
             )
         case .leanMass:
+            let source = fallbackMeasurement(latest: latest) { $0.fatFreeMassKg != nil }
             MetricCard(
                 label: label,
-                value: latest.fatFreeMassKg?.truncated(to: 2).formattedTwoDecimals ?? "—",
-                unit: latest.fatFreeMassKg != nil ? "kg" : nil,
-                delta: nil
+                value: source?.fatFreeMassKg?.truncated(to: 1).formattedOneDecimal ?? "—",
+                unit: source?.fatFreeMassKg != nil ? "kg" : nil,
+                delta: nil,
+                asOfDate: fallbackDate(source: source, latest: latest)
             )
         case .bmi:
             let bmi = computedBMI(measurement: latest)
             MetricCard(
                 label: label,
-                value: bmi?.truncated(to: 2).formattedTwoDecimals ?? "—",
+                value: bmi?.truncated(to: 1).formattedOneDecimal ?? "—",
                 unit: nil,
                 delta: nil
             )
@@ -601,6 +757,27 @@ public struct DashboardView: View {
                 unit: nil
             )
         }
+    }
+
+    /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Punkt 5): liefert
+    /// `latest` selbst, wenn die gefragte Kennzahl dort vorliegt — sonst die
+    /// JUENGSTE AELTERE Zeile mit einem echten Wert. `measurements` ist
+    /// bereits rueckwaerts-chronologisch sortiert (`.first(where:)` trifft
+    /// daher automatisch die juengste passende Zeile). Verhindert, dass eine
+    /// neue Weight-only-Messung eine aeltere, gueltige Koerperkompositions-
+    /// Analyse verdeckt — ohne je einen neuen KFA-/FFM-/FFMI-Schaetzwert aus
+    /// dem reinen Gewichtseintrag zu erzeugen (der bleibt nil, siehe
+    /// `BodyMeasurement.makeWeightOnly`).
+    private func fallbackMeasurement(latest: BodyMeasurement, hasValue: (BodyMeasurement) -> Bool) -> BodyMeasurement? {
+        hasValue(latest) ? latest : measurements.first(where: hasValue)
+    }
+
+    /// Nil, wenn `source` identisch mit `latest` ist (kein Rueckfall noetig,
+    /// kein Datum anzeigen) — sonst `source`s eigenes Datum, NIE das von
+    /// `latest` uebernommen.
+    private func fallbackDate(source: BodyMeasurement?, latest: BodyMeasurement) -> Date? {
+        guard let source, source.date != latest.date else { return nil }
+        return source.date
     }
 
     /// DEL-132 (Phase 1): BMI = weight_kg / (height_m)². Nil-Fallback
@@ -748,22 +925,28 @@ public struct DashboardView: View {
             } else if measurements.count < 3 {
                 InsufficientDataCard(currentCount: measurements.count)
             } else {
+                // Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+                // kg/lbs): der Chart zeigte bisher durchgehend kg, auch wenn
+                // die Hero-Kachel darueber (siehe `heroMetricCard`) schon auf
+                // lbs umgestellt war - derselbe Screen haette dann zwei
+                // widerspruechliche Einheiten gleichzeitig gezeigt.
+                let weightSeriesLabel = weightUnitRaw == "lbs" ? "Gewicht (lbs)" : "Gewicht (kg)"
                 Chart {
                     // Historical points + connecting line.
                     ForEach(historicalPoints, id: \.date) { p in
                         LineMark(
                             x: .value("Datum", p.date),
-                            y: .value("Gewicht (kg)", p.weight),
+                            y: .value(weightSeriesLabel, p.weight),
                             series: .value("Serie", "Tatsächlich")
                         )
                         .interpolationMethod(.monotone)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.deltiqOrange)
 
                         PointMark(
                             x: .value("Datum", p.date),
-                            y: .value("Gewicht (kg)", p.weight)
+                            y: .value(weightSeriesLabel, p.weight)
                         )
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.deltiqOrange)
                         .symbolSize(40)
                     }
 
@@ -773,7 +956,7 @@ public struct DashboardView: View {
                         ForEach(forecastPoints, id: \.date) { p in
                             LineMark(
                                 x: .value("Datum", p.date),
-                                y: .value("Gewicht (kg)", p.weight),
+                                y: .value(weightSeriesLabel, p.weight),
                                 series: .value("Serie", "Prognose")
                             )
                             .foregroundStyle(.orange)
@@ -783,13 +966,15 @@ public struct DashboardView: View {
 
                     // Goal-weight reference line if the user set one in onboarding.
                     if let goal = profiles.first?.goalWeightKg {
-                        RuleMark(y: .value("Ziel", goal))
+                        let goalDisplay = dashboardWeightUnit.fromKg(goal)
+                        let goalLineKey = weightUnitRaw == "lbs" ? "dashboard.goal.line.lbs" : "dashboard.goal.line"
+                        RuleMark(y: .value("Ziel", goalDisplay))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
                             .foregroundStyle(.green.opacity(0.7))
                             .annotation(position: .top, alignment: .leading) {
-                                Text(String(localized: "dashboard.goal.line", bundle: .module)
+                                Text(String(localized: String.LocalizationValue(goalLineKey), bundle: .module)
                                         .replacingOccurrences(of: "%@",
-                                                              with: goal.truncated(to: 2).formattedTwoDecimals))
+                                                              with: goalDisplay.truncated(to: 1).formattedOneDecimal))
                                     .font(.caption2)
                                     .foregroundStyle(.green)
                             }
@@ -828,8 +1013,11 @@ public struct DashboardView: View {
     }
 
     /// Chronologically-ordered historical points (Charts wants left-to-right by date).
+    /// Geraete-Abnahme (Runde 9, kg/lbs): konvertiert fuer die Anzeige - die
+    /// zugrunde liegenden `measurements`/`BodyCalculations`-Berechnungen
+    /// unten bleiben unveraendert kg.
     private var historicalPoints: [(date: Date, weight: Double)] {
-        measurements.reversed().map { ($0.date, $0.weightKg) }
+        measurements.reversed().map { ($0.date, dashboardWeightUnit.fromKg($0.weightKg)) }
     }
 
     /// Forecast series: anchors at the last historical point, then extends to +4w (and
@@ -840,16 +1028,19 @@ public struct DashboardView: View {
               let lastHistorical = measurements.first
         else { return [] }
 
-        let anchor = (date: lastHistorical.date, weight: lastHistorical.weightKg)
+        // `BodyCalculations.projectWeightTrend` rechnet mit den kanonischen
+        // kg-`measurements` - erst das fertige Ergebnis wird fuer die
+        // Anzeige in die gewaehlte Einheit konvertiert.
+        let anchor = (date: lastHistorical.date, weight: dashboardWeightUnit.fromKg(lastHistorical.weightKg))
         let p4 = BodyCalculations.projectWeightTrend(measurements: measurements, weeksAhead: 4)
         let p8 = BodyCalculations.projectWeightTrend(measurements: measurements, weeksAhead: 8)
 
         var points: [(date: Date, weight: Double)] = [anchor]
         if let p4 {
-            points.append((date: lastHistorical.date.addingTimeInterval(4 * 7 * 24 * 3600), weight: p4))
+            points.append((date: lastHistorical.date.addingTimeInterval(4 * 7 * 24 * 3600), weight: dashboardWeightUnit.fromKg(p4)))
         }
         if let p8 {
-            points.append((date: lastHistorical.date.addingTimeInterval(8 * 7 * 24 * 3600), weight: p8))
+            points.append((date: lastHistorical.date.addingTimeInterval(8 * 7 * 24 * 3600), weight: dashboardWeightUnit.fromKg(p8)))
         }
         // Just the anchor isn't a useful "forecast line".
         return points.count >= 2 ? points : []
@@ -890,10 +1081,18 @@ public struct DashboardView: View {
             // Button mit Hint, dass Uebungen fehlen (DEL-021/023).
             let isRestDay = day.type == .rest
             let isCurrentlyRunning = runningDay != nil
+            // Signature-Geruest 1.4: die Plan-Karte traegt die Hauptaussage
+            // des Screens - die eine erlaubte Orange-Kante links pro Screen.
+            // Geprueft (wiederholt): dieser accentEdge:true und der im
+            // else-Zweig unten schliessen sich gegenseitig aus (Normal- vs.
+            // Leerzustand desselben Plan-Day-Slots, nie beide gleichzeitig
+            // sichtbar) - genau die von Abschnitt 1.4 erlaubte Ausnahme.
+            DeltiqCard(accentEdge: true) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     // DEL-105: Brand-Akzent fuer Trainings-Tage statt iOS-Blau.
-                    // Rest-Day-Branch bleibt Purple — semantische Farbe fuer Ruhe.
+                    // Signature-Geruest: Rest-Day-Branch ist jetzt ebenfalls
+                    // Orange statt Purple - ein Screen, ein Akzent.
                     // DEL-133: Running-Branch bekommt play.circle.fill als
                     // Icon — User sieht sofort, dass das Workout AKTIV ist.
                     Image(systemName: isCurrentlyRunning
@@ -902,7 +1101,7 @@ public struct DashboardView: View {
                         .font(.title2)
                         .foregroundStyle(.white)
                         .frame(width: 38, height: 38)
-                        .background((isRestDay ? Color.purple : Color.deltiqOrange).gradient)
+                        .background(Color.deltiqOrange.gradient)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
                         // DEL-133: drei-Wege-Label.
@@ -935,10 +1134,7 @@ public struct DashboardView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else if !day.activeExercises.isEmpty {
-                    Text(exercisesPreview(for: day))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                    exercisesList(for: day)
                 }
 
                 if isRestDay {
@@ -959,7 +1155,7 @@ public struct DashboardView: View {
                             Text("dashboard.plan.checkoffRestDay.button", bundle: .module)
                         }
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.purple)
+                        .foregroundStyle(Color.deltiqOrange)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("dashboard.plan.checkoffRestDay.a11y", bundle: .module))
@@ -975,10 +1171,14 @@ public struct DashboardView: View {
                     adHocWorkoutButton(prominent: false)
                 }
             }
-            // DEL-102: Bento-Card.
-            .deltiqCardStyle()
+            }
         } else {
             // No active plan or active plan has no days yet.
+            // Signature-Geruest 1.4: gleiche Orange-Kante wie im Haben-
+            // Plan-Zweig - die "Hauptaussage" bleibt dieselbe Karte, nur
+            // ohne aktiven Plan. Mutual exclusive mit dem accentEdge:true
+            // oben (if/else desselben Slots) - siehe Kommentar dort.
+            DeltiqCard(accentEdge: true) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     Image(systemName: "list.bullet.rectangle.portrait")
@@ -1011,8 +1211,7 @@ public struct DashboardView: View {
                 // Ad-Hoc ist hier der einzige Trainings-CTA, also prominent.
                 adHocWorkoutButton(prominent: true)
             }
-            // DEL-102: Bento-Card.
-            .deltiqCardStyle()
+            }
         }
     }
 
@@ -1065,6 +1264,35 @@ public struct DashboardView: View {
         activeCoachingContext == nil && activeSoftCoachingContext == .deloadRecommended
     }
 
+    // MARK: - Paket 3a Laufversäumnis-Hinweis
+
+    /// Live gerechnet bei jedem Render, keine gespeicherte "ausstehende
+    /// Empfehlung" — gleiches Prinzip wie `cardioFeasibilityModel`/
+    /// `coachAdjustmentModel`. `nil` deckt sowohl "Coach aus"/"kein aktiver
+    /// Plan" als auch "Daten unklar/unzureichend" als auch "unter der
+    /// Schwelle" als auch "aktuell abgelehnt" ab (siehe
+    /// `MissedRunDaysCardModel.make`-Dokumentation).
+    private var missedRunDaysModel: MissedRunDaysCardModel? {
+        guard let profile = profiles.first else { return nil }
+        return MissedRunDaysCardModel.make(for: profile, activePlan: activePlans.first, in: modelContext)
+    }
+
+    /// Zeigt die CTA-/Ablehnen-Zeile unter dem Hinweistext — nur wenn dieser
+    /// Kontext tatsächlich der aktive ist (gleiches Gate wie
+    /// `showsDeloadApplyAction`).
+    private var showsMissedRunDaysActions: Bool {
+        activeCoachingContext == nil && activeSoftCoachingContext == .cardioMissedRunDays
+    }
+
+    /// "Nicht jetzt": blendet den Hinweis aus (siehe
+    /// `MissedRunDaysCardModel.dismiss`-Dokumentation zur
+    /// Planfassung-/Beobachtungs-Bindung). Rührt den Plan nicht an.
+    private func dismissMissedRunDaysHint() {
+        guard let profile = profiles.first, let model = missedRunDaysModel else { return }
+        model.dismiss(profile: profile)
+        try? modelContext.save()
+    }
+
     /// Startet die Deload-Woche: Gewichte via DeloadManager halbieren,
     /// Ablaufdatum setzen. Bei 0 angepassten Übungen (kein aktiver Plan
     /// mit Gewichten) passiert nichts — kein Phantom-Deload-Banner.
@@ -1080,52 +1308,72 @@ public struct DashboardView: View {
     /// Beendet die Deload-Woche (manuell oder via Auto-Expiry):
     /// Original-Gewichte zurück, Flag löschen.
     private func endDeload() {
-        _ = try? DeloadManager.endDeload(in: modelContext)
+        // Den Timer nur nach erfolgreicher Rueckstellung loeschen: Da der
+        // Auto-Ablauf jetzt wirklich laeuft, wuerde ein fehlgeschlagener Save
+        // sonst Snapshots ohne Timer zuruecklassen (Banner "bis 1970", und der
+        // Auto-Ablauf versucht es nie wieder).
+        guard (try? DeloadManager.endDeload(in: modelContext)) != nil else { return }
         deloadUntil = 0
     }
 
     /// Auto-Restore beim Dashboard-Erscheinen: Deload abgelaufen → Gewichte
     /// zurückschreiben. Wird in `.task` der View aufgerufen — der typische
     /// "App nach einer Woche wieder öffnen"-Pfad.
+    ///
+    /// Bugfix: Der Ablauf haengt NUR am Timer (`DeloadAdvisor.hasExpired`).
+    /// Vorher stand hier `!isDeloadActive`, und `isDeloadActive` ist seit
+    /// DEL-238 auch ueber die Daten wahr (gesicherte Originalgewichte) — also
+    /// nach Ablauf weiterhin, solange die Gewichte nicht zurueckgestellt
+    /// waren. Der Auto-Ablauf konnte damit nie greifen; Banner und halbierte
+    /// Gewichte blieben bis zum manuellen Beenden.
     private func autoEndDeloadIfExpired() {
-        guard deloadUntil > 0, !isDeloadActive else { return }
+        guard DeloadAdvisor.hasExpired(untilTimestamp: deloadUntil, now: Date()) else { return }
         endDeload()
     }
 
-    private var deloadActiveBanner: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "arrow.down.heart.fill")
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.teal)
-                .font(.title3)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(String(
-                    format: String(localized: "dashboard.deload.activeBanner", bundle: .module),
-                    Date(timeIntervalSince1970: deloadUntil)
-                        .formatted(date: .abbreviated, time: .omitted)
-                ))
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-                Button {
-                    withAnimation { endDeload() }
-                } label: {
-                    Text("dashboard.deload.endButton", bundle: .module)
-                        .font(.caption.weight(.semibold))
-                }
-                .buttonStyle(.bordered)
-                .tint(.teal)
-            }
-            Spacer(minLength: 0)
+    /// Banner-Text: mit Enddatum, solange ein Timer laeuft. Fehlt der Timer
+    /// (`deloadUntil <= 0`; der Deload wird dann nur noch an den gesicherten
+    /// Gewichten erkannt), gibt es kein Datum, das man nennen koennte — dort
+    /// stand frueher "bis 1. Jan. 1970".
+    private var deloadBannerText: String {
+        guard deloadUntil > 0 else {
+            return String(localized: "dashboard.deload.activeBannerNoDate", bundle: .module)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.teal.opacity(0.10))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.teal.opacity(0.20), lineWidth: 1)
+        return String(
+            format: String(localized: "dashboard.deload.activeBanner", bundle: .module),
+            Date(timeIntervalSince1970: deloadUntil)
+                .formatted(date: .abbreviated, time: .omitted)
         )
+    }
+
+    private var deloadActiveBanner: some View {
+        // Signature-Geruest 1.7: Teal war Sonderfarbe fuer den Deload-
+        // Hinweis, verletzt aber "alles Interaktive/Aktive ist Orange" —
+        // anders als der Health-Rot-Fall (2.5) hat Teal keine externe
+        // Marken-Begruendung. Auf Orange vereinheitlicht.
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "arrow.down.heart.fill")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(deloadBannerText)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    Button {
+                        withAnimation { endDeload() }
+                    } label: {
+                        Text("dashboard.deload.endButton", bundle: .module)
+                            .font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Color.deltiqOrange)
+                }
+                Spacer(minLength: 0)
+            }
+        }
     }
 
     /// Liefert den aktuellen Coaching-Text — oder nil, wenn kein Trigger
@@ -1224,25 +1472,70 @@ public struct DashboardView: View {
 
     /// Auswahl in Prioritaets-Reihenfolge — erster Treffer gewinnt. Wird nur
     /// erreicht, wenn `activeCoachingContext` nil ist (keine P1-Warnung).
+    /// Nachtrag (Audit): diese Liste war ueber mehrere Tickets hinweg nicht
+    /// mitgepflegt worden - hier vollstaendig, in der tatsaechlichen
+    /// Code-Reihenfolge:
     ///
-    ///   1. **reEntry**       — Lange nicht trainiert (≥5 Tage Pause). Hat
-    ///      Vorrang, weil "wieder einsteigen" der wichtigste Re-Engagement-
-    ///      Hinweis ist.
-    ///   2. **postVolume**    — Gestrige Session ueber 5.000 kg Volumen.
-    ///   3. **postCardio**    — Gestrige Cardio-Distanz ueber 5 km.
-    ///   4. **streak**        — ≥5 reale Sessions in den letzten 7 Tagen.
-    ///   5. **planPreview**   — Heutiger Plan-Tag ist ein Trainings-Tag
-    ///      (kein Rest, kein Skip-Marker).
+    ///   1. **cardioVolumeSpike**   — Lauf-KM dieser Woche > 120% der
+    ///      Vorwoche (DEL-248). Rangiert VOR deloadRecommended (DEL-249):
+    ///      struktureller Schaden durch zu schnell gesteigertes Laufvolumen
+    ///      (Sehnen/Baender) braucht Wochen zum Heilen, ZNS-Ermuedung durch
+    ///      Krafttraining nur 1-2 Tage - das akutere Verletzungsrisiko
+    ///      gewinnt, falls ein Hybrid-Athlet beide Ramps gleichzeitig faehrt.
+    ///   2. **deloadRecommended**   — Overreaching-Muster im Krafttraining
+    ///      (DEL-196). Gesundheitsrelevanter als jedes Kompliment.
+    ///   3. **reEntry**             — Lange nicht trainiert (≥5 Tage Pause).
+    ///      Der wichtigste Re-Engagement-Hinweis.
+    ///   4. **volumeRecord**        — Letzte volle Woche war die
+    ///      volumenstaerkste der Historie (DEL-198).
+    ///   5. **cardioMissedRunDays** — Paket 3a: wiederholt verfehlte/
+    ///      uebersprungene geplante Lauf-Tage in einem rollierenden Fenster
+    ///      (`CardioCoachingAdvisor.missedRunWindowDays`). Rangiert VOR
+    ///      `cardioMissedLongRun`: wer wiederholt Lauf-Tage verfehlt, erfuellt
+    ///      ueblicherweise auch dessen engere Bedingung (ein einzelner
+    ///      verpasster langer Lauf) gleich mit - das breitere, konsolidierte
+    ///      Muster ist die wichtigere Aussage. Dieselbe Prioritaetskette IST
+    ///      hier die Koordination gegen konkurrierende Hinweise fuer denselben
+    ///      Anlass (ein Treffer belegt den einzigen Karten-Slot) - kein
+    ///      zusaetzlicher Abgleich noetig.
+    ///   6. **cardioMissedLongRun** — Plan sieht einen langen Lauf vor, aber
+    ///      keiner in den letzten 7 Tagen geloggt (DEL-248).
+    ///   7. **postVolume**/**postCardio** — gestrige Session ueber 5.000 kg
+    ///      bzw. 5 km (Volumen gewinnt bei Gleichstand).
+    ///   8. **streak**              — ≥5 reale Sessions in den letzten 7 Tagen.
+    ///   9. **trainedYesterday**    — irgendeine reale Session gestern
+    ///      (DEL-211, faengt alles ab, was 7. nicht schon abdeckt).
+    ///  10. **planPreview**         — heutiger Plan-Tag ist ein Trainings-Tag.
+    ///  11. **measurementOverdue**/**hydrationLow**/**backupOverdue** —
+    ///      Feature-Nudges, niedrigste Prioritaet.
     /// Sonst nil → Dashboard zeigt den neutralen Empty-State (DEL-166).
+    ///
+    /// **cardioJunkMiles** ist definiert (Case + dreisprachige Catalog-Keys),
+    /// aber bewusst NICHT Teil dieser Liste - siehe Doc-Kommentar auf
+    /// `CoachingContext.cardioJunkMiles` fuer den Grund.
     private var activeSoftCoachingContext: CoachingContext? {
-        // DEL-196: Deload zuerst — gesundheitsrelevanter als jedes Post-
-        // Workout-Kompliment. Praktisch nie gleichzeitig mit reEntry
-        // (Deload braucht hohe RECENT-Aktivität, reEntry Inaktivität).
+        // DEL-249: Cardio-Volumen-Spike zuerst - anders als reEntry/
+        // deloadRecommended (die sich durch ihre Bedingungen praktisch
+        // gegenseitig ausschliessen) koennen deloadRecommended und
+        // cardioVolumeSpike bei einem Hybrid-Athleten GLEICHZEITIG
+        // zutreffen. Cardio gewinnt bewusst: struktureller Schaden durch
+        // zu schnell gesteigertes Laufvolumen (Sehnen/Baender) braucht
+        // Wochen zum Heilen, ZNS-Ermuedung durch Krafttraining nur 1-2 Tage.
+        if isCardioVolumeSpikeActive { return .cardioVolumeSpike }
+        // DEL-196: gesundheitsrelevanter als jedes Post-Workout-Kompliment.
+        // Praktisch nie gleichzeitig mit reEntry (Deload braucht hohe
+        // RECENT-Aktivität, reEntry Inaktivität).
         if shouldRecommendDeload { return .deloadRecommended }
-        if daysSinceLastRealSession >= 5 { return .reEntry }
+        if let days = daysSinceLastRealSession, days >= 5 { return .reEntry }
         // DEL-198: Volumen-Rekord schlägt die generischen Post-Workout-
         // Komplimente — "beste Woche ever" ist die stärkere Nachricht.
         if hadVolumeRecordWeek { return .volumeRecord }
+        // Paket 3a: wiederholt verfehlte Lauf-Tage rangieren VOR dem
+        // engeren `cardioMissedLongRun` (siehe Dokumentation oben).
+        if missedRunDaysModel != nil { return .cardioMissedRunDays }
+        // DEL-248: ein fehlendes Schluessel-Training (Long Run) ist wichtiger
+        // als die generischen Post-Workout-Komplimente unten.
+        if isLongRunOverdueForActivePlan { return .cardioMissedLongRun }
         if let yKm = yesterdayCardioDistanceKm, let yVol = yesterdayVolumeKg {
             if yVol >= 5_000 { return .postVolume }
             if yKm >= 5      { return .postCardio }
@@ -1302,6 +1595,74 @@ public struct DashboardView: View {
               let lastFull = fullWeeks.last, lastFull.volumeKg > 0 else { return false }
         // Strikt größer als ALLE vorherigen vollen Wochen.
         return fullWeeks.dropLast().allSatisfy { $0.volumeKg < lastFull.volumeKg }
+    }
+
+    // MARK: - DEL-248 (Phase 4): Cardio-Coaching-Trigger
+
+    /// DEL-248: Cardio-Pendant zu `shouldRecommendDeload` — anders als dort
+    /// wird bewusst die LAUFENDE (unvollstaendige) aktuelle Woche gegen die
+    /// letzte volle Vorwoche verglichen, nicht zwei volle Wochen. Ziel ist,
+    /// einen Spike zu erkennen, WAEHREND er passiert ("schon Donnerstag bei
+    /// 130% der Vorwoche") - beim Warten auf eine volle Woche waere die
+    /// Warnung erst nuetzlich, wenn die Woche schon vorbei ist.
+    private var isCardioVolumeSpikeActive: Bool {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else {
+            return false
+        }
+        func cardioKm(weeksAgo: Int) -> Double {
+            guard let start = calendar.date(byAdding: .weekOfYear, value: -weeksAgo, to: currentWeekStart),
+                  let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { return 0 }
+            return completedSessions
+                .filter { $0.isRealWorkout && $0.startTime >= start && $0.startTime < end }
+                .flatMap(\.logs)
+                .filter(\.resolvedIsCardio)
+                .compactMap(\.distanceKm)
+                .reduce(0, +)
+        }
+        return CardioCoachingAdvisor.isVolumeSpike(
+            currentWeekKm: cardioKm(weeksAgo: 0),
+            previousWeekKm: cardioKm(weeksAgo: 1)
+        )
+    }
+
+    /// DEL-248: der aktive Plan gilt als "hat einen langen Lauf", wenn seine
+    /// Cardio-Uebungen mindestens zwei unterschiedliche Ziel-Dauern haben -
+    /// die laengste davon ist dann `planLongRunTargetMinutes`. Bewusst
+    /// RELATIV zum eigenen Plan statt ein fixer globaler Minutenwert (siehe
+    /// Kommentar auf `CardioCoachingAdvisor.isLongRunOverdue`: ein
+    /// Anfaenger-Tier setzt seinen langen Lauf bei 50 Minuten an, ein
+    /// Performance-Tier bei 85 - ein einzelner globaler Schwellwert wuerde
+    /// fuer kuerzere Tiers nie greifen). Hat der Plan gar keine Cardio-
+    /// Uebungen, oder sind alle gleich lang (z.B. nur gleich lange Easy
+    /// Runs), gibt es keinen erkennbar LAENGEREN Tag ->
+    /// `planLongRunTargetMinutes` ist `nil`, die Frage ist gegenstandslos.
+    /// Rein strukturell, KEIN Namens-/Key-Abgleich (siehe Datei-Kommentar
+    /// auf `CardioCoachingAdvisor`: "Long Run" ist im Generator tatsaechlich
+    /// der Uebungs-Name der Tempo-Zone, ein Namensabgleich waere hier
+    /// irrefuehrend).
+    private var isLongRunOverdueForActivePlan: Bool {
+        guard let plan = activePlans.first else { return false }
+        let cardioDurations = plan.days
+            .flatMap(\.activeExercises)
+            .filter(\.isCardio)
+            .compactMap(\.targetDurationMinutes)
+        var planLongRunTargetMinutes: Int?
+        if let maxDuration = cardioDurations.max(), let minDuration = cardioDurations.min(),
+           maxDuration > minDuration {
+            planLongRunTargetMinutes = maxDuration
+        }
+        let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
+        let recentRunMinutes = completedSessions
+            .filter { $0.isRealWorkout && $0.startTime >= sevenDaysAgo }
+            .flatMap(\.logs)
+            .filter(\.resolvedIsCardio)
+            .compactMap { $0.durationSeconds.map { $0 / 60 } }
+        return CardioCoachingAdvisor.isLongRunOverdue(
+            planLongRunTargetMinutes: planLongRunTargetMinutes,
+            recentRunDurationsMinutes: recentRunMinutes
+        )
     }
 
     /// True wenn die letzte Körpermessung > 14 Tage her ist UND der User
@@ -1432,15 +1793,20 @@ public struct DashboardView: View {
         return completedSessions.filter { $0.isRealWorkout && $0.startTime >= cutoff }.count
     }
 
-    /// Tage seit der juengsten realen Session. `Int.max` wenn nie trainiert
+    /// Tage seit der juengsten realen Session. `nil` wenn nie trainiert
     /// → triggert reEntry nicht (keine Daten = kein Hinweis).
-    private var daysSinceLastRealSession: Int {
+    ///
+    /// Bugfix: Vorher `Int.max` als Sentinel — und `Int.max >= 5` ist wahr,
+    /// d.h. der Wiedereinstiegs-Hinweis erschien gerade bei Nutzern, die noch
+    /// nie trainiert haben, also das Gegenteil von dem, was dieser Kommentar
+    /// versprach. Ein Optional macht "keine Daten" unmissverstaendlich.
+    private var daysSinceLastRealSession: Int? {
         let realSessions = completedSessions.filter(\.isRealWorkout)
-        guard let latest = realSessions.map(\.endTime).max() else { return Int.max }
+        guard let latest = realSessions.map(\.endTime).max() else { return nil }
         let cal = Calendar.current
         let start = cal.startOfDay(for: latest)
         let today = cal.startOfDay(for: Date())
-        return cal.dateComponents([.day], from: start, to: today).day ?? Int.max
+        return cal.dateComponents([.day], from: start, to: today).day
     }
 
     /// True wenn der heutige Plan-Eintrag ein Trainings-Tag ist (kein Rest).
@@ -1462,78 +1828,91 @@ public struct DashboardView: View {
         }
     }
 
-    /// DEL-100 + DEL-102: Bento-Card mit warmem DeltiqOrange-Tint. Bewusst
-    /// NICHT die generische `.deltiqCardStyle()` — die Coaching-Insight haben
-    /// wir absichtlich orange-getoent fuer visuelle Differenzierung vom
-    /// Plan-Card.
+    /// DEL-100: Coaching-Insight in der normalen Karte statt eines eigenen
+    /// Orange-Tints. Handoff 2.1: "der Inhalt traegt sich selbst, der Tint
+    /// ist ueberfluessig" — die visuelle Differenzierung von der Plan-Karte
+    /// kommt jetzt darueber, dass NUR die Plan-Karte die Orange-Kante hat.
     private func coachingInsightContent(message: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "sparkles")
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Color.deltiqOrange)
-                .font(.title3)
-            VStack(alignment: .leading, spacing: 8) {
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                // DEL-200: Apply-Button direkt unter der Deload-Empfehlung —
-                // aus dem Hinweis wird eine Ein-Tap-Handlung.
-                if showsDeloadApplyAction {
-                    Button {
-                        withAnimation { applyDeload() }
-                    } label: {
-                        Label {
-                            Text("dashboard.deload.applyButton", bundle: .module)
-                        } icon: {
-                            Image(systemName: "arrow.down.heart")
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "sparkles")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    // DEL-200: Apply-Button direkt unter der Deload-Empfehlung —
+                    // aus dem Hinweis wird eine Ein-Tap-Handlung.
+                    if showsDeloadApplyAction {
+                        Button {
+                            withAnimation { applyDeload() }
+                        } label: {
+                            Label {
+                                Text("dashboard.deload.applyButton", bundle: .module)
+                            } icon: {
+                                Image(systemName: "arrow.down.heart")
+                            }
+                            .font(.caption.weight(.semibold))
                         }
-                        .font(.caption.weight(.semibold))
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color.deltiqOrange)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color.deltiqOrange)
+                    // Paket 3a: CTA öffnet ausschließlich den bestehenden
+                    // Paket-1-Pfad; "Nicht jetzt" lehnt NUR diesen Hinweis ab
+                    // (siehe `MissedRunDaysCardModel.dismiss`).
+                    if showsMissedRunDaysActions {
+                        HStack(spacing: 12) {
+                            if missedRunDaysModel?.coachAdjustment != nil {
+                                Button {
+                                    showingMissedRunAdjustmentPreview = true
+                                } label: {
+                                    Text("dashboard.missedRunDays.reviewButton", bundle: .module)
+                                        .font(.caption.weight(.semibold))
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(Color.deltiqOrange)
+                            }
+                            Button {
+                                withAnimation { dismissMissedRunDaysHint() }
+                            } label: {
+                                Text("dashboard.missedRunDays.dismissButton", bundle: .module)
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
                 }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.deltiqOrange.opacity(0.10))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.deltiqOrange.opacity(0.20), lineWidth: 1)
-        )
     }
 
     /// DEL-166: Neutraler Empty-State, wenn das Widget aktiv ist, aber gerade
     /// kein Coaching-Trigger anliegt (kein CNS-Overload, kein Plan-Ruhetag).
-    /// Visuell gedaempfter (weniger Tint, anderes Icon) — kommuniziert "alles
-    /// gut, keine Aktion noetig" statt zu verschwinden.
+    /// Gleiche Karte wie der Insight-Zustand — der gedaempfte Ton kommt jetzt
+    /// nur noch aus Icon-Deckkraft + Copy, nicht mehr aus einem eigenen,
+    /// schwaecheren Tint.
     private var coachingInsightEmptyContent: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "checkmark.seal.fill")
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Color.deltiqOrange.opacity(0.7))
-                .font(.title3)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("coaching.empty.title", bundle: .module)
-                    .font(.subheadline.weight(.semibold))
-                Text("coaching.empty.message", bundle: .module)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "checkmark.seal.fill")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange.opacity(0.7))
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("coaching.empty.title", bundle: .module)
+                        .font(.subheadline.weight(.semibold))
+                    Text("coaching.empty.message", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.deltiqOrange.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.deltiqOrange.opacity(0.12), lineWidth: 1)
-        )
     }
 
     /// Wahlt den passenden Coaching-Context aus dem Heute-Zustand des
@@ -1573,11 +1952,35 @@ public struct DashboardView: View {
 
     /// Sequential-rotation pick. Delegates to `PlanNavigator` (Core) so widgets
     /// + watch can reuse the exact same logic without dragging FitnessAppData in.
-    private func nextScheduledDay(in plan: TrainingPlan) -> TrainingDay {
+    ///
+    /// Bugfix (TestFlight-Crash Build 164, SwiftData `_InvalidFutureBackingData`
+    /// in `TrainingDay.plan.getter`, ausgeloest hier waehrend des ersten
+    /// Dashboard-Aufbaus): zaehlt NICHT mehr ueber die globale, `@Query`-
+    /// gespeiste `completedSessions` + `$0.day?.plan?.persistentModelID` —
+    /// das liest `.plan` auf einem `TrainingDay`, das ausschliesslich ueber
+    /// die RUECKWAERTIGE `WorkoutSession.day`-Relationship erreicht wird.
+    /// Zeigt diese bei einer (z.B. auf einem Bestandsgeraet noch aus der Zeit
+    /// VOR der `TrainingDay.sessions`-Nullify-Inverse-Korrektur stammenden)
+    /// Session auf einen bereits geloeschten Tag, liefert SwiftData dafuer
+    /// keinen `nil`, sondern bricht beim Lesen JEDER gespeicherten Property
+    /// dieses Tages mit einer fatalen, nicht abfangbaren Assertion ab -
+    /// weder `try?` noch optionales Verketten helfen dagegen (siehe
+    /// `docs/TESTFLIGHT_CRASH_164.md`).
+    ///
+    /// Stattdessen ausschliesslich ueber den VOM AUFRUFER bereits als lebend
+    /// bekannten `plan` vorwaerts gehen: `plan.days` (eigene, per Cascade
+    /// konsistente Kinder) -> `day.sessions` (deren eigene, direkte
+    /// Ruecktrefferliste). Eine Session, deren `day` verwaist/geloescht ist,
+    /// taucht in KEINEM `day.sessions` eines noch existierenden Tages auf
+    /// und wird so automatisch nicht mitgezaehlt - ohne die gefaehrliche
+    /// Rueckreferenz jemals zu beruehren. Identisches Ergebnis fuer jeden
+    /// unbeschaedigten Bestand (dieselbe Menge an Sessions, nur von der
+    /// anderen Seite der Relationship gezaehlt).
+    internal func nextScheduledDay(in plan: TrainingPlan) -> TrainingDay {
         let sortedDays = PlanNavigator.sortByWeekdayMondayFirst(plan.days)
-        let completedCount = completedSessions.filter {
-            $0.day?.plan?.persistentModelID == plan.persistentModelID
-        }.count
+        let completedCount = plan.days.reduce(0) { count, day in
+            count + day.sessions.filter(\.isCompleted).count
+        }
         let idx = PlanNavigator.nextScheduledIndex(
             dayCount: sortedDays.count,
             completedSessions: completedCount
@@ -1585,41 +1988,69 @@ public struct DashboardView: View {
         return sortedDays[idx]
     }
 
-    private func exercisesPreview(for day: TrainingDay) -> String {
+    /// Nachtrag 6. August (README 2.1): ersetzt die alte Fliesszeile mit
+    /// Auslassungspunkten (`names.joined(separator: ", ")` + " …") durch
+    /// echte Zeilen. Erste drei Uebungen sind immer sichtbar; bei mehr als
+    /// drei kommt darunter eine Umschaltzeile dazu, die den Rest ein- und
+    /// wieder ausblendet.
+    @ViewBuilder
+    private func exercisesList(for day: TrainingDay) -> some View {
         // DEL-049: archivierte Snapshots (Urlaubs-Modus) gehoeren nicht in
         // die Dashboard-Vorschau — sonst zeigt der Card "Bankdruecken" auch
         // wenn der User nur noch Liegestuetze trainiert.
-        let active = day.activeExercises
-        let names = active
-            .sorted { $0.orderIndex < $1.orderIndex }
-            .prefix(3)
-            .map { $0.displayName }   // DEL-111: lokalisierter Name fuer Library-Übungen
-        let joined = names.joined(separator: ", ")
-        // DEL-121: Apple's format-as-key Plural-Convention war
-        // "%lld Übungen — %@" mit variations.plural. Xcode 26.4.1's
-        // GenerateStringSymbols-Step chokes auf den format-pattern-keys,
-        // daher umgestellt auf explizite one/other namespace-Keys mit
-        // manueller %lld/%@-Substitution.
-        let key: String.LocalizationValue = active.count == 1
-            ? "dashboard.exercisesPreview.one"
-            : "dashboard.exercisesPreview.other"
+        let sorted = day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
+        let remaining = sorted.count - 3
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(sorted.prefix(isExercisesExpanded ? sorted.count : 3), id: \.persistentModelID) { exercise in
+                Text(exercise.displayName)   // DEL-111: lokalisierter Name fuer Library-Übungen
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+            if remaining > 0 {
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        isExercisesExpanded.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(isExercisesExpanded
+                             ? String(localized: "dashboard.exerciseList.showLess", bundle: .module)
+                             : pluralizedShowMore(remaining: remaining))
+                        Image(systemName: isExercisesExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.deltiqOrange)
+                    .frame(minHeight: 44, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// Gleiches manuelles .one/.other-Muster wie `PlansListView.pluralizedCount`
+    /// (siehe DEL-121/DEL-128) - Apple's format-as-key Plural-Convention
+    /// chokt Xcode 26.4.1s GenerateStringSymbols-Step.
+    private func pluralizedShowMore(remaining: Int) -> String {
+        let suffix = remaining == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "dashboard.exerciseList.showMore.\(suffix)")
         let raw = String(localized: key, bundle: .module)
-        let template = raw
-            .replacingOccurrences(of: "%1$lld", with: "\(active.count)")
-            .replacingOccurrences(of: "%2$@",   with: joined)
-        return active.count > 3 ? template + " …" : template
+        return raw.replacingOccurrences(of: "%lld", with: "\(remaining)")
     }
 
     /// DEL-042: Adaptive Start-Button. Drei States:
     ///   1. Keine offene Session       → "Direkt starten" (blau, neu)
     ///   2. Offene Session AUF DEM-Tag → "Fortsetzen" (orange, navigiert in
     ///      die existing Session — kein neuer Insert)
-    ///   3. Offene Session AUF ANDEREM Tag → "Direkt starten", Klick
+    ///   3. Offene Session AUF ANDEREM Tag → "Anderes Training läuft", Klick
     ///      triggert Conflict-Dialog mit drei Optionen.
-    /// DEL-105: Beide Branches nutzen jetzt `.deltiqButtonStyle()` (Hero-CTA-
-    /// Modifier aus DEL-102). Mode-Unterscheidung "Fortsetzen" vs "Direkt
-    /// starten" laeuft nur noch ueber Label + Icon, nicht ueber Farbe — das
-    /// frueher blau-vs-orange Pattern stoerte das Markenbild.
+    /// DEL-105: Alle Branches nutzen jetzt `.deltiqButtonStyle()` (Hero-CTA-
+    /// Modifier aus DEL-102). Mode-Unterscheidung laeuft nur noch ueber Label
+    /// + Icon, nicht ueber Farbe — das frueher blau-vs-orange Pattern stoerte
+    /// das Markenbild.
+    /// DEL-146: State 3 hatte bislang denselben Text wie State 1 ("Direkt
+    /// starten"), obwohl ein Klick tatsaechlich den Conflict-Dialog oeffnet
+    /// statt sofort zu starten — eigener Text macht das ehrlich sichtbar.
     @ViewBuilder
     private func activeWorkoutButton(plan: TrainingPlan, day: TrainingDay) -> some View {
         let matchingOpen = openSessionForDay(day)
@@ -1637,14 +2068,14 @@ public struct DashboardView: View {
                 actuallyStartNewWorkout(plan: plan, day: day)
             }
         } label: {
-            // DEL-073: Beide Branches via xcstrings.
+            // DEL-073/DEL-146: Alle drei Branches via xcstrings.
             Label {
                 Text(matchingOpen != nil
                      ? "dashboard.action.resumeRunning"
-                     : "dashboard.action.startDirect",
+                     : (hasOtherOpen ? "dashboard.action.otherRunning" : "dashboard.action.startDirect"),
                      bundle: .module)
             } icon: {
-                Image(systemName: matchingOpen != nil ? "play.circle.fill" : "play.fill")
+                Image(systemName: matchingOpen != nil ? "play.circle.fill" : (hasOtherOpen ? "exclamationmark.circle.fill" : "play.fill"))
             }
         }
         .buttonStyle(.plain)
@@ -1661,8 +2092,25 @@ public struct DashboardView: View {
     ///     Gewicht des primaeren Plan-Buttons schluckt.
     @ViewBuilder
     private func adHocWorkoutButton(prominent: Bool) -> some View {
-        Button {
-            startAdHocWorkout()
+        // README 2.35 (43b): aus dem einfachen Button wird ein Menue -
+        // "Saetze & Wdh." ruft exakt den bisherigen Pfad unveraendert auf,
+        // die drei Zeitformate starten `beginTimedAdHocWorkout(format:)`.
+        Menu {
+            Button {
+                startAdHocWorkout()
+            } label: {
+                Text("day.editor.field.structure.sets", bundle: .module)
+            }
+            // Paket 2: `.enduranceIntervals` bewusst ausgeschlossen, gleiche
+            // Begruendung wie `DayEditorView`s Struktur-Picker - noch kein
+            // Player/keine Konfigurations-UI dafuer.
+            ForEach(WorkoutTimeFormat.allCases.filter { $0 != .enduranceIntervals }, id: \.self) { format in
+                Button {
+                    beginTimedAdHocWorkout(format: format)
+                } label: {
+                    Text(timedFormatDisplayName(format))
+                }
+            }
         } label: {
             if prominent {
                 HStack {
@@ -1720,11 +2168,35 @@ public struct DashboardView: View {
         pendingNewStart = nil
     }
 
+    /// Task #252 (TestFlight-Crash-Audit, siehe `docs/TESTFLIGHT_CRASH_164.md`):
+    /// findet den Plan, zu dem `sessionID` ueber dessen Tag strukturell
+    /// gehoert — ausschliesslich VORWAERTS ueber `plans` (`plan.days` ->
+    /// `day.sessions`), NIE rueckwaerts ueber `session.day?.plan`. Eine
+    /// verwaiste Tag-Referenz (die urspruengliche Session existiert zwar
+    /// noch, aber keiner der uebergebenen Plaene fuehrt mehr zu ihr) liefert
+    /// hier einfach `nil` statt eines fatalen `_InvalidFutureBackingData`-
+    /// Abbruchs. Bewusst eine reine, Environment-/Query-freie statische
+    /// Funktion (wie `nextScheduledDay`), damit sie direkt regressionstestbar
+    /// ist — siehe `DashboardNextScheduledDayTests.testOwningPlan...`.
+    internal static func owningPlan(forSessionID sessionID: PersistentIdentifier, in plans: [TrainingPlan]) -> TrainingPlan? {
+        plans.first { plan in
+            plan.days.contains { $0.sessions.contains { $0.persistentModelID == sessionID } }
+        }
+    }
+
     /// Resume-Pfad fuer den Conflict-Dialog: springt in die existing Session
     /// (welche auch immer die juengste offene ist).
+    ///
+    /// `open` stammt aus `openSessions`, einer APP-WEITEN `@Query` ueber ALLE
+    /// nicht abgeschlossenen Sessions — strukturell derselbe ungefilterte
+    /// Zugriff wie `completedSessions` im urspruenglichen Crash, nur mit
+    /// (laut DEL-215-Doku) "deutlich kuerzerer Lebensdauer" — das senkt das
+    /// Risiko, schliesst es aber nicht aus (eine liegengelassene offene
+    /// Session kann beliebig lange bestehen bleiben).
     private func resumeAnyOpenFromConflict() {
         guard let open = openSessions.first else { return }
-        let plan = open.day?.plan ?? activePlans.first
+        let allPlans = (try? modelContext.fetch(FetchDescriptor<TrainingPlan>())) ?? []
+        let plan = Self.owningPlan(forSessionID: open.persistentModelID, in: allPlans) ?? activePlans.first
         if let plan {
             resumeSession(open, plan: plan)
         }
@@ -1741,10 +2213,11 @@ public struct DashboardView: View {
     /// das Dashboard die Resume-Tile direkt unter den Hero-Metrics.
     private var unrepresentedOpenSession: WorkoutSession? {
         guard let open = openSessions.first else { return nil }
+        // Task #252: `owningPlan` statt rueckwaerts `open.day?.plan` — siehe
+        // dessen Dokumentation fuer die Begruendung.
+        let activePlansList = activePlans.first.map { [$0] } ?? []
         let planCardCoversIt = activeDashboardWidgets.contains(.nextWorkout)
-            && activePlans.first.map { plan in
-                open.day?.plan?.persistentModelID == plan.persistentModelID
-            } ?? false
+            && Self.owningPlan(forSessionID: open.persistentModelID, in: activePlansList) != nil
         return planCardCoversIt ? nil : open
     }
 
@@ -1788,12 +2261,69 @@ public struct DashboardView: View {
         .accessibilityLabel(Text("dashboard.resume.caption", bundle: .module))
     }
 
+    // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"
+
+    /// Live gerechnet bei jedem Render, keine gespeicherte "ausstehende
+    /// Empfehlung" - Profil, Dashboard und Plan-Tab rufen alle denselben
+    /// `CardioFeasibilityCardModel.make(for:)` auf.
+    private var cardioFeasibilityModel: CardioFeasibilityCardModel? {
+        profiles.first.flatMap(CardioFeasibilityCardModel.make(for:))
+    }
+
+    /// Verkuerzte Vorschau (2.30): zwei Tage statt der vollen Woche, kein
+    /// Wochensummen-Fusstext. Knopf ist "Plan ansehen", nicht "Uebernehmen"
+    /// - die Annahme selbst passiert im Profil oder im Plan-Tab (dort erneut
+    /// `CardioFeasibilityCardModel.make(for:)`, nicht dasselbe Objekt).
+    private func cardioFeasibilityDashboardCard(_ model: CardioFeasibilityCardModel) -> some View {
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "flag.checkered")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(model.verdict.feasible
+                         ? String(localized: "dashboard.cardioFeasibility.feasibleTitle", bundle: .module)
+                         : String(localized: "dashboard.cardioFeasibility.infeasibleTitle", bundle: .module))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(model.detailText)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if model.hasPlan, let days = model.planResult?.days {
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(days.prefix(2).enumerated()), id: \.offset) { _, day in
+                                CardioFeasibilityDayRow(day: day)
+                            }
+                        }
+                    }
+                    Button {
+                        navigation.selectedTab = .plan
+                    } label: {
+                        Text("dashboard.cardioFeasibility.viewPlan", bundle: .module)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
     /// DEL-215: Resume fuer beliebige offene Sessions. Plan-gebundene
     /// Sessions bauen den vollen Stack (Plan → Day → Active), Ad-hoc-
     /// Sessions springen direkt in die ActiveWorkoutView — identisch zum
     /// Start-Pfad in `startAdHocWorkout()`.
     private func resumeOpenSession(_ session: WorkoutSession) {
-        if let plan = session.day?.plan {
+        // Task #252: `owningPlan` statt rueckwaerts `session.day?.plan`
+        // (siehe dessen Dokumentation), ALLE Plaene (nicht nur aktive) — wie
+        // zuvor kann der Owner ausdruecklich auch ein inaktiver Plan sein
+        // (DEL-215-Doku: "Session auf einem inaktiven Plan" ist einer der
+        // Faelle, die diese Resume-Tile abdeckt).
+        let allPlans = (try? modelContext.fetch(FetchDescriptor<TrainingPlan>())) ?? []
+        if let plan = Self.owningPlan(forSessionID: session.persistentModelID, in: allPlans) {
             resumeSession(session, plan: plan)
         } else {
             navigation.workoutPath = NavigationPath()
@@ -1862,7 +2392,12 @@ public struct DashboardView: View {
         // DEL-239: Vor dem Anlegen der Session fragen. Danach ist es zu spaet —
         // `SetRow` sperrt sich per `didInit` gegen ein zweites Befuellen, eine
         // spaetere Gewichtsaenderung erreicht die Felder nicht mehr.
-        guard !interceptForComeback({ actuallyStartNewWorkout(plan: plan, day: day) }) else { return }
+        // Bugfix (Comeback-Advisor bei Zeitformat-Sessions): reine
+        // Zeitformat-Tage werden nie abgefangen — siehe `actuallyStartNewSession`
+        // in DayEditorView fuer die Begruendung.
+        if day.timeFormat == nil {
+            guard !interceptForComeback({ actuallyStartNewWorkout(plan: plan, day: day) }) else { return }
+        }
 
         let session = WorkoutSession(
             startTime: Date(),
@@ -1874,6 +2409,10 @@ public struct DashboardView: View {
             day: day
         )
         modelContext.insert(session)
+        // P8 Stufe-2: Initial-Snapshot direkt bei Erzeugung — der einzige
+        // korrekte Zeitpunkt fuer einen vollen Re-Read des Live-Tages, siehe
+        // TrainingDayContentSnapshotWriter-Dokumentation.
+        TrainingDayContentSnapshotWriter.capture(for: session, in: modelContext)
 
         navigation.workoutPath = NavigationPath()
         navigation.workoutPath.append(plan)
@@ -1922,9 +2461,52 @@ public struct DashboardView: View {
             day: adHocDay
         )
         modelContext.insert(session)
+        // P8 Stufe-2: Initial-Snapshot — bei einem frischen Ad-hoc-Tag
+        // zunaechst eine gueltige, leere Uebungsliste (kein Fehler).
+        TrainingDayContentSnapshotWriter.capture(for: session, in: modelContext)
 
         navigation.workoutPath = NavigationPath()
         navigation.workoutPath.append(ActiveSessionRoute(session: session))
+        navigation.selectedTab = .plan
+    }
+
+    /// Nutzer-Feedback: der urspruengliche Ein-Uebung-Sofort-Start liess
+    /// weder mehrere Uebungen noch das Bearbeiten von Wiederholungen/Zeit
+    /// zu. Legt stattdessen einen LEEREN Tag mit gesetztem `timeFormat` an
+    /// und navigiert in `DayEditorView` - der bietet bereits alles, was
+    /// hier fehlte (Uebungen beliebig oft ueber den bestehenden Bibliotheks-
+    /// Picker hinzufuegen, jede einzeln in `ExerciseEditorView` bearbeiten,
+    /// die Struktur-Wahl aus 43a jederzeit aendern), plus den bewusst zu
+    /// bestaetigenden Start-Moment gratis mit ("Training starten" ist ueber
+    /// `day.activeExercises.isEmpty` disabled, bis mindestens eine Uebung
+    /// existiert - kein eigener Guard hier noetig). Keine Comeback-
+    /// Rueckfrage/Konflikt-Handling noetig: `DayEditorView.actuallyStartNewSession`
+    /// deckt beides bereits ab, inklusive des Zeitformat-Tage-Sonderfalls
+    /// (keine Zielgewichte, die eine Reduktion betreffen koennte).
+    private func beginTimedAdHocWorkout(format: WorkoutTimeFormat) {
+        let todayWeekday = Calendar.current.component(.weekday, from: Date())
+        // Zirkel hat kein Minuten-Dauer-Konzept (siehe
+        // `defaultTimedFormatDurationMinutes`-Kommentar) - bekommt
+        // stattdessen die Runden-/Pause-/Modus-Defaults, `timeCapMinutes`
+        // bleibt wie bei Auf Zeit `nil`. `.fixedReps` als Vorgabe-Modus, weil
+        // das der haeufigere Fall ist - "bis zur Ausbelastung" bleibt in
+        // DayEditorView jederzeit umstellbar.
+        let adHocDay = TrainingDay(
+            name: "Spontanes Training",
+            weekday: todayWeekday,
+            type: .custom,
+            plan: nil,
+            localizationKey: "session.adHoc.dayName",
+            timeFormat: format,
+            timeCapMinutes: (format == .forTime || format == .circuit) ? nil : defaultTimedFormatDurationMinutes(for: format),
+            circuitRounds: format == .circuit ? defaultCircuitRounds() : nil,
+            circuitRestSeconds: format == .circuit ? defaultCircuitRestSeconds() : nil,
+            circuitMode: format == .circuit ? .fixedReps : nil
+        )
+        modelContext.insert(adHocDay)
+
+        navigation.workoutPath = NavigationPath()
+        navigation.workoutPath.append(adHocDay)
         navigation.selectedTab = .plan
     }
 
@@ -1972,6 +2554,53 @@ public struct DashboardView: View {
         "Schulterdrücken (stehend)",
         "Rudern vorgebeugt"
     ]
+
+    /// Signature-Geruest 2.16: validierte, CVD-sichere Fuenfer-Kategorie-
+    /// Palette (dataviz-Skill, adjacent-pairs-Check fuer Linien-Charts,
+    /// beide Modi PASS) - feste Reihenfolge, nie zyklisch neu zugeordnet.
+    /// Passend zu `compoundLiftNames` per Index gepaart in
+    /// `compoundColorScale`, nicht hartcodiert auf einen bestimmten Lift,
+    /// weil die Legenden-Beschriftung lokalisiert ist (siehe dort).
+    private static let compoundLiftColors: [Color] = [
+        Color(deltiqLight: Color(red: 0.165, green: 0.471, blue: 0.839),
+              deltiqDark: Color(red: 0.224, green: 0.529, blue: 0.898)),
+        Color(deltiqLight: Color(red: 0.922, green: 0.408, blue: 0.204),
+              deltiqDark: Color(red: 0.851, green: 0.349, blue: 0.149)),
+        Color(deltiqLight: Color(red: 0.106, green: 0.686, blue: 0.478),
+              deltiqDark: Color(red: 0.098, green: 0.620, blue: 0.439)),
+        Color(deltiqLight: Color(red: 0.929, green: 0.631, blue: 0.000),
+              deltiqDark: Color(red: 0.788, green: 0.522, blue: 0.000)),
+        Color(deltiqLight: Color(red: 0.910, green: 0.482, blue: 0.643),
+              deltiqDark: Color(red: 0.835, green: 0.318, blue: 0.506))
+    ]
+
+    /// Bindet jeden Lift-NAMEN (lokalisiert, wie er auch als `.value("Lift",
+    /// ...)`-Plot-Key verwendet wird) an eine feste Farbe aus
+    /// `compoundLiftColors` - `chartForegroundStyleScale` braucht eine
+    /// garantierte Zuordnung, sonst kann Swift Charts Farben zwischen
+    /// Zeitraum-Filterwechseln neu vergeben (Serie B haette dann nicht mehr
+    /// dieselbe Farbe wie vorher). Nimmt bewusst nur die Namen der gerade
+    /// SICHTBAREN Serien (nicht immer alle fuenf moeglichen) als Scale-
+    /// Domain - eine explizite Scale mit allen fuenf Namen wuerde die
+    /// Legende auch dann komplett zeigen, wenn der Zeitraum-Filter nur
+    /// zwei der fuenf Lifts mit Daten uebrig laesst. Die Farbe pro Lift
+    /// bleibt trotzdem stabil, weil sie immer vom selben, festen Index in
+    /// `compoundLiftNames` kommt - nur die Domain schrumpft mit der
+    /// aktuellen Auswahl.
+    ///
+    /// CI-Fix: `chartForegroundStyleScale` hat KEINE Ueberladung, die ein
+    /// `[String: Color]`-Dictionary annimmt - nur `KeyValuePairs<...>`
+    /// (ausschliesslich per Literal an der Aufrufstelle konstruierbar,
+    /// nicht aus einer Variable) oder `domain:`/`range:` als zwei parallele
+    /// Arrays. Dieser Fehler war vorher durch den Type-Checker-Timeout im
+    /// LineMark-Block DARUEBER maskiert - der Compiler kam nie bis zu
+    /// dieser Zeile. Rueckgabetyp deshalb auf das Array-Paar umgestellt.
+    private func compoundColorScale(for series: [CompoundSeries]) -> (domain: [String], range: [Color]) {
+        let visibleNames = Set(series.map(\.exerciseName))
+        let allNames = Self.compoundLiftNames.map { Exercise.resolvedDisplayName(forStoredName: $0) }
+        let pairs = zip(allNames, Self.compoundLiftColors).filter { visibleNames.contains($0.0) }
+        return (domain: pairs.map(\.0), range: pairs.map(\.1))
+    }
 
     /// One series per compound lift. Each series carries one point per session
     /// (the best estimated 1RM of any set in that session). Lifts with fewer
@@ -2123,6 +2752,17 @@ public struct DashboardView: View {
                 base: compoundChartRange.domain(oldestDataDate: oldestCompound),
                 forecastPoints: forecastSamples
             )
+            let colorScale = compoundColorScale(for: series)
+            // Signature-Geruest 2.16: datengetriebene y-Achse statt Swift-
+            // Charts-Automatik - die rundete bei Werten zwischen 60-110 kg
+            // auf "schoene" Ticks wie 0/50/100/150 und liess die obere
+            // Haelfte des Charts leer.
+            let allOneRMValues = series.flatMap(\.points).map(\.oneRM)
+                + forecastSamples.flatMap(\.points).map(\.oneRM)
+            let yMin = allOneRMValues.min() ?? 0
+            let yMax = allOneRMValues.max() ?? 100
+            let yPadding = max((yMax - yMin) * 0.1, 5)
+            let yDomain = max(0, yMin - yPadding)...(yMax + yPadding)
             if allCompound.isEmpty {
                 // UX-201: Premium-Empty-State (icon + headline + description
                 // + CTA). Vorher: kompakte HStack ohne Aktion.
@@ -2139,52 +2779,90 @@ public struct DashboardView: View {
                 Chart {
                     ForEach(series) { line in
                         ForEach(line.points) { point in
-                            LineMark(
-                                x: .value("Datum", point.date),
-                                y: .value("1RM (kg)", point.oneRM),
-                                series: .value("Lift", line.exerciseName)
-                            )
-                            .interpolationMethod(.monotone)
-                            .foregroundStyle(by: .value("Lift", line.exerciseName))
-                            .symbol(by: .value("Lift", line.exerciseName))
+                            // Gleicher Fix wie beim Forecast-Segment unten:
+                            // LineMark(x:y:series:) plus zwei weitere
+                            // ueberladene `.value(...)`-Aufrufe in
+                            // `.foregroundStyle(by:)`/`.symbol(by:)` zwingen
+                            // den Type-Checker, alle Ueberladungen gemeinsam
+                            // aufzuloesen - erst als eigene, typisierte
+                            // `let`s vorab macht jede Aufloesung billig und
+                            // unabhaengig.
+                            let xValue: PlottableValue<Date> = .value("Datum", point.date)
+                            let yValue: PlottableValue<Double> = .value("1RM (kg)", point.oneRM)
+                            let seriesValue: PlottableValue<String> = .value("Lift", line.exerciseName)
+                            let liftStyleValue: PlottableValue<String> = .value("Lift", line.exerciseName)
+                            LineMark(x: xValue, y: yValue, series: seriesValue)
+                                .interpolationMethod(.monotone)
+                                .foregroundStyle(by: liftStyleValue)
+                                .symbol(by: liftStyleValue)
 
-                            PointMark(
-                                x: .value("Datum", point.date),
-                                y: .value("1RM (kg)", point.oneRM)
-                            )
-                            .foregroundStyle(by: .value("Lift", line.exerciseName))
-                            .symbolSize(40)
+                            PointMark(x: xValue, y: yValue)
+                                .foregroundStyle(by: liftStyleValue)
+                                .symbolSize(40)
                         }
                     }
                     // DEL-179: gestrichelte Forecast-Linie pro Lift —
                     // verbindet den letzten echten Punkt mit dem
                     // projizierten 4-Wochen-Wert. Nur für Lifts, deren
                     // Trend nicht als "unreliable" markiert ist.
+                    // Signature-Geruest 2.16: eigener `series`-Schluessel
+                    // ("-forecast"-Suffix) trennt das Prognose-Segment vom
+                    // Ist-Verlauf - vorher teilten sich beide denselben
+                    // "Lift"-Series-Key, wodurch Swift Charts beide Segmente
+                    // als EINEN durchgehenden Pfad interpretieren konnte.
+                    // `foregroundStyle(by:)` bleibt auf dem echten Lift-Namen,
+                    // damit die Farbe trotzdem an den Ist-Verlauf gekoppelt ist.
                     ForEach(forecastSamples) { line in
+                        let forecastSeriesKey = "\(line.exerciseName)-forecast"
+                        // Auf DIESER Ebene deklariert (nicht in der inneren
+                        // ForEach-Closure) - der Forecast-Endpunkt-PointMark
+                        // gleich unten ist ein GESCHWISTER-Statement der
+                        // inneren ForEach, braucht also seinen eigenen
+                        // Zugriff auf denselben Wert.
+                        let liftStyleValue: PlottableValue<String> = .value("Lift", line.exerciseName)
                         ForEach(line.points) { point in
-                            LineMark(
-                                x: .value("Datum", point.date),
-                                y: .value("1RM (kg)", point.oneRM),
-                                series: .value("Lift", line.exerciseName)
-                            )
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                            .foregroundStyle(by: .value("Lift", line.exerciseName))
-                            .opacity(0.6)
+                            // Fix Runde 2 (Release-Gate-Log): das Auslagern
+                            // der Serien-Strings allein reichte nicht - der
+                            // Type-Checker haengt weiterhin an den drei
+                            // gemeinsam aufgeloesten `.value(...)`-Ueberladungen
+                            // INNERHALB des LineMark-Aufrufs. Jeden Plot-Wert
+                            // vorab einzeln binden trennt die Ueberladungs-
+                            // Aufloesung in drei billige Einzelschritte statt
+                            // einem gemeinsamen.
+                            let xValue: PlottableValue<Date> = .value("Datum", point.date)
+                            let yValue: PlottableValue<Double> = .value("1RM (kg)", point.oneRM)
+                            let seriesValue: PlottableValue<String> = .value("Serie", forecastSeriesKey)
+                            LineMark(x: xValue, y: yValue, series: seriesValue)
+                                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                                .foregroundStyle(by: liftStyleValue)
+                                .opacity(0.6)
                         }
                         // Forecast-Endpunkt als hohler Ring — visuell als
                         // "Projektion" erkennbar, kein voller PointMark.
                         if let last = line.points.last {
-                            PointMark(
-                                x: .value("Datum", last.date),
-                                y: .value("1RM (kg)", last.oneRM)
-                            )
-                            .symbol(.circle.strokeBorder(lineWidth: 1.5))
-                            .symbolSize(50)
-                            .foregroundStyle(by: .value("Lift", line.exerciseName))
-                            .opacity(0.8)
+                            let lastXValue: PlottableValue<Date> = .value("Datum", last.date)
+                            let lastYValue: PlottableValue<Double> = .value("1RM (kg)", last.oneRM)
+                            PointMark(x: lastXValue, y: lastYValue)
+                                .symbol(.circle.strokeBorder(lineWidth: 1.5))
+                                .symbolSize(50)
+                                .foregroundStyle(by: liftStyleValue)
+                                .opacity(0.8)
                         }
                     }
+                    // Signature-Geruest 2.16: "Heute"-Markierung, damit
+                    // gemessene und projizierte Punkte unterscheidbar bleiben.
+                    if !forecastSamples.isEmpty {
+                        RuleMark(x: .value("Heute", Date()))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                            .foregroundStyle(.secondary)
+                            .annotation(position: .top, alignment: .trailing) {
+                                Text("dashboard.compoundChart.today", bundle: .module)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                    }
                 }
+                .chartForegroundStyleScale(domain: colorScale.domain, range: colorScale.range)
                 .chartXScale(domain: domain)
                 .chartXAxis {
                     // DEL-153: feste Kalender-Anker statt daten-getriebener
@@ -2212,8 +2890,12 @@ public struct DashboardView: View {
                         AxisValueLabel()
                     }
                 }
+                .chartYScale(domain: yDomain)
                 .chartLegend(position: .bottom, alignment: .leading)
-                .frame(height: 220)
+                // Signature-Geruest 2.16: 220 -> 260, damit bei bis zu fuenf
+                // Serien (Farbe + Symbol je Eintrag) die Legende umbrechen
+                // kann, ohne die Plot-Flaeche zusammenzudruecken.
+                .frame(height: 260)
                 .fitnessNumberStyle()
             }
         }
@@ -2237,35 +2919,38 @@ public struct DashboardView: View {
         let distanceKm = weekLogs.compactMap(\.distanceKm).reduce(0.0, +)
 
         if volumeKg > 0 || distanceKm > 0 {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("dashboard.weeklySummary.title", bundle: .module)
-                    .font(.headline)
-                HStack(spacing: 12) {
-                    if volumeKg > 0 {
-                        // DEL-105: Indigo statt iOS-Default-Blau fuer Strength —
-                        // erhaelt die semantische Differenzierung zum Cardio-
-                        // Orange-Tile, ohne wieder in den System-Akzent zu fallen.
-                        weeklyStatTile(
-                            label: String(localized: "dashboard.weeklySummary.volume", bundle: .module),
-                            value: formatVolumeKg(volumeKg),
-                            unit: "kg",
-                            icon: "scalemass.fill",
-                            tint: .indigo
-                        )
-                    }
-                    if distanceKm > 0 {
-                        weeklyStatTile(
-                            label: String(localized: "dashboard.weeklySummary.distance", bundle: .module),
-                            value: formatDistance(distanceKm),
-                            unit: "km",
-                            icon: "figure.run",
-                            tint: Color.deltiqOrange
-                        )
+            DeltiqCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(String(localized: "dashboard.weeklySummary.title", bundle: .module).uppercased())
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(1.5)
+                        .foregroundStyle(Color.deltiqOrange)
+                    HStack(spacing: 12) {
+                        if volumeKg > 0 {
+                            // Signature-Geruest 1.7: Indigo war die semantische
+                            // Differenzierung zum Cardio-Orange-Tile — das
+                            // Geruest erlaubt aber nur Orange als Icon-Tint,
+                            // beide Kacheln teilen sich die Farbe jetzt.
+                            weeklyStatTile(
+                                label: String(localized: "dashboard.weeklySummary.volume", bundle: .module),
+                                value: formatVolumeKg(volumeKg),
+                                unit: "kg",
+                                icon: "scalemass.fill",
+                                tint: Color.deltiqOrange
+                            )
+                        }
+                        if distanceKm > 0 {
+                            weeklyStatTile(
+                                label: String(localized: "dashboard.weeklySummary.distance", bundle: .module),
+                                value: formatDistance(distanceKm),
+                                unit: "km",
+                                icon: "figure.run",
+                                tint: Color.deltiqOrange
+                            )
+                        }
                     }
                 }
             }
-            // DEL-103: Bento-Card als outer Container fuer Header+Tiles.
-            .deltiqCardStyle()
         }
     }
 
@@ -2297,9 +2982,10 @@ public struct DashboardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        // DEL-103: Tiles sitzen IN einer Bento-Card (Surface-Background), also
-        // brauchen sie selbst nur einen ganz leichten Tint, um sich abzuheben.
-        .background(Color.secondary.opacity(0.08))
+        // Tiles sitzen IN einer Bento-Card (Surface-Background), also
+        // brauchen sie selbst nur einen ganz leichten Tint, um sich
+        // abzuheben — Signature-Geruest-Fuellfarbe statt Ad-hoc-Opacity.
+        .background(Color.Deltiq.fill)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
@@ -2311,8 +2997,9 @@ public struct DashboardView: View {
     }
 
     private func formatVolumeKg(_ kg: Double) -> String {
-        let rounded = kg.truncated(to: 0)
-        return rounded.formattedTwoDecimals
+        // Signature-Geruest 2.16: Volumen ist eine diskrete Groesse - "0,00 KG"
+        // taeuschte eine Praezision vor, die hier niemand braucht.
+        kg.truncated(to: 0).formattedNoDecimals
     }
 
     private func formatDistance(_ km: Double) -> String {
@@ -2358,9 +3045,16 @@ public struct DashboardView: View {
                 )
             } else {
                 ChartTimeRangePicker(selection: $volumeChartRange)
-                let domain = volumeChartRange.domain(
+                let rawDomain = volumeChartRange.domain(
                     oldestDataDate: points.first?.weekStart
                 )
+                // Signature-Geruest 2.16: 3 Tage Nachlauf-Puffer rechts -
+                // die harte Obergrenze `now` liess Swift Charts das letzte
+                // Achsen-Label (Tag + Monat) genau am rechten Plot-Rand
+                // zentrieren, wo es ohne reservierten Rand abgeschnitten
+                // wurde (nur die fuehrende Tagesziffer blieb sichtbar).
+                let domain = rawDomain.lowerBound...rawDomain.upperBound.addingTimeInterval(3 * 86_400)
+                let maxVolumeKg = points.map(\.volumeKg).max() ?? 0
                 Chart {
                     ForEach(points) { point in
                         BarMark(
@@ -2403,6 +3097,10 @@ public struct DashboardView: View {
                         AxisValueLabel()
                     }
                 }
+                // Signature-Geruest 2.16: Balken starten bei 0 (kein
+                // Bar-Chart mit verschobener Grundlinie), oben 15% Puffer
+                // statt Swift-Charts-Automatik.
+                .chartYScale(domain: 0...(maxVolumeKg * 1.15))
                 .frame(height: 220)
                 .fitnessNumberStyle()
             }
@@ -2472,6 +3170,10 @@ public struct DashboardView: View {
     /// DEL-202: Sessions eines getappten Kalendertags. Eigene
     /// NavigationStack im Sheet, Rows verlinken in die Read-Only-Summary —
     /// gleiche Ziel-View wie die Recent-Workouts-Liste.
+    ///
+    /// Gruppe B (Sheet): `.sheet(item:)`-praesentiert mit nativem
+    /// "Schliessen"-Toolbar-Button, kein Push, daher bewusst KEIN
+    /// DeltiqHeader - die List traegt die Deltiq-Karten-Flaeche.
     private func calendarDaySheet(for day: Date) -> some View {
         let sessions = completedSessions.filter {
             $0.isRealWorkout && Calendar.current.isDate($0.startTime, inSameDayAs: day)
@@ -2485,7 +3187,10 @@ public struct DashboardView: View {
                         DashboardSessionRow(session: session)
                     }
                 }
+                .listRowBackground(Color.Deltiq.surface)
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(day.formatted(date: .abbreviated, time: .omitted))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -2590,7 +3295,8 @@ public struct DashboardView: View {
         // Modalitaet. Laufband-Laeufe und Fahrradfahrten derselben Uebung
         // bilden getrennte Trend-Linien.
         let byName = Dictionary(grouping: allCardioLogs) { log in
-            CardioGroupKey(name: log.resolvedExerciseName ?? "—",
+            CardioGroupKey(templateID: log.resolvedExerciseTemplateID,
+                           name: log.resolvedExerciseName ?? "—",
                            equipment: log.resolvedCardioEquipment)
         }
         return byName.compactMap { (key, logs) -> CardioPaceSeries? in
@@ -2696,21 +3402,24 @@ public struct DashboardView: View {
                 Chart {
                     ForEach(series) { line in
                         ForEach(line.points) { point in
-                            LineMark(
-                                x: .value("Datum", point.date),
-                                y: .value("Pace (min/km)", point.paceMinPerKm),
-                                series: .value("Lauf", line.exerciseName)
-                            )
-                            .interpolationMethod(.monotone)
-                            .foregroundStyle(by: .value("Lauf", line.exerciseName))
-                            .symbol(by: .value("Lauf", line.exerciseName))
+                            // Gleicher Type-Checker-Fix wie beim Compound-
+                            // Lift-Chart oben: LineMark(x:y:series:) plus
+                            // zwei weitere ueberladene `.value(...)`-Aufrufe
+                            // in `.foregroundStyle(by:)`/`.symbol(by:)`
+                            // erst als eigene, typisierte `let`s vorab
+                            // aufloesen statt gemeinsam inline.
+                            let xValue: PlottableValue<Date> = .value("Datum", point.date)
+                            let yValue: PlottableValue<Double> = .value("Pace (min/km)", point.paceMinPerKm)
+                            let seriesValue: PlottableValue<String> = .value("Lauf", line.exerciseName)
+                            let runStyleValue: PlottableValue<String> = .value("Lauf", line.exerciseName)
+                            LineMark(x: xValue, y: yValue, series: seriesValue)
+                                .interpolationMethod(.monotone)
+                                .foregroundStyle(by: runStyleValue)
+                                .symbol(by: runStyleValue)
 
-                            PointMark(
-                                x: .value("Datum", point.date),
-                                y: .value("Pace (min/km)", point.paceMinPerKm)
-                            )
-                            .foregroundStyle(by: .value("Lauf", line.exerciseName))
-                            .symbolSize(40)
+                            PointMark(x: xValue, y: yValue)
+                                .foregroundStyle(by: runStyleValue)
+                                .symbolSize(40)
                         }
                     }
                 }
@@ -2919,10 +3628,39 @@ struct CardioPaceSeries: Identifiable {
 
 /// DEL-156: Composite-Gruppierungs-Schluessel fuer den Cardio-Pace-Chart —
 /// eine Trend-Linie pro (Uebung, Equipment).
+/// P0-Audit (neue Spezifikation): Identitaet ist ID-first, analog
+/// `PRDetector.GroupKey` — ein Log mit aufloesbarer `exerciseTemplateID`
+/// gruppiert darueber (ueberlebt Umbenennen der Custom-Cardio-Uebung), ein
+/// Log ohne ID gruppiert weiterhin per Name (unveraendertes Alt-Verhalten).
+/// Niemals beides gemischt, damit ein zufaelliger Namens-Treffer nie zwei
+/// verschiedene Uebungen zusammenlegt.
 @available(iOS 17.0, macOS 14.0, *)
 private struct CardioGroupKey: Hashable {
+    enum Identity: Hashable {
+        case id(UUID)
+        case name(String)
+    }
+    let identity: Identity
+    /// Nur fuer Anzeige, NICHT Teil von Hash/Equality — sonst koennte ein
+    /// inkonsistenter Namens-Snapshot zwei Logs derselben `identity`
+    /// faelschlich auftrennen.
     let name: String
     let equipment: CardioEquipment
+
+    init(templateID: UUID?, name: String, equipment: CardioEquipment) {
+        self.identity = templateID.map(Identity.id) ?? .name(name)
+        self.name = name
+        self.equipment = equipment
+    }
+
+    static func == (lhs: CardioGroupKey, rhs: CardioGroupKey) -> Bool {
+        lhs.identity == rhs.identity && lhs.equipment == rhs.equipment
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(identity)
+        hasher.combine(equipment)
+    }
 }
 
 // MARK: - Recent-row subview
@@ -2946,10 +3684,17 @@ private struct DashboardSessionRow: View {
                     .font(.subheadline.weight(.semibold))
                 HStack(spacing: 6) {
                     Text(session.startTime.formatted(date: .abbreviated, time: .omitted))
+                    // Signature-Geruest 2.16: 0 Min ist typischerweise eine
+                    // Unter-Minuten-Session (Ganzzahl-Trunkierung bei der
+                    // Dauer-Berechnung) oder ein CSV-Import ohne Dauer-
+                    // Spalte - beides zeigt man besser gar nicht als eine
+                    // irrefuehrende Null.
+                    if session.durationMinutes > 0 {
+                        Text("•")
+                        Text(minutesText)
+                    }
                     Text("•")
-                    Text("\(session.durationMinutes) Min")
-                    Text("•")
-                    Text("\(session.totalSets) Sätze")
+                    Text(setsText)
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -2963,6 +3708,24 @@ private struct DashboardSessionRow: View {
         .padding(.vertical, 8)
         .contentShape(Rectangle())
     }
+
+    private var minutesText: String {
+        String(
+            format: String(localized: "dashboard.recent.minutesShort", bundle: .module),
+            session.durationMinutes
+        )
+    }
+
+    /// Signature-Geruest 2.16: "Sätze" war hartes Deutsch ohne Katalog-
+    /// Schluessel - gleiches .one/.other-Muster wie `PlanRow.pluralized`
+    /// bzw. `DashboardView.pluralizedShowMore` (DEL-121/DEL-128).
+    private var setsText: String {
+        let count = session.totalSets
+        let suffix = count == 1 ? "one" : "other"
+        let key = String.LocalizationValue(stringLiteral: "dashboard.recent.sets.\(suffix)")
+        let raw = String(localized: key, bundle: .module)
+        return raw.replacingOccurrences(of: "%lld", with: "\(count)")
+    }
 }
 
 // MARK: - Subviews
@@ -2973,67 +3736,87 @@ private struct MetricCard: View {
     let value: String
     let unit: String?
     let delta: Double?
+    /// Geraete-Abnahme (Runde 9, kg/lbs): Einheit fuer `deltaLabel` - war
+    /// hart "kg"; nur das Gewicht-Tile uebergibt bisher ueberhaupt ein
+    /// `delta`, Default haelt dessen frueheres Verhalten unveraendert bei.
+    var deltaUnit: String = "kg"
+    /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Punkt 5): gesetzt nur
+    /// wenn `value` NICHT aus der neuesten Messung stammt, sondern aus einem
+    /// Rueckfall auf eine aeltere Zeile mit echtem Wert — zeigt deren
+    /// tatsaechliches Datum, statt den Wert kommentarlos als aktuell
+    /// auszugeben.
+    var asOfDate: Date? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // UX-Fix 2026-05-21: Label-Layout-Hardening.
-            //   * .lineLimit(2): max 2 Zeilen (wie "Body Fat (Navy)") —
-            //     verhindert dass extreme Sprachen unbegrenzt wachsen.
-            //   * .minimumScaleFactor(0.85): wenn ein 1-Zeilen-Label knapp
-            //     ist, lieber leicht runterskalieren statt umbrechen.
-            //   * .fixedSize(vertical: true): zwingt SwiftUI die intrinsische
-            //     Hoehe zu reporten (sonst kollabiert das Label bei Equal-
-            //     Height-Layouts unsichtbar zusammen).
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.85)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                // DEL-102: fitnessNumberStyle ersetzt das manuelle
-                // .monospacedDigit() + erzwingt zusaetzlich .fontDesign(.rounded),
-                // damit die Hero-Zahlen sportlicher und kohaerent mit Timer-
-                // Anzeigen sind.
-                Text(value)
-                    .font(.title2.weight(.semibold))
-                    .fitnessNumberStyle()
-                if let unit {
-                    Text(unit)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        // Signature-Geruest 1.6/1.8: Hero-Kachel-Label wird zum Eyebrow-Stil
+        // (vorher 12pt Regular Weiss 60%), Radius 14 -> 20 (1.4: 10/14/16
+        // verschwinden aus Container-Hintergruenden), kompaktes Padding 12
+        // bleibt (die drei Kacheln sitzen nebeneinander in einer Reihe).
+        DeltiqCard(padding: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                // UX-Fix 2026-05-21: Label-Layout-Hardening.
+                //   * .lineLimit(2): max 2 Zeilen (wie "Body Fat (Navy)") —
+                //     verhindert dass extreme Sprachen unbegrenzt wachsen.
+                //   * .minimumScaleFactor(0.85): wenn ein 1-Zeilen-Label knapp
+                //     ist, lieber leicht runterskalieren statt umbrechen.
+                //   * .fixedSize(vertical: true): zwingt SwiftUI die intrinsische
+                //     Hoehe zu reporten (sonst kollabiert das Label bei Equal-
+                //     Height-Layouts unsichtbar zusammen).
+                Text(label.uppercased())
+                    .font(.system(size: 9, weight: .heavy))
+                    .tracking(1.5)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    // Signature-Geruest 1.8: Kachel-Wert-Rolle (22pt/Weight800)
+                    // statt der bisherigen .title2.semibold.
+                    Text(value)
+                        .font(.system(size: 22, weight: .heavy))
+                        .fitnessNumberStyle()
+                    if let unit {
+                        Text(unit)
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    }
                 }
+                if let delta {
+                    deltaLabel(delta, unit: deltaUnit)
+                } else if let asOfDate {
+                    Text(String(format: String(localized: "dashboard.hero.asOf", bundle: .module),
+                                 asOfDate.formatted(date: .abbreviated, time: .omitted)))
+                        .font(.caption2)
+                        .foregroundStyle(Color.Deltiq.textTertiary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                } else {
+                    Text(" ")
+                        .font(.caption2)
+                }
+                // UX-Fix 2026-05-21: Spacer drueckt den Card-Inhalt nach oben,
+                // wenn der HStack-Container der MetricCard mehr Hoehe gibt als
+                // ihr intrinsischer Inhalt braucht. So bleiben Label oben +
+                // Wert oben, statt vertikal zentriert zu rendern.
+                Spacer(minLength: 0)
             }
-            if let delta {
-                deltaLabel(delta)
-            } else {
-                Text(" ")
-                    .font(.caption2)
-            }
-            // UX-Fix 2026-05-21: Spacer drueckt den Card-Inhalt nach oben,
-            // wenn der HStack-Container der MetricCard mehr Hoehe gibt als
-            // ihr intrinsischer Inhalt braucht. So bleiben Label oben +
-            // Wert oben, statt vertikal zentriert zu rendern.
-            Spacer(minLength: 0)
+            // UX-Fix 2026-05-21: maxHeight: .infinity expandiert jede Card auf
+            // die Hoehe der hoechsten Geschwister-Karte im HStack (siehe
+            // `heroMetrics` Container-Modifier). topLeading alignment haelt
+            // den Inhalt oben-links statt zentriert.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        // UX-Fix 2026-05-21: maxHeight: .infinity expandiert jede Card auf
-        // die Hoehe der hoechsten Geschwister-Karte im HStack (siehe
-        // `heroMetrics` Container-Modifier). topLeading alignment haelt
-        // den Inhalt oben-links statt zentriert.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        // DEL-102: Sub-Card-Format (kleiner Corner-Radius, kompakteres Padding)
-        // — die Metric-Cards sind enthalten in einer Reihe von drei und sollten
-        // schmaler wirken als die Top-Level-Bento-Cards.
-        .deltiqCardStyle(padding: 12, cornerRadius: 14)
     }
 
-    private func deltaLabel(_ delta: Double) -> some View {
+    private func deltaLabel(_ delta: Double, unit: String) -> some View {
         let prefix = delta > 0 ? "+" : (delta < 0 ? "" : "±")
-        let formatted = abs(delta).truncated(to: 2).formattedTwoDecimals
+        // Signature-Geruest 2.16: eine Nachkommastelle wie beim Gewicht selbst
+        // ("+1,00 kg" -> "+1,0 kg") - gleiche Begruendung wie beim Hero-Wert.
+        let formatted = abs(delta).truncated(to: 1).formattedOneDecimal
         let arrow = delta > 0 ? "arrow.up" : (delta < 0 ? "arrow.down" : "minus")
         return HStack(spacing: 2) {
             Image(systemName: arrow)
-            Text("\(prefix)\(formatted) kg")
+            Text("\(prefix)\(formatted) \(unit)")
             Text("metric.weeklyDelta.suffix", bundle: .module)
                 .foregroundStyle(.secondary)
         }
@@ -3045,21 +3828,20 @@ private struct MetricCard: View {
 @available(iOS 17.0, macOS 14.0, *)
 private struct EmptyMetricsCard: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label {
-                Text("dashboard.trend.emptyTitle", bundle: .module)
-            } icon: {
-                Image(systemName: "scalemass")
+        DeltiqCard {
+            VStack(alignment: .leading, spacing: 6) {
+                Label {
+                    Text("dashboard.trend.emptyTitle", bundle: .module)
+                } icon: {
+                    Image(systemName: "scalemass")
+                }
+                .font(.headline)
+                Text("dashboard.trend.emptyDescription", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .font(.headline)
-            Text("dashboard.trend.emptyDescription", bundle: .module)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color.secondary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

@@ -26,6 +26,8 @@ struct ExerciseLibraryEditorSheet: View {
     @State private var muscle: MuscleGroup
     @State private var equipment: Equipment
     @State private var isCompound: Bool
+    /// UI-Refactor (DeltiqHeader-Muster): siehe `BodyDataEditorView`.
+    @State private var showingDiscardConfirm = false
 
     init(template: ExerciseTemplate?) {
         self.existing = template
@@ -58,33 +60,68 @@ struct ExerciseLibraryEditorSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                if isReadOnly {
-                    readOnlyContent
-                } else {
-                    editableContent
-                }
-            }
-            .navigationTitle(titleText)
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Text(isReadOnly ? "common.done" : "common.cancel", bundle: .module)
-                    }
-                }
-                if !isReadOnly {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button { save() } label: {
-                            Text(isCreate ? "customExercise.add" : "common.done", bundle: .module)
+            VStack(spacing: 0) {
+                // UI-Refactor (DeltiqHeader-Muster fuer Editoren): ersetzt
+                // natives Cancel/Done-Toolbar. Im Read-Only-Modus (System-
+                // Template) gibt es nichts zu speichern/verwerfen — Chevron
+                // schliesst dann immer sofort, kein Checkmark im Header.
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                    title: titleText,
+                    onBack: {
+                        if !isReadOnly && isDirty {
+                            showingDiscardConfirm = true
+                        } else {
+                            dismiss()
                         }
-                        .disabled(trimmedName.isEmpty)
+                    },
+                    actions: isReadOnly ? [] : [
+                        DeltiqHeaderAction(
+                            systemImage: "checkmark",
+                            isDisabled: trimmedName.isEmpty,
+                            accessibilityLabel: String(localized: isCreate ? "customExercise.add" : "common.done", bundle: .module)
+                        ) {
+                            save()
+                        }
+                    ]
+                )
+                Form {
+                    if isReadOnly {
+                        readOnlyContent
+                    } else {
+                        editableContent
                     }
                 }
+                .scrollContentBackground(.hidden)
             }
+            .background(Color.Deltiq.background.ignoresSafeArea())
+            #if os(iOS)
+            .toolbar(.hidden, for: .navigationBar)
+            #endif
+            .navigationBarBackButtonHidden(true)
+            .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+                dismiss()
+            }
+            // UI-Refactor (Korrektur, Punkt 4): interaktives Wegziehen des
+            // Sheets ist sonst ein ungesicherter Verlassen-Weg am Discard-
+            // Dialog vorbei. Read-Only (System-Template) hat nichts zu
+            // verlieren — dort bleibt Wegziehen frei moeglich.
+            .interactiveDismissDisabled(isReadOnly ? false : isDirty)
         }
+    }
+
+    /// UI-Refactor (DeltiqHeader-Muster): Create-Modus vergleicht gegen die
+    /// Init-Defaults (keine `existing`-Vorlage vorhanden), Edit-Modus gegen
+    /// die geladene Custom-Vorlage. Read-Only erreicht diese Property nie
+    /// (siehe `onBack` oben).
+    private var isDirty: Bool {
+        guard let existing, !isCreate else {
+            return !name.isEmpty || muscle != .chest || equipment != .bodyweight || isCompound != false
+        }
+        return name != existing.name
+            || muscle != existing.primaryMuscle
+            || equipment != existing.equipment
+            || isCompound != existing.isSystemCompound
     }
 
     // MARK: Editable (create + custom edit)
@@ -96,9 +133,11 @@ struct ExerciseLibraryEditorSheet: View {
                 String(localized: "picker.exercise.namePlaceholder", bundle: .module),
                 text: $name
             )
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
             Text("customExercise.section.name", bundle: .module)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
 
         Section {
             Picker(selection: $muscle) {
@@ -108,6 +147,7 @@ struct ExerciseLibraryEditorSheet: View {
             } label: {
                 Text("customExercise.field.muscle", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
             Picker(selection: $equipment) {
                 ForEach(Equipment.allCases, id: \.self) { e in
                     Text(e.localizedName).tag(e)
@@ -115,14 +155,18 @@ struct ExerciseLibraryEditorSheet: View {
             } label: {
                 Text("customExercise.field.equipment", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
             Toggle(isOn: $isCompound) {
                 Text("customExercise.field.compound", bundle: .module)
             }
+            .tint(Color.deltiqOrange)
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
             Text("customExercise.section.metadata", bundle: .module)
         } footer: {
             Text("customExercise.section.metadataFooter", bundle: .module)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: Read-only (system templates)
@@ -130,26 +174,40 @@ struct ExerciseLibraryEditorSheet: View {
     @ViewBuilder
     private var readOnlyContent: some View {
         Section {
+            HStack {
+                Spacer()
+                ExerciseGifView(exerciseName: existing?.name ?? trimmedName, displayName: titleText)
+                    .frame(width: 140, height: 140)
+                Spacer()
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
+        }
+        Section {
             LabeledContent {
                 Text(muscle.localizedName)
             } label: {
                 Text("customExercise.field.muscle", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
             LabeledContent {
                 Text(equipment.localizedName)
             } label: {
                 Text("customExercise.field.equipment", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
             LabeledContent {
                 Text(isCompound ? "common.yes" : "common.no", bundle: .module)
             } label: {
                 Text("customExercise.field.compound", bundle: .module)
             }
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
             Text("customExercise.section.metadata", bundle: .module)
         } footer: {
             Text("library.readOnlyFooter", bundle: .module)
         }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
     // MARK: Save

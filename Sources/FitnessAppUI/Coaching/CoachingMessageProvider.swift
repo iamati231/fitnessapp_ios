@@ -43,8 +43,15 @@ public enum CoachingMessageProvider {
             }
         }
 
-        // Goal-Fallback auf .hybrid (am breitesten anwendbar).
-        if goal != .hybrid {
+        // Goal-Fallback auf .hybrid (am breitesten anwendbar). Review-Korrektur
+        // nach P2.2: `.endurance` NICHT auf diesen Fallback schicken — die
+        // `.hybrid`-Texte sind inhaltlich geprüft und schreiben aktiv Krafttraining
+        // vor (z.B. "Dein Hybrid-Ziel braucht auch Kraft — heb heute Abend noch
+        // etwas Eisen"), was für ein reines Ausdauerziel falsch/irreführend wäre.
+        // `.endurance` faellt stattdessen bis zum leeren String durch (Zeile
+        // "Caller-Verantwortung" unten) — die UI blendet die Insight-Card dann
+        // sauber aus, statt falsche Empfehlungen zu zeigen.
+        if goal != .hybrid && goal != .endurance {
             let goalFallback = key(context: context, tone: .analytical, goal: .hybrid)
             if let resolved = resolve(key: goalFallback) {
                 return resolved

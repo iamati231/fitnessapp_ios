@@ -5,9 +5,12 @@ final class ProgramTemplatesTests: XCTestCase {
 
     // MARK: Inventory + uniqueness
 
-    func testFourteenProgramsAreShipped() {
-        // DEL-055: 11 → 14 Programme (Hybrid Beginner/Balanced/Performance dazu).
-        XCTAssertEqual(ProgramTemplates.all.count, 14,
+    func testTwentyProgramsAreShipped() {
+        // README 2.9: 14 → 19 Programme (CrossFit Bodyweight Rx/Scaled,
+        // CrossFit mit Gewichten, Kettlebell Beginner/Advanced dazu).
+        // Nutzer-Upload (13. August, zweite Runde): 19 → 20 (Kettlebell
+        // Komplexe, neues .circuit-Zeitformat).
+        XCTAssertEqual(ProgramTemplates.all.count, 20,
                        "Editing the catalog needs an explicit count update — fail-fast prevents silent template drops")
     }
 
@@ -148,6 +151,73 @@ final class ProgramTemplatesTests: XCTestCase {
         }
     }
 
+    // MARK: README 2.9 Zeitformate (AMRAP/EMOM/Auf Zeit)
+
+    /// AMRAP/EMOM brauchen einen Deckel, sonst weiss der Player nicht, wann
+    /// die Runde/Minute endet (die View-Defaults von 12/20 Minuten sind nur
+    /// ein Nothelfer fuer fehlerhafte Daten, kein Ersatz fuer echte Werte
+    /// in den Templates selbst).
+    func testAmrapAndEmomDaysHaveATimeCap() {
+        for template in ProgramTemplates.all {
+            for day in template.days {
+                guard let format = day.timeFormat, format == .amrap || format == .emom else { continue }
+                XCTAssertNotNil(day.timeCapMinutes,
+                                "\(template.name) / \(day.name): \(format) ohne timeCapMinutes")
+                XCTAssertGreaterThan(day.timeCapMinutes ?? 0, 0,
+                                     "\(template.name) / \(day.name): timeCapMinutes muss positiv sein")
+            }
+        }
+    }
+
+    /// Nutzer-Feedback (13. August, zweite Runde): `.circuit`-Tage brauchen
+    /// alle drei Zirkel-Felder, sonst faellt der Player auf die generischen
+    /// `defaultCircuitRounds()`/`defaultCircuitRestSeconds()`-Fallbacks
+    /// zurueck statt die im Template beabsichtigten Werte zu zeigen -
+    /// gleiches Fail-fast-Prinzip wie `testAmrapAndEmomDaysHaveATimeCap`.
+    func testCircuitDaysHaveCompleteConfiguration() {
+        for template in ProgramTemplates.all {
+            for day in template.days where day.timeFormat == .circuit {
+                XCTAssertNotNil(day.circuitRounds,
+                                "\(template.name) / \(day.name): .circuit ohne circuitRounds")
+                XCTAssertGreaterThan(day.circuitRounds ?? 0, 0,
+                                     "\(template.name) / \(day.name): circuitRounds muss positiv sein")
+                XCTAssertNotNil(day.circuitRestSeconds,
+                                "\(template.name) / \(day.name): .circuit ohne circuitRestSeconds")
+                XCTAssertGreaterThan(day.circuitRestSeconds ?? 0, 0,
+                                     "\(template.name) / \(day.name): circuitRestSeconds muss positiv sein")
+                XCTAssertNotNil(day.circuitMode,
+                                "\(template.name) / \(day.name): .circuit ohne circuitMode")
+            }
+        }
+    }
+
+    /// Ergaenzt `testExerciseRepRangesAreValid`: bei `.circuit` spiegelt
+    /// `ExerciseSpec.sets` bewusst `circuitRounds` (gleiche Konvention wie
+    /// bei Auf-Zeit) - eine Abweichung waere ein stiller Kopier-Fehler beim
+    /// Anlegen des Tages, keine gueltige Variation.
+    func testCircuitExerciseSetsMatchCircuitRounds() {
+        for template in ProgramTemplates.all {
+            for day in template.days where day.timeFormat == .circuit {
+                for exercise in day.exercises {
+                    XCTAssertEqual(exercise.sets, day.circuitRounds,
+                                   "\(template.name) / \(day.name) / \(exercise.name): sets (\(exercise.sets)) != circuitRounds (\(day.circuitRounds ?? -1))")
+                }
+            }
+        }
+    }
+
+    /// Zeitformat-Tage tragen kein Ad-Hoc-/Zusatz-Feld, das sie versehentlich
+    /// wie einen normalen Kraft-Tag behandeln liesse — DayType.rest ist fuer
+    /// Zeitformat-Tage genauso ausgeschlossen wie fuer normale Tage.
+    func testTimedFormatDaysAreNeverRestDays() {
+        for template in ProgramTemplates.all {
+            for day in template.days where day.timeFormat != nil {
+                XCTAssertNotEqual(day.type, .rest,
+                                  "\(template.name) / \(day.name) ist ein Zeitformat-Tag mit type .rest")
+            }
+        }
+    }
+
     // MARK: DEL-090 Quiz-Tags
 
     /// Jeder Plan muss mindestens ein Experience-Level UND ein Goal als Tag
@@ -159,5 +229,30 @@ final class ProgramTemplatesTests: XCTestCase {
             XCTAssertFalse(template.targetGoals.isEmpty,
                            "\(template.name) hat keine targetGoals-Tags")
         }
+    }
+
+    /// Umgekehrte Richtung zu `testEveryTemplateHasOnboardingTags`: jedes
+    /// waehlbare `TrainingGoal` muss von mindestens einem Template abgedeckt
+    /// sein, sonst gibt es eine "tote" Quiz-Auswahl, die nie einen Ziel-
+    /// Matchbonus bekommen kann (siehe die `.fatloss`/`.weightLoss`-
+    /// Doppelsemantik, die genau das verursacht hatte).
+    func testEveryTrainingGoalHasAtLeastOneTemplate() {
+        for goal in TrainingGoal.allCases {
+            let hasTemplate = ProgramTemplates.all.contains { $0.targetGoals.contains(goal) }
+            XCTAssertTrue(hasTemplate, "TrainingGoal.\(goal) hat kein einziges Template — tote Quiz-Auswahl")
+        }
+    }
+
+    /// P5.3: `ExerciseRole.cooldown` existierte vorher nur im Datenmodell und
+    /// in der UI-Anzeige (`ExerciseCard`), wurde aber von KEINEM Generator-
+    /// oder Template-Pfad je tatsaechlich erzeugt. Regressionstest gegen ein
+    /// erneutes Leerlaufen dieser Rolle.
+    func testAtLeastOneTemplateExerciseHasCooldownRole() {
+        let hasCooldownExercise = ProgramTemplates.all.contains { template in
+            template.days.contains { day in
+                day.exercises.contains { $0.role == .cooldown }
+            }
+        }
+        XCTAssertTrue(hasCooldownExercise, "Kein einziges Template erzeugt je eine Uebung mit role == .cooldown")
     }
 }

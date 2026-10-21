@@ -83,8 +83,10 @@ public struct ActiveWorkoutView: View {
     /// nur isCompleted-Sessions.
     @Query private var recentSessions: [WorkoutSession]
 
-    @State private var now: Date = Date()
-    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    /// README 2.16 (28c): liefert die Tonlage fuer `PRCelebration.make` -
+    /// Emoji nur bei "Motivierend", damit PR-Feier und Coach-Texte
+    /// konsistent bleiben.
+    @Query private var profiles: [UserBodyProfile]
 
     /// DEL-039: aktuelle Page in der paginierten TabView. 0..N-1 sind die
     /// Uebungs-Pages, Page N ist die "Finish"-Seite mit Save/Discard.
@@ -127,28 +129,57 @@ public struct ActiveWorkoutView: View {
 
     public var body: some View {
         // DEL-039: paginierte Ansicht statt scrollbarer Single-Page-List.
-        // Stats oben fix, dann TabView mit einer Page pro Uebung + einer
+        // Kopf oben fix, dann TabView mit einer Page pro Uebung + einer
         // finalen "Finish"-Page (Save/Discard). User swipt horizontal
         // zwischen Uebungen, page-indicator unten zeigt Position.
-        VStack(spacing: 8) {
-            // DEL-086: Interference-Warning ueber dem Header. Banner zieht
-            // sich aus, sobald der User es dismissed oder die Bedingungen
-            // nicht erfuellt sind.
-            interferenceBanner
-                .padding(.horizontal)
-                .padding(.top, 8)
-            statsCard
-                .padding(.horizontal)
+        //
+        // Signature-Geruest 1.2/1.3: eigene Kopfzone (Eyebrow = Live-Timer)
+        // statt navigationTitle, Kontextzeile statt statsCard. Der Rest der
+        // paginatedBody-Struktur (TabView.page mit einer ExerciseCard pro
+        // Seite) bleibt unangetastet - .deltiqScreen() eignet sich hier
+        // NICHT, weil es eine eigene ScrollView um den gesamten Inhalt legt,
+        // die mit der TabView-Pagination kollidieren wuerde.
+        VStack(spacing: 0) {
+            // Bugfix (Audit): war ein `@State private var now` + `.onReceive`
+            // -Combine-Timer, der `now` bei JEDEM Tick unbedingt schrieb, nur
+            // um ein Redraw zu erzwingen - exakt das Muster, das in
+            // TimedWorkoutPlayerView.swift bereits als Ursache des
+            // Vordergrund-Freeze-Bugs identifiziert wurde (siehe dortiger
+            // Kommentar bei `tick`). `TimelineView` uebernimmt den Redraw
+            // jetzt eigenstaendig, `context.date` ist die sichtbare Eingabe.
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                DeltiqHeader(
+                    eyebrow: String(
+                        format: String(localized: "active.context.eyebrow.running", bundle: .module),
+                        formattedDuration(at: context.date)
+                    ),
+                    title: session.displayDayName,
+                    onBack: { dismiss() },
+                    actions: headerActions
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                // DEL-086: Interference-Warning ueber dem Header. Banner zieht
+                // sich aus, sobald der User es dismissed oder die Bedingungen
+                // nicht erfuellt sind.
+                interferenceBanner
+                activeContextRow
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
 
             paginatedBody
         }
-        .background(Color(.gray).opacity(0.04).ignoresSafeArea())
-        // DEL-129: lokalisierter Display-Name via Extension.
-        .navigationTitle(session.displayDayName)
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .keyboardDismissToolbar()
         // DEL-108: Wenn ein Halte-Timer-Set startet, killt das den Rest-
         // Timer sofort. Rationale — ein laufender Pausen-Timer waehrend
@@ -163,28 +194,6 @@ public struct ActiveWorkoutView: View {
                 Task { await restTimerActivity.endRestTimer(reason: .skipped) }
             }
         }
-        // DEL-096: "+Übung"-Toolbar-Button waehrend einer non-empty
-        // Ad-Hoc-Session — User darf jederzeit weitere Uebungen einschieben,
-        // ohne den Workflow zu verlassen. Plan-Sessions kriegen den Button
-        // bewusst NICHT: dort kommt die Uebungs-Liste aus dem Plan, und
-        // mid-workout-Adds wuerden den Pagination-State (currentPageIndex)
-        // unter den Fuessen wegrotieren.
-        .toolbar {
-            if session.isAdHoc, let day = session.day, !day.activeExercises.isEmpty {
-                ToolbarItem(placement: .deltiqTrailing) {
-                    Button {
-                        showingAdHocPicker = true
-                    } label: {
-                        Label {
-                            Text("active.addExercise", bundle: .module)
-                        } icon: {
-                            Image(systemName: "plus")
-                        }
-                    }
-                }
-            }
-        }
-        .onReceive(tick) { now = $0 }
         .safeAreaInset(edge: .bottom) {
             if let end = restTimerEnd {
                 RestTimerBar(
@@ -213,7 +222,7 @@ public struct ActiveWorkoutView: View {
         // Action gevetoed.
         .sheet(isPresented: $showingFinishConfirm) {
             FinishWorkoutSheet(
-                durationText: formattedDuration,
+                durationText: finishSheetDurationText,
                 setsCount: loggedSetsCount,
                 volumeText: formatVolume(),
                 // DEL-137: Session-Category + adaptive Distanz/Pace-Texte
@@ -288,6 +297,14 @@ public struct ActiveWorkoutView: View {
             NavigationStack {
                 ExerciseEditorView(exercise: exercise)
             }
+            // P8 Stufe-2: "ausdrücklich innerhalb der Session" vorgenommene
+            // Änderung — aktualisiert den eigenen Snapshot-Eintrag dieser
+            // Ad-hoc-Übung (Guard in `recordAdHocExerciseEdited` lehnt
+            // regulaere Plan-Sessions ohnehin ab; dieses Sheet ist dafuer
+            // sowieso nicht erreichbar, siehe `onEdit`-Gate oben).
+            .onDisappear {
+                TrainingDayContentSnapshotWriter.recordAdHocExerciseEdited(exercise, within: session, in: modelContext)
+            }
         }
         // DEL-154: Delete-Confirm — nur wenn die Uebung bereits geloggte
         // Saetze in dieser Session hat (sonst entfernen wir direkt, weniger
@@ -327,44 +344,93 @@ public struct ActiveWorkoutView: View {
 
     // MARK: Sections
 
-    /// DEL-061 + DEL-081: Stats-Karte mit drei States.
-    ///   * pureCardio  → Dauer | Distanz | ⌀ Pace
-    ///   * mixed       → Dauer | Volumen kg | Distanz km
-    ///   * pureStrength → Dauer | Saetze | Volumen kg
-    /// Mixed-Header zeigt allgemeine Werte beider Welten, ohne page-aware
-    /// hin- und herzuspringen wenn der User durch die Day-Pages swipet —
-    /// das wirkte vorher unruhig.
+    /// Signature-Geruest 1.2: max. 2 Kopfzeilen-Aktionen. "+Übung" nur bei
+    /// non-empty Ad-Hoc-Sessions (User darf jederzeit weitere Uebungen
+    /// einschieben, Plan-Sessions kriegen den Button bewusst NICHT — dort
+    /// kommt die Uebungs-Liste aus dem Plan und mid-workout-Adds wuerden
+    /// den Pagination-State unter den Fuessen wegrotieren). Ellipsis ist
+    /// immer da und haengt am bereits existierenden Discard-Dialog.
+    private var headerActions: [DeltiqHeaderAction] {
+        var actions: [DeltiqHeaderAction] = []
+        if session.isAdHoc, let day = session.day, !day.activeExercises.isEmpty {
+            actions.append(DeltiqHeaderAction(systemImage: "plus") {
+                showingAdHocPicker = true
+            })
+        }
+        // Explizites `menu:`-Label statt bare trailing closure - sonst muss
+        // der Compiler zwischen den beiden DeltiqHeaderAction-Initializern
+        // (action: () -> Void vs. menu: () -> MenuContent) per Typ-Inferenz
+        // entscheiden, was bei einem View-liefernden Closure-Body unnoetig
+        // fragil waere.
+        actions.append(DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+            Button(role: .destructive) {
+                showingDiscardConfirm = true
+            } label: {
+                Text("active.action.discard", bundle: .module)
+            }
+        }))
+        return actions
+    }
+
+    /// DEL-061 + DEL-081, umgestellt auf Signature-Geruest 1.3: ersetzt die
+    /// bisherige statsCard (Dauer|Saetze/Distanz|Volumen/Pace) durch zwei
+    /// Kapseln. Dauer wandert in den Eyebrow (Live-Timer, siehe body).
+    /// Die zweite Kapsel passt sich an die Tages-Kategorie an: bei reinem
+    /// Cardio zeigt sie Distanz statt Volumen (Ruecksprache — eine woertlich
+    /// feste "Volumen"-Kapsel waere an einem Cardio-Tag bedeutungslos, weil
+    /// Cardio-Logs keine Gewicht×Wdh-Volumen-Zahl haben). ⌀-Pace und die
+    /// Satz-Zaehlung fallen damit aus der Kopfzone — beide bleiben aber
+    /// weiterhin Teil des Finish-Sheets (siehe .sheet(isPresented:
+    /// $showingFinishConfirm) weiter oben, unveraendert).
     @ViewBuilder
-    private var statsCard: some View {
-        HStack(spacing: 0) {
-            StatBlock(label: String(localized: "active.stats.duration", bundle: .module),
-                      value: formattedDuration, monospacedDigit: true)
-            divider
-            switch dayCategory {
-            case .pureCardio:
-                StatBlock(label: String(localized: "active.stats.distance", bundle: .module),
-                          value: formatTotalDistance(), monospacedDigit: true)
-                divider
-                StatBlock(label: String(localized: "active.stats.avgPace", bundle: .module),
-                          value: formatAveragePace(), monospacedDigit: true)
-            case .mixed:
-                StatBlock(label: String(localized: "active.stats.volumeKg", bundle: .module),
-                          value: formatVolume(), monospacedDigit: true)
-                divider
-                StatBlock(label: String(localized: "active.stats.distanceKm", bundle: .module),
-                          value: formatTotalDistance(stripUnit: true), monospacedDigit: true)
-            case .pureStrength:
-                StatBlock(label: String(localized: "active.stats.sets", bundle: .module),
-                          value: "\(loggedSetsCount)", monospacedDigit: true)
-                divider
-                StatBlock(label: String(localized: "active.stats.volumeKg", bundle: .module),
-                          value: formatVolume(), monospacedDigit: true)
+    private var activeContextRow: some View {
+        let exercises = resolvedExercises
+        // Signature-Geruest 2.16: die Volumen-Kapsel erschien bisher auch VOR
+        // dem ersten geloggten Satz ("VOLUMEN 0,00 KG") - erscheint jetzt erst,
+        // sobald wirklich etwas geloggt ist. Die Distanz-Kapsel am Cardio-Tag
+        // bleibt unbedingt (dort gab es keinen gemeldeten Leerlauf-Fall).
+        let currentVolumeKg = session.logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
+        let secondPill: DeltiqContextItem? = {
+            if dayCategory == .pureCardio {
+                return DeltiqContextItem(
+                    String(
+                        format: String(localized: "active.context.distance", bundle: .module),
+                        formatTotalDistance(stripUnit: true)
+                    ),
+                    style: .neutral
+                )
+            }
+            guard currentVolumeKg > 0 else { return nil }
+            return DeltiqContextItem(
+                String(
+                    format: String(localized: "active.context.volume", bundle: .module),
+                    formatVolume()
+                ),
+                style: .neutral
+            )
+        }()
+
+        if !exercises.isEmpty {
+            if currentPageIndex < exercises.count {
+                // %1$d/%2$d bewusst manuell ersetzt statt via String(format:) -
+                // gleiche Konvention wie an anderen Mehrfach-Platzhalter-
+                // Stellen im Catalog (z.B. dashboard.openSession.message.
+                // withInfo): vermeidet %d-vs-%lld-Interger-Groessen-
+                // Mismatches bei mehreren positionellen Platzhaltern.
+                let exerciseTemplate = String(localized: "active.context.exercise", bundle: .module)
+                let exerciseText = exerciseTemplate
+                    .replacingOccurrences(of: "%1$d", with: "\(currentPageIndex + 1)")
+                    .replacingOccurrences(of: "%2$d", with: "\(exercises.count)")
+                let firstPill = DeltiqContextItem(exerciseText, style: .accent)
+                let items = secondPill.map { [firstPill, $0] } ?? [firstPill]
+                DeltiqContextRow(items)
+            } else {
+                // Finish-Seite (currentPageIndex == exercises.count): kein
+                // "Uebung x/y" mehr sinnvoll, nur noch die zweite Kapsel (falls
+                // vorhanden).
+                DeltiqContextRow(secondPill.map { [$0] } ?? [])
             }
         }
-        .padding(.vertical, 12)
-        .background(Color.secondary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .innerLightStroke(cornerRadius: 16, opacity: 0.08)
     }
 
     // MARK: - DEL-086 Hybrid-Interference-Banner
@@ -386,7 +452,8 @@ public struct ActiveWorkoutView: View {
             }
         // DEL-092: Interference-Detection schaut nur auf das, was der User
         // tatsaechlich macht — gefilterte Warmup-Liste, falls Toggle off.
-        let plannedNames = session.day.map { orderedExercises(in: $0).map(\.name) } ?? []
+        // P8 Stufe-2: Namen aus dem eingefrorenen Inhaltsstand dieser Session.
+        let plannedNames = resolvedExercises.map { $0.entry.nameSnapshot }
         return InterferenceDetector.shouldWarn(
             recentCardioSessions: recentCardioTuples,
             plannedExerciseNames: plannedNames
@@ -442,11 +509,10 @@ public struct ActiveWorkoutView: View {
         // DEL-092: respektiert Warmup-Filter — wenn der User Warmups off-toggled,
         // wird ein Hybrid-Day mit Run-Warmup + Strength als pureStrength
         // klassifiziert.
-        guard let day = session.day else { return .pureStrength }
-        let exercises = orderedExercises(in: day)
+        let exercises = resolvedExercises
         guard !exercises.isEmpty else { return .pureStrength }
-        let hasCardio = exercises.contains { $0.isCardio }
-        let hasStrength = exercises.contains { !$0.isCardio }
+        let hasCardio = exercises.contains { $0.entry.isCardio }
+        let hasStrength = exercises.contains { !$0.entry.isCardio }
         switch (hasStrength, hasCardio) {
         case (true, true):   return .mixed
         case (false, true):  return .pureCardio
@@ -461,41 +527,27 @@ public struct ActiveWorkoutView: View {
     ///     (`currentPageIndex`). Auf der Bankdruecken-Page = Strength-
     ///     Header, auf der Run-Page = Cardio-Header.
     private var isCardioSession: Bool {
-        // DEL-092: nutzt orderedExercises(in:) statt direkter activeExercises,
+        // DEL-092: nutzt resolvedExercises statt direkter activeExercises,
         // damit Warmup-/Cooldown-Filter durchschlaegt.
-        guard let day = session.day else { return false }
-        let exercises = orderedExercises(in: day)
+        let exercises = resolvedExercises
         guard !exercises.isEmpty else { return false }
-        let allCardio = exercises.allSatisfy { $0.isCardio }
-        let allStrength = exercises.allSatisfy { !$0.isCardio }
+        let allCardio = exercises.allSatisfy { $0.entry.isCardio }
+        let allStrength = exercises.allSatisfy { !$0.entry.isCardio }
         if allCardio   { return true }
         if allStrength { return false }
         guard currentPageIndex >= 0, currentPageIndex < exercises.count else {
             return false
         }
-        return exercises[currentPageIndex].isCardio
-    }
-
-    /// DEL-071 + DEL-063: Session-Level-Detection fuer den HealthKit-Push.
-    /// Hier brauchen wir die kategorische Antwort "ist das Workout
-    /// ueberwiegend Cardio?" — und konservativ heisst das `allSatisfy`,
-    /// damit ein Mix-Day NICHT als `.running` in Apple Health landet.
-    private var isPureCardioSessionForHealthKit: Bool {
-        // DEL-092: respektiert Warmup-Filter — HealthKit-Categorization soll
-        // das tracken, was der User tatsaechlich macht.
-        guard let day = session.day else { return false }
-        let exercises = orderedExercises(in: day)
-        guard !exercises.isEmpty else { return false }
-        return exercises.allSatisfy { $0.isCardio }
+        return exercises[currentPageIndex].entry.isCardio
     }
 
     /// DEL-158: True wenn die Session MINDESTENS eine Cardio-Uebung mit
     /// geloggter Distanz oder Dauer enthaelt — unabhaengig davon, ob das
     /// Workout rein Cardio oder gemischt (Kraft + Cardio) war. Steuert die
     /// Sichtbarkeit des Gear-Pickers + die Distanz-Buchung. Bewusst getrennt
-    /// von `isPureCardioSessionForHealthKit`: ein Mix-Day soll NICHT als
-    /// `.running` in Apple Health landen, aber sehr wohl Laufschuhe zuordnen
-    /// koennen.
+    /// von der Health-Klassifikation (`HealthWorkoutPlanner`): ein Mix-Day mit
+    /// wenig Cardio soll als Krafttraining in Apple Health landen, aber sehr
+    /// wohl Laufschuhe zuordnen koennen.
     private var sessionHasLoggedCardio: Bool {
         session.logs.contains { log in
             log.resolvedIsCardio
@@ -530,12 +582,6 @@ public struct ActiveWorkoutView: View {
         return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
     }
 
-    private var divider: some View {
-        Rectangle()
-            .fill(Color.secondary.opacity(0.25))
-            .frame(width: 1, height: 32)
-    }
-
     /// DEL-039: paginierte TabView mit einer Übung pro Seite + finaler Save/
     /// Discard-Seite. Page-Indicator unten zeigt Position. Auto-Advance bei
     /// vollständig geloggter Übung nach kurzer Verzögerung (1.2s — gibt User
@@ -545,25 +591,26 @@ public struct ActiveWorkoutView: View {
         // DEL-092: empty-check faellt jetzt auf das gefilterte Set —
         // wenn der User Warmups deaktiviert hat, aber ein Tag NUR Warmups
         // enthaelt, zeigen wir die Empty-State-Karte.
-        if let day = session.day, !orderedExercises(in: day).isEmpty {
-            let exercises = orderedExercises(in: day)
+        // P8 Stufe-2: Quelle ist jetzt immer `resolvedExercises` — der
+        // eingefrorene Inhaltsstand dieser Session, nicht mehr der live
+        // gelesene Tag.
+        let exercises = resolvedExercises
+        if !exercises.isEmpty {
             #if os(iOS)
             TabView(selection: $currentPageIndex) {
-                ForEach(Array(exercises.enumerated()), id: \.offset) { idx, exercise in
+                // Bugfix (Audit): Identitaet ueber die Uebung selbst, nicht
+                // die Array-Position - sonst uebernimmt SwiftUI nach dem
+                // Loeschen einer Uebung mitten im Ad-Hoc-Workout die bereits
+                // gemountete SetRow-Instanz (samt getippter Werte) fuer die
+                // nachgerueckte Uebung an derselben Position weiter.
+                // P8 Stufe-2: `ResolvedSessionExercise.id` (orderIndex im
+                // Snapshot) ersetzt die frühere `persistentModelID` —
+                // bleibt auch für `.removedFromLiveDay` (kein Live-Objekt
+                // mehr) stabil.
+                ForEach(Array(exercises.enumerated()), id: \.element.id) { idx, item in
                     ScrollView {
-                        ExerciseCard(
-                            exercise: exercise,
-                            session: session,
-                            activeTimedSet: $activeTimedSet,
-                            onSetLogged: { setIndex in
-                                startRestTimer(for: exercise, setIndex: setIndex)
-                                maybeAutoAdvance(after: exercise, exercises: exercises, currentIndex: idx)
-                            },
-                            // DEL-154: Edit/Delete nur im Ad-Hoc-Workout.
-                            onEdit: session.isAdHoc ? { exerciseToEdit = exercise } : nil,
-                            onDelete: session.isAdHoc ? { requestDeleteExercise(exercise) } : nil
-                        )
-                        .padding()
+                        exercisePageContent(item, idx: idx)
+                            .padding()
                     }
                     .tag(idx)
                 }
@@ -581,17 +628,8 @@ public struct ActiveWorkoutView: View {
             // ScrollView-Liste.
             ScrollView {
                 VStack(spacing: 14) {
-                    ForEach(exercises) { exercise in
-                        ExerciseCard(
-                            exercise: exercise,
-                            session: session,
-                            activeTimedSet: $activeTimedSet,
-                            onSetLogged: { setIndex in
-                                startRestTimer(for: exercise, setIndex: setIndex)
-                            },
-                            onEdit: session.isAdHoc ? { exerciseToEdit = exercise } : nil,
-                            onDelete: session.isAdHoc ? { requestDeleteExercise(exercise) } : nil
-                        )
+                    ForEach(Array(exercises.enumerated()), id: \.element.id) { idx, item in
+                        exercisePageContent(item, idx: idx)
                     }
                     actionsCard
                 }
@@ -625,6 +663,34 @@ public struct ActiveWorkoutView: View {
                     .padding(.horizontal)
                     .padding(.top, 12)
             }
+        }
+    }
+
+    /// P8 Stufe-2: EINZIGE Stelle, die aus einem aufgelösten Snapshot-
+    /// Eintrag die tatsächliche Karte baut — live editierbar/loggbar
+    /// (`.live`) oder read-only mit sichtbarem Hinweis (`.removedFromLiveDay`,
+    /// die zugehörige Live-Übung wurde extern gelöscht, während die Session
+    /// offen war). Niemals ein Snapshot-Eintrag OHNE Live-Gegenstück
+    /// stillschweigend übersprungen.
+    @ViewBuilder
+    private func exercisePageContent(_ item: ResolvedSessionExercise, idx: Int) -> some View {
+        switch item {
+        case .live(let entry, let exercise):
+            ExerciseCard(
+                exercise: exercise,
+                content: entry,
+                session: session,
+                activeTimedSet: $activeTimedSet,
+                onSetLogged: { setIndex in
+                    startRestTimer(for: exercise, entry: entry, setIndex: setIndex)
+                    maybeAutoAdvance(after: exercise, targetSets: entry.sets, currentIndex: idx)
+                },
+                // DEL-154: Edit/Delete nur im Ad-Hoc-Workout.
+                onEdit: session.isAdHoc ? { exerciseToEdit = exercise } : nil,
+                onDelete: session.isAdHoc ? { requestDeleteExercise(exercise) } : nil
+            )
+        case .removedFromLiveDay(let entry):
+            RemovedExerciseCard(entry: entry)
         }
     }
 
@@ -686,11 +752,13 @@ public struct ActiveWorkoutView: View {
     /// kurzer Pause auf die naechste Page. Gibt dem User Zeit, den Rest-Timer-
     /// Start visuell zu registrieren (kommt parallel als safeAreaInset).
     private func maybeAutoAdvance(after exercise: Exercise,
-                                   exercises: [Exercise],
+                                   targetSets: Int,
                                    currentIndex idx: Int) {
         let loggedSets = exercise.logs.filter { $0.session?.persistentModelID == session.persistentModelID }.count
-        // Alle Saetze inkl. dem gerade geloggten sind durch?
-        guard loggedSets >= exercise.sets else { return }
+        // Alle Saetze inkl. dem gerade geloggten sind durch? P8 Stufe-2:
+        // `targetSets` kommt aus dem eingefrorenen Snapshot-Eintrag, nicht
+        // mehr aus `exercise.sets` live.
+        guard loggedSets >= targetSets else { return }
         // Bereits auf der letzten Page? Naechste waere die Finish-Page —
         // advance ist hier OK (zeigt automatisch Save/Discard).
         let nextIndex = idx + 1
@@ -754,21 +822,49 @@ public struct ActiveWorkoutView: View {
 
     /// DEL-049: filtert archivierte Urlaubs-Modus-Snapshots aus dem Active-
     /// Workout-Flow — sonst sieht der User bei Plan-Switch Geist-Uebungen
-    /// in der TabView.
-    /// DEL-092: zusaetzlich werden Warmup-/Cooldown-Uebungen unterdrueckt,
-    /// wenn der User den `pref_show_warmups`-Toggle abgeschaltet hat. Single
-    /// source of truth — alle Paginator-, Categorizer- und Auto-Advance-
-    /// Pfade laufen ueber diese Funktion, damit der Toggle global wirkt.
+    /// in der TabView. Nur noch als Fallback-Quelle fuer `resolvedExercises`
+    /// genutzt (Alt-Sessions ohne Snapshot) — der Warmup-Filter (DEL-092)
+    /// wird dort zentral auf das AUFGELOESTE Ergebnis angewendet, nicht mehr
+    /// hier, damit er fuer Snapshot- UND Fallback-Pfad identisch greift.
     private func orderedExercises(in day: TrainingDay) -> [Exercise] {
-        let active = day.activeExercises
-        let visible = showWarmups
-            ? active
-            : active.filter { $0.role == .workingSet }
-        return visible.sorted { $0.orderIndex < $1.orderIndex }
+        day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
     }
 
-    private var formattedDuration: String {
-        let elapsed = max(0, Int(now.timeIntervalSince(session.startTime)))
+    /// P8 Stufe-2 (Session-Inhaltsvertrag, Wiederaufnahme-Isolation): was
+    /// diese Session TATSÄCHLICH trainiert. Bei vorhandenem, lesbarem
+    /// Snapshot der zum Start (bzw. durch Ad-hoc-Edits/"+ Satz")
+    /// eingefrorene Stand, aufgelöst gegen die aktuell noch existierenden
+    /// Live-Objekte (`SessionContentResolver`) — unabhängig von externen
+    /// Änderungen am Tag seit Session-Start (Übung hinzugefügt/entfernt,
+    /// umsortiert, Zielwerte geändert). Fällt auf das bisherige, rein live
+    /// gelesene Verhalten zurück, wenn (noch) nie ein Snapshot aufgenommen
+    /// wurde (Alt-Sessions vor diesem Feature) oder er unlesbar ist
+    /// (Store-Korruption) — niemals stillschweigend ersetzt, aber auch kein
+    /// Totalausfall des Workouts. EINZIGE Stelle, über die diese View ihre
+    /// Übungsliste/-reihenfolge/-Rollenfilter bezieht (ersetzt die frühere,
+    /// direkt live lesende Verwendung von `orderedExercises(in:)`).
+    private var resolvedExercises: [ResolvedSessionExercise] {
+        guard let day = session.day else { return [] }
+        let resolved: [ResolvedSessionExercise]
+        switch session.contentSnapshotState {
+        case .available(let snapshot):
+            resolved = SessionContentResolver.resolve(snapshot: snapshot, liveExercises: day.activeExercises)
+        case .notCaptured, .unreadable:
+            resolved = orderedExercises(in: day).map { exercise in
+                .live(entry: TrainingDayContentSnapshotWriter.snapshotEntry(for: exercise), exercise: exercise)
+            }
+        }
+        return showWarmups ? resolved : resolved.filter { $0.entry.role == .workingSet }
+    }
+
+    /// Verstrichene Zeit der live-tickenden Kopfzone (`context.date` aus der
+    /// `TimelineView` in `body`). Das Beenden-Sheet nutzt stattdessen
+    /// `finishSheetDurationText` (Dauer nach der Nachtrags-Regel).
+    private func formattedDuration(at now: Date) -> String {
+        formatElapsed(max(0, Int(now.timeIntervalSince(session.startTime))))
+    }
+
+    private func formatElapsed(_ elapsed: Int) -> String {
         let h = elapsed / 3600
         let m = (elapsed % 3600) / 60
         let s = elapsed % 60
@@ -778,13 +874,25 @@ public struct ActiveWorkoutView: View {
         return String(format: "%d:%02d", m, s)
     }
 
+    /// Dauer im Beenden-Sheet: dieselbe Regel wie `finalizeTiming` beim Speichern
+    /// (live = Wanduhr; nachgetragen = eingetragene Cardio-Zeit bzw. Schaetzung
+    /// aus den Saetzen) — sonst stuende hier "0:45" und danach "26 Min".
+    private var finishSheetDurationText: String {
+        let elapsed = max(0, Int(Date().timeIntervalSince(session.startTime)))
+        let estimate = SessionDurationEstimator.estimate(
+            wallClockSeconds: elapsed,
+            logs: session.durationLogInputs
+        )
+        return formatElapsed(estimate.isCorrected ? estimate.seconds : elapsed)
+    }
+
     private var loggedSetsCount: Int {
         session.logs.count
     }
 
     private func formatVolume() -> String {
         let total = session.logs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
-        return total.truncated(to: 0).formattedTwoDecimals
+        return total.truncated(to: 0).formattedNoDecimals
     }
 
     // MARK: Rest-timer
@@ -799,22 +907,22 @@ public struct ActiveWorkoutView: View {
     /// die alte Subscription invalidiert + die existing Activity beendet,
     /// BEVOR der neue Timer gesetzt wird. Garantiert: immer maximal ein
     /// laufender Timer pro Workout.
-    private func startRestTimer(for exercise: Exercise, setIndex: Int) {
+    private func startRestTimer(for exercise: Exercise, entry: TrainingDayContentSnapshot.ExerciseEntry, setIndex: Int) {
         // DEL-083: Superset-Hook. Wenn diese Uebung Teil einer Superset-Gruppe
         // ist, starten wir die Pause NUR wenn alle Partner-Uebungen den
         // aktuellen Set-Index auch schon abgehakt haben (A1 → B1 → Pause;
         // nicht: A1 → Pause → B1).
-        if let supersetId = exercise.supersetId,
+        // P8 Stufe-2: `supersetId` aus dem eingefrorenen Snapshot-Eintrag.
+        if let supersetId = entry.supersetId,
            !isSupersetRoundComplete(supersetId: supersetId, setIndex: setIndex) {
             // Partner-Uebung steht noch aus → kein Timer-Start, kein Live-
             // Activity-Push. User soll erstmal zur Partner-Page swipen.
             return
         }
         // ── 1) Harter Reset des aktuellen In-App-Timers ─────────────────
-        // Die `Timer.publish(every: 1, ...)` Subscription oben bleibt fix
-        // (sie liefert nur den `now`-Tick); das eigentliche "Timer-State"
-        // sitzt in restTimerEnd. Auf nil setzen blendet die RestTimerBar
-        // aus + verhindert dass die alte Bar fuer einen Frame mit-rendert.
+        // Das eigentliche "Timer-State" sitzt in restTimerEnd. Auf nil
+        // setzen blendet die RestTimerBar aus + verhindert dass die alte
+        // Bar fuer einen Frame mit-rendert.
         restTimerEnd = nil
         restTimerOriginalSeconds = 0
 
@@ -825,7 +933,9 @@ public struct ActiveWorkoutView: View {
         Task { await restTimerActivity.endRestTimer(reason: .skipped) }
 
         // ── 3) Validate + neuen Timer setzen ────────────────────────────
-        let raw = exercise.restSeconds
+        // P8 Stufe-2: Pausendauer kommt aus dem eingefrorenen Snapshot-
+        // Eintrag, nicht mehr aus der (ggf. extern geänderten) Live-Übung.
+        let raw = entry.restSeconds
         guard raw > 0 else { return }
         let bounded = min(raw, 600)
         let endDate = Date().addingTimeInterval(TimeInterval(bounded))
@@ -837,7 +947,7 @@ public struct ActiveWorkoutView: View {
             await restTimerActivity.startRestTimer(
                 exerciseName: exercise.name,
                 setNumber: setIndex + 1,
-                totalSets: exercise.sets,
+                totalSets: entry.sets,
                 endDate: endDate,
                 originalSeconds: bounded
             )
@@ -853,7 +963,7 @@ public struct ActiveWorkoutView: View {
             let title = String(localized: "rest.notification.title", bundle: .module)
             let body = String(
                 format: String(localized: "rest.notification.body", bundle: .module),
-                exercise.displayName, setIndex + 2, exercise.sets
+                exercise.displayName, setIndex + 2, entry.sets
             )
             Task {
                 await ReminderScheduler.scheduleRestTimerEnd(
@@ -874,8 +984,15 @@ public struct ActiveWorkoutView: View {
     /// Set-Index bereits geloggt ist. Vergleicht log-counts pro Plan-Uebung
     /// in der Session.
     private func isSupersetRoundComplete(supersetId: UUID, setIndex: Int) -> Bool {
-        guard let day = session.day else { return true }
-        let group = day.activeExercises.filter { $0.supersetId == supersetId }
+        // P8 Stufe-2: Partner-Übungen werden über den eingefrorenen
+        // Snapshot-Eintrag identifiziert (`entry.supersetId`), nicht über
+        // die ggf. extern geänderte Live-Gruppierung. `.removedFromLiveDay`-
+        // Partner (kein Live-Objekt mehr) können ohnehin nichts mehr loggen
+        // und werden bewusst nicht mitgezählt.
+        let group = resolvedExercises.compactMap { item -> Exercise? in
+            guard case .live(let entry, let exercise) = item, entry.supersetId == supersetId else { return nil }
+            return exercise
+        }
         guard !group.isEmpty else { return true }
         let neededLoggedCount = setIndex + 1
         return group.allSatisfy { partner in
@@ -895,17 +1012,23 @@ public struct ActiveWorkoutView: View {
         // Checkmarks auf WorkoutSummaryView, der gleich erscheint.
         DeltiqHaptics.notify(.success)
 
-        let endTime = Date()
-
-        session.endTime = endTime
-        session.durationMinutes = max(0, Int(endTime.timeIntervalSince(session.startTime) / 60))
+        // Ende und Dauer: live aufgezeichnet = Wanduhr; nachgetragen (z.B. ein Lauf,
+        // der erst nach dem Laufen eingetragen wird) = eingetragene Cardio-Zeit
+        // bzw. eine Schaetzung aus den Saetzen, dann mit zurueckgesetztem Beginn.
+        // MUSS vor dem Health-Push unten stehen, der Beginn und Dauer liest.
+        session.finalizeTiming(endingAt: Date())
         // DEL-221: Aggregate ueber den einen Schreiber (recomputeTotals).
         // DEL-092: exerciseCount zaehlt das, was der User tatsaechlich gemacht
         // hat — wenn Warmups versteckt waren, fliessen sie nicht in die
         // History-Stat. Deshalb explizit uebergeben statt abgeleitet.
-        session.recomputeTotals(
-            exerciseCount: session.day.map { orderedExercises(in: $0).count } ?? 0
-        )
+        // P8 Stufe-2: aus `resolvedExercises` (eingefrorener Inhaltsstand),
+        // NICHT mehr aus dem ggf. zwischenzeitlich extern veränderten Live-Tag.
+        session.recomputeTotals(exerciseCount: resolvedExercises.count)
+        // P8 Stufe-2: ABSICHTLICH KEIN erneuter
+        // `TrainingDayContentSnapshotWriter.capture`-Aufruf hier — der bei
+        // Erzeugung (bzw. durch Ad-hoc-Edits) bereits vorhandene Stand wird
+        // eingefroren, nicht aus dem (ggf. zwischenzeitlich extern
+        // veränderten) Live-Tag neu erzeugt.
         session.isCompleted = true
 
         // Persist any newly-set PRs to the Trophy Room (`PersonalRecordEntry`).
@@ -922,40 +1045,13 @@ public struct ActiveWorkoutView: View {
         // (read-only) berechnet, daher hier Discard.
         _ = ProgressionApplicator.apply(to: session, in: modelContext)
 
-        // DEL-063: Push to Apple Health with the correct activity type.
-        //   * Pure Cardio-Session (Hybrid Easy/Long/Intervall-Run) →
-        //     `.running` + distance-sample, sodass Fitness-Ringe + Lauf-
-        //     Statistiken stimmig sind.
-        //   * Strength / Mixed → `.traditionalStrengthTraining` wie bisher.
-        // Snapshot der relevanten Werte JETZT, weil session.* spaeter mutiert.
-        let workoutStart = session.startTime
-        let workoutEnd = endTime
-        let workoutSets = session.totalSets
-        let workoutVolume = session.totalVolumeKg
-        let pushAsCardio = isPureCardioSessionForHealthKit
-        let cardioTotalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
-        let cardioTotalSec = session.logs.compactMap(\.durationSeconds).reduce(0, +)
-        let cardioPace = PaceCalculator.minutesPerKm(
-            distanceKm: cardioTotalKm,
-            durationSeconds: cardioTotalSec
-        )
-        Task {
-            if pushAsCardio, cardioTotalKm > 0 {
-                await healthKit.saveRunningWorkout(
-                    startDate: workoutStart,
-                    endDate: workoutEnd,
-                    totalDistanceKm: cardioTotalKm,
-                    averagePaceMinPerKm: cardioPace
-                )
-            } else {
-                await healthKit.saveWorkout(
-                    startDate: workoutStart,
-                    endDate: workoutEnd,
-                    totalSets: workoutSets,
-                    totalVolumeKg: workoutVolume
-                )
-            }
-        }
+        // Nach Apple Health schreiben — gemaess den Schaltern (Einstellungen →
+        // Apple Health → Trainings in Health: Krafttraining / Cardio) und der
+        // log-basierten Klassifikation (`HealthWorkoutPlanner`): Cardio ohne
+        // Distanz bleibt Cardio, Radfahren ist kein Laufen, Laufband ist
+        // indoor. Der Draft wird SYNCHRON als Wert gebaut (session.* mutiert
+        // spaeter), danach wird die Session nicht mehr angefasst.
+        HealthWorkoutWriter.pushLive(session: session, healthKit: healthKit, context: modelContext)
 
         // Clear any running rest timer (in-app + Live Activity). Branching:
         //   - PRs detected + Celebrations on → push final state with trophy
@@ -968,7 +1064,7 @@ public struct ActiveWorkoutView: View {
         // DEL-204: Workout beendet → keine "Pause vorbei"-Notification mehr.
         cancelRestTimerNotification()
         let celebration = prCelebrationsEnabled
-            ? PRCelebration.make(from: detectedPRs)
+            ? PRCelebration.make(from: detectedPRs, tone: profiles.first?.coachingTone ?? .analytical)
             : nil
         Task { [celebration] in
             if let celebration {
@@ -1014,6 +1110,9 @@ public struct ActiveWorkoutView: View {
         // `Exercise.displayName`-Extension.
         let exercise = Exercise(
             name: template.name,
+            // Settings-Epic Phase 6 (EXLIB-07/09): stabile Rueckreferenz,
+            // ueberlebt ein spaeteres Umbenennen der Vorlage.
+            exerciseTemplateID: template.id,
             // DEL-157: Cardio/Time-Based starten mit 1 Satz (siehe
             // DayEditorView.addExercise).
             sets: (template.isCardio || template.isTimeBased) ? 1 : 3,
@@ -1037,6 +1136,10 @@ public struct ActiveWorkoutView: View {
             day: day
         )
         modelContext.insert(exercise)
+        // P8 Stufe-2: explizite In-Session-Änderung — hängt GENAU diese
+        // Übung an den bestehenden Snapshot an, liest NICHT den ganzen
+        // Live-Tag erneut.
+        TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(exercise, to: session, in: modelContext)
     }
 
     /// Custom-Uebung im Ad-Hoc-Flow — analog zu `DayEditorView.addCustomExercise`.
@@ -1066,6 +1169,8 @@ public struct ActiveWorkoutView: View {
             day: day
         )
         modelContext.insert(exercise)
+        // P8 Stufe-2: siehe addAdHocExercise.
+        TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(exercise, to: session, in: modelContext)
     }
 
     /// DEL-154: Entry-Point fuer das Entfernen einer Ad-Hoc-Uebung. Hat die
@@ -1088,7 +1193,7 @@ public struct ActiveWorkoutView: View {
     /// Snapshot in der Session-Statistik haengen). Danach den Paginator-Index
     /// clampen, damit die TabView nicht auf eine entfernte Seite zeigt.
     private func deleteAdHocExercise(_ exercise: Exercise) {
-        guard let day = session.day else { return }
+        guard session.day != nil else { return }
 
         // 1) Logs dieser Uebung in DIESER Session loeschen.
         let logs = session.logs.filter { $0.exercise == exercise }
@@ -1096,13 +1201,19 @@ public struct ActiveWorkoutView: View {
             modelContext.delete(log)
         }
 
+        // P8 Stufe-2: VOR dem Delete aufrufen — liest `exercise.orderIndex`,
+        // um den passenden Snapshot-Eintrag zu finden.
+        TrainingDayContentSnapshotWriter.recordAdHocExerciseRemoved(exercise, from: session, in: modelContext)
+
         // 2) Uebung selbst entfernen.
         modelContext.delete(exercise)
 
         // 3) Paginator-Index clampen + Exercise-Count auffrischen. Nach dem
         // Delete kann currentPageIndex auf eine nicht mehr existente Seite
         // zeigen → auf die letzte gueltige Seite (oder die Finish-Page) ziehen.
-        let remaining = orderedExercises(in: day).count
+        // P8 Stufe-2: `resolvedExercises` spiegelt hier bereits den gerade
+        // aktualisierten Snapshot (recordAdHocExerciseRemoved lief oben).
+        let remaining = resolvedExercises.count
         if currentPageIndex > remaining {
             currentPageIndex = remaining
         }
@@ -1133,29 +1244,41 @@ public struct ActiveWorkoutView: View {
 
 // MARK: - Subviews
 
+// MARK: - P8 Stufe-2 RemovedExerciseCard
+
+/// Platzhalter für einen Snapshot-Eintrag, dessen Live-`Exercise` seit
+/// Session-Start extern gelöscht wurde (z. B. über `DayEditorView`,
+/// während diese Session offen blieb). Read-only — KEIN neues Logging, da
+/// kein Live-Objekt mehr existiert, an das ein `ExerciseLog` sicher binden
+/// könnte (analog zur orphanen Darstellung in `WorkoutSummaryView`).
+/// Bereits vor der Löschung erfasste Logs bleiben über ihre eigenen
+/// Snapshot-Felder unverändert sichtbar/zählend — nur NEUES Logging ist
+/// hier gesperrt.
 @available(iOS 17.0, macOS 14.0, *)
-private struct StatBlock: View {
-    let label: String
-    let value: String
-    var monospacedDigit: Bool = false
+private struct RemovedExerciseCard: View {
+    let entry: TrainingDayContentSnapshot.ExerciseEntry
+
+    private var displayName: String {
+        if let custom = entry.customNameSnapshot, !custom.isEmpty { return custom }
+        return Exercise.resolvedDisplayName(forStoredName: entry.nameSnapshot)
+    }
 
     var body: some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(.title3.weight(.semibold))
-                .applyIf(monospacedDigit) { $0.monospacedDigit() }
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+        DeltiqCard(accentEdge: true) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundStyle(.secondary)
+                    Text(displayName)
+                        .font(.headline)
+                        .strikethrough()
+                }
+                Text("active.exercise.removedDuringSession", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 4)
         }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-private extension View {
-    @ViewBuilder
-    func applyIf<T: View>(_ condition: Bool, _ transform: (Self) -> T) -> some View {
-        if condition { transform(self) } else { self }
     }
 }
 
@@ -1216,6 +1339,7 @@ private struct FinishWorkoutSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(Text("active.finish.title", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -1256,7 +1380,7 @@ private struct FinishWorkoutSheet: View {
                                 .foregroundStyle(.primary)
                             Text("\(formatKm(gear.currentDistanceKm)) / \(formatKm(gear.maxDistanceKm)) km")
                                 .font(.caption.monospacedDigit())
-                                .foregroundStyle(gear.needsReplacement ? .red : .secondary)
+                                .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.Deltiq.textSecondary)
                         }
                         Spacer()
                         if selectedGear?.persistentModelID == gear.persistentModelID {
@@ -1270,7 +1394,7 @@ private struct FinishWorkoutSheet: View {
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(selectedGear?.persistentModelID == gear.persistentModelID
                                     ? Color.deltiqOrange
-                                    : Color.secondary.opacity(0.25),
+                                    : Color.Deltiq.divider,
                                     lineWidth: selectedGear?.persistentModelID == gear.persistentModelID ? 1.5 : 1)
                     )
                 }
@@ -1317,8 +1441,8 @@ private struct FinishWorkoutSheet: View {
                 }
             }
             .padding(.vertical, 8)
-            .background(Color.secondary.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .background(Color.Deltiq.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
         }
     }
 
@@ -1329,7 +1453,7 @@ private struct FinishWorkoutSheet: View {
                 .monospacedDigit()
             Text(label)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -1340,7 +1464,7 @@ private struct FinishWorkoutSheet: View {
                 .font(.headline)
             Text("active.finish.feeling.message", bundle: .module)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.Deltiq.textSecondary)
             VStack(spacing: 8) {
                 ForEach(SessionFeeling.allCases, id: \.self) { feeling in
                     feelingRow(feeling)
@@ -1369,7 +1493,7 @@ private struct FinishWorkoutSheet: View {
                     if feeling.vetoesProgression {
                         Text("active.finish.feeling.noProgression", bundle: .module)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
                     }
                 }
                 Spacer()
@@ -1382,7 +1506,7 @@ private struct FinishWorkoutSheet: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(selected == feeling ? Color.deltiqOrange : Color.secondary.opacity(0.25),
+                    .stroke(selected == feeling ? Color.deltiqOrange : Color.Deltiq.divider,
                             lineWidth: selected == feeling ? 1.5 : 1)
             )
         }
@@ -1393,19 +1517,14 @@ private struct FinishWorkoutSheet: View {
         Button {
             onConfirm(selected, selectedGear)
         } label: {
-            HStack {
-                Spacer()
-                Image(systemName: "checkmark.seal.fill")
+            Label {
                 Text("active.finish.save", bundle: .module)
-                    .font(.headline)
-                Spacer()
+            } icon: {
+                Image(systemName: "checkmark.seal.fill")
             }
-            .padding(.vertical, 14)
-            .background(Color.deltiqOrange.gradient)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
+        .deltiqButtonStyle()
     }
 }
 #endif

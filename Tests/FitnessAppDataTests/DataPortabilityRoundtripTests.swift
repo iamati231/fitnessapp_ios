@@ -93,7 +93,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
     // MARK: - Tests
 
-    func testExportImportRoundtripRestoresAllRows() throws {
+    func testExportImportRoundtripRestoresAllRows() async throws {
         // 1) Quelle befüllen + exportieren.
         let source = try makeContainer()
         try seed(source.mainContext)
@@ -103,7 +103,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         // 2) In einen FRISCHEN Container importieren (Append auf leer =
         //    Neues-Gerät-Szenario).
         let target = try makeContainer()
-        let result = try DataImportService.performImport(
+        let result = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -142,13 +142,13 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertNotNil(session?.gear, "Gear-FK muss über die idMap resolven")
     }
 
-    func testReimportIntoSameStoreSkipsDuplicates() throws {
+    func testReimportIntoSameStoreSkipsDuplicates() async throws {
         // Append-Import in den GLEICHEN Store: alles Duplikat, nichts doppelt.
         let container = try makeContainer()
         try seed(container.mainContext)
         let bundle = try DataExportService.makeExport(context: container.mainContext)
 
-        let result = try DataImportService.performImport(
+        let result = try await DataImportService.performImport(
             zipData: bundle.data,
             context: container.mainContext,
             strategy: .appendOnly
@@ -167,7 +167,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         // deshalb hier KEIN Plan-Count-Assert.
     }
 
-    func testReplaceImportWipesBeforeRestore() throws {
+    func testReplaceImportWipesBeforeRestore() async throws {
         // Replace: Store enthält EXTRA-Daten, die nicht im ZIP sind — nach
         // dem Replace-Import müssen sie weg sein.
         let container = try makeContainer()
@@ -185,7 +185,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         try container.mainContext.save()
         XCTAssertEqual(try container.mainContext.fetchCount(FetchDescriptor<WorkoutSession>()), 2)
 
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: container.mainContext,
             strategy: .replace
@@ -196,18 +196,26 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         )
     }
 
-    func testGarbageZipThrowsWithoutWiping() throws {
+    func testGarbageZipThrowsWithoutWiping() async throws {
         // DEL-183-Regression: ein kaputtes ZIP darf bei Replace NIEMALS
         // erst wipen und dann scheitern.
         let container = try makeContainer()
         try seed(container.mainContext)
         let garbage = Data("definitiv kein zip".utf8)
 
-        XCTAssertThrowsError(try DataImportService.performImport(
-            zipData: garbage,
-            context: container.mainContext,
-            strategy: .replace
-        ))
+        // `performImport` ist jetzt `async` — `XCTAssertThrowsError`s
+        // Autoclosure-Parameter ist das nicht, deshalb manuelles do/catch
+        // statt der sonst ueblichen Einzeiler-Assertion.
+        do {
+            _ = try await DataImportService.performImport(
+                zipData: garbage,
+                context: container.mainContext,
+                strategy: .replace
+            )
+            XCTFail("Erwartete einen Fehler fuer ein ungueltiges ZIP")
+        } catch {
+            // erwartet
+        }
         XCTAssertEqual(
             try container.mainContext.fetchCount(FetchDescriptor<WorkoutSession>()), 1,
             "Bestand muss nach abgelehntem ZIP unangetastet sein — Validate-first!"
@@ -224,7 +232,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Vor DEL-225 bestand der Dedup-Schluessel aus (session.startTime,
     /// set_index, name_snapshot) — fuer beide Serien identisch. Die komplette
     /// zweite Serie wurde beim Import still als Duplikat verworfen.
-    func testSecondSeriesOfSameExerciseSurvivesImport() throws {
+    func testSecondSeriesOfSameExerciseSurvivesImport() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
 
@@ -260,7 +268,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -277,7 +285,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// ein Schluessel ueber die Uebungs-Identitaet haette hier verdoppelt,
     /// weil `importPlanExercises` kein Dedup hat und beim zweiten Lauf neue
     /// Exercise-Rows anlegt.
-    func testDoubleImportDoesNotDuplicateLogs() throws {
+    func testDoubleImportDoesNotDuplicateLogs() async throws {
         let source = try makeContainer()
         try seed(source.mainContext)
         let bundle = try DataExportService.makeExport(context: source.mainContext)
@@ -285,7 +293,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let target = try makeContainer()
         for _ in 0..<2 {
-            _ = try DataImportService.performImport(
+            _ = try await DataImportService.performImport(
                 zipData: bundle.data,
                 context: target.mainContext,
                 strategy: .appendOnly
@@ -301,7 +309,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Ein ergaenzender Import darf den LAUFENDEN Plan des Users nicht
     /// umschalten. Vorher deaktivierte jedes Backup mit aktivem Plan
     /// bedingungslos alle bestehenden aktiven Plaene.
-    func testAppendImportDoesNotHijackActivePlan() throws {
+    func testAppendImportDoesNotHijackActivePlan() async throws {
         let source = try makeContainer()
         try seed(source.mainContext)   // enthaelt einen aktiven "Roundtrip-Plan"
         let bundle = try DataExportService.makeExport(context: source.mainContext)
@@ -312,7 +320,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         target.mainContext.insert(mine)
         try target.mainContext.save()
 
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -328,7 +336,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
     /// Die Swap-Referenz (DEL-091 Urlaubs-Modus) muss den Roundtrip
     /// ueberleben — sonst ist der Tausch nach einem Restore nicht mehr
     /// zuruecknehmbar.
-    func testSwappedFromOriginalSurvivesRoundtrip() throws {
+    func testSwappedFromOriginalSurvivesRoundtrip() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
         let plan = TrainingPlan(name: "Swap-Plan", programType: "custom", isActive: true)
@@ -344,7 +352,7 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
         let bundle = try DataExportService.makeExport(context: ctx)
         let target = try makeContainer()
-        _ = try DataImportService.performImport(
+        _ = try await DataImportService.performImport(
             zipData: bundle.data,
             context: target.mainContext,
             strategy: .appendOnly
@@ -356,10 +364,583 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(swapped?.swappedFromOriginal?.name, "Bankdrücken")
     }
 
+    // MARK: - Bugfix (Audit): Zeitformat + Generator-Metadaten im Roundtrip
+
+    /// Vor diesem Fix hatten `buildDays`/`buildWorkouts`/`buildPlans` keine
+    /// Spalten fuer `timeFormat`/`timeCapMinutes` (Tag), die sieben
+    /// Zeitformat-Ergebnisfelder (Session) oder `generatorInputRaw` (Plan) -
+    /// jeder Export/Import-Roundtrip (Backups eingeschlossen) verwandelte
+    /// einen AMRAP-Tag stillschweigend in einen normalen Satz/Wiederholungs-
+    /// Tag, loeschte das WOD-Ergebnis komplett und deaktivierte "neu rechnen"
+    /// fuer Wizard-generierte Plaene fuer immer.
+    ///
+    /// Bugfix (Audit, Nachtrag): dieser Test behauptete "Generator-Metadaten"
+    /// im Namen/Kommentar abzudecken, pruefte aber nur `generatorInputRaw`
+    /// (Plan-Ebene) - `TrainingDay.generationFingerprint`/
+    /// `.generatorSequenceIndex` fehlten in `buildDays`/`importPlanDays`
+    /// KOMPLETT und wurden von keinem Test erfasst. Genau die Luecke, vor
+    /// der der urspruengliche Fix eigentlich schuetzen sollte: nach jedem
+    /// Restore ueberspringt `PlanGeneratorInstantiator.recalculate` (siehe
+    /// dort: `guard let sequenceIndex = day.generatorSequenceIndex ... else
+    /// { continue }`) jeden Tag des Plans, "neu rechnen" tut fortan nichts
+    /// mehr - ohne Fehler, ohne Hinweis.
+    func testTimedFormatDayAndSessionSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "WOD-Plan", programType: "custom", isActive: true)
+        plan.generatorInputRaw = #"{"selections":[]}"#
+        ctx.insert(plan)
+        let day = TrainingDay(
+            name: "Cindy", weekday: 2, type: .fullBody, plan: plan,
+            timeFormat: .amrap, timeCapMinutes: 20,
+            generationFingerprint: "fingerprint-cindy-v1",
+            generatorSequenceIndex: 1
+        )
+        ctx.insert(day)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_100_000),
+            endTime: Date(timeIntervalSince1970: 1_760_101_200),
+            durationMinutes: 20, isCompleted: true, dayName: "Cindy", day: day,
+            timeFormatSnapshot: .amrap,
+            roundsCompleted: 15,
+            partialReps: 7,
+            partialRepsExerciseName: "Kniebeugen",
+            completedTarget: true
+        )
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedDay = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        XCTAssertEqual(importedDay?.timeFormat, .amrap, "Zeitformat-Tag darf nach dem Roundtrip nicht zu einem normalen Tag werden")
+        XCTAssertEqual(importedDay?.timeCapMinutes, 20)
+        XCTAssertEqual(importedDay?.generationFingerprint, "fingerprint-cindy-v1",
+                       "ohne Fingerprint erkennt \"neu rechnen\" den Tag faelschlich als unveraendert/veraendert")
+        XCTAssertEqual(importedDay?.generatorSequenceIndex, 1,
+                       "ohne sequenceIndex ueberspringt recalculate() den Tag fuer immer - \"neu rechnen\" wuerde stillschweigend nichts mehr tun")
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertEqual(importedSession?.timeFormatSnapshot, .amrap)
+        XCTAssertEqual(importedSession?.roundsCompleted, 15)
+        XCTAssertEqual(importedSession?.partialReps, 7)
+        XCTAssertEqual(importedSession?.partialRepsExerciseName, "Kniebeugen")
+        XCTAssertEqual(importedSession?.completedTarget, true)
+
+        let importedPlan = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertEqual(importedPlan?.generatorInputRaw, #"{"selections":[]}"#,
+                       "\"neu rechnen\" braucht generatorInputRaw, um nach einem Restore weiter zu funktionieren")
+    }
+
+    /// Nutzer-Feedback (13. August, zweite Runde): neues `.circuit`-Zeitformat
+    /// - deckt sowohl die drei neuen `TrainingDay`-Felder (`circuitRounds`/
+    /// `circuitRestSeconds`/`circuitMode`) als auch die drei neuen
+    /// `WorkoutSession`-Resume-Felder ab (`circuitRoundsCompleted`,
+    /// `circuitRestEndDate` als optionales Datum, `circuitCurrentRoundCheckedRaw`
+    /// als Snapshot einer laufenden Pause mitten in einer Session) - gleiches
+    /// Prinzip wie `testTimedFormatDayAndSessionSurviveRoundtrip` fuer AMRAP.
+    func testCircuitDayAndSessionSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Zirkel-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(
+            name: "Ganzkörper-Komplex", weekday: 2, type: .fullBody, plan: plan,
+            timeFormat: .circuit,
+            circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps
+        )
+        ctx.insert(day)
+        let restEnd = Date(timeIntervalSince1970: 1_760_500_090)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_500_000),
+            endTime: Date(timeIntervalSince1970: 1_760_500_090),
+            isCompleted: false, dayName: "Ganzkörper-Komplex", day: day,
+            timeFormatSnapshot: .circuit,
+            circuitRoundsCompleted: 2,
+            circuitRestEndDate: restEnd,
+            circuitCurrentRoundCheckedRaw: "0,2"
+        )
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedDay = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        XCTAssertEqual(importedDay?.timeFormat, .circuit)
+        XCTAssertEqual(importedDay?.circuitRounds, 5)
+        XCTAssertEqual(importedDay?.circuitRestSeconds, 90)
+        XCTAssertEqual(importedDay?.circuitMode, .fixedReps)
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertEqual(importedSession?.timeFormatSnapshot, .circuit)
+        XCTAssertEqual(importedSession?.circuitRoundsCompleted, 2)
+        XCTAssertEqual(
+            importedSession?.circuitRestEndDate.map { $0.timeIntervalSince1970.rounded() },
+            restEnd.timeIntervalSince1970.rounded(),
+            "circuitRestEndDate muss den laufenden Pausen-Countdown ueberleben, sonst verliert ein Backup/Restore mitten in einer Pause die verbleibende Zeit"
+        )
+        XCTAssertEqual(importedSession?.circuitCurrentRoundCheckedRaw, "0,2")
+    }
+
+    /// Paket 2 (strukturierte Ausdauereinheiten): CSV-Export/-Import der
+    /// sechs neuen `TrainingDay`-Konfigurationsfelder und der sieben neuen
+    /// `WorkoutSession`-Ergebnisfelder, gleiches Prinzip wie
+    /// `testCircuitDayAndSessionSurviveRoundtrip` fuer `.circuit` - bisher
+    /// war dieser Pfad nur per Code-Review behauptet ("additiv ergaenzt"),
+    /// nicht durch einen Test belegt (docs/DELTIQ_DEVICE_ACCEPTANCE.md,
+    /// Paket-2-Abschlussnachtrag).
+    func testEnduranceIntervalsDayAndSessionSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Lauf-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(
+            name: "Intervalle", weekday: 3, type: .fullBody, plan: plan,
+            timeFormat: .enduranceIntervals,
+            enduranceWarmupDurationSeconds: 600,
+            enduranceCooldownDurationSeconds: 300,
+            enduranceIntervalRounds: 5,
+            enduranceWorkDurationSeconds: nil,
+            enduranceWorkDistanceKm: 1.0,
+            enduranceRestDurationSeconds: 120,
+            enduranceSportKind: .cycling
+        )
+        ctx.insert(day)
+        // Sportart-Unterscheidung gilt auch auf Exercise-Ebene (einfache
+        // Ausdauereinheiten) - hier an einem Tag mit anderem Format
+        // mitgeprueft, damit kein zweiter fast identischer Test noetig ist.
+        let simpleRunDay = TrainingDay(name: "Easy Run", weekday: 5, type: .cardio, plan: plan)
+        ctx.insert(simpleRunDay)
+        let runExercise = Exercise(
+            name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1,
+            isCardio: true, targetDurationMinutes: 30, day: simpleRunDay
+        )
+        runExercise.enduranceSportKind = .running
+        ctx.insert(runExercise)
+        let phaseEnd = Date(timeIntervalSince1970: 1_760_500_090)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_500_000),
+            endTime: Date(timeIntervalSince1970: 1_760_500_090),
+            isCompleted: false, dayName: "Intervalle", day: day,
+            timeFormatSnapshot: .enduranceIntervals,
+            endurancePhase: .rest,
+            enduranceCurrentRoundNumber: 2,
+            enduranceRoundsCompleted: 1,
+            endurancePhaseEndDate: phaseEnd,
+            endurancePausedRemainingSeconds: 42,
+            enduranceWarmupSkipped: true,
+            enduranceCooldownSkipped: false
+        )
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedDays = try target.mainContext.fetch(FetchDescriptor<TrainingDay>())
+        let importedDay = importedDays.first { $0.timeFormat == .enduranceIntervals }
+        XCTAssertEqual(importedDay?.enduranceSportKind, .cycling)
+        let importedRunDay = importedDays.first { $0.name == "Easy Run" }
+        XCTAssertEqual(importedRunDay?.exercises.first?.enduranceSportKind, .running)
+        XCTAssertEqual(importedDay?.timeFormat, .enduranceIntervals)
+        XCTAssertEqual(importedDay?.enduranceWarmupDurationSeconds, 600)
+        XCTAssertEqual(importedDay?.enduranceCooldownDurationSeconds, 300)
+        XCTAssertEqual(importedDay?.enduranceIntervalRounds, 5)
+        XCTAssertNil(importedDay?.enduranceWorkDurationSeconds)
+        XCTAssertEqual(importedDay?.enduranceWorkDistanceKm, 1.0)
+        XCTAssertEqual(importedDay?.enduranceRestDurationSeconds, 120)
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertEqual(importedSession?.timeFormatSnapshot, .enduranceIntervals)
+        XCTAssertEqual(importedSession?.endurancePhase, .rest)
+        XCTAssertEqual(importedSession?.enduranceCurrentRoundNumber, 2)
+        XCTAssertEqual(importedSession?.enduranceRoundsCompleted, 1, "uebersprungene Runde darf den Ergebnis-Zaehler nicht erreicht haben")
+        XCTAssertEqual(
+            importedSession?.endurancePhaseEndDate.map { $0.timeIntervalSince1970.rounded() },
+            phaseEnd.timeIntervalSince1970.rounded()
+        )
+        XCTAssertEqual(importedSession?.endurancePausedRemainingSeconds, 42, "eine laufende Pause muss ein Backup/Restore ueberleben")
+        XCTAssertTrue(importedSession?.enduranceWarmupSkipped ?? false)
+        XCTAssertFalse(importedSession?.enduranceCooldownSkipped ?? true)
+    }
+
+    /// Altbestand/Legacy-Fall: ein Tag mit einem Namen, der eine Sportart
+    /// nahelegt ("Radfahren"), aber ohne gesetztes `enduranceSportKind` -
+    /// muss nach dem Roundtrip weiterhin `nil` sein. Beweist, dass die
+    /// additive CSV-Spalte bei Fehlen NIE aus dem Tagnamen zurueckgeraten
+    /// wird (siehe `TrainingDay.enduranceSportKind`-Doku).
+    func testEnduranceSportKindDefaultsToNilOnRoundtripAndIsNotDerivedFromDayName() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Altbestand-Plan", programType: "custom", isActive: false)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Radfahren", weekday: 5, type: .cardio, plan: plan)
+        ctx.insert(day)
+        let exercise = Exercise(
+            name: "Radfahren", sets: 1, repsMin: 1, repsMax: 1,
+            isCardio: true, targetDurationMinutes: 45, day: day
+        )
+        ctx.insert(exercise)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        XCTAssertNil(imported?.enduranceSportKind)
+        XCTAssertNil(imported?.exercises.first?.enduranceSportKind)
+    }
+
+    /// P8 Stufe-2, Paket D: der eingefrorene Tagesinhalts-Snapshot
+    /// (`contentSnapshotJSON`/`contentSnapshotCapturedAt`) ist additiv und
+    /// muss exakt die drei "gültigen" Fälle unterscheidbar überleben — nie
+    /// erfasst (`nil`), gültig leer, gültig gefüllt. Die beiden kaputten
+    /// Fälle (beschädigt / nicht unterstützte Version) deckt
+    /// `testCorruptedContentSnapshotPayloadSurvivesRoundtripVerbatim` /
+    /// `testUnsupportedSchemaVersionPayloadSurvivesRoundtripVerbatim` unten ab.
+    func testContentSnapshotSurvivesRoundtripNeverCapturedValidEmptyValidFilled() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Snapshot-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Push A", weekday: 2, type: .push, plan: plan)
+        ctx.insert(day)
+
+        // Fall 1: nie erfasst.
+        let neverCaptured = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_000_000),
+            endTime: Date(timeIntervalSince1970: 1_761_003_600),
+            durationMinutes: 60, isCompleted: true, day: day
+        )
+        ctx.insert(neverCaptured)
+
+        // Fall 2: gültig, aber leer (z.B. Ad-hoc-Session ohne je eine
+        // Übung hinzuzufügen).
+        let emptySnapshot = TrainingDayContentSnapshot(
+            dayNameSnapshot: "Spontanes Training", dayCustomNameSnapshot: nil,
+            dayLocalizationKeySnapshot: nil, weekday: 2, dayType: .custom,
+            timeFormat: nil, timeCapMinutes: nil, circuitRounds: nil,
+            circuitRestSeconds: nil, circuitMode: nil, exercises: []
+        )
+        let validEmpty = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_100_000),
+            endTime: Date(timeIntervalSince1970: 1_761_101_800),
+            durationMinutes: 30, isCompleted: true, isAdHoc: true, day: day
+        )
+        validEmpty.contentSnapshotJSON = emptySnapshot.encodedJSON()
+        validEmpty.contentSnapshotCapturedAt = Date(timeIntervalSince1970: 1_761_100_000)
+        ctx.insert(validEmpty)
+
+        // Fall 3: gültig und gefüllt.
+        let filledSnapshot = TrainingDayContentSnapshot(
+            dayNameSnapshot: "Push A", dayCustomNameSnapshot: nil,
+            dayLocalizationKeySnapshot: nil, weekday: 2, dayType: .push,
+            timeFormat: nil, timeCapMinutes: nil, circuitRounds: nil,
+            circuitRestSeconds: nil, circuitMode: nil,
+            exercises: [
+                TrainingDayContentSnapshot.ExerciseEntry(
+                    orderIndex: 0, instanceID: UUID(), exerciseTemplateID: UUID(), nameSnapshot: "Bankdrücken",
+                    customNameSnapshot: nil, role: .workingSet, supersetId: nil,
+                    isCardio: false, isTimeBased: false, cardioEquipment: .none,
+                    sets: 3, repsMin: 6, repsMax: 10, restSeconds: 120,
+                    targetRir: 2, targetDistanceKm: nil, targetDurationMinutes: nil
+                )
+            ]
+        )
+        let validFilled = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_200_000),
+            endTime: Date(timeIntervalSince1970: 1_761_203_600),
+            durationMinutes: 60, isCompleted: true, day: day
+        )
+        validFilled.contentSnapshotJSON = filledSnapshot.encodedJSON()
+        validFilled.contentSnapshotCapturedAt = Date(timeIntervalSince1970: 1_761_200_000)
+        ctx.insert(validFilled)
+
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(
+            FetchDescriptor<WorkoutSession>(sortBy: [SortDescriptor(\.startTime)])
+        )
+        XCTAssertEqual(imported.count, 3)
+
+        XCTAssertEqual(imported[0].contentSnapshotState, .notCaptured, "Fall 1 (nie erfasst) darf nicht rückwirkend aufgefüllt werden")
+        XCTAssertNil(imported[0].contentSnapshotCapturedAt)
+
+        guard case .available(let restoredEmpty) = imported[1].contentSnapshotState else {
+            return XCTFail("Fall 2 (gültig leer) muss nach dem Roundtrip lesbar bleiben")
+        }
+        XCTAssertTrue(restoredEmpty.exercises.isEmpty, "eine leere Übungsliste ist gültig, kein Fehler")
+        XCTAssertNotNil(imported[1].contentSnapshotCapturedAt)
+
+        guard case .available(let restoredFilled) = imported[2].contentSnapshotState else {
+            return XCTFail("Fall 3 (gültig gefüllt) muss nach dem Roundtrip lesbar bleiben")
+        }
+        XCTAssertEqual(restoredFilled, filledSnapshot, "Payload muss exakt wiederhergestellt werden, nicht nur teilweise")
+    }
+
+    /// Eine beschädigte Payload (z.B. durch Store-Korruption VOR dem Export
+    /// entstanden) wird vom Export/Import 1:1 durchgereicht — niemals
+    /// stillschweigend gelöscht, repariert oder durch den (beim Import ggf.
+    /// ganz anderen) Live-Tag ersetzt. Erst der LESEZUGRIFF entscheidet
+    /// "unreadable", nie der Import selbst.
+    func testCorruptedContentSnapshotPayloadSurvivesRoundtripVerbatim() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let plan = TrainingPlan(name: "Snapshot-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Push A", weekday: 2, type: .push, plan: plan)
+        ctx.insert(day)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_300_000),
+            endTime: Date(timeIntervalSince1970: 1_761_303_600),
+            durationMinutes: 60, isCompleted: true, day: day
+        )
+        session.contentSnapshotJSON = "{ kaputt, das ist kein JSON"
+        session.contentSnapshotCapturedAt = Date(timeIntervalSince1970: 1_761_300_000)
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        guard case .unreadable(.corrupted) = imported?.contentSnapshotState else {
+            return XCTFail("beschädigtes JSON muss nach dem Roundtrip weiterhin als .unreadable(.corrupted) erkennbar sein, nicht verschwinden oder lesbar werden: \(String(describing: imported?.contentSnapshotState))")
+        }
+    }
+
+    /// Eine Payload mit einer (aus Sicht DIESER App-Version) zukünftigen,
+    /// nicht unterstützten `schemaVersion` darf beim Import nicht einfach
+    /// verworfen oder als "nie erfasst" behandelt werden — ein künftiges
+    /// Feld-Redesign muss ein ALTES Backup unverändert transportieren
+    /// können, bis eine App-Version kommt, die die neue Version versteht.
+    func testUnsupportedSchemaVersionPayloadSurvivesRoundtripVerbatim() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let plan = TrainingPlan(name: "Snapshot-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Push A", weekday: 2, type: .push, plan: plan)
+        ctx.insert(day)
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_761_400_000),
+            endTime: Date(timeIntervalSince1970: 1_761_403_600),
+            durationMinutes: 60, isCompleted: true, day: day
+        )
+        // Handgeschriebenes JSON mit einer absichtlich zukünftigen Version -
+        // die echten Feldnamen sind irrelevant, nur `schemaVersion` zählt.
+        session.contentSnapshotJSON = #"{"schemaVersion":999,"dayNameSnapshot":"x","weekday":2,"dayType":"push","exercises":[]}"#
+        session.contentSnapshotCapturedAt = Date(timeIntervalSince1970: 1_761_400_000)
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        guard case .unreadable(.unsupportedSchemaVersion(999)) = imported?.contentSnapshotState else {
+            return XCTFail("eine zukünftige schemaVersion muss nach dem Roundtrip exakt als .unreadable(.unsupportedSchemaVersion(999)) erkennbar bleiben: \(String(describing: imported?.contentSnapshotState))")
+        }
+    }
+
+    /// HealthKit-Import: `importSourceName`/`healthKitSampleUUID` sind die
+    /// einzigen Provenienz-Marker fuer eine automatisch aus Apple Health
+    /// importierte Session (z.B. Adidas Running) — ohne Roundtrip-Schutz
+    /// wuerde ein Backup/Restore diese Herkunft stillschweigend verlieren,
+    /// und die Session saehe danach wie eine nativ erfasste aus.
+    func testHealthKitImportProvenanceSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_500_000),
+            endTime: Date(timeIntervalSince1970: 1_760_501_800),
+            isCompleted: true, isAdHoc: true,
+            importSourceName: "Adidas Running",
+            healthKitSampleUUID: "3F2504E0-4F89-11D3-9A0C-0305E82C3301"
+        )
+        ctx.insert(session)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertEqual(importedSession?.importSourceName, "Adidas Running")
+        XCTAssertEqual(importedSession?.healthKitSampleUUID, "3F2504E0-4F89-11D3-9A0C-0305E82C3301")
+    }
+
+    /// `healthKitExportedAt` ist der lokale "behandelt"-Merker und massgeblich:
+    /// Ein markiertes Training wird nie wieder exportiert, auch wenn sein Eintrag
+    /// in Health geloescht wird. Er reist bewusst NICHT durch Backup/Restore:
+    /// nach einem Restore gleicht der Export wieder mit Health ab (kein Doppel,
+    /// solange die eigenen Workouts dort sichtbar sind).
+    /// Ein Marker aus einem fremden Backup koennte ausserdem zu einem anderen
+    /// Health-Konto gehoeren. Der Test haelt fest, dass die Spalte nicht
+    /// versehentlich in workouts.csv landet.
+    func testHealthKitExportMarkerIsNotPartOfTheBackup() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let session = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_600_000),
+            endTime: Date(timeIntervalSince1970: 1_760_603_000),
+            durationMinutes: 50, exerciseCount: 1, totalSets: 3, totalVolumeKg: 900,
+            isCompleted: true,
+            healthKitExportedAt: Date(timeIntervalSince1970: 1_760_700_000)
+        )
+        ctx.insert(session)
+        try ctx.save()
+        XCTAssertNotNil(session.healthKitExportedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertNotNil(importedSession, "die Session selbst muss ankommen")
+        XCTAssertNil(importedSession?.healthKitExportedAt)
+    }
+
+    /// Bugfix (Nutzer-Feedback, Auf-Zeit-Resume): `forTimeCheckedRoundsRaw`
+    /// nutzt bewusst den Platzhalter "-" statt eines leeren Strings fuer
+    /// "gestartet, noch nichts abgehakt" - ein echter leerer String wuerde
+    /// `CSVRow.optionalString` beim Import wieder zu `nil` normalisieren
+    /// (siehe deren Doc-Kommentar) und damit "bereits gestartet" faelschlich
+    /// zu "Vorlauf nie durchlaufen" machen. Deckt alle drei moeglichen
+    /// Zustaende in einem Export/Import-Durchlauf ab: nie gestartet (nil),
+    /// gestartet ohne Fortschritt ("-"), gestartet mit Fortschritt (echte
+    /// Daten) - keiner darf durch den Roundtrip in einen anderen kippen.
+    func testForTimeCheckedRoundsRawSurvivesRoundtripIncludingPlaceholder() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "WOD-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(
+            name: "Auf Zeit Tag", weekday: 2, type: .fullBody, plan: plan,
+            timeFormat: .forTime, timeCapMinutes: 20
+        )
+        ctx.insert(day)
+
+        let startedButUnchecked = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_200_000),
+            endTime: Date(timeIntervalSince1970: 1_760_200_600),
+            isCompleted: false, dayName: "Auf Zeit Tag", day: day,
+            timeFormatSnapshot: .forTime,
+            forTimeCheckedRoundsRaw: "-"
+        )
+        ctx.insert(startedButUnchecked)
+
+        let inProgress = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_300_000),
+            endTime: Date(timeIntervalSince1970: 1_760_300_600),
+            isCompleted: false, dayName: "Auf Zeit Tag", day: day,
+            timeFormatSnapshot: .forTime,
+            forTimeCheckedRoundsRaw: "0=2,1=1"
+        )
+        ctx.insert(inProgress)
+
+        let neverStarted = WorkoutSession(
+            startTime: Date(timeIntervalSince1970: 1_760_400_000),
+            endTime: Date(timeIntervalSince1970: 1_760_400_600),
+            isCompleted: false, dayName: "Auf Zeit Tag", day: day,
+            timeFormatSnapshot: .forTime
+        )
+        ctx.insert(neverStarted)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(
+            FetchDescriptor<WorkoutSession>(sortBy: [SortDescriptor(\.startTime, order: .forward)])
+        )
+        XCTAssertEqual(imported.count, 3)
+        XCTAssertEqual(imported[0].forTimeCheckedRoundsRaw, "-",
+                       "Platzhalter fuer \"gestartet, 0 abgehakt\" darf nicht zu nil normalisiert werden")
+        XCTAssertEqual(imported[1].forTimeCheckedRoundsRaw, "0=2,1=1")
+        XCTAssertNil(imported[2].forTimeCheckedRoundsRaw, "nie gestartet muss nil bleiben")
+    }
+
+    /// Ein normaler Satz/Wiederholungs-Tag (kein Zeitformat) darf durch die
+    /// neuen additiven Spalten nicht ploetzlich ein Zeitformat annehmen -
+    /// leere Zelle muss zuverlaessig als nil ankommen, nicht als "amrap"
+    /// o.ae. missinterpretiert werden.
+    func testNormalDayStaysNilTimeFormatAfterRoundtrip() async throws {
+        let source = try makeContainer()
+        try seed(source.mainContext)
+        let bundle = try DataExportService.makeExport(context: source.mainContext)
+
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let importedDay = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        XCTAssertNil(importedDay?.timeFormat)
+        XCTAssertNil(importedDay?.timeCapMinutes)
+        let importedSession = try target.mainContext.fetch(FetchDescriptor<WorkoutSession>()).first
+        XCTAssertNil(importedSession?.timeFormatSnapshot)
+        XCTAssertNil(importedSession?.roundsCompleted)
+    }
+
     // MARK: - DEL-226 Trockenlauf
 
     /// Die Vorschau muss den Inhalt korrekt melden und dabei NICHTS schreiben.
-    func testPreviewReportsContentWithoutTouchingData() throws {
+    func testPreviewReportsContentWithoutTouchingData() async throws {
         let source = try makeContainer()
         try seed(source.mainContext)
         let bundle = try DataExportService.makeExport(context: source.mainContext)
@@ -393,9 +974,1157 @@ final class DataPortabilityRoundtripTests: XCTestCase {
 
     /// Ein kaputtes ZIP muss in der Vorschau scheitern — dort ist der Abbruch
     /// harmlos, weil noch nichts angefasst wurde.
-    func testPreviewRejectsGarbage() throws {
+    func testPreviewRejectsGarbage() async throws {
         XCTAssertThrowsError(
             try DataImportService.preview(zipData: Data("kein zip".utf8))
+        )
+    }
+
+    // MARK: - Bugfix (Audit): "alles ausblenden" im Roundtrip
+
+    /// `activeDashboardWidgetsRaw`/`heroMetricSlotsRaw` sind beide leer ein
+    /// gueltiger, bewusst vom User gewaehlter Zustand (siehe
+    /// `DashboardSettingsView` - dort laesst sich jedes Widget/jeder
+    /// Hero-Slot einzeln bis auf null abwaehlen). `importProfile` konnte
+    /// "Spalte existiert, Wert ist bewusst leer" bisher nicht von "alter
+    /// Export kannte die Spalte noch nicht" unterscheiden (`row["..."]`
+    /// liefert fuer beide `""`) und ueberschrieb eine bewusst geleerte Liste
+    /// nach jedem Restore stillschweigend mit dem nicht-leeren
+    /// Konstruktor-Default.
+    func testEmptyDashboardWidgetsAndHeroSlotsSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.activeDashboardWidgetsRaw = []
+        profile.heroMetricSlotsRaw = []
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.activeDashboardWidgetsRaw, [],
+                       "bewusst leere Dashboard-Widget-Liste darf nach dem Restore nicht auf den Default zurueckspringen")
+        XCTAssertEqual(imported?.heroMetricSlotsRaw, [],
+                       "bewusst leere Hero-Metric-Liste darf nach dem Restore nicht auf den Default zurueckspringen")
+    }
+
+    /// DEL-250: alle sechs neuen Cardio-Profil-Felder muessen den Export/
+    /// Import-Roundtrip ueberleben — inklusive `cardioRaceDate` (ein echtes
+    /// `Date?`, nicht nur ein String-Feld wie `cardioGoalRaw`).
+    func testCardioProfileFieldsSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.cardioCoachingEnabled = true
+        profile.cardioGoal = .halfMarathon
+        profile.cardioRaceDate = Date(timeIntervalSince1970: 1_800_000_000)
+        profile.current5kReferenceSeconds = 1_500
+        profile.weeklyBaseVolumeKm = 25.5
+        profile.maxHeartRateBpm = 188
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first)
+        XCTAssertEqual(imported.cardioCoachingEnabled, true)
+        XCTAssertEqual(imported.cardioGoal, .halfMarathon)
+        let restoredRaceDate = try XCTUnwrap(imported.cardioRaceDate)
+        XCTAssertEqual(restoredRaceDate.timeIntervalSince1970, 1_800_000_000, accuracy: 1.0)
+        XCTAssertEqual(imported.current5kReferenceSeconds, 1_500)
+        let restoredWeeklyVolumeKm = try XCTUnwrap(imported.weeklyBaseVolumeKm)
+        XCTAssertEqual(restoredWeeklyVolumeKm, 25.5, accuracy: 0.01)
+        XCTAssertEqual(imported.maxHeartRateBpm, 188)
+    }
+
+    /// DEL-250: ein Profil OHNE Cardio-Ziele (Default-Zustand, z.B.
+    /// Bestandsnutzer nach einem Update) darf beim Roundtrip nicht
+    /// versehentlich Werte "erfinden" — alle sechs Felder bleiben auf
+    /// ihrem Default/nil.
+    func testCardioProfileDefaultsSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.cardioCoachingEnabled, false)
+        XCTAssertEqual(imported?.cardioGoal, .generalFitness)
+        XCTAssertNil(imported?.cardioRaceDate)
+        XCTAssertNil(imported?.current5kReferenceSeconds)
+        XCTAssertNil(imported?.weeklyBaseVolumeKm)
+        XCTAssertNil(imported?.maxHeartRateBpm)
+    }
+
+    // Handoff "Lauf-Coaching - Machbarkeits-Check": der Fingerprint muss
+    // ein Backup/Restore ueberleben, sonst zeigt die Karte nach einem
+    // Restore erneut einen bereits verworfenen/angenommenen Vorschlag.
+    func testCardioFeasibilityDismissedFingerprintSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.cardioFeasibilityDismissedFingerprint = "marathon#1800000000#22.4"
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.cardioFeasibilityDismissedFingerprint, "marathon#1800000000#22.4")
+    }
+
+    func testCardioFeasibilityDismissedFingerprintDefaultsToNilOnRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertNil(imported?.cardioFeasibilityDismissedFingerprint)
+    }
+
+    /// Paket-3a-Restpunkt 3 (Persistenz/Import, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// Kaltstart — ein frisch angelegtes Profil (kein Export/Import im
+    /// Spiel) hat den Hinweis nie abgelehnt. Trivial durch den Konstruktor-
+    /// Default, aber ausdruecklich verlangt und hier eigenstaendig
+    /// nachgewiesen statt nur behauptet.
+    func testMissedRunHintDismissedFingerprintDefaultsToNilOnColdStart() {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        XCTAssertNil(profile.missedRunHintDismissedFingerprint)
+    }
+
+    /// Paket-3a-Restpunkt 3: bewusster Vertrag (siehe `UserBodyProfile.
+    /// missedRunHintDismissedFingerprint`-Doc) — anders als
+    /// `cardioFeasibilityDismissedFingerprint` oben wird DIESES Feld beim
+    /// Export/Import NICHT mitgenommen, selbst wenn es vor dem Export
+    /// gesetzt war. Eigenstaendig nachgewiesen (nicht nur vom
+    /// `cardioPlanAdjustmentFingerprint`-Praezedenzfall abgeleitet) — ein
+    /// kuenftiger versehentlicher Export dieses Felds wuerde diesen Test
+    /// zum Fehlschlagen bringen.
+    func testMissedRunHintDismissedFingerprintResetsOnImport() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.missedRunHintDismissedFingerprint = "1700000000#flex:1#2#8"
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertNil(imported?.missedRunHintDismissedFingerprint,
+                     "bewusst zurueckgesetzt, nicht exportiert/importiert — siehe UserBodyProfile-Doc")
+    }
+
+    // Smart-Onboarding-Epic: `experience_track` ist eine additive CSV-Spalte
+    // (ans Ende des Headers angehaengt) — ein gesetzter Wert muss Backup/
+    // Restore ueberleben, sonst verliert ein Nutzer seine abgeleitete oder
+    // im Onboarding gewaehlte Einstufung bei jedem Restore.
+    func testExperienceTrackSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.experienceTrack = .returner
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.experienceTrack, .returner)
+    }
+
+    /// Ohne gesetzten Track (z.B. frisch angelegtes Profil, Backfill lief
+    /// noch nicht) bleibt die Spalte leer und bleibt `nil` — ein Restore darf
+    /// nicht versehentlich `.experienced` oder sonst einen Wert erfinden.
+    func testExperienceTrackDefaultsToNilOnRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertNil(imported?.experienceTrack)
+    }
+
+    // MARK: - Smart-Onboarding-Epic Phase 2: equipmentProfile (dreiwertige Equipment-Erfassung)
+
+    func testEquipmentProfileSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.equipmentProfile = UserEquipmentProfile(
+            availability: [.kettlebell: .available, .adjustableBench: .unavailable, .pullUpBar: .available],
+            counts: [.kettlebell: 1]
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .kettlebell), .available)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .adjustableBench), .unavailable)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .pullUpBar), .available)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .barbell), .unknown)
+        XCTAssertEqual(imported?.equipmentProfile.count(for: .kettlebell), 1)
+    }
+
+    /// Korrektur V5: eine explizite "Weiß ich nicht"-Aussage (Bank/
+    /// Klimmzugstange im `EquipmentProfileEditor`) muss den vollen CSV-
+    /// Export/Import-Rundlauf ueberleben — nicht nur den reinen In-Memory-
+    /// Setter/Getter von `UserBodyProfileTests`. Vor dem Fix gab es dafuer
+    /// gar keine eigene CSV-Spalte: `.unknown` landete in keiner der beiden
+    /// bestehenden Listen und war nach dem Export/Import nicht mehr von
+    /// einem nie angefassten Item unterscheidbar.
+    func testExplicitlyUnknownEquipmentSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.equipmentProfile = UserEquipmentProfile(
+            availability: [.adjustableBench: .unknown, .pullUpBar: .unknown, .kettlebell: .available]
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .adjustableBench), .unknown)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .pullUpBar), .unknown)
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .kettlebell), .available)
+
+        // Die eigentliche Regression: nach dem Rundlauf muss die explizite
+        // "weiß ich nicht"-Aussage auch die anschliessende vollstaendige
+        // Bestaetigung ueberleben (siehe `UserBodyProfileTests.
+        // testExplicitlyUnknownBenchSurvivesConfirmEquipmentProfileCompleteThroughPersistence`
+        // fuer denselben Vertrag ohne den CSV-Rundlauf dazwischen).
+        imported?.confirmEquipmentProfileComplete()
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .adjustableBench), .unknown,
+                       "Explizit 'weiß ich nicht' darf auch nach Export/Import nicht zu 'nicht vorhanden' kippen")
+        XCTAssertEqual(imported?.equipmentProfile.availability(for: .barbell), .unavailable,
+                       "Ein wirklich nie angefasstes Item kippt weiterhin wie gewohnt zu unavailable")
+    }
+
+    /// Entspricht einem Bestandsprofil von vor dieser Phase: die drei neuen
+    /// Spalten fehlen im Export schlicht nicht (sie werden immer mit-
+    /// geschrieben), aber ein Profil, das die Felder nie gesetzt hat, muss
+    /// nach dem Rundlauf weiterhin ueberall `.unknown` liefern — kein Restore
+    /// darf `.unavailable` erfinden.
+    func testEquipmentProfileDefaultsToAllUnknownOnRoundtripForUntouchedProfile() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        for item in EquipmentItem.allCases {
+            XCTAssertEqual(imported?.equipmentProfile.availability(for: item), .unknown)
+        }
+    }
+
+    /// Smart-Onboarding-Epic Phase 3: die neue Bestaetigungs-Flag muss den
+    /// Rundlauf ueberleben — sonst wuerde ein Restore eine bereits
+    /// abgeschlossene Erfassung wieder als "offen" erscheinen lassen.
+    func testEquipmentProfileConfirmedCompleteSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.confirmBodyweightOnly()
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.equipmentProfileConfirmedComplete, true)
+        XCTAssertEqual(imported?.equipmentPreferences, [.bodyweight])
+        for item in EquipmentItem.allCases {
+            XCTAssertEqual(imported?.equipmentProfile.availability(for: item), .unavailable)
+        }
+    }
+
+    // Start-Check-Epic: Core-Pflichttest 2 ("Jede Testvariante kann
+    // gespeichert, exportiert und importiert werden") + 8 ("Backward
+    // compatibility: bestehender User ohne Baseline bleibt unveraendert").
+
+    /// Ein VOLLSTAENDIGER Check (alle fuenf Bewegungsfamilien + beide
+    /// Selbsteinschaetzungs-Fallbacks gesetzt) muss 1:1 ueberleben.
+    func testFullBaselineAssessmentSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        let assessment = BaselineAssessment(
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            source: .guidedTest,
+            safetyStatus: .clear,
+            pushUp: PushUpAssessment(variant: .knees, cleanReps: 8),
+            chairSquat: ChairSquatAssessment(cleanReps: 12, durationSeconds: 30),
+            pull: PullAssessment(variant: .latPulldown, cleanReps: 10, loadKg: 35.5, rir: 2.5),
+            plank: PlankAssessment(seconds: 42),
+            cardio: CardioBaseline(answer: .canJogEasy10Min),
+            pushSelfAssessment: .canButStrenuous,
+            legsSelfAssessment: .easy,
+            pullSelfAssessment: .unsureNoCleanRep,
+            desiredFirstWeekIntensity: .veryEasy
+        )
+        profile.baselineAssessment = assessment
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.baselineAssessment, assessment)
+    }
+
+    /// Ein TEILWEISE ausgefuellter Check (nur Push-up getestet, Rest nil)
+    /// darf beim Restore nichts erfinden.
+    func testPartialBaselineAssessmentSurvivesRoundtripWithNilFieldsIntact() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        let assessment = BaselineAssessment(
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            source: .selfAssessment,
+            safetyStatus: .flagged,
+            pushUp: PushUpAssessment(variant: .standard, cleanReps: 15)
+        )
+        profile.baselineAssessment = assessment
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertEqual(imported?.baselineAssessment, assessment)
+        XCTAssertNil(imported?.baselineAssessment?.chairSquat)
+        XCTAssertNil(imported?.baselineAssessment?.pull)
+        XCTAssertNil(imported?.baselineAssessment?.plank)
+        XCTAssertNil(imported?.baselineAssessment?.cardio)
+    }
+
+    /// Bestandsnutzer OHNE Check (Default-Zustand) bleiben unveraendert —
+    /// kein Restore darf versehentlich einen Check erfinden.
+    func testNoBaselineAssessmentStaysNilOnRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
+        XCTAssertNil(imported?.baselineAssessment)
+    }
+
+    // Handoff "Lauf-Coaching - Machbarkeits-Check": generationSource muss
+    // ein Backup/Restore ueberleben, sonst haelt die "bereits angenommen"-
+    // Erkennung (bzw. hier: die zugrundeliegende Herkunfts-Markierung) einen
+    // Restore nicht durch.
+    func testGenerationSourceSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Cardio-Coach-Plan", programType: "custom", isActive: false)
+        plan.generationSource = .cardioCoach
+        ctx.insert(plan)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertEqual(imported?.generationSource, .cardioCoach)
+    }
+
+    func testGenerationSourceDefaultsToManualOnRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Handangelegter Plan", programType: "custom", isActive: false)
+        ctx.insert(plan)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertEqual(imported?.generationSource, .manual)
+    }
+
+    // MARK: - P6.1 (Plan-Versionierung): activatedAt
+
+    func testActivatedAtSurvivesRoundtripForAnActivePlan() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Aktiver Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        try ctx.save()
+        let originalActivatedAt = try XCTUnwrap(plan.activatedAt, "Init muss bei isActive:true automatisch stempeln")
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        let importedActivatedAt = try XCTUnwrap(imported?.activatedAt)
+        XCTAssertEqual(importedActivatedAt.timeIntervalSince1970, originalActivatedAt.timeIntervalSince1970, accuracy: 1.0)
+    }
+
+    func testActivatedAtDefaultsToNilOnRoundtripForANeverActivatedPlan() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Nie aktivierter Plan", programType: "custom", isActive: false)
+        ctx.insert(plan)
+        try ctx.save()
+        XCTAssertNil(plan.activatedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertNil(imported?.activatedAt)
+    }
+
+    /// Haertet genau den Fund, der beim Entwurf dieses Felds beinahe
+    /// passiert waere: DEL-225s `mayActivate`-Regel kann einen laut Backup
+    /// aktiven Plan beim Import auf `isActive = false` zuruecksetzen (wenn
+    /// das Zielgeraet bereits einen anderen aktiven Plan hat). `activatedAt`
+    /// darf davon UNBERUEHRT bleiben — weder auf `nil` noch auf "jetzt"
+    /// zurueckfallen, sondern den echten, historischen Wert aus dem Backup
+    /// behalten, auch wenn der Plan importiert gerade inaktiv ankommt.
+    func testActivatedAtSurvivesEvenWhenImportSuppressesActivationDueToExistingActivePlan() async throws {
+        let source = try makeContainer()
+        let sourceCtx = source.mainContext
+        let historicalPlan = TrainingPlan(name: "Historisch aktiver Plan", programType: "custom", isActive: true)
+        sourceCtx.insert(historicalPlan)
+        try sourceCtx.save()
+        let historicalActivatedAt = try XCTUnwrap(historicalPlan.activatedAt)
+
+        let bundle = try DataExportService.makeExport(context: sourceCtx)
+
+        let target = try makeContainer()
+        let targetCtx = target.mainContext
+        let alreadyActiveOnTarget = TrainingPlan(name: "Bereits aktiv auf dem Zielgeraet", programType: "custom", isActive: true)
+        targetCtx.insert(alreadyActiveOnTarget)
+        try targetCtx.save()
+
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: targetCtx,
+            strategy: .appendOnly
+        )
+
+        let imported = try targetCtx.fetch(FetchDescriptor<TrainingPlan>())
+            .first { $0.name == "Historisch aktiver Plan" }
+        XCTAssertEqual(imported?.isActive, false, "mayActivate muss den Import korrekt auf inaktiv setzen")
+        let importedActivatedAt = try XCTUnwrap(imported?.activatedAt, "activatedAt darf trotz unterdrueckter Aktivierung nicht verloren gehen")
+        XCTAssertEqual(importedActivatedAt.timeIntervalSince1970, historicalActivatedAt.timeIntervalSince1970, accuracy: 1.0)
+    }
+
+    // MARK: - P7.3: Review-Zustandsfeld (reviewCompletedAt/reviewDecision/reviewObservationStartedAt)
+
+    func testReviewCompletionStateSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Abgeschlossener Rückblick", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        try ctx.save()
+        let completedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        FourWeekReviewDueStatus.completeCurrentBlock(
+            for: plan,
+            expectedBlockStart: FourWeekReviewDueStatus.currentBlockStart(for: plan),
+            decision: .actionTaken,
+            shownReview: FourWeekReviewOrchestrator.Review(
+                participation: .notReliablyEvaluable(.activationStartUnknown),
+                outcome: .keepAsIs,
+                dataGaps: []
+            ),
+            now: completedAt,
+            in: ctx
+        )
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        let importedCompletedAt = try XCTUnwrap(imported?.reviewCompletedAt)
+        XCTAssertEqual(importedCompletedAt.timeIntervalSince1970, 1_700_000_000, accuracy: 1.0)
+        XCTAssertEqual(imported?.reviewDecision, .actionTaken)
+
+        // P8 Stufe 3: die Blockhistorie selbst (nicht nur die Altfelder)
+        // überlebt denselben Roundtrip.
+        let importedPlan = try XCTUnwrap(imported)
+        let importedHistory = FourWeekReviewDueStatus.history(for: importedPlan)
+        XCTAssertEqual(importedHistory.count, 1)
+        XCTAssertEqual(importedHistory[0].completedAt.timeIntervalSince1970, 1_700_000_000, accuracy: 1.0)
+        XCTAssertEqual(importedHistory[0].decision, .actionTaken)
+        XCTAssertEqual(importedHistory[0].shownOutcome, .keepAsIs)
+    }
+
+    /// Ein Backup von vor P8 Stufe 3 hat die neue Spalte nicht — der Import
+    /// darf dann weder abstürzen noch eine Blockhistorie erfinden. Die drei
+    /// Altfelder bleiben die einzige bekannte Grundlage (siehe
+    /// `FourWeekReviewDueStatus.history(for:)`).
+    func testBlockReviewHistorySurvivesRoundtripAndIsAbsentWithoutAnyCompletion() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Noch kein Block abgeschlossen", programType: "custom", isActive: true)
+        plan.activatedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        ctx.insert(plan)
+        try ctx.save()
+        XCTAssertNil(plan.blockReviewHistoryJSON)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first)
+        XCTAssertNil(imported.blockReviewHistoryJSON)
+        XCTAssertTrue(FourWeekReviewDueStatus.history(for: imported).isEmpty, "keine erfundene Blockhistorie ohne jeden Abschluss")
+    }
+
+    /// Ein Backup von vor P7.3 (bzw. ein Plan, dessen Rückblick nie
+    /// abgeschlossen wurde) darf NIE einen erfundenen Abschluss oder
+    /// Beobachtungsbeginn bekommen — alle drei Felder bleiben `nil`.
+    func testReviewStateFieldsDefaultToNilOnRoundtripWhenNeverReviewed() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Nie überprüft", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        try ctx.save()
+        XCTAssertNil(plan.reviewCompletedAt)
+        XCTAssertNil(plan.reviewDecision)
+        XCTAssertNil(plan.reviewObservationStartedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertNil(imported?.reviewCompletedAt)
+        XCTAssertNil(imported?.reviewDecision)
+        XCTAssertNil(imported?.reviewObservationStartedAt)
+    }
+
+    func testReviewObservationStartedAtFallbackSurvivesRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        // Simuliert einen Altbestand-Plan ohne activatedAt, fuer den bereits
+        // einmal ein Beobachtungs-Fallback angelegt wurde.
+        let plan = TrainingPlan(name: "Altbestand ohne Zeitanker", programType: "custom", isActive: true)
+        plan.activatedAt = nil
+        ctx.insert(plan)
+        try ctx.save()
+        FourWeekReviewDueStatus.establishObservationAnchorsIfNeeded(in: ctx, now: Date(timeIntervalSince1970: 1_600_000_000))
+        let originalObservationStart = try XCTUnwrap(plan.reviewObservationStartedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let imported = try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first
+        XCTAssertNil(imported?.activatedAt)
+        let importedObservationStart = try XCTUnwrap(imported?.reviewObservationStartedAt)
+        XCTAssertEqual(importedObservationStart.timeIntervalSince1970, originalObservationStart.timeIntervalSince1970, accuracy: 1.0)
+    }
+
+    // MARK: - P6.3: PeriodicCheckIn (Häufigkeit/Dauer/Beschwerden/Ziel)
+
+    /// Gemischter Fall — manche Fragen beantwortet, manche bewusst
+    /// übersprungen. Beweist, dass `nil` (übersprungen) und ein echter Wert
+    /// unabhängig voneinander pro Feld überleben, nicht alles-oder-nichts.
+    func testPeriodicCheckInPartialAnswersSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let checkIn = PeriodicCheckIn(
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            frequencyFeedback: .asPlanned,
+            durationFeedback: nil,
+            hadComplaints: true,
+            complaintsNote: "Knie zwickt leicht",
+            goalStillCurrent: nil,
+            exertionFeedback: .tooHard
+        )
+        ctx.insert(checkIn)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<PeriodicCheckIn>()).first)
+        XCTAssertEqual(imported.frequencyFeedback, .asPlanned)
+        XCTAssertNil(imported.durationFeedback, "uebersprungene Frage bleibt nil, nicht ein geratener Default")
+        XCTAssertEqual(imported.hadComplaints, true)
+        XCTAssertEqual(imported.complaintsNote, "Knie zwickt leicht")
+        XCTAssertNil(imported.goalStillCurrent)
+        XCTAssertEqual(imported.exertionFeedback, .tooHard)
+    }
+
+    /// Regressionsschutz fuer genau die Falle, die beim Bau vermieden werden
+    /// musste: `CSVRow.bool(_:)` liest eine leere Spalte als `false` (etab-
+    /// liertes Verhalten fuer Bestandsfelder) — fuer die beiden echten
+    /// Ja/Nein-Fragen dieses Features waere das eine stille Umdeutung von
+    /// "uebersprungen" zu "Nein". Ein komplett uebersprungener Rueckblick
+    /// (alle fuenf Fragen `nil`) muss nach Export+Import weiterhin FUENF MAL
+    /// `nil` liefern, nie `false`/0.
+    func testPeriodicCheckInFullySkippedStaysNilNotFalseAfterRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let checkIn = PeriodicCheckIn(date: Date(timeIntervalSince1970: 1_700_000_000))
+        ctx.insert(checkIn)
+        try ctx.save()
+        XCTAssertNil(checkIn.hadComplaints)
+        XCTAssertNil(checkIn.goalStillCurrent)
+        XCTAssertNil(checkIn.exertionFeedback)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<PeriodicCheckIn>()).first)
+        XCTAssertNil(imported.frequencyFeedback)
+        XCTAssertNil(imported.durationFeedback)
+        XCTAssertNil(imported.hadComplaints, "darf nach dem Roundtrip nicht faelschlich 'false' werden")
+        XCTAssertNil(imported.complaintsNote)
+        XCTAssertNil(imported.goalStillCurrent, "darf nach dem Roundtrip nicht faelschlich 'false' werden")
+        XCTAssertNil(imported.exertionFeedback, "darf nach dem Roundtrip nicht faelschlich auf .appropriate o.ae. erraten werden")
+    }
+
+    /// Daten-/Exportkompatibilitäts-Checkpoint für das gesamte P6-Paket:
+    /// P6.1 (`TrainingPlan.activatedAt`), P6.2 (liest nur, schreibt nichts
+    /// Eigenes) und P6.3 (`PeriodicCheckIn`) wurden bisher nur isoliert in
+    /// ihren jeweils eigenen Minimal-Fixtures roundtrip-getestet. Dieser Test
+    /// exportiert einen aktiven Plan MIT `activatedAt` und einen
+    /// `PeriodicCheckIn` GEMEINSAM in einem einzigen Bundle und bestätigt,
+    /// dass beide additiven Erweiterungen nebeneinander, ohne gegenseitige
+    /// Beeinflussung, denselben Import-Lauf überstehen.
+    func testP6CombinedPlanActivationAndPeriodicCheckInCoexistInOneRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let plan = TrainingPlan(name: "P6-Kombi-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let checkIn = PeriodicCheckIn(
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            frequencyFeedback: .moreThanPlanned,
+            durationFeedback: .justRight,
+            hadComplaints: false,
+            goalStillCurrent: true,
+            exertionFeedback: .appropriate
+        )
+        ctx.insert(checkIn)
+        try ctx.save()
+        let activatedAt = try XCTUnwrap(plan.activatedAt)
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+        XCTAssertEqual(result.errorRows, 0)
+
+        let importedPlan = try XCTUnwrap(
+            try target.mainContext.fetch(FetchDescriptor<TrainingPlan>()).first { $0.name == "P6-Kombi-Plan" }
+        )
+        let importedActivatedAt = try XCTUnwrap(importedPlan.activatedAt)
+        XCTAssertEqual(importedActivatedAt.timeIntervalSince1970, activatedAt.timeIntervalSince1970, accuracy: 1.0)
+
+        let importedCheckIn = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<PeriodicCheckIn>()).first)
+        XCTAssertEqual(importedCheckIn.frequencyFeedback, .moreThanPlanned)
+        XCTAssertEqual(importedCheckIn.durationFeedback, .justRight)
+        XCTAssertEqual(importedCheckIn.hadComplaints, false, "echtes 'Nein' darf nicht mit uebersprungen (nil) verwechselt werden")
+        XCTAssertEqual(importedCheckIn.goalStillCurrent, true)
+        XCTAssertEqual(importedCheckIn.exertionFeedback, .appropriate)
+    }
+
+    // MARK: - Settings-Epic Phase 5
+
+    /// Befund-Aufhaenger: "grosse Historie". Beweist, dass der neue Off-Main-
+    /// Pfad (`makeExportAsync`, ZIP-Kompression per `Task.detached`) bei
+    /// echtem Datenvolumen exakt dieselben Daten liefert wie der bisherige
+    /// synchrone Pfad — die Sendable-Snapshot-Aufteilung (Fetch+CSV-Bau
+    /// bleibt auf dem Context-Actor, nur die Kompression wandert) darf die
+    /// Zeilen nicht verlieren oder verdoppeln.
+    func testAsyncExportAtVolumeRoundtripsCompletely() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 700_000_000),
+            heightCm: 180, profile: .male, goalWeightKg: 90, environment: .gym
+        )
+        ctx.insert(profile)
+        let plan = TrainingPlan(name: "Volumen-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Ganzkoerper", weekday: 1, type: .fullBody, plan: plan)
+        ctx.insert(day)
+        let exercise = Exercise(name: "Kreuzheben", sets: 3, suggestedWeight: 100, day: day)
+        ctx.insert(exercise)
+
+        let sessionCount = 250
+        for i in 0..<sessionCount {
+            let start = Date(timeIntervalSince1970: 1_700_000_000 + Double(i) * 86_400)
+            let session = WorkoutSession(
+                startTime: start, endTime: start.addingTimeInterval(3_600),
+                durationMinutes: 60, exerciseCount: 1, totalSets: 3,
+                totalVolumeKg: 900, isCompleted: true, day: day
+            )
+            ctx.insert(session)
+            for setIndex in 0..<3 {
+                ctx.insert(ExerciseLog(
+                    date: start, setIndex: setIndex, weight: 100, reps: 5, rir: 2,
+                    exercise: exercise, session: session
+                ))
+            }
+        }
+        try ctx.save()
+
+        let bundle = try await DataExportService.makeExportAsync(context: ctx)
+        XCTAssertEqual(bundle.totalRows, 1 /* profile */ + 1 /* plan */ + 1 /* day */ + 1 /* exercise */ + sessionCount + sessionCount * 3)
+
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+        XCTAssertEqual(result.errorRows, 0)
+        XCTAssertEqual(try target.mainContext.fetchCount(FetchDescriptor<WorkoutSession>()), sessionCount)
+        XCTAssertEqual(try target.mainContext.fetchCount(FetchDescriptor<ExerciseLog>()), sessionCount * 3)
+    }
+
+    /// Befund RS-03a: `UserDataWipe.deleteSharedUserData` darf GENAU die 10
+    /// mit dem Replace-Import gemeinsamen Typen loeschen — `ExerciseTemplate`
+    /// (System UND Custom) muss unberuehrt bleiben, weil Reset und
+    /// Replace-Import dafuer bewusst unterschiedliche, separat behandelte
+    /// Umfaenge haben (siehe `SettingsView.resetApp`/
+    /// `DataImportService.wipeAllUserData`).
+    func testUserDataWipeDeletesOnlyTheSharedScope() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        try seed(ctx)
+        let systemTemplate = ExerciseTemplate(name: "Systemuebung", equipment: .barbell, primaryMuscle: .chest, isCustom: false)
+        let customTemplate = ExerciseTemplate(name: "Eigene Uebung", equipment: .dumbbell, primaryMuscle: .chest, isCustom: true)
+        ctx.insert(systemTemplate)
+        ctx.insert(customTemplate)
+        try ctx.save()
+
+        try UserDataWipe.deleteSharedUserData(in: ctx)
+        try ctx.save()
+
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<PersonalRecordEntry>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseLog>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WorkoutSession>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<Exercise>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<TrainingDay>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<TrainingPlan>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WaterEntry>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<BodyMeasurement>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<Gear>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<UserBodyProfile>()), 0)
+        // Der eigentliche Punkt des Tests: beide Templates ueberleben.
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseTemplate>()), 2)
+    }
+
+    /// Befund RS-02/"Restore nach Reset": eine VOR einem destruktiven Wipe
+    /// erzeugte Sicherung (wie `BackupService.createBackupAsync(reason:
+    /// .preReset)` sie vor `SettingsView.resetApp`s Loeschung anlegt) muss
+    /// den kompletten Vor-Wipe-Zustand wiederherstellen koennen. Simuliert
+    /// den Reset-Loeschumfang direkt (`UserDataWipe` + alle Templates, wie
+    /// `resetApp` es tut) statt ueber die UI — die eigentliche
+    /// Service-Garantie ("Backup vor Wipe ist vollstaendig restaurierbar")
+    /// ist hier vollstaendig pruefbar, die SwiftUI-Orchestrierung selbst
+    /// nicht (kein UI-Test-Target in diesem Repo).
+    func testRestoreAfterResetLikeWipeRecoversFullState() async throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        try seed(ctx)
+
+        // 1) "Vorab-Sicherung" — exakt das, was vor einem Reset passieren wuerde.
+        let preResetBundle = try DataExportService.makeExport(context: ctx)
+
+        // 2) Reset-Loeschumfang: gemeinsame Typen + ALLE ExerciseTemplates
+        //    (anders als der Replace-Import, der nur Custom-Templates wischt —
+        //    hier gibt es ohnehin keine, seed() legt keine an).
+        try UserDataWipe.deleteSharedUserData(in: ctx)
+        try UserDataWipe.deleteEach(of: ExerciseTemplate.self, in: ctx)
+        try ctx.save()
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<UserBodyProfile>()), 0, "Wipe muss vorher wirklich leeren")
+
+        // 3) Restore — wie `BackupListView.restore(_:)` es tut.
+        let result = try await DataImportService.performImport(
+            zipData: preResetBundle.data, context: ctx, strategy: .replace
+        )
+        XCTAssertEqual(result.errorRows, 0)
+
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<UserBodyProfile>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<TrainingPlan>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WorkoutSession>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseLog>()), 3, "2 Session-Logs + 1 Orphan-Log, siehe seed()")
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<PersonalRecordEntry>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<Gear>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<BodyMeasurement>()), 1)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<WaterEntry>()), 1)
+    }
+
+    // MARK: - Settings-Epic Phase 6 (EXLIB-07/09): stabile Exercise-Referenz
+
+    /// Kern-Regression des Audit-Befunds: Umbenennen einer eigenen Übung
+    /// darf Verlaufs-Lookup nicht brechen. `exerciseTemplateID` (stabil)
+    /// bleibt unveraendert; `exerciseNameSnapshot` (historischer Snapshot)
+    /// bleibt bewusst auf dem ALTEN Namen stehen — der Test beweist explizit,
+    /// dass ein Lookup rein über den aktuellen Namen die Historie verfehlen
+    /// WUERDE, waehrend die ID sie weiterhin findet.
+    func testExerciseTemplateIDResolvesHistoryAfterTemplateRename() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let template = ExerciseTemplate(name: "Kabelzug", equipment: .cable, primaryMuscle: .back, isCustom: true)
+        ctx.insert(template)
+        let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
+        ctx.insert(exercise)
+        let log = ExerciseLog(setIndex: 0, weight: 50, reps: 10, rir: 2, exercise: exercise)
+        ctx.insert(log)
+        try ctx.save()
+
+        XCTAssertEqual(log.resolvedExerciseTemplateID, template.id)
+        XCTAssertEqual(log.resolvedExerciseName, "Kabelzug")
+
+        template.name = "Lat-Zug"
+        try ctx.save()
+
+        XCTAssertEqual(log.resolvedExerciseTemplateID, template.id, "Umbenennen darf die stabile Referenz nicht brechen")
+        XCTAssertEqual(log.resolvedExerciseName, "Kabelzug", "Historischer Namens-Snapshot bleibt erhalten")
+        XCTAssertNotEqual(
+            log.resolvedExerciseName, template.name,
+            "Beweis: ein Lookup NUR ueber den aktuellen Namen wuerde diesen Log nach dem Umbenennen verfehlen — die ID ist die einzig verlässliche Referenz"
+        )
+    }
+
+    /// Löschen einer (Custom-)Vorlage darf Logs/PRs strukturell niemals
+    /// mitlöschen — `exerciseTemplateID` ist ein reiner UUID-Scalar, kein
+    /// `@Relationship`, genau damit es keine Delete-Rule gibt, die das
+    /// erzwingen könnte.
+    func testDeletingTemplateNeverCascadesToExerciseLogsOrPRs() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let template = ExerciseTemplate(name: "Face Pull", equipment: .cable, primaryMuscle: .shoulders, isCustom: true)
+        ctx.insert(template)
+        let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
+        ctx.insert(exercise)
+        let log = ExerciseLog(setIndex: 0, weight: 15, reps: 15, rir: 2, exercise: exercise)
+        ctx.insert(log)
+        let pr = PersonalRecordEntry(
+            date: Date(), exerciseName: template.name, exerciseTemplateID: template.id,
+            kindRaw: PersonalRecord.Kind.heaviestWeight.rawValue,
+            value: 15, previousValue: 10, weightKg: 15, reps: 15
+        )
+        ctx.insert(pr)
+        try ctx.save()
+
+        // ID VOR dem Loeschen sichern — `template` nach `ctx.delete`+`save`
+        // ist ein invalidiertes SwiftData-Objekt; jeder Property-Zugriff
+        // danach (auch `template.id`) ist undefiniert/crasht.
+        let templateID = template.id
+        ctx.delete(template)
+        try ctx.save()
+
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseLog>()), 1, "Log darf durch das Vorlagen-Loeschen nicht verschwinden")
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<PersonalRecordEntry>()), 1, "PR darf durch das Vorlagen-Loeschen nicht verschwinden")
+        // Snapshot-Felder bleiben unveraendert — nur die Live-Vorlage ist weg.
+        XCTAssertEqual(log.exerciseTemplateIDSnapshot, templateID)
+        XCTAssertEqual(pr.exerciseTemplateID, templateID)
+    }
+
+    /// CSV-/Backup-Roundtrip (häufiger Fall): Export + Import in einen
+    /// FRISCHEN Container — die stabile `ExerciseTemplate.id` wird 1:1
+    /// wiederhergestellt, und `exercise_template_id` auf Exercise/PR löst
+    /// nach dem Import korrekt auf die neu angelegte Vorlage auf.
+    func testCustomExerciseTemplateIDSurvivesExportImportRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let template = ExerciseTemplate(name: "Meine Uebung", equipment: .dumbbell, primaryMuscle: .chest, isCustom: true)
+        ctx.insert(template)
+        let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
+        ctx.insert(exercise)
+        let log = ExerciseLog(setIndex: 0, weight: 20, reps: 12, rir: 2, exercise: exercise)
+        ctx.insert(log)
+        let pr = PersonalRecordEntry(
+            date: Date(), exerciseName: template.name, exerciseTemplateID: template.id,
+            kindRaw: PersonalRecord.Kind.heaviestWeight.rawValue,
+            value: 20, previousValue: 15, weightKg: 20, reps: 12
+        )
+        ctx.insert(pr)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let importedTemplates = try target.mainContext.fetch(FetchDescriptor<ExerciseTemplate>())
+        guard let importedTemplate = importedTemplates.first(where: { $0.name == "Meine Uebung" }) else {
+            return XCTFail("Custom-Vorlage fehlt nach dem Import")
+        }
+        XCTAssertEqual(importedTemplate.id, template.id, "Stabile ID muss 1:1 ueberleben (frischer Container, kein Dedup)")
+
+        let importedExercises = try target.mainContext.fetch(FetchDescriptor<Exercise>())
+        XCTAssertEqual(importedExercises.first?.exerciseTemplateID, importedTemplate.id)
+
+        let importedPRs = try target.mainContext.fetch(FetchDescriptor<PersonalRecordEntry>())
+        XCTAssertEqual(importedPRs.first?.exerciseTemplateID, importedTemplate.id)
+
+        let importedLogs = try target.mainContext.fetch(FetchDescriptor<ExerciseLog>())
+        XCTAssertEqual(importedLogs.first?.exerciseTemplateIDSnapshot, importedTemplate.id)
+    }
+
+    /// CSV-/Backup-Roundtrip (Dedup-Fall): der Zielcontainer hat bereits eine
+    /// gleichnamige Custom-Vorlage MIT EIGENER ID (z.B. ein zweiter Import
+    /// derselben ZIP, oder ein Merge zweier Geräte). Der Importer legt dann
+    /// KEINE zweite Vorlage an, sondern verknuepft `exercise_template_id`
+    /// auf die BEREITS VORHANDENE Vorlage — nicht auf die (jetzt verwaiste)
+    /// ID aus der Export-Datei.
+    func testCustomExerciseTemplateIDResolvesThroughDedupOnReimport() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+        let template = ExerciseTemplate(name: "Dedup-Uebung", equipment: .machine, primaryMuscle: .quads, isCustom: true)
+        ctx.insert(template)
+        let exercise = Exercise(name: template.name, exerciseTemplateID: template.id, sets: 3)
+        ctx.insert(exercise)
+        try ctx.save()
+        let bundle = try DataExportService.makeExport(context: ctx)
+
+        // Zielcontainer hat bereits eine gleichnamige Vorlage mit ANDERER ID.
+        let target = try makeContainer()
+        let existingTemplate = ExerciseTemplate(name: "Dedup-Uebung", equipment: .machine, primaryMuscle: .quads, isCustom: true)
+        target.mainContext.insert(existingTemplate)
+        try target.mainContext.save()
+        XCTAssertNotEqual(existingTemplate.id, template.id)
+
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        XCTAssertEqual(
+            try target.mainContext.fetchCount(FetchDescriptor<ExerciseTemplate>()), 1,
+            "Dedup muss greifen — keine zweite gleichnamige Vorlage"
+        )
+        let importedExercises = try target.mainContext.fetch(FetchDescriptor<Exercise>())
+        XCTAssertEqual(
+            importedExercises.first?.exerciseTemplateID, existingTemplate.id,
+            "Referenz muss auf die WIEDERVERWENDETE Vorlage zeigen, nicht auf die verwaiste Export-ID"
         )
     }
 }

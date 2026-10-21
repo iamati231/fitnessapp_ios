@@ -8,6 +8,12 @@ import FitnessAppCore
 /// in einer `List`-Section (WorkoutSummaryView History-Edit). Bindet direkt
 /// an `Exercise.cardioEquipment` — die Aenderung persistiert via SwiftData-
 /// Autosave und wird sofort im Verlauf sichtbar.
+///
+/// Kartenflaeche/Radius geprueft: dieser Picker zeichnet keine eigene
+/// Flaeche (kein `.background`/`.clipShape` hier) - er sitzt als reine
+/// Menu-Row im Caller-Grid, der Caller gibt via `.listRowBackground(...)`
+/// die Deltiq-Karten-Flaeche vor (siehe ExerciseEditorViews
+/// cardioTargetSection). Nichts zu tun.
 @available(iOS 17.0, macOS 14.0, *)
 struct CardioEquipmentPicker: View {
     @Binding var selection: CardioEquipment
@@ -53,7 +59,7 @@ struct CardioEquipmentDisplayRow: View {
                 .foregroundStyle(Color.deltiqOrange)
         }
         .font(.callout)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Color.Deltiq.textSecondary)
     }
 }
 #endif

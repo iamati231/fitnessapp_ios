@@ -16,24 +16,59 @@ import Observation
 public final class HealthKitController {
 
     public private(set) var authorizationStatus: HealthKitAuthorizationStatus = .unavailable
+    /// Write status of the Trainings type + distance type (see
+    /// `WorkoutWriteAuthorization`). UI display only — the actual write gate
+    /// reads the status fresh inside `HealthKitService.saveWorkout`.
+    public private(set) var workoutWriteAuthorization: WorkoutWriteAuthorization = .unavailable
     public private(set) var isAvailable: Bool = false
+    /// Settings-Epic Phase 4 (docs/SETTINGS_UX_AUDIT.md, Befund SV-F13):
+    /// persistiert ueber `UserDefaults`, damit der Zeitstempel einen
+    /// Kaltstart ueberlebt — vorher rein In-Memory, verschwand nach jedem
+    /// Neustart und wirkte dann wie "noch nie synchronisiert", obwohl laengst
+    /// erfolgreich geschrieben wurde. Wird AUSSCHLIESSLICH ueber
+    /// `markSyncSucceeded()` gesetzt — nie bei einem blossen Zugriffsdialog,
+    /// Versuch oder Fehler (siehe dortige Call-Sites in `saveMeasurement`/
+    /// `saveWorkout`: beide setzen das erst NACH einem nachweislich
+    /// erfolgreichen Schreibvorgang).
     public private(set) var lastSyncDate: Date?
     public private(set) var lastError: (any Error)?
+
+    /// `internal` statt `private`, damit `HealthKitControllerLastSyncTests`
+    /// (`@testable import`) denselben Key verwendet statt ihn zu duplizieren.
+    static let lastSyncDateDefaultsKey = "healthkit_last_sync_date"
+    private let userDefaults: UserDefaults
 
     #if canImport(HealthKit)
     private let service: HealthKitService?
     #endif
 
-    public init() {
+    /// `userDefaults` ist injizierbar (Vorbild: `ReminderPreferences.load(from:)`)
+    /// — Produktionscode nutzt immer die Vorgabe `.standard`, Tests isolieren
+    /// sich ueber eine eigene Suite statt `UserDefaults.standard` zu beruehren.
+    public init(userDefaults: UserDefaults = .standard) {
+        self.userDefaults = userDefaults
+        self.lastSyncDate = userDefaults.object(forKey: Self.lastSyncDateDefaultsKey) as? Date
         #if canImport(HealthKit)
         if let s = try? HealthKitService() {
             self.service = s
             self.isAvailable = true
             self.authorizationStatus = .notDetermined
+            self.workoutWriteAuthorization = WorkoutWriteAuthorization(
+                workout: .notDetermined, distance: .notDetermined
+            )
         } else {
             self.service = nil
         }
         #endif
+    }
+
+    /// Einzige Schreibstelle fuer `lastSyncDate` — haelt In-Memory-Wert
+    /// (fuer `@Observable`-Updates) und `UserDefaults` (fuer den naechsten
+    /// Kaltstart) synchron.
+    private func markSyncSucceeded() {
+        let now = Date()
+        lastSyncDate = now
+        userDefaults.set(now, forKey: Self.lastSyncDateDefaultsKey)
     }
 
     // MARK: Authorization
@@ -42,10 +77,19 @@ public final class HealthKitController {
     /// — view code can run this on `.task` without worrying about cost.
     public func refreshAuthorizationStatus() async {
         #if canImport(HealthKit)
-        guard let service else { return }
-        authorizationStatus = await service.currentAuthorizationStatus()
+        await refreshAllStatuses()
         #endif
     }
+
+    #if canImport(HealthKit)
+    /// Weight proxy + workout/distance write status in one go, so a request
+    /// from any entry point leaves every status row current.
+    private func refreshAllStatuses() async {
+        guard let service else { return }
+        authorizationStatus = await service.currentAuthorizationStatus()
+        workoutWriteAuthorization = await service.currentWorkoutWriteAuthorization()
+    }
+    #endif
 
     /// Triggers the native HealthKit permission sheet. After the user responds,
     /// `authorizationStatus` reflects the new state.
@@ -54,11 +98,56 @@ public final class HealthKitController {
         guard let service else { return }
         do {
             try await service.requestAuthorization()
-            authorizationStatus = await service.currentAuthorizationStatus()
             lastError = nil
         } catch {
             lastError = error
         }
+        await refreshAllStatuses()
+        #endif
+    }
+
+    /// User-initiated, incremental request for the Trainings write permission
+    /// (+ walking/running distance when `includeDistance`). Needed because the
+    /// connect rows only show while the weight status is `.notDetermined`, so
+    /// users who connected Apple Health before workouts joined the request
+    /// would never see that dialog. Always re-reads the status afterwards (a
+    /// returning request says nothing about what the user granted); when
+    /// nothing is left to ask — including a Trainings type iOS already counts
+    /// as asked — no sheet appears and the status is unchanged.
+    @discardableResult
+    public func requestWorkoutWriteAuthorization(includeDistance: Bool) async -> WorkoutWriteAuthorization {
+        #if canImport(HealthKit)
+        guard let service else { return workoutWriteAuthorization }
+        do {
+            try await service.requestWorkoutWriteAuthorization(includeDistance: includeDistance)
+            lastError = nil
+        } catch {
+            lastError = error
+        }
+        await refreshAllStatuses()
+        return workoutWriteAuthorization
+        #else
+        return workoutWriteAuthorization
+        #endif
+    }
+
+    /// Request for reading other apps' workouts (e.g. Adidas Running). The
+    /// Trainings type is always requested for write AND read together, and only
+    /// while iOS would still show a sheet — see
+    /// `HealthKitService.requestWorkoutReadAuthorization`. Errors land in
+    /// `lastError`; the write-side status is re-read afterwards, but there is
+    /// nothing to reflect for reading, since HealthKit never discloses
+    /// read-grant/deny.
+    public func requestWorkoutReadAuthorization() async {
+        #if canImport(HealthKit)
+        guard let service else { return }
+        do {
+            try await service.requestWorkoutReadAuthorization()
+            lastError = nil
+        } catch {
+            lastError = error
+        }
+        await refreshAllStatuses()
         #endif
     }
 
@@ -169,6 +258,26 @@ public final class HealthKitController {
         #endif
     }
 
+    /// Pulls running/cycling workouts written by OTHER apps since `since`
+    /// (all-time when `nil`). Empty on any failure — same nil/empty-on-failure
+    /// contract as the other reads, errors land in `lastError`. Does NOT gate
+    /// on `authorizationStatus` (that only reflects the WRITE-side status —
+    /// see `HealthKitAuthorizationStatus` — and would incorrectly block this
+    /// read even when workout-read was separately granted).
+    public func fetchExternalWorkouts(since: Date?) async -> [ExternalWorkoutSample] {
+        #if canImport(HealthKit)
+        guard let service else { return [] }
+        do {
+            return try await service.fetchExternalWorkouts(since: since)
+        } catch {
+            lastError = error
+            return []
+        }
+        #else
+        return []
+        #endif
+    }
+
     // MARK: Writes
 
     /// Best-effort write of a complete body-composition snapshot. Each metric is
@@ -203,63 +312,47 @@ public final class HealthKitController {
         if let firstError {
             lastError = firstError
         } else {
-            lastSyncDate = Date()
+            markSyncSucceeded()
             lastError = nil
         }
         #endif
     }
 
-    /// Best-effort push of a completed strength-training workout to Apple Health.
-    /// Fills the Activity rings and shows up in the Fitness app like a watch-
-    /// recorded session. Errors land in `lastError`; the caller's main flow
-    /// (saving the SwiftData session, navigating to summary) is never blocked.
-    public func saveWorkout(
-        startDate: Date,
-        endDate: Date,
-        totalSets: Int,
-        totalVolumeKg: Double
-    ) async {
+    /// Time windows of all workouts visible to this app in `[start, end]` (own
+    /// and, with the read permission, other apps'). THROWS instead of
+    /// returning `[]` on failure: the history export must not mistake a failed
+    /// query (locked device) for "nothing there" and write duplicates. Which
+    /// workouts are visible depends on permissions HealthKit does not disclose
+    /// — see `HealthKitService.fetchWorkoutWindows`.
+    public func fetchWorkoutWindows(from start: Date, to end: Date) async throws -> [HealthWorkoutWindow] {
         #if canImport(HealthKit)
-        guard let service, authorizationStatus == .sharingAuthorized else { return }
-        do {
-            try await service.saveStrengthTrainingWorkout(
-                startDate: startDate,
-                endDate: endDate,
-                totalSets: totalSets,
-                totalVolumeKg: totalVolumeKg
-            )
-            lastSyncDate = Date()
-            lastError = nil
-        } catch {
-            lastError = error
-        }
+        guard let service else { return [] }
+        return try await service.fetchWorkoutWindows(from: start, to: end)
+        #else
+        return []
         #endif
     }
 
-    /// DEL-063: Best-effort push einer Cardio-Session (Hybrid-Lauftag) als
-    /// `.running` mit angehaengtem Distanz-Sample. Wenn der User Apple
-    /// Health nicht autorisiert hat, ist das ein No-Op — Caller-Flow wird
-    /// nicht blockiert.
-    public func saveRunningWorkout(
-        startDate: Date,
-        endDate: Date,
-        totalDistanceKm: Double,
-        averagePaceMinPerKm: Double?
-    ) async {
+    /// Writes one finished workout. Throws (`HealthKitError`) so the caller can
+    /// tell a missing permission, a locked device and a rejected workout
+    /// apart; `lastError`/`lastSyncDate` are kept up to date as before. The
+    /// write gate is the Trainings permission read fresh in the service — NOT
+    /// the weight proxy `authorizationStatus`.
+    @discardableResult
+    public func saveWorkout(_ draft: HealthWorkoutDraft) async throws -> HealthWorkoutWriteOutcome {
         #if canImport(HealthKit)
-        guard let service, authorizationStatus == .sharingAuthorized else { return }
+        guard let service else { throw HealthKitError.unavailable }
         do {
-            try await service.saveRunningWorkout(
-                startDate: startDate,
-                endDate: endDate,
-                totalDistanceKm: totalDistanceKm,
-                averagePaceMinPerKm: averagePaceMinPerKm
-            )
-            lastSyncDate = Date()
+            let outcome = try await service.saveWorkout(draft)
+            markSyncSucceeded()
             lastError = nil
+            return outcome
         } catch {
             lastError = error
+            throw error
         }
+        #else
+        throw HealthKitError.unavailable
         #endif
     }
 }

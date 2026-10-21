@@ -7,8 +7,10 @@ import FitnessAppCore
 /// `ExerciseLibraryData`. Idempotent: skips if any template already exists.
 ///
 /// Called from `RootView.task` on every app launch (cheap — one fetch-count
-/// query). New users get the full library on first start; existing users with
-/// hand-added custom templates aren't disturbed.
+/// query), from the onboarding as a safety net and right after "App
+/// zuruecksetzen" (which deletes all templates). New users get the full
+/// library on first start; existing users with hand-added custom templates
+/// aren't disturbed.
 @MainActor
 public enum LibrarySeeder {
 
@@ -29,7 +31,18 @@ public enum LibrarySeeder {
         let descriptor = FetchDescriptor<ExerciseTemplate>(
             predicate: #Predicate { $0.isCustom == false }
         )
-        let existing = (try? context.fetchCount(descriptor)) ?? 0
+        // Bugfix (Geraetetest): ein fehlgeschlagener Fetch (`try?` → nil →
+        // `?? 0`) wurde bisher wie "Bibliothek ist leer" behandelt und hat
+        // bei JEDEM App-Start die komplette ~229-Eintraege-Library erneut
+        // eingefuegt — sichtbar als 8-fache Dubletten nach 8 Starts. Ein
+        // echter Fetch-Fehler darf niemals als "leer" interpretiert werden;
+        // im Zweifel nichts tun, der naechste Start versucht es erneut.
+        let existing: Int
+        do {
+            existing = try context.fetchCount(descriptor)
+        } catch {
+            return false
+        }
         guard existing == 0 else { return false }
 
         for spec in ExerciseLibraryData.all {
@@ -64,6 +77,141 @@ public enum LibrarySeeder {
             context.insert(template)
         }
         return true
+    }
+
+    /// README 2.35: One-Shot-Backfill fuer NEUE System-Library-Eintraege.
+    ///
+    /// `seedIfNeeded` seedet nur ein KOMPLETT leeres System-Library-Set
+    /// (siehe dortiger Kommentar) - jeder Bestandsnutzer, der die App schon
+    /// vor einem neu hinzugekommenen `ExerciseLibraryData.all`-Eintrag
+    /// gestartet hat, bekommt diesen neuen Eintrag NIE in die persistierte
+    /// `ExerciseTemplate`-Tabelle. `ExerciseLibraryPickerSheet`/
+    /// `ExerciseLibraryView` fragen aber genau diese Tabelle ab (nicht
+    /// `ExerciseLibraryData.all` direkt) - ohne diesen Backfill waere ein
+    /// neuer Eintrag fuer alle Bestandsnutzer dauerhaft unsichtbar im
+    /// Picker. Konkreter Ausloeser: die "Lauf-Intervall"/"Rad-Intervall"-
+    /// Eintraege aus README 2.35 (Ad-Hoc-Zeitformat-Start, 43b) - generisch
+    /// gehalten, damit jede kuenftige Library-Erweiterung automatisch
+    /// nachzieht, statt denselben Bug bei der naechsten neuen Uebung zu
+    /// wiederholen.
+    ///
+    /// Strategie: Diff zwischen `ExerciseLibraryData.all`-Namen und den
+    /// bereits persistierten System-Template-Namen (`isCustom == false`);
+    /// jeder fehlende Name wird als neues `ExerciseTemplate` nachgezogen -
+    /// identischer Konstruktions-Code wie `seedIfNeeded`s Schleife.
+    ///
+    /// Idempotent: nach dem ersten erfolgreichen Pass ist die Differenzmenge
+    /// leer, der Fetch bleibt aber (wie bei den anderen Backfills) guenstig
+    /// genug fuer jeden App-Start. Auf einem frischen Install laeuft
+    /// `seedIfNeeded` VOR diesem Aufruf und hat bereits alle Namen inseriert,
+    /// die Differenzmenge ist dann ebenfalls leer.
+    ///
+    /// Returns: Anzahl der nachgezogenen Eintraege.
+    @discardableResult
+    public static func backfillNewLibraryEntriesIfNeeded(in context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<ExerciseTemplate>(
+            predicate: #Predicate { $0.isCustom == false }
+        )
+        // Bugfix (Geraetetest): wie bei `seedIfNeeded` — ein fehlgeschlagener
+        // Fetch darf nicht als "keine Namen vorhanden" gelten, sonst wuerde
+        // JEDER Library-Eintrag faelschlich als "fehlt noch" erneut eingefuegt.
+        let existingTemplates: [ExerciseTemplate]
+        do {
+            existingTemplates = try context.fetch(descriptor)
+        } catch {
+            return 0
+        }
+        let existingNames = Set(existingTemplates.map(\.name))
+
+        var updated = 0
+        for spec in ExerciseLibraryData.all where !existingNames.contains(spec.name) {
+            let template = ExerciseTemplate(
+                name: spec.name,
+                equipment: spec.equipment,
+                primaryMuscle: spec.primaryMuscle,
+                isCustom: false,
+                difficultyLevel: spec.difficultyLevel,
+                isSystemCompound: spec.isSystemCompound,
+                isTimeBased: spec.isTimeBased,
+                isCardio: spec.isCardio,
+                systemicFatigueFactor: spec.systemicFatigueFactor,
+                localMuscleDamageFactor: spec.localMuscleDamageFactor,
+                cnsDemandFactor: spec.cnsDemandFactor,
+                axialLoadFactor: spec.axialLoadFactor,
+                technicalComplexityFactor: spec.technicalComplexityFactor,
+                recoveryClass: spec.recoveryClass,
+                localizationKey: spec.localizationKey,
+                isSystemProvided: true
+            )
+            context.insert(template)
+            updated += 1
+        }
+        return updated
+    }
+
+    /// Bugfix (Geraetetest nach Settings-Epic Phase 6): behebt bereits
+    /// entstandene Dubletten. `seedIfNeeded`/`backfillNewLibraryEntriesIfNeeded`
+    /// interpretierten einen fehlgeschlagenen Fetch bisher faelschlich als
+    /// "Bibliothek leer/Eintrag fehlt" und fuegten die komplette System-
+    /// Library bei JEDEM App-Start erneut ein — auf einem betroffenen Geraet
+    /// sichtbar als z.B. 8-fach wiederholtes "Bankdruecken" in der
+    /// Uebungsbibliothek. Diese Migration raeumt den entstandenen Bestand auf,
+    /// unabhaengig davon ob die Ursache (oben) schon behoben ist.
+    ///
+    /// Gruppiert alle System-Templates (`isCustom == false`) case-insensitiv
+    /// nach `name` und behaelt pro Gruppe genau EINEN Eintrag — bevorzugt
+    /// den mit gesetztem `localizationKey` (deterministische Wahl, falls sich
+    /// Duplikate je unterscheiden sollten; im Normalfall sind alle Kopien
+    /// identisch, da sie aus derselben `ExerciseLibraryData`-Spec stammen).
+    /// Custom-Templates (`isCustom == true`) sind nie betroffen — Nutzer
+    /// koennen bewusst mehrere eigene Uebungen mit gleichem Namen anlegen.
+    ///
+    /// Sicher bzgl. bestehender Referenzen: `Exercise`/`ExerciseLog`/
+    /// `PersonalRecordEntry` speichern `exerciseTemplateID` als reinen
+    /// UUID-Scalar-Wert (KEIN `@Relationship`, siehe `ExerciseTemplate.id`-
+    /// Dokumentation) — PR-/Verlaufs-Gruppierung vergleicht nur diesen
+    /// gespeicherten Wert, ohne die lebende `ExerciseTemplate`-Zeile erneut
+    /// aufzuloesen. Loeschen ueberzaehliger Duplikate kann also keine
+    /// bestehende Historie brechen. Sollte eine bereits adoptierte Exercise
+    /// zufaellig auf die ID eines geloeschten Duplikats zeigen, heilt
+    /// `ExerciseTemplateIDBackfill.runIfNeeded` das beim naechsten Lauf
+    /// automatisch (Konsistenz-Check dort).
+    ///
+    /// Idempotent: nach dem ersten Durchlauf hat jede Namensgruppe genau
+    /// einen Eintrag, der Gruppierungs-Schritt findet dann nichts mehr.
+    ///
+    /// Returns: Anzahl der geloeschten Duplikate.
+    @discardableResult
+    public static func deduplicateTemplatesIfNeeded(in context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<ExerciseTemplate>(
+            predicate: #Predicate { $0.isCustom == false }
+        )
+        let systemTemplates: [ExerciseTemplate]
+        do {
+            systemTemplates = try context.fetch(descriptor)
+        } catch {
+            return 0
+        }
+        guard systemTemplates.count > 1 else { return 0 }
+
+        var byName: [String: [ExerciseTemplate]] = [:]
+        for template in systemTemplates {
+            byName[template.name.lowercased(), default: []].append(template)
+        }
+
+        var removed = 0
+        for group in byName.values where group.count > 1 {
+            // Mit gesetztem localizationKey zuerst — deterministisch, falls
+            // sich Duplikate je unterscheiden sollten.
+            let sorted = group.sorted { lhs, rhs in
+                (lhs.localizationKey != nil ? 0 : 1) < (rhs.localizationKey != nil ? 0 : 1)
+            }
+            for duplicate in sorted.dropFirst() {
+                context.delete(duplicate)
+                removed += 1
+            }
+        }
+        return removed
     }
 
     /// DEL-051: One-Shot-Backfill der Snapshot-Felder auf vorhandenen
@@ -210,7 +358,13 @@ public enum LibrarySeeder {
         for plan in pendingPlans {
             let isSystemDefault: Bool = {
                 guard let template = templatesByID[plan.programType] else {
-                    return false   // Custom-Plan ohne Template-Origin
+                    // Custom-Plan ohne Template-Origin: nur der noch
+                    // unbenannte Leer-Plan traegt einen System-Namen. Ohne
+                    // diese Ausnahme wuerde sein deutscher Name beim naechsten
+                    // Start als `customName` festgeschrieben und der
+                    // Katalog-Schluessel waere wirkungslos.
+                    return plan.localizationKey == TrainingPlan.blankPlanLocalizationKey
+                        && plan.name == TrainingPlan.blankPlanName
                 }
                 return plan.name == template.name
             }()

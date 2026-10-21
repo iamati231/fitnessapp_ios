@@ -51,6 +51,72 @@ public enum PersonalRecordSync {
         return prs
     }
 
+    // MARK: - Zeitformate (README 2.9: AMRAP/EMOM/Auf Zeit)
+
+    /// Analog zu `recordPRs(for:in:)`, aber fuer den Session-weiten
+    /// AMRAP/Auf-Zeit-Ergebnispfad statt Set-basierter `ExerciseLog`s.
+    /// Kein-op fuer EMOM-Sessions (kein PR-Kind, siehe `PRDetector`) oder
+    /// wenn `session.timeFormatSnapshot == nil` (normale Krafteinheit).
+    @discardableResult
+    public static func recordTimedFormatPR(
+        for session: WorkoutSession,
+        in context: ModelContext
+    ) -> PersonalRecord? {
+        guard session.isCompleted,
+              let format = session.timeFormatSnapshot,
+              let wodName = session.dayName
+        else { return nil }
+
+        let attempt = TimedWorkoutAttempt(
+            wodName: wodName,
+            format: format,
+            date: session.startTime,
+            roundsCompleted: session.roundsCompleted,
+            partialReps: session.partialReps,
+            finishTimeSeconds: session.finishTimeSeconds,
+            completedTarget: session.completedTarget
+        )
+        let history = fetchHistoricalTimedAttempts(excluding: session, in: context)
+
+        guard let record = PRDetector.detectTimedFormatPR(session: attempt, history: history) else {
+            return nil
+        }
+        context.insert(PersonalRecordEntry(record: record, session: session))
+        return record
+    }
+
+    /// Pullt alle ANDEREN abgeschlossenen Sessions mit einem Zeitformat-
+    /// Ergebnis. Breiter Fetch + In-Memory-Filter (gleiches Muster wie
+    /// `fetchHistoricalLifts`) statt eines `#Predicate` auf dem optionalen
+    /// Enum-Feld — SwiftData-Predicates auf optionalen Codable-RawValue-
+    /// Enums sind unzuverlaessig.
+    private static func fetchHistoricalTimedAttempts(
+        excluding session: WorkoutSession,
+        in context: ModelContext
+    ) -> [TimedWorkoutAttempt] {
+        let thisID = session.persistentModelID
+        let descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.isCompleted == true && $0.isRestDay == false },
+            sortBy: [SortDescriptor(\.startTime, order: .forward)]
+        )
+        let sessions = (try? context.fetch(descriptor)) ?? []
+        return sessions.compactMap { other -> TimedWorkoutAttempt? in
+            guard other.persistentModelID != thisID,
+                  let format = other.timeFormatSnapshot,
+                  let wodName = other.dayName
+            else { return nil }
+            return TimedWorkoutAttempt(
+                wodName: wodName,
+                format: format,
+                date: other.startTime,
+                roundsCompleted: other.roundsCompleted,
+                partialReps: other.partialReps,
+                finishTimeSeconds: other.finishTimeSeconds,
+                completedTarget: other.completedTarget
+            )
+        }
+    }
+
     // MARK: - Full rebuild (Trophy-Room manual button + first-run backfill)
 
     /// Wipes every `PersonalRecordEntry` in the store and re-detects PRs for
@@ -79,6 +145,15 @@ public enum PersonalRecordSync {
 
         // 3) Walk chronologically, accumulating history-as-we-go.
         var historyLifts: [LiftAttempt] = []
+        // Bugfix (Audit): Zeitformat-Sessions (AMRAP/EMOM/Auf Zeit) schreiben
+        // nie `ExerciseLog`s, `sessionLifts` ist fuer sie also immer leer -
+        // ohne diesen zweiten Akkumulator erkannte ein Rebuild ihre PRs nie
+        // erneut, waehrend Schritt 1) oben alle bestehenden Zeilen (auch die
+        // bereits korrekt erkannten WOD-Bestleistungen) zuerst geloescht hat.
+        // "Aus History neu berechnen" hat also jede WOD-PR unwiderruflich
+        // vernichtet. Paralleler Erkennungspfad, analog zu
+        // `recordTimedFormatPR`/`fetchHistoricalTimedAttempts` oben.
+        var historyTimedAttempts: [TimedWorkoutAttempt] = []
         var inserted = 0
 
         for session in sessions {
@@ -92,6 +167,23 @@ public enum PersonalRecordSync {
             // Append AFTER detection — the current session shouldn't be its
             // own history (matches the strict-greater-than contract).
             historyLifts.append(contentsOf: sessionLifts)
+
+            if let format = session.timeFormatSnapshot, let wodName = session.dayName {
+                let attempt = TimedWorkoutAttempt(
+                    wodName: wodName,
+                    format: format,
+                    date: session.startTime,
+                    roundsCompleted: session.roundsCompleted,
+                    partialReps: session.partialReps,
+                    finishTimeSeconds: session.finishTimeSeconds,
+                    completedTarget: session.completedTarget
+                )
+                if let record = PRDetector.detectTimedFormatPR(session: attempt, history: historyTimedAttempts) {
+                    context.insert(PersonalRecordEntry(record: record, session: session))
+                    inserted += 1
+                }
+                historyTimedAttempts.append(attempt)
+            }
         }
         return inserted
     }
@@ -107,6 +199,9 @@ public enum PersonalRecordSync {
             guard let name = log.resolvedExerciseName else { return nil }
             return LiftAttempt(
                 exerciseName: name,
+                // Settings-Epic Phase 6 (EXLIB-07/09): stabile ID durchreichen,
+                // damit PRDetector ueber Umbenennen hinweg korrekt gruppiert.
+                exerciseTemplateID: log.resolvedExerciseTemplateID,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,
@@ -145,6 +240,7 @@ public enum PersonalRecordSync {
             else { return nil }
             return LiftAttempt(
                 exerciseName: name,
+                exerciseTemplateID: log.resolvedExerciseTemplateID,
                 weightKg: log.weight,
                 reps: log.reps,
                 date: log.date,

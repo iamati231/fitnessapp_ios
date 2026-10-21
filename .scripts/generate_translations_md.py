@@ -69,7 +69,6 @@ def main():
         "PreviewSupport.swift",
         "BundleHelpers.swift",
         "Theme.swift",
-        "DeltiqFormSection.swift",
         "Compatibility.swift",
     }
     PATTERNS = [

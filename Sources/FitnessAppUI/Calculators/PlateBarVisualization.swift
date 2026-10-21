@@ -189,8 +189,16 @@ public struct PlateBarVisualization: View {
 
     private var accessibilityDescription: String {
         guard !plates.isEmpty else { return "Stange ohne Plates" }
-        let parts = plates.map { "\($0.count) mal \($0.weight, specifier: "%g") \(unit.rawValue)" }
+        let parts = plates.map { "\($0.count) mal \(formattedWeight($0.weight)) \(unit.rawValue)" }
         return "Beladung pro Seite: " + parts.joined(separator: ", ")
+    }
+
+    /// Bugfix (Audit): war `specifier: "%g"` ohne Locale, zeigte VoiceOver
+    /// also immer den Punkt als Dezimaltrenner, waehrend der sichtbare Text
+    /// auf dem selben Screen (`PlateCalculatorView.formatPlate`) korrekt das
+    /// lokalisierte Komma nutzt. Gleiches Muster wie dort.
+    private func formattedWeight(_ w: Double) -> String {
+        w == w.rounded() ? "\(Int(w))" : w.formattedTwoDecimals
     }
 }
 
@@ -233,13 +241,6 @@ private func hex(_ value: UInt32) -> Color {
     let g = Double((value >>  8) & 0xFF) / 255
     let b = Double( value        & 0xFF) / 255
     return Color(red: r, green: g, blue: b)
-}
-
-// Allow `\($0.weight, specifier: "%g")` interpolation in accessibility text.
-private extension String.StringInterpolation {
-    mutating func appendInterpolation(_ value: Double, specifier: String) {
-        appendLiteral(String(format: specifier, value))
-    }
 }
 
 // MARK: - Previews

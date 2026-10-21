@@ -32,13 +32,14 @@ struct TrainingCalendarCard: View {
     private var calendar: Calendar { Calendar.current }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            header
-            monthNavigator
-            weekdayHeader
-            dayGrid
+        DeltiqCard {
+            VStack(alignment: .leading, spacing: 12) {
+                header
+                monthNavigator
+                weekdayHeader
+                dayGrid
+            }
         }
-        .deltiqCardStyle()
         // DEL-202: .contain statt .combine — combine hätte die Monats-
         // Chevrons und die tappbaren Workout-Tage für VoiceOver
         // verschluckt. Die Zusammenfassung hängt am Header (s.u.).
@@ -49,25 +50,20 @@ struct TrainingCalendarCard: View {
 
     private var header: some View {
         HStack {
-            Text("dashboard.calendar.title", bundle: .module)
-                .font(.headline)
+            Text(String(localized: "dashboard.calendar.title", bundle: .module).uppercased())
+                .font(.system(size: 10, weight: .heavy))
+                .tracking(1.5)
+                .foregroundStyle(Color.deltiqOrange)
                 .accessibilityLabel(a11ySummary)
             Spacer()
             if streak > 0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "flame.fill")
-                        .font(.caption)
-                    Text(String(
+                DeltiqPill(
+                    String(
                         format: String(localized: "dashboard.calendar.streakFormat", bundle: .module),
                         streak
-                    ))
-                    .font(.caption.weight(.bold))
-                }
-                .foregroundStyle(Color.deltiqOrange)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.deltiqOrange.opacity(0.15))
-                .clipShape(Capsule())
+                    ).uppercased(),
+                    style: .accent
+                )
             }
         }
     }
@@ -196,7 +192,11 @@ struct TrainingCalendarCard: View {
             .frame(height: 28)
             .background(
                 Circle()
-                    .fill(isWorkout ? Color.deltiqOrange.opacity(0.85) : Color.clear)
+                    // Handoff 2.1 (Dashboard/Kalender): volles Orange statt
+                    // 85% — die 85%-Deckkraft-Variante braucht helle
+                    // Schrift fuer Kontrast, das Geruest will hier den
+                    // dunklen #1A1A1A-Text (siehe dayTextColor).
+                    .fill(isWorkout ? Color.deltiqOrange : Color.clear)
                     .frame(width: 26, height: 26)
             )
             .overlay(
@@ -207,7 +207,9 @@ struct TrainingCalendarCard: View {
     }
 
     private func dayTextColor(isWorkout: Bool, isFuture: Bool) -> Color {
-        if isWorkout { return .white }
+        // Handoff 2.1: dunkle Schrift (#1A1A1A) auf vollem Orange statt
+        // Weiss auf 85%-Orange — besserer Kontrast, siehe dayCellLabel.
+        if isWorkout { return Color(red: 0.102, green: 0.102, blue: 0.102) }
         if isFuture { return Color.secondary.opacity(0.4) }
         return .primary
     }

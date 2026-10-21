@@ -9,7 +9,7 @@ import FitnessAppData
 ///
 ///   * Durchsuchbar; Custom oben, danach nach Muskelgruppe gruppiert.
 ///   * Tap → `ExerciseLibraryEditorSheet` (Custom editierbar, System read-only).
-///   * Toolbar-"+" → neue Custom-Uebung anlegen.
+///   * Kopfzeilen-"+" → neue Custom-Uebung anlegen.
 ///   * Swipe-Delete (mit Confirm) NUR fuer Custom-Eintraege.
 @available(iOS 17.0, macOS 14.0, *)
 public struct ExerciseLibraryView: View {
@@ -38,6 +38,7 @@ public struct ExerciseLibraryView: View {
     public var onCreateCustom: ((CustomExerciseDraft) -> Void)?
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \ExerciseTemplate.name) private var templates: [ExerciseTemplate]
 
@@ -80,65 +81,89 @@ public struct ExerciseLibraryView: View {
     }
 
     public var body: some View {
-        List {
-            // DEL-210: Plan-Env-Filter-Toggle (DEL-048, portiert) — nur
-            // wenn ein Plan-Kontext mitkommt.
-            if planEnvironment != nil {
-                planEnvFilterSection
-            }
-            customSection
-            ForEach(MuscleGroup.allCases, id: \.self) { muscle in
-                muscleSection(muscle)
-            }
-        }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #endif
-        .searchable(text: $search,
-                    prompt: Text("library.searchPlaceholder", bundle: .module))
-        .navigationTitle(Text("library.title", bundle: .module))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
-        #endif
-        .toolbar {
-            // DEL-162: Filter-Button (Equipment/Muskel) — wie im Picker, mit
-            // Badge-Variante wenn ein Filter aktiv ist.
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showingFilterSheet = true
-                } label: {
-                    Image(systemName: hasActiveFilters
-                          ? "line.3.horizontal.decrease.circle.fill"
-                          : "line.3.horizontal.decrease.circle")
-                        .foregroundStyle(hasActiveFilters ? Color.deltiqOrange : Color.primary)
-                }
-                .accessibilityLabel(Text("picker.exercise.filter.button.a11y", bundle: .module))
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    // DEL-210: Picker-Modus mit Draft-Callback → DEL-159-
-                    // Flow (Caller baut Template + Exercise). Sonst der
-                    // normale Library-Editor.
-                    if isPickerMode && onCreateCustom != nil {
-                        showingDraftSheet = true
-                    } else {
-                        showingCreate = true
+        // Signature-Geruest: eigene Kopfzone statt navigationTitle/Toolbar.
+        // `List` bleibt Container - beide Swipe-Richtungen (Verlauf links,
+        // Loeschen rechts) sind fuer diese Liste funktional wesentlich,
+        // anders als bei Rechner/Wassertracker. `.searchable` faellt weg:
+        // haengt sich normalerweise an die native Navigationsleiste, die
+        // hier ausgeblendet ist - eigenes `searchField` bleibt stattdessen
+        // fix zwischen Kopfzone und Liste sichtbar (kein Wegscrollen bei
+        // einer potenziell langen Bibliothek).
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "library.title", bundle: .module),
+                onBack: { dismiss() },
+                actions: [
+                    // DEL-162: Filter-Button (Equipment/Muskel) — Akzent-
+                    // Highlight wenn ein Filter aktiv ist.
+                    DeltiqHeaderAction(
+                        systemImage: hasActiveFilters
+                            ? "line.3.horizontal.decrease.circle.fill"
+                            : "line.3.horizontal.decrease.circle",
+                        isHighlighted: hasActiveFilters
+                    ) {
+                        showingFilterSheet = true
+                    },
+                    DeltiqHeaderAction(systemImage: "plus") {
+                        // DEL-210: Picker-Modus mit Draft-Callback → DEL-159-
+                        // Flow (Caller baut Template + Exercise). Sonst der
+                        // normale Library-Editor.
+                        if isPickerMode && onCreateCustom != nil {
+                            showingDraftSheet = true
+                        } else {
+                            showingCreate = true
+                        }
                     }
-                } label: {
-                    Image(systemName: "plus")
+                ]
+            )
+
+            searchField
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
+
+            List {
+                // DEL-210: Plan-Env-Filter-Toggle (DEL-048, portiert) — nur
+                // wenn ein Plan-Kontext mitkommt.
+                if planEnvironment != nil {
+                    planEnvFilterSection
                 }
-                .accessibilityLabel(Text("library.newExercise", bundle: .module))
+                // EXLIB-02/03: Suche/Filter ohne Treffer rendert sonst eine
+                // stumme leere Liste — expliziter Hinweis statt Stille.
+                if filtered.isEmpty {
+                    noResultsRow
+                } else {
+                    customSection
+                    ForEach(MuscleGroup.allCases, id: \.self) { muscle in
+                        muscleSection(muscle)
+                    }
+                }
             }
+            .scrollContentBackground(.hidden)
         }
+        .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift. Harmlos im
+        // Picker-Sheet-Modus (dort ist die View die Wurzel ihres eigenen
+        // NavigationStacks, es gibt nichts zum Zurueckwischen).
+        .deltiqSwipeBackEnabled()
         .sheet(item: $selectedTemplate) { template in
             ExerciseLibraryEditorSheet(template: template)
         }
         // DEL-201: Übungs-Detail-Push. Leading-Swipe auf einer Zeile setzt
-        // historyTemplate; der Detail-Screen identifiziert die Historie
-        // über den System-Namen (Snapshot-Matching, DEL-051).
+        // historyTemplate; der Detail-Screen identifiziert die Historie seit
+        // Settings-Epic Phase 6 (EXLIB-07/09) primaer ueber die stabile
+        // `template.id`, mit Namens-Snapshot als Fallback fuer Alt-Daten.
         .navigationDestination(item: $historyTemplate) { template in
             ExerciseDetailView(
                 systemName: template.name,
+                exerciseTemplateID: template.id,
                 displayName: template.displayName,
                 isCardio: template.isCardio
             )
@@ -182,7 +207,69 @@ public struct ExerciseLibraryView: View {
         }
     }
 
+    // MARK: - Suche
+
+    /// Ersatz fuer `.searchable()` (siehe Kommentar in `body`) - gleiche
+    /// ruhige Fill-Flaeche wie `DeltiqSegmentedPicker`s Spur, damit sich
+    /// das Suchfeld optisch in die bestehende Token-Sprache einreiht.
+    /// `.autocorrectionDisabled()` gleicht das an, was `.searchable()`
+    /// (UISearchBar-basiert) schon immer implizit mitbrachte.
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+            TextField(
+                String(localized: "library.searchPlaceholder", bundle: .module),
+                text: $search
+            )
+            .font(.system(size: 15))
+            .foregroundStyle(Color.primary)
+            .autocorrectionDisabled()
+            if !search.isEmpty {
+                Button {
+                    search = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Color.Deltiq.textTertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Color.Deltiq.fill)
+        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+    }
+
     // MARK: Sections
+
+    /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention.
+    /// Nimmt (anders als in anderen Screens) einen bereits aufgeloesten
+    /// String statt eines Lokalisierungs-Keys entgegen, da Muskelgruppen-
+    /// Header ueber `MuscleGroup.localizedName` (LocalizedStringResource)
+    /// statt eines eigenen xcstrings-Keys aufgeloest werden.
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .heavy))
+            .tracking(1.5)
+            .foregroundStyle(Color.deltiqOrange)
+            .textCase(nil)
+    }
+
+    @ViewBuilder
+    /// EXLIB-02/03: Expliziter No-Results-State, wenn Suche/Filter alles
+    /// ausschliessen. Kein CTA — der Ausweg ist, Suchtext/Filter anzupassen,
+    /// nicht eine Aktion hier auf der Zeile.
+    private var noResultsRow: some View {
+        DashboardEmptyState(
+            icon: "magnifyingglass",
+            title: "library.noResults.title",
+            description: "library.noResults.description"
+        )
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
 
     @ViewBuilder
     private var customSection: some View {
@@ -204,12 +291,12 @@ public struct ExerciseLibraryView: View {
                         }
                 }
             } header: {
-                Label {
-                    Text("picker.exercise.section.customs", bundle: .module)
-                } icon: {
-                    Image(systemName: "star.fill")
-                }
+                // Stern-Icon entfaellt - kein anderer Section-Header im
+                // Signature-Geruest traegt ein Icon; die "EIGEN"-Pill an
+                // jeder Zeile markiert Custom-Uebungen bereits eindeutig.
+                sectionHeader(String(localized: "picker.exercise.section.customs", bundle: .module))
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 
@@ -222,8 +309,9 @@ public struct ExerciseLibraryView: View {
                     row(template)
                 }
             } header: {
-                Text(muscle.localizedName)
+                sectionHeader(String(localized: muscle.localizedName))
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 
@@ -231,6 +319,7 @@ public struct ExerciseLibraryView: View {
 
     private func row(_ template: ExerciseTemplate) -> some View {
         rowContent(template)
+            .listRowBackground(Color.Deltiq.surface)
             // DEL-201: Leading-Swipe öffnet den Verlaufs-Screen. Auf der
             // Row selbst (nicht im Section-ForEach), damit System- UND
             // Custom-Übungen den Swipe bekommen.
@@ -258,35 +347,27 @@ public struct ExerciseLibraryView: View {
             }
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: equipmentIcon(template.equipment))
-                    .font(.body)
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
-                    .background(Color.deltiqOrange.gradient)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                ExerciseGifView(exerciseName: template.name, displayName: template.displayName, animated: false)
+                    .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(template.displayName)
-                            .font(.body)
-                            .foregroundStyle(.primary)
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.primary)
                         if template.isCustom {
-                            Text("picker.exercise.customBadge", bundle: .module)
-                                .font(.caption2.weight(.bold))
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(Color.purple.opacity(0.15))
-                                .foregroundStyle(.purple)
-                                .clipShape(Capsule())
+                            // Handoff 1.10 (ein Akzent): war Lila, jetzt
+                            // dieselbe Orange-DeltiqPill wie ueberall sonst.
+                            DeltiqPill(String(localized: "picker.exercise.customBadge", bundle: .module).uppercased(), style: .accent)
                         }
                     }
                     Text("\(String(localized: template.primaryMuscle.localizedName)) • \(String(localized: template.equipment.localizedName))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.Deltiq.textSecondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.tertiary)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.textTertiary)
             }
             .contentShape(Rectangle())
         }
@@ -306,14 +387,19 @@ public struct ExerciseLibraryView: View {
                     Label {
                         Text(String(format: String(localized: "picker.exercise.filterFor", bundle: .module),
                                     String(localized: env.localizedName)))
+                            .font(.system(size: 15))
                     } icon: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                     }
                 }
+                .tint(Color.deltiqOrange)
+                .listRowBackground(Color.Deltiq.surface)
             } footer: {
                 Text("picker.exercise.filterHint", bundle: .module)
-                    .font(.footnote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
+            .listRowSeparatorTint(Color.Deltiq.divider)
         }
     }
 
@@ -350,19 +436,6 @@ public struct ExerciseLibraryView: View {
         try? modelContext.save()
     }
 
-    /// DEL-210: Bibliothek + Picker SIND jetzt dieselbe View — die
-    /// frühere Spiegelung zum separaten ExercisePickerView entfällt.
-    private func equipmentIcon(_ e: Equipment) -> String {
-        switch e {
-        case .barbell:     return "scalemass"
-        case .dumbbell:    return "dumbbell"
-        case .bodyweight:  return "figure.walk"
-        case .machine:     return "gearshape"
-        case .cable:       return "cable.connector"
-        case .kettlebell:  return "circle.grid.cross"
-        case .band:        return "infinity"
-        }
-    }
 }
 
 // MARK: - DEL-210 Picker-Sheet-Wrapper
@@ -372,9 +445,10 @@ public struct ExerciseLibraryView: View {
 /// rendert die ECHTE Übungsbibliothek im Picker-Modus — identisches
 /// Layout, Suche, Filter und Verlaufs-Swipe wie unter Einstellungen.
 ///
-/// Eigene NavigationStack + Abbrechen-Button, dismissed sich selbst
-/// nach Auswahl/Erstellung — Call-Sites brauchen nur den Typnamen zu
-/// tauschen.
+/// Eigene NavigationStack, dismissed sich selbst nach Auswahl/Erstellung
+/// (Abbrechen laeuft ueber die DeltiqHeader-Kopfzone der eingebetteten
+/// View, siehe Kommentar in `body`) — Call-Sites brauchen nur den
+/// Typnamen zu tauschen.
 @available(iOS 17.0, macOS 14.0, *)
 public struct ExerciseLibraryPickerSheet: View {
 
@@ -396,6 +470,13 @@ public struct ExerciseLibraryPickerSheet: View {
 
     public var body: some View {
         NavigationStack {
+            // Signature-Geruest: ExerciseLibraryView blendet die native
+            // Navigationsleiste jetzt selbst aus (eigene DeltiqHeader-
+            // Kopfzone) - ein hier angehaengtes .toolbar-Abbrechen-Item
+            // wuerde dadurch nie sichtbar. Dismiss laeuft stattdessen ueber
+            // den Zurueck-Chevron der DeltiqHeader-Kopfzone, der intern
+            // ebenfalls `dismiss()` aufruft (funktioniert fuer Sheets genau
+            // wie fuer Stack-Pushes).
             ExerciseLibraryView(
                 planEnvironment: planEnvironment,
                 onExerciseSelected: { template in
@@ -407,15 +488,6 @@ public struct ExerciseLibraryPickerSheet: View {
                     dismiss()
                 }
             )
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("common.cancel", bundle: .module)
-                    }
-                }
-            }
         }
     }
 }

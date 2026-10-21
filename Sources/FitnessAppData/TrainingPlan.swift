@@ -21,6 +21,76 @@ public final class TrainingPlan {
     public var descriptionText: String
     public var weeks: Int
     public var isActive: Bool
+
+    /// P6.1 (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md, "Plan-Versionierung &
+    /// Datenqualitaet"): Zeitanker fuer den Beginn der AKTUELLEN
+    /// Aktiv-Periode dieses Plans — die Grundlage, ab der ein spaeterer
+    /// Soll-Ist-Teilnahmevergleich (P6.2) ueberhaupt erst "geplante
+    /// Gelegenheiten" zaehlen darf. `nil` heisst ausdruecklich "unbekannt",
+    /// NIEMALS "nie aktiviert" — additiv auf Bestandsplaenen vor diesem
+    /// Feld (Lightweight-Migration, identisches Prinzip wie
+    /// `localizationKey`). Es gibt bewusst KEIN erfundenes Backfill-Datum:
+    /// ein Plan, der vor P6.1 aktiviert wurde, bleibt `nil`, bis er das
+    /// naechste Mal (re-)aktiviert wird — alles andere waere ein
+    /// erfundenes historisches Startdatum.
+    ///
+    /// Mehrere gleichzeitig aktive Plaene sind im Produkt ausdruecklich
+    /// vorgesehen (Task #201/#202) — dieses Feld ist bewusst PRO PLAN, kein
+    /// globaler "seit wann laeuft der eine aktive Plan"-Zeitpunkt.
+    ///
+    /// Wird NICHT automatisch bei jedem `isActive`-Schreibzugriff
+    /// fortgeschrieben (SwiftData-`@Model`-Properties haben keine
+    /// verlaesslichen Observer) — jeder Aufrufer, der einen Plan NEU
+    /// aktiviert, muss diesen Zeitpunkt selbst setzen (siehe
+    /// `PlanEditorView.setActive(_:)` fuer die manuelle UI-Reaktivierung;
+    /// der Init unten deckt den Erzeugt-bereits-aktiv-Fall automatisch ab).
+    /// Ein Import aus einem Backup setzt das Feld explizit auf den
+    /// gespeicherten Wert (oder `nil` bei einem Backup von vor P6.1) —
+    /// NIE auf "jetzt", das waere ebenfalls ein erfundenes Datum.
+    public var activatedAt: Date?
+
+    /// P7.3: Zeitpunkt, zu dem der Vier-Wochen-Rückblick für DIESEN Plan
+    /// zuletzt ausdrücklich ABGESCHLOSSEN wurde (Nutzeraktion im
+    /// Review-Screen, siehe `FourWeekReviewDueStatus.completeCurrentBlock`). `nil` =
+    /// noch nie abgeschlossen. Bewusst PRO PLAN wie `activatedAt` — mehrere
+    /// gleichzeitig aktive Pläne (Task #201/#202) haben jeweils ihren
+    /// EIGENEN Fälligkeits-/Abschlussstatus, keine stillschweigende
+    /// Auswahl nur eines Plans (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md, P7.3).
+    /// Bloßes Öffnen/Verlassen des Review-Screens setzt dieses Feld NICHT.
+    public var reviewCompletedAt: Date?
+
+    /// Begleitet `reviewCompletedAt`: welche Entscheidung beim Abschluss
+    /// getroffen wurde. "Plan beibehalten" ist ein vollwertiges Ergebnis,
+    /// kein Nicht-Ereignis — siehe `FourWeekReviewDueCalculator.Decision`.
+    public var reviewDecisionRaw: String?
+
+    /// P7.3-Fallback NUR wenn `activatedAt` unbekannt ist (Altbestand vor
+    /// P6.1): der tatsächliche Zeitpunkt, an dem die Fälligkeitsbeobachtung
+    /// für DIESEN Plan real begonnen hat (erste Auswertung ohne
+    /// Zeitanker) — NIE ein erfundenes historisches Aktivierungsdatum. Wird
+    /// genau einmal gesetzt, siehe
+    /// `FourWeekReviewDueStatus.establishObservationAnchorsIfNeeded`.
+    public var reviewObservationStartedAt: Date?
+
+    /// Typisierter Zugriff auf `reviewDecisionRaw`.
+    public var reviewDecision: FourWeekReviewDueCalculator.Decision? {
+        get { reviewDecisionRaw.flatMap(FourWeekReviewDueCalculator.Decision.init(rawValue:)) }
+        set { reviewDecisionRaw = newValue?.rawValue }
+    }
+
+    /// P8 Stufe 3: JSON-codierte, chronologische Liste bereits
+    /// abgeschlossener Block-Rückblicke (`[BlockReviewRecord]`). `nil` =
+    /// noch kein Block über den NEUEN Pfad abgeschlossen — das schließt
+    /// einen Plan ein, dessen einziger Abschluss noch aus der Zeit vor
+    /// diesem Feld stammt (reine `reviewCompletedAt`/`reviewDecisionRaw`,
+    /// P7); dieser Zustand wird nie rückwirkend in dieses Feld geschrieben,
+    /// sondern beim Lesen aus den Alt-Feldern nachgebildet (siehe
+    /// `FourWeekReviewDueStatus.history(for:)`). `reviewCompletedAt`/
+    /// `.reviewDecisionRaw` bleiben parallel gepflegt (spiegeln immer den
+    /// JEWEILS LETZTEN Eintrag dieser Liste) — Rückwärtskompatibilität für
+    /// jeden Code, der weiterhin nur diese beiden Altfelder liest.
+    public var blockReviewHistoryJSON: String?
+
     /// Environment this plan is designed for — used to filter recommendations (F154).
     public var targetEnvironment: EnvironmentType
 
@@ -34,9 +104,10 @@ public final class TrainingPlan {
     /// DEL-053: Globaler User-Override der RIR-Schwelle fuer
     /// Smart-Progression in DIESEM Plan. Nil = Default-Logik
     /// (`ProgressionEvaluator.defaultRIRForCompound/Isolation`). Non-nil =
-    /// alle Uebungen progressen erst, wenn `lastSet.rir <= override`.
-    /// Beispiel: `override = 2` zwingt sowohl Compounds als auch Isolation
-    /// auf RIR<=2 — strenger Modus.
+    /// alle Uebungen progressen erst, wenn der letzte Satz mindestens
+    /// `override` Wiederholungen in Reserve hatte (`lastSet.rir >= override`).
+    /// Beispiel: `override = 3` verlangt sowohl bei Compounds als auch bei
+    /// Isolation RIR>=3 — strenger Modus.
     public var progressionTargetRIROverride: Float?
 
     /// DEL-123: i18n-Lookup-Key fuer den Plan-Namen.
@@ -47,8 +118,46 @@ public final class TrainingPlan {
     /// addiert das Feld als nil auf existierende Rows ohne Schema-Bruch.
     public var localizationKey: String?
 
+    /// README 2.20: JSON-codiertes `PlanGeneratorInput`, gesetzt wenn dieser
+    /// Plan ueber den "Plan bauen"-Assistenten erzeugt wurde. Nil = manuell
+    /// angelegter oder direkt aus einem `ProgramTemplate` instanziierter
+    /// Plan. Ermoeglicht "neu rechnen": der Assistent liest die urspruenglich
+    /// gewaehlten Trainingsarten zurueck, statt sie erneut abzufragen.
+    /// Gleiches Raw+Computed-Prinzip wie
+    /// `UserBodyProfile.equipmentPreferencesRaw`.
+    public var generatorInputRaw: String?
+
+    /// Handoff "Lauf-Coaching - Machbarkeits-Check": Herkunft dieses Plans.
+    /// Default `.manual`, weil das die einzige Herkunft ist, die kein
+    /// Instantiator explizit setzt (Template-Adopt/Leerer-Plan gehen nicht
+    /// ueber `PlanGeneratorInstantiator`). Gleiches Raw+Computed-Prinzip wie
+    /// `UserBodyProfile.cardioGoalRaw`.
+    public var generationSourceRaw: String = GenerationSource.manual.rawValue
+
     @Relationship(deleteRule: .cascade, inverse: \TrainingDay.plan)
     public var days: [TrainingDay] = []
+
+    /// Typisierter Zugriff auf `generatorInputRaw`. Getter dekodiert JSON;
+    /// liefert `nil` still (kein Crash) wenn der Plan kein Wizard-Plan ist
+    /// oder das JSON aus irgendeinem Grund nicht mehr decodierbar ist.
+    public var generatorInput: PlanGeneratorInput? {
+        get {
+            guard let raw = generatorInputRaw, let data = raw.data(using: .utf8) else { return nil }
+            return try? JSONDecoder().decode(PlanGeneratorInput.self, from: data)
+        }
+        set {
+            guard let newValue, let data = try? JSONEncoder().encode(newValue) else {
+                generatorInputRaw = nil
+                return
+            }
+            generatorInputRaw = String(data: data, encoding: .utf8)
+        }
+    }
+
+    public var generationSource: GenerationSource {
+        get { GenerationSource(rawValue: generationSourceRaw) ?? .manual }
+        set { generationSourceRaw = newValue.rawValue }
+    }
 
     public init(
         name: String = "",
@@ -59,7 +168,14 @@ public final class TrainingPlan {
         isActive: Bool = false,
         targetEnvironment: EnvironmentType = .gym,
         isTemplate: Bool = false,
-        localizationKey: String? = nil
+        localizationKey: String? = nil,
+        generatorInputRaw: String? = nil,
+        generationSource: GenerationSource = .manual,
+        // P6.1: explizit statt nur abgeleitet, damit ein Backup-Import den
+        // tatsaechlich gespeicherten Zeitpunkt (oder `nil` bei einem
+        // Backup von vor P6.1) durchreichen kann, ohne vom
+        // Auto-"jetzt"-Default ueberschrieben zu werden.
+        activatedAt: Date? = nil
     ) {
         self.name = name
         self.customName = customName
@@ -70,6 +186,25 @@ public final class TrainingPlan {
         self.targetEnvironment = targetEnvironment
         self.isTemplate = isTemplate
         self.localizationKey = localizationKey
+        self.generatorInputRaw = generatorInputRaw
+        self.generationSourceRaw = generationSource.rawValue
+        // P6.1: ein neu erzeugter, bereits aktiver Plan wird JETZT aktiviert
+        // — kein erfundenes Datum, sondern der tatsaechliche Erzeugungs-
+        // zeitpunkt. Ein expliziter `activatedAt`-Wert (Backup-Import) gewinnt
+        // immer, auch wenn er `nil` ist (deshalb `??`, nicht ein zweiter
+        // optionaler Parameter mit anderem Defaultverhalten).
+        self.activatedAt = activatedAt ?? (isActive ? Date() : nil)
     }
+}
+
+extension TrainingPlan {
+    /// System-Name und Katalog-Schluessel eines vom Nutzer frisch angelegten,
+    /// leeren Plans ("Neuer Plan" / "New Plan" / "Yeni Plan"). Beide Seiten
+    /// muessen dasselbe Paar kennen: `PlansListView.createNewPlan` legt den
+    /// Plan damit an, `LibrarySeeder.backfillCustomNamesIfNeeded` darf ihn
+    /// nicht als Nutzer-Umbenennung werten (sonst friert der deutsche Name
+    /// beim naechsten App-Start als `customName` fest).
+    public static let blankPlanName = "Neuer Plan"
+    public static let blankPlanLocalizationKey = "plans.new"
 }
 #endif

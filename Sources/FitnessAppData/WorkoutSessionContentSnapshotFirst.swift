@@ -1,0 +1,106 @@
+#if canImport(SwiftData)
+import Foundation
+import FitnessAppCore
+
+/// P8 Stufe-2 (Session-Inhaltsvertrag): snapshot-first lesen mit Live-
+/// Fallback NUR für Alt-Sessions, für die NIE ein Snapshot aufgenommen
+/// wurde (`.notCaptured`). Ein vorhandener, aber beschädigter/nicht
+/// unterstützter Snapshot (`.unreadable`) liefert bewusst `nil` statt
+/// stillschweigend auf den (ggf. inzwischen anders aussehenden) Live-Tag
+/// auszuweichen. Geteilt zwischen `WorkoutSummaryView` (Historie,
+/// abgeschlossene Session) und den Zeitformat-/Zirkel-Playern
+/// (`TimedWorkoutPlayerView`/`CircuitWorkoutPlayerView`) für eine laufende/
+/// wiederaufgenommene Session — in beiden Fällen gilt: eine externe
+/// Änderung an `day.timeCapMinutes`/`circuitRounds`/`circuitRestSeconds`/
+/// `circuitMode` seit Session-Start darf weder die Anzeige noch (bei den
+/// Playern) die tatsächliche Timer-/Rundenlogik beeinflussen.
+extension WorkoutSession {
+    public func contentSnapshotFirst<T>(
+        _ fromSnapshot: (TrainingDayContentSnapshot) -> T?,
+        liveFallback: () -> T?
+    ) -> T? {
+        switch contentSnapshotState {
+        case .available(let snapshot): return fromSnapshot(snapshot)
+        case .notCaptured: return liveFallback()
+        case .unreadable: return nil
+        }
+    }
+
+    public var contentSnapshotTimeCapMinutes: Int? {
+        contentSnapshotFirst({ $0.timeCapMinutes }, liveFallback: { day?.timeCapMinutes })
+    }
+
+    public var contentSnapshotCircuitRounds: Int? {
+        contentSnapshotFirst({ $0.circuitRounds }, liveFallback: { day?.circuitRounds })
+    }
+
+    public var contentSnapshotCircuitRestSeconds: Int? {
+        contentSnapshotFirst({ $0.circuitRestSeconds }, liveFallback: { day?.circuitRestSeconds })
+    }
+
+    /// P8 Stufe-2-Nachbesserung (Resume-Isolation): steuert bei
+    /// `CircuitWorkoutPlayerView` die tatsächliche Rundenabschluss-LOGIK
+    /// (`.toFailure` vs. `.fixedReps`), nicht nur eine Anzeige — deshalb
+    /// hier mit aufgenommen, obwohl `WorkoutSummaryView` es bisher nicht
+    /// brauchte.
+    public var contentSnapshotCircuitMode: CircuitRoundMode? {
+        contentSnapshotFirst({ $0.circuitMode }, liveFallback: { day?.circuitMode })
+    }
+
+    /// Paket 2: wie die drei Zirkel-Accessor oben - steuert bei
+    /// `EnduranceIntervalPlayerView` die tatsaechliche Timer-/Phasenlogik,
+    /// nicht nur eine Anzeige.
+    public var contentSnapshotEnduranceWarmupDurationSeconds: Int? {
+        contentSnapshotFirst({ $0.enduranceWarmupDurationSeconds }, liveFallback: { day?.enduranceWarmupDurationSeconds })
+    }
+
+    public var contentSnapshotEnduranceCooldownDurationSeconds: Int? {
+        contentSnapshotFirst({ $0.enduranceCooldownDurationSeconds }, liveFallback: { day?.enduranceCooldownDurationSeconds })
+    }
+
+    public var contentSnapshotEnduranceIntervalRounds: Int? {
+        contentSnapshotFirst({ $0.enduranceIntervalRounds }, liveFallback: { day?.enduranceIntervalRounds })
+    }
+
+    public var contentSnapshotEnduranceWorkDurationSeconds: Int? {
+        contentSnapshotFirst({ $0.enduranceWorkDurationSeconds }, liveFallback: { day?.enduranceWorkDurationSeconds })
+    }
+
+    public var contentSnapshotEnduranceWorkDistanceKm: Double? {
+        contentSnapshotFirst({ $0.enduranceWorkDistanceKm }, liveFallback: { day?.enduranceWorkDistanceKm })
+    }
+
+    public var contentSnapshotEnduranceRestDurationSeconds: Int? {
+        contentSnapshotFirst({ $0.enduranceRestDurationSeconds }, liveFallback: { day?.enduranceRestDurationSeconds })
+    }
+
+    /// Paket 2 (Sportart-Unterscheidung): reine Anzeige (Laufen/Radfahren-
+    /// Kontext im Player/in der Historie), beeinflusst keine Timer-/
+    /// Phasenlogik - gleiches Snapshot-first-Prinzip wie oben.
+    public var contentSnapshotEnduranceSportKind: TrainingTypeKind? {
+        contentSnapshotFirst({ $0.enduranceSportKind }, liveFallback: { day?.enduranceSportKind })
+    }
+
+    /// P8 Stufe-2-Nachbesserung (Geräteabnahme-Befund, Block D): steuert,
+    /// welcher Player überhaupt geöffnet wird (`WorkoutRootView`) und,
+    /// innerhalb eines Zeitformat-Tags, welcher der vier Unterspieler
+    /// (`TimedWorkoutPlayerView`) — nicht nur eine Anzeige. Ändert ein
+    /// externer Edit das Zeitformat des Tages, während die Session offen
+    /// bleibt, darf das weder den falschen Player öffnen noch Fortschritt
+    /// falsch interpretieren.
+    ///
+    /// Bewusst NICHT über `contentSnapshotFirst` (das liefert bei
+    /// `.unreadable` `nil`): eine Routing-Entscheidung muss IMMER einen
+    /// Player ergeben, sonst zeigt `TimedWorkoutPlayerView.case nil` eine
+    /// leere Seite statt eines nutzbaren (ggf. leicht veralteten) Live-
+    /// Fallbacks. Folgt damit derselben Fallback-Politik wie
+    /// `ActiveWorkoutView.resolvedExercises` (`.notCaptured` UND
+    /// `.unreadable` fallen beide auf den Live-Tag zurück).
+    public var contentSnapshotTimeFormat: WorkoutTimeFormat? {
+        switch contentSnapshotState {
+        case .available(let snapshot): return snapshot.timeFormat
+        case .notCaptured, .unreadable: return day?.timeFormat
+        }
+    }
+}
+#endif

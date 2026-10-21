@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 1470 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2296 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **1470 / 1470** (100%) | 0 |
-| 🇬🇧 English (EN) | **1470 / 1470** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **1470 / 1470** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2296 / 2296** (100%) | 0 |
+| 🇬🇧 English (EN) | **2296 / 2296** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2296 / 2296** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -20,7 +20,7 @@ Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 
 
-## `active.*`  (42 Keys)
+## `active.*`  (48 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -29,6 +29,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.addExercise` | Übung | Exercise | Hareket |
 | `active.addExerciseCTA` | Übung hinzufügen | Add Exercise | Hareket Ekle |
 | `active.confirm.discard.title` | Training verwerfen? | Discard workout? | Antrenmanı silmek istiyor musun? |
+| `active.context.distance` | DISTANZ %@ KM | DISTANCE %@ KM | MESAFE %@ KM |
+| `active.context.exercise` | ÜBUNG %1$d/%2$d | EXERCISE %1$d/%2$d | EGZERSİZ %1$d/%2$d |
+| `active.context.eyebrow.running` | LÄUFT · %@ | RUNNING · %@ | ÇALIŞIYOR · %@ |
+| `active.context.volume` | VOLUMEN %@ KG | VOLUME %@ KG | HACİM %@ KG |
 | `active.discard.cta` | Training abbrechen | Discard Workout | Antrenmanı Sil |
 | `active.discard.message` | Die Session und alle %lld bisher geloggten Sätze gehen verloren. | The session and all %lld logged sets will be lost. | Oturum ve şimdiye kadar kaydedilen %lld set kaybolacak. |
 | `active.empty.adhoc.message` | Such dir aus der Library eine Übung — alles weitere passiert wie im Plan-Training. | Pick an exercise from the library — everything else works like a plan workout. | Kütüphaneden bir hareket seç — gerisi plan antrenmanı gibi çalışır. |
@@ -41,6 +45,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.exercise.removeConfirmCta` | Entfernen | Remove | Kaldır |
 | `active.exercise.removeConfirmMessage` | Die bereits geloggten Sätze dieser Übung werden mit entfernt. | The sets already logged for this exercise will be removed too. | Bu hareket için kaydedilmiş setler de kaldırılacak. |
 | `active.exercise.removeConfirmTitle` | Übung entfernen? | Remove exercise? | Hareket kaldırılsın mı? |
+| `active.exercise.removedDuringSession` | Diese Übung wurde entfernt, während die Session lief – nur Anzeige. | This exercise was removed while the session was running – view only. | Bu egzersiz oturum devam ederken kaldırıldı – yalnızca görüntüleme. |
 | `active.finish.feeling.message` | Die App nutzt das für die Progression: Wenn du am Limit warst, halten wir das Gewicht stabil — kein Zwangs-Plus. | We use this for progression: when you were at the limit, we keep the weight stable — no forced increase. | Bunu ilerleme için kullanırız: limitteydiysen ağırlığı sabit tutarız — zorla artırma yok. |
 | `active.finish.feeling.noProgression` | Kein Gewichts-Plus im nächsten Training | No weight increase next workout | Sonraki antrenmanda ağırlık artışı yok |
 | `active.finish.feeling.title` | Wie hat sich das Training angefühlt? | How did the workout feel? | Antrenman nasıl hissettirdi? |
@@ -57,15 +62,24 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.set.previousFormat` | letztes: %@ | last: %@ | son: %@ |
 | `active.set.previousRIR` | RIR %@ | RIR %@ | RIR %@ |
 | `active.set.remove` | Satz entfernen | Remove set | Seti kaldır |
+| `active.set.rir.scaleMax` | 5 — locker | 5 — easy | 5 — kolay |
+| `active.set.rir.scaleMin` | 0 — nichts mehr | 0 — nothing left | 0 — hiç kalmadı |
+| `active.set.rir.subtitle` | Wiederholungen in Reserve | Reps in Reserve | Yedek tekrar |
 | `active.stats.avgPace` | ⌀ Pace | ⌀ Pace | ⌀ Tempo |
 | `active.stats.distance` | Distanz | Distance | Mesafe |
-| `active.stats.distanceKm` | Distanz km | Distance km | Mesafe km |
 | `active.stats.duration` | Dauer | Duration | Süre |
 | `active.stats.sets` | Sätze | Sets | Set |
-| `active.stats.volumeKg` | Volumen kg | Volume kg | Hacim kg |
 | `active.summary.duration` | Dauer | Duration | Süre |
 | `active.summary.sets` | Sätze | Sets | Set |
 | `active.summary.volume` | Volumen | Volume | Hacim |
+
+## `activeSet.*`  (3 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `activeSet.plateCalculator.accessibilityLabel` | Hantelscheiben-Aufladung anzeigen | Show plate loading | Disk yükleme hesaplayıcısını göster |
+| `activeSet.rirCapsule.accessibilityHint` | Zum Anpassen antippen | Tap to adjust | Ayarlamak için dokunun |
+| `activeSet.rirCapsule.accessibilityLabel` | RIR %@ | RIR %@ | RIR %@ |
 
 ## `activity.*`  (10 Keys)
 
@@ -82,19 +96,27 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `activity.veryActive.description` | Tag-täglich intensives Training oder schwere körperliche Arbeit. | Daily intense training or heavy physical labor. | Her gün yoğun antrenman ya da ağır fiziksel iş. |
 | `activity.veryActive.label` | Sehr aktiv (1.9) | Very Active (1.9) | Çok Aktif (1.9) |
 
-## `backups.*`  (17 Keys)
+## `backups.*`  (25 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `backups.actions.menu` | Aktionen für Sicherung vom %@ | Actions for the backup from %@ | %@ tarihli yedek için işlemler |
 | `backups.createNow` | Jetzt sichern | Back up now | Şimdi yedekle |
+| `backups.creating.running` | Wird gesichert … | Backing up … | Yedekleniyor … |
 | `backups.delete.action` | Löschen | Delete | Sil |
+| `backups.delete.confirm.message` | Die Sicherung vom %@ wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden. | The backup from %@ will be permanently deleted. This cannot be undone. | %@ tarihli yedek kalıcı olarak silinecek. Bu işlem geri alınamaz. |
+| `backups.delete.confirm.title` | Diesen Stand löschen? | Delete this backup? | Bu yedek silinsin mi? |
+| `backups.deleting.running` | Wird gelöscht … | Deleting … | Siliniyor … |
 | `backups.empty.description` | Sobald du ein Training aufgezeichnet hast, legt Deltiq beim nächsten Verlassen der App die erste Sicherung an. | Once you've recorded a workout, Deltiq creates the first backup the next time you leave the app. | Bir antrenman kaydettiğinde, Deltiq uygulamadan bir sonraki çıkışında ilk yedeği oluşturur. |
 | `backups.empty.title` | Noch keine Backups | No backups yet | Henüz yedek yok |
 | `backups.footer` | Du findest die Backups auch in der Dateien-App unter „Auf meinem iPhone → Deltiq → Backups“. Von dort kannst du eine Sicherung nach iCloud Drive ziehen oder auf den Rechner kopieren. Der Ordner ist außerdem im iCloud-Gerätebackup enthalten. | You can also find the backups in the Files app under "On My iPhone → Deltiq → Backups". From there you can move one to iCloud Drive or copy it to a computer. The folder is also included in your iCloud device backup. | Yedekleri Dosyalar uygulamasında „iPhone'umda → Deltiq → Backups" altında da bulabilirsin. Oradan bir yedeği iCloud Drive'a taşıyabilir veya bilgisayara kopyalayabilirsin. Klasör ayrıca iCloud cihaz yedeğine dahildir. |
 | `backups.intro` | Deltiq sichert deine Daten automatisch, wenn du die App verlässt — höchstens einmal pro Tag. Die letzten fünf Sicherungen bleiben erhalten und liegen in der Dateien-App. | Deltiq backs up your data automatically when you leave the app — at most once a day. The five most recent backups are kept and stored in the Files app. | Deltiq, uygulamadan çıktığında verilerini otomatik olarak yedekler — günde en fazla bir kez. En son beş yedek saklanır ve Dosyalar uygulamasında bulunur. |
+| `backups.loadError.retry` | Erneut versuchen | Try again | Tekrar dene |
+| `backups.loadError.title` | Backups konnten nicht geladen werden | Couldn't load backups | Yedekler yüklenemedi |
 | `backups.reason.automatic` | Automatisch | Automatic | Otomatik |
 | `backups.reason.manual` | Manuell | Manual | Manuel |
 | `backups.reason.preImport` | Vor einem Import | Before an import | İçe aktarmadan önce |
+| `backups.reason.preReset` | Vor einem Zurücksetzen | Before a reset | Sıfırlamadan önce |
 | `backups.restore.action` | Wiederherstellen | Restore | Geri yükle |
 | `backups.restore.confirm.message` | Deine aktuellen Daten werden durch den Stand von %@ ersetzt. Vorher legt Deltiq automatisch eine Sicherung des JETZIGEN Stands an, damit du zurück kannst. | Your current data will be replaced with the backup from %@. Deltiq first saves a backup of your CURRENT data so you can go back. | Mevcut verilerin %@ tarihli yedekle değiştirilecek. Deltiq önce ŞU ANKİ verilerinin bir yedeğini alır, böylece geri dönebilirsin. |
 | `backups.restore.confirm.title` | Diesen Stand wiederherstellen? | Restore this backup? | Bu yedek geri yüklensin mi? |
@@ -104,26 +126,147 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `backups.unhealthy.description` | Die App konnte ihren gewohnten Datenspeicher nicht öffnen und läuft auf einem Ersatz. Der angezeigte Stand kann veraltet sein. Es werden vorsichtshalber keine neuen Backups angelegt, damit bestehende Sicherungen nicht überschrieben werden. Bitte melde das — starte die App vorher nicht neu und lösche sie nicht. | The app couldn't open its usual data store and is running on a fallback. What you see may be out of date. No new backups are being created, so existing ones stay intact. Please report this — don't reinstall or delete the app first. | Uygulama olağan veri deposunu açamadı ve yedek bir depo üzerinde çalışıyor. Gördüğün veriler güncel olmayabilir. Mevcut yedeklerin bozulmaması için yeni yedek alınmıyor. Lütfen bunu bildir — önce uygulamayı yeniden yükleme veya silme. |
 | `backups.unhealthy.title` | Backups angehalten | Backups paused | Yedekler duraklatıldı |
 
-## `barbell.*`  (2 Keys)
+## `barbell.*`  (5 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `barbell.loading.empty` | Keine Aufladung — bleib bei der leeren Stange. | No plates needed — keep the empty bar. | Plaka yok — boş barı bırak. |
 | `barbell.loading.title` | Hantel-Aufladung | Barbell Loading | Halter Yükleme |
+| `barbell.loading.type.ezBar` | SZ | EZ | EZ |
+| `barbell.loading.type.standard` | Langhantel | Barbell | Halter |
+| `barbell.loading.type.trapBar` | Trap | Trap | Trap |
+
+## `baseline.*`  (113 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `baseline.action.backToTest` | Zurück zum Test | Back to test | Teste geri dön |
+| `baseline.action.saveAndContinue` | Speichern | Save | Kaydet |
+| `baseline.action.skipExercise` | Diese Übung überspringen | Skip this exercise | Bu egzersizi atla |
+| `baseline.action.switchToSelfAssess` | Stattdessen einschätzen | Estimate instead | Bunun yerine değerlendir |
+| `baseline.cardio.answer.canJogEasy10Min` | Ich kann 10 Minuten locker joggen | I can jog easily for 10 minutes | 10 dakika rahat tempoda koşabilirim |
+| `baseline.cardio.answer.canWalkBriskly10Min` | Ich kann 10 Minuten zügig gehen | I can walk briskly for 10 minutes | 10 dakika hızlı yürüyebilirim |
+| `baseline.cardio.answer.runsRegularly` | Ich laufe bereits regelmäßig | I already run regularly | Zaten düzenli koşuyorum |
+| `baseline.cardio.answer.unsure` | Unsicher / noch nicht ausprobiert | Not sure / haven't tried yet | Emin değilim / henüz denemedim |
+| `baseline.core.doneButton` | Fertig, Zeit übernehmen | Done, keep this time | Bitti, bu süreyi kullan |
+| `baseline.core.instructions` | Unterarmstütz, so lange wie angenehm möglich — maximal 60 Sekunden. Brich bei Hohlkreuz oder Formverlust ab. | Forearm plank, as long as comfortable — max 60 seconds. Stop if your lower back sags or your form breaks down. | Ön kol plank, rahat olduğun sürece — en fazla 60 saniye. Belin çukurlaşırsa veya form bozulursa dur. |
+| `baseline.core.seconds.label` | Sekunden gehalten | Seconds held | Tutulan saniye |
+| `baseline.family.cardio.cue1` | Kein Test — nur eine ehrliche Selbsteinschätzung. | No test — just an honest self-assessment. | Test yok — sadece dürüst bir öz değerlendirme. |
+| `baseline.family.cardio.cue2` | Hilft uns, dein Ausdauertraining passend zu starten. | Helps us start your cardio training at the right level. | Dayanıklılık antrenmanına doğru seviyeden başlamamıza yardımcı olur. |
+| `baseline.family.cardio.overviewSubtitle` | Kurze Einschätzung für dein Lauftraining | Quick self-assessment for your running training | Koşu antrenmanın için kısa öz değerlendirme |
+| `baseline.family.cardio.title` | Ausdauer | Cardio | Dayanıklılık |
+| `baseline.family.core.cue1` | Rücken bleibt gerade, kein Hohlkreuz. | Back stays straight, no sagging lower back. | Sırt düz kalır, bel çukurlaşmaz. |
+| `baseline.family.core.cue2` | Gesäß leicht anspannen, Blick zum Boden. | Gently brace your glutes, look at the floor. | Kalçayı hafifçe sık, bakış yere doğru. |
+| `baseline.family.core.overviewSubtitle` | Optional — Rumpfstabilität | Optional — core stability | İsteğe bağlı — core stabilitesi |
+| `baseline.family.core.title` | Rumpf (Unterarmstütz) | Core (forearm plank) | Core (Ön Kol Plank) |
+| `baseline.family.legs.cue1` | Knie zeigen in Richtung der Zehen, nicht nach innen. | Knees track toward your toes, not inward. | Dizler ayak uçlarına doğru gider, içe çökmez. |
+| `baseline.family.legs.cue2` | Kontrolliert runter, kontrolliert wieder hoch. | Controlled down, controlled up. | Kontrollü aşağı, kontrollü yukarı. |
+| `baseline.family.legs.overviewSubtitle` | Kurzer Check für deine Beine | Quick check for your legs | Bacakların için kısa kontrol |
+| `baseline.family.legs.title` | Beine (Stuhl-Kniebeuge) | Legs (chair squat) | Bacaklar (Sandalye Squat) |
+| `baseline.family.pull.cue1` | Schultern bleiben unten, nicht hochziehen. | Shoulders stay down, not shrugged up. | Omuzlar aşağıda kalır, yukarı kalkmaz. |
+| `baseline.family.pull.cue2` | Ellbogen führen die Bewegung, nicht die Hände. | Elbows lead the movement, not your hands. | Hareketi dirsekler yönlendirir, eller değil. |
+| `baseline.family.pull.overviewSubtitle` | Kurzer Check fürs Ziehen | Quick check for pulling | Çekme hareketi için kısa kontrol |
+| `baseline.family.pull.title` | Ziehen | Pull | Çekme |
+| `baseline.family.push.cue1` | Körper bildet eine gerade Linie von Kopf bis Ferse. | Body forms a straight line from head to heel. | Vücut baştan topuğa düz bir çizgi oluşturur. |
+| `baseline.family.push.cue2` | Brust kommt nah an den Boden, Ellbogen nicht komplett durchdrücken. | Chest comes close to the floor; don't lock out your elbows. | Göğüs yere yaklaşır, dirsekler tam kilitlenmez. |
+| `baseline.family.push.overviewSubtitle` | Kurzer Check für Oberkörper-Drücken | Quick check for upper-body pushing | Üst vücut itme için kısa kontrol |
+| `baseline.family.push.title` | Drücken (Liegestütze) | Push (push-ups) | İtme (Şınav) |
+| `baseline.flow.title` | Start-Check | Start Check | Başlangıç Kontrolü |
+| `baseline.intensity.comfortablyChallenging.blurb` | Spürbar, aber nicht überfordernd — der empfohlene Standard. | Noticeable, but not overwhelming — the recommended default. | Hissedilir ama yıpratıcı değil — önerilen varsayılan. |
+| `baseline.intensity.comfortablyChallenging.label` | Angenehm fordernd | Comfortably challenging | Rahatça zorlayıcı |
+| `baseline.intensity.knowMyBody.blurb` | Ich schätze mich gut ein und will normal einsteigen. | I assess myself well and want a normal start. | Kendimi iyi değerlendiriyorum ve normal başlamak istiyorum. |
+| `baseline.intensity.knowMyBody.label` | Ich kenne meinen Körper gut | I know my body well | Vücudumu iyi tanıyorum |
+| `baseline.intensity.subtitle` | Das hilft uns, dein Starttempo zu kalibrieren — unabhängig vom Test oben. | This helps us calibrate your starting pace — independent of the test above. | Bu, yukarıdaki testten bağımsız olarak başlangıç temponu ayarlamamıza yardımcı olur. |
+| `baseline.intensity.title` | Wie anstrengend darf deine erste Woche sein? | How challenging should your first week be? | İlk haftan ne kadar zorlayıcı olsun? |
+| `baseline.intensity.veryEasy.blurb` | Lieber zu leicht als zu schwer — ich will mich erst herantasten. | Better too easy than too hard — I want to ease in. | Zor olmaktansa kolay olsun — yavaş yavaş alışmak istiyorum. |
+| `baseline.intensity.veryEasy.label` | Sehr leicht starten | Start very easy | Çok kolay başla |
+| `baseline.legs.confirmReps.title` | Wie viele saubere Wiederholungen? | How many clean reps? | Kaç temiz tekrar yaptın? |
+| `baseline.legs.noChairAssessIntro` | Mach stattdessen 10 kontrollierte Kniebeugen ohne Stuhl. Wie hat sich das angefühlt? | Instead, do 10 controlled squats without a chair. How did that feel? | Bunun yerine sandalyesiz 10 kontrollü squat yap. Nasıl hissettirdi? |
+| `baseline.legs.reps.label` | Saubere Wiederholungen in 30 Sekunden | Clean reps in 30 seconds | 30 saniyede temiz tekrar sayısı |
+| `baseline.legs.timer.instructions` | Stell dich hüftbreit vor einen stabilen Stuhl, Hände leicht auf der Sitzfläche. 30 Sekunden, zähl deine sauberen Wiederholungen. | Stand shoulder-width in front of a stable chair, hands lightly on the seat. 30 seconds — count your clean reps. | Sağlam bir sandalyenin önünde omuz genişliğinde dur, ellerini hafifçe oturma yüzeyine koy. 30 saniye — temiz tekrarlarını say. |
+| `baseline.overview.expandTitle` | Optional erweitern | Expand (optional) | İsteğe bağlı genişlet |
+| `baseline.overview.subtitle` | Starte mit einer Karte deiner Wahl. Du kannst jederzeit überspringen oder direkt zum Ergebnis weitergehen. | Start with whichever card you like. You can skip anytime or jump straight to your result. | İstediğin kartla başla. İstediğin zaman atlayabilir veya doğrudan sonuca geçebilirsin. |
+| `baseline.overview.title` | Deine Checks im Überblick | Your checks at a glance | Kontrollerine genel bakış |
+| `baseline.pull.barQuestion.title` | Hast du Zugang zu einer Klimmzugstange? | Do you have access to a pull-up bar? | Barfiks barına erişimin var mı? |
+| `baseline.pull.latPulldown.intro` | Wähle ein Gewicht, mit dem du 8–12 saubere Wiederholungen schaffst. | Choose a weight you can do 8–12 clean reps with. | 8-12 temiz tekrar yapabileceğin bir ağırlık seç. |
+| `baseline.pull.latPulldown.reps.label` | Wiederholungen | Reps | Tekrar |
+| `baseline.pull.latPulldown.rir.label` | RIR nach dem Satz | RIR after the set | Set sonrası RIR |
+| `baseline.pull.latPulldown.rirHint` | RIR = Wiederholungen, die noch möglich gewesen wären. 0 = komplett ausbelastet. | RIR = reps still possible. 0 = completely to failure. | RIR = hâlâ yapılabilecek tekrar sayısı. 0 = tamamen tükenme. |
+| `baseline.pull.latPulldown.weight.label` | Gewicht (kg) | Weight (kg) | Ağırlık (kg) |
+| `baseline.pull.noEquipmentNote` | Ohne Klimmzugstange oder Kabelzug überspringen wir diesen Test — wir ersetzen ihn nicht durch eine ungeeignete Alternative. | Without a pull-up bar or cable machine we'll skip this test — we won't replace it with an unsuitable alternative. | Barfiks barı veya kablo makinesi olmadan bu testi atlıyoruz — uygun olmayan bir alternatifle değiştirmiyoruz. |
+| `baseline.pull.pullUpVariant.title` | Schaffst du normale Klimmzüge ohne Unterstützung? | Can you do a regular pull-up without assistance? | Desteksiz normal barfiks çekebiliyor musun? |
+| `baseline.pull.reps.label` | Saubere Wiederholungen | Clean reps | Temiz tekrar sayısı |
+| `baseline.pull.variant.assistedPullUp` | Unterstützter Klimmzug | Assisted pull-up | Destekli barfiks |
+| `baseline.pull.variant.latPulldown` | Latzug | Lat pulldown | Lat pulldown |
+| `baseline.pull.variant.pullUp` | Klimmzug | Pull-up | Barfiks |
+| `baseline.push.reps.hint` | Stopp bei Formverlust — nicht bei völliger Erschöpfung. | Stop at form breakdown — not at total exhaustion. | Form bozulunca dur — tamamen tükenene kadar değil. |
+| `baseline.push.reps.label` | Saubere Wiederholungen | Clean reps | Temiz tekrar sayısı |
+| `baseline.push.variant.incline` | Erhöht (z. B. an der Couch) | Incline (e.g. on a couch) | Yükseltilmiş (örn. koltuğa dayanarak) |
+| `baseline.push.variant.knees` | Auf den Knien | On your knees | Dizler üzerinde |
+| `baseline.push.variant.noCleanRep` | Noch keine saubere Wiederholung | No clean rep yet | Henüz temiz bir tekrar yok |
+| `baseline.push.variant.standard` | Standard | Standard | Standart |
+| `baseline.push.variant.title` | Welche Variante schaffst du sauber? | Which variant can you do with clean form? | Hangi varyantı temiz formla yapabiliyorsun? |
+| `baseline.push.zeroRepsNote` | Alles gut — wir starten mit einer passenden Variante für dich. | Totally fine — we'll start with a suitable variant for you. | Sorun değil — sana uygun bir varyantla başlayacağız. |
+| `baseline.result.detailsTitle` | Einzelheiten anzeigen | Show details | Ayrıntıları göster |
+| `baseline.result.overall.high` | Du bringst schon eine gute Basis mit. Wir starten trotzdem kontrolliert und steigern bewusst Schritt für Schritt. | You already bring a solid base. We'll still start in a controlled way and increase deliberately, step by step. | Zaten sağlam bir temelin var. Yine de kontrollü başlayıp adım adım bilinçli şekilde artıracağız. |
+| `baseline.result.overall.low` | Du startest mit einem soliden, etwas reduzierten Einstieg. Das Tempo passen wir Schritt für Schritt an. | You're starting with a solid, slightly reduced setup. We'll adjust the pace step by step. | Sağlam ama biraz hafifletilmiş bir başlangıç yapıyorsun. Temponu adım adım ayarlayacağız. |
+| `baseline.result.overall.moderate` | Du startest im normalen Tempo — ein guter, ausgewogener Einstieg. | You're starting at a normal pace — a good, balanced start. | Normal bir tempoda başlıyorsun — dengeli, iyi bir başlangıç. |
+| `baseline.result.overall.unknown` | Wir haben noch keine Ausgangswerte von dir — kein Problem, wir kalibrieren einfach während der ersten Workouts. | We don't have starting values from you yet — no problem, we'll calibrate during your first workouts. | Henüz senden başlangıç değeri yok — sorun değil, ilk antrenmanların sırasında ayarlarız. |
+| `baseline.result.overall.veryLow` | Du startest sinnvoll mit den einfachsten Varianten. Wir schauen in ein paar Wochen gemeinsam, ob wir steigern. | You're starting sensibly with the simplest variants. We'll check together in a few weeks whether to increase. | En basit varyantlarla mantıklı bir başlangıç yapıyorsun. Birkaç hafta sonra birlikte artırıp artırmayacağımıza bakarız. |
+| `baseline.result.phaseNote` | Dein Check ist gespeichert und fließt in künftige Anpassungen ein — dein aktueller Plan ändert sich dadurch jetzt noch nicht automatisch. | Your check is saved and will inform future adjustments — it doesn't change your current plan automatically yet. | Kontrolün kaydedildi ve gelecekteki ayarlamalara yansıyacak — şu an mevcut planını otomatik olarak değiştirmiyor. |
+| `baseline.result.planButton` | Plan ansehen | View plan | Planı görüntüle |
+| `baseline.result.recheckNote` | Nach 4–6 Wochen schauen wir gemeinsam, ob sich etwas verändert hat — verglichen nur mit deinem eigenen Start, nie mit anderen. | In 4–6 weeks we'll check together whether anything has changed — compared only to your own starting point, never to others. | 4-6 hafta sonra birlikte bir şey değişti mi diye bakacağız — sadece kendi başlangıcınla karşılaştırarak, asla başkalarıyla değil. |
+| `baseline.result.safetyNote` | Du hattest oben Vorsicht angegeben — wenn Beschwerden bestehen bleiben, sprich bitte mit einer Ärztin oder einem Arzt. | You indicated caution above — if symptoms persist, please talk to a doctor first. | Yukarıda dikkatli olmanı gerektiren bir durum belirttin — şikayetlerin sürerse lütfen önce bir doktora danış. |
+| `baseline.result.title` | Dein Start-Check | Your Start Check | Başlangıç Kontrolün |
+| `baseline.safety.flaggedNote` | Alles gut — wir überspringen die Belastungstests und starten vorsichtig. Bei anhaltenden Beschwerden sprich bitte vorher mit einer Ärztin oder einem Arzt. | All good — we'll skip the exertion tests and start carefully. If symptoms persist, please talk to a doctor first. | Sorun değil — zorlayıcı testleri atlıyoruz ve dikkatli başlıyoruz. Şikayetlerin sürerse lütfen önce bir doktora danış. |
+| `baseline.safety.option.clear` | Ja, los geht's | Yes, let's go | Evet, başlayalım |
+| `baseline.safety.option.flagged` | Lieber ohne Test | I'd rather skip the test | Testsiz devam etmeyi tercih ederim |
+| `baseline.safety.question` | Hast du aktuell Schmerzen, Schwindel, Brustschmerzen oder eine ärztliche Einschränkung für Sport? | Do you currently have pain, dizziness, chest pain, or a medical restriction for exercise? | Şu anda ağrın, baş dönmen, göğüs ağrın veya spor için tıbbi bir kısıtlaman var mı? |
+| `baseline.safety.title` | Heute beschwerdefrei? | Pain-free today? | Bugün şikayetin yok mu? |
+| `baseline.selfAssess.answer.canButStrenuous` | Kann ich, aber anstrengend | I can, but it's strenuous | Yapabiliyorum ama zorlayıcı |
+| `baseline.selfAssess.answer.easy` | Fühlt sich aktuell leicht an | Feels easy right now | Şu anda kolay geliyor |
+| `baseline.selfAssess.answer.skipped` | Überspringen | Skip | Atla |
+| `baseline.selfAssess.answer.unsureNoCleanRep` | Unsicher / noch keine saubere Wiederholung | Not sure / no clean rep yet | Emin değilim / henüz temiz tekrar yok |
+| `baseline.selfAssess.legs.title` | Wie fühlen sich Kniebeugen aktuell für dich an? | How do squats feel for you right now? | Squat şu anda sana nasıl geliyor? |
+| `baseline.selfAssess.pull.title` | Wie fühlt sich Ziehen (z. B. Klimmzüge) aktuell für dich an? | How does pulling (e.g. pull-ups) feel for you right now? | Çekme hareketi (örn. barfiks) şu anda sana nasıl geliyor? |
+| `baseline.selfAssess.push.title` | Wie fühlen sich Liegestütze aktuell für dich an? | How do push-ups feel for you right now? | Şınav şu anda sana nasıl geliyor? |
+| `baseline.status.open` | Offen | Open | Açık |
+| `baseline.status.recorded` | Erfasst | Recorded | Kaydedildi |
+| `baseline.status.skipped` | Übersprungen | Skipped | Atlandı |
+| `baseline.step.cta.compactLink` | Startwerte erfassen (optional) | Log starting values (optional) | Başlangıç değerlerini kaydet (isteğe bağlı) |
+| `baseline.step.cta.later` | Später entscheiden | Decide later | Sonra karar ver |
+| `baseline.step.cta.later.subtitle` | Du kannst das jederzeit später nachholen. | You can always do this later. | Bunu istediğin zaman sonra yapabilirsin. |
+| `baseline.step.cta.selfAssess` | Selbst einschätzen | Self-assess | Kendimi değerlendir |
+| `baseline.step.cta.selfAssess.subtitle` | Ein paar einfache Fragen statt Test — dauert eine Minute. | A few simple questions instead of a test — takes a minute. | Test yerine birkaç basit soru — bir dakika sürer. |
+| `baseline.step.cta.test` | Kurz testen | Quick test | Kısa test |
+| `baseline.step.cta.test.subtitle` | 5 kurze, schonende Übungen mit Sicherheits-Check davor. | 5 short, gentle exercises with a safety check first. | Önce güvenlik kontrolü, sonra 5 kısa ve nazik egzersiz. |
+| `baseline.step.disclaimer` | Kein medizinischer Test. Bei Schmerzen oder Unsicherheit sprich vorher mit einer Ärztin oder einem Arzt. | Not a medical test. If you have pain or are unsure, talk to a doctor first. | Tıbbi bir test değildir. Ağrın varsa veya emin değilsen önce bir doktora danış. |
+| `baseline.step.done.redo` | Erneut durchführen | Redo | Tekrar yap |
+| `baseline.step.done.title` | Start-Check erfasst | Start check recorded | Başlangıç kontrolü kaydedildi |
+| `baseline.step.subtitle` | Optional: Mit 2–3 kurzen Checks machen wir deinen Einstieg passender. Es gibt kein Bestehen oder Durchfallen. | Optional: A couple of short checks help us tailor your start. There's no passing or failing. | İsteğe bağlı: 2-3 kısa kontrolle başlangıcını sana daha uygun hale getiriyoruz. Burada geçme ya da kalma yok. |
+| `baseline.step.subtitle.compact` | Du kannst optional ein paar Startwerte hinterlegen — ganz ohne geführten Test. | You can optionally log some starting values — no guided test needed. | İstersen rehberli test olmadan birkaç başlangıç değeri girebilirsin. |
+| `baseline.step.title` | Dein Startpunkt | Your starting point | Başlangıç Noktan |
+| `baseline.timer.cancel` | Abbrechen | Cancel | İptal |
+| `baseline.timer.elapsed.a11y` | %d Sekunden gehalten | %d seconds held | %d saniye tutuldu |
+| `baseline.timer.finished` | Fertig | Done | Bitti |
+| `baseline.timer.pause` | Pause | Pause | Duraklat |
+| `baseline.timer.remaining.a11y` | Noch %d Sekunden | %d seconds remaining | %d saniye kaldı |
+| `baseline.timer.resume` | Weiter | Resume | Devam et |
+| `baseline.timer.start` | Start | Start | Başla |
 
 ## `calc.*`  (59 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `calc.index.footer` | Alle Rechner nutzen die gleiche Domain-Logik (FitnessAppCore) wie der Rest der App — Werte sind 1:1 mit Dashboard und MeasurementView. | All calculators use the same domain logic (FitnessAppCore) as the rest of the app — values match dashboard and measurement view 1:1. | Tüm hesaplayıcılar uygulamanın geri kalanıyla aynı domain mantığını (FitnessAppCore) kullanır — değerler panel ve ölçüm görünümü ile birebir eşleşir. |
-| `calc.index.oneRm.subtitle` | Epley + Brzycki + Mittelwert, plus Trainings-%-Tabelle. | Epley + Brzycki + average, plus a training-% table. | Epley + Brzycki + ortalama, artı antrenman % tablosu. |
+| `calc.index.oneRm.subtitle` | Epley, Brzycki und Mittelwert | Epley, Brzycki and average | Epley, Brzycki ve ortalama |
 | `calc.index.oneRm.title` | 1RM-Rechner | 1RM Calculator | 1RM Hesaplayıcı |
-| `calc.index.plate.subtitle` | Welche Plates für dein Zielgewicht — mit Inventar-Cap und visualer Stange. | Which plates for your target weight — with inventory cap and visual bar. | Hedef ağırlığın için hangi plakalar — envanter sınırı ve görsel barla. |
+| `calc.index.plate.subtitle` | Scheiben für dein Zielgewicht | Plates for your target weight | Hedef ağırlığın için plakalar |
 | `calc.index.plate.title` | Hantel-Rechner | Plate Calculator | Plaka Hesaplayıcı |
-| `calc.index.tdee.subtitle` | BMR + TDEE aus deinem Profil und Aktivitäts-Level. | BMR + TDEE from your profile and activity level. | Profil ve aktivite seviyenden BMR + TDEE. |
+| `calc.index.tdee.subtitle` | BMR und TDEE aus deinem Profil | BMR and TDEE from your profile | Profilinden BMR ve TDEE |
 | `calc.index.tdee.title` | Kalorien-Rechner | Calorie Calculator | Kalori Hesaplayıcı |
 | `calc.index.title` | Rechner | Calculators | Hesaplayıcılar |
-| `calc.index.water.subtitle` | Tagesziel = Gewicht × 35 ml. Mit Quick-Add. | Daily goal = weight × 35 ml. With quick-add. | Günlük hedef = kilo × 35 ml. Hızlı ekleme ile. |
+| `calc.index.unitContext` | EINHEIT: %@ | UNIT: %@ | BİRİM: %@ |
+| `calc.index.water.subtitle` | Tagesziel aus deinem Gewicht | Daily goal from your weight | Kilona göre günlük hedef |
 | `calc.index.water.title` | Wasser-Tracker | Water Tracker | Su Takipçisi |
 | `calc.oneRm.input.footer` | Gültig für 1-36 Reps. Bei sehr hohen Reps wird die Schätzung unzuverlässig — die Formeln liefern nur für den Hypertrophie- bis Kraft-Bereich (~1-12 Reps) brauchbare Werte. | Valid for 1-36 reps. Estimates get unreliable at very high reps — formulas work best in the hypertrophy-to-strength range (~1-12 reps). | 1-36 tekrar için geçerli. Çok yüksek tekrarlarda tahmin güvenilmez olur — formüller hipertrofi-güç aralığında (~1-12 tekrar) en iyi sonucu verir. |
 | `calc.oneRm.percentages.footer` | Rep-Hints sind Faustwerte. Effektive Reps hängen vom Trainings-Status und der Bewegung ab. | Rep hints are rules of thumb. Actual reps depend on training status and the lift. | Tekrar ipuçları yaklaşık değerlerdir. Gerçek tekrar; antrenman durumuna ve harekete bağlıdır. |
@@ -143,8 +286,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `calc.plate.emptyHint.noInventory` | Mit dem aktuellen Inventar bleibt nichts über der Stange. | With your current inventory, nothing fits above the bar. | Mevcut envanterle barın üzerine yüklenecek bir şey yok. |
 | `calc.plate.emptyHint.noTarget` | Trag dein Zielgewicht ein. | Enter your target weight. | Hedef ağırlığını gir. |
 | `calc.plate.emptyHint.targetTooLow` | Zielgewicht muss schwerer sein als die Stange. | Target must be heavier than the bar. | Hedef bardan ağır olmalı. |
-| `calc.plate.inventoryFooter.kg` | Cap pro Plate: 25/20 kg → 10, alle anderen → 1. Auf 0 setzen, wenn die Plate bei dir fehlt. | Cap per plate: 25/20 kg → 10, all others → 1. Set to 0 if you don't own that plate. | Plaka başına sınır: 25/20 kg → 10, diğerleri → 1. Plaka yoksa 0 olarak ayarla. |
-| `calc.plate.inventoryFooter.lbs` | Cap pro Plate: 45/35 lbs → 10, alle anderen → 1. Auf 0 setzen, wenn die Plate bei dir fehlt. | Cap per plate: 45/35 lbs → 10, all others → 1. Set to 0 if you don't own that plate. | Plaka başına sınır: 45/35 lbs → 10, diğerleri → 1. Plaka yoksa 0 olarak ayarla. |
+| `calc.plate.inventoryFooter.kg` | Cap pro Scheibe: 25/20 kg → 10, alle anderen → 1. Auf 0 setzen, wenn die Scheibe bei dir fehlt. | Cap per plate: 25/20 kg → 10, all others → 1. Set to 0 if you don't own that plate. | Plaka başına sınır: 25/20 kg → 10, diğerleri → 1. Plaka yoksa 0 olarak ayarla. |
+| `calc.plate.inventoryFooter.lbs` | Cap pro Scheibe: 45/35 lbs → 10, alle anderen → 1. Auf 0 setzen, wenn die Scheibe bei dir fehlt. | Cap per plate: 45/35 lbs → 10, all others → 1. Set to 0 if you don't own that plate. | Plaka başına sınır: 45/35 lbs → 10, diğerleri → 1. Plaka yoksa 0 olarak ayarla. |
 | `calc.plate.inventoryRow.count` | %lld Stk | %lld pcs | %lld adet |
 | `calc.plate.loaded` | Geladen gesamt | Total Loaded | Yüklenen Toplam |
 | `calc.plate.perSide` | Pro Seite | Per Side | Tarafa |
@@ -186,6 +329,32 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `cardioEquipment.rowingMachine` | Rudergerät | Rowing machine | Kürek makinesi |
 | `cardioEquipment.treadmill` | Laufband | Treadmill | Koşu Bandı |
 
+## `cardioFeasibility.*`  (11 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `cardioFeasibility.day.interval` | %1$lld × %2$@ km | %1$lld × %2$@ km | %1$lld × %2$@ km |
+| `cardioFeasibility.day.run` | ~%lld Min. Lauf | ~%lld min run | ~%lld dk koşu |
+| `cardioFeasibility.day.runFallback` | Lauf | Run | Koşu |
+| `cardioFeasibility.day.strength` | Krafttraining | Strength training | Kuvvet antrenmanı |
+| `cardioFeasibility.detail.feasible` | Du brauchst rechnerisch %1$lld Wochen, verfügbar sind %2$lld – das reicht. | You need about %1$lld weeks, %2$lld are available – that's enough. | Hesaba göre %1$lld hafta gerekiyor, %2$lld hafta mevcut – bu yeterli. |
+| `cardioFeasibility.detail.infeasibleNoSuggestion` | Du brauchst rechnerisch %1$lld Wochen, verfügbar sind nur %2$lld. Selbst ein kleineres Ziel passt nicht mehr in die verbleibende Zeit. | You need about %1$lld weeks, but only %2$lld are available. Even a smaller goal no longer fits in the remaining time. | Hesaba göre %1$lld hafta gerekiyor, ama sadece %2$lld hafta mevcut. Daha küçük bir hedef bile kalan süreye sığmıyor. |
+| `cardioFeasibility.detail.infeasibleWithSuggestion` | Du brauchst rechnerisch %1$lld Wochen, verfügbar sind nur %2$lld. Realistischer wäre aktuell: %3$@. | You need about %1$lld weeks, but only %2$lld are available. A more realistic goal right now: %3$@. | Hesaba göre %1$lld hafta gerekiyor, ama sadece %2$lld hafta mevcut. Şu an daha gerçekçi bir hedef: %3$@. |
+| `cardioFeasibility.error.createdButUnresolved.message` | Dein Plan wurde gespeichert, konnte aber nicht sofort geöffnet werden. Du findest ihn im Plan-Tab. | Your plan was saved, but couldn't be opened right away. You'll find it in the Plan tab. | Planın kaydedildi, ancak hemen açılamadı. Plan sekmesinde bulabilirsin. |
+| `cardioFeasibility.error.createdButUnresolved.title` | Plan wurde erstellt | Plan Was Created | Plan Oluşturuldu |
+| `cardioFeasibility.error.saveFailed.message` | Beim Speichern ist ein Fehler aufgetreten. Es wurde nichts geändert — bitte versuche es erneut. | Something went wrong while saving. Nothing was changed — please try again. | Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene. |
+| `cardioFeasibility.error.saveFailed.title` | Plan konnte nicht gespeichert werden | Plan Couldn't Be Saved | Plan Kaydedilemedi |
+
+## `cardioGoal.*`  (5 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `cardioGoal.fiveK` | 5 km | 5K | 5 km |
+| `cardioGoal.generalFitness` | Allgemeine Fitness | General Fitness | Genel Fitness |
+| `cardioGoal.halfMarathon` | Halbmarathon | Half Marathon | Yarı Maraton |
+| `cardioGoal.marathon` | Marathon | Marathon | Maraton |
+| `cardioGoal.tenK` | 10 km | 10K | 10 km |
+
 ## `chart.*`  (3 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
@@ -194,7 +363,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (216 Keys)
+## `coaching.*`  (229 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -271,6 +440,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.edu.strict.9` | Niemand schuldet dir Ergebnisse. Du musst sie dir verdienen — Satz für Satz. | Nobody owes you results. You earn them — set by set. | Kimse sana sonuç borçlu değil. Set set kazanırsın. |
 | `coaching.empty.message` | Aktuell ist keine Warnung oder Aktion nötig — weiter so. | No warning or action needed right now — keep it up. | Şu an uyarı veya işlem gerekmez — böyle devam et. |
 | `coaching.empty.title` | Heute kein besonderer Hinweis | No special note today | Bugün özel bir not yok |
+| `coaching.goal.endurance.blurb` | Aerobe Leistungsfähigkeit und Grundlagenausdauer steigern, lange ruhige Einheiten plus gezielte Tempoarbeit. | Build aerobic capacity and endurance base — long easy sessions plus targeted tempo work. | Aerobik kapasiteyi ve dayanıklılık tabanını geliştir — uzun sakin birimler artı hedefli tempo çalışması. |
+| `coaching.goal.endurance.label` | Ausdauer | Endurance | Dayanıklılık |
+| `coaching.goal.functional.blurb` | Alltagstaugliche Bewegungsmuster, Mobilität, kein reiner Kraft- oder Muskelfokus. | Everyday movement patterns, mobility, not purely strength- or muscle-focused. | Günlük yaşama uygun hareket kalıpları, mobilite, sadece güç veya kas odaklı değil. |
+| `coaching.goal.functional.label` | Funktionelle Fitness | Functional Fitness | Fonksiyonel Fitness |
 | `coaching.goal.hybrid.blurb` | Kraft + Ausdauer + Mobilität — alles fließt zusammen. | Strength + endurance + mobility — all flowing together. | Güç + dayanıklılık + mobilite — hepsi bir arada. |
 | `coaching.goal.hybrid.label` | Funktionell / Hybrid | Functional / Hybrid | Fonksiyonel / Hibrit |
 | `coaching.goal.hypertrophy.blurb` | Volumen, Pump, sichtbares Muskelwachstum. | Volume, pump, visible muscle growth. | Hacim, pump, görünür kas gelişimi. |
@@ -285,7 +458,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.highFatigueYesterday.analytical.weightLoss` | Gestern war hochvolumig. Aktive Regeneration — ein lockerer Spaziergang — verbrennt heute Kalorien, ohne zusätzlichen Erholungsbedarf zu erzeugen. | Yesterday was high volume. Active recovery — an easy walk — burns calories today without adding recovery debt. | Dün yüksek hacimliydi. Aktif toparlanma — hafif bir yürüyüş — bugün toparlanma borcu eklemeden kalori yakar. |
 | `coaching.highFatigueYesterday.motivating.hybrid` | Gestern war intensiv! Ein lockerer Recovery-Run oder eine Radrunde spült heute die schweren Beine frei. 🚴 | Yesterday was intense! An easy recovery run or bike spin will flush those heavy legs today. 🚴 | Dün yoğundu! Hafif bir toparlanma koşusu veya bisiklet turu bugün ağır bacakları açar. 🚴 |
 | `coaching.highFatigueYesterday.motivating.hypertrophy` | Dein Volumen gestern war massiv! Muskeln wachsen in der Ruhephase — gönn dir heute einen kompletten Rest-Day. 😴 | Your volume yesterday was massive! Muscles grow during rest — treat yourself to a full rest day today. 😴 | Dünkü hacmin devasaydı! Kaslar dinlenirken büyür — bugün kendine tam bir dinlenme günü hediye et. 😴 |
-| `coaching.highFatigueYesterday.motivating.strength` | Gestern ordentlich Last bewegt! Dein Nervensystem lädt gerade nach — morgen kommst du stärker zurück. ⚡ | You moved serious load yesterday! Your nervous system is recharging — you'll come back stronger tomorrow. ⚡ | Dün ciddi yük kaldırdın! Sinir sistemin şarj oluyor — yarın daha güçlü dönersin. ⚡ |
+| `coaching.highFatigueYesterday.motivating.strength` | Gestern ordentlich Last bewegt! Dein Nervensystem lädt gerade nach — morgen kommst du stärker zurück. | You moved serious load yesterday! Your nervous system is recharging — you'll come back stronger tomorrow. | Dün ciddi yük kaldırdın! Sinir sistemin şarj oluyor — yarın daha güçlü dönersin. |
 | `coaching.highFatigueYesterday.motivating.weightLoss` | Du hast gestern hart trainiert! Ein leichter Spaziergang heute verbrennt Kalorien UND hilft der Regeneration — doppelter Gewinn. 🚶 | You trained hard yesterday! An easy walk today burns calories AND helps recovery — double win. 🚶 | Dün sıkı çalıştın! Bugün hafif bir yürüyüş hem kalori yakar HEM toparlanmaya yardım eder — çifte kazanç. 🚶 |
 | `coaching.highFatigueYesterday.strict.hybrid` | Intensiver Tag gestern. Recovery heißt aktiv: 20 Minuten lockeres Rollen, nicht 'mal schauen' auf der Couch. | Intense day yesterday. Recovery means active: 20 easy minutes rolling, not 'we'll see' on the couch. | Dün yoğun bir gündü. Toparlanma aktif demek: 20 dakika hafif tempo, koltukta 'bakarız' değil. |
 | `coaching.highFatigueYesterday.strict.hypertrophy` | Gestern massiv trainiert. Heute trotzdem ins Gym zu rennen wäre Ego, kein Plan — Rest-Day, Punkt. | Massive session yesterday. Running back to the gym today would be ego, not programming — rest day, period. | Dün devasa bir seans. Bugün salona koşmak ego olur, program değil — dinlenme günü, nokta. |
@@ -297,7 +470,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.morningCardioDone.analytical.weightLoss` | Cardio heute Morgen verbucht. Für den Fettabbau ist Muskelerhalt entscheidend — ein leichtes Ganzkörper-Krafttraining heute schützt die Magermasse im Defizit. | Cardio logged this morning. For weight loss, muscle retention is key — a light full-body strength session today protects lean mass in the deficit. | Kardiyo bu sabah kaydedildi. Yağ kaybında kas koruması kritik — bugün hafif bir tüm vücut kuvvet antrenmanı açıkta yağsız kütleyi korur. |
 | `coaching.morningCardioDone.motivating.hybrid` | Cardio-Check! ✅ Dein Hybrid-Ziel braucht auch Kraft — heb heute Abend noch etwas Eisen. | Cardio: check! ✅ Your hybrid goal needs strength too — lift some iron tonight. | Kardiyo: tamam! ✅ Hibrit hedefin kuvvet de ister — bu akşam biraz demir kaldır. |
 | `coaching.morningCardioDone.motivating.hypertrophy` | Cardio ist im Kasten! Heute Abend gehört dem Oberkörper — die Beine haben ihren Teil schon geleistet. 💪 | Cardio is in the bag! Tonight belongs to the upper body — your legs already did their part. 💪 | Kardiyo cepte! Bu akşam üst vücudun — bacaklar payına düşeni yaptı. 💪 |
-| `coaching.morningCardioDone.motivating.strength` | Cardio-Basis steht! Falls heute noch gehoben wird: Oberkörper rockt, Beine schonen. ⚡ | Cardio base is set! If you lift today: rock the upper body, spare the legs. ⚡ | Kardiyo tabanı hazır! Bugün kaldıracaksan: üst vücut coşsun, bacaklar dinlensin. ⚡ |
+| `coaching.morningCardioDone.motivating.strength` | Cardio-Basis steht! Falls heute noch gehoben wird: Oberkörper rockt, Beine schonen. | Cardio base is set! If you lift today: rock the upper body, spare the legs. | Kardiyo tabanı hazır! Bugün kaldıracaksan: üst vücut coşsun, bacaklar dinlensin. |
 | `coaching.morningCardioDone.motivating.weightLoss` | Super Start in den Tag! Wenn du heute noch Energie hast, bau ein leichtes Ganzkörper-Krafttraining ein — so bleiben die Muskeln im Defizit erhalten. 🌅 | Great start to the day! If you have energy left, add a light full-body strength session — it keeps your muscle while you cut. 🌅 | Güne süper başlangıç! Enerjin kaldıysa hafif bir tüm vücut kuvvet antrenmanı ekle — açıkta kasını korur. 🌅 |
 | `coaching.morningCardioDone.strict.hybrid` | Halbzeit. Cardio war heute Morgen, Kraft steht noch aus — Hybrid gibt's nicht zum halben Preis. | Halftime. Cardio was this morning, strength is still owed — hybrid doesn't come at half price. | Devre arası. Kardiyo sabahtı, kuvvet hâlâ borç — hibrit yarı fiyata olmaz. |
 | `coaching.morningCardioDone.strict.hypertrophy` | Cardio war noch nicht alles. Heute Abend Krafttraining — Oberkörper, die Beine sind durch. Aufbau passiert am Eisen. | Cardio wasn't the whole job. Strength tonight — upper body, the legs are spent. Muscle is built at the iron. | Kardiyo işin tamamı değildi. Akşam kuvvet — üst vücut, bacaklar bitti. Kas demirde yapılır. |
@@ -309,7 +482,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.morningStrengthDone.analytical.weightLoss` | Kraft ist für heute erledigt. Für den Fettabbau bringt lockere Nachmittags-Aktivität — Spaziergang oder leichte Radtour — extra Kalorienverbrauch, ohne die Erholung zu stören. | Strength is done for today. For fat loss, easy afternoon activity — a walk or light ride — adds calorie burn without hurting recovery. | Bugünlük kuvvet tamam. Yağ kaybı için öğleden sonra hafif aktivite — yürüyüş veya hafif bisiklet — toparlanmayı bozmadan ekstra kalori yakar. |
 | `coaching.morningStrengthDone.motivating.hybrid` | Kraft ist drin! Wenn du Zeit hast, mach heute noch 20-30 Minuten lockeres Zone-2-Cardio — dein Hybrid-Motor dankt es dir. 🚴 | Strength is in! If you have time, add 20-30 minutes of easy zone-2 cardio today — your hybrid engine will thank you. 🚴 | Kuvvet tamam! Vaktin varsa bugün 20-30 dakika rahat zone-2 kardiyo ekle — hibrit motorun teşekkür eder. 🚴 |
 | `coaching.morningStrengthDone.motivating.hypertrophy` | Guter Pump heute Morgen! Iss genug Protein und ruh dich für den Rest des Tages aus. 💪 | Great pump this morning! Eat enough protein and rest up for the remainder of the day. 💪 | Bu sabah harika bir pump! Yeterince protein ye ve günün geri kalanında dinlen. 💪 |
-| `coaching.morningStrengthDone.motivating.strength` | Schwere Arbeit heute Morgen erledigt! Gönn deinem Nervensystem jetzt die Pause, die es für den nächsten PR braucht. ⚡ | Heavy work done this morning! Now give your nervous system the rest it needs for the next PR. ⚡ | Ağır iş bu sabah bitti! Şimdi sinir sistemine bir sonraki PR için ihtiyacı olan molayı ver. ⚡ |
+| `coaching.morningStrengthDone.motivating.strength` | Schwere Arbeit heute Morgen erledigt! Gönn deinem Nervensystem jetzt die Pause, die es für den nächsten PR braucht. | Heavy work done this morning! Now give your nervous system the rest it needs for the next PR. | Ağır iş bu sabah bitti! Şimdi sinir sistemine bir sonraki PR için ihtiyacı olan molayı ver. |
 | `coaching.morningStrengthDone.motivating.weightLoss` | Kraft ist erledigt! Für maximalen Fettabbau häng heute Nachmittag noch einen Spaziergang oder eine lockere Radtour dran. 🚶 | Strength: done! For maximum fat burn, add a walk or an easy bike ride this afternoon. 🚶 | Kuvvet tamam! Maksimum yağ yakımı için bu öğleden sonra bir yürüyüş veya hafif bisiklet turu ekle. 🚶 |
 | `coaching.morningStrengthDone.strict.hybrid` | Kraft erledigt — halbes Soll. Hybrid heißt beides: 20 Minuten lockeres Cardio heute noch, dann ist der Tag komplett. | Strength done — that's half the job. Hybrid means both: 20 minutes of easy cardio today completes the day. | Kuvvet bitti — işin yarısı. Hibrit ikisi de demek: bugün 20 dakika hafif kardiyo günü tamamlar. |
 | `coaching.morningStrengthDone.strict.hypertrophy` | Training war heute Morgen. Jetzt nicht den Aufbau sabotieren: Protein rein, Füße hoch, kein Junk-Cardio. | Training was this morning. Don't sabotage the gains now: protein in, feet up, no junk cardio. | Antrenman bu sabahtı. Şimdi kazanımları sabote etme: protein al, ayakları uzat, gereksiz kardiyo yok. |
@@ -342,6 +515,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.soft.backupOverdue.analytical` | Dein letzter Daten-Export ist über 30 Tage her. Ein frisches Backup bewahrt deine Trainings-Historie. | Your last data export was over 30 days ago. A fresh backup keeps your training history safe. | Son veri dışa aktarımının üzerinden 30 günden fazla geçti. Yeni bir yedek antrenman geçmişini güvende tutar. |
 | `coaching.soft.backupOverdue.motivating` | All diese PRs verdienen ein Sicherheitsnetz — kurzer CSV-Export und du bist zukunftssicher. 🛡️ | All these PRs deserve a safety net — quick CSV export and you're future-proof. 🛡️ | Tüm bu PR'lar bir güvenlik ağını hak ediyor — hızlı bir CSV dışa aktarımı seni geleceğe hazırlar. 🛡️ |
 | `coaching.soft.backupOverdue.strict` | 30+ Tage ohne Backup. Mach's jetzt, bevor ein Handy-Wechsel dich deine Historie kostet. | 30+ days without a backup. Do it now before a phone swap costs you your history. | 30+ gündür yedek yok. Bir telefon değişikliği seni geçmişinden etmeden hemen yap. |
+| `coaching.soft.cardioJunkMiles.analytical` | Dein letzter lockerer Lauf war deutlich schneller als deine Zielpace. Training in einer zu hohen Zone baut weniger Grundlagenausdauer auf als echtes lockeres Training. Werde langsamer, um an wichtigen Tagen schneller zu sein. | Your last easy run came in noticeably faster than your target pace. Training in too high a zone builds less aerobic base than genuinely easy running does. Slow down to go faster on the days that matter. | Son tempo koşun, hedef pace'inden gözle görülür şekilde hızlıydı. Çok yüksek bir bölgede antrenman yapmak, gerçek tempo koşusundan daha az aerobik taban oluşturur. Önemli günlerde daha hızlı olmak için yavaşla. |
+| `coaching.soft.cardioJunkMiles.motivating` | Dein letzter lockerer Lauf war ziemlich flott! Am Erholungstag zählt aber Ruhe mehr als Tempo – gönn dir beim nächsten Mal bewusst mehr Langsamkeit. | Your last easy run was pretty quick! On recovery days, though, rest matters more than pace — dial it back a bit next time. | Son tempo koşun epey hızlıydı! Ama toparlanma günlerinde tempo değil dinlenme önemlidir — bir dahaki sefere biraz daha yavaş tut. |
+| `coaching.soft.cardioJunkMiles.strict` | Dein lockerer Lauf war zu schnell. Das ist kein lockeres Training mehr. Halte dich an die Zielpace. | Your easy run was too fast. That's not easy training anymore. Stick to the target pace. | Tempo koşun çok hızlıydı. Bu artık tempo antrenmanı değil. Hedef pace'e sadık kal. |
+| `coaching.soft.cardioMissedLongRun.analytical` | Dein Plan enthält einen langen Lauf, aber in den letzten 7 Tagen ist keiner dabei gewesen. Der lange Lauf ist der wichtigste Baustein für die Grundlagenausdauer – hol ihn möglichst bald nach. | Your plan includes a long run, but none has been logged in the last 7 days. The long run is the single most important building block for aerobic base — try to fit it in soon. | Planında uzun bir koşu var, ama son 7 gündür hiç kaydedilmedi. Uzun koşu, aerobik tabanı oluşturan en önemli yapı taşıdır — yakın zamanda tamamlamaya çalış. |
+| `coaching.soft.cardioMissedLongRun.motivating` | Dein langer Lauf diese Woche fehlt noch! Egal wie langsam – such dir ein Zeitfenster, in dem du ihn nachholen kannst. | Your long run is still missing this week! No matter how slow, find a window to get it in. | Bu haftanın uzun koşusu hâlâ eksik! Ne kadar yavaş olursa olsun, bunun için bir zaman bul. |
+| `coaching.soft.cardioMissedLongRun.strict` | Du hast deinen langen Lauf diese Woche ausgelassen. Genau der baut die Ausdauer auf, die du für dein Ziel brauchst. Trag ihn nach. | You skipped your long run this week. That's exactly what builds the endurance your goal needs. Make it up. | Bu hafta uzun koşunu atladın. Hedefin için gereken dayanıklılığı tam olarak o oluşturur. Telafi et. |
+| `coaching.soft.cardioVolumeSpike.analytical` | Deine Lauf-Kilometer sind diese Woche über 20% höher als letzte Woche. Ein schneller Anstieg im Laufvolumen ist einer der zuverlässigsten Prädiktoren für Überlastungsschäden wie das Schienbeinkantensyndrom. | Your running distance is up more than 20% versus last week. A rapid jump in weekly mileage is one of the most reliable predictors of overuse injuries like shin splints. | Bu haftaki koşu mesafen geçen haftaya göre %20'den fazla arttı. Haftalık mesafede ani bir sıçrama, kaval kemiği ağrısı gibi aşırı yüklenme sakatlanmalarının en güvenilir habercilerinden biridir. |
+| `coaching.soft.cardioVolumeSpike.motivating` | Du bist diese Woche richtig aktiv unterwegs! Achte trotzdem darauf, das Tempo nicht zu übertreiben – lieber konstant dranbleiben als sich zu verletzen. | You've been putting in serious miles this week! Just don't let the excitement outrun your body — steady beats fast when it comes to staying injury-free. | Bu hafta gerçekten çok koştun! Ama heyecana kapılıp vücudunu zorlama — sakatlanmadan devam etmek için sabit tempo hızlı tempodan daha önemlidir. |
+| `coaching.soft.cardioVolumeSpike.strict` | Du hast dein Laufvolumen zu schnell gesteigert. Das ist ein direkter Weg zu Überlastungsschäden. Bremse diese Woche bewusst ab. | You're increasing your running volume too fast. That's a direct path to overuse injuries. Pull back this week. | Koşu hacmini çok hızlı artırıyorsun. Bu, aşırı yüklenme sakatlanmalarına doğrudan giden bir yol. Bu hafta bilerek yavaşla. |
 | `coaching.soft.deloadRecommended.analytical` | Deine Trainings-Last ist über drei Wochen um mehr als 20% gestiegen, und die letzten Einheiten fühlten sich schwer an. Die Daten sprechen für eine Deload-Woche: Gewichte um ~40-50% reduzieren, Bewegungen beibehalten. | Your training load has risen over 20% across three weeks, and your last sessions felt heavy. The data points to a deload week: cut weights by ~40-50% and keep the movements. | Antrenman yükün üç haftada %20'den fazla arttı ve son seanslar ağır hissettirdi. Veriler bir deload haftasını işaret ediyor: ağırlıkları ~%40-50 azalt, hareketleri koru. |
 | `coaching.soft.deloadRecommended.motivating` | Du hast drei Wochen am Stück Vollgas gegeben — genau so entsteht Fortschritt! Gönn deinem Körper jetzt eine leichte Woche, um die Gains einzusammeln. Deload, erholen, stärker zurückkommen. 💪 | You've been pushing hard for three weeks straight — that's how progress is built! Now give your body a light week to cash in those gains. Deload, recover, come back stronger. 💪 | Üç haftadır aralıksız yükleniyorsun — ilerleme tam böyle olur! Şimdi vücuduna kazanımları toplaması için hafif bir hafta ver. Deload yap, toparlan, daha güçlü dön. 💪 |
 | `coaching.soft.deloadRecommended.strict` | Drei Wochen steigende Last und du bewertest die Einheiten als brutal. Erholung ist Teil des Programms — plane jetzt eine Deload-Woche, sonst plant dein Körper sie für dich. | Three weeks of climbing load and you're rating sessions as brutal. Recovery is part of the program — schedule a deload week now, or your body will schedule one for you. | Üç haftadır artan yük ve seansları çok ağır olarak değerlendiriyorsun. Toparlanma programın parçası — şimdi bir deload haftası planla, yoksa vücudun senin yerine planlar. |
@@ -355,7 +537,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.soft.planPreview.analytical.1` | Heute steht eine Einheit im Plan. Ein kurzer Blick auf die letzten Gewichte vor dem Start spart Zeit im Gym. | A session is on today's plan. A quick look at your last weights before starting saves time at the gym. | Bugün planında bir seans var. Başlamadan önce son ağırlıklara hızlıca bakmak salonda zaman kazandırır. |
 | `coaching.soft.planPreview.analytical.2` | Trainingstag laut Plan. Die beste Leistung kommt ~2-3 Stunden nach der letzten vollen Mahlzeit. | Training day per plan. Peak performance comes ~2-3 hours after your last full meal. | Plana göre antrenman günü. En iyi performans son tam öğünden ~2-3 saat sonra gelir. |
 | `coaching.soft.planPreview.motivating` | Heute steht ein Training an. Mach dich gut warm und gib alles für die schweren Sätze! | A workout's on the schedule today. Warm up well and give it your all on the heavy sets! | Bugün bir antrenman var. İyi ısın ve ağır setlerde her şeyini ver! |
-| `coaching.soft.planPreview.motivating.1` | Heute ist Trainingstag! Die beste Version von dir wartet im Gym. ⚡ | It's training day! The best version of you is waiting at the gym. ⚡ | Bugün antrenman günü! Senin en iyi versiyonun salonda bekliyor. ⚡ |
+| `coaching.soft.planPreview.motivating.1` | Heute ist Trainingstag! Die beste Version von dir wartet im Gym. | It's training day! The best version of you is waiting at the gym. | Bugün antrenman günü! Senin en iyi versiyonun salonda bekliyor. |
 | `coaching.soft.planPreview.motivating.2` | Dein Plan ruft! Schon der Gang zum Gym ist der halbe Sieg. | Your plan is calling! Just getting to the gym is half the victory. | Planın seni çağırıyor! Salona gitmek bile zaferin yarısı. |
 | `coaching.soft.planPreview.strict` | Heute ist Trainingstag. Kein Aufschub. Punkt. | Today is a training day. No postponing. Period. | Bugün antrenman günü. Erteleme yok. Nokta. |
 | `coaching.soft.planPreview.strict.1` | Im Plan steht heute Training. Pläne sind keine Vorschläge. | The plan says training today. Plans are not suggestions. | Planda bugün antrenman yazıyor. Planlar öneri değildir. |
@@ -457,13 +639,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (80 Keys)
+## `dashboard.*`  (94 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `dashboard.action.adHoc.a11y` | Spontanes Training starten — leere Session ohne Plan-Anbindung | Start a spontaneous workout — empty session without plan attachment | Spontane antrenman başlat — plana bağlı olmayan boş oturum |
+| `dashboard.action.adHoc.a11y` | Spontanes Training starten — ohne Plan-Anbindung | Start a spontaneous workout — without plan attachment | Spontane antrenman başlat — plana bağlı olmadan |
 | `dashboard.action.adHoc.primary` | Spontanes Training starten | Start spontaneous workout | Spontane antrenman başlat |
 | `dashboard.action.adHoc.secondary` | Vom Plan abweichen — Spontanes Training | Skip the plan — spontaneous workout | Plandan sap — spontane antrenman |
+| `dashboard.action.otherRunning` | Anderes Training läuft | Another workout is running | Başka bir antrenman sürüyor |
 | `dashboard.action.resumeRunning` | Laufendes Training fortsetzen | Resume running workout | Devam eden antrenmanı sürdür |
 | `dashboard.action.startDirect` | Direkt starten | Start now | Hemen başlat |
 | `dashboard.calendar.a11y` | Trainings-Kalender, %1$lld Trainingstage in diesem Monat, %2$lld-Wochen-Streak | Training calendar, %1$lld workout days this month, %2$lld-week streak | Antrenman takvimi, bu ay %1$lld antrenman günü, %2$lld haftalık seri |
@@ -471,18 +654,25 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.calendar.title` | Trainings-Kalender | Training calendar | Antrenman takvimi |
 | `dashboard.cardioChart.legend` | min/km · niedriger = besser | min/km · lower = better | dk/km · daha düşük = daha iyi |
 | `dashboard.cardioChart.title` | Cardio-Pace-Trend | Cardio Pace Trend | Kardiyo Tempo Trendi |
+| `dashboard.cardioFeasibility.feasibleTitle` | Dein Lauf-Ziel ist machbar | Your running goal is achievable | Koşu hedefin ulaşılabilir |
+| `dashboard.cardioFeasibility.infeasibleTitle` | Dein Lauf-Ziel wird eng | Your running goal is getting tight | Koşu hedefin zorlaşıyor |
+| `dashboard.cardioFeasibility.viewPlan` | Plan ansehen | View plan | Planı görüntüle |
 | `dashboard.compoundChart.empty.description` | Logge zwei oder mehr Sätze deiner großen Lifts, um die Kurve zu sehen. | Log two or more sets of your main lifts to see the trend. | Eğriyi görmek için ana liftlerinden iki veya daha fazla set kaydet. |
 | `dashboard.compoundChart.empty.title` | Noch zu wenig Daten | Not enough data yet | Henüz yeterli veri yok |
 | `dashboard.compoundChart.legend` | Geschätztes 1RM · gestrichelt = 4-Wochen-Prognose | Estimated 1RM · dashed = 4-week forecast | Tahmini 1RM · kesik çizgi = 4 haftalık tahmin |
 | `dashboard.compoundChart.title` | Compound-Lift-Trend | Compound Lift Trend | Temel Hareket Trendi |
+| `dashboard.compoundChart.today` | Heute | Today | Bugün |
 | `dashboard.deload.activeBanner` | Deload-Woche aktiv bis %@ — Arbeitsgewichte um ~50%% reduziert. Trainiere die Bewegungen, lass das Schleifen weg. | Deload week active until %@ — working weights reduced by ~50%%. Train the movements, skip the grind. | Deload haftası %@ tarihine kadar aktif — çalışma ağırlıkları ~%%50 azaltıldı. Hareketleri çalış, kendini ezme. |
+| `dashboard.deload.activeBannerNoDate` | Deload-Woche aktiv — Arbeitsgewichte halbiert. Trainiere die Bewegungen, lass das Schleifen weg. | Deload week active — working weights halved. Train the movements, skip the grind. | Deload haftası aktif — çalışma ağırlıkları yarıya indirildi. Hareketleri çalış, kendini ezme. |
 | `dashboard.deload.applyButton` | Deload-Woche starten | Start deload week | Deload haftasını başlat |
 | `dashboard.deload.endButton` | Deload beenden & Gewichte zurücksetzen | End deload & restore weights | Deload'u bitir ve ağırlıkları geri yükle |
 | `dashboard.empty.cta.addMeasurement` | Messung hinzufügen | Add measurement | Ölçüm ekle |
 | `dashboard.empty.cta.startWorkout` | Training starten | Start workout | Antrenmana başla |
-| `dashboard.exercisesPreview.one` | %1$lld Übung — %2$@ | %1$lld exercise — %2$@ | %1$lld egzersiz — %2$@ |
-| `dashboard.exercisesPreview.other` | %1$lld Übungen — %2$@ | %1$lld exercises — %2$@ | %1$lld egzersiz — %2$@ |
+| `dashboard.exerciseList.showLess` | Weniger anzeigen | Show less | Daha az göster |
+| `dashboard.exerciseList.showMore.one` | %lld weitere anzeigen | Show %lld more | %lld tane daha göster |
+| `dashboard.exerciseList.showMore.other` | %lld weitere anzeigen | Show %lld more | %lld tane daha göster |
 | `dashboard.goal.line` | Ziel %@ kg | Goal %@ kg | Hedef %@ kg |
+| `dashboard.goal.line.lbs` | Ziel %@ lbs | Goal %@ lbs | Hedef %@ lbs |
 | `dashboard.greeting.afternoon.generic` | Guten Tag | Good afternoon | İyi günler |
 | `dashboard.greeting.afternoon.named` | Guten Tag, %@ | Good afternoon, %@ | İyi günler, %@ |
 | `dashboard.greeting.evening.generic` | Guten Abend | Good evening | İyi akşamlar |
@@ -492,13 +682,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.heatmap.a11y.tile` | %1$@, %2$lld Sätze, %3$@ | %1$@, %2$lld sets, %3$@ | %1$@, %2$lld set, %3$@ |
 | `dashboard.heatmap.legend` | Sätze | Sets | Set |
 | `dashboard.heatmap.title` | Muskel-Heatmap (Woche) | Muscle Heatmap (week) | Kas Isı Haritası (hafta) |
+| `dashboard.hero.asOf` | Stand: %@ | As of %@ | %@ itibarıyla |
 | `dashboard.history.countOnly` | %lld Trainings | %lld workouts | %lld antrenman |
 | `dashboard.history.countWithLast` | %1$lld Trainings • zuletzt %2$@ | %1$lld workouts • last %2$@ | %1$lld antrenman • son %2$@ |
 | `dashboard.history.empty` | Noch keine Trainings — starte oben dein erstes. | No workouts yet — start your first one above. | Henüz antrenman yok — yukarıdan ilkini başlat. |
 | `dashboard.history.emptyDescription` | Starte dein erstes Training, um Verlauf und Fortschritt zu sehen. | Start your first workout to see history and progress. | Geçmiş ve ilerlemeyi görmek için ilk antrenmanına başla. |
 | `dashboard.history.emptyTitle` | Noch kein Training gespeichert | No workout saved yet | Henüz kayıtlı antrenman yok |
 | `dashboard.history.title` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
-| `dashboard.newMeasurement` | Neue Messung | New Measurement | Yeni Ölçüm |
+| `dashboard.onboardingPlanCreationFailed.goToPlan` | Zum Plan-Tab | Go to Plan Tab | Plan Sekmesine Git |
+| `dashboard.onboardingPlanCreationFailed.message` | Dein Profil wurde gespeichert, aber beim vorgeschlagenen Trainingsplan gab es ein Problem. Bitte sieh im Plan-Tab nach, ob dein Plan vorhanden ist, und lege bei Bedarf einen neuen an. | Your profile was saved, but there was a problem with the suggested training plan. Please check the Plan tab to see if your plan is there, and create a new one if needed. | Profilin kaydedildi, ancak önerilen antrenman planında bir sorun oluştu. Lütfen Plan sekmesinden planının orada olup olmadığını kontrol et ve gerekirse yeni bir tane oluştur. |
+| `dashboard.onboardingPlanCreationFailed.title` | Hinweis zu deinem Trainingsplan | A Note About Your Training Plan | Antrenman Planınla İlgili Not |
 | `dashboard.openSession.cancel` | Abbrechen | Cancel | İptal |
 | `dashboard.openSession.dayName.unknown` | Unbekannt | Unknown | Bilinmiyor |
 | `dashboard.openSession.discardAndStart` | Altes verwerfen & Neu starten | Discard old & start new | Eskiyi sil ve yeni başlat |
@@ -519,6 +712,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.plan.todayRestDay` | Heute: Ruhetag | Today: rest day | Bugün: dinlenme günü |
 | `dashboard.recent.empty.description` | Beende dein erstes Training, dann erscheint es hier mit Dauer, Sätzen und Volumen. | Finish your first workout — it appears here with duration, sets, and volume. | İlk antrenmanını tamamla — burada süre, set ve hacimle birlikte görünür. |
 | `dashboard.recent.empty.title` | Noch keine Trainingseinheiten | No training sessions yet | Henüz antrenman yok |
+| `dashboard.recent.minutesShort` | %lld Min | %lld min | %lld dk |
+| `dashboard.recent.sets.one` | %lld Satz | %lld set | %lld set |
+| `dashboard.recent.sets.other` | %lld Sätze | %lld sets | %lld set |
 | `dashboard.recent.title` | Letzte Trainings | Recent Workouts | Son Antrenmanlar |
 | `dashboard.recent.viewAll` | Alle anzeigen | Show all | Tümünü göster |
 | `dashboard.resume.caption` | Aktuelles Training fortsetzen | Resume current workout | Devam eden antrenmanı sürdür |
@@ -533,7 +729,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.trophy.emptyTitle` | Noch keine PRs | No PRs yet | Henüz PR yok |
 | `dashboard.trophy.recordCount.one` | %lld Rekord | %lld record | %lld rekor |
 | `dashboard.trophy.recordCount.other` | %lld Rekorde | %lld records | %lld rekor |
-| `dashboard.trophy.title` | Trophy Room | Trophy Room | Kupa Odası |
+| `dashboard.trophy.title` | Rekorde | Trophy Room | Kupa Odası |
 | `dashboard.volumeChart.empty.description` | Absolviere ein paar Kraft-Sessions und dein wöchentliches Volumen erscheint hier. | Complete some strength sessions and your weekly volume will show up here. | Birkaç kuvvet antrenmanı tamamla, haftalık hacmin burada görünecek. |
 | `dashboard.volumeChart.empty.title` | Noch kein Kraft-Volumen | No strength volume yet | Henüz kuvvet hacmi yok |
 | `dashboard.volumeChart.legend` | kg pro Woche | kg per week | haftada kg |
@@ -542,13 +738,17 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.weeklySummary.title` | Diese Woche | This Week | Bu Hafta |
 | `dashboard.weeklySummary.volume` | Volumen | Volume | Hacim |
 
-## `dashboardSettings.*`  (14 Keys)
+## `dashboardSettings.*`  (18 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `dashboardSettings.add.actionFormat` | %@ hinzufügen | Add %@ | %@ ekle |
 | `dashboardSettings.empty` | Alle Widgets deaktiviert. Tippe ein '+' weiter unten, um wieder welche einzublenden. | All widgets are off. Tap '+' below to bring some back. | Tüm widget'lar kapalı. Geri eklemek için aşağıdan '+' simgesine dokun. |
 | `dashboardSettings.entry.subtitle` | Widgets ein-/ausblenden und umsortieren | Toggle widgets on/off and reorder | Widget'ları aç/kapat ve sırala |
 | `dashboardSettings.entry.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
+| `dashboardSettings.moveDown.action` | Nach unten verschieben | Move down | Aşağı taşı |
+| `dashboardSettings.moveUp.action` | Nach oben verschieben | Move up | Yukarı taşı |
+| `dashboardSettings.reorder.action` | Sortieren | Reorder | Sırala |
 | `dashboardSettings.section.active.footer` | Halten + ziehen zum Umsortieren. Toggle aus, um ein Widget zu deaktivieren. | Press and drag to reorder. Toggle off to deactivate a widget. | Sıralamak için basılı tutup sürükle. Devre dışı bırakmak için kapat. |
 | `dashboardSettings.section.active.title` | Reihenfolge & Sichtbarkeit | Order & Visibility | Sıralama ve Görünürlük |
 | `dashboardSettings.section.hero.empty` | Keine Hero-Karten aktiv — die obere Reihe ist ausgeblendet. | No hero cards active — the top row is hidden. | Aktif üst kart yok — üst satır gizlendi. |
@@ -561,7 +761,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (48 Keys)
+## `day.*`  (83 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -570,6 +770,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.analysis.coachNote.compoundHeavy` | Systemisch fordernder Compound-Tag. Plane danach eher Erholung oder einen leichten Oberkörper-Tag. | Systemically demanding compound day. Plan for recovery or a light upper-body day afterwards. | Sistemik olarak zorlayıcı bir compound günü. Sonrasında toparlanma veya hafif üst vücut günü planla. |
 | `day.analysis.coachNote.highLocal` | Hoher lokaler Reiz bei moderater Systemlast — klassischer Hypertrophie-Tag. | High local stimulus with moderate systemic load — classic hypertrophy day. | Yüksek yerel uyaran, orta düzey sistemik yük — klasik hipertrofi günü. |
 | `day.analysis.coachNote.lightDeload` | Geringer Reiz — passend für Deload, Technik oder Erhaltung. | Low stimulus — ideal for deload, technique, or maintenance. | Düşük uyaran — deload, teknik veya koruma için ideal. |
+| `day.analysis.coachNote.metabolicDensity` | Ein Zeitformat-Tag: Die Belastung kommt hier aus der Dichte, nicht aus dem Gewicht. | A time-format day: the load here comes from density, not from weight. | Bir zaman formatı günü: Buradaki yük ağırlıktan değil, yoğunluktan gelir. |
+| `day.analysis.coachNote.metabolicDensity.amrap` | %@ ohne feste Pause. Die Belastung kommt hier aus der Dichte, nicht aus dem Gewicht. | %@ with no fixed rest. The load here comes from density, not weight. | Sabit molasız %@. Buradaki yük ağırlıktan değil, yoğunluktan gelir. |
+| `day.analysis.coachNote.metabolicDensity.circuit` | %@ mit fester Pause zwischen den Runden. Die Belastung kommt aus der Dichte pro Runde, nicht aus dem Gewicht. | %@ with a fixed rest between rounds. The load comes from the density per round, not the weight. | %@ turlar arasında sabit molayla. Yük ağırlıktan değil, tur başına yoğunluktan gelir. |
+| `day.analysis.coachNote.metabolicDensity.emom` | %@ im Minutentakt. Die Pause steckt in der Minute selbst, nicht dazwischen. | %@ on the minute. The rest lives inside the minute itself, not between them. | %@ dakika bazında. Mola dakikanın kendi içinde, aralarda değil. |
+| `day.analysis.coachNote.metabolicDensity.enduranceIntervals` | %@ strukturierte Intervalle — wiederholte Belastungen mit geplanter Erholung dazwischen. | %@ of structured intervals — repeated efforts with planned recovery between them. | %@ yapılandırılmış aralıklar — aralarında planlı dinlenme olan tekrarlanan efor. |
+| `day.analysis.coachNote.metabolicDensity.forTime` | %@ im eigenen Tempo. Die Belastung kommt aus der Dichte, nicht aus dem Gewicht. | %@ at your own pace. The load comes from density, not weight. | %@ kendi temponda. Yük ağırlıktan değil, yoğunluktan gelir. |
 | `day.analysis.coachNote.veryHighStress` | Sehr hohe Belastung. Achte danach besonders auf Schlaf und Nahrung — und plane keinen zweiten harten Tag direkt im Anschluss. | Very high load. Pay extra attention to sleep and food afterwards — and don't stack another hard day right after. | Çok yüksek yük. Sonrasında uykuya ve beslenmeye özellikle dikkat et — ve hemen ardına başka bir zor gün koyma. |
 | `day.analysis.duration` | Geschätzte Dauer | Estimated Duration | Tahmini Süre |
 | `day.analysis.empty` | Füge Übungen hinzu, um die Tagesanalyse zu sehen. | Add exercises to see the day analysis. | Gün analizini görmek için egzersiz ekle. |
@@ -591,13 +797,37 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.equipmentConflict.message` | „%1$@" erfordert Equipment, das in %2$@-Plänen normalerweise nicht verfügbar ist. Möchtest du den Plan-Typ entsprechend anpassen? | "%1$@" requires equipment that's not normally available in %2$@ plans. Want to adjust the plan type? | "%1$@" %2$@ planlarında genellikle bulunmayan ekipman gerektirir. Plan tipini değiştirmek ister misin? |
 | `day.editor.equipmentConflict.switchPlan` | Plan auf %@ umstellen | Switch plan to %@ | Planı %@ olarak değiştir |
 | `day.editor.equipmentConflict.title` | Equipment-Konflikt | Equipment Conflict | Ekipman Çakışması |
+| `day.editor.exercise.delete.saveFailed` | Löschen konnte nicht gespeichert werden. Bitte erneut versuchen. | Couldn't save the deletion. Please try again. | Silme işlemi kaydedilemedi. Lütfen tekrar deneyin. |
 | `day.editor.exercises.editHint` | Tippe eine Übung an um sie zu bearbeiten. „Bearbeiten" oben rechts aktiviert die Drag-Handles zum Umsortieren — Superset-Partner werden automatisch mit verschoben. | Tap an exercise to edit. "Edit" top-right enables drag handles for reordering — superset partners move together. | Düzenlemek için bir harekete dokun. Sağ üstteki "Düzenle" sıralama tutamaçlarını etkinleştirir — süperset eşleri birlikte hareket eder. |
 | `day.editor.exercises.empty` | Noch keine Übungen. | No exercises yet. | Henüz hareket yok. |
 | `day.editor.exercises.restDayEmpty` | Ruhetag — keine Übungen. | Rest day — no exercises. | Dinlenme günü — hareket yok. |
+| `day.editor.field.circuitMode` | Modus | Mode | Mod |
+| `day.editor.field.circuitMode.fixedReps` | Feste Wiederholungen | Fixed reps | Sabit tekrar |
+| `day.editor.field.circuitMode.toFailure` | Bis zur Ausbelastung | To failure | Tükenene kadar |
+| `day.editor.field.circuitRest` | Pause zwischen Runden | Rest between rounds | Turlar arası mola |
+| `day.editor.field.circuitRounds` | Runden | Rounds | Tur |
+| `day.editor.field.duration` | Dauer | Duration | Süre |
+| `day.editor.field.enduranceCooldown` | Auslaufen | Cool-down | Soğuma |
+| `day.editor.field.enduranceRest` | Erholung | Recovery | Dinlenme |
+| `day.editor.field.enduranceRounds` | Runden | Rounds | Tur |
+| `day.editor.field.enduranceSportKind` | Sportart | Sport | Spor dalı |
+| `day.editor.field.enduranceSportKind.notSet` | Nicht festgelegt | Not set | Belirlenmedi |
+| `day.editor.field.enduranceWarmup` | Einlaufen | Warm-up | Isınma |
+| `day.editor.field.enduranceWorkDistance` | Belastungsstrecke (km) | Effort distance (km) | Yüklenme mesafesi (km) |
+| `day.editor.field.enduranceWorkDuration` | Belastungsdauer | Effort duration | Yüklenme süresi |
+| `day.editor.field.enduranceWorkTarget` | Belastungsziel | Effort target | Yüklenme hedefi |
+| `day.editor.field.enduranceWorkTarget.distance` | Strecke | Distance | Mesafe |
+| `day.editor.field.enduranceWorkTarget.open` | Offen | Open | Açık |
+| `day.editor.field.enduranceWorkTarget.time` | Zeit | Time | Süre |
 | `day.editor.field.name` | Name | Name | Ad |
 | `day.editor.field.nextIntensity` | Nächste Intensität | Next Intensity | Sonraki Yoğunluk |
+| `day.editor.field.structure` | Struktur | Structure | Yapı |
+| `day.editor.field.structure.sets` | Sätze & Wdh. | Sets & Reps | Set ve Tekrar |
+| `day.editor.field.timeCap` | Zeitlimit | Time cap | Süre sınırı |
+| `day.editor.field.timeCap.noLimit` | Kein Limit | No limit | Sınırsız |
 | `day.editor.field.type` | Typ | Type | Tip |
 | `day.editor.field.weekday` | Wochentag | Weekday | Gün |
+| `day.editor.save.failed` | Speichern fehlgeschlagen. Bitte erneut versuchen. | Save failed. Please try again. | Kaydetme başarısız oldu. Lütfen tekrar deneyin. |
 | `day.editor.section.exercises` | Übungen | Exercises | Hareketler |
 | `day.editor.section.info` | Tag-Info | Day Info | Gün Bilgisi |
 | `day.editor.start.button` | Training starten | Start Workout | Antrenmanı Başlat |
@@ -608,6 +838,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.superset.unlink` | Trennen | Unlink | Ayır |
 | `day.editor.templateLocked.exercises` | Template-Plan — Übungen sind festgelegt. Du kannst sie ansehen, aber nicht hinzufügen, entfernen oder umsortieren. | Template plan — exercises are fixed. You can view them but not add, remove, or reorder. | Şablon plan — hareketler sabit. Görüntüleyebilirsin ama ekleyemez, kaldıramaz veya sıralayamazsın. |
 | `day.editor.templateLocked.footer` | Dieser Tag gehört zu einem vorgefertigten Plan-Template und kann strukturell nicht bearbeitet werden. Du kannst aber die Trainings-Intensität anpassen. | This day belongs to a built-in plan template and can't be edited structurally. You can adjust training intensity though. | Bu gün hazır bir plan şablonuna ait ve yapısal olarak düzenlenemez. Ancak antrenman yoğunluğunu ayarlayabilirsin. |
+| `day.editor.timedFormat.hintAmrap` | Keine festen Pausen — so viele Runden wie möglich, bis die Zeit um ist. | No fixed rest — as many rounds as possible until time is up. | Sabit mola yok — süre bitene kadar mümkün olduğunca çok tur. |
+| `day.editor.timedFormat.hintCircuit` | Feste Rundenzahl, feste Pause dazwischen — je nach Modus zaehlst du entweder feste Wiederholungen ab oder beendest die Runde selbst, wenn du am Limit bist. | Fixed round count, fixed rest in between — depending on the mode you either count off fixed reps or end the round yourself once you've hit your limit. | Sabit tur sayısı, aralarda sabit mola — moda göre ya sabit tekrarları sayarsın ya da limitine ulaştığında turu kendin bitirirsin. |
+| `day.editor.timedFormat.hintEmom` | Keine festen Pausen — jede Minute startet neu. | No fixed rest — every minute starts fresh. | Sabit mola yok — her dakika yeniden başlar. |
+| `day.editor.timedFormat.hintEnduranceIntervals` | Einlaufen, dann wiederholte Belastungs-/Erholungsrunden, dann Auslaufen — jede Phase kann zeit- oder streckenbasiert sein. | Warm-up, then repeated work/rest rounds, then cool-down — each phase can be timed or distance-based. | Isınma, ardından tekrarlanan yüklenme/dinlenme turları, sonra soğuma — her aşama süreye veya mesafeye dayalı olabilir. |
+| `day.editor.timedFormat.hintForTime` | Keine festen Pausen — so schnell wie möglich durcharbeiten. | No fixed rest — work through it as fast as possible. | Sabit mola yok — mümkün olduğunca hızlı bitir. |
 | `day.editor.untitled` | Tag | Day | Gün |
 | `day.restDay.complete.button` | Ruhetag abschließen | Complete Rest Day | Dinlenme Gününü Tamamla |
 | `day.restDay.complete.footer` | Markiert den Ruhetag als erledigt — kein leerer Eintrag in der History, aber der Plan-Pointer rückt zum nächsten echten Training. | Marks the rest day as done — no empty history entry, but the plan pointer advances to the next real training day. | Dinlenme gününü tamamlandı olarak işaretler — geçmişte boş kayıt olmaz ama plan işaretçisi bir sonraki gerçek antrenmana ilerler. |
@@ -656,10 +891,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `difficulty.beginner` | Anfänger | Beginner | Başlangıç |
 | `difficulty.intermediate` | Fortgeschritten | Intermediate | Orta |
 
-## `editor.*`  (32 Keys)
+## `editor.*`  (37 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `editor.discardChanges.confirmAction` | Änderungen verwerfen | Discard Changes | Değişiklikleri Sil |
+| `editor.discardChanges.keepEditing` | Weiter bearbeiten | Keep Editing | Düzenlemeye Devam Et |
+| `editor.discardChanges.title` | Änderungen verwerfen? | Discard changes? | Değişiklikler silinsin mi? |
 | `editor.exercise.delete` | Übung löschen | Delete exercise | Hareketi sil |
 | `editor.exercise.deleteConfirmCta` | Löschen | Delete | Sil |
 | `editor.exercise.deleteConfirmMessage` | Bist du sicher? Diese Custom-Übung verschwindet dauerhaft. Bereits geloggte Trainings bleiben erhalten. | Are you sure? This custom exercise is removed permanently. Already logged workouts stay intact. | Emin misin? Bu özel hareket kalıcı olarak silinir. Kaydedilmiş antrenmanlar korunur. |
@@ -685,13 +923,26 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `editor.exercise.section.suggestedWeight` | Vorgeschlagenes Gewicht (optional) | Suggested Weight (optional) | Önerilen Ağırlık (opsiyonel) |
 | `editor.exercise.sets` | Sätze | Sets | Set |
 | `editor.exercise.smartOff` | Aus = das Gewicht wird nie automatisch geändert. Du behältst die volle Kontrolle. | Off = weight never auto-adjusts. You stay in full control. | Kapalı = ağırlık asla otomatik değişmez. Kontrol sende. |
-| `editor.exercise.smartProgressionFooterCompound` | Compound: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 3 war, steigt das Gewicht beim nächsten Mal automatisch um den eingestellten Inkrement. | Compound: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 3, the weight automatically increases by your set increment next time. | Bileşik: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 3 ise, ağırlık bir sonraki sefer ayarladığın artış kadar otomatik yükselir. |
-| `editor.exercise.smartProgressionFooterIsolation` | Isolation: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND der letzte Satz bei RIR ≤ 1 war (also nah am Versagen), steigt das Gewicht beim nächsten Mal um den eingestellten Inkrement. | Isolation: When you hit the upper rep limit in every set AND the last set was at RIR ≤ 1 (close to failure), the weight increases by your set increment next time. | İzolasyon: Tüm setlerde üst tekrar sınırına ulaşırsan VE son set RIR ≤ 1 ise (yani yetmezliğe yakın), ağırlık bir sonraki sefer ayarladığın artış kadar yükselir. |
+| `editor.exercise.smartProgressionFooterCompound` | Compound: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND im letzten Satz noch mindestens 2 Wiederholungen übrig hattest (RIR ≥ 2), steigt das Gewicht beim nächsten Mal automatisch um das eingestellte Inkrement. | Compound: When you hit the upper rep limit in every set AND still had at least 2 reps in reserve in the last set (RIR ≥ 2), the weight automatically increases by your set increment next time. | Bileşik: Tüm setlerde üst tekrar sınırına ulaşırsan VE son sette en az 2 tekrar daha yapabilecek durumdaysan (RIR ≥ 2), ağırlık bir sonraki sefer ayarladığın artış kadar otomatik yükselir. |
+| `editor.exercise.smartProgressionFooterIsolation` | Isolation: Wenn du in allen Sätzen die obere Rep-Grenze schaffst UND im letzten Satz noch mindestens 1 Wiederholung übrig hattest (RIR ≥ 1), steigt das Gewicht beim nächsten Mal um das eingestellte Inkrement. | Isolation: When you hit the upper rep limit in every set AND still had at least 1 rep in reserve in the last set (RIR ≥ 1), the weight increases by your set increment next time. | İzolasyon: Tüm setlerde üst tekrar sınırına ulaşırsan VE son sette en az 1 tekrar daha yapabilecek durumdaysan (RIR ≥ 1), ağırlık bir sonraki sefer ayarladığın artış kadar yükselir. |
 | `editor.exercise.templateLocked` | Template-Übung — Name und Cardio/Zeit-Flags sind festgelegt. | Template exercise — name and cardio/time flags are fixed. | Şablon hareket — ad ve kardiyo/süre bayrakları sabit. |
 | `editor.exercise.toggle.cardio` | Cardio | Cardio | Kardiyo |
 | `editor.exercise.toggle.compoundLift` | Compound-Lift | Compound Lift | Bileşik Hareket |
 | `editor.exercise.toggle.smartOverload` | Smart Overload aktivieren | Enable Smart Overload | Akıllı Aşırı Yüklemeyi Etkinleştir |
 | `editor.exercise.toggle.timeBased` | Zeit-basiert | Time-Based | Süre Bazlı |
+| `editor.reorder.done` | Fertig | Done | Bitti |
+| `editor.reorder.start` | Sortieren | Reorder | Sırala |
+
+## `enduranceModality.*`  (6 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `enduranceModality.both` | Beides | Both | İkisi de |
+| `enduranceModality.both.blurb` | Eine Mischung aus Laufen und Radfahren, je nachdem was passt. | A mix of running and cycling, whichever fits. | Uygun olana göre koşu ve bisiklet karışımı. |
+| `enduranceModality.cycling` | Radfahren | Cycling | Bisiklet |
+| `enduranceModality.cycling.blurb` | Radfahren steht im Mittelpunkt deiner Ausdauereinheiten. | Cycling is the focus of your endurance sessions. | Dayanıklılık antrenmanlarının odağı bisiklet. |
+| `enduranceModality.running` | Laufen | Running | Koşu |
+| `enduranceModality.running.blurb` | Laufen steht im Mittelpunkt deiner Ausdauereinheiten. | Running is the focus of your endurance sessions. | Dayanıklılık antrenmanlarının odağı koşu. |
 
 ## `environment.*`  (3 Keys)
 
@@ -713,7 +964,44 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `equipment.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
 | `equipment.machine` | Maschine | Machine | Makine |
 
-## `exercise.*`  (181 Keys)
+## `equipmentEditor.*`  (17 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `equipmentEditor.bench.adjustable` | Verstellbare Bank | Adjustable bench | Ayarlanabilir bank |
+| `equipmentEditor.bench.flat` | Flachbank | Flat bench | Düz bank |
+| `equipmentEditor.bench.none` | Keine Bank | No bench | Bank yok |
+| `equipmentEditor.bench.unknown` | Weiß ich noch nicht | Not sure yet | Henüz bilmiyorum |
+| `equipmentEditor.bodyweightOnly.subtitle` | Ich trainiere ohne zusätzliche Geräte | I train without any extra equipment | Ek ekipman olmadan antrenman yapıyorum |
+| `equipmentEditor.bodyweightOnly.title` | Nur Körpergewicht | Bodyweight only | Sadece vücut ağırlığı |
+| `equipmentEditor.count.label` | Wie viele? | How many? | Kaç tane? |
+| `equipmentEditor.count.one` | 1 | 1 | 1 |
+| `equipmentEditor.count.twoOrMore` | 2 oder mehr | 2 or more | 2 veya daha fazla |
+| `equipmentEditor.footer` | Nicht ausgewählte Geräte gelten als unbekannt, nicht als fehlend — bis du bestätigst. Du kannst alles später im Profil ändern. | Unselected equipment counts as unknown, not missing — until you confirm. You can change everything later in your profile. | Seçilmeyen ekipmanlar, onaylayana kadar eksik değil bilinmiyor sayılır. Her şeyi daha sonra profilinden değiştirebilirsin. |
+| `equipmentEditor.pullUpBar.no` | Nein | No | Hayır |
+| `equipmentEditor.pullUpBar.unknown` | Weiß ich noch nicht | Not sure yet | Henüz bilmiyorum |
+| `equipmentEditor.pullUpBar.yes` | Ja | Yes | Evet |
+| `equipmentEditor.section.bench` | Bank | Bench | Bank |
+| `equipmentEditor.section.further` | Weitere Ausstattung | Further equipment | Diğer ekipmanlar |
+| `equipmentEditor.section.pullUpBar` | Klimmzugstange | Pull-up bar | Barfiks demiri |
+| `equipmentEditor.section.weights` | Gewichte | Weights | Ağırlıklar |
+
+## `equipmentItem.*`  (10 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `equipmentItem.adjustableBench` | Verstellbare Bank | Adjustable bench | Ayarlanabilir bank |
+| `equipmentItem.barbell` | Langhantel | Barbell | Halter |
+| `equipmentItem.cableStation` | Kabelzug-Station | Cable station | Kablo istasyonu |
+| `equipmentItem.dumbbell` | Kurzhantel | Dumbbell | Dambıl |
+| `equipmentItem.flatBench` | Flachbank | Flat bench | Düz bank |
+| `equipmentItem.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
+| `equipmentItem.machineStation` | Maschinen | Machines | Makineler |
+| `equipmentItem.pullUpBar` | Klimmzugstange | Pull-up bar | Barfiks demiri |
+| `equipmentItem.rack` | Rack | Rack | Squat rack |
+| `equipmentItem.resistanceBand` | Widerstandsband | Resistance band | Direnç bandı |
+
+## `exercise.*`  (247 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -727,20 +1015,30 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.detail.stats.maxWeight` | Schwerster Satz | Heaviest set | En ağır set |
 | `exercise.detail.stats.sets` | Sätze gesamt | Total sets | Toplam set |
 | `exercise.detail.stats.volume` | Volumen gesamt | Total volume | Toplam hacim |
+| `exercise.gif.a11y` | Animation: %@ | Animation: %@ | Animasyon: %@ |
+| `exercise.gif.button.a11y` | Animation ansehen: %@ | View animation: %@ | Animasyonu görüntüle: %@ |
 | `exercise.kind.cardio` | Cardio | Cardio | Kardiyo |
 | `exercise.name.assistedDip` | Dip (assistiert) | Assisted Dip | Destekli Dip |
 | `exercise.name.assistedPullUp` | Klimmzug (assistiert) | Assisted Pull-Up | Destekli Barfiks |
 | `exercise.name.australianPullup` | Australian Pull-ups | Australian Pull-Up | Australian Pull-Up |
 | `exercise.name.backWidows` | Back Widows | Back Widow | Back Widow |
+| `exercise.name.bandCloseGripPulldown` | Latzug eng (Band) | Band Close-Grip Pulldown | Band Close-Grip Pulldown |
 | `exercise.name.bandCurl` | Band Curls | Band Curls | Band Curls |
 | `exercise.name.bandPullApart` | Band Pull-Aparts | Band Pull-Aparts | Band Pull-Aparts |
+| `exercise.name.bandPullThrough` | Band Pull-Through | Band Pull-Through | Band Pull-Through |
 | `exercise.name.bandedHipThrust` | Banded Hip Thrust | Banded Hip Thrust | Banded Hip Thrust |
 | `exercise.name.bandedSquat` | Banded Squats | Banded Squats | Banded Squats |
 | `exercise.name.barbellCurl` | Bizeps-Curl (LH) | Barbell Curl | Barbell Curl |
+| `exercise.name.barbellHackSquat` | Hack Squat (LH) | Barbell Hack Squat | Barbell Hack Squat |
 | `exercise.name.barbellHipThrust` | Hip Thrust (LH) | Barbell Hip Thrust | Barbell Hip Thrust |
+| `exercise.name.barbellLateralLunge` | Seitlicher Ausfallschritt (LH) | Barbell Lateral Lunge | Barbell Lateral Lunge |
 | `exercise.name.barbellLunge` | Ausfallschritte (LH) | Barbell Lunges | Barbell Lunges |
+| `exercise.name.barbellOneArmFloorPress` | Floor Press einarmig (LH) | Barbell One Arm Floor Press | Barbell One Arm Floor Press |
+| `exercise.name.barbellReverseLunge` | Ausfallschritt rückwärts (LH) | Barbell Rear Lunge | Barbell Rear Lunge |
 | `exercise.name.barbellShrug` | Shrug (LH) | Barbell Shrug | Barbell Shrug |
 | `exercise.name.barbellStandingCalfRaise` | Wadenheben (stehend, LH) | Standing Calf Raise (Barbell) | Standing Calf Raise |
+| `exercise.name.barbellStandingCloseGripMilitaryPress` | Schulterdrücken stehend (LH, enger Griff) | Barbell Standing Close Grip Military Press | Barbell Standing Close Grip Military Press |
+| `exercise.name.barbellWristCurl` | Handgelenk-Curl (LH) | Barbell Wrist Curl | Barbell Wrist Curl |
 | `exercise.name.barbellrow` | Rudern vorgebeugt | Bent-Over Row | Bent-Over Row |
 | `exercise.name.battleRopes` | Battle Ropes | Battle Ropes | Battle Ropes (Halat) |
 | `exercise.name.bayesianCurl` | Bayesian Curl | Bayesian Curl | Bayesian Curl |
@@ -755,13 +1053,19 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.boxSquat` | Box Squat | Box Squat | Box Squat |
 | `exercise.name.bulgarianSplitSquatDB` | Bulgarische Kniebeuge (KH) | Dumbbell Bulgarian Split Squat | Dumbbell Bulgarian Split Squat |
 | `exercise.name.burpee` | Burpees | Burpees | Burpees |
+| `exercise.name.cableBarLateralPulldown` | Latzug an der Kabelstange | Cable Bar Lateral Pulldown | Cable Bar Lateral Pulldown |
+| `exercise.name.cableCrossOverVariation` | Kabel Cross-Over (Variation) | Cable Cross-Over Variation | Cable Cross-Over Variation |
 | `exercise.name.cableCrossover` | Kabel Crossover | Cable Crossover | Cable Crossover |
 | `exercise.name.cableCrunch` | Kabel Crunch | Cable Crunch | Cable Crunch |
 | `exercise.name.cableCurl` | Kabel Curl | Cable Curl | Cable Curl |
 | `exercise.name.cableLateralRaise` | Kabel Seitheben | Cable Lateral Raise | Cable Lateral Raise |
 | `exercise.name.cableOverheadTricepExtension` | Trizepsstrecker über Kopf (Kabel) | Cable Overhead Triceps Extension | Cable Overhead Triceps Extension |
 | `exercise.name.cablePullThrough` | Cable Pull-Through | Cable Pull-Through | Cable Pull-Through |
+| `exercise.name.cableReverseCrunch` | Kabel Reverse Crunch | Cable Reverse Crunch | Cable Reverse Crunch |
+| `exercise.name.cableSeatedCrunch` | Sitzender Kabel-Crunch | Cable Seated Crunch | Cable Seated Crunch |
+| `exercise.name.cableSupineReverseFly` | Kabel Reverse Fly liegend | Cable Supine Reverse Fly | Cable Supine Reverse Fly |
 | `exercise.name.cableWoodchopper` | Cable Woodchopper | Cable Woodchopper | Cable Woodchopper (Odun Kesme) |
+| `exercise.name.cableWristCurl` | Handgelenk-Curl (Kabel) | Cable Wrist Curl | Cable Wrist Curl |
 | `exercise.name.calfPressLegPress` | Wadenpresse (Beinpresse) | Calf Press (Leg Press) | Baldır Press (Leg Press) |
 | `exercise.name.chestDip` | Dips (Brust) | Chest Dips | Chest Dips |
 | `exercise.name.chestPressMachine` | Brustdrücken (Maschine) | Machine Chest Press | Machine Chest Press |
@@ -772,13 +1076,17 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.copenhagenPlank` | Copenhagen Plank | Copenhagen Plank | Copenhagen Plank |
 | `exercise.name.crunch` | Crunches (BW) | Crunches | Mekik |
 | `exercise.name.cycling` | Radfahren (outdoor) | Outdoor Cycling | Bisiklet |
+| `exercise.name.cyclingInterval` | Rad-Intervall | Cycling Interval | Bisiklet İnterval |
 | `exercise.name.deadlift` | Kreuzheben (konventionell) | Conventional Deadlift | Conventional Deadlift |
 | `exercise.name.declineBenchPress` | Schrägbankdrücken (abwärts) | Decline Bench Press | Decline Bench Press |
 | `exercise.name.deficitDeadlift` | Deficit-Kreuzheben | Deficit Deadlift | Deficit Deadlift |
 | `exercise.name.diamondPushup` | Diamant-Liegestütze | Diamond Push-Up | Diamond Push-Up |
 | `exercise.name.dragonFlag` | Dragon Flag | Dragon Flag | Dragon Flag |
+| `exercise.name.dumbbellArnoldPress` | Arnold Press (KH) | Dumbbell Arnold Press | Dumbbell Arnold Press |
 | `exercise.name.dumbbellBenchPress` | Bankdrücken (KH) | Dumbbell Bench Press | Dumbbell Bench Press |
+| `exercise.name.dumbbellBurpee` | Burpee mit Kurzhanteln | Dumbbell Burpee | Dumbbell Burpee |
 | `exercise.name.dumbbellCalfRaise` | Wadenheben (KH) | Dumbbell Calf Raise | Dumbbell Calf Raise |
+| `exercise.name.dumbbellDeadlift` | Kreuzheben (KH) | Dumbbell Deadlift | Dumbbell Deadlift |
 | `exercise.name.dumbbellFlyFlat` | Flyes flach (KH) | Flat Dumbbell Fly | Flat Dumbbell Fly |
 | `exercise.name.dumbbellFlyIncline` | Flyes Schrägbank (KH) | Incline Dumbbell Fly | Incline Dumbbell Fly |
 | `exercise.name.dumbbellHipThrust` | Hip Thrust (KH) | Dumbbell Hip Thrust | Dumbbell Hip Thrust |
@@ -786,10 +1094,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.dumbbellLunge` | Ausfallschritte (KH) | Dumbbell Lunges | Dumbbell Lunges |
 | `exercise.name.dumbbellOverheadTricepExtension` | Trizepsstrecker über Kopf (KH) | Overhead Dumbbell Triceps Extension | Overhead Dumbbell Triceps Extension |
 | `exercise.name.dumbbellPullover` | Pullover (KH) | Dumbbell Pullover | Dumbbell Pullover |
+| `exercise.name.dumbbellPushPress` | Push Press (KH) | Dumbbell Push Press | Dumbbell Push Press |
 | `exercise.name.dumbbellRDL` | Rumänisches Kreuzheben (KH) | Dumbbell Romanian Deadlift | Dumbbell Romanian Deadlift |
+| `exercise.name.dumbbellReverseLunge` | Ausfallschritt rückwärts (KH) | Dumbbell Rear Lunge | Dumbbell Rear Lunge |
 | `exercise.name.dumbbellRowOneArm` | Rudern einarmig (KH) | One-Arm Dumbbell Row | One-Arm Dumbbell Row |
+| `exercise.name.dumbbellSeatedCalfRaise` | Sitzendes Wadenheben (KH) | Dumbbell Seated Calf Raise | Dumbbell Seated Calf Raise |
+| `exercise.name.dumbbellSeatedTricepsExtension` | Sitzendes Trizepsstrecken (KH) | Dumbbell Seated Triceps Extension | Dumbbell Seated Triceps Extension |
 | `exercise.name.dumbbellShoulderPress` | Schulterdrücken (KH) | Dumbbell Shoulder Press | Dumbbell Shoulder Press |
 | `exercise.name.dumbbellShrug` | Shrug (KH) | Dumbbell Shrug | Dumbbell Shrug |
+| `exercise.name.dumbbellThruster` | Thruster (KH) | Dumbbell Thruster | Dumbbell Thruster |
 | `exercise.name.dumbbellTricepKickback` | Trizepskickback (KH) | Dumbbell Triceps Kickback | Dumbbell Triceps Kickback |
 | `exercise.name.easyRun` | Easy Run | Easy Run | Kolay Koşu |
 | `exercise.name.elliptical` | Crosstrainer | Elliptical | Eliptik |
@@ -811,16 +1124,42 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.intervals` | Intervalle | Intervals | İnterval |
 | `exercise.name.invertedRow` | Inverted Row | Inverted Row | Inverted Row |
 | `exercise.name.jumpSquat` | Jump Squat | Jump Squat | Jump Squat |
+| `exercise.name.jumpingLunges` | Gesprungene Ausfallschritte | Jumping Lunges | Jumping Lunges |
+| `exercise.name.kettlebellArnoldPress` | Arnold Press (Kettlebell) | Kettlebell Arnold Press | Kettlebell Arnold Press |
+| `exercise.name.kettlebellBentPress` | Kettlebell Bent Press | Kettlebell Bent Press | Kettlebell Bent Press |
 | `exercise.name.kettlebellCleanAndPress` | Kettlebell Clean & Press | Kettlebell Clean & Press | Kettlebell Clean & Press |
+| `exercise.name.kettlebellCleanToFrontSquat` | Kettlebell Clean to Front Squat | Kettlebell Clean to Front Squat | Kettlebell Clean to Front Squat |
+| `exercise.name.kettlebellDeadlift` | Kettlebell Kreuzheben | Kettlebell Deadlift | Kettlebell Deadlift |
+| `exercise.name.kettlebellDoublePushPress` | Kettlebell Doppel-Push-Press | Kettlebell Double Push Press | Kettlebell Double Push Press |
 | `exercise.name.kettlebellFloorPress` | Kettlebell Floor Press | Kettlebell Floor Press | Kettlebell Floor Press |
+| `exercise.name.kettlebellFrontSquat` | Kettlebell Front Squat | Kettlebell Front Squat | Kettlebell Front Squat |
 | `exercise.name.kettlebellGobletSquat` | Kettlebell Goblet Squat | Kettlebell Goblet Squat | Kettlebell Goblet Squat |
 | `exercise.name.kettlebellHalo` | Kettlebell Halo | Kettlebell Halo | Kettlebell Halo |
+| `exercise.name.kettlebellOneArmCleanAndJerk` | Kettlebell Clean & Jerk einarmig | Kettlebell One Arm Clean and Jerk | Kettlebell One Arm Clean and Jerk |
+| `exercise.name.kettlebellOneArmPushPress` | Kettlebell Push Press einarmig | Kettlebell One Arm Push Press | Kettlebell One Arm Push Press |
+| `exercise.name.kettlebellOverheadPress` | Kettlebell Overhead Press | Kettlebell Overhead Press | Kettlebell Overhead Press |
+| `exercise.name.kettlebellPistolSquat` | Kettlebell Pistol Squat | Kettlebell Pistol Squat | Kettlebell Pistol Squat |
+| `exercise.name.kettlebellPlyoPushUp` | Kettlebell Plyo-Liegestütze | Kettlebell Plyo Push-Up | Kettlebell Plyo Push-Up |
+| `exercise.name.kettlebellPullover` | Kettlebell Pullover | Kettlebell Pullover | Kettlebell Pullover |
 | `exercise.name.kettlebellPushPress` | Kettlebell Push Press | Kettlebell Push Press | Kettlebell Push Press |
+| `exercise.name.kettlebellPushup` | Liegestütze auf Kettlebell | Push-Up on Kettlebell | Kettlebell Üzerinde Şınav |
 | `exercise.name.kettlebellRDL` | Kettlebell RDL | Kettlebell RDL | Kettlebell RDL |
+| `exercise.name.kettlebellRenegadeRow` | Renegade Row (Kettlebell) | Kettlebell Alternating Renegade Row | Kettlebell Alternating Renegade Row |
 | `exercise.name.kettlebellRowSingleArm` | Kettlebell Row einarmig | Kettlebell Single-Arm Row | Kettlebell Tek Kol Row |
+| `exercise.name.kettlebellSeatedPress` | Kettlebell Schulterdrücken sitzend | Kettlebell Seated Press | Kettlebell Seated Press |
+| `exercise.name.kettlebellSitUpOverhead` | Kettlebell Sit-Up (Overhead-Halten) | Kettlebell Sit-Up (Overhead Hold) | Kettlebell Mekik (Overhead Tutuş) |
 | `exercise.name.kettlebellSnatch` | Kettlebell Snatch | Kettlebell Snatch | Kettlebell Snatch |
+| `exercise.name.kettlebellSnatchLeft` | Kettlebell Snatch (Links) | Kettlebell Snatch (Left) | Kettlebell Snatch (Sol) |
+| `exercise.name.kettlebellSnatchRight` | Kettlebell Snatch (Rechts) | Kettlebell Snatch (Right) | Kettlebell Snatch (Sağ) |
 | `exercise.name.kettlebellSuitcaseCarry` | Kettlebell Suitcase Carry | Kettlebell Suitcase Carry | Kettlebell Bavul Taşıma |
 | `exercise.name.kettlebellSwing` | Kettlebell Swing | Kettlebell Swing | Kettlebell Swing |
+| `exercise.name.kettlebellThruster` | Kettlebell Thruster | Kettlebell Thruster | Kettlebell Thruster |
+| `exercise.name.kettlebellThrusterSingleArm` | Kettlebell Thruster einarmig | Kettlebell Single-Arm Thruster | Tek Kollu Kettlebell Thruster |
+| `exercise.name.kettlebellTurkishGetUpSquatStyle` | Kettlebell Turkish Get-Up (Squat-Stil) | Kettlebell Turkish Get-Up (Squat Style) | Kettlebell Turkish Get-Up (Squat Style) |
+| `exercise.name.kettlebellTwoArmMilitaryPress` | Kettlebell Schulterdrücken stehend (zwei Kettlebells) | Kettlebell Two Arm Military Press | Kettlebell Two Arm Military Press |
+| `exercise.name.kettlebellUppercutRotation` | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotation | Kettlebell Uppercut Rotasyonu |
+| `exercise.name.kettlebellWindmill` | Kettlebell Windmill | Kettlebell Windmill | Kettlebell Windmill |
+| `exercise.name.kneePushup` | Liegestütze (Knie) | Knee Push-Up | Diz Üstü Şınav |
 | `exercise.name.lSit` | L-Sit | L-Sit | L-Sit |
 | `exercise.name.latPulldownClose` | Latzug (eng) | Close-Grip Lat Pulldown | Close-Grip Lat Pulldown |
 | `exercise.name.lateralRaise` | Seitheben | Lateral Raise | Lateral Raise |
@@ -828,9 +1167,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.legExtension` | Beinstrecker | Leg Extension | Leg Extension |
 | `exercise.name.legpress` | Beinpresse | Leg Press | Leg Press |
 | `exercise.name.longRun` | Long Run | Long Run | Uzun Koşu |
+| `exercise.name.lowBarBackSquat` | Low-Bar-Kniebeuge (LH) | Barbell Low Bar Squat | Barbell Low Bar Squat |
 | `exercise.name.lyingLegCurl` | Beinbeuger liegend | Lying Leg Curl | Lying Leg Curl |
 | `exercise.name.lyingLegExtension` | Beinstrecker liegend | Lying Leg Extension | Lying Leg Extension |
+| `exercise.name.lyingLegHipRaise` | Liegendes Bein-Hüft-Heben | Lying Leg-Hip Raise | Lying Leg-Hip Raise |
 | `exercise.name.lyingLegRaise` | Beinheben (liegend) | Lying Leg Raise | Lying Leg Raise |
+| `exercise.name.lyingLegRaiseFlatBench` | Beinheben auf Flachbank | Lying Leg Raise Flat Bench | Lying Leg Raise Flat Bench |
+| `exercise.name.machineInnerChestPress` | Innere Brustpresse (Maschine) | Machine Inner Chest Press | Machine Inner Chest Press |
+| `exercise.name.marchSitWall` | Wand-Sitz mit Marschieren | March Sit (Wall) | March Sit (Wall) |
 | `exercise.name.meadowsRow` | Meadows Row | Meadows Row | Meadows Row |
 | `exercise.name.medicineBallSlam` | Medizinball-Slam | Medicine Ball Slam | Sağlık Topu Slam |
 | `exercise.name.mountainClimber` | Mountain Climbers | Mountain Climbers | Mountain Climbers |
@@ -845,12 +1189,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.pikePushup` | Pike Liegestütze | Pike Push-Up | Pike Push-Up |
 | `exercise.name.pistolSquat` | Pistol Squat | Pistol Squat | Pistol Squat |
 | `exercise.name.plank` | Plank | Plank | Plank |
+| `exercise.name.powerClean` | Power Clean | Power Clean | Power Clean |
 | `exercise.name.preacherCurl` | Preacher Curl (Maschine) | Machine Preacher Curl | Machine Preacher Curl |
 | `exercise.name.pullup` | Klimmzüge (eng/Chin-up) | Chin-Up | Barfiks (Chin-Up) |
+| `exercise.name.pullupStandard` | Klimmzüge | Pull-Up | Barfiks |
 | `exercise.name.pushPress` | Push Press | Push Press | Push Press |
 | `exercise.name.pushup` | Liegestütze | Push-Up | Şınav |
 | `exercise.name.renegadeRow` | Renegade Row | Renegade Row | Renegade Row |
 | `exercise.name.reverseCableFly` | Reverse Cable Fly | Reverse Cable Fly | Ters Cable Fly |
+| `exercise.name.reverseCrunch` | Reverse Crunch | Reverse Crunch | Reverse Crunch |
 | `exercise.name.reverseCurl` | Reverse Curl | Reverse Curl | Reverse Curl |
 | `exercise.name.reverseFlyDB` | Reverse Flyes (KH) | Dumbbell Reverse Fly | Dumbbell Reverse Fly |
 | `exercise.name.reverseNordicCurl` | Reverse Nordic Curl | Reverse Nordic Curl | Ters Nordic Curl |
@@ -858,6 +1205,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.romanianDeadlift` | Rumänisches Kreuzheben | Romanian Deadlift | Romanian Deadlift |
 | `exercise.name.rowingMachine` | Rudermaschine | Rowing Machine | Kürek Ergometresi |
 | `exercise.name.run` | Freier Lauf | Outdoor Run | Koşu |
+| `exercise.name.runInterval` | Lauf-Intervall | Run Interval | Koşu İnterval |
 | `exercise.name.russianTwist` | Russian Twists | Russian Twist | Russian Twist |
 | `exercise.name.sandbagCarry` | Sandbag Carry | Sandbag Carry | Kum Torbası Taşıma |
 | `exercise.name.seatedCableRow` | Kabelrudern sitzend | Seated Cable Row | Seated Cable Row |
@@ -870,11 +1218,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.skullCrusher` | Skull Crusher | Skull Crusher | Skull Crusher |
 | `exercise.name.sledPull` | Sled Pull | Sled Pull | Kızak Çekme |
 | `exercise.name.sledPush` | Sled Push | Sled Push | Kızak İtme |
+| `exercise.name.smithHackSquat` | Hack Squat (Smith) | Smith Hack Squat | Smith Hack Squat |
 | `exercise.name.smithMachineSquat` | Smith Machine Squat | Smith Machine Squat | Smith Machine Squat |
+| `exercise.name.smithShoulderPress` | Schulterdrücken (Smith Machine) | Smith Shoulder Press | Smith Shoulder Press |
 | `exercise.name.snatch` | Reißen (Snatch) | Snatch | Snatch (Koparma) |
 | `exercise.name.squat` | Kniebeuge | Back Squat | Back Squat |
 | `exercise.name.stairStepper` | Stepper | Stair Stepper | Stepper |
 | `exercise.name.standingLegCurl` | Beincurl stehend | Standing Leg Curl | Ayakta Bacak Curl |
+| `exercise.name.standingSingleLegCurlBodyweight` | Beincurl stehend (BW) | Standing Single Leg Curl | Standing Single Leg Curl |
 | `exercise.name.stationaryBike` | Fahrradergometer | Exercise Bike | Egzersiz Bisikleti |
 | `exercise.name.stepUpDB` | Step-Up (KH) | Dumbbell Step-Up | Dumbbell Step-Up |
 | `exercise.name.sumoDeadlift` | Sumo-Kreuzheben | Sumo Deadlift | Sumo Deadlift |
@@ -888,6 +1239,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.tricepDip` | Dips (Trizeps) | Triceps Dips | Triceps Dips |
 | `exercise.name.tricepPushdown` | Trizepsdrücken (Kabel) | Cable Triceps Pushdown | Cable Triceps Pushdown |
 | `exercise.name.turkishGetUp` | Turkish Get-Up | Turkish Get-Up | Türk Kalkışı |
+| `exercise.name.walkingInclineTreadmill` | Gehen am Laufband (Steigung) | Walking on Incline Treadmill | Walking on Incline Treadmill |
 | `exercise.name.wallSit` | Wall Sit | Wall Sit | Wall Sit |
 | `exercise.name.warmupWalk` | Gehen / Einlaufen | Warm-Up Walk | Isınma Yürüyüşü |
 | `exercise.name.widePullup` | Klimmzüge (weit) | Wide-Grip Pull-Up | Wide-Grip Pull-Up |
@@ -896,8 +1248,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `exercise.name.zPress` | Z-Press | Z-Press | Z-Press |
 | `exercise.name.zercherSquat` | Zercher Squat | Zercher Squat | Zercher Squat |
 | `exercise.rest.label` | Pause | Rest | Mola |
-| `exercise.target.cardioFormat` | %1$@ • %2$llds %3$@ | %1$@ • %2$llds %3$@ | %1$@ • %2$llds %3$@ |
-| `exercise.target.strengthFormat` | %1$lld × %2$@ %3$@ • %4$llds %5$@ | %1$lld × %2$@ %3$@ • %4$llds %5$@ | %1$lld × %2$@ %3$@ • %4$llds %5$@ |
+| `exercise.role.cooldown.pill` | COOLDOWN | COOL-DOWN | SOĞUMA |
+| `exercise.role.warmup.pill` | AUFWÄRMEN | WARM-UP | ISINMA |
+| `exercise.target.cardioFormat` | %1$@ • %2$@ %3$@ | %1$@ • %2$@ %3$@ | %1$@ • %2$@ %3$@ |
+| `exercise.target.strengthFormat` | %1$lld × %2$@ %3$@ • %4$@ %5$@ | %1$lld × %2$@ %3$@ • %4$@ %5$@ | %1$lld × %2$@ %3$@ • %4$@ %5$@ |
 
 ## `experience.*`  (3 Keys)
 
@@ -917,10 +1271,55 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `feeling.hard` | Sehr schwer | Very Hard | Çok Zor |
 | `feeling.okay` | Okay | Okay | İdare Eder |
 
-## `gear.*`  (19 Keys)
+## `fourWeekReview.*`  (36 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `fourWeekReview.choosePlan.section` | Aktive Pläne | Active plans | Aktif planlar |
+| `fourWeekReview.choosePlan.title` | Plan wählen | Choose a plan | Bir plan seç |
+| `fourWeekReview.complete.action` | Rückblick abschließen | Complete review | Değerlendirmeyi tamamla |
+| `fourWeekReview.concern.comeback.action` | Anpassung ansehen | Review adjustment | Ayarlamayı incele |
+| `fourWeekReview.concern.comeback.subtitle` | Empfehlung: Arbeitsgewichte um etwa %d %% reduzieren, bis du wieder reinkommst. | Recommendation: reduce working weights by about %d%% while you ease back in. | Öneri: tekrar alışana kadar çalışma ağırlıklarını yaklaşık %%%d azalt. |
+| `fourWeekReview.concern.comeback.title` | Längere Trainingspause erkannt | A longer training gap was detected | Daha uzun bir antrenman arası tespit edildi |
+| `fourWeekReview.concern.complaints.subtitle` | In deinem letzten Rückblick hast du Beschwerden oder Schmerzen angegeben. | In your last check-in, you reported complaints or pain. | Son check-in'inde şikayet veya ağrı bildirdin. |
+| `fourWeekReview.concern.complaints.title` | Beschwerden gemeldet | Complaints reported | Şikayet bildirildi |
+| `fourWeekReview.concern.deload.action` | Deload-Woche einplanen | Schedule a deload week | Deload haftası planla |
+| `fourWeekReview.concern.deload.subtitle` | Steigende Last über drei Wochen plus mehrere sehr anstrengende Einheiten — ein Deload könnte jetzt helfen. | Rising load over three weeks plus several very hard sessions — a deload could help now. | Üç haftadır artan yük ve birkaç çok zorlu antrenman — şimdi bir deload işe yarayabilir. |
+| `fourWeekReview.concern.deload.title` | Deine Belastung steigt deutlich | Your training load is climbing fast | Antrenman yükün hızla artıyor |
+| `fourWeekReview.concern.goal.subtitle` | Du hast zuletzt angegeben, dass dein Ziel sich geändert haben könnte. Schau in deinem Profil vorbei, wenn du es anpassen willst. | You last indicated your goal may have changed. Check your profile if you'd like to update it. | Son olarak hedefinin değişmiş olabileceğini belirttin. Güncellemek istersen profiline bakabilirsin. |
+| `fourWeekReview.concern.goal.title` | Ziel möglicherweise nicht mehr aktuell | Goal may no longer be current | Hedef artık güncel olmayabilir |
+| `fourWeekReview.concern.participation.subtitle` | %d von %d geplanten Einheiten verpasst. Kein Vorwurf — nur eine Beobachtung. | %d of %d planned sessions missed. No judgment here — just an observation. | Planlanan %2$d antrenmandan %1$d tanesi kaçırıldı. Bu bir eleştiri değil, sadece bir gözlem. |
+| `fourWeekReview.concern.participation.title` | Teilnahme spürbar unter Plan | Participation noticeably below plan | Katılım plandan belirgin şekilde düşük |
+| `fourWeekReview.dataGap.noCheckIn` | Noch kein Alltags-Rückblick ausgefüllt. | No everyday check-in filled out yet. | Henüz bir günlük check-in doldurulmadı. |
+| `fourWeekReview.dataGap.participation.activationUnknown` | Startdatum des Plans unbekannt — neue Beobachtungsphase ab jetzt. | Plan start date unknown — a new observation period begins now. | Plan başlangıç tarihi bilinmiyor — yeni bir gözlem dönemi şimdi başlıyor. |
+| `fourWeekReview.dataGap.participation.beforeActivation` | Datenstand liegt vor der Planaktivierung. | Data predates the plan's activation. | Veri, planın etkinleştirilmesinden önceye ait. |
+| `fourWeekReview.dataGap.participation.dataUnavailable` | Daten für diese Auswertung konnten nicht geladen werden. | Could not load the data needed for this evaluation. | Bu değerlendirme için gereken veriler yüklenemedi. |
+| `fourWeekReview.dataGap.participation.noActivePlan` | Kein aktuell aktiver Plan vorhanden. | No currently active plan. | Şu anda aktif bir plan yok. |
+| `fourWeekReview.dataGap.participation.noTrainingDays` | Dieser Plan hat keine Trainingstage. | This plan has no training days. | Bu planda antrenman günü yok. |
+| `fourWeekReview.dataGap.participation.partiallyUnattributed` | Ein Teil deiner Trainingshistorie ließ sich wegen mehrerer aktiver Pläne keinem bestimmten Plan sicher zuordnen und wurde hier nicht mitgezählt. | Some of your training history couldn't be reliably matched to a specific plan because multiple plans are active, so it wasn't counted here. | Birden fazla plan aktif olduğu için antrenman geçmişinin bir kısmı belirli bir plana güvenilir şekilde eşlenemedi ve bu nedenle burada sayılmadı. |
+| `fourWeekReview.dataGap.participation.tooEarly` | Noch zu früh seit Planstart für eine Aussage. | Still too early since plan start to say anything. | Plan başlangıcından bu yana henüz bir değerlendirme için çok erken. |
+| `fourWeekReview.dataGap.title` | UNZUREICHENDE DATENGRUNDLAGE | INSUFFICIENT DATA | YETERSİZ VERİ |
+| `fourWeekReview.deload.confirm.apply` | Ja, starten | Yes, start it | Evet, başlat |
+| `fourWeekReview.deload.confirm.title` | Deload-Woche jetzt starten? | Start deload week now? | Deload haftası şimdi başlasın mı? |
+| `fourWeekReview.header.eyebrow` | DEIN RÜCKBLICK | YOUR REVIEW | GERİ BAKIŞIN |
+| `fourWeekReview.keepAsIs.subtitle` | Nichts deutet darauf hin, dass sich etwas ändern sollte. Mach einfach weiter wie bisher. | Nothing suggests a change is needed. Just keep doing what you're doing. | Bir değişiklik gerektiğine dair hiçbir işaret yok. Böyle devam et. |
+| `fourWeekReview.keepAsIs.title` | Dein Plan passt – weiter so! | Your plan fits — keep going! | Planın uyumlu — devam et! |
+| `fourWeekReview.participation.partial` | Davon %d teilweise, %d nur begonnen. | Of those, %d partial, %d only started. | Bunlardan %d kısmi, %d sadece başlandı. |
+| `fourWeekReview.participation.summary` | %d von %d Einheiten abgeschlossen. | %d of %d sessions completed. | %2$d antrenmandan %1$d tanesi tamamlandı. |
+| `fourWeekReview.participation.title` | TEILNAHME | PARTICIPATION | KATILIM |
+| `fourWeekReview.status.completed` | Abgeschlossen am %@ | Completed on %@ | %@ tarihinde tamamlandı |
+| `fourWeekReview.status.due` | Fällig | Due | Süresi geldi |
+| `fourWeekReview.title` | Deine ersten vier Wochen | Your first four weeks | İlk dört haftan |
+| `fourWeekReview.title.laterBlock` | Dein Block-Rückblick | Your block review | Blok değerlendirmen |
+
+## `gear.*`  (24 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `gear.delete.action` | Ausrüstung löschen | Delete gear | Ekipmanı sil |
+| `gear.delete.confirm.action` | Löschen | Delete | Sil |
+| `gear.delete.confirm.message` | Der Kilometerstand von „%@“ wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden. | The distance history for “%@” will be permanently deleted. This cannot be undone. | “%@” için kilometre geçmişi kalıcı olarak silinecek. Bu işlem geri alınamaz. |
+| `gear.delete.confirm.title` | Diese Ausrüstung löschen? | Delete this gear? | Bu ekipman silinsin mi? |
 | `gear.editor.distance.footer` | Laufschuhe verlieren nach ~600–800 km ihre Dämpfung. Bei Erreichen des Maximums warnt die App. | Running shoes lose cushioning after ~600–800 km. The app warns when you hit the max. | Koşu ayakkabıları ~600–800 km sonra yastıklamasını kaybeder. Maks. ulaşıldığında uygulama uyarır. |
 | `gear.editor.field.currentKm` | Bisherige km | Current km | Mevcut km |
 | `gear.editor.field.maxKm` | Max. km | Max km | Maks. km |
@@ -934,22 +1333,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `gear.editor.type.bike` | Fahrrad | Bike | Bisiklet |
 | `gear.editor.type.shoe` | Laufschuh | Shoe | Ayakkabı |
 | `gear.inactive` | INAKTIV | INACTIVE | PASİF |
+| `gear.list.add.action` | Ausrüstung hinzufügen | Add gear | Ekipman ekle |
 | `gear.list.empty.cta` | Ausrüstung anlegen | Add Gear | Ekipman Ekle |
 | `gear.list.empty.description` | Füge Laufschuhe oder Fahrräder hinzu, damit die App deine Kilometer automatisch trackt. | Add running shoes or bicycles so the app can track your distance automatically. | Koşu ayakkabıları veya bisikletler ekle, böylece uygulama mesafeni otomatik takip etsin. |
 | `gear.list.empty.title` | Noch keine Ausrüstung | No gear yet | Henüz ekipman yok |
 | `gear.list.footer` | Cardio-Trainings buchen ihre Distanz automatisch auf den im Finish-Sheet ausgewählten Schuh. | Cardio workouts log distance to the shoe selected in the finish sheet. | Kardiyo antrenmanları, bitiş sayfasında seçilen ayakkabıya mesafe ekler. |
-| `gear.list.title` | Ausrüstung | Gear | Ekipman |
+| `gear.list.title` | Ausrüstung & Schuhe | Gear & Shoes | Ekipman & Ayakkabı |
 | `gear.needsReplacement` | Schuh erneuern — Dämpfung erschöpft. | Replace shoe — cushioning depleted. | Ayakkabıyı değiştir — yastıklama tükendi. |
-
-## `goalType.*`  (5 Keys)
-
-| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
-|---|---|---|---|
-| `goalType.fatloss` | Fett verbrennen | Burn Fat | Yağ Yak |
-| `goalType.functional` | Funktionelle Fitness | Functional Fitness | Fonksiyonel Fitness |
-| `goalType.hybrid` | Athletisch werden | Become Athletic | Atletik Ol |
-| `goalType.hypertrophy` | Muskeln aufbauen | Build Muscle | Kas Yap |
-| `goalType.strength` | Maximalkraft | Maximum Strength | Maksimal Güç |
 
 ## `heroMetric.*`  (10 Keys)
 
@@ -966,10 +1356,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `heroMetric.weight.label` | Gewicht | Weight | Ağırlık |
 | `heroMetric.workoutsThisWeek.label` | Trainings diese Woche | Workouts this week | Bu haftaki antrenmanlar |
 
-## `history.*`  (3 Keys)
+## `history.*`  (4 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `history.early.badge` | VORZEITIG | EARLY | ERKEN |
 | `history.empty.description` | Beende dein erstes Training, um deine Historie zu sehen. | Finish your first workout to see your history. | Geçmişini görmek için ilk antrenmanını bitir. |
 | `history.empty.title` | Noch keine Trainings | No workouts yet | Henüz antrenman yok |
 | `history.session.fallback` | Training | Workout | Antrenman |
@@ -1003,25 +1394,24 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `import.preview.title` | Inhalt der Datei | File contents | Dosya içeriği |
 | `import.preview.unreadable` | Diese Datei konnte nicht gelesen werden — sie ist kein gültiges Deltiq-Backup. | This file could not be read — it isn't a valid Deltiq backup. | Bu dosya okunamadı — geçerli bir Deltiq yedeği değil. |
 
-## `library.*`  (5 Keys)
+## `library.*`  (6 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `library.newExercise` | Neue Übung | New exercise | Yeni hareket |
+| `library.noResults.description` | Keine Übung passt zu deiner Suche oder den gewählten Filtern. Versuche einen anderen Begriff oder setze die Filter zurück. | No exercise matches your search or the selected filters. Try a different term or reset the filters. | Aramanıza veya seçili filtrelere uyan bir egzersiz yok. Farklı bir terim deneyin veya filtreleri sıfırlayın. |
+| `library.noResults.title` | Keine Treffer | No matches | Eşleşme yok |
 | `library.readOnlyFooter` | System-Übung — die Basis-Vorlagen der App sind nicht bearbeitbar. | System exercise — the app's base templates can't be edited. | Sistem hareketi — uygulamanın temel şablonları düzenlenemez. |
 | `library.row.history` | Verlauf | History | Geçmiş |
 | `library.searchPlaceholder` | Übung suchen | Search exercise | Hareket ara |
 | `library.title` | Übungsbibliothek | Exercise Library | Hareket Kütüphanesi |
 
-## `measurement.*`  (80 Keys)
+## `measurement.*`  (79 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `measurement.action.delete` | Messung löschen | Delete Measurement | Ölçümü Sil |
 | `measurement.action.done` | Fertig | Done | Tamam |
-| `measurement.action.edit` | Bearbeiten | Edit | Düzenle |
-| `measurement.action.save` | Messung speichern | Save Measurement | Ölçümü Kaydet |
-| `measurement.action.saveEdit` | Änderungen speichern | Save Changes | Değişiklikleri Kaydet |
+| `measurement.context.last` | Letzte: %@ | Last: %@ | Son: %@ |
 | `measurement.derived.bmi` | BMI | BMI | BKİ |
 | `measurement.derived.bmr` | BMR | BMR | BMR |
 | `measurement.derived.deurenberg` | KFA Deurenberg | Body Fat (Deurenberg) | Yağ Oranı (Deurenberg) |
@@ -1039,11 +1429,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `measurement.field.chest` | Brust (cm) | Chest (cm) | Göğüs (cm) |
 | `measurement.field.hip` | Hüfte (cm) | Hip (cm) | Kalça (cm) |
 | `measurement.field.neck` | Halsumfang (cm) | Neck (cm) | Boyun (cm) |
+| `measurement.field.optional` | optional | optional | opsiyonel |
+| `measurement.field.required` | erforderlich | required | gerekli |
 | `measurement.field.shoulder.full` | Schulterumfang (cm) | Shoulder Circumference (cm) | Omuz Çevresi (cm) |
 | `measurement.field.shoulder.label` | Schulter (cm) | Shoulder (cm) | Omuz (cm) |
 | `measurement.field.thigh` | Oberschenkel (cm) | Thigh (cm) | Uyluk (cm) |
 | `measurement.field.waist` | Taille (cm) | Waist (cm) | Bel (cm) |
 | `measurement.field.weight` | Gewicht (kg) | Weight (kg) | Ağırlık (kg) |
+| `measurement.header.eyebrow` | MESSUNG | MEASUREMENT | ÖLÇÜM |
 | `measurement.healthkit.blocked` | Apple Health blockiert. Ändere die Berechtigung in den iOS-Einstellungen. | Apple Health is blocked. Change the permission in iOS Settings. | Apple Health engellendi. İzni iOS Ayarları'ndan değiştir. |
 | `measurement.healthkit.connect` | Apple Health verbinden | Connect Apple Health | Apple Health'e Bağlan |
 | `measurement.healthkit.connected` | Verbunden | Connected | Bağlı |
@@ -1088,15 +1481,13 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `measurement.section.history` | Verlauf | History | Geçmiş |
 | `measurement.section.profile` | Profil | Profile | Profil |
 | `measurement.section.ratios` | Körper-Proportion | Body Proportion | Vücut Oranı |
-| `measurement.title.detail` | Messung | Measurement | Ölçüm |
 | `measurement.title.edit` | Messung bearbeiten | Edit Measurement | Ölçümü Düzenle |
 | `measurement.title.new` | Neue Messung | New Measurement | Yeni Ölçüm |
 | `measurement.validation.field.hip` | Hüfte | Hip | Kalça |
 | `measurement.validation.field.neck` | Hals | Neck | Boyun |
 | `measurement.validation.field.waist` | Taille | Waist | Bel |
 | `measurement.validation.field.weight` | Gewicht | Weight | Ağırlık |
-| `measurement.validation.missing.many` | Pflichtfelder noch leer: %@. | Required fields missing: %@. | Zorunlu alanlar eksik: %@. |
-| `measurement.validation.missing.one` | Pflichtfeld noch leer: %@. | Required field missing: %@. | Zorunlu alan eksik: %@. |
+| `measurement.weightOnly.editHint` | Diese Messung wurde nur mit Gewicht erfasst. Umfänge sind hier optional. | This entry was logged with weight only. Circumferences are optional here. | Bu ölçüm yalnızca kiloyla kaydedildi. Çevre ölçüleri burada isteğe bağlıdır. |
 
 ## `metric.*`  (1 Keys)
 
@@ -1128,17 +1519,30 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (53 Keys)
+## `onboarding.*`  (95 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `onboarding.body.weightInitial` | Wird im Hintergrund als initiale Messung gespeichert. | Saved in the background as your initial measurement. | Arka planda ilk ölçüm olarak kaydedilir. |
 | `onboarding.body.weightRequired` | Pflichtfeld — wird als erste Messung gespeichert. | Required — saved as your first measurement. | Zorunlu — ilk ölçüm olarak kaydedilir. |
 | `onboarding.body.weightZero` | Gewicht muss > 0 sein. | Weight must be > 0. | Kilo > 0 olmalı. |
+| `onboarding.enduranceModality.subtitle` | Du hast ein Ausdauer- oder Kombi-Ziel gewählt — das klären wir jetzt einmal, unabhängig davon, ob du gleich einen Plan auswählst oder selbst baust. | You picked an endurance or combined goal — let's settle this once now, whether you pick a plan next or build your own. | Dayanıklılık veya karma bir hedef seçtin — şimdi bunu bir kez netleştirelim, sonra hazır bir plan seçsen de kendin oluştursan da fark etmez. |
+| `onboarding.enduranceModality.title` | Welche Ausdauerform? | Which endurance style? | Hangi dayanıklılık türü? |
 | `onboarding.environment.footnote1` | Trainingsort filtert Plan-Empfehlungen und die Equipment-Auswahl beim Übungs-Tausch. | Training location filters plan recommendations and equipment options when swapping exercises. | Antrenman yeri plan önerilerini ve hareket değiştirirken ekipman seçeneklerini filtreler. |
 | `onboarding.environment.footnote2` | Hybrid- oder reine Lauf-Athleten wählen ihren Strength-Ort — die Hybrid-Pläne enthalten ihre Run-Tage unabhängig davon. | Hybrid or pure running athletes pick their strength location — Hybrid plans include run days regardless. | Hibrit veya saf koşu sporcuları güç antrenman yerini seçer — Hibrit planlar koşu günlerini her durumda içerir. |
-| `onboarding.equipment.footer` | Du kannst diese Auswahl später jederzeit im Profil anpassen. Leer lassen = Standard-Variante (Langhantel) wird verwendet. | You can change this anytime in your profile. Leave empty = default variant (barbell) is used. | Bu seçimi profilden istediğin zaman değiştirebilirsin. Boş bırakırsan varsayılan (barbell) kullanılır. |
-| `onboarding.equipment.subtitle` | Bestimmt, welche Geräte-Variante dein Trainingsplan nutzt — z. B. Kurzhantel- statt Langhantel-Übungen, wenn du kein Rack hast. | Determines which equipment variant your training plan uses — e.g. dumbbell instead of barbell exercises if you have no rack. | Antrenman planının hangi ekipman varyantını kullanacağını belirler — örneğin rack yoksa halter yerine dambıl egzersizleri. |
+| `onboarding.equipment.footer` | Du kannst diese Auswahl später jederzeit im Profil anpassen. Dein Trainingsort allein legt dein Equipment nie automatisch fest. | You can adjust this anytime later in your profile. Your training location alone never automatically sets your equipment. | Bu seçimi istediğin zaman profilinden değiştirebilirsin. Antrenman yerin tek başına ekipmanını asla otomatik belirlemez. |
+| `onboarding.equipment.gym.adjustButton` | Ausstattung anpassen | Adjust equipment | Ekipmanı düzenle |
+| `onboarding.equipment.gym.confirmedTitle` | Ausstattung erfasst | Equipment recorded | Ekipman kaydedildi |
+| `onboarding.equipment.gym.editButton` | Ausstattung bearbeiten | Edit equipment | Ekipmanı düzenle |
+| `onboarding.equipment.gym.footer` | Die meisten Studios haben Langhantel, Kurzhanteln, Bank, Rack, Kabelzug und Maschinen. Weicht dein Studio davon ab, kannst du das hier anpassen. | Most gyms have a barbell, dumbbells, a bench, a rack, a cable station and machines. If your gym differs, you can adjust it here. | Çoğu spor salonunda halter, dambıl, bank, rack, kablo istasyonu ve makineler bulunur. Senin salonun farklıysa burada güncelleyebilirsin. |
+| `onboarding.equipment.gym.sheetTitle` | Deine Ausrüstung | Your equipment | Ekipmanın |
+| `onboarding.equipment.gym.subtitle` | Wir planen für ein übliches Fitnessstudio. Fehlende Geräte kannst du jederzeit anpassen. | We plan for a typical gym. You can adjust missing equipment anytime. | Standart bir spor salonu için planlıyoruz. Eksik ekipmanları istediğin zaman güncelleyebilirsin. |
+| `onboarding.equipment.gym.title` | Deine Ausrüstung im Studio | Your gym equipment | Spor salonu ekipmanın |
+| `onboarding.equipment.laterLink` | Später einrichten | Set up later | Daha sonra ayarla |
+| `onboarding.equipment.noEquipment.further` | Weitere Ausstattung | Further equipment | Diğer ekipmanlar |
+| `onboarding.equipment.noEquipment.subtitle` | Kurzhanteln, ein Kettlebell oder ein Widerstandsband zählen schon. | Dumbbells, a kettlebell, or a resistance band already count. | Dambıl, kettlebell veya direnç bandı bile yeterli. |
+| `onboarding.equipment.noEquipment.title` | Hast du kleine Trainingshilfen? | Do you have any small training aids? | Küçük antrenman yardımcıların var mı? |
+| `onboarding.equipment.subtitle` | Wähle alles aus, was du nutzen kannst — auch Zubehör wie Bank oder Klimmzugstange. Nicht Ausgewähltes bleibt offen, bis du unten bestätigst. | Pick everything you can use — including accessories like a bench or pull-up bar. Anything unselected stays open until you confirm below. | Kullanabileceğin her şeyi seç — bank veya barfiks demiri gibi aksesuarlar dahil. Seçilmeyenler, aşağıda onaylayana kadar açık kalır. |
 | `onboarding.equipment.title` | Womit trainierst du? | What do you train with? | Hangi ekipmanla çalışıyorsun? |
 | `onboarding.field.birthdate` | Geburtsdatum | Birth date | Doğum Tarihi |
 | `onboarding.field.environment` | Trainingsort | Training Location | Antrenman Yeri |
@@ -1159,6 +1563,24 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.health.pulled` | Daten übernommen — du kannst sie im nächsten Schritt prüfen. | Data imported — review in the next step. | Veriler alındı — bir sonraki adımda kontrol edebilirsin. |
 | `onboarding.health.title` | Apple Health verbinden | Connect Apple Health | Apple Health'i Bağla |
 | `onboarding.health.unavailable` | Apple Health ist auf diesem Gerät nicht verfügbar. | Apple Health is not available on this device. | Apple Health bu cihazda kullanılamıyor. |
+| `onboarding.history.longBreakAfterTraining.blurb` | Wir passen dein Tempo an deine Pause an. | We'll adjust your pace to your break. | Tempona arana göre ayarlarız. |
+| `onboarding.history.longBreakAfterTraining.label` | Ich habe schon trainiert, aber vor einer langen Pause | I've trained before, but after a long break | Daha önce antrenman yaptım ama uzun bir aradan sonra |
+| `onboarding.history.neverTrained.blurb` | Wir starten mit einem sanften Einstieg. | We'll start with a gentle introduction. | Yumuşak bir başlangıçla başlarız. |
+| `onboarding.history.neverTrained.label` | Ich habe noch nie regelmäßig trainiert | I've never trained regularly | Hiç düzenli antrenman yapmadım |
+| `onboarding.history.pauseLength.overOneYear` | Über 1 Jahr | Over 1 year | 1 yıldan fazla |
+| `onboarding.history.pauseLength.sixToTwelveWeeks` | 6–12 Wochen | 6–12 weeks | 6-12 hafta |
+| `onboarding.history.pauseLength.threeToTwelveMonths` | 3–12 Monate | 3–12 months | 3-12 ay |
+| `onboarding.history.pauseLength.title` | Wie lange ist deine aktuelle Pause? | How long has your current break been? | Mevcut aran ne kadar sürdü? |
+| `onboarding.history.priorExperience.oneToThreeYears` | 1–3 Jahre | 1–3 years | 1-3 yıl |
+| `onboarding.history.priorExperience.overThreeYears` | Über 3 Jahre | Over 3 years | 3 yıldan fazla |
+| `onboarding.history.priorExperience.title` | Seit wann trainierst du insgesamt? | How long have you been training overall? | Toplamda ne zamandır antrenman yapıyorsun? |
+| `onboarding.history.priorExperience.underOneYear` | Weniger als 1 Jahr | Less than 1 year | 1 yıldan az |
+| `onboarding.history.subtitle` | Das hilft uns, dein Tempo richtig einzuschätzen. | This helps us calibrate your pace correctly. | Bu, tempona doğru karar vermemize yardımcı olur. |
+| `onboarding.history.title` | Wie sieht deine Trainingsgeschichte aus? | What does your training history look like? | Antrenman geçmişin nasıl? |
+| `onboarding.history.trainingIrregularly.blurb` | Eine kurze Folgefrage hilft uns, dich richtig einzuordnen. | One quick follow-up question helps us place you correctly. | Kısa bir ek soru seni doğru sınıflandırmamıza yardımcı olur. |
+| `onboarding.history.trainingIrregularly.label` | Ich trainiere gerade unregelmäßig | I currently train irregularly | Şu anda düzensiz antrenman yapıyorum |
+| `onboarding.history.trainingRegularly.blurb` | Wir starten direkt mit deinem vollen Tempo. | We'll start right at your full pace. | Doğrudan tam tempoyla başlarız. |
+| `onboarding.history.trainingRegularly.label` | Ich trainiere regelmäßig (mind. 3 Monate, 2×/Woche) | I train regularly (3+ months, at least 2×/week) | Düzenli antrenman yapıyorum (en az 3 ay, haftada 2×) |
 | `onboarding.import.button` | Backup importieren (ZIP) | Import backup (ZIP) | Yedeği içe aktar (ZIP) |
 | `onboarding.import.prompt` | Schon Deltiq-Nutzer? Stelle deine Daten aus einer Backup-Datei wieder her. | Already a Deltiq user? Restore your data from a backup file. | Zaten Deltiq kullanıcısı mısın? Verilerini bir yedek dosyasından geri yükle. |
 | `onboarding.import.running` | Stelle deine Daten wieder her… | Restoring your data… | Verilerin geri yükleniyor… |
@@ -1168,14 +1590,25 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.notif.measurement` | Mess-Erinnerung | Measurement Reminder | Ölçüm Hatırlatıcısı |
 | `onboarding.notif.section` | Benachrichtigungen | Notifications | Bildirimler |
 | `onboarding.notif.water` | Wasser-Erinnerung | Water Reminder | Su Hatırlatıcısı |
-| `onboarding.plan.footnote` | Templates sind nach deinem Trainingsort gefiltert (%@). Auch ohne Plan starten ist okay. | Templates are filtered by your training location (%@). Starting without a plan is fine too. | Şablonlar antrenman yerine göre filtrelendi (%@). Plansız başlamak da mümkün. |
+| `onboarding.plan.alternatives` | Alternativen | Alternatives | Alternatifler |
+| `onboarding.plan.builderCard.footnote` | Ideal, wenn dir keines der Templates genau passt oder du volle Kontrolle willst. | Ideal if none of the templates quite fit, or if you want full control. | Şablonlardan hiçbiri tam uymuyorsa veya tam kontrol istiyorsan idealdir. |
+| `onboarding.plan.builderCard.subtitle` | Trainingsarten, Tage und Ausstattung frei kombinieren. | Freely combine training types, days, and equipment. | Antrenman türlerini, günleri ve ekipmanı özgürce birleştir. |
+| `onboarding.plan.builderCard.title` | Plan bauen | Build Plan | Plan Oluştur |
+| `onboarding.plan.builderSection` | Selbst bauen | Build Your Own | Kendin Oluştur |
+| `onboarding.plan.daysMatch` | Tage passend | Days match | Gün uyumlu |
+| `onboarding.plan.equipmentMatch` | Equipment passend | Equipment match | Ekipman uyumlu |
+| `onboarding.plan.fallbackRecommended` | Beste verfügbare Option | Best available option | Mevcut en iyi seçenek |
+| `onboarding.plan.fallbackRecommendedFootnote` | Mit deinen aktuellen Angaben gibt es keine perfekte Übereinstimmung — das ist die naheliegendste verfügbare Option. | There's no perfect match for your current answers — this is the closest available option. | Mevcut yanıtlarınla tam uyan bir seçenek yok — bu, mevcut en yakın seçenek. |
+| `onboarding.plan.firstWeek.title` | Deine erste Trainingswoche | Your first training week | İlk antrenman haftan |
 | `onboarding.plan.goalMatch` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |
-| `onboarding.plan.noTemplates` | Keine Templates für '%@'. Du kannst trotzdem ohne Plan starten und später einen eigenen anlegen. | No templates for '%@'. You can still start without a plan and create your own later. | '%@' için şablon yok. Plansız başlayıp sonradan kendi planını oluşturabilirsin. |
-| `onboarding.plan.quizCard.footnote` | Empfohlen, wenn du nicht weißt, welcher Plan zu dir passt. Du kannst stattdessen auch direkt aus der Liste unten wählen. | Recommended if you're not sure which plan fits. You can also pick directly from the list below. | Hangi planın sana uygun olduğundan emin değilsen önerilir. Aşağıdaki listeden de doğrudan seçebilirsin. |
-| `onboarding.plan.quizCard.subtitle` | 4 kurze Fragen — wir matchen dich auf den passenden Plan. | 4 quick questions — we match you to the right plan. | 4 kısa soru — sana uygun planı eşleştiririz. |
-| `onboarding.plan.quizCard.title` | Plan finden lassen | Find a Plan | Plan Bul |
+| `onboarding.plan.levelMatch` | Level passend | Level match | Seviye uyumlu |
+| `onboarding.plan.metadataLine` | %1$lld Tage · %2$@ | %1$lld days · %2$@ | %1$lld gün · %2$@ |
+| `onboarding.plan.morePlans` | Weitere Pläne | More plans | Diğer planlar |
+| `onboarding.plan.reason.days` | %lld Tage pro Woche | %lld days per week | Haftada %lld gün |
+| `onboarding.plan.reason.goal` | Passt zu deinem Ziel | Matches your goal | Hedefine uygun |
+| `onboarding.plan.reason.level` | Passt zu deinem Level | Matches your level | Seviyene uygun |
 | `onboarding.plan.recommended` | Empfohlen | Recommended | Önerilen |
-| `onboarding.plan.section` | Trainingsplan für %@ | Plans for %@ | %@ için Plan |
+| `onboarding.plan.recommendedFootnote` | Basierend auf deinen Angaben zu Ziel, Trainingsgeschichte, Ort und Equipment. | Based on your answers about goal, training history, location, and equipment. | Hedef, antrenman geçmişi, yer ve ekipman bilgilerine dayanır. |
 | `onboarding.section.body` | Körpermaße | Body Measurements | Vücut Ölçüleri |
 | `onboarding.section.goals` | Ziel & Training | Goals & Training | Hedef & Antrenman |
 | `onboarding.section.name` | Dein Name | Your Name | Adın |
@@ -1186,12 +1619,42 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.weeklyGoal.subtitle` | Wie oft willst du pro Woche trainieren? Dein Kalender-Streak zählt gegen dieses Ziel — wähle, was du wirklich durchhalten kannst. | How often do you want to train per week? Your calendar streak counts against this — pick what you can actually sustain. | Haftada kaç kez antrenman yapmak istiyorsun? Takvim serin bu hedefe göre sayılır — gerçekten sürdürebileceğini seç. |
 | `onboarding.weeklyGoal.title` | Dein Wochenziel | Your weekly goal | Haftalık hedefin |
 
-## `picker.*`  (13 Keys)
+## `periodicCheckIn.*`  (26 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `periodicCheckIn.answer.duration.justRight` | Passend | Just right | Tam uygun |
+| `periodicCheckIn.answer.duration.justRight.a11y` | Trainingsdauer: Passend | Duration: Just right | Antrenman süresi: Tam uygun |
+| `periodicCheckIn.answer.duration.tooLong` | Zu lang | Too long | Çok uzun |
+| `periodicCheckIn.answer.duration.tooShort` | Zu kurz | Too short | Çok kısa |
+| `periodicCheckIn.answer.exertion.appropriate` | Passend | Just right | Tam uygun |
+| `periodicCheckIn.answer.exertion.appropriate.a11y` | Belastung: Passend | Training load: Just right | Antrenman yükü: Tam uygun |
+| `periodicCheckIn.answer.exertion.tooEasy` | Zu leicht | Too easy | Çok hafif |
+| `periodicCheckIn.answer.exertion.tooHard` | Zu hart | Too hard | Çok zor |
+| `periodicCheckIn.answer.frequency.asPlanned` | Wie geplant | As planned | Planlandığı gibi |
+| `periodicCheckIn.answer.frequency.less` | Seltener | Less often | Daha az |
+| `periodicCheckIn.answer.frequency.more` | Öfter | More often | Daha sık |
+| `periodicCheckIn.answer.no` | Nein | No | Hayır |
+| `periodicCheckIn.answer.skip` | Keine Angabe | Skip | Belirtmek istemiyorum |
+| `periodicCheckIn.answer.yes` | Ja | Yes | Evet |
+| `periodicCheckIn.footer` | Jede Frage ist freiwillig – überspringe, was du nicht beantworten möchtest. | Every question is optional — skip anything you'd rather not answer. | Her soru isteğe bağlıdır — yanıtlamak istemediğini atlayabilirsin. |
+| `periodicCheckIn.header.eyebrow` | RÜCKBLICK | CHECK-IN | DEĞERLENDİRME |
+| `periodicCheckIn.lastSaved` | Zuletzt gespeichert am %@ | Last saved on %@ | %@ tarihinde kaydedildi |
+| `periodicCheckIn.question.complaints.label` | Hattest du Beschwerden oder Schmerzen? | Did you have any complaints or pain? | Herhangi bir rahatsızlık ya da ağrın oldu mu? |
+| `periodicCheckIn.question.complaints.notePlaceholder` | Was genau? (optional) | What exactly? (optional) | Ne tür? (isteğe bağlı) |
+| `periodicCheckIn.question.duration.label` | Wie fanden sich die Einheiten in der Länge an? | How did the sessions feel in terms of length? | Antrenman süreleri nasıldı? |
+| `periodicCheckIn.question.exertion.label` | Wie war die Belastung insgesamt in diesem Zeitraum? | How was the overall training load during this period? | Bu dönemde genel antrenman yükü nasıldı? |
+| `periodicCheckIn.question.frequency.label` | Wie oft konntest du trainieren? | How often were you able to train? | Ne sıklıkla antrenman yapabildin? |
+| `periodicCheckIn.question.goal.label` | Ist dein Ziel noch aktuell? | Is your goal still current? | Hedefin hâlâ geçerli mi? |
+| `periodicCheckIn.saved.confirmation` | Danke für dein Feedback! | Thanks for your feedback! | Geri bildirimin için teşekkürler! |
+| `periodicCheckIn.section.title` | WIE LIEF ES? | HOW DID IT GO? | NASIL GİTTİ? |
+| `periodicCheckIn.title` | Rückblick | Check-in | Değerlendirme |
+
+## `picker.*`  (23 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `picker.exercise.customBadge` | Custom | Custom | Özel |
-| `picker.exercise.filter.button.a11y` | Filter öffnen | Open filters | Filtreleri aç |
 | `picker.exercise.filter.reset` | Filter zurücksetzen | Reset filters | Filtreleri sıfırla |
 | `picker.exercise.filter.section.equipment` | Gerät | Equipment | Ekipman |
 | `picker.exercise.filter.section.muscle` | Muskelgruppe | Muscle Group | Kas Grubu |
@@ -1201,10 +1664,21 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `picker.exercise.namePlaceholder` | Name (z.B. Bankdrücken) | Name (e.g. Bench Press) | Ad (örn. Bench Press) |
 | `picker.exercise.section.customs` | Eigene | Custom | Özel |
 | `picker.plan.adoptFootnote` | Beim Übernehmen wird eine Tiefkopie für deine eigene Bibliothek angelegt — Tage, Übungen, Sätze sind danach frei editierbar. | Adopting creates a deep copy in your library — days, exercises, and sets are then freely editable. | Plan alındığında kütüphanende derin kopya oluşturulur — günler, hareketler ve setler özgürce düzenlenebilir. |
+| `picker.plan.equipment.adaptationAttemptedHint` | Eine automatische Anpassung wurde versucht, war aber nicht vollständig möglich. | An automatic adaptation was attempted but wasn't fully possible. | Otomatik bir uyarlama denendi ancak tam olarak mümkün olmadı. |
+| `picker.plan.equipment.adapted.showChanges` | Änderungen anzeigen | Show changes | Değişiklikleri göster |
+| `picker.plan.equipment.adapted.title` | An deine Ausrüstung angepasst | Adapted to your equipment | Ekipmanına göre uyarlandı |
+| `picker.plan.equipment.available.title` | Equipment passend bestätigt | Equipment confirmed to match | Ekipman uyumlu olarak onaylandı |
+| `picker.plan.equipment.gymAssumption.detail` | Du hast deine Ausrüstung noch nicht individuell eingerichtet — passe sie jederzeit in den Einstellungen an. | You haven't set up your own equipment yet — you can adjust it anytime in Settings. | Ekipmanını henüz kişiselleştirmedin — istediğin zaman Ayarlar'dan güncelleyebilirsin. |
+| `picker.plan.equipment.gymAssumption.title` | Für ein übliches Fitnessstudio geplant | Planned for a typical gym | Standart bir spor salonu için planlandı |
+| `picker.plan.equipment.missingItems` | Fehlt: %@ | Missing: %@ | Eksik: %@ |
+| `picker.plan.equipment.notAnnotatedHint` | Einzelne Übungen sind im Katalog noch nicht auf Geräte-Voraussetzungen geprüft. | A few exercises haven't been checked against equipment requirements yet. | Bazı egzersizler henüz ekipman gereksinimlerine göre kontrol edilmedi. |
+| `picker.plan.equipment.unavailable.title` | Passt nicht zu deiner Ausrüstung | Doesn't match your equipment | Ekipmanınla uyuşmuyor |
+| `picker.plan.equipment.uncertainItems` | Noch ungeklärt: %@ | Still unclear: %@ | Henüz belirsiz: %@ |
+| `picker.plan.equipment.unknown.title` | Ausrüstung noch nicht vollständig bestätigt | Equipment not fully confirmed yet | Ekipman henüz tam olarak onaylanmadı |
 | `picker.plan.filterFootnote` | Gefiltert nach deinem Trainingsort (%@). Im Profil anpassen, wenn du auch andere Pläne sehen willst. | Filtered by your training location (%@). Adjust in profile to see other plans. | Antrenman yerine göre filtrelendi (%@). Diğer planları görmek için profilden ayarla. |
 | `picker.plan.title` | Programm wählen | Choose Program | Program Seç |
 
-## `plan.*`  (106 Keys)
+## `plan.*`  (150 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1214,16 +1688,36 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.day.chest` | Brust | Chest | Göğüs |
 | `plan.day.chestBackA` | Brust & Rücken A | Chest & Back A | Göğüs & Sırt A |
 | `plan.day.chestBackB` | Brust & Rücken B | Chest & Back B | Göğüs & Sırt B |
+| `plan.day.cindyRx` | Cindy | Cindy | Cindy |
+| `plan.day.cindyScaled` | Cindy (Scaled) | Cindy (Scaled) | Cindy (Scaled) |
+| `plan.day.crossfitWeightedAmrap` | Grundlagen-AMRAP | Foundations AMRAP | Temel AMRAP |
+| `plan.day.crossfitWeightedEmom` | EMOM Ganzkörper | EMOM Full Body | EMOM Tüm Vücut |
+| `plan.day.crossfitWeightedForTime` | Auf Zeit: Thruster & Burpees | For Time: Thrusters & Burpees | Süreye Karşı: Thruster & Burpee |
 | `plan.day.deadliftDay` | Tag 3 – Kreuzhebe-Tag | Day 3 - Deadlift Day | Gün 3 - Deadlift Günü |
 | `plan.day.easyRun` | Easy Run | Easy Run | Kolay Koşu |
+| `plan.day.emomIntensityRx` | EMOM Intensität | EMOM Intensity | EMOM Yoğunluk |
+| `plan.day.emomIntensityScaled` | EMOM Intensität (Scaled) | EMOM Intensity (Scaled) | EMOM Yoğunluk (Scaled) |
 | `plan.day.fatBurnA` | Cut A | Cut A | Cut A |
 | `plan.day.fatBurnB` | Cut B | Cut B | Cut B |
 | `plan.day.fatBurnC` | Cut C | Cut C | Cut C |
+| `plan.day.forTimeSitupsSquatsRx` | Auf Zeit: Sit-ups & Squats | For Time: Sit-ups & Squats | Süreye Karşı: Mekik & Squat |
+| `plan.day.forTimeSitupsSquatsScaled` | Auf Zeit: Sit-ups & Squats (Scaled) | For Time: Sit-ups & Squats (Scaled) | Süreye Karşı: Mekik & Squat (Scaled) |
 | `plan.day.fullBodyA` | Ganzkörper A | Full Body A | Tüm Vücut A |
 | `plan.day.fullBodyB` | Ganzkörper B | Full Body B | Tüm Vücut B |
 | `plan.day.fullBodyC` | Ganzkörper C | Full Body C | Tüm Vücut C |
 | `plan.day.fullBodyHIIT` | Ganzkörper HIIT | Full Body HIIT | Tüm Vücut HIIT |
 | `plan.day.intervals` | Intervalle | Intervals | İnterval |
+| `plan.day.kbComplexEndurance` | Kraftausdauer | Muscular Endurance | Kas Dayanıklılığı |
+| `plan.day.kbComplexExplosive` | Explosivität | Explosiveness | Patlayıcılık |
+| `plan.day.kbComplexFullBody` | Ganzkörper-Komplex | Full-Body Complex | Tüm Vücut Kompleksi |
+| `plan.day.kbComplexSeatedControl` | Seated Control | Seated Control | Seated Control |
+| `plan.day.kbComplexShoulderCore` | Schulter & Core | Shoulder & Core | Omuz & Core |
+| `plan.day.kbFoundationsCircuit` | Grundlagen-Zirkel | Foundations Circuit | Temel Devre |
+| `plan.day.kbHeavyPullEmom` | Heavy Pull: EMOM Snatch | Heavy Pull: EMOM Snatch | Ağır Çekiş: EMOM Snatch |
+| `plan.day.kbHeavyPushSquat` | Heavy Push & Squat | Heavy Push & Squat | Ağır İtme & Squat |
+| `plan.day.kbMetcon` | Metabolic Conditioning | Metabolic Conditioning | Metabolik Kondisyon |
+| `plan.day.kbPushPullCore` | Push, Pull & Core | Push, Pull & Core | İtme, Çekme & Core |
+| `plan.day.kbSwingEndurance` | Schwung & Ausdauer | Swing & Endurance | Salınım & Dayanıklılık |
 | `plan.day.legs` | Beine | Legs | Bacak |
 | `plan.day.legsA` | Beine A | Legs A | Bacak A |
 | `plan.day.legsB` | Beine B | Legs B | Bacak B |
@@ -1262,7 +1756,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.arnoldSplit.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
 | `plan.template.arnoldSplit.name` | Arnold Split | Arnold Split | Arnold Split |
 | `plan.template.arnoldSplit.tagline` | 6 Tage · Bodybuilding | 6 Days · Bodybuilding | 6 Gün · Vücut Geliştirme |
-| `plan.template.bodyweightMastery.description` | Komplettes Körpergewichtstraining ohne ein einziges Gerät. Kürzere Pausen und isometrische Übungen sorgen für maximalen Trainingsreiz. | Complete bodyweight training without a single piece of equipment. Shorter rest periods and isometric exercises maximize training stimulus. | Tek bir ekipman olmadan komple vücut ağırlığı antrenmanı. Kısa molalar ve izometrik hareketler maksimum antrenman uyarısı sağlar. |
+| `plan.template.bodyweightMastery.description` | Komplettes Körpergewichtstraining – die meisten Übungen brauchen kein Gerät. Für Rudern nutzt du einen stabilen Türrahmen, für Dips idealerweise Barren oder zwei stabile Erhöhungen. | Complete bodyweight training — most exercises need no equipment. Rows use a sturdy door frame, and dips work best with parallel bars or two stable elevated surfaces. | Komple vücut ağırlığı antrenmanı — çoğu hareket ekipman gerektirmez. Row hareketi için sağlam bir kapı çerçevesi, dips için paralel barlar veya iki sağlam yükseltilmiş yüzey idealdir. |
 | `plan.template.bodyweightMastery.focus` | Funktionelle Fitness | Functional Fitness | Fonksiyonel Fitness |
 | `plan.template.bodyweightMastery.name` | Bodyweight Mastery | Bodyweight Mastery | Bodyweight Mastery |
 | `plan.template.bodyweightMastery.tagline` | 3 Tage · Funktionelles Training ohne Geräte | 3 Days · Functional Training, No Equipment | 3 Gün · Ekipmansız Fonksiyonel Antrenman |
@@ -1270,6 +1764,18 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.broSplit.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
 | `plan.template.broSplit.name` | Bro-Split | Bro-Split | Bro-Split |
 | `plan.template.broSplit.tagline` | 5 Tage · Hypertrophie | 5 Days · Hypertrophy | 5 Gün · Hipertrofi |
+| `plan.template.crossfitBodyweightRx.description` | Benchmark-WODs nur mit Körpergewicht: ein 20-Minuten-AMRAP, ein Intensitäts-EMOM und eine Auf-Zeit-Rundenleiter. Volle Rx-Bewegungen — Klimmzüge, Liegestütze, Air Squats. | Benchmark WODs using bodyweight only: a 20-minute AMRAP, an intensity EMOM, and a for-time round ladder. Full Rx movements — pull-ups, push-ups, air squats. | Sadece vücut ağırlığıyla ölçüt WOD'ları: 20 dakikalık bir AMRAP, bir yoğunluk EMOM'u ve süreye karşı bir tur merdiveni. Tam Rx hareketleri — barfiks, şınav, hava squat. |
+| `plan.template.crossfitBodyweightRx.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.crossfitBodyweightRx.name` | CrossFit Bodyweight (Rx) | CrossFit Bodyweight (Rx) | CrossFit Bodyweight (Rx) |
+| `plan.template.crossfitBodyweightRx.tagline` | 3 Tage · Klassische Bodyweight-WODs | 3 days · Classic bodyweight WODs | 3 gün · Klasik vücut ağırlığı WOD'ları |
+| `plan.template.crossfitBodyweightScaled.description` | Dieselben Benchmark-WODs wie Rx, mit Einsteiger-Bewegungen: Handtuch-Rudern statt Klimmzüge, Liegestütze auf den Knien und eine kürzere Rundenleiter. | The same benchmark WODs as Rx, with beginner-friendly movements: towel rows instead of pull-ups, knee push-ups, and a shorter round ladder. | Rx ile aynı ölçüt WOD'ları, başlangıç seviyesi hareketlerle: barfiks yerine havlu çekişi, dizde şınav ve daha kısa bir tur merdiveni. |
+| `plan.template.crossfitBodyweightScaled.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.crossfitBodyweightScaled.name` | CrossFit Bodyweight (Scaled) | CrossFit Bodyweight (Scaled) | CrossFit Bodyweight (Scaled) |
+| `plan.template.crossfitBodyweightScaled.tagline` | 3 Tage · Bodyweight-WODs, Einsteiger-Varianten | 3 days · Bodyweight WODs, beginner variations | 3 gün · Vücut ağırlığı WOD'ları, başlangıç seviyesi varyasyonlar |
+| `plan.template.crossfitWeighted.description` | Metcon-Workouts mit Zusatzgewicht statt reinem Körpergewicht — die Schwierigkeit steuerst du über das Gewicht, nicht über die Bewegung. Für Einsteiger und Fortgeschrittene. | Metcon workouts with added weight instead of pure bodyweight — you control the difficulty through the load, not the movement. For beginners and advanced athletes alike. | Salt vücut ağırlığı yerine ek yüklü metcon antrenmanları — zorluğu hareketle değil ağırlıkla ayarlarsın. Hem başlangıç hem ileri seviye için. |
+| `plan.template.crossfitWeighted.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.crossfitWeighted.name` | CrossFit mit Gewichten | CrossFit with Weights | Ağırlıklarla CrossFit |
+| `plan.template.crossfitWeighted.tagline` | 3 Tage · Funktionelle WODs mit Kurzhantel/Kettlebell | 3 days · Functional WODs with dumbbell/kettlebell | 3 gün · Dambıl/kettlebell ile fonksiyonel WOD'lar |
 | `plan.template.fatBurnFullBody.description` | Fettverlust kommt aus dem Kaloriendefizit — dieser Plan schützt Muskel und Kraft im Cut: solides Hypertrophie-Volumen bei moderaten Lasten plus ein Cardio-Finisher pro Einheit. Reps und Pausen folgen Standard-Hypertrophie (6–12 bzw. 8–15, 60–180 s Pause), kein 'hohe Wdh = Fett weg'-Mythos. | Fat loss comes from the calorie deficit — this plan preserves muscle and strength during the cut: solid hypertrophy volume at moderate loads plus a cardio finisher per session. Reps and rest follow standard hypertrophy (6–12 or 8–15, 60–180 s rest); no 'high reps melt fat' myth. | Yağ kaybı kalori açığından gelir — bu plan diyet sırasında kası ve kuvveti korur: orta yüklerde sağlam hipertrofi hacmi artı her seansta bir kardiyo finisher. Tekrar ve dinlenme standart hipertrofiye uyar (6–12 ya da 8–15, 60–180 sn dinlenme); 'yüksek tekrar = yağ erir' miti yok. |
 | `plan.template.fatBurnFullBody.focus` | Defizit-Phase | Cut Phase | Cut Fazı |
 | `plan.template.fatBurnFullBody.name` | Cut-Phase Ganzkörper | Cut Phase Full Body | Cut Fazı – Tüm Vücut |
@@ -1278,11 +1784,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.footballAthletic.focus` | Athletik | Athletics | Atletik |
 | `plan.template.footballAthletic.name` | Fussball Athletik | Football Athletic | Futbol Atletik |
 | `plan.template.footballAthletic.tagline` | 2 Tage · Kraft & Explosivität | 2 Days · Strength & Explosiveness | 2 Gün · Güç & Patlayıcılık |
-| `plan.template.fullBody3x.description` | Höchste Trainingsfrequenz pro Muskelgruppe. Laut Forschung optimal für Anfänger und Wiedereinstieg — maximales Signal für Muskelwachstum. | Highest training frequency per muscle group. Research-backed as optimal for beginners and re-entry — maximum signal for muscle growth. | Kas grubu başına en yüksek antrenman frekansı. Araştırmalar başlangıç ve yeniden başlama için ideal olduğunu gösteriyor — kas gelişimi için maksimum sinyal. |
+| `plan.template.fullBody3x.description` | Hohe Trainingsfrequenz pro Muskelgruppe — ein bewährter Ansatz für den Einstieg. Enthält freie Kniebeuge, Kreuzheben und Schulterdrücken: plane in den ersten Wochen Zeit für die Technik ein. | High training frequency per muscle group — a well-established approach for getting started. Includes free-weight squats, deadlifts, and overhead presses: budget time for technique in the first few weeks. | Kas grubu başına yüksek antrenman frekansı — başlangıç için köklü bir yaklaşım. Serbest ağırlıkla squat, deadlift ve omuz press içerir: ilk haftalarda tekniğe zaman ayır. |
 | `plan.template.fullBody3x.focus` | Anfänger / Allgemein | Beginner / General | Başlangıç / Genel |
 | `plan.template.fullBody3x.name` | Ganzkörper 3x | Full Body 3x | Tüm Vücut 3x |
 | `plan.template.fullBody3x.tagline` | 3 Tage · Anfänger & Re-Einstieg | 3 Days · Beginner & Re-Entry | 3 Gün · Başlangıç & Yeniden Başlama |
-| `plan.template.homeGymHero.description` | Effektiver Ganzkörperplan komplett mit Kurzhanteln. Ideal für das Training zuhause — kein Fitnessstudio nötig. | Effective full-body plan using only dumbbells. Ideal for training at home — no gym required. | Sadece dambıllarla etkili tüm vücut planı. Evde antrenman için ideal — salon gerekmez. |
+| `plan.template.homeGymHero.description` | Effektiver Ganzkörperplan mit Kurzhanteln. Für einige Übungen ist zusätzlich eine Flach-/Schrägbank hilfreich — sonst reicht das Training zuhause ohne Fitnessstudio. | Effective full-body plan using dumbbells. A flat/incline bench is helpful for a few exercises — otherwise this works at home without a gym. | Dambıllarla etkili tüm vücut planı. Birkaç hareket için düz/eğimli bir bank faydalı olur — aksi halde salon olmadan evde çalışır. |
 | `plan.template.homeGymHero.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
 | `plan.template.homeGymHero.name` | Home Gym Hero | Home Gym Hero | Home Gym Hero |
 | `plan.template.homeGymHero.tagline` | 3 Tage · Muskelaufbau mit Kurzhanteln | 3 Days · Muscle Building with Dumbbells | 3 Gün · Dambıl ile Kas Gelişimi |
@@ -1298,27 +1804,133 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.hybridPerformance.focus` | Hybrid & Athletik | Hybrid & Athletics | Hibrit & Atletik |
 | `plan.template.hybridPerformance.name` | Hybrid Athlete — Performance | Hybrid Athlete — Performance | Hybrid Athlete — Performance |
 | `plan.template.hybridPerformance.tagline` | 6 Tage · Wettkampf-Hybrid | 6 Days · Competitive Hybrid | 6 Gün · Rekabetçi Hibrit |
+| `plan.template.kettlebellAdvanced.description` | Komplexe Kettlebell-Lifts (Snatch, Clean & Press) für erfahrene Trainierende, ergänzt von einem 20-Minuten-Metcon. Plane zwischen den Einheiten einen Tag aktiver Erholung ein. | Complex kettlebell lifts (snatch, clean & press) for experienced athletes, rounded off with a 20-minute metcon. Plan a day of active recovery between sessions. | Deneyimli sporcular için karmaşık kettlebell hareketleri (snatch, clean & press), 20 dakikalık bir metconla tamamlanır. Seanslar arasında bir aktif toparlanma günü planla. |
+| `plan.template.kettlebellAdvanced.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.kettlebellAdvanced.name` | Kettlebell Fortgeschritten | Kettlebell Advanced | İleri Seviye Kettlebell |
+| `plan.template.kettlebellAdvanced.tagline` | 3 Trainingstage · Maximalkraft, Explosivität, Metcon | 3 training days · Maximal strength, explosiveness, metcon | 3 antrenman günü · Maksimal kuvvet, patlayıcılık, metcon |
+| `plan.template.kettlebellBeginner.description` | Einstieg ins Kettlebell-Training: saubere Grundtechnik bei Deadlift, Goblet Squat und Swing, ergänzt von einem AMRAP-Finisher zum Rundenaufbau. | Your entry into kettlebell training: clean technique on deadlifts, goblet squats and swings, rounded off with an AMRAP finisher to build round count. | Kettlebell antrenmanına giriş: deadlift, goblet squat ve swing'de temiz teknik, tur sayısı oluşturmak için bir AMRAP bitiricisiyle tamamlanır. |
+| `plan.template.kettlebellBeginner.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.kettlebellBeginner.name` | Kettlebell Grundlagen | Kettlebell Fundamentals | Kettlebell Temelleri |
+| `plan.template.kettlebellBeginner.tagline` | 3 Tage · Technik, Kraftausdauer, Stabilität | 3 days · Technique, strength endurance, stability | 3 gün · Teknik, kuvvet dayanıklılığı, stabilite |
+| `plan.template.kettlebellComplexes.description` | Fünf eigenständige Kettlebell-Komplexe für Ganzkörper-Athletik - von rundenbasierten Ganzkörper- und Explosivitäts-Komplexen bis zu einem AMRAP-Finisher für die Körpermitte. Moderates Gewicht wählen, saubere Technik vor Tempo. | Five standalone kettlebell complexes for full-body athleticism - from round-based full-body and explosive complexes to an AMRAP finisher for your core. Choose a moderate weight, clean technique before speed. | Tüm vücut atletizmi için beş bağımsız kettlebell kompleksi - tur bazlı tüm vücut ve patlayıcı kompleksten karın bölgesi için bir AMRAP bitirişine kadar. Orta ağırlık seç, hız yerine temiz teknik. |
+| `plan.template.kettlebellComplexes.focus` | CrossFit & Kettlebell | CrossFit & Kettlebell | CrossFit & Kettlebell |
+| `plan.template.kettlebellComplexes.name` | Kettlebell Komplexe | Kettlebell Complexes | Kettlebell Kompleksleri |
+| `plan.template.kettlebellComplexes.tagline` | 5 Tage · Ganzkörper-Komplexe für Athletik & Kraftausdauer | 5 days · Full-body complexes for athleticism & muscular endurance | 5 gün · Atletizm ve kas dayanıklılığı için tüm vücut kompleksleri |
 | `plan.template.powerlifting3x5.description` | Dreier-Frequenz auf die Grundübungen Kniebeuge, Bankdrücken und Kreuzheben. Jede Session dreht sich um eine primäre Wettkampfübung mit schweren 3x5-Sätzen. | Triple frequency on the core lifts: squat, bench press, and deadlift. Each session focuses on one primary competition lift with heavy 3x5 sets. | Temel hareketler (squat, bench press, deadlift) için üçlü frekans. Her seans ağır 3x5 setleriyle bir ana yarışma hareketine odaklanır. |
 | `plan.template.powerlifting3x5.focus` | Kraft | Strength | Güç |
 | `plan.template.powerlifting3x5.name` | Powerlifting 3x5 | Powerlifting 3x5 | Powerlifting 3x5 |
 | `plan.template.powerlifting3x5.tagline` | 3 Tage · Maximalkraft | 3 Days · Maximum Strength | 3 Gün · Maksimal Güç |
-| `plan.template.powerlifting5x5.description` | Das bewährteste Kraft-Programm für Anfänger & Fortgeschrittene. Progressive Überlastung mit den Grundübungen — wissenschaftlich und praktisch belegt. | The most proven strength program for beginners and intermediates. Progressive overload with the main lifts — scientifically and practically validated. | Başlangıç ve orta seviye için en kanıtlanmış güç programı. Temel hareketlerle aşamalı yüklenme — bilimsel ve pratik olarak doğrulanmış. |
+| `plan.template.powerlifting5x5.description` | Einfaches, lineares Kraftprogramm mit den Grundübungen. Progressive Überlastung macht Fortschritt leicht nachvollziehbar — ein klassischer Einstieg ins Krafttraining. | A simple, linear strength program built on the main lifts. Progressive overload makes progress easy to track — a classic starting point for strength training. | Temel hareketlere dayanan basit, doğrusal bir güç programı. Aşamalı yüklenme ilerlemeyi takip etmeyi kolaylaştırır — güç antrenmanına klasik bir başlangıç. |
 | `plan.template.powerlifting5x5.focus` | Kraft | Strength | Güç |
 | `plan.template.powerlifting5x5.name` | Powerlifting 5x5 | Powerlifting 5x5 | Powerlifting 5x5 |
 | `plan.template.powerlifting5x5.tagline` | 3 Tage · Kraft & Masse | 3 Days · Strength & Mass | 3 Gün · Güç & Kütle |
-| `plan.template.pushPullLegs.description` | Wissenschaftlich optimierter Split. Jede Muskelgruppe wird 2x pro Woche trainiert – ideal für intermediäre Sportler laut Meta-Analysen. | Scientifically optimized split. Each muscle group trained 2x per week — ideal for intermediate lifters per meta-analyses. | Bilimsel olarak optimize edilmiş split. Her kas grubu haftada 2 kez çalıştırılır — meta-analizlere göre orta seviye sporcular için ideal. |
+| `plan.template.pushPullLegs.description` | Klassischer 6-Tage-Split: jede Muskelgruppe wird 2x pro Woche trainiert. Hohes Wochenvolumen — für Fortgeschrittene mit vorhandener Trainingsbasis gedacht. | Classic 6-day split: each muscle group trained twice a week. High weekly volume — built for advanced lifters with an existing training base. | Klasik 6 günlük split: her kas grubu haftada 2 kez çalıştırılır. Yüksek haftalık hacim — mevcut antrenman temeli olan ileri seviye sporcular için tasarlandı. |
 | `plan.template.pushPullLegs.focus` | Hypertrophie | Hypertrophy | Hipertrofi |
 | `plan.template.pushPullLegs.name` | Push-Pull-Legs | Push-Pull-Legs | Push-Pull-Legs |
 | `plan.template.pushPullLegs.tagline` | 6 Tage · Hypertrophie + Kraft | 6 Days · Hypertrophy + Strength | 6 Gün · Hipertrofi + Güç |
-| `plan.template.upperLower.description` | Optimale Balance zwischen Frequenz und Volumen. Laut Studienlage der effektivste Split für Kraft- und Muskelaufbau bei Intermediären. | Optimal balance between frequency and volume. Studies show this is the most effective split for strength and muscle building at the intermediate level. | Frekans ve hacim arasında optimal denge. Çalışmalar bunun orta seviyede güç ve kas gelişimi için en etkili split olduğunu gösteriyor. |
+| `plan.template.upperLower.description` | Balance aus Frequenz und Volumen: Kraft- und Aufbau-Tage wechseln sich ab. Ein bewährter Split für Fortgeschrittene mit vorhandener Technik in den Grundübungen. | A balance of frequency and volume: strength and volume days alternate. A well-established split for intermediate/advanced lifters with existing technique in the main lifts. | Frekans ve hacim dengesi: güç ve hacim günleri birbirini izler. Temel hareketlerde tekniğe sahip orta/ileri seviye sporcular için köklü bir split. |
 | `plan.template.upperLower.focus` | Kraft + Hypertrophie | Strength + Hypertrophy | Güç + Hipertrofi |
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planEditor.*`  (26 Keys)
+## `planBuilder.*`  (88 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `planBuilder.context.equipmentSummary.adjustForThisPlan` | Für diesen Plan anpassen | Adjust for this plan | Bu plan için ayarla |
+| `planBuilder.context.equipmentSummary.bodyweightOnly` | Nur Körpergewicht | Bodyweight only | Sadece vücut ağırlığı |
+| `planBuilder.context.equipmentSummary.title` | Ausstattung | Equipment | Ekipman |
+| `planBuilder.context.subtitle` | Sag uns, wie viel Zeit und Struktur in deine Woche passt. | Tell us how much time and structure fits into your week. | Haftana ne kadar zaman ve düzen sığdığını bize söyle. |
+| `planBuilder.context.title` | Dein Alltag | Your everyday life | Günlük hayatın |
+| `planBuilder.day.runEasy` | Ruhiger Lauf | Easy Run | Kolay Koşu |
+| `planBuilder.day.runInterval` | Intervalle | Intervals | İnterval |
+| `planBuilder.day.runTempo` | Tempolauf | Tempo Run | Tempo Koşusu |
+| `planBuilder.equipment.subtitle` | Welche Ausrüstung steht dir zur Verfügung? | What equipment do you have available? | Hangi ekipmana erişimin var? |
+| `planBuilder.equipment.title` | Ausrüstung | Equipment | Ekipman |
+| `planBuilder.error.createdButUnresolved.message` | Dein Plan wurde gespeichert, konnte aber nicht sofort geöffnet werden. Du findest ihn im Plan-Tab. | Your plan was saved, but couldn't be opened right away. You'll find it in the Plan tab. | Planın kaydedildi, ancak hemen açılamadı. Plan sekmesinde bulabilirsin. |
+| `planBuilder.error.createdButUnresolved.title` | Plan wurde erstellt | Plan Was Created | Plan Oluşturuldu |
+| `planBuilder.error.noProfile.message` | Der Plan konnte nicht erstellt werden, weil kein Nutzerprofil gefunden wurde. Bitte starte die App neu oder wende dich an den Support, falls das Problem bestehen bleibt. | The plan couldn't be created because no user profile was found. Please restart the app, or contact support if the problem persists. | Kullanıcı profili bulunamadığı için plan oluşturulamadı. Lütfen uygulamayı yeniden başlat; sorun devam ederse destek ile iletişime geç. |
+| `planBuilder.error.noProfile.title` | Kein Profil gefunden | No Profile Found | Profil Bulunamadı |
+| `planBuilder.error.saveFailed.message` | Beim Speichern ist ein Fehler aufgetreten. Es wurde nichts geändert — bitte versuche es erneut. | Something went wrong while saving. Nothing was changed — please try again. | Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene. |
+| `planBuilder.error.saveFailed.title` | Plan konnte nicht gespeichert werden | Plan Couldn't Be Saved | Plan Kaydedilemedi |
+| `planBuilder.goal.endurance.blurb` | Deine Ausdauer durch Laufen oder Radfahren verbessern. | Improve your aerobic fitness through running or cycling. | Koşu veya bisikletle aerobik kondisyonunu geliştir. |
+| `planBuilder.goal.endurance.title` | Laufen & Ausdauer | Running & Endurance | Koşu ve Dayanıklılık |
+| `planBuilder.goal.enduranceModality` | Ausdauerform | Endurance type | Dayanıklılık türü |
+| `planBuilder.goal.generalFitness.blurb` | Alltagstaugliche Bewegungsmuster und Mobilität — kein einzelner Fokus. | Everyday movement patterns and mobility — no single focus. | Günlük hareket örüntüleri ve mobilite — tek bir odak yok. |
+| `planBuilder.goal.generalFitness.title` | Allgemeine Fitness | General Fitness | Genel Fitness |
+| `planBuilder.goal.hybrid.blurb` | Kraft und Ausdauer gemeinsam in einem Plan trainieren. | Train strength and endurance together in one plan. | Güç ve dayanıklılığı tek bir planda birlikte çalış. |
+| `planBuilder.goal.hybrid.title` | Kraft & Ausdauer kombinieren | Strength & Endurance Combined | Güç ve Dayanıklılığı Birleştir |
+| `planBuilder.goal.runCoach.question` | Wie möchtest du dein Lauftraining gestalten? | How do you want to structure your running? | Koşu antrenmanını nasıl yapılandırmak istiyorsun? |
+| `planBuilder.goal.runCoach.withCoach.blurb` | Laufeinheiten erscheinen in deinem Plan, zusätzlich werden unterstützte Coaching-Funktionen aktiviert. | Running sessions appear in your plan, plus supported coaching features. | Koşu seansları planında yer alır, ayrıca desteklenen koçluk özellikleri etkinleşir. |
+| `planBuilder.goal.runCoach.withCoach.title` | Mit Laufcoach auf ein Ziel hinarbeiten | Work toward a goal with a run coach | Koşu koçuyla bir hedefe çalış |
+| `planBuilder.goal.runCoach.withoutCoach.blurb` | Laufeinheiten erscheinen in deinem Plan, ohne zusätzlichen Laufcoach. | Running sessions appear in your plan, without an additional run coach. | Koşu seansları planında yer alır, ek bir koşu koçu olmadan. |
+| `planBuilder.goal.runCoach.withoutCoach.title` | Laufen in meine Woche einplanen | Schedule running in my week | Koşuyu haftama ekle |
+| `planBuilder.goal.strengthFocus.hypertrophy` | Muskelaufbau | Muscle growth | Kas gelişimi |
+| `planBuilder.goal.strengthFocus.strength` | Maximalkraft | Maximum strength | Maksimum güç |
+| `planBuilder.goal.strengthHypertrophy.blurb` | Muskeln aufbauen oder stärker werden mit strukturiertem Krafttraining. | Build muscle or get stronger with structured strength training. | Yapılandırılmış güç antrenmanıyla kas yap veya daha güçlü ol. |
+| `planBuilder.goal.strengthHypertrophy.title` | Kraft & Muskelaufbau | Strength & Muscle | Güç ve Kas |
+| `planBuilder.goal.subtitle` | Wähle, worauf es dir gerade am meisten ankommt — alles Weitere baut darauf auf. | Choose what matters most to you right now — everything else builds on this. | Şu anda senin için en önemli olanı seç — geri kalan her şey buna dayanır. |
+| `planBuilder.goal.title` | Was ist dein Ziel? | What's your goal? | Hedefin nedir? |
+| `planBuilder.load.easy` | Locker | Easy | Hafif |
+| `planBuilder.load.hard` | Schwer | Hard | Ağır |
+| `planBuilder.load.medium` | Mittel | Medium | Orta |
+| `planBuilder.load.tough` | Hart | Tough | Zor |
+| `planBuilder.nav.next` | Weiter | Next | İleri |
+| `planBuilder.result.adopt` | Plan übernehmen | Adopt Plan | Planı Onayla |
+| `planBuilder.result.alternatives` | Alternativen anzeigen | Show alternatives | Alternatifleri göster |
+| `planBuilder.result.alternatives.title` | Alternative für diesen Tag wählen | Choose an alternative for this day | Bu gün için bir alternatif seç |
+| `planBuilder.result.dayActions` | Tagesoptionen | Day options | Gün seçenekleri |
+| `planBuilder.result.distributionConflict` | Nicht genug Tage für alle gewählten Sportarten: %d Tage nötig, %d verfügbar. Geh zurück, um die Tage zu ändern oder eine andere Ziel-/Sportartenauswahl zu treffen. | Not enough days for all chosen sports: %d days needed, %d available. Go back to change the days, or your goal and sport selection. | Seçilen tüm sporlar için yeterli gün yok: %d gün gerekli, %d gün mevcut. Geri dönüp günleri veya hedef/spor seçimini değiştirebilirsin. |
+| `planBuilder.result.empty.message` | Für diese Kombination aus Ausrüstung und Erfahrung gibt es keine passenden Übungen in der Bibliothek. Wähle andere Optionen. | No matching exercises exist in the library for this combination of equipment and experience. Choose different options. | Bu ekipman ve deneyim kombinasyonu için kütüphanede uygun egzersiz yok. Farklı seçenekler dene. |
+| `planBuilder.result.empty.title` | Keine Übungen gefunden | No Exercises Found | Egzersiz Bulunamadı |
+| `planBuilder.result.explanation.spread` | Die Reihenfolge verteilt harte und leichte Einheiten über die Woche, statt sie zu häufen. | The order spreads hard and light sessions across the week instead of clustering them. | Sıralama, zor ve hafif antrenmanları haftaya yayar, art arda toplamaz. |
+| `planBuilder.result.fixContent.lock` | Inhalt fixieren | Lock content | İçeriği sabitle |
+| `planBuilder.result.fixContent.unlock` | Inhalt-Fixierung lösen | Unlock content | İçerik sabitlemesini kaldır |
+| `planBuilder.result.fixPosition.lock` | Position fixieren | Lock position | Pozisyonu sabitle |
+| `planBuilder.result.fixPosition.unlock` | Positions-Fixierung lösen | Unlock position | Pozisyon sabitlemesini kaldır |
+| `planBuilder.result.fixed.content.badge` | Inhalt fixiert | Content locked | İçerik sabit |
+| `planBuilder.result.fixed.position.badge` | Position fixiert | Position locked | Pozisyon sabit |
+| `planBuilder.result.freshProposal.action` | Neuen Vorschlag erstellen | Create a new proposal | Yeni bir öneri oluştur |
+| `planBuilder.result.freshProposal.confirm.action` | Neu erstellen | Create New | Yeniden Oluştur |
+| `planBuilder.result.freshProposal.confirm.message` | Das ersetzt die gesamte Woche – auch fixierte und manuell geänderte Tage gehen dabei verloren. | This replaces the whole week — pinned and manually changed days will be lost too. | Bu, tüm haftayı değiştirir – sabitlenmiş ve elle değiştirilmiş günler de kaybolur. |
+| `planBuilder.result.freshProposal.confirm.title` | Neuen Vorschlag erstellen? | Create a new proposal? | Yeni bir öneri oluşturulsun mu? |
+| `planBuilder.result.loadLevel.unrated` | Nicht bewertet | Not rated | Değerlendirilmedi |
+| `planBuilder.result.moveTo` | Verschieben nach… | Move to… | Taşı… |
+| `planBuilder.result.moveTo.position` | Position %lld | Position %lld | Pozisyon %lld |
+| `planBuilder.result.noAlternatives.toast` | Für diesen Tag gibt es keine Alternative. | No alternative is available for this day. | Bu gün için alternatif yok. |
+| `planBuilder.result.redistribute.action` | Woche anders verteilen | Redistribute the week | Haftayı farklı dağıt |
+| `planBuilder.result.redistribute.unavailable.toast` | Keine andere Verteilung möglich. | No other distribution is possible. | Başka bir dağıtım mümkün değil. |
+| `planBuilder.result.reorderRejected.toast` | Verschieben nicht möglich: ein fixierter Tag würde seine Position verlieren. | Can't move this day: a pinned day would lose its position. | Taşınamadı: sabitlenmiş bir gün yerini kaybederdi. |
+| `planBuilder.result.retryResolve` | Erneut versuchen | Try Again | Tekrar Dene |
+| `planBuilder.result.weeklyTotal` | %@ pro Woche | %@ per week | Haftada %@ |
+| `planBuilder.rhythm.fixedWeekdays` | Feste Wochentage | Fixed Weekdays | Sabit Günler |
+| `planBuilder.rhythm.orderOnly` | Nur Reihenfolge | Order Only | Sadece Sıralama |
+| `planBuilder.rhythm.subtitle` | Feste Wochentage oder einfach nur die Reihenfolge festlegen. | Fixed weekdays, or just set the order. | Sabit haftanın günleri mi, yoksa sadece sıralama mı? |
+| `planBuilder.rhythm.title` | Rhythmus | Rhythm | Ritim |
+| `planBuilder.title` | Plan bauen | Build Plan | Plan Oluştur |
+| `planBuilder.type.barbell` | Langhantel | Barbell | Halter |
+| `planBuilder.type.bodyweight` | Körpergewicht | Bodyweight | Vücut Ağırlığı |
+| `planBuilder.type.cycling` | Radfahren | Cycling | Bisiklet |
+| `planBuilder.type.dumbbell` | Kurzhantel | Dumbbell | Dambıl |
+| `planBuilder.type.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
+| `planBuilder.type.running` | Laufen | Running | Koşu |
+| `planBuilder.types.more` | Weitere Trainingsarten | More Training Types | Diğer Antrenman Türleri |
+| `planBuilder.types.subtitle` | Wähle eine oder mehrere Trainingsarten. Für jede legst du Tage, Dauer und Erfahrung fest. | Choose one or more training types. For each, set days, duration, and experience. | Bir veya daha fazla antrenman türü seç. Her biri için gün, süre ve deneyim belirle. |
+| `planBuilder.types.title` | Trainingsarten | Training Types | Antrenman Türleri |
+| `planBuilder.wizard.daysPerWeek.one` | %lld Tag pro Woche | %lld day per week | Haftada %lld gün |
+| `planBuilder.wizard.daysPerWeek.other` | %lld Tage pro Woche | %lld days per week | Haftada %lld gün |
+| `planBuilder.wizard.exerciseCount.one` | %lld Übung | %lld exercise | %lld egzersiz |
+| `planBuilder.wizard.exerciseCount.other` | %lld Übungen | %lld exercises | %lld egzersiz |
+| `planBuilder.wizard.experience` | Erfahrung | Experience | Deneyim |
+| `planBuilder.wizard.minutesValue` | %lld Min. | %lld min | %lld dk |
+| `planBuilder.wizard.unitsCount.one` | %lld Einheit | %lld unit | %lld birim |
+| `planBuilder.wizard.unitsCount.other` | %lld Einheiten | %lld units | %lld birim |
+
+## `planEditor.*`  (34 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `planEditor.day.delete.saveFailed` | Löschen konnte nicht gespeichert werden. Bitte erneut versuchen. | Couldn't save the deletion. Please try again. | Silme işlemi kaydedilemedi. Lütfen tekrar deneyin. |
 | `planEditor.days.add.training` | Trainingstag | Training Day | Antrenman Günü |
 | `planEditor.days.empty.template` | Template hat keine Trainings-Tage konfiguriert (sollte nicht passieren). | Template has no training days configured (shouldn't happen). | Şablonun antrenman günleri yok (olmamalı). |
 | `planEditor.days.empty.user` | Noch keine Trainings-Tage. Tippe '+' oben rechts um deinen ersten Tag anzulegen. | No training days yet. Tap '+' top-right to add your first day. | Henüz antrenman günü yok. İlk gününü eklemek için sağ üstteki '+' simgesine dokun. |
@@ -1335,10 +1947,17 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.globalSync.title` | Auch andere Pläne anpassen? | Adjust Other Plans Too? | Diğer Planlar da Ayarlansın mı? |
 | `planEditor.progressRIR.auto` | Auto (pro Übung) | Auto (per exercise) | Otomatik (hareket başına) |
 | `planEditor.progressRIR.label` | Progressions-Ziel-RIR | Progression Target RIR | İlerleme Hedef RIR |
-| `planEditor.progressRIR.rir0` | RIR ≤ 0 (zum Versagen) | RIR ≤ 0 (to failure) | RIR ≤ 0 (yenilgiye) |
-| `planEditor.progressRIR.rir1` | RIR ≤ 1 | RIR ≤ 1 | RIR ≤ 1 |
-| `planEditor.progressRIR.rir2` | RIR ≤ 2 | RIR ≤ 2 | RIR ≤ 2 |
-| `planEditor.progressRIR.rir3` | RIR ≤ 3 | RIR ≤ 3 | RIR ≤ 3 |
+| `planEditor.progressRIR.rir0` | RIR ≥ 0 (auch bis zum Versagen) | RIR ≥ 0 (even to failure) | RIR ≥ 0 (yetmezlik dahil) |
+| `planEditor.progressRIR.rir1` | RIR ≥ 1 | RIR ≥ 1 | RIR ≥ 1 |
+| `planEditor.progressRIR.rir2` | RIR ≥ 2 | RIR ≥ 2 | RIR ≥ 2 |
+| `planEditor.progressRIR.rir3` | RIR ≥ 3 | RIR ≥ 3 | RIR ≥ 3 |
+| `planEditor.recalculate.action` | Neu rechnen | Recalculate | Yeniden Hesapla |
+| `planEditor.recalculate.toast.failed` | Neu rechnen fehlgeschlagen — keine Änderung vorgenommen. Bitte später erneut versuchen. | Recalculate failed — no changes made. Please try again later. | Yeniden hesaplama başarısız oldu — hiçbir değişiklik yapılmadı. Lütfen daha sonra tekrar deneyin. |
+| `planEditor.recalculate.toast.none` | Keine unveränderten Tage zum Neu-Rechnen gefunden | No unchanged days found to recalculate | Yeniden hesaplanacak değişmemiş gün bulunamadı |
+| `planEditor.recalculate.toast.rewritten.one` | %lld Tag neu berechnet | %lld day recalculated | %lld gün yeniden hesaplandı |
+| `planEditor.recalculate.toast.rewritten.other` | %lld Tage neu berechnet | %lld days recalculated | %lld gün yeniden hesaplandı |
+| `planEditor.recalculate.toast.skipped.one` | %lld Tag wegen bestehender Trainingshistorie übersprungen | %lld day skipped due to existing workout history | %lld gün mevcut antrenman geçmişi nedeniyle atlandı |
+| `planEditor.recalculate.toast.skipped.other` | %lld Tage wegen bestehender Trainingshistorie übersprungen | %lld days skipped due to existing workout history | %lld gün mevcut antrenman geçmişi nedeniyle atlandı |
 | `planEditor.section.info` | Plan-Info | Plan Info | Plan Bilgisi |
 | `planEditor.section.settings` | Einstellungen | Settings | Ayarlar |
 | `planEditor.section.trainingDays` | Trainings-Tage | Training Days | Antrenman Günleri |
@@ -1346,7 +1965,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.template.banner.title` | Template-Plan | Template Plan | Şablon Plan |
 | `planEditor.toggle.setActive` | Als aktiven Plan setzen | Set as Active Plan | Aktif Plan Olarak Ayarla |
 
-## `plans.*`  (14 Keys)
+## `plans.*`  (26 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1355,40 +1974,106 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plans.active.startedAt` | Gestartet %@ | Started %@ | %@ başladı |
 | `plans.active.title` | Laufendes Training | Active Workout | Aktif Antrenman |
 | `plans.activeBadge` | Aktiv | Active | Aktif |
+| `plans.cardioFeasibility.acceptSuggestion` | Vorschlag annehmen | Accept suggestion | Öneriyi kabul et |
+| `plans.cardioFeasibility.adjustPlan` | Plan anpassen | Adjust plan | Planı düzenle |
+| `plans.cardioFeasibility.apply` | Plan übernehmen | Adopt plan | Planı benimse |
+| `plans.cardioFeasibility.feasibleTitle` | Dein Lauf-Ziel ist machbar | Your running goal is achievable | Koşu hedefin ulaşılabilir |
+| `plans.cardioFeasibility.infeasibleTitle` | Dein Lauf-Ziel wird eng | Your running goal is getting tight | Koşu hedefin zorlaşıyor |
+| `plans.cardioFeasibility.keepGoal` | Ziel behalten | Keep goal | Hedefi koru |
+| `plans.cardioFeasibility.retryResolve` | Erneut versuchen | Try Again | Tekrar Dene |
+| `plans.context.count.one` | %lld Plan | %lld plan | %lld plan |
+| `plans.context.count.other` | %lld Pläne | %lld plans | %lld plan |
 | `plans.create.empty` | Leerer Plan | Empty Plan | Boş Plan |
 | `plans.create.emptyShort` | Leer | Empty | Boş |
+| `plans.create.fromBuilder` | Plan bauen | Build Plan | Plan Oluştur |
 | `plans.create.fromTemplate` | Aus Template anlegen | From Template | Şablondan Oluştur |
 | `plans.create.fromTemplateShort` | Aus Template | From Template | Şablondan |
+| `plans.delete.blockedActiveSession` | Dieser Plan hat eine laufende Trainingseinheit. Bitte zuerst beenden, dann den Plan löschen. | This plan has a workout in progress. Finish it first, then delete the plan. | Bu planda devam eden bir antrenman var. Önce onu bitirin, sonra planı silin. |
+| `plans.delete.error.title` | Plan konnte nicht gelöscht werden | Plan Couldn't Be Deleted | Plan Silinemedi |
 | `plans.duplicate` | Duplizieren | Duplicate | Çoğalt |
 | `plans.empty.hint` | Lege deinen ersten Trainings-Plan an — Tage, Übungen, Sätze. Der Plan ist die Grundlage für jede Session. | Create your first training plan — days, exercises, sets. The plan is the foundation of every session. | İlk antrenman planını oluştur — günler, hareketler, setler. Plan, her oturumun temelidir. |
 | `plans.empty.title` | Noch kein Plan | No plans yet | Henüz plan yok |
 | `plans.list.title` | Pläne | Plans | Planlar |
 | `plans.new` | Neuer Plan | New Plan | Yeni Plan |
 
-## `pr.*`  (9 Keys)
+## `pr.*`  (11 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `pr.kind.bestSet` | Neuer Bestsatz (Volumen) | New best set (volume) | Yeni en iyi set (hacim) |
 | `pr.kind.estimated1RM` | Neuer 1RM (geschätzt) | New 1RM (estimated) | Yeni 1TM (tahmini) |
 | `pr.kind.fastestPace` | Neue Best-Pace | New best pace | Yeni en iyi tempo |
+| `pr.kind.fastestTime` | Neue WOD-Bestzeit | New WOD best time | Yeni WOD en iyi süresi |
 | `pr.kind.heaviestWeight` | Neues Maximalgewicht | New max weight | Yeni maksimum ağırlık |
 | `pr.kind.longestDistance` | Längste Distanz | Longest distance | En uzun mesafe |
 | `pr.kind.maxHoldSeconds` | Neue Bestzeit | New best time | Yeni en iyi süre |
 | `pr.kind.maxReps` | Neuer Reps-Rekord | New reps record | Yeni tekrar rekoru |
+| `pr.kind.mostRounds` | Neue Bestrunde | New round record | Yeni tur rekoru |
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (30 Keys)
+## `profile.*`  (97 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `profile.body.footerOk` | Alle Berechnungen lesen Höhe metrisch aus dieser Quelle. | All calculations read height metrically from this source. | Tüm hesaplamalar boyu metrik olarak bu kaynaktan okur. |
 | `profile.body.heightPlaceholder` | z.B. 180 | e.g. 180 | örn. 180 |
-| `profile.body.plausible` | Plausibel: %1$lld–%2$lld cm. | Plausible: %1$lld–%2$lld cm. | Makul: %1$lld–%2$lld cm. |
+| `profile.bodyData.goalWeight.label.lbs` | Zielgewicht (lbs, optional) | Goal Weight (lbs, optional) | Hedef Kilo (lbs, opsiyonel) |
+| `profile.bodyData.summary.footer` | Größe, aktuelles Gewicht und Zielgewicht an einem Ort. | Height, current weight and goal weight in one place. | Boy, güncel kilo ve hedef kilo tek yerde. |
+| `profile.bodyData.title` | Körperdaten | Body data | Vücut verileri |
+| `profile.bodyData.weight.footer` | Gewicht lässt sich hier ohne Umfänge speichern. Für Körperfett- und FFMI-Werte nutze die vollständige Messung. | You can log weight here without circumferences. For body-fat and FFMI values, use the full measurement. | Burada çevre ölçüsü olmadan kilo kaydedebilirsin. Vücut yağı ve FFMI değerleri için tam ölçümü kullan. |
+| `profile.bodyData.weight.fullMeasurement` | Vollständige Messung hinzufügen | Add full measurement | Tam ölçüm ekle |
+| `profile.bodyData.weight.header` | Gewicht | Weight | Kilo |
+| `profile.bodyData.weight.label` | Aktuelles Gewicht (kg) | Current weight (kg) | Güncel kilo (kg) |
+| `profile.bodyData.weight.label.lbs` | Aktuelles Gewicht (lbs) | Current weight (lbs) | Güncel kilo (lbs) |
+| `profile.bodyData.weight.lastEntry` | Zuletzt erfasst: %@ | Last recorded: %@ | Son kayıt: %@ |
+| `profile.bodyData.weight.noEntry` | Noch keine Gewichtsmessung erfasst. | No weight entry recorded yet. | Henüz kilo kaydı yok. |
+| `profile.bodyData.weight.placeholderEmpty` | Gewicht eingeben | Enter weight | Kilo gir |
+| `profile.cardio.adjustment.after` | Vorschlag | Suggested | Öneri |
+| `profile.cardio.adjustment.applied` | Anpassung übernommen | Adjustment applied | Uyarlama uygulandı |
+| `profile.cardio.adjustment.applyError.title` | Anpassung konnte nicht übernommen werden | Could not apply adjustment | Uyarlama uygulanamadı |
+| `profile.cardio.adjustment.applyToCurrentPlan` | Aktuellen Plan anpassen | Adjust current plan | Mevcut planı uyarla |
+| `profile.cardio.adjustment.before` | Bisher | Current | Mevcut |
+| `profile.cardio.adjustment.createNewPlan` | Als neuen Plan erstellen | Create new plan | Yeni plan olarak oluştur |
+| `profile.cardio.adjustment.keep` | Beibehalten | Keep as is | Olduğu gibi bırak |
+| `profile.cardio.adjustment.noEligibleDay` | Deine Laufeinheiten wurden manuell geändert und bleiben unangetastet. Erstelle stattdessen einen neuen Plan, wenn der Coach sie anpassen soll. | Your running days were changed manually and are kept as they are. Create a new plan instead if you want the coach to adjust them. | Koşu günlerin manuel olarak değiştirildi ve olduğu gibi kalıyor. Koçun bunları uyarlamasını istiyorsan bunun yerine yeni bir plan oluştur. |
+| `profile.cardio.adjustment.pending` | Coach aktiviert, Plan noch nicht angepasst | Coach activated, plan not yet adjusted | Koç etkinleştirildi, plan henüz uyarlanmadı |
+| `profile.cardio.adjustment.title` | Plan anpassen | Adjust plan | Planı uyarla |
+| `profile.cardio.coachOff.confirm` | Laufcoach ausschalten | Turn off running coach | Koşu koçunu kapat |
+| `profile.cardio.coachOff.message` | Deine Laufeinheiten und Trainingsdaten bleiben erhalten. Neue laufcoachbezogene Vorschläge und automatische Zielanpassungen werden deaktiviert. | Your running sessions and training data stay as they are. New coaching suggestions and automatic goal adjustments are turned off. | Koşu antrenmanların ve antrenman verilerin olduğu gibi kalır. Yeni koçluk önerileri ve otomatik hedef uyarlamaları kapatılır. |
+| `profile.cardio.coachOff.title` | Laufcoach ausschalten? | Turn off running coach? | Koşu koçu kapatılsın mı? |
+| `profile.cardio.enable` | Lauf-Coaching aktivieren | Enable running coaching | Koşu koçluğunu etkinleştir |
+| `profile.cardio.feasibility.acceptSuggestion` | Vorschlag annehmen | Accept suggestion | Öneriyi kabul et |
+| `profile.cardio.feasibility.adjustPlan` | Plan anpassen | Adjust plan | Planı düzenle |
+| `profile.cardio.feasibility.apply` | Plan übernehmen | Adopt plan | Planı benimse |
+| `profile.cardio.feasibility.feasibleHeadline` | Dein Ziel ist machbar | Your goal is achievable | Hedefin ulaşılabilir |
+| `profile.cardio.feasibility.infeasibleHeadline` | Das wird eng | This is going to be tight | Bu biraz zor olacak |
+| `profile.cardio.feasibility.keepGoal` | Ziel behalten | Keep goal | Hedefi koru |
+| `profile.cardio.feasibility.retryResolve` | Erneut versuchen | Try Again | Tekrar Dene |
+| `profile.cardio.fiveKReference` | Aktuelle 5-km-Zeit | Current 5K time | Güncel 5 km süresi |
+| `profile.cardio.footer` | Aktiviere Lauf-Coaching, um Cardio-spezifische Hinweise zu erhalten (z.B. bei zu schnell gesteigertem Laufvolumen). Deine 5-km-Zeit hilft, sinnvolle Trainings-Paces abzuleiten. | Enable running coaching to get cardio-specific insights (e.g. when your running volume ramps up too fast). Your 5K time helps derive sensible training paces. | Kardiyoya özel bilgiler almak için (örn. koşu hacmin çok hızlı artarsa) koşu koçluğunu etkinleştir. 5 km süren, anlamlı antrenman temposu türetmemize yardımcı olur. |
+| `profile.cardio.goal` | Lauf-Ziel | Running goal | Koşu hedefi |
+| `profile.cardio.maxHeartRate` | Maximalpuls (bpm) | Max heart rate (bpm) | Maksimum nabız (bpm) |
+| `profile.cardio.maxHeartRatePlaceholder` | z.B. 185 | e.g. 185 | örn. 185 |
+| `profile.cardio.paceZones` | Locker ~%1$@ · Tempo ~%2$@ | Easy ~%1$@ · Tempo ~%2$@ | Rahat ~%1$@ · Tempo ~%2$@ |
+| `profile.cardio.raceDateToggle` | Renn-Datum festlegen | Set race date | Yarış tarihi belirle |
+| `profile.cardio.raceDateValue` | Datum | Date | Tarih |
+| `profile.cardio.retroSync.apply` | Als Basis übernehmen | Use as baseline | Temel olarak kullan |
+| `profile.cardio.retroSync.button` | Aus Trainingsverlauf berechnen | Calculate from training history | Antrenman geçmişinden hesapla |
+| `profile.cardio.retroSync.discard` | Verwerfen | Discard | Vazgeç |
+| `profile.cardio.retroSync.empty` | Noch keine geloggten Läufe in den letzten 60 Tagen gefunden. Trage die Werte unten manuell ein, oder logge ein paar Läufe und versuche es erneut. | No logged runs found in the last 60 days. Enter the values below manually, or log a few runs and try again. | Son 60 günde kayıtlı koşu bulunamadı. Aşağıdaki değerleri elle gir veya birkaç koşu kaydettikten sonra tekrar dene. |
+| `profile.cardio.retroSync.messageBoth` | Wochenvolumen: ca. %1$@ km · Beste Pace: %2$@ | Weekly volume: approx. %1$@ km · Best pace: %2$@ | Haftalık hacim: yaklaşık %1$@ km · En iyi tempo: %2$@ |
+| `profile.cardio.retroSync.messagePaceOnly` | Beste Pace: %1$@. Noch kein Wochenvolumen der letzten 4 Wochen gefunden. | Best pace: %1$@. No weekly volume found for the last 4 weeks yet. | En iyi tempo: %1$@. Son 4 haftaya ait haftalık hacim henüz bulunamadı. |
+| `profile.cardio.retroSync.messageVolumeOnly` | Wochenvolumen: ca. %1$@ km. Noch keine Referenzpace gefunden (mind. 3 km, 5 Min). | Weekly volume: approx. %1$@ km. No reference pace found yet (min. 3 km, 5 min). | Haftalık hacim: yaklaşık %1$@ km. Henüz referans tempo bulunamadı (en az 3 km, 5 dk). |
+| `profile.cardio.retroSync.title` | Retro-Sync | Retro-Sync | Geriye Dönük Senkron |
+| `profile.cardio.weeklyVolume` | Start-Laufvolumen (km/Woche) | Starting volume (km/week) | Başlangıç hacmi (km/hafta) |
+| `profile.cardio.weeklyVolumePlaceholder` | z.B. 20 | e.g. 20 | örn. 20 |
+| `profile.cardioGoal.summary.off` | Lauf-Coaching aus | Running coaching off | Koşu koçluğu kapalı |
+| `profile.coaching.enduranceModality` | Ausdauerform | Endurance type | Dayanıklılık türü |
 | `profile.coaching.footer` | Steuert Tonfall und Inhalt der Coaching-Insights auf dem Dashboard. Lässt sich jederzeit ändern. | Drives tone and content of coaching insights on the dashboard. Changeable any time. | Paneldeki koçluk öngörülerinin tonunu ve içeriğini yönlendirir. Her zaman değiştirilebilir. |
 | `profile.coaching.goal` | Trainingsziel | Training Goal | Antrenman Hedefi |
+| `profile.coaching.runCoach.unavailableHint` | Der Laufcoach ist nur bei Laufen oder Beides verfügbar — nicht bei reinem Radfahren. | The run coach is only available for Running or Both — not for Cycling alone. | Koşu koçu yalnızca Koşu veya İkisi de seçiliyken kullanılabilir, yalnızca bisiklette değil. |
 | `profile.coaching.tone` | Coaching-Stil | Coaching Style | Koçluk Tarzı |
+| `profile.editor.title` | Profil bearbeiten | Edit Profile | Profili Düzenle |
 | `profile.envRestore.adjustNew` | Nein, neu anpassen | No, Re-Adjust | Hayır, Yeniden Uyarla |
 | `profile.envRestore.confirm` | Ja, wiederherstellen | Yes, Restore | Evet, Geri Yükle |
 | `profile.envRestore.message` | Wir haben Original-Übungen aus einem früheren Equipment-Wechsel gespeichert. Möchtest du diese in deinen Plänen wiederherstellen (inkl. der letzten Arbeitsgewichte)? | We saved original exercises from a previous equipment change. Restore them in your plans (with the last working weights)? | Önceki bir ekipman değişikliğinden orijinal hareketleri kaydettik. Bunları planlarına geri yüklemek ister misin (son çalışma ağırlıklarıyla)? |
@@ -1397,19 +2082,34 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.envSwap.keep` | Nein, so lassen | No, Keep As-Is | Hayır, Olduğu Gibi Bırak |
 | `profile.envSwap.message` | Du hast deinen Trainingsort auf %@ geändert. Sollen deine bestehenden Trainingspläne automatisch an das dort verfügbare Equipment angepasst werden? | You changed your training location to %@. Should existing plans be auto-adjusted to the equipment available there? | Antrenman yerini %@ olarak değiştirdin. Mevcut planlar oradaki ekipmana otomatik uyarlanmalı mı? |
 | `profile.envSwap.title` | Trainingsort geändert | Training Location Changed | Antrenman Yeri Değişti |
-| `profile.equipment.footer` | Wähle aus, was du zur Verfügung hast. Pläne mit mehreren Implement-Varianten (z.B. Hybrid) bekommen automatisch die passende Übungsauswahl. Leer = Standard-Variante (Langhantel). | Pick what you have available. Plans with multiple implement variants (e.g. Hybrid) automatically get the matching exercise lineup. Empty = default variant (barbell). | Sahip olduğun ekipmanı seç. Birden çok ekipman varyantı olan planlar (örn. Hybrid) otomatik olarak uygun hareket listesini alır. Boş = varsayılan (barbell). |
+| `profile.equipment.footer` | Wähle aus, was du zur Verfügung hast. Nicht Ausgewähltes gilt als unbekannt, bis du bestätigst — dein Trainingsort legt dein Equipment nie automatisch fest. | Pick what you have available. Anything unselected counts as unknown until you confirm — your training location never automatically sets your equipment. | Elindeki ekipmanı seç. Seçilmeyenler onaylayana kadar bilinmiyor sayılır — antrenman yerin ekipmanını asla otomatik belirlemez. |
 | `profile.equipment.header` | Equipment-Präferenzen | Equipment preferences | Ekipman tercihleri |
+| `profile.equipment.status.bodyweightOnly` | Nur Körpergewicht | Bodyweight only | Sadece vücut ağırlığı |
+| `profile.equipment.status.confirmed` | Bestätigt | Confirmed | Onaylandı |
+| `profile.equipment.status.gymAssumption` | Für ein übliches Fitnessstudio geplant | Planned for a typical gym | Standart bir spor salonu için planlandı |
+| `profile.equipment.status.inProgress` | Teilweise erfasst | Partially filled in | Kısmen girildi |
+| `profile.equipment.status.notSet` | Nicht eingerichtet | Not set up | Ayarlanmadı |
+| `profile.equipmentSwap.message` | Du hast dein Equipment aktualisiert. Sollen bestehende Trainingspläne wo möglich automatisch an die neue Ausstattung angepasst werden? | You updated your equipment. Should existing plans be auto-adjusted to the new setup where possible? | Ekipmanını güncelledin. Mevcut antrenman planları mümkün olduğunda yeni donanıma göre otomatik uyarlansın mı? |
+| `profile.equipmentSwap.title` | Equipment geändert | Equipment Changed | Ekipman değişti |
 | `profile.goal.footer` | Das Zielgewicht erscheint als grüne Linie im Dashboard-Trend-Chart. Trainingsort filtert später Plan-Empfehlungen. | Goal weight shows as a green line in the dashboard trend chart. Training location filters plan recommendations. | Hedef kilo, panel trend grafiğinde yeşil çizgi olarak görünür. Antrenman yeri plan önerilerini filtreler. |
 | `profile.goal.weightPlaceholder` | z.B. 75 | e.g. 75 | örn. 75 |
 | `profile.health.denied` | Berechtigung verweigert. Aktiviere sie in iOS-Einstellungen → Datenschutz → Apple Health → Deltiq. | Permission denied. Enable it in iOS Settings → Privacy → Apple Health → Deltiq. | İzin reddedildi. iOS Ayarlar → Gizlilik → Apple Health → Deltiq'ten etkinleştir. |
-| `profile.health.footer` | Pre-fill von Geburtsdatum, Geschlecht und Größe aus dem Apple-Health-Profil. Manuelle Eingaben werden NICHT überschrieben, wenn sie schon plausible Werte haben. | Pre-fills date of birth, sex, and height from Apple Health. Manual entries are NOT overwritten if they already have plausible values. | Apple Health profilinden doğum tarihi, cinsiyet ve boyu önceden doldurur. Manuel girişler makul değer içeriyorsa ÜZERİNE YAZILMAZ. |
+| `profile.health.footer` | Übernimmt Geburtsdatum, Geschlecht und Größe aus dem Apple-Health-Profil und ersetzt damit die aktuellen Werte. | Takes date of birth, sex, and height from your Apple Health profile and replaces the current values. | Doğum tarihi, cinsiyet ve boyu Apple Health profilinden alır ve mevcut değerlerin yerine geçirir. |
 | `profile.health.pull` | Aus Apple Health übernehmen | Import from Apple Health | Apple Health'ten Al |
+| `profile.health.pullConfirm.apply` | Übernehmen | Import | Al |
+| `profile.health.pullConfirm.fieldBirthdate` | Geburtsdatum: %@ | Date of birth: %@ | Doğum tarihi: %@ |
+| `profile.health.pullConfirm.fieldHeight` | Größe: %@ cm | Height: %@ cm | Boy: %@ cm |
+| `profile.health.pullConfirm.fieldSex` | Geschlecht: %@ | Sex: %@ | Cinsiyet: %@ |
+| `profile.health.pullConfirm.nothingFound` | Apple Health hat keine passenden Werte geliefert. | Apple Health didn't provide any usable values. | Apple Health kullanılabilir bir değer vermedi. |
+| `profile.health.pullConfirm.title` | Werte aus Apple Health übernehmen? | Import values from Apple Health? | Apple Health'ten değerler alınsın mı? |
 | `profile.health.pulled` | Aus Apple Health übernommen: %@ | Imported from Apple Health: %@ | Apple Health'ten alındı: %@ |
-| `profile.person.footer` | Sex steuert die Navy/Deurenberg-Formeln; das Alter geht in Mifflin-St-Jeor-BMR und Deurenberg ein. | Sex drives the Navy/Deurenberg formulas; age feeds into Mifflin-St-Jeor BMR and Deurenberg. | Cinsiyet Navy/Deurenberg formüllerini etkiler; yaş Mifflin-St-Jeor BMR ve Deurenberg'e dahil olur. |
+| `profile.person.footer` | Sex steuert die Navy/Deurenberg-Formeln; das Alter geht in Mifflin-St-Jeor-BMR und Deurenberg ein. Eine Änderung wirkt nur auf künftige Messungen — bereits gespeicherte Körperfett-/FFMI-Werte werden nicht neu berechnet. | Sex drives the Navy/Deurenberg formulas; age feeds into Mifflin-St-Jeor BMR and Deurenberg. A change only affects future measurements — already saved body-fat/FFMI values are not recalculated. | Cinsiyet Navy/Deurenberg formüllerini etkiler; yaş Mifflin-St-Jeor BMR ve Deurenberg'e dahil olur. Bir değişiklik yalnızca gelecekteki ölçümleri etkiler — zaten kaydedilmiş vücut yağı/FFMI değerleri yeniden hesaplanmaz. |
 | `profile.section.body` | Körpermasse | Body Metrics | Vücut Ölçüleri |
+| `profile.section.cardio` | Cardio- & Lauf-Ziele | Cardio & Running Goals | Kardiyo ve Koşu Hedefleri |
 | `profile.section.coach` | Coach | Coach | Koç |
 | `profile.section.health` | Apple Health | Apple Health | Apple Health |
 | `profile.section.person` | Person | Person | Kişi |
+| `profile.trainingLocation.title` | Trainingsort & Ausstattung | Training location & equipment | Antrenman yeri & ekipman |
 | `profile.weeklyGoal.footer` | Dein Kalender-Streak zählt nur Wochen, die dieses Ziel erfüllen. Wähle, was du wirklich durchhalten kannst — ein gehaltener Streak schlägt ein verfehltes Ziel. | Your calendar streak only counts weeks that meet this goal. Pick what you can actually sustain — a streak you keep beats a goal you don't. | Takvim serin yalnızca bu hedefi karşılayan haftaları sayar. Gerçekten sürdürebileceğini seç — tutulan bir seri, kaçırılan bir hedeften iyidir. |
 | `profile.weeklyGoal.header` | Wochenziel | Weekly goal | Haftalık hedef |
 | `profile.weeklyGoal.label` | Workouts pro Woche | Workouts per week | Haftalık antrenman |
@@ -1421,28 +2121,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `progression.detail.newTargetFormat` | Neues Ziel: %@ kg | New target: %@ kg | Yeni hedef: %@ kg |
 | `progression.headline.deload` | Lass uns kurz zurückrudern | Let's pull back briefly | Biraz geri çekilelim |
 | `progression.headline.increase` | 🎯 Ziel erreicht — nächstes Mal mehr | 🎯 Goal hit — more next time | 🎯 Hedefe ulaşıldı — bir dahaki sefer daha fazla |
-
-## `quiz.*`  (17 Keys)
-
-| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
-|---|---|---|---|
-| `quiz.days.option` | %lld Tage | %lld days | %lld gün |
-| `quiz.days.subtitle` | Sei realistisch — lieber 3 Tage konsistent als 6 geplant und nur 2 gemacht. | Be realistic — 3 consistent days beat 6 planned and only 2 done. | Gerçekçi ol — tutarlı 3 gün, planlanmış 6 ama yalnızca 2 yapılandan iyidir. |
-| `quiz.days.title` | Wie oft möchtest du pro Woche trainieren? | How often do you want to train per week? | Haftada ne sıklıkla antrenman yapmak istersin? |
-| `quiz.environment.gym` | Fitnessstudio | Gym | Salon |
-| `quiz.environment.homeGym` | Home-Gym (Kurzhanteln) | Home Gym (Dumbbells) | Ev Salonu (Dambıllar) |
-| `quiz.environment.noEquipment` | Überall (ohne Geräte) | Anywhere (no equipment) | Her yer (ekipmansız) |
-| `quiz.environment.subtitle` | Wir filtern Programme, die zu deinem Equipment passen. | We filter programs to match your equipment. | Programları ekipmanına göre filtreleriz. |
-| `quiz.environment.title` | Wo trainierst du meistens? | Where do you usually train? | Genelde nerede antrenman yapıyorsun? |
-| `quiz.experience.subtitle` | Wir wählen Programme, die dich nicht überfordern. | We pick programs that won't overwhelm you. | Seni zorlamayacak programlar seçeriz. |
-| `quiz.experience.title` | Wie viel Erfahrung hast du im Training? | How much training experience do you have? | Antrenmanda ne kadar deneyimin var? |
-| `quiz.goal.subtitle` | Wähle das, was dich aktuell am meisten antreibt. | Pick what drives you most right now. | Şu an seni en çok motive edeni seç. |
-| `quiz.goal.title` | Was ist dein primäres Ziel? | What's your primary goal? | Birincil hedefin ne? |
-| `quiz.nav.next` | Weiter | Next | İleri |
-| `quiz.result.alternatives` | Alternativen | Alternatives | Alternatifler |
-| `quiz.result.choose` | Diesen Plan wählen | Choose This Plan | Bu Planı Seç |
-| `quiz.result.topMatch` | TOP EMPFEHLUNG FÜR DICH | TOP MATCH FOR YOU | SENİN İÇİN EN İYİ EŞLEŞME |
-| `quiz.title` | Plan finden | Find a Plan | Plan Bul |
 
 ## `rest.*`  (5 Keys)
 
@@ -1486,18 +2164,23 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `session.recovery.resume` | Fortsetzen | Continue | Devam et |
 | `session.recovery.saveAndRestart` | Speichern & neu starten | Save & Restart | Kaydet ve Yeniden Başlat |
 
-## `set.*`  (2 Keys)
+## `set.*`  (6 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
+| `set.column.header.accessibilityLabel` | Spaltenbeschriftung: Satz, Kilogramm, Wiederholungen, RIR | Column headers: set, kilograms, repetitions, RIR | Sütun başlıkları: set, kilogram, tekrar, RIR |
+| `set.column.header.reducedAccessibilityLabel` | Spaltenbeschriftung: Satz, Kilogramm, Wiederholungen | Column headers: set, kilograms, repetitions | Sütun başlıkları: set, kilogram, tekrar |
+| `set.column.rirLabel` | RIR | RIR | RIR |
+| `set.column.setLabel` | Satz | Set | Set |
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (126 Keys)
+## `settings.*`  (227 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `settings.about.bundle` | Bundle | Bundle | Bundle |
+| `settings.about.exerciseMediaCredit` | Übungs-GIFs | Exercise GIFs | Egzersiz GIF'leri |
 | `settings.about.version` | Version | Version | Sürüm |
 | `settings.action.reset` | App zurücksetzen | Reset App | Uygulamayı Sıfırla |
 | `settings.appearance.dark` | Dunkel | Dark | Koyu |
@@ -1508,9 +2191,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.confirm.reset.action` | Alles löschen | Delete everything | Her şeyi sil |
 | `settings.confirm.reset.message` | Profil, alle Messungen, Pläne und Trainings-Sessions gehen UNWIDERRUFLICH verloren. Die App startet danach im Onboarding. | Profile, all measurements, plans, and workouts will be IRRECOVERABLY lost. The app will start in onboarding. | Profil, tüm ölçümler, planlar ve antrenman oturumları GERİ ALINAMAZ şekilde silinecek. Uygulama ardından tekrar onboarding'den başlayacak. |
 | `settings.confirm.reset.title` | App wirklich zurücksetzen? | Really reset the app? | Uygulamayı gerçekten sıfırlamak istiyor musun? |
+| `settings.credits.exerciseMedia.attribution` | © Gym visual — https://gymvisual.com/ | © Gym visual — https://gymvisual.com/ | © Gym visual — https://gymvisual.com/ |
+| `settings.credits.exerciseMedia.body` | Die animierten Übungs-GIFs stammen aus einem offenen Datensatz. Laut dessen eigener Hinweis-Datei gehören die Bildrechte Gym visual und werden mit deren Erlaubnis weitergegeben. | The animated exercise GIFs come from an open dataset. According to that dataset's own notice, the image rights belong to Gym visual and are redistributed with their permission. | Animasyonlu egzersiz GIF'leri açık bir veri setinden alınmıştır. Bu veri setinin kendi bildirim dosyasına göre görsel hakları Gym visual'a aittir ve onların izniyle yeniden paylaşılmaktadır. |
+| `settings.credits.exerciseMedia.sources` | Quelle: github.com/hasaneyldrm/exercises-dataset (Daten, MIT-Lizenz) und github.com/arvids-unavailable/openGym (Bilddateien). Volle Bedingungen: gymvisual.com/content/3-terms-and-conditions-of-use | Source: github.com/hasaneyldrm/exercises-dataset (data, MIT license) and github.com/arvids-unavailable/openGym (image files). Full terms: gymvisual.com/content/3-terms-and-conditions-of-use | Kaynak: github.com/hasaneyldrm/exercises-dataset (veri, MIT lisansı) ve github.com/arvids-unavailable/openGym (görsel dosyaları). Tam koşullar: gymvisual.com/content/3-terms-and-conditions-of-use |
+| `settings.credits.exerciseMedia.title` | Übungs-GIFs | Exercise GIFs | Egzersiz GIF'leri |
 | `settings.dangerZone.footer` | Löscht Profil, Messungen, Pläne, Trainings-Templates und Trainings-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. | Deletes profile, measurements, plans, training templates, and workout sessions completely. Apple Health data is preserved — delete that from the Health app. | Profil, ölçümler, planlar, antrenman şablonları ve antrenman oturumlarını tamamen siler. Apple Health verileri korunur — onları Health uygulamasından silersin. |
 | `settings.dataExport.action.share` | Archiv teilen | Share archive | Arşivi paylaş |
 | `settings.dataExport.action.start` | Export starten | Start export | Dışa aktarmayı başlat |
+| `settings.dataExport.backupFailed` | Teilen funktioniert, aber die lokale Sicherung ist fehlgeschlagen: %@ | Sharing still works, but the local backup failed: %@ | Paylaşma hâlâ çalışıyor, ancak yerel yedekleme başarısız oldu: %@ |
 | `settings.dataExport.contents.custom` | Eigene Übungen, die du selbst angelegt hast | Custom exercises you created yourself | Kendin oluşturduğun özel egzersizler |
 | `settings.dataExport.contents.gear` | Ausrüstung (Schuhe, Bikes) und deren Kilometer | Gear (shoes, bikes) and their mileage | Ekipman (ayakkabı, bisiklet) ve kilometre bilgileri |
 | `settings.dataExport.contents.header` | Was enthalten ist | What's included | Neler dahil |
@@ -1532,11 +2220,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.action.start` | Import starten | Start import | İçe aktarmayı başlat |
 | `settings.dataImport.action.startReplace` | Daten löschen und einspielen | Delete data and restore | Verileri sil ve geri yükle |
 | `settings.dataImport.confirm.action` | Ja, jetzt importieren | Yes, import now | Evet, şimdi içe aktar |
-| `settings.dataImport.confirm.message` | Bestehende Daten bleiben unangetastet. Nur fehlende Zeilen aus dem Archiv werden ergänzt. Duplikate werden erkannt und übersprungen. | Existing data stays untouched. Only missing rows from the archive will be added. Duplicates are detected and skipped. | Mevcut veriler değişmez. Yalnızca arşivdeki eksik satırlar eklenir. Yinelenen kayıtlar algılanır ve atlanır. |
+| `settings.dataImport.confirm.message` | Bestehende Workouts, Rekorde, Messungen und Pläne bleiben unangetastet. Fehlende Zeilen aus dem Archiv werden ergänzt, Duplikate erkannt und übersprungen – nur Pläne werden immer als neue Pläne angelegt. Profil und App-Einstellungen werden mit den Werten aus dem Archiv überschrieben. | Existing workouts, records, measurements and plans stay untouched. Missing rows from the archive are added, duplicates are detected and skipped – only plans are always added as new plans. Your profile and app settings are overwritten with the values from the archive. | Mevcut antrenmanların, rekorların, ölçümlerin ve planların değişmez. Arşivdeki eksik satırlar eklenir, yinelenen kayıtlar algılanır ve atlanır; yalnızca planlar her zaman yeni plan olarak eklenir. Profilin ve uygulama ayarların arşivdeki değerlerle değiştirilir. |
 | `settings.dataImport.confirm.title` | Daten importieren? | Import data? | Verileri içe aktar? |
 | `settings.dataImport.importing` | Lese Archiv und füge Daten ein… | Reading archive and merging data… | Arşiv okunuyor ve veriler birleştiriliyor… |
 | `settings.dataImport.importing.header` | Import läuft | Import in progress | İçe aktarma sürüyor |
-| `settings.dataImport.intro.body` | Wähle ein Deltiq-Export-ZIP (auf diesem oder einem anderen Gerät erstellt) und wir spielen die Daten in deine Bibliothek ein. Der Import ist sicher: nichts, was bereits in der App ist, wird angefasst. | Pick a Deltiq export ZIP (created on this or another device) and we'll merge the data into your library. The import is safe: nothing already in your app gets touched. | Bir Deltiq dışa aktarma ZIP'i seç (bu veya başka bir cihazda oluşturulmuş) ve verileri kütüphanene birleştirelim. İçe aktarma güvenlidir: uygulamada zaten bulunan hiçbir şey değişmez. |
+| `settings.dataImport.intro.body` | Wähle ein Deltiq-Export-ZIP (auf diesem oder einem anderen Gerät erstellt) und wir spielen die Daten in deine Bibliothek ein. Bestehende Workouts, Rekorde, Messungen und Pläne bleiben unangetastet; Profil und App-Einstellungen werden aus dem Archiv übernommen. | Pick a Deltiq export ZIP (created on this or another device) and we'll merge the data into your library. Existing workouts, records, measurements and plans stay untouched; your profile and app settings are taken from the archive. | Bir Deltiq dışa aktarma ZIP'i seç (bu veya başka bir cihazda oluşturulmuş) ve verileri kütüphanene birleştirelim. Mevcut antrenmanların, rekorların, ölçümlerin ve planların değişmez; profil ve uygulama ayarların arşivden alınır. |
 | `settings.dataImport.intro.footer` | Es werden nur ZIP-Archive mit Format-Version 1.x unterstützt. Neuere oder ältere Formate werden abgelehnt. | Only ZIP archives with format version 1.x are supported. Newer or older formats will be refused. | Yalnızca format sürümü 1.x olan ZIP arşivleri desteklenir. Daha yeni veya eski formatlar reddedilir. |
 | `settings.dataImport.intro.header` | Von einem Export wiederherstellen | Restore from an export | Bir dışa aktarmadan geri yükle |
 | `settings.dataImport.picked.header` | Ausgewählte Datei | Selected file | Seçili dosya |
@@ -1562,12 +2250,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.dataImport.result.header` | Import abgeschlossen | Import complete | İçe aktarma tamamlandı |
 | `settings.dataImport.result.imported` | Importiert | Imported | İçe aktarıldı |
 | `settings.dataImport.result.skipped` | Übersprungen (Duplikate) | Skipped (duplicates) | Atlandı (yinelenen) |
-| `settings.dataImport.strategy.appendOnly` | Append-only — deine bestehenden Workouts, Rekorde und Pläne bleiben unangetastet. | Append-only — your existing workouts, records and plans stay untouched. | Yalnızca ekleme — mevcut antrenmanların, rekorların ve planların değişmez. |
+| `settings.dataImport.strategy.appendOnly` | Append-only — deine bestehenden Workouts, Rekorde und Pläne bleiben unangetastet; Profil und Einstellungen werden aus dem Archiv übernommen. | Append-only — your existing workouts, records and plans stay untouched; profile and settings are taken from the archive. | Yalnızca ekleme — mevcut antrenmanların, rekorların ve planların değişmez; profil ve ayarlar arşivden alınır. |
 | `settings.dataImport.strategy.duplicates` | Duplikate (gleiches Workout/Maß/PR) werden anhand des Zeitstempels erkannt und übersprungen. | Duplicates (same workout/measurement/PR) are detected by timestamp and skipped. | Yinelenen kayıtlar (aynı antrenman/ölçüm/PR) zaman damgasına göre algılanır ve atlanır. |
 | `settings.dataImport.strategy.errorsLog` | Fehlerhafte Zeilen werden in einem Fehlerprotokoll gesammelt, das du teilen kannst. | Broken rows are collected into an errors report you can share. | Bozuk satırlar, paylaşabileceğin bir hata raporunda toplanır. |
 | `settings.dataImport.strategy.header` | Wie der Import arbeitet | How the import works | İçe aktarma nasıl çalışır |
 | `settings.dataImport.strategyPicker.appendOnly` | Anhängen (sicher) | Append (safe) | Ekle (güvenli) |
-| `settings.dataImport.strategyPicker.appendOnlyDescription` | Nur fehlende Einträge werden hinzugefügt. Deine bestehenden Daten bleiben erhalten. | Only missing entries are added. Your existing data is preserved. | Yalnızca eksik kayıtlar eklenir. Mevcut verilerin korunur. |
+| `settings.dataImport.strategyPicker.appendOnlyDescription` | Nur fehlende Einträge werden hinzugefügt (Pläne immer als neue Pläne). Bestehende Workouts, Rekorde und Messungen bleiben erhalten; Profil und Einstellungen werden aus dem Archiv übernommen. | Only missing entries are added (plans always as new plans). Your existing workouts, records and measurements are preserved; profile and settings are taken from the archive. | Yalnızca eksik kayıtlar eklenir (planlar her zaman yeni plan olarak). Mevcut antrenmanların, rekorların ve ölçümlerin korunur; profil ve ayarlar arşivden alınır. |
 | `settings.dataImport.strategyPicker.header` | Import-Strategie | Import strategy | İçe aktarma stratejisi |
 | `settings.dataImport.strategyPicker.replace` | Ersetzen | Replace | Değiştir |
 | `settings.dataImport.strategyPicker.replaceWarning` | Alle bestehenden Workouts, Pläne, Messungen, Ausrüstung und PRs werden gelöscht, bevor das Archiv eingespielt wird. Das kann nicht rückgängig gemacht werden. | All existing workouts, plans, measurements, gear and PRs will be deleted before the archive is restored. This cannot be undone. | Arşiv geri yüklenmeden önce mevcut tüm antrenmanlar, planlar, ölçümler, ekipman ve PR'lar silinir. Bu işlem geri alınamaz. |
@@ -1576,13 +2264,90 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.deload.endNow` | Gesenkte Gewichte zurücksetzen (%lld Übungen) | Restore lowered weights (%lld exercises) | Düşürülmüş ağırlıkları geri yükle (%lld egzersiz) |
 | `settings.deload.endNow.done` | Ursprüngliche Gewichte wiederhergestellt. | Original weights restored. | Orijinal ağırlıklar geri yüklendi. |
 | `settings.deload.toggle` | Deload-Vorschläge | Deload suggestions | Deload önerileri |
+| `settings.fourWeekReview.row` | Vier-Wochen-Rückblick | Four-week review | Dört haftalık değerlendirme |
+| `settings.group.appExperience` | App & Trainingserlebnis | App & Workout Experience | Uygulama & Antrenman Deneyimi |
+| `settings.group.dataConnections` | Daten & Verbindungen | Data & Connections | Veri & Bağlantılar |
+| `settings.group.helpInfo` | Hilfe & Informationen | Help & Information | Yardım & Bilgi |
+| `settings.group.libraryEquipment` | Bibliothek & Ausrüstung | Library & Gear | Kütüphane & Ekipman |
 | `settings.health.connect` | Verbinden | Connect | Bağla |
 | `settings.health.denied` | Berechtigung verweigert | Permission denied | İzin reddedildi |
 | `settings.health.footer` | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. | When connected, the measurement form prefills your last scale weight. Saving writes weight, body fat %, and lean mass back to Apple Health. | Bağlıyken ölçüm formu son tartı kilonu önceden doldurur. Kaydetme; kilo, yağ oranı ve yağsız kütleyi Apple Health'e yazar. |
 | `settings.health.lastSync` | Letzter Sync | Last Sync | Son Senkronizasyon |
 | `settings.health.notSetup` | Nicht eingerichtet | Not set up | Kurulmadı |
-| `settings.health.openIOSSettings` | In iOS-Einstellungen öffnen | Open iOS Settings | iOS Ayarlarını Aç |
+| `settings.health.readGroup.header` | Daten übernehmen | Import data | Verileri içe aktar |
 | `settings.health.unavailable` | Nicht verfügbar | Not available | Kullanılamıyor |
+| `settings.health.workoutImport` | Workouts übernehmen (Adidas Running, Strava, …) | Import workouts (Adidas Running, Strava, …) | Antrenmanları içe aktar (Adidas Running, Strava, …) |
+| `settings.health.workoutImport.footer` | Läufe und Radfahrten aus anderen Apps (z.B. Adidas Running, Strava) werden automatisch als Trainingseinheiten übernommen, sobald sie in Apple Health erscheinen. | Runs and rides from other apps (e.g. Adidas Running, Strava) are automatically added as workouts once they appear in Apple Health. | Diğer uygulamalardan (örn. Adidas Running, Strava) koşular ve bisiklet turları, Apple Health'te göründükten sonra otomatik olarak antrenman olarak eklenir. |
+| `settings.healthWrite.accessBlocked` | Fehlt dort der Schalter „Trainings“, kann iOS die Frage nicht noch einmal stellen: Sie gilt als beantwortet, zum Beispiel weil „Trainings“ zuerst nur zum Lesen angefragt wurde (Workout-Import). Dann hilft voraussichtlich nur, Deltiq zu löschen und neu zu installieren. Sichere vorher deine Daten mit „Daten exportieren (CSV)“ und lege die ZIP-Datei außerhalb von Deltiq ab, etwa in iCloud Drive. | If the “Workouts” switch is missing there, iOS can no longer ask: the question counts as answered, for example because “Workouts” was first requested for reading only (workout import). Then it will most likely only be fixed by deleting and reinstalling Deltiq. Back up your data first with “Export data (CSV)” and save the ZIP file outside Deltiq, for example in iCloud Drive. | Orada „Antrenmanlar“ anahtarı yoksa iOS soruyu bir daha soramaz: Soru yanıtlanmış sayılır, örneğin „Antrenmanlar“ önce yalnızca okuma için istendiği için (antrenman içe aktarma). Bunun çözümü büyük olasılıkla yalnızca Deltiq'i silip yeniden yüklemektir. Öncesinde verilerini „Verileri dışa aktar (CSV)“ ile yedekle ve ZIP dosyasını Deltiq dışında, örneğin iCloud Drive'da sakla. |
+| `settings.healthWrite.accessButton` | Zugriff erlauben | Allow access | Erişime izin ver |
+| `settings.healthWrite.accessDenied` | Öffne die Health-App → Profil → Apps → Deltiq und schalte unter „darf Daten schreiben“ den Schalter „Trainings“ ein. Danach zeigt Deltiq hier den neuen Stand. | Open the Health app → Profile → Apps → Deltiq and turn on “Workouts” among the data Deltiq may write. Deltiq then shows the new state here. | Health uygulamasını aç → Profil → Uygulamalar → Deltiq ve Deltiq'in yazabileceği veriler arasında „Antrenmanlar“ı aç. Deltiq yeni durumu burada gösterir. |
+| `settings.healthWrite.accessDeniedLabel` | Zugriff nicht erteilt | Access not granted | Erişim verilmedi |
+| `settings.healthWrite.accessGranted` | Zugriff erlaubt | Access allowed | Erişime izin verildi |
+| `settings.healthWrite.accessHeader` | Zugriff | Access | Erişim |
+| `settings.healthWrite.accessHint` | Apple fragt einmal nach – für das Schreiben und das Lesen von „Trainings“. Das Lesen braucht Deltiq für den Workout-Import und den Abgleich beim Export. Du kannst den Zugriff jederzeit in Health widerrufen. | Apple asks once – for writing and reading “Workouts”. Deltiq needs reading for the workout import and the check during export. You can withdraw access in Health at any time. | Apple bir kez sorar – „Antrenmanlar“ı yazma ve okuma için. Okuma, antrenman içe aktarma ve dışa aktarırken yapılan karşılaştırma için gerekir. Erişimi istediğin zaman Health'ten geri alabilirsin. |
+| `settings.healthWrite.accessNoDialog` | Keine Freigabe erteilt. Tippe erneut auf „Zugriff erlauben“ oder erlaube „Trainings“ in der Health-App unter Profil → Apps → Deltiq. | No access granted. Tap “Allow access” again, or allow “Workouts” in the Health app under Profile → Apps → Deltiq. | İzin verilmedi. Tekrar „Erişime izin ver“e dokun veya Health uygulamasında Profil → Uygulamalar → Deltiq altında „Antrenmanlar“a izin ver. |
+| `settings.healthWrite.accessNone` | Noch nicht freigegeben | Not allowed yet | Henüz izin verilmedi |
+| `settings.healthWrite.cardioFooter` | Laufen, Radfahren, Rudern und mehr, die du in Deltiq selbst erfasst – auch reine Cardio-Tage mit Zeitformat. Schreibt schon eine andere App (z. B. Adidas Running) deine Läufe, lass das aus. Aus anderen Apps übernommene Einheiten schickt Deltiq nie zurück. Die Distanz kommt nur mit der zusätzlichen Freigabe „Geh- und Laufdistanz“; ohne sie wird das Training ohne Distanz gespeichert. | Running, cycling, rowing and more that you record in Deltiq yourself – including pure cardio days with a time format. If another app (e.g. Adidas Running) already writes your runs, leave this off. Deltiq never sends workouts taken over from other apps back. The distance is only included with the additional “Walking + Running Distance” permission; without it the workout is saved without distance. | Deltiq'te kendin kaydettiğin koşu, bisiklet, kürek ve diğer kardiyo antrenmanları – zaman formatlı saf kardiyo günleri dahil. Koşularını zaten başka bir uygulama (örn. Adidas Running) yazıyorsa bunu kapalı bırak. Deltiq, diğer uygulamalardan alınan antrenmanları asla geri göndermez. Mesafe yalnızca ek „Yürüyüş + koşu mesafesi“ izniyle eklenir; izin yoksa antrenman mesafesiz kaydedilir. |
+| `settings.healthWrite.cardioLabel` | Cardio schreiben | Write cardio | Kardiyoyu yaz |
+| `settings.healthWrite.confirmAction` | Ja, jetzt schreiben | Yes, write now | Evet, şimdi yaz |
+| `settings.healthWrite.confirmMessage` | Für jedes Training entsteht ein Eintrag mit Start, Dauer und Art, bei Krafttraining mit den Namen der Übungen – ohne Kalorien und Puls. In Deltiq lässt sich das nicht rückgängig machen, nur in Health. Health kann die Trainings bei Trainingsminuten und Stehen vergangener Tage mitrechnen; mit einer Apple Watch kann das doppelt zählen. | Each workout becomes an entry with start, duration and type, with the names of the exercises for strength training – without calories and heart rate. This cannot be undone in Deltiq, only in Health. Health may count the workouts towards exercise minutes and stand hours of past days; with an Apple Watch this can count twice. | Her antrenman için başlangıç, süre ve türü içeren, kuvvet antrenmanında ayrıca egzersizlerin adlarını taşıyan bir kayıt oluşur – kalori ve nabız olmadan. Bu, Deltiq'te geri alınamaz, yalnızca Health'te. Health antrenmanları geçmiş günlerin egzersiz dakikalarına ve ayakta kalma saatlerine katabilir; Apple Watch ile bu iki kez sayılabilir. |
+| `settings.healthWrite.confirmTitle` | Trainings nach Health schreiben? | Write workouts to Health? | Antrenmanlar Health'e yazılsın mı? |
+| `settings.healthWrite.diagnosticDisclosure` | Diagnose anzeigen | Show diagnostics | Tanılamayı göster |
+| `settings.healthWrite.distanceButton` | Geh- und Laufdistanz erlauben | Allow walking + running distance | Yürüyüş + koşu mesafesine izin ver |
+| `settings.healthWrite.distanceMissing` | „Geh- und Laufdistanz“ ist nicht freigegeben – Läufe werden ohne Distanz gespeichert. Erlaube sie in der Health-App unter Profil → Apps → Deltiq. | “Walking + Running Distance” is not allowed – runs are saved without distance. Allow it in the Health app under Profile → Apps → Deltiq. | „Yürüyüş + koşu mesafesi“ için izin yok – koşular mesafesiz kaydedilir. Health uygulamasında Profil → Uygulamalar → Deltiq altından izin ver. |
+| `settings.healthWrite.errorGeneric` | Die Abfrage von Health ist fehlgeschlagen. Es wurde nichts geschrieben. | Querying Health failed. Nothing was written. | Health sorgusu başarısız oldu. Hiçbir şey yazılmadı. |
+| `settings.healthWrite.errorLocked` | Health ließ sich nicht abfragen (Gerät gesperrt?). Es wurde nichts geschrieben. | Health could not be queried (device locked?). Nothing was written. | Health sorgulanamadı (cihaz kilitli mi?). Hiçbir şey yazılmadı. |
+| `settings.healthWrite.errorStoreFallback` | Der Export ist gesperrt, solange die App auf einem Ersatz-Datenspeicher läuft. | The export is locked while the app runs on a fallback data store. | Uygulama yedek bir veri deposunda çalıştığı sürece dışa aktarma kilitlidir. |
+| `settings.healthWrite.exportCheck` | Trainings prüfen | Check workouts | Antrenmanları kontrol et |
+| `settings.healthWrite.exportChecking` | Prüfe Health … | Checking Health … | Health kontrol ediliyor … |
+| `settings.healthWrite.exportHeader` | Frühere Trainings | Past workouts | Geçmiş antrenmanlar |
+| `settings.healthWrite.exportIntro` | Schreibt Trainings, die du vor dem Einschalten gespeichert hast, nachträglich nach Health. Was schon in Health steht, wird erkannt und übersprungen – du kannst den Export gefahrlos wiederholen. Aus anderen Apps importierte Einheiten werden nie zurückgeschrieben. | Writes workouts you saved before turning this on to Health afterwards. What is already in Health is detected and skipped – you can safely repeat the export. Workouts imported from other apps are never written back. | Bunu açmadan önce kaydettiğin antrenmanları sonradan Health'e yazar. Health'te zaten olanlar algılanıp atlanır – dışa aktarmayı güvenle tekrarlayabilirsin. Diğer uygulamalardan içe aktarılan antrenmanlar asla geri yazılmaz. |
+| `settings.healthWrite.exportNeedsAccess` | Erlaube zuerst oben den Zugriff. | Allow access above first. | Önce yukarıdan erişime izin ver. |
+| `settings.healthWrite.exportRetry` | Erneut versuchen | Try again | Tekrar dene |
+| `settings.healthWrite.exportStart.one` | 1 Training nach Health schreiben | Write 1 workout to Health | 1 antrenmanı Health'e yaz |
+| `settings.healthWrite.exportStart.other` | %lld Trainings nach Health schreiben | Write %lld workouts to Health | %lld antrenmanı Health'e yaz |
+| `settings.healthWrite.exporting` | Schreibe Trainings … | Writing workouts … | Antrenmanlar yazılıyor … |
+| `settings.healthWrite.exportingHint` | Lass Deltiq geöffnet und das Gerät entsperrt. | Keep Deltiq open and the device unlocked. | Deltiq'i açık ve cihazı kilitsiz bırak. |
+| `settings.healthWrite.introBody` | Deltiq kann abgeschlossene Trainings in Apple Health speichern: Start, Dauer und Art, bei Krafttraining mit den Namen der Übungen, bei Läufen auf Wunsch auch die Distanz. Kalorien und Puls schreibt Deltiq nicht. Apple kennt nur „Trainings“ als Ganzes – was Deltiq davon schreibt, stellst du hier ein. | Deltiq can save completed workouts to Apple Health: start, duration and type – with the names of the exercises for strength training and, if you like, the distance for runs. Deltiq does not write calories or heart rate. Apple only knows “Workouts” as a whole – what Deltiq writes of them is up to you here. | Deltiq, tamamlanan antrenmanları Apple Health'e kaydedebilir: başlangıç, süre ve tür; kuvvet antrenmanında egzersizlerin adlarıyla birlikte, istersen koşularda mesafe de. Deltiq kalori ve nabız yazmaz. Apple yalnızca „Antrenmanlar“ı bütün olarak tanır – Deltiq'in bunlardan neyi yazacağını burada sen belirlersin. |
+| `settings.healthWrite.introHeader` | Trainings speichern | Save workouts | Antrenmanları kaydet |
+| `settings.healthWrite.meta.distance` | Distanz (km) | Distance (km) | Mesafe (km) |
+| `settings.healthWrite.meta.exercises` | Übungen | Exercises | Egzersizler |
+| `settings.healthWrite.meta.pace` | Ø Pace (min/km) | Avg. pace (min/km) | Ort. tempo (dk/km) |
+| `settings.healthWrite.meta.sets` | Sätze | Sets | Setler |
+| `settings.healthWrite.meta.volume` | Volumen (kg) | Volume (kg) | Hacim (kg) |
+| `settings.healthWrite.openHealthApp` | Health-App öffnen | Open Health app | Health uygulamasını aç |
+| `settings.healthWrite.previewAlready` | Schon in Health erkannt: %lld | Already detected in Health: %lld | Health'te zaten algılanan: %lld |
+| `settings.healthWrite.previewBlindWarning` | Trainings anderer Apps oder einer Uhr erkennt Deltiq nur, wenn Deltiq Trainings lesen darf – ob das erlaubt ist, verrät Apple nicht. Sonst können Doppelte entstehen. | Deltiq only recognises workouts from other apps or a watch if it is allowed to read workouts – Apple does not reveal whether that is the case. Otherwise duplicates can appear. | Deltiq, diğer uygulamaların veya bir saatin antrenmanlarını yalnızca antrenmanları okuyabiliyorsa tanır – bunun açık olup olmadığını Apple söylemez. Aksi halde yinelenenler oluşabilir. |
+| `settings.healthWrite.previewCardioToggle` | Cardio exportieren (%lld) | Export cardio (%lld) | Kardiyoyu aktar (%lld) |
+| `settings.healthWrite.previewNotExportable` | Nicht exportierbar (zu kurz, zu lang oder leer): %lld | Not exportable (too short, too long or empty): %lld | Aktarılamaz (çok kısa, çok uzun veya boş): %lld |
+| `settings.healthWrite.previewNothing` | Nichts zu exportieren. | Nothing to export. | Aktarılacak bir şey yok. |
+| `settings.healthWrite.previewStrengthToggle` | Krafttraining exportieren (%lld) | Export strength workouts (%lld) | Kuvvet antrenmanlarını aktar (%lld) |
+| `settings.healthWrite.previewVisible` | In Health sichtbar: %1$lld (davon von Deltiq: %2$lld) | Visible in Health: %1$lld (from Deltiq: %2$lld) | Health'te görünen: %1$lld (Deltiq'ten: %2$lld) |
+| `settings.healthWrite.resetButton` | Neu mit Health abgleichen | Re-check with Health | Health ile yeniden eşleştir |
+| `settings.healthWrite.resetInfo.one` | 1 Training gilt als schon an Health gesendet – auch wenn du es dort inzwischen gelöscht hast. „Neu mit Health abgleichen“ lässt Deltiq das vergessen und prüft alles neu: Was Deltiq in Health noch findet, wird nicht doppelt geschrieben, was fehlt, kannst du erneut senden. | 1 workout counts as already sent to Health – even if you have since deleted it there. “Re-check with Health” makes Deltiq forget that and check everything again: what Deltiq still finds in Health is not written twice, and what is missing can be sent again. | 1 antrenman Health'e zaten gönderilmiş sayılıyor – sonradan orada silmiş olsan bile. „Health ile yeniden eşleştir“ Deltiq'in bunu unutmasını sağlar ve her şeyi yeniden kontrol eder: Deltiq'in Health'te hâlâ bulduğu kayıtlar iki kez yazılmaz, eksik olanları yeniden gönderebilirsin. |
+| `settings.healthWrite.resetInfo.other` | %lld Trainings gelten als schon an Health gesendet – auch wenn du sie dort inzwischen gelöscht hast. „Neu mit Health abgleichen“ lässt Deltiq das vergessen und prüft alles neu: Was Deltiq in Health noch findet, wird nicht doppelt geschrieben, was fehlt, kannst du erneut senden. | %lld workouts count as already sent to Health – even if you have since deleted them there. “Re-check with Health” makes Deltiq forget that and check everything again: what Deltiq still finds in Health is not written twice, and what is missing can be sent again. | %lld antrenman Health'e zaten gönderilmiş sayılıyor – sonradan orada silmiş olsan bile. „Health ile yeniden eşleştir“ Deltiq'in bunu unutmasını sağlar ve her şeyi yeniden kontrol eder: Deltiq'in Health'te hâlâ bulduğu kayıtlar iki kez yazılmaz, eksik olanları yeniden gönderebilirsin. |
+| `settings.healthWrite.resultAlready` | Schon in Health | Already in Health | Zaten Health'te |
+| `settings.healthWrite.resultCancelled` | Abgebrochen. %1$lld von %2$lld bearbeitet – beim nächsten Export geht es dort weiter. | Cancelled. %1$lld of %2$lld processed – the next export continues from there. | İptal edildi. %1$lld / %2$lld işlendi – bir sonraki dışa aktarma kaldığı yerden devam eder. |
+| `settings.healthWrite.resultDone` | Fertig | Done | Bitti |
+| `settings.healthWrite.resultFailed` | Fehlgeschlagen | Failed | Başarısız |
+| `settings.healthWrite.resultNotExportable` | Nicht exportierbar | Not exportable | Aktarılamadı |
+| `settings.healthWrite.resultUnverified` | Nicht bestätigt (Gerät gesperrt?) | Not confirmed (device locked?) | Doğrulanmadı (cihaz kilitli mi?) |
+| `settings.healthWrite.resultWithoutDistance` | Ohne Distanz gespeichert: %lld – die Freigabe „Geh- und Laufdistanz“ fehlt oder wurde abgelehnt. | Saved without distance: %lld – the “Walking + Running Distance” permission is missing or was declined. | Mesafesiz kaydedilen: %lld – „Yürüyüş + koşu mesafesi“ izni yok veya reddedildi. |
+| `settings.healthWrite.resultWritten` | Geschrieben | Written | Yazıldı |
+| `settings.healthWrite.row` | Trainings an Health senden | Send workouts to Health | Antrenmanları Health'e gönder |
+| `settings.healthWrite.stopDeviceLocked` | Gestoppt: Health war nicht lesbar (Gerät gesperrt?). Entsperre das Gerät und starte den Export erneut. | Stopped: Health was not readable (device locked?). Unlock the device and start the export again. | Durduruldu: Health okunamadı (cihaz kilitli mi?). Cihazın kilidini aç ve dışa aktarmayı yeniden başlat. |
+| `settings.healthWrite.stopNotAuthorized` | Gestoppt: Der Zugriff auf Trainings wurde entzogen. | Stopped: access to workouts was withdrawn. | Durduruldu: Antrenmanlara erişim geri alındı. |
+| `settings.healthWrite.stopTooManyFailures` | Gestoppt: Health hat mehrere Trainings in Folge abgelehnt. Prüfe den Zugriff und starte erneut. | Stopped: Health rejected several workouts in a row. Check access and start again. | Durduruldu: Health üst üste birkaç antrenmanı reddetti. Erişimi kontrol et ve yeniden başlat. |
+| `settings.healthWrite.strengthFooter` | Auch AMRAP, EMOM, Auf Zeit und Zirkel – außer Tagen, die nur aus Cardio-Übungen bestehen, die zählen zu Cardio. Trägst du dabei eine Apple Watch, nimmt sie das Training schon auf – dann lass das aus, sonst steht es doppelt in Health. | Includes AMRAP, EMOM, For Time and circuits – except days made up only of cardio exercises, which count as cardio. If you wear an Apple Watch while training it already records the workout – turn this off, or it appears twice in Health. | AMRAP, EMOM, Süreye Karşı ve Devre dahil – yalnızca kardiyo egzersizlerinden oluşan günler hariç, onlar kardiyoya sayılır. Antrenman sırasında Apple Watch takıyorsan antrenmanı zaten o kaydeder – bunu kapat, yoksa Health'te iki kez görünür. |
+| `settings.healthWrite.strengthLabel` | Krafttraining schreiben | Write strength workouts | Kuvvet antrenmanlarını yaz |
+| `settings.healthWrite.switchesHeader` | Was Deltiq schreibt | What Deltiq writes | Deltiq neyi yazar |
+| `settings.healthWrite.title` | Trainings an Health senden | Send workouts to Health | Antrenmanları Health'e gönder |
+| `settings.healthWrite.valueBoth` | Kraft + Cardio | Strength + cardio | Kuvvet + kardiyo |
+| `settings.healthWrite.valueCardio` | Cardio | Cardio | Kardiyo |
+| `settings.healthWrite.valueNoAccess` | Nicht freigegeben | Not allowed | İzin verilmedi |
+| `settings.healthWrite.valueOff` | Aus | Off | Kapalı |
+| `settings.healthWrite.valueStrength` | Kraft | Strength | Kuvvet |
+| `settings.periodicCheckIn.row` | Kurzer Rückblick | Quick check-in | Kısa değerlendirme |
 | `settings.preferences.exerciseLibrary` | Übungen | Exercises | Hareketler |
 | `settings.preferences.gear` | Ausrüstung & Schuhe | Gear & Shoes | Ekipman & Ayakkabı |
 | `settings.preferences.units.imperial` | Imperial | Imperial | İmperyal |
@@ -1603,20 +2368,38 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.reminders.frequency` | Häufigkeit | Frequency | Sıklık |
 | `settings.reminders.hour` | %lld:00 Uhr | %lld:00 | %lld:00 |
 | `settings.reminders.measurement` | Messung erinnern | Measurement reminder | Ölçüm hatırlat |
+| `settings.reminders.permission.denied` | Benachrichtigungen verweigert | Notifications denied | Bildirimlere izin verilmedi |
+| `settings.reminders.permission.deniedHint` | Erinnerungen bleiben wie eingestellt, werden aber nicht zugestellt, solange Benachrichtigungen für Deltiq deaktiviert sind. | Reminders stay as configured but won't be delivered while notifications for Deltiq are turned off. | Deltiq için bildirimler kapalıyken hatırlatıcılar ayarlandığı gibi kalır, ancak iletilmez. |
+| `settings.reminders.permission.granted` | Benachrichtigungen erlaubt | Notifications allowed | Bildirimlere izin verildi |
+| `settings.reminders.permission.notDetermined` | Noch nicht festgelegt | Not yet determined | Henüz belirlenmedi |
+| `settings.reminders.permission.openSettings` | Einstellungen öffnen | Open Settings | Ayarları Aç |
 | `settings.reminders.section` | Erinnerungen | Reminders | Hatırlatıcılar |
 | `settings.reminders.time` | Uhrzeit | Time | Saat |
 | `settings.reminders.water` | Wasser erinnern | Water reminder | Su hatırlat |
+| `settings.reset.backupFailed` | Die Sicherung vor dem Zurücksetzen ist fehlgeschlagen: %@. Es wurde nichts gelöscht. | The backup before resetting failed: %@. Nothing was deleted. | Sıfırlamadan önceki yedekleme başarısız oldu: %@. Hiçbir şey silinmedi. |
+| `settings.reset.errorTitle` | Fehler beim Zurücksetzen | Error resetting | Sıfırlama hatası |
 | `settings.section.about` | Über | About | Hakkında |
 | `settings.section.danger_zone` | Daten-Management | Data Management | Veri Yönetimi |
+| `settings.section.more` | Weitere Einstellungen | More Settings | Diğer Ayarlar |
 | `settings.section.preferences` | Präferenzen | Preferences | Tercihler |
 | `settings.section.privacy` | Datenschutz | Privacy | Gizlilik |
 | `settings.section.profile_goals` | Profil & Ziele | Profile & Goals | Profil & Hedefler |
-| `settings.timer.footer` | Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. | Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. | Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. |
+| `settings.timer.backgroundAudio` | Im Hintergrund weiterlaufen | Keep running in background | Arka planda çalışmaya devam et |
+| `settings.timer.footer` | Wird beim Ablauf des Pausen-Timers ausgelöst. Vibrations-Toggle hat auf iPads keine Wirkung. 'PR-Feiern' steuert Save-Screen-Popups, Live-Activity-Headline und lokale Benachrichtigungen — die Bestleistungen werden trotzdem im Trophy-Room gespeichert. 'Vorlauf vor dem Start' zeigt vor AMRAP/EMOM/Auf-Zeit-Läufen einen Countdown, bevor die Uhr wirklich startet. 'Im Hintergrund weiterlaufen' hält Zeitformat-Läufe (AMRAP, EMOM, Auf Zeit, Zirkel) bei gesperrtem Bildschirm oder in einer anderen App am Laufen: Die Signaltöne bleiben hörbar (die App spielt dafür unhörbar Audio ab) und die Live Activity bleibt aktuell. Das kostet etwas Akku. | Fires when the rest timer ends. Vibration has no effect on iPads. 'Celebrate PRs' drives save-screen popups, Live Activity headlines, and local notifications — PRs are saved to the Trophy Room either way. 'Lead-in before start' shows a countdown before AMRAP/EMOM/For-Time runs, before the clock actually starts. 'Keep running in background' keeps time-format runs (AMRAP, EMOM, For Time, Circuit) going with a locked screen or in another app: the signal tones stay audible (the app plays inaudible audio to do so) and the Live Activity stays up to date. It costs a little battery. | Mola zamanlayıcısı bittiğinde tetiklenir. Titreşim iPad'lerde etkisizdir. 'PR'ı Kutla' kaydetme ekranı pencerelerini, Live Activity başlıklarını ve yerel bildirimleri yönlendirir — PR'lar her durumda Kupa Odası'na kaydedilir. 'Başlamadan önce geri sayım', AMRAP/EMOM/Süreye Karşı koşularından önce saat gerçekten başlamadan bir geri sayım gösterir. 'Arka planda çalışmaya devam et', zaman formatı antrenmanlarının (AMRAP, EMOM, Süreye Karşı, Devre) ekran kilitliyken veya başka bir uygulamadayken de sürmesini sağlar: sinyal sesleri duyulur kalır (uygulama bunun için duyulmayan bir ses çalar) ve Live Activity güncel kalır. Biraz pil harcar. |
 | `settings.timer.haptics` | Vibrieren | Vibrate | Titret |
 | `settings.timer.prCelebrations` | PR-Feiern | Celebrate PRs | PR'ı Kutla |
+| `settings.timer.preroll` | Vorlauf vor dem Start | Lead-in before start | Başlamadan önce geri sayım |
+| `settings.timer.preroll.10s` | 10 Sekunden | 10 seconds | 10 saniye |
+| `settings.timer.preroll.15s` | 15 Sekunden | 15 seconds | 15 saniye |
+| `settings.timer.preroll.5s` | 5 Sekunden | 5 seconds | 5 saniye |
+| `settings.timer.preroll.off` | Aus | Off | Kapalı |
 | `settings.timer.section` | Pausen-Timer-Feedback | Rest Timer Feedback | Mola Zamanlayıcı Geri Bildirimi |
 | `settings.timer.sound` | Ton abspielen | Play sound | Ses çal |
 | `settings.title` | Einstellungen | Settings | Ayarlar |
+| `settings.training.displayMode.classic` | Bisherige Darstellung | Previous layout | Önceki görünüm |
+| `settings.training.displayMode.column` | Spaltenübersicht | Column overview | Sütun görünümü |
+| `settings.training.displayMode.footer` | Bestimmt, wie Gewicht, Wiederholungen und RIR beim Satz-Logging angezeigt werden. | Controls how weight, reps and RIR are shown while logging sets. | Set kaydederken ağırlık, tekrar ve RIR'ın nasıl gösterileceğini belirler. |
+| `settings.training.displayMode.label` | Satzanzeige | Set display | Set görünümü |
 | `settings.training.rirTooltip.description` | Zeigt kurze Erklärungen beim Einstellen der Intensität (Reps in Reserve). | Shows short explanations when setting intensity (Reps in Reserve). | Yoğunluk ayarlanırken kısa açıklamalar gösterir (Reps in Reserve). |
 | `settings.training.rirTooltip.title` | RIR-Hilfstexte anzeigen | Show RIR helper texts | RIR yardım metinlerini göster |
 | `settings.units.footer` | Die DB speichert immer metrisch. Diese Einstellung steuert nur die Anzeige in Eingabe-Feldern, im Hantel-Rechner und auf den Karten. | DB always stores metric. This setting only changes display in inputs, the plate calculator, and cards. | Veritabanı her zaman metrik kaydeder. Bu ayar sadece giriş alanlarında, plaka hesabında ve kartlarda görünümü değiştirir. |
@@ -1631,7 +2414,17 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `sex.female` | Weiblich | Female | Kadın |
 | `sex.male` | Männlich | Male | Erkek |
 
-## `summary.*`  (51 Keys)
+## `substitution.*`  (5 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `substitution.reason.barbellRowToChestSupportedRow` | Ohne Langhantel: das unterstützte Kurzhantel-Rudern trainiert dieselbe Zugbewegung ohne Belastung für den unteren Rücken. | Without a barbell: the chest-supported dumbbell row trains the same pulling movement without lower-back strain. | Halter olmadan: desteklenmiş dambıl çekişi, bel alt kısmına yük bindirmeden aynı çekme hareketini çalıştırır. |
+| `substitution.reason.bulgarianSplitSquatToLunge` | Ohne passende Bank: der normale Ausfallschritt trainiert dieselben Muskeln mit etwas geringerer Bewegungsreichweite. | Without a suitable bench: the regular lunge trains the same muscles with a slightly smaller range of motion. | Uygun bir bank olmadan: normal hamle aynı kasları biraz daha az hareket genişliğiyle çalıştırır. |
+| `substitution.reason.chestSupportedRowToSeatedCableRow` | Ohne passende Bank: sitzendes Kabelrudern trainiert dieselbe Zugbewegung, verlangt aber etwas mehr Rumpfstabilisation. | Without a suitable bench: the seated cable row trains the same pulling movement, but requires a bit more core stabilization. | Uygun bir bank olmadan: oturarak kablo çekişi aynı çekme hareketini çalıştırır, ancak biraz daha fazla gövde stabilizasyonu gerektirir. |
+| `substitution.reason.pullupToCableLatPulldown` | Ohne Klimmzugstange: der Latzug am Kabel trainiert dieselbe Zugrichtung mit einstellbarem Gewicht. | Without a pull-up bar: the cable lat pulldown trains the same pulling direction with adjustable weight. | Barfiks demiri olmadan: kablo lat pulldown aynı çekiş yönünü ayarlanabilir ağırlıkla çalıştırır. |
+| `substitution.reason.squatToGobletSquat` | Ohne Langhantel und Rack: Goblet Squat trainiert dieselbe Bewegung, aber mit geringerer Lastkapazität. | Without a barbell and rack: the goblet squat trains the same movement, but with lower load capacity. | Halter ve rack olmadan: Goblet Squat aynı hareketi çalıştırır, ancak daha düşük yük kapasitesiyle. |
+
+## `summary.*`  (72 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1648,6 +2441,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.addExercise.button` | Übung hinzufügen | Add exercise | Egzersiz ekle |
 | `summary.addExercise.hint` | Vergessen, eine Übung im Training zu loggen? Hinzufügen, Sätze eintragen, fertig. | Forgot to log an exercise during the workout? Add it here, fill in the sets, done. | Antrenman sırasında bir egzersizi kaydetmeyi unuttun mu? Buradan ekle, setleri doldur, hazır. |
 | `summary.addSet.button` | Satz hinzufügen | Add set | Set ekle |
+| `summary.amrap.avgPace` | ⌀ / Runde | ⌀ / Round | ⌀ / Tur |
+| `summary.amrap.perRound` | %@ pro Runde | %@ per round | tur başına %@ |
+| `summary.content.noHistoricalSnapshot` | Zeigt den aktuellen Planstand – kein überprüfter historischer Schnappschuss. | Shows the current plan state – not a verified historical snapshot. | Geçerli plan durumunu gösterir – doğrulanmış geçmiş bir anlık görüntü değildir. |
+| `summary.content.unreadable` | Trainingsdetails nicht lesbar. | Training details unreadable. | Antrenman detayları okunamıyor. |
 | `summary.date` | Datum | Date | Tarih |
 | `summary.deleteSession.confirmDelete` | Löschen | Delete | Sil |
 | `summary.deleteSession.confirmMessage` | Alle Sätze und das Volumen dieses Trainings werden entfernt. Diese Aktion kann nicht rückgängig gemacht werden. | All sets and the volume of this workout will be removed. This cannot be undone. | Bu antrenmanın tüm setleri ve hacmi kaldırılacak. Bu işlem geri alınamaz. |
@@ -1655,19 +2452,35 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.detailTitle` | Trainings-Detail | Workout Details | Antrenman Detayı |
 | `summary.duration` | Dauer | Duration | Süre |
 | `summary.durationMinutes` | %lld Min | %lld min | %lld dk |
+| `summary.early.footnote` | Der Lauf ist gespeichert, zählt aber nicht als Bestleistung — das Pensum war noch offen. | This run is saved but doesn't count as a personal best — the target wasn't fully reached. | Bu antrenman kaydedildi ama hedef tamamlanmadığı için rekor olarak sayılmıyor. |
+| `summary.early.progress` | %1$@ von %2$@ | %1$@ of %2$@ | %2$@ içinde %1$@ |
+| `summary.early.unitWithTime` | %1$@ in %2$@ | %1$@ in %2$@ | %2$@ içinde %1$@ |
 | `summary.editMeta.footer` | Datum + Dauer werden hier überschrieben. Set-Werte unten editierst du direkt am Satz. | Date + duration are overridden here. Edit set values directly on each set below. | Tarih + süre burada üzerine yazılır. Set değerlerini aşağıda doğrudan her sette düzenle. |
 | `summary.editMeta.header` | Eckdaten | Key Data | Temel Veriler |
+| `summary.editResult.circuitRounds` | Runden geschafft | Rounds completed | Tamamlanan tur |
+| `summary.editResult.completedMinutes` | Geschaffte Minuten | Minutes completed | Tamamlanan dakika |
+| `summary.editResult.enduranceRounds` | Runden geschafft | Rounds completed | Tamamlanan tur |
+| `summary.editResult.finishTime` | Zielzeit | Finish time | Bitiş süresi |
+| `summary.editResult.footer` | Nachträglich korrigieren, falls beim Speichern etwas danebenging. | Correct after the fact if something was off when you saved. | Kaydederken bir şey yanlış gittiyse sonradan düzelt. |
+| `summary.editResult.header` | Ergebnis | Result | Sonuç |
+| `summary.editResult.rounds` | Runden | Rounds | Tur |
 | `summary.editTitle` | Training bearbeiten | Edit Workout | Antrenmanı Düzenle |
 | `summary.exercise.bestPrefix` | Beste | Best | En İyi |
 | `summary.exercise.footer.one` | %1$lld Satz • %2$@ kg Volumen | %1$lld set • %2$@ kg volume | %1$lld set • %2$@ kg hacim |
 | `summary.exercise.footer.other` | %1$lld Sätze • %2$@ kg Volumen | %1$lld sets • %2$@ kg volume | %1$lld set • %2$@ kg hacim |
+| `summary.exercise.originalDeleted` | Ursprüngliche Übung wurde gelöscht – nur Anzeige. | Original exercise was deleted – view only. | Orijinal egzersiz silindi – yalnızca görüntüleme. |
 | `summary.exercise.removeFromSession` | Aus Session entfernen | Remove from session | Oturumdan kaldır |
+| `summary.eyebrow` | Training | Workout | Antrenman |
 | `summary.finishFooter` | Die Session ist bereits gespeichert. Der Button schließt die Zusammenfassung und bringt dich zurück aufs Dashboard. | Session is already saved. The button closes the summary and returns you to the dashboard. | Oturum zaten kaydedildi. Buton özeti kapatır ve seni panele döndürür. |
 | `summary.gear.header` | Ausrüstung | Gear | Ekipman |
 | `summary.gear.none` | Kein Gear | No gear | Ekipman yok |
 | `summary.hero.title` | Training abgeschlossen | Workout completed | Antrenman Tamamlandı |
+| `summary.hero.title.early` | Vorzeitig gespeichert | Saved early | Erken kaydedildi |
+| `summary.hero.unit.circuitRounds` | Runden geschafft | rounds completed | tamamlanan tur |
 | `summary.hero.unit.km` | km Cardio | km cardio | km kardiyo |
 | `summary.hero.unit.minutes` | Minuten Training | minutes training | dakika antrenman |
+| `summary.hero.unit.minutesDone` | Minuten geschafft | minutes done | tamamlanan dakika |
+| `summary.hero.unit.rounds` | Runden geschafft | rounds completed | tamamlanan tur |
 | `summary.hero.unit.volumeKg` | kg Volumen | kg volume | kg hacim |
 | `summary.menu.deleteSession` | Training löschen | Delete Workout | Antrenmanı sil |
 | `summary.note.footer` | Tauchen später in der History pro Session auf — gut für Form-Cues und Verletzungs-Tracking. | Show up later in history per session — useful for form cues and injury tracking. | Geçmişte oturum başına görünür — form ipuçları ve sakatlık takibi için faydalı. |
@@ -1683,27 +2496,86 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `summary.section.stats` | Zusammenfassung | Summary | Özet |
 | `summary.setsEmpty` | Keine Sätze geloggt. | No sets logged. | Set kaydedilmedi. |
 | `summary.setsHeader` | Sätze | Sets | Setler |
+| `summary.stat.circuitRest` | Pause | Rest | Mola |
+| `summary.stat.exercises` | Übungen | Exercises | Egzersizler |
+| `summary.stat.minuteTarget` | Minuten-Ziel | Minute target | Dakika hedefi |
 | `summary.title` | Zusammenfassung | Summary | Özet |
-| `summary.toolbar.done` | Fertig | Done | Tamam |
-| `summary.toolbar.edit` | Bearbeiten | Edit | Düzenle |
 
 ## `tab.*`  (5 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `tab.calculators` | Rechner | Tools | Araçlar |
 | `tab.dashboard` | Dashboard | Dashboard | Panel |
 | `tab.measurement` | Messung | Measurement | Ölçüm |
 | `tab.more` | Mehr | More | Daha Fazla |
 | `tab.plan` | Plan | Plan | Plan |
+| `tab.tools` | Werkzeuge | Tools | Araçlar |
 
-## `trophy.*`  (23 Keys)
+## `timedWorkout.*`  (52 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `timedWorkout.amrap.addRound` | +1 Runde | +1 round | +1 tur |
+| `timedWorkout.amrap.capContext` | %lld Min. Deckel | %lld min cap | %lld dk limit |
+| `timedWorkout.amrap.circuitHint` | Von vorn, bis die Zeit abgelaufen ist. | Start over, until time runs out. | Süre bitene kadar baştan başla. |
+| `timedWorkout.amrap.partialReps` | Zusätzliche Wdh. | Extra reps | Ek tekrar |
+| `timedWorkout.amrap.partialReps.exercise` | Übung (Restwdh.) | Exercise (extra reps) | Egzersiz (ek tekrar) |
+| `timedWorkout.amrap.partialReps.hint` | Zeit ist abgelaufen. Trag ein, wie weit du in der angebrochenen Runde gekommen bist. | Time's up. Enter how far you got in the unfinished round. | Süre doldu. Bitmeyen turda ne kadar ilerlediğini gir. |
+| `timedWorkout.amrap.rounds.one` | %lld Runde | %lld round | %lld tur |
+| `timedWorkout.amrap.rounds.other` | %lld Runden | %lld rounds | %lld tur |
+| `timedWorkout.amrap.roundsLabel` | RUNDEN | ROUNDS | TUR |
+| `timedWorkout.circuit.checkedProgress` | %lld von %lld abgehakt | %lld of %lld checked | %lld/%lld işaretlendi |
+| `timedWorkout.circuit.finishRound` | Runde beenden | End round | Turu bitir |
+| `timedWorkout.circuit.fixedRepsHint` | Hake jede Uebung ab, sobald du ihr Ziel fuer diese Runde geschafft hast. | Check off each exercise once you've hit its target for this round. | Bu turdaki hedefine ulastigin her egzersizi isaretle. |
+| `timedWorkout.circuit.pauseHint` | Nutze die Pause zum Durchatmen - die naechste Runde startet automatisch, sobald die Zeit um ist. | Use the rest to catch your breath - the next round starts automatically once time's up. | Nefes almak icin molayi kullan - sure dolunca bir sonraki tur otomatik baslar. |
+| `timedWorkout.circuit.pauseLabel` | PAUSE | REST | MOLA |
+| `timedWorkout.circuit.pillLabel` | Zirkel | Circuit | Devre |
+| `timedWorkout.circuit.roundContext` | RUNDE %lld/%lld | ROUND %lld/%lld | TUR %lld/%lld |
+| `timedWorkout.circuit.skipRest` | Pause überspringen | Skip rest | Molayı atla |
+| `timedWorkout.circuit.toFailureHint` | Wiederhole die Sequenz, bis keine sauberen Wiederholungen mehr moeglich sind, dann "Runde beenden" antippen. | Repeat the sequence until no more clean reps are possible, then tap "End round". | Temiz tekrar yapamayana kadar diziyi tekrarla, sonra "Turu bitir"e dokun. |
+| `timedWorkout.discard.confirmButton` | Abbrechen & verwerfen | Cancel & discard | İptal et ve sil |
+| `timedWorkout.discard.confirmTitle` | Training abbrechen? | Cancel workout? | Antrenmanı iptal et? |
+| `timedWorkout.discard.menu` | Verwerfen | Discard | Sil |
+| `timedWorkout.elapsed` | Verstrichen: %@ | Elapsed: %@ | Geçen süre: %@ |
+| `timedWorkout.emom.completedPill` | %lld erledigt | %lld done | %lld tamam |
+| `timedWorkout.emom.markDone` | Minute geschafft | Minute done | Dakika tamam |
+| `timedWorkout.emom.minuteContext` | Minute %lld / %lld | Minute %lld of %lld | %lld. / %lld. dakika |
+| `timedWorkout.emom.nextMinute` | Nächste Minute | Next minute | Sonraki dakika |
+| `timedWorkout.emom.notification.complete` | EMOM geschafft! Ergebnis speichern. | EMOM complete! Save your result. | EMOM tamamlandı! Sonucu kaydet. |
+| `timedWorkout.emom.notification.nextMinute` | Minute %lld beginnt | Minute %lld starts | %lld. dakika başlıyor |
+| `timedWorkout.emom.thisMinute` | DIESE MINUTE | THIS MINUTE | BU DAKİKA |
+| `timedWorkout.enduranceIntervals.cooldown` | AUSLAUFEN | COOL-DOWN | SOĞUMA |
+| `timedWorkout.enduranceIntervals.cooldownHint` | Lauf locker aus, um runterzukommen. | Ease off to cool down. | Yavaşlayarak soğu. |
+| `timedWorkout.enduranceIntervals.openTarget` | Kein festes Ziel | No fixed target | Sabit hedef yok |
+| `timedWorkout.enduranceIntervals.pause` | Pause | Pause | Duraklat |
+| `timedWorkout.enduranceIntervals.paused` | PAUSIERT | PAUSED | DURAKLATILDI |
+| `timedWorkout.enduranceIntervals.pillLabel` | Intervalle | Intervals | Aralıklar |
+| `timedWorkout.enduranceIntervals.rest` | ERHOLUNG | RECOVERY | TOPARLANMA |
+| `timedWorkout.enduranceIntervals.resume` | Fortsetzen | Resume | Devam et |
+| `timedWorkout.enduranceIntervals.skip` | Überspringen | Skip | Atla |
+| `timedWorkout.enduranceIntervals.warmup` | EINLAUFEN | WARM-UP | ISINMA |
+| `timedWorkout.enduranceIntervals.warmupHint` | Lauf dich locker ein - die Belastung startet automatisch, sobald die Zeit um ist. | Ease into it - the work phase starts automatically once time's up. | Yavaşça ısın - süre dolunca yüklenme otomatik başlar. |
+| `timedWorkout.enduranceIntervals.work` | BELASTUNG | WORK | ÇALIŞMA |
+| `timedWorkout.enduranceIntervals.workDone` | Fertig | Done | Bitti |
+| `timedWorkout.enduranceIntervals.workOpenHint` | Lauf dein Ziel, dann tippe auf „Fertig“. | Cover your target, then tap “Done”. | Hedefini tamamla, sonra “Bitti”'ye dokun. |
+| `timedWorkout.enduranceIntervals.workTimedHint` | Gib Gas, bis die Zeit um ist - danach folgt automatisch die Erholung. | Push until time's up - recovery follows automatically. | Süre dolana kadar yüklen - ardından toparlanma otomatik başlar. |
+| `timedWorkout.finish.save` | Speichern | Save | Kaydet |
+| `timedWorkout.forTime.finishedLabel` | Geschafft! | Done! | Tamamlandı! |
+| `timedWorkout.forTime.lastRoundHint` | Das letzte Häkchen stoppt die Uhr. | The last checkmark stops the clock. | Son işaret saati durdurur. |
+| `timedWorkout.forTime.pillLabel` | Auf Zeit | For Time | Süreye Karşı |
+| `timedWorkout.forTime.progressContext` | %lld / %lld erledigt | %lld of %lld done | %lld / %lld tamam |
+| `timedWorkout.preroll.label` | STARTET GLEICH | STARTING SOON | HEMEN BAŞLIYOR |
+| `timedWorkout.preroll.startNow` | Jetzt starten | Start now | Şimdi başla |
+| `timedWorkout.running.label` | LÄUFT | RUNNING | ÇALIŞIYOR |
+
+## `trophy.*`  (24 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `trophy.axis.distance` | Distanz (km) | Distance (km) | Mesafe (km) |
 | `trophy.axis.pace` | Pace (min/km) | Pace (min/km) | Tempo (dk/km) |
 | `trophy.axis.reps` | Wdh | Reps | Tekrar |
+| `trophy.axis.rounds` | Runden | Rounds | Tur |
 | `trophy.axis.seconds` | Sekunden | Seconds | Saniye |
 | `trophy.axis.volume` | Volumen (kg) | Volume (kg) | Hacim (kg) |
 | `trophy.axis.weight` | Gewicht (kg) | Weight (kg) | Ağırlık (kg) |
@@ -1725,13 +2597,15 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `trophy.singleEntry` | Nur ein %@-Eintrag — Trend ab 2 Rekorden. | Only one %@ entry — trend starts at 2 records. | Sadece bir %@ kaydı — trend 2 rekordan başlar. |
 | `trophy.totalRecords` | %lld Rekorde gesamt | %lld records total | Toplam %lld rekor |
 
-## `unit.*`  (6 Keys)
+## `unit.*`  (8 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `unit.kg.lower` | kg | kg | kg |
 | `unit.kg.upper` | KG | KG | KG |
 | `unit.km.lower` | km | km | km |
+| `unit.lbs.lower` | lbs | lbs | lbs |
+| `unit.lbs.upper` | LBS | LBS | LBS |
 | `unit.minutes.short` | Min | min | dk |
 | `unit.reps.short` | Wdh | reps | tkr |
 | `unit.seconds.short` | Sek | sec | sn |
@@ -1747,7 +2621,6 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `water.empty` | Trag deinen ersten Schluck mit den Buttons oben ein. | Log your first sip with the buttons above. | İlk yudumu yukarıdaki butonlarla kaydet. |
 | `water.goalReached` | Tagesziel erreicht | Daily goal reached | Günlük hedef ulaşıldı |
 | `water.heroFooter` | Tagesziel = Gewicht × 35 ml. Quelle: %@. | Daily goal = weight × 35 ml. Source: %@. | Günlük hedef = kilo × 35 ml. Kaynak: %@. |
 | `water.ofTotal` | ml von %lld | ml of %lld | ml / %lld |
@@ -1758,6 +2631,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `water.source.goalWeight` | Profil-Zielgewicht | profile goal weight | profil hedef kilo |
 | `water.source.lastMeasurement` | letzte Messung | last measurement | son ölçüm |
 | `water.title` | Wasser | Water | Su |
+| `water.todaySection.title` | Heute | Today | Bugün |
 
 ## `widget.*`  (12 Keys)
 
@@ -1776,14 +2650,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `widget.weightTrend.name` | Gewichts-Trend | Weight Trend | Kilo Trendi |
 | `widget.workoutHistory.name` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
 
-## `workout.*`  (4 Keys)
+## `workout.*`  (6 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `workout.allSetsDone` | Alle Sätze erledigt | All sets done | Tüm setler tamam |
 | `workout.detail.cardio` | Cardio • %llds Pause | Cardio • %llds rest | Kardiyo • %llds mola |
-| `workout.detail.reps` | %1$lld Sätze • %2$@ Wdh • %3$llds Pause | %1$lld sets • %2$@ reps • %3$llds rest | %1$lld set • %2$@ tekrar • %3$llds mola |
-| `workout.detail.seconds` | %1$lld Sätze • %2$@ Sek • %3$llds Pause | %1$lld sets • %2$@ sec • %3$llds rest | %1$lld set • %2$@ sn • %3$llds mola |
+| `workout.detail.reps.one` | %1$lld Satz • %2$@ Wdh • %3$llds Pause | %1$lld set • %2$@ reps • %3$llds rest | %1$lld set • %2$@ tekrar • %3$llds mola |
+| `workout.detail.reps.other` | %1$lld Sätze • %2$@ Wdh • %3$llds Pause | %1$lld sets • %2$@ reps • %3$llds rest | %1$lld set • %2$@ tekrar • %3$llds mola |
+| `workout.detail.seconds.one` | %1$lld Satz • %2$@ Sek • %3$llds Pause | %1$lld set • %2$@ sec • %3$llds rest | %1$lld set • %2$@ sn • %3$llds mola |
+| `workout.detail.seconds.other` | %1$lld Sätze • %2$@ Sek • %3$llds Pause | %1$lld sets • %2$@ sec • %3$llds rest | %1$lld set • %2$@ sn • %3$llds mola |
 
 
 ---

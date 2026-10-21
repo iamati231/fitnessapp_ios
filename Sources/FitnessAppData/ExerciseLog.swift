@@ -38,6 +38,15 @@ public final class ExerciseLog {
     /// — PR-Sync fallbacked dann auf `exercise?.name`, solange noch eine
     /// Live-Referenz existiert.
     public var exerciseNameSnapshot: String?
+    /// Settings-Epic Phase 6 (EXLIB-07/09): Snapshot der stabilen
+    /// `ExerciseTemplate.id`, analog zu `exerciseNameSnapshot`. Wird beim
+    /// `init(...)` aus der uebergebenen `Exercise` gezogen. `nil` fuer
+    /// Alt-Logs ohne Backfill-Treffer ODER wenn die geloggte `Exercise`
+    /// selbst keine aufgeloeste Vorlagen-ID trug (Ad-Hoc ohne Plan-Bezug
+    /// gibt es in dieser App nicht — jede `Exercise` stammt von einer
+    /// `ExerciseTemplate` — insofern ist `nil` hier ausschliesslich ein
+    /// Alt-Daten-Fall). `resolvedExerciseTemplateID` liest snapshot-first.
+    public var exerciseTemplateIDSnapshot: UUID?
     /// DEL-051: Snapshot der `Exercise.isCardio`-Flagge. Cardio-Lifts werden
     /// vom `PRDetector` aussortiert, dafuer brauchen wir den Wert auch
     /// nach einem Exercise-Delete.
@@ -72,6 +81,17 @@ public final class ExerciseLog {
     /// Nullify rather than cascade — sessions can be deleted without losing logs.
     public var session: WorkoutSession?
 
+    /// P8 Stufe-2: Snapshot von `Exercise.orderIndex` zum Logging-Zeitpunkt.
+    /// Einziger Zweck: NACH einem Exercise-Delete (`exercise` wird `nil`,
+    /// s. DEL-051 oben) zwei gleichnamige Übungen am selben Tag (z. B.
+    /// Bankdrücken als Hauptsatz UND als Finisher) weiterhin
+    /// auseinanderzuhalten — `exerciseNameSnapshot`/`exerciseTemplateIDSnapshot`
+    /// allein wären für beide identisch. `nil` für Alt-Logs vor diesem Feld;
+    /// ein `WorkoutSummaryView`-Leser ohne diesen Wert gruppiert dann
+    /// konservativ nur nach Name/Vorlagen-ID (dieselbe, bereits vorher
+    /// bestehende Grenze bei fehlendem Snapshot).
+    public var exerciseOrderIndexSnapshot: Int?
+
     public init(
         date: Date = Date(),
         setIndex: Int,
@@ -100,8 +120,10 @@ public final class ExerciseLog {
         // ziehen. Wenn `exercise == nil` (z.B. ad-hoc-Logs ohne Plan-
         // Verknuepfung) bleiben die Snapshots leer.
         self.exerciseNameSnapshot       = exercise?.name
+        self.exerciseTemplateIDSnapshot = exercise?.exerciseTemplateID
         self.exerciseIsCardioSnapshot   = exercise?.isCardio ?? false
         self.exerciseIsTimeBasedSnapshot = exercise?.isTimeBased ?? false
+        self.exerciseOrderIndexSnapshot = exercise?.orderIndex
         // DEL-155: Cardio-Equipment-Snapshot. Nur fuer Cardio-Logs relevant;
         // bei Strength bleibt es nil.
         self.exerciseCardioEquipmentSnapshot = (exercise?.isCardio == true)
@@ -117,6 +139,15 @@ public final class ExerciseLog {
     public var resolvedExerciseName: String? {
         if let snap = exerciseNameSnapshot, !snap.isEmpty { return snap }
         return exercise?.name
+    }
+
+    /// Settings-Epic Phase 6 (EXLIB-07/09): stabile Vorlagen-ID, snapshot-
+    /// first wie `resolvedExerciseName`. `nil` nur fuer Alt-Logs ohne
+    /// Backfill-Treffer (weder Snapshot noch Live-Exercise hatten je eine
+    /// ID) — Caller fallen dann auf `resolvedExerciseName` zurueck, exakt
+    /// das Verhalten vor dieser Phase.
+    public var resolvedExerciseTemplateID: UUID? {
+        exerciseTemplateIDSnapshot ?? exercise?.exerciseTemplateID
     }
 
     /// Cardio-Flag mit Snapshot-first-Auflesung. Pre-DEL-051-Bestand ohne

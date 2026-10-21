@@ -10,6 +10,8 @@ import FitnessAppData
 @available(iOS 17.0, macOS 14.0, *)
 public struct WorkoutHistoryView: View {
 
+    @Environment(\.dismiss) private var dismiss
+
     // Rest-day-marker sessions (skipped rest days from the Dashboard) live
     // in the store with isCompleted=true so the PlanNavigator advances its
     // pointer, but they aren't workouts and don't belong in History.
@@ -20,33 +22,83 @@ public struct WorkoutHistoryView: View {
     public init() {}
 
     public var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            // Signature-Geruest 1.2: direkt vom Dashboard gepusht (kein
+            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
+            // DashboardSettingsView/DataExportView unter "Mehr".
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.dashboard", bundle: .module).uppercased(),
+                title: String(localized: "dashboard.history.title", bundle: .module),
+                onBack: { dismiss() }
+            )
+
             if sessions.isEmpty {
-                ContentUnavailableView(
-                    String(localized: "history.empty.title", bundle: .module),
-                    systemImage: "calendar.badge.exclamationmark",
-                    description: Text("history.empty.description", bundle: .module)
-                )
+                VStack(alignment: .leading, spacing: 18) {
+                    DashboardEmptyState(
+                        icon: "calendar.badge.exclamationmark",
+                        title: "history.empty.title",
+                        description: "history.empty.description"
+                    )
+                    .deltiqCardStyle()
+                }
+                .deltiqScreen()
             } else {
-                List {
+                VStack(alignment: .leading, spacing: 18) {
+                    // DEL-Handoff 3a: Kontextzeile mit Anzahl + letzter Einheit —
+                    // dieselbe Formel wie DashboardView.historyTeaserText, nur
+                    // als Pill statt Fliesstext.
+                    DeltiqContextRow([
+                        DeltiqContextItem(historyContextText.uppercased(), style: .neutral)
+                    ])
                     ForEach(monthSections) { section in
-                        Section(section.label) {
-                            ForEach(section.sessions) { session in
-                                NavigationLink {
-                                    WorkoutSummaryView(session: session, isReadOnly: true)
-                                } label: {
-                                    HistorySessionRow(session: session)
-                                }
-                            }
-                        }
+                        monthCard(section)
                     }
                 }
+                .deltiqScreen()
             }
         }
-        .navigationTitle(Text("dashboard.history.title", bundle: .module))
+        .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
+        .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
+    }
+
+    // MARK: Sections
+
+    private func monthCard(_ section: MonthSection) -> some View {
+        DeltiqSection(section.label.uppercased()) {
+            ForEach(section.sessions) { session in
+                NavigationLink {
+                    WorkoutSummaryView(session: session, isReadOnly: true)
+                } label: {
+                    HistorySessionRow(session: session, showsDivider: session.id != section.sessions.last?.id)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: Context
+
+    /// Spiegelt `DashboardView.historyTeaserText` — dieselben zwei
+    /// xcstrings-Varianten (count+last / count-only), hier als Pill statt
+    /// Fliesstext, weil sie in eine `DeltiqContextRow` wandert.
+    private var historyContextText: String {
+        guard let latest = sessions.first else {
+            return String(format: String(localized: "dashboard.history.countOnly", bundle: .module), sessions.count)
+        }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        let relative = formatter.localizedString(for: latest.startTime, relativeTo: Date())
+        let template = String(localized: "dashboard.history.countWithLast", bundle: .module)
+        return template
+            .replacingOccurrences(of: "%1$lld", with: "\(sessions.count)")
+            .replacingOccurrences(of: "%2$@", with: relative)
     }
 
     // MARK: Grouping
@@ -83,31 +135,80 @@ public struct WorkoutHistoryView: View {
 @available(iOS 17.0, macOS 14.0, *)
 struct HistorySessionRow: View {
     let session: WorkoutSession
+    var showsDivider: Bool = true
 
     var body: some View {
-        HStack(spacing: 12) {
-            // DEL-065: Icon + Hintergrundfarbe je nach Session-Typ.
-            //   * Cardio  → figure.run + orange
-            //   * Rest    → bed.double.fill + purple (eigentlich gefiltert,
-            //               aber Edge-Case-safe)
-            //   * Strength → Datums-Block in blau wie bisher
-            iconBadge
-            VStack(alignment: .leading, spacing: 2) {
-                // DEL-129: displayDayName loest day.displayName + Snapshot-
-                // Fallback in einer Extension auf, sodass History-Eintraege
-                // im EN/TR-Modus korrekt rendern.
-                Text(session.displayDayName)
-                    .font(.body.weight(.semibold))
-                statsLine
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                // DEL-065: Icon + Hintergrundfarbe je nach Session-Typ.
+                //   * Cardio  → figure.run + Orange
+                //   * Rest    → bed.double.fill + Orange (eigentlich gefiltert,
+                //               aber Edge-Case-safe; Icon-Form ist der einzige
+                //               Unterschied zu Cardio/Strength, siehe DEL-105)
+                //   * Strength → Datums-Block in Orange wie bisher
+                iconBadge
+                VStack(alignment: .leading, spacing: 2) {
+                    // DEL-129: displayDayName loest day.displayName + Snapshot-
+                    // Fallback in einer Extension auf, sodass History-Eintraege
+                    // im EN/TR-Modus korrekt rendern.
+                    HStack(spacing: 6) {
+                        Text(session.displayDayName)
+                            .font(.body.weight(.semibold))
+                            .lineLimit(1)
+                        // README 2.11: unterscheidet einen vorzeitig gespeicherten
+                        // Zeitformat-Lauf von einem vollstaendigen beim Durch-
+                        // blaettern - sonst liest sich die Kennzahl in `statsLine`
+                        // gegen einen vollen Lauf falsch.
+                        if isEarlySaveTimedFormat {
+                            DeltiqPill(String(localized: "history.early.badge", bundle: .module), style: .neutral)
+                        }
+                        // Zeigt, dass diese Session automatisch aus einem
+                        // externen HealthKit-Workout importiert wurde (z.B.
+                        // Adidas Running) statt nativ in der App erfasst.
+                        if let source = session.importSourceName {
+                            DeltiqPill(source, style: .neutral)
+                        }
+                    }
+                    statsLine
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.textTertiary)
             }
-            Spacer()
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(minHeight: 44)
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
+            }
         }
-        .padding(.vertical, 2)
+    }
+
+    /// README 2.11: siehe `WorkoutSummaryView.isEarlySaveTimedFormat` -
+    /// dieselbe Bedingung, hier lokal dupliziert statt geteilt, da beide
+    /// Views sonst keine gemeinsame Basis haben.
+    private var isEarlySaveTimedFormat: Bool {
+        session.timeFormatSnapshot != nil && !session.completedTarget
     }
 
     @ViewBuilder
     private var iconBadge: some View {
-        if isCardioSession {
+        // README 2.9: eigenes Icon fuer AMRAP/EMOM/Auf Zeit, analog zum
+        // Cardio-/Rest-Sonderfall darueber - ein gemeinsames "stopwatch"
+        // reicht, die Format-Differenzierung passiert schon in statsLine.
+        if session.timeFormatSnapshot != nil {
+            VStack {
+                Image(systemName: "stopwatch")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 44, height: 44)
+            .background(Color.deltiqOrange.gradient)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else if isCardioSession {
             // Cardio-Tag: figure.run-Symbol + Orange. Datum wandert als
             // kleiner Untertitel in die statsLine? Nein — wir behalten den
             // Datums-Stempel, aber mit Orange-Tint.
@@ -129,7 +230,7 @@ struct HistorySessionRow: View {
                     .foregroundStyle(.white)
             }
             .frame(width: 44, height: 44)
-            .background(Color.purple.gradient)
+            .background(Color.deltiqOrange.gradient)
             .clipShape(RoundedRectangle(cornerRadius: 8))
         } else {
             // DEL-105: Strength-Datums-Block uebernimmt den Brand-Akzent.
@@ -158,18 +259,47 @@ struct HistorySessionRow: View {
         return formatter.string(from: session.startTime)
     }
 
+    /// "25:56" auf die Sekunde, solange Beginn und Ende zur Dauer passen; sonst
+    /// die Minuten ("26 min").
+    private var durationText: String {
+        session.exactDurationText
+            ?? "\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))"
+    }
+
     /// DEL-063 + DEL-081: Drei-State-Stats-Zeile via `SessionCategory`.
     ///   * pureStrength → Dauer · Saetze · Volumen-kg
     ///   * pureCardio   → Dauer · Distanz · Ø-Pace
     ///   * mixed        → Dauer · Volumen · Distanz (Pace + Saetze entfallen
     ///     aus Platzgruenden; User sieht beide Hauptmetriken sofort)
+    ///
+    /// README 2.9: vierter State fuer Zeitformate, VOR `sessionCategory`
+    /// geprueft - die liest aus `logs` und wuerde Zeitformat-Sessions (nie
+    /// ExerciseLogs) faelschlich als "0 Saetze · 0 kg" lesen.
     @ViewBuilder
     private var statsLine: some View {
+        if let format = session.timeFormatSnapshot {
+            HStack(spacing: 6) {
+                Image(systemName: "clock")
+                Text(durationText)
+                Text("•")
+                Image(systemName: timedFormatIcon(format))
+                Text(timedFormatValueText(format))
+            }
+            .font(.caption)
+            .foregroundStyle(Color.Deltiq.textSecondary)
+            .monospacedDigit()
+        } else {
+            timedFormatAgnosticStatsLine
+        }
+    }
+
+    @ViewBuilder
+    private var timedFormatAgnosticStatsLine: some View {
         switch session.sessionCategory {
         case .pureCardio:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
+                Text(durationText)
                 Text("•")
                 Image(systemName: "figure.run")
                 Text(totalDistanceText)
@@ -178,13 +308,13 @@ struct HistorySessionRow: View {
                 Text(averagePaceText)
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.Deltiq.textSecondary)
             .monospacedDigit()
 
         case .mixed:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
+                Text(durationText)
                 Text("•")
                 Image(systemName: "scalemass")
                 Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
@@ -193,13 +323,13 @@ struct HistorySessionRow: View {
                 Text(totalDistanceText)
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.Deltiq.textSecondary)
             .monospacedDigit()
 
         case .pureStrength:
             HStack(spacing: 6) {
                 Image(systemName: "clock")
-                Text("\(session.durationMinutes) \(String(localized: "unit.minutes.short", bundle: .module))")
+                Text(durationText)
                 Text("•")
                 Image(systemName: "list.number")
                 Text("\(session.totalSets)")
@@ -208,8 +338,35 @@ struct HistorySessionRow: View {
                 Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.Deltiq.textSecondary)
             .monospacedDigit()
+        }
+    }
+
+    private func timedFormatIcon(_ format: WorkoutTimeFormat) -> String {
+        switch format {
+        case .amrap: return "repeat"
+        case .emom: return "checkmark.circle"
+        case .forTime: return "flag.checkered"
+        case .circuit: return "arrow.triangle.2.circlepath"
+        case .enduranceIntervals:
+            // Paket 2 (Sportart-Unterscheidung): war hartcodiert auf
+            // "figure.run", unabhaengig von der tatsaechlichen Sportart -
+            // zeigte faelschlich ein Lauf-Icon auch fuer Rad-Einheiten.
+            return session.contentSnapshotEnduranceSportKind == .cycling ? "figure.outdoor.cycle" : "figure.run"
+        }
+    }
+
+    /// Bare Zahl statt Zahl+Einheit — gleiche Konvention wie "list.number"
+    /// oben fuer Saetze: das Icon traegt die Bedeutung, der Wert bleibt kurz
+    /// genug fuer die einzeilige Kompakt-Zeile.
+    private func timedFormatValueText(_ format: WorkoutTimeFormat) -> String {
+        switch format {
+        case .amrap: return "\(session.roundsCompleted ?? 0)"
+        case .emom: return "\(session.completedMinuteCount ?? 0)"
+        case .forTime: return PaceCalculator.formatDuration(session.finishTimeSeconds ?? 0)
+        case .circuit: return "\(session.circuitRoundsCompleted ?? 0)"
+        case .enduranceIntervals: return "\(session.enduranceRoundsCompleted ?? 0)"
         }
     }
 

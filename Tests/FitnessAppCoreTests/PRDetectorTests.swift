@@ -430,6 +430,132 @@ final class PRDetectorTests: XCTestCase {
         XCTAssertTrue(prs.contains { $0.kind == .heaviestWeight })
     }
 
+    // MARK: - Zeitformate (README 2.9): detectTimedFormatPR
+
+    private func amrapAttempt(rounds: Int, partial: Int = 0, wod: String = "Cindy", date: Date? = nil) -> TimedWorkoutAttempt {
+        TimedWorkoutAttempt(wodName: wod, format: .amrap, date: date ?? now, roundsCompleted: rounds, partialReps: partial)
+    }
+
+    private func forTimeAttempt(seconds: Int, wod: String = "Fran", date: Date? = nil, completedTarget: Bool = true) -> TimedWorkoutAttempt {
+        TimedWorkoutAttempt(wodName: wod, format: .forTime, date: date ?? now, finishTimeSeconds: seconds, completedTarget: completedTarget)
+    }
+
+    func testAmrapFirstAttemptProducesNoPR() {
+        let pr = PRDetector.detectTimedFormatPR(session: amrapAttempt(rounds: 10), history: [])
+        XCTAssertNil(pr, "Erste Session an diesem WOD hat keine Baseline zum Schlagen")
+    }
+
+    func testAmrapDifferentWodNameIsNotABaseline() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: amrapAttempt(rounds: 10, wod: "Cindy"),
+            history: [amrapAttempt(rounds: 5, wod: "Annie", date: weekAgo)]
+        )
+        XCTAssertNil(pr, "Historie eines ANDEREN WODs darf keine Baseline liefern")
+    }
+
+    func testAmrapMoreRoundsIsAPR() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: amrapAttempt(rounds: 13, partial: 4),
+            history: [amrapAttempt(rounds: 12, partial: 8, date: weekAgo)]
+        )
+        XCTAssertEqual(pr?.kind, .mostRounds)
+        XCTAssertEqual(pr?.newValue, 13)
+        XCTAssertEqual(pr?.previousValue, 12)
+        XCTAssertEqual(pr?.reps, 4, "reps traegt die aktuellen partialReps fuer die Anzeige")
+    }
+
+    func testAmrapFewerOrEqualRoundsIsNotAPR() {
+        let sameRounds = PRDetector.detectTimedFormatPR(
+            session: amrapAttempt(rounds: 12, partial: 8),
+            history: [amrapAttempt(rounds: 12, partial: 2, date: weekAgo)]
+        )
+        XCTAssertNil(sameRounds, "Gleiche Rundenzahl ist kein PR, auch mit mehr Restwiederholungen (v1-Vereinfachung)")
+
+        let fewerRounds = PRDetector.detectTimedFormatPR(
+            session: amrapAttempt(rounds: 11),
+            history: [amrapAttempt(rounds: 12, date: weekAgo)]
+        )
+        XCTAssertNil(fewerRounds)
+    }
+
+    func testForTimeFasterIsAPR() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 300),
+            history: [forTimeAttempt(seconds: 330, date: weekAgo)]
+        )
+        XCTAssertEqual(pr?.kind, .fastestTime)
+        XCTAssertEqual(pr?.newValue, 300)
+        XCTAssertEqual(pr?.previousValue, 330)
+    }
+
+    func testForTimeSlowerOrEqualIsNotAPR() {
+        let slower = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 340),
+            history: [forTimeAttempt(seconds: 330, date: weekAgo)]
+        )
+        XCTAssertNil(slower)
+
+        let tied = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 330),
+            history: [forTimeAttempt(seconds: 330, date: weekAgo)]
+        )
+        XCTAssertNil(tied, "Identische Zeit ist kein PR — strict > only, analog zu Kraft-PRs")
+    }
+
+    /// README 2.10/19e-Vorbedingung: ein frueh gespeicherter (kuerzerer) Lauf
+    /// darf nicht als Bestzeit durchgehen, egal wie schnell seine Zeit
+    /// gegenueber einem echten, vollstaendigen Lauf wirkt.
+    func testForTimeAbandonedRunNeverProducesAPR() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 192, completedTarget: false),
+            history: [forTimeAttempt(seconds: 580, date: weekAgo)]
+        )
+        XCTAssertNil(pr, "4 von 9 Runden in 3:12 darf 9 von 9 in 9:40 nicht schlagen")
+    }
+
+    /// Gegenstueck: eine abgebrochene HISTORISCHE Session darf nicht als
+    /// schlagbare Baseline zaehlen — sonst wuerde ein spaeterer, ebenfalls
+    /// abgebrochener Lauf sie faelschlich als PR ausweisen.
+    func testForTimeAbandonedHistoryIsNotABaseline() {
+        let pr = PRDetector.detectTimedFormatPR(
+            session: forTimeAttempt(seconds: 400),
+            history: [forTimeAttempt(seconds: 192, date: weekAgo, completedTarget: false)]
+        )
+        XCTAssertNil(pr, "Eine abgebrochene Historie darf keine Baseline liefern, egal wie kurz")
+    }
+
+    func testEmomNeverProducesAPR() {
+        let attempt = TimedWorkoutAttempt(
+            wodName: "EMOM 12", format: .emom, date: now, roundsCompleted: 12
+        )
+        let history = TimedWorkoutAttempt(
+            wodName: "EMOM 12", format: .emom, date: weekAgo, roundsCompleted: 6
+        )
+        XCTAssertNil(
+            PRDetector.detectTimedFormatPR(session: attempt, history: [history]),
+            "EMOM ist pass/fail, kein maximierbarer Wert — bewusst kein PR-Kind"
+        )
+    }
+
+    /// Nutzer-Feedback (13. August, zweite Runde): `.circuit` hat eine vom
+    /// Tag fest vorgegebene Rundenzahl (`TrainingDay.circuitRounds`) - anders
+    /// als EMOM (pass/fail) ist hier `roundsCompleted` sogar ein Zahlenwert,
+    /// der theoretisch verglichen werden KOENNTE, aber bewusst nicht wird:
+    /// die Zahl ist durch den Plan fix, keine variable Leistung, gegen die
+    /// sich ein Bestwert bilden liesse.
+    func testCircuitNeverProducesAPR() {
+        let attempt = TimedWorkoutAttempt(
+            wodName: "Ganzkörper-Komplex", format: .circuit, date: now, roundsCompleted: 5
+        )
+        let history = TimedWorkoutAttempt(
+            wodName: "Ganzkörper-Komplex", format: .circuit, date: weekAgo, roundsCompleted: 3
+        )
+        XCTAssertNil(
+            PRDetector.detectTimedFormatPR(session: attempt, history: [history]),
+            "Zirkel-Rundenzahl ist durch den Tag fest vorgegeben, kein maximierbarer Wert — bewusst kein PR-Kind"
+        )
+    }
+
     // MARK: - DEL-218 displayOrder
 
     /// Regression: `displayOrder` MUSS jeden Case enthalten. Vor DEL-218 lag
@@ -462,5 +588,80 @@ final class PRDetectorTests: XCTestCase {
                 )
             }
         }
+    }
+
+    // MARK: - Settings-Epic Phase 6 (EXLIB-07/09): ID-first Gruppierung
+
+    /// Kernfall des Bugs: eine Uebung wurde umbenannt (Historie traegt noch
+    /// den ALTEN Namens-Snapshot, die aktuelle Session den NEUEN), aber
+    /// beide Attempts tragen dieselbe stabile `exerciseTemplateID`. Vor
+    /// Phase 6 waere das eine "neue Uebung ohne Historie" gewesen (0 PRs,
+    /// weil `exerciseHistory` leer bleibt) — jetzt gruppiert die ID beide
+    /// zusammen, die Historie bleibt gefunden.
+    func testRenameSurvivesViaSharedTemplateID() {
+        let templateID = UUID()
+        // Gleiche Zahlen wie testHeaviestWeightPRDetected (dort gegen den
+        // Namen allein verifiziert): 90kg x 3 schlaegt nur das Gewicht
+        // (90 gegen 80), nicht Volume (270 gegen 640) oder 1RM (99 gegen
+        // 101.33) — isoliert also sauber genau EINEN PR-Kind.
+        let history = LiftAttempt(
+            exerciseName: "Alter Name", exerciseTemplateID: templateID,
+            weightKg: 80, reps: 8, date: weekAgo
+        )
+        let session = LiftAttempt(
+            exerciseName: "Neuer Name", exerciseTemplateID: templateID,
+            weightKg: 90, reps: 3, date: now
+        )
+        let prs = PRDetector.detectPRs(sessionLifts: [session], history: [history])
+        XCTAssertEqual(prs.count, 1, "Trotz Namenswechsel sollte die gemeinsame ID die Historie finden")
+        XCTAssertEqual(prs.first?.kind, .heaviestWeight)
+        XCTAssertEqual(prs.first?.exerciseTemplateID, templateID)
+        // Anzeige-Name ist der AKTUELLE (Session-)Name, nicht der veraltete.
+        XCTAssertEqual(prs.first?.exerciseName, "Neuer Name")
+    }
+
+    /// Kehrprobe: zwei verschiedene Uebungen, die zufaellig denselben Namen
+    /// tragen (z.B. eine geloeschte und eine neu angelegte Custom-Uebung),
+    /// aber unterschiedliche IDs — duerfen NIEMALS zusammengelegt werden,
+    /// sonst koennte ein Namens-Zufall fremde Historie "erben".
+    func testDifferentTemplateIDsWithSameNameStayAparts() {
+        let idA = UUID()
+        let idB = UUID()
+        let history = LiftAttempt(
+            exerciseName: "Rudern", exerciseTemplateID: idA,
+            weightKg: 80, reps: 8, date: weekAgo
+        )
+        let session = LiftAttempt(
+            exerciseName: "Rudern", exerciseTemplateID: idB,
+            weightKg: 90, reps: 8, date: now
+        )
+        let prs = PRDetector.detectPRs(sessionLifts: [session], history: [history])
+        XCTAssertTrue(prs.isEmpty, "Unterschiedliche IDs duerfen trotz gleichem Namen keine Historie teilen")
+    }
+
+    /// Alt-Daten ohne jede ID (vor dieser Phase geloggt, nicht per Backfill
+    /// aufloesbar) gruppieren weiterhin per Name — unveraendertes Verhalten,
+    /// keine Regression.
+    func testNilTemplateIDFallsBackToNameGrouping() {
+        let prs = PRDetector.detectPRs(
+            sessionLifts: [bench(90, 3)],
+            history: [bench(80, 8, weekAgo)]
+        )
+        XCTAssertEqual(prs.count, 1)
+        XCTAssertNil(prs.first?.exerciseTemplateID)
+    }
+
+    /// Eine Seite mit ID, die andere ohne (z.B. Session schon migriert,
+    /// Historie-Zeile ein nicht per Backfill aufloesbarer Alt-Eintrag mit
+    /// zufaellig gleichem Namen) — gilt bewusst als NICHT derselbe Bucket,
+    /// damit nie ID- und Namens-Identitaet vermischt werden.
+    func testMixedIDAndNilNeverMerge() {
+        let session = LiftAttempt(
+            exerciseName: "Bankdruecken", exerciseTemplateID: UUID(),
+            weightKg: 90, reps: 8, date: now
+        )
+        let history = bench(80, 8, weekAgo)   // kein exerciseTemplateID
+        let prs = PRDetector.detectPRs(sessionLifts: [session], history: [history])
+        XCTAssertTrue(prs.isEmpty, "ID-Attempt und namensgleicher Nil-ID-Attempt duerfen nicht gemischt gruppiert werden")
     }
 }
