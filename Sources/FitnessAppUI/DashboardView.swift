@@ -61,6 +61,13 @@ public struct DashboardView: View {
     @Query(sort: \WaterEntry.date, order: .reverse)
     private var waterEntries: [WaterEntry]
 
+    /// Task 9: alle `MealEntry`s fuer die `nutritionCard`-Tagessumme.
+    /// Gleiches In-Memory-Filter-Prinzip wie `waterEntries`/`todayWaterMl`
+    /// oben — SwiftData-`#Predicate` mit `Calendar.startOfDay` ist
+    /// unzuverlaessig (siehe WaterTrackerView).
+    @Query(sort: \MealEntry.date, order: .reverse)
+    private var mealEntries: [MealEntry]
+
     /// DEL-042: ConfirmationDialog-State fuer den Konflikt-Pfad.
     /// pendingNewStart-Closure wird aufgerufen wenn der User "Altes verwerfen"
     /// waehlt — sie liefert die Aktion fuer einen frischen Insert.
@@ -155,6 +162,10 @@ public struct DashboardView: View {
     /// NavigationLink im `.toolbar`.
     @State private var showingNewMeasurement = false
 
+    /// Task 9: `nutritionCard`'s "Mahlzeit hinzufuegen"-Button oeffnet
+    /// `AddMealView` als Sheet — analog zu `showingNewMeasurement` oben.
+    @State private var showingAddMealFromDashboard = false
+
     /// Paket 3a (Laufversäumnis-Hinweis): CTA der `coachingInsightCard`
     /// öffnet ausschließlich diesen bestehenden Paket-1-Pfad — kein neues
     /// Sheet/keine neue Card-Komponente.
@@ -230,6 +241,7 @@ public struct DashboardView: View {
                         case .recentWorkouts:  recentWorkoutsCard
                         case .volumeOverTime:  volumeOverTimeChart
                         case .trainingCalendar: trainingCalendarCard
+                        case .nutrition:       nutritionCard
                         }
                     }
                 }
@@ -258,6 +270,10 @@ public struct DashboardView: View {
         .navigationBarBackButtonHidden(true)
         .navigationDestination(isPresented: $showingNewMeasurement) {
             MeasurementView()
+        }
+        // Task 9: `nutritionCard`'s "Mahlzeit hinzufuegen"-Button.
+        .sheet(isPresented: $showingAddMealFromDashboard) {
+            AddMealView()
         }
         // DEL-132 (Phase 3): HealthKit-Werte fuer aktive Hero-Slots
         // ziehen. `.task(id:)` schiesst neu, sobald sich die Slot-Liste
@@ -516,6 +532,85 @@ public struct DashboardView: View {
                 .replacingOccurrences(of: "%2$@",   with: relative)
         }
         return String(format: String(localized: "dashboard.history.countOnly", bundle: .module), real.count)
+    }
+
+    // MARK: - Nutrition teaser (Task 9)
+
+    /// Dashboard-Einstiegspunkt in die Ernaehrungs-Tagesuebersicht (Task 8).
+    /// Gleiche Doppel-Branch-Logik wie `trophyRoomCard`/`historyCard`: ohne
+    /// heutige Mahlzeiten rendert `DashboardEmptyState` mit CTA, sonst eine
+    /// kompakte Teaser-Row (Tagessumme in kcal) + separater "Mahlzeit
+    /// hinzufuegen"-Button. NavigationLink und Button sind bewusst
+    /// Geschwister (nicht verschachtelt) in der VStack — vermeidet den
+    /// SwiftUI-Gestenkonflikt, den ein Button innerhalb eines
+    /// NavigationLink-Labels haben kann.
+    @ViewBuilder
+    private var nutritionCard: some View {
+        if todayMeals.isEmpty {
+            DashboardEmptyState(
+                icon: "fork.knife",
+                // Titel wiederverwendet aus NutritionDayView (Task 8) — kein
+                // neuer Key noetig, Beschreibung + CTA sind Task-9-eigene Keys.
+                title: "nutrition.day.empty.title",
+                description: "nutrition.dashboard.empty.message",
+                ctaTitle: "nutrition.dashboard.addMeal.button",
+                ctaAction: { showingAddMealFromDashboard = true }
+            )
+            .deltiqCardStyle()
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                NavigationLink {
+                    NutritionDayView()
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "fork.knife")
+                            .font(.title2)
+                            .foregroundStyle(.white)
+                            .frame(width: 38, height: 38)
+                            .background(Color.deltiqOrange.gradient)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("widget.nutrition.name", bundle: .module)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.primary)
+                            Text("\(todayNutritionTotal.kcal.truncated(to: 0).formattedTwoDecimals) kcal")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fitnessNumberStyle()
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showingAddMealFromDashboard = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("nutrition.dashboard.addMeal.button", bundle: .module)
+                        Spacer()
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+                .buttonStyle(.plain)
+            }
+            .deltiqCardStyle()
+        }
+    }
+
+    /// In-Memory-Filter auf den heutigen Tag, analog `todayWaterMl` oben.
+    private var todayMeals: [MealEntry] {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        return mealEntries.filter { $0.date >= startOfToday }
+    }
+
+    private var todayNutritionTotal: NutrientValues {
+        NutritionDayAggregator.dailyTotal(meals: todayMeals)
     }
 
     // MARK: - DEL-109 Widget-Konfiguration
