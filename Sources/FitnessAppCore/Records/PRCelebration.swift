@@ -55,7 +55,7 @@ public enum PRCelebration {
             case .longestDistance:
                 return "\(trophyPrefix)\(formatNumber(headline.newValue)) km \(exercise)"
             case .fastestPace:
-                return "\(trophyPrefix)\(formatPace(headline.newValue)) \(exercise)"
+                return "\(trophyPrefix)\(PaceCalculator.formatPace(headline.newValue)) \(exercise)"
             // Zeitformate (README 2.9)
             case .mostRounds:
                 return "\(trophyPrefix)\(Int(headline.newValue)) Runden \(exercise)"
@@ -124,7 +124,7 @@ public enum PRCelebration {
         case .longestDistance:
             return "\(record.exerciseName) — \(formatNumber(record.newValue)) km (vorher \(formatNumber(record.previousValue)) km)"
         case .fastestPace:
-            return "\(record.exerciseName) — \(formatPace(record.newValue)) (vorher \(formatPace(record.previousValue)))"
+            return "\(record.exerciseName) — \(PaceCalculator.formatPace(record.newValue)) (vorher \(PaceCalculator.formatPace(record.previousValue)))"
         case .mostRounds:
             // Bugfix (Teil-Wiederholungen entfernt): siehe PRHistoryView.swift
             // fuer die Begruendung des reps > 0-Gates.
@@ -148,15 +148,6 @@ public enum PRCelebration {
     /// eigene Kopie der Reihenfolge zu halten.
     private static func priority(_ kind: PersonalRecord.Kind) -> Int {
         kind.displayPriority
-    }
-
-    /// Pace-Formatter analog zu `PaceCalculator.formatPace`, aber als
-    /// stand-alone-Hilfsfunktion damit dieser File keine zusaetzliche
-    /// Cross-Module-Dependency braucht.
-    private static func formatPace(_ minutesPerKm: Double) -> String {
-        guard minutesPerKm.isFinite, minutesPerKm > 0 else { return "—:——" }
-        let total = Int((minutesPerKm * 60.0).rounded())
-        return String(format: "%d:%02d /km", total / 60, total % 60)
     }
 
     /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet

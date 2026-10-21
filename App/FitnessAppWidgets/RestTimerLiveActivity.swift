@@ -33,17 +33,17 @@ struct RestTimerLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     // DEL-112: setNumber/totalSets aus dem ContentState
                     // lesen — wandern via .update() ohne Activity-Respawn.
-                    Text("Satz \(context.state.setNumber) / \(context.state.totalSets)")
+                    Text(context.state.texts.setLabel)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 DynamicIslandExpandedRegion(.center) {
                     if context.state.prMessage != nil {
-                        Text("Personal Record!")
+                        Text(context.state.texts.personalRecordTitle)
                             .font(.caption.weight(.bold))
                             .foregroundStyle(.yellow)
                     } else {
-                        Text(context.state.isFinished ? "Pause vorbei" : "Pause")
+                        Text(context.state.isFinished ? context.state.texts.pauseOver : context.state.texts.pauseRunning)
                             .font(.caption)
                             .foregroundStyle(context.state.isFinished ? .green : .cyan)
                     }
@@ -110,7 +110,7 @@ private struct LockScreenTimerView: View {
                 Image(systemName: "trophy.fill")
                     .font(.title2)
                     .foregroundStyle(.yellow)
-                Text("Personal Record!")
+                Text(context.state.texts.personalRecordTitle)
                     .font(.headline.weight(.bold))
                     .foregroundStyle(.yellow)
                 Spacer()
@@ -126,7 +126,7 @@ private struct LockScreenTimerView: View {
             }
 
             HStack {
-                Text("Im Trophy Room ansehen")
+                Text(context.state.texts.viewInTrophyRoom)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -150,13 +150,13 @@ private struct LockScreenTimerView: View {
                     .lineLimit(1)
                 Spacer()
                 // DEL-112: setNumber sitzt jetzt im ContentState.
-                Text("Satz \(context.state.setNumber)")
+                Text(context.state.texts.setLabelShort)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
             HStack {
-                Text(context.state.isFinished ? "Pause vorbei" : "Pause laeuft")
+                Text(context.state.isFinished ? context.state.texts.pauseOver : context.state.texts.pauseRunning)
                     .font(.subheadline)
                 Spacer()
                 Text(timerInterval: Date()...context.state.endDate, countsDown: true)

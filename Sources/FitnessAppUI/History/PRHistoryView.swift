@@ -555,16 +555,12 @@ private struct PRHistoryRow: View {
         let raw = (entry.value - entry.previousValue) / entry.previousValue
         let improvement = isLowerBetter ? -raw : raw
         guard improvement > 0 else { return nil }
-        return "+\(formatDelta(improvement))"
-    }
-
-    private func formatDelta(_ percent: Double) -> String {
-        "\(Int((percent * 100).rounded())) %"
+        return "+\(improvement.formattedPercentRounded)"
     }
 
     private var detailLine: String {
         guard let kind = entry.kind else {
-            return "\(formatNumber(entry.value))"
+            return "\(entry.value.formattedWholeOrTwoDecimals)"
         }
         switch kind {
         case .maxReps:
@@ -572,14 +568,14 @@ private struct PRHistoryRow: View {
         case .maxHoldSeconds:
             return "\(entry.reps) Sek (vorher \(Int(entry.previousValue.rounded())) Sek)"
         case .heaviestWeight, .estimated1RM:
-            return "\(formatNumber(entry.value)) kg (vorher \(formatNumber(entry.previousValue)) kg)"
+            return "\(entry.value.formattedWholeOrTwoDecimals) kg (vorher \(entry.previousValue.formattedWholeOrTwoDecimals) kg)"
         case .bestSet:
-            return "\(formatNumber(entry.weightKg)) kg × \(entry.reps) = \(formatNumber(entry.value)) kg-Vol"
+            return "\(entry.weightKg.formattedWholeOrTwoDecimals) kg × \(entry.reps) = \(entry.value.formattedWholeOrTwoDecimals) kg-Vol"
         // DEL-064 Cardio-PRs — Xcode-26-strict braucht alle Cases.
         case .longestDistance:
-            return "\(formatKm(entry.value)) km (vorher \(formatKm(entry.previousValue)) km)"
+            return "\(entry.value.formattedWholeOrTwoDecimals) km (vorher \(entry.previousValue.formattedWholeOrTwoDecimals) km)"
         case .fastestPace:
-            return "\(formatPace(entry.value)) (vorher \(formatPace(entry.previousValue)))"
+            return "\(PaceCalculator.formatPace(entry.value)) (vorher \(PaceCalculator.formatPace(entry.previousValue)))"
         // Zeitformate (README 2.9) — Xcode-26-strict braucht alle Cases.
         case .mostRounds:
             // Nutzer-Feedback (13. August, zweite Runde): `partialReps` wird
@@ -602,22 +598,6 @@ private struct PRHistoryRow: View {
     /// `PaceCalculator.formatDuration` statt eines eigenen mm:ss-Formatters.
     private func formatDuration(_ totalSeconds: Double) -> String {
         PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
-    }
-
-    /// DEL-064: km-Formatter (Spiegelung von WorkoutSummaryView.formatKm).
-    private func formatKm(_ km: Double) -> String {
-        km == km.rounded() ? "\(Int(km))" : km.truncated(to: 2).formattedTwoDecimals
-    }
-
-    /// DEL-064: Pace-Formatter (min/km Double → "5:42 /km").
-    private func formatPace(_ minutesPerKm: Double) -> String {
-        guard minutesPerKm.isFinite, minutesPerKm > 0 else { return "—:——" }
-        let total = Int((minutesPerKm * 60.0).rounded())
-        return String(format: "%d:%02d /km", total / 60, total % 60)
-    }
-
-    private func formatNumber(_ value: Double) -> String {
-        value == value.rounded() ? "\(Int(value))" : value.truncated(to: 2).formattedTwoDecimals
     }
 }
 

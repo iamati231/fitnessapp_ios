@@ -191,7 +191,7 @@ public struct ActiveWorkoutView: View {
             if restTimerEnd != nil {
                 restTimerEnd = nil
                 cancelRestTimerNotification()
-                Task { await restTimerActivity.endRestTimer(reason: .skipped) }
+                restTimerActivity.endRestTimer(reason: .skipped)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -206,11 +206,9 @@ public struct ActiveWorkoutView: View {
                         // — pending + delivered abräumen ist in beiden
                         // Fällen das Richtige.
                         cancelRestTimerNotification()
-                        Task {
-                            await restTimerActivity.endRestTimer(
-                                reason: reason == .completed ? .completed : .skipped
-                            )
-                        }
+                        restTimerActivity.endRestTimer(
+                            reason: reason == .completed ? .completed : .skipped
+                        )
                     }
                 )
             }
@@ -897,6 +895,26 @@ public struct ActiveWorkoutView: View {
 
     // MARK: Rest-timer
 
+    /// Bugfix (Audit): das Widget-Target der Rest-Timer-Live-Activity hat
+    /// keinen String-Katalog — die App uebersetzt hier und schickt das
+    /// Ergebnis mit (siehe `RestTimerLiveTexts`).
+    private func restTimerLiveTexts(setNumber: Int, totalSets: Int) -> RestTimerLiveTexts {
+        RestTimerLiveTexts(
+            setLabel: String(
+                format: String(localized: "active.restTimer.setLabel", bundle: .module),
+                String(setNumber), String(totalSets)
+            ),
+            setLabelShort: String(
+                format: String(localized: "active.restTimer.setLabelShort", bundle: .module),
+                String(setNumber)
+            ),
+            pauseRunning: String(localized: "rest.timer.label.active", bundle: .module),
+            pauseOver: String(localized: "rest.timer.label.finished", bundle: .module),
+            personalRecordTitle: String(localized: "active.restTimer.personalRecordTitle", bundle: .module),
+            viewInTrophyRoom: String(localized: "active.restTimer.viewInTrophyRoom", bundle: .module)
+        )
+    }
+
     /// `restSeconds == 0` is intentional (drop sets, supersets, rest-pause) — DO NOT
     /// auto-start a timer in that case. Otherwise cap at 600s (10 min) as a safety
     /// guard against typo'd 9000-second rests. Also drives the Live Activity, so
@@ -927,10 +945,10 @@ public struct ActiveWorkoutView: View {
         restTimerOriginalSeconds = 0
 
         // ── 2) Harter Reset der Live-Activity ───────────────────────────
-        // Synchron via Task — die Activity-Cleanup-Logik im neuen
-        // startRestTimer beendet zusaetzlich alle stale activities,
-        // aber wir cleanen hier defensive vorab.
-        Task { await restTimerActivity.endRestTimer(reason: .skipped) }
+        // `endRestTimer`/`startRestTimer` serialisieren intern (`enqueue`),
+        // der Reset hier und der neue Start weiter unten laufen also in
+        // Aufrufreihenfolge, nicht als zwei sich ueberholende Tasks.
+        restTimerActivity.endRestTimer(reason: .skipped)
 
         // ── 3) Validate + neuen Timer setzen ────────────────────────────
         // P8 Stufe-2: Pausendauer kommt aus dem eingefrorenen Snapshot-
@@ -943,15 +961,14 @@ public struct ActiveWorkoutView: View {
         restTimerOriginalSeconds = bounded
         restTimerEnd = endDate
 
-        Task {
-            await restTimerActivity.startRestTimer(
-                exerciseName: exercise.name,
-                setNumber: setIndex + 1,
-                totalSets: entry.sets,
-                endDate: endDate,
-                originalSeconds: bounded
-            )
-        }
+        restTimerActivity.startRestTimer(
+            exerciseName: exercise.name,
+            setNumber: setIndex + 1,
+            totalSets: entry.sets,
+            endDate: endDate,
+            originalSeconds: bounded,
+            texts: restTimerLiveTexts(setNumber: setIndex + 1, totalSets: entry.sets)
+        )
         // DEL-204: Background-Feedback. Sound/Haptik der RestTimerBar
         // feuern nur im Vordergrund — wenn der User das Handy weglegt
         // oder die App wechselt, kam bisher NICHTS. Die Local Notification
@@ -1066,16 +1083,16 @@ public struct ActiveWorkoutView: View {
         let celebration = prCelebrationsEnabled
             ? PRCelebration.make(from: detectedPRs, tone: profiles.first?.coachingTone ?? .analytical)
             : nil
-        Task { [celebration] in
-            if let celebration {
-                await restTimerActivity.endRestTimerWithPR(prMessage: celebration.activityLine)
+        if let celebration {
+            restTimerActivity.endRestTimerWithPR(prMessage: celebration.activityLine)
+            Task {
                 await prNotifications.scheduleCelebration(
                     title: celebration.title,
                     body: celebration.body
                 )
-            } else {
-                await restTimerActivity.endRestTimer(reason: .skipped)
             }
+        } else {
+            restTimerActivity.endRestTimer(reason: .skipped)
         }
 
         // Push the summary onto the workout-tab navigation stack. The user reviews
@@ -1084,7 +1101,7 @@ public struct ActiveWorkoutView: View {
     }
 
     private func discardWorkout() {
-        Task { await restTimerActivity.endRestTimer(reason: .skipped) }
+        restTimerActivity.endRestTimer(reason: .skipped)
         // DEL-096: Ad-Hoc-Sessions schleppen einen ephemeren TrainingDay
         // mit sich — der muss bei Discard mit weg, sonst bleibt ein
         // verwaister Tag mit `plan: nil` im Store zurueck.
@@ -1378,7 +1395,7 @@ private struct FinishWorkoutSheet: View {
                             Text(gear.name)
                                 .font(.body.weight(.medium))
                                 .foregroundStyle(.primary)
-                            Text("\(formatKm(gear.currentDistanceKm)) / \(formatKm(gear.maxDistanceKm)) km")
+                            Text("\(gear.currentDistanceKm.formattedWholeOrTwoDecimals) / \(gear.maxDistanceKm.formattedWholeOrTwoDecimals) km")
                                 .font(.caption.monospacedDigit())
                                 .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.Deltiq.textSecondary)
                         }
@@ -1401,10 +1418,6 @@ private struct FinishWorkoutSheet: View {
                 .buttonStyle(.plain)
             }
         }
-    }
-
-    private func formatKm(_ km: Double) -> String {
-        km == km.rounded() ? "\(Int(km))" : km.truncated(to: 0).formattedTwoDecimals
     }
 
     private var summarySection: some View {

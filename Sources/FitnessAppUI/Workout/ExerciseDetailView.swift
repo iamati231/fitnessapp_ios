@@ -285,7 +285,7 @@ struct ExerciseDetailView: View {
 
     private func formatWeight(_ kg: Double) -> String {
         if weightUnitRaw == "lbs" {
-            let lbs = kg / 0.453592
+            let lbs = WeightUnit.lbs.fromKg(kg)
             return "\(lbs.truncated(to: 1).formatted(.number.precision(.fractionLength(0...1)))) lbs"
         }
         return "\(kg.truncated(to: 1).formatted(.number.precision(.fractionLength(0...1)))) kg"

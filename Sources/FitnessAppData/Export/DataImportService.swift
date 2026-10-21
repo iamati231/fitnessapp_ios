@@ -819,7 +819,7 @@ public enum DataImportService {
                 type: type,
                 maxDistanceKm: row.double("max_distance_km") ?? 800,
                 currentDistanceKm: row.double("current_distance_km") ?? 0,
-                isActive: row.bool("is_active") ?? true,
+                isActive: optionalSkippableBool(row, "is_active") ?? true,
                 createdAt: row.date("created_at_utc") ?? Date()
             )
             context.insert(g)
@@ -891,7 +891,7 @@ public enum DataImportService {
                 name: name,
                 equipment: equipment,
                 primaryMuscle: muscle,
-                isCustom: row.bool("is_custom") ?? true,
+                isCustom: optionalSkippableBool(row, "is_custom") ?? true,
                 difficultyLevel: difficulty,
                 isSystemCompound: row.bool("is_system_compound") ?? false,
                 isTimeBased: row.bool("is_time_based") ?? false,
@@ -1133,13 +1133,22 @@ public enum DataImportService {
         return (imported, skipped, errors)
     }
 
-    /// `CSVRow.bool(_:)` liest eine leere Spalte als `false` (etabliertes
-    /// Verhalten für bestehende Felder, deren Default historisch "false"
-    /// ist). Für eine echte, übersprungbare Ja/Nein-Frage (P6.3) wäre das
-    /// eine stille Fehlinterpretation — "übersprungen" würde zu "Nein"
-    /// werden. Deshalb ein eigener, strikt dreiwertiger Parser: leer/trimmt-
-    /// leer → `nil`, sonst wie `CSVRow.bool`.
-    private static func optionalSkippableBool(_ row: CSVRow, _ key: String) -> Bool? {
+    /// `CSVRow.bool(_:)` liest eine leere ODER ganz fehlende Spalte als
+    /// `false` (etabliertes Verhalten für bestehende Felder, deren Default
+    /// historisch "false" ist). Für ein Feld, dessen Legacy-Default NICHT
+    /// `false` sein soll (z.B. `is_active`/`is_custom`/
+    /// `smart_progression_enabled` — ein `??`-Fallback nach `row.bool(key)`
+    /// greift dort nie, weil `bool()` schon vorher `false` liefert statt
+    /// `nil`), braucht es diesen strikt dreiwertigen Parser: leer/fehlend
+    /// → `nil`, sonst wie `CSVRow.bool`. Ursprünglich nur für P6.3s
+    /// überspringbare Ja/Nein-Fragen gedacht, jetzt generischer Helfer für
+    /// jeden Bool mit Legacy-Default ≠ `false`.
+    ///
+    /// Not `private`: `@testable`-only Sichtbarkeit, damit
+    /// `DataImportLegacyColumnDefaultTests` die Unterscheidung
+    /// fehlende-Spalte-vs-explizit-false direkt prüfen kann, ohne dafür
+    /// einen kompletten ZIP-Roundtrip aufzubauen.
+    static func optionalSkippableBool(_ row: CSVRow, _ key: String) -> Bool? {
         guard let raw = row.optionalString(key) else { return nil }
         switch raw.lowercased() {
         case "true", "1": return true
@@ -1467,7 +1476,7 @@ public enum DataImportService {
                 isCardio: row.bool("is_cardio") ?? false,
                 isTimeBased: row.bool("is_time_based") ?? false,
                 isArchived: row.bool("is_archived") ?? false,
-                smartProgressionEnabled: row.bool("smart_progression_enabled") ?? true,
+                smartProgressionEnabled: optionalSkippableBool(row, "smart_progression_enabled") ?? true,
                 progressionStep: row.double("progression_step") ?? 2.5,
                 isCompound: row.bool("is_compound") ?? false,
                 targetDistanceKm: row.double("target_distance_km"),

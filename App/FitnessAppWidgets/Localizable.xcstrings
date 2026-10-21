@@ -1,0 +1,174 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "Wasser loggen": {
+      "comment": "LogWaterIntent.title — Widget-Extension-Target hat kein SPM-Bundle; Catalog-Key ist der bisherige deutsche Quelltext (Bugfix Audit: Widget zeigte diesen Text bisher immer auf Deutsch, unabhaengig von der Geraetesprache).",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wasser loggen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log water"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Su ekle"
+          }
+        }
+      }
+    },
+    "Fügt der heutigen Wasserbilanz eine Menge hinzu.": {
+      "comment": "LogWaterIntent.description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fügt der heutigen Wasserbilanz eine Menge hinzu."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds an amount to today's water balance."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugünkü su bilançosuna bir miktar ekler."
+          }
+        }
+      }
+    },
+    "Menge (ml)": {
+      "comment": "LogWaterIntent @Parameter title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menge (ml)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount (ml)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miktar (ml)"
+          }
+        }
+      }
+    },
+    "App einmal öffnen, um das Widget zu aktivieren.": {
+      "comment": "WaterTrackerWidgetView.unavailableView — App-Group-Store noch nicht initialisiert.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App einmal öffnen, um das Widget zu aktivieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the app once to activate the widget."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widget'ı etkinleştirmek için uygulamayı bir kez aç."
+          }
+        }
+      }
+    },
+    "Wasser heute": {
+      "comment": "WaterTrackerWidgetView.mediumLayout header",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wasser heute"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water today"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugünkü su"
+          }
+        }
+      }
+    },
+    "Wasser-Tracker": {
+      "comment": "WaterTrackerWidget.configurationDisplayName",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wasser-Tracker"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water Tracker"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Su Takibi"
+          }
+        }
+      }
+    },
+    "Heutige Wasseraufnahme — direkt vom Homescreen loggen.": {
+      "comment": "WaterTrackerWidget.description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heutige Wasseraufnahme — direkt vom Homescreen loggen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's water intake — log it right from the Home Screen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugünkü su tüketimi — doğrudan ana ekrandan kaydet."
+          }
+        }
+      }
+    }
+  }
+}

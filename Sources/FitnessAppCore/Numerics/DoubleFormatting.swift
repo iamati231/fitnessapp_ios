@@ -127,6 +127,27 @@ extension Double {
         }
         return text
     }
+
+    /// Precision measurement display (plate weight, distance): a whole number
+    /// shown without decimals, anything else truncated to 2 decimals first
+    /// (see `truncated(to:)` for why truncation, not rounding).
+    ///
+    /// Single source of truth for a pattern that was copy-pasted into 9+
+    /// private view-local formatters (`formatKm`/`formatWeight` across
+    /// GearListView, ActiveWorkoutView, WorkoutSummaryView, PRHistoryView,
+    /// SetRow) — one of those copies had regressed to `truncated(to: 0)`
+    /// (distances always showing "X,00") because the fix for the same bug in
+    /// a sibling copy never reached this one.
+    public var formattedWholeOrTwoDecimals: String {
+        self == rounded() ? "\(Int(self))" : truncated(to: 2).formattedTwoDecimals
+    }
+
+    /// Formats a 0...1 fraction as a rounded whole-number percent delta, e.g.
+    /// `0.083 -> "8 %"`. Shared body for the PR-improvement badges in
+    /// PRHistoryView and WorkoutSummaryView.
+    public var formattedPercentRounded: String {
+        "\(Int((self * 100).rounded())) %"
+    }
 }
 
 extension Float {

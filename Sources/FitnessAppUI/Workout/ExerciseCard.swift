@@ -508,7 +508,7 @@ struct ExerciseCard: View {
 
         if weightUnitRaw == "lbs" {
             // lbs-Konventionen: 45-lbs-Bar, 5-lbs-Increment, Heavy ab 220 lbs.
-            let workingLbs = workingKg / 0.453592
+            let workingLbs = WeightUnit.lbs.fromKg(workingKg)
             return WarmupRampCalculator.ramp(
                 workingWeightKg: workingLbs,
                 barWeightKg: 45,

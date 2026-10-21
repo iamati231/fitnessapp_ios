@@ -217,17 +217,25 @@ public enum PersonalRecordSync {
         }
     }
 
-    /// DEL-051: Pulls every log from completed sessions OTHER than `session`.
+    /// DEL-051: Pulls every log from completed sessions BEFORE `session`.
     /// Wichtig: vorher hatte ein `.cascade`-Delete der Plan-Uebung den
     /// `log.exercise`-Pointer mit-genommen → Historie verschwand aus PR-
     /// Detection. Jetzt nutzen wir die Snapshot-Felder, sodass auch
     /// orphan-Logs (Plan-Uebung geloescht) als historische Lifts in die
     /// PR-Berechnung eingehen.
+    ///
+    /// Bugfix (Audit): filterte vorher nur die ID der aktuellen Session raus,
+    /// nicht das Datum — jede andere abgeschlossene Session zaehlte als
+    /// "Historie", auch eine mit SPAETEREM `startTime` (z.B. nachtraeglich
+    /// rueckdatierter Workout-Log). `rebuild(in:)` lief chronologisch und sah
+    /// pro Session nur Lifts STRIKT DAVOR — bei rueckdatierten Sessions
+    /// konnten die beiden Pfade dadurch unterschiedliche PRs erkennen. Der
+    /// `startTime`-Vergleich macht `recordPRs` und `rebuild` deckungsgleich.
     private static func fetchHistoricalLifts(
         excluding session: WorkoutSession,
         in context: ModelContext
     ) -> [LiftAttempt] {
-        let thisID = session.persistentModelID
+        let sessionStart = session.startTime
         let descriptor = FetchDescriptor<ExerciseLog>(
             sortBy: [SortDescriptor(\.date, order: .forward)]
         )
@@ -236,7 +244,7 @@ public enum PersonalRecordSync {
             guard let name = log.resolvedExerciseName,
                   let logSession = log.session,
                   logSession.isCompleted,
-                  logSession.persistentModelID != thisID
+                  logSession.startTime < sessionStart
             else { return nil }
             return LiftAttempt(
                 exerciseName: name,

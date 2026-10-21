@@ -150,7 +150,7 @@ public struct GearListView: View {
                                 Text(gear.name)
                                     .font(.body.weight(.semibold))
                                     .foregroundStyle(Color.primary)
-                                Text("\(formatKm(gear.currentDistanceKm)) / \(formatKm(gear.maxDistanceKm)) km")
+                                Text("\(gear.currentDistanceKm.formattedWholeOrTwoDecimals) / \(gear.maxDistanceKm.formattedWholeOrTwoDecimals) km")
                                     .font(.caption.monospacedDigit())
                                     .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.Deltiq.textSecondary)
                             }
@@ -222,15 +222,6 @@ public struct GearListView: View {
         } catch {
             deleteErrorMessage = error.localizedDescription
         }
-    }
-
-    private func formatKm(_ km: Double) -> String {
-        // Bugfix (Audit): truncated(to: 0) rundete VOR der Zwei-Dezimalstellen-
-        // Formatierung bereits auf eine ganze Zahl, sodass Nachkommastellen
-        // nie sichtbar wurden (142.73 km -> "142,00"). truncated(to: 2)
-        // verhindert weiterhin ein kosmetisches Aufrunden, ohne die
-        // Nachkommastellen selbst zu verschlucken.
-        km == km.rounded() ? "\(Int(km))" : km.truncated(to: 2).formattedTwoDecimals
     }
 }
 

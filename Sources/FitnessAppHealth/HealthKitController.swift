@@ -169,21 +169,6 @@ public final class HealthKitController {
         #endif
     }
 
-    /// Latest body-fat percent (0..100). Same nil-on-failure semantics.
-    public func latestBodyFatPercent() async -> Double? {
-        #if canImport(HealthKit)
-        guard let service, authorizationStatus == .sharingAuthorized else { return nil }
-        do {
-            return try await service.latestBodyFatPercent()
-        } catch {
-            lastError = error
-            return nil
-        }
-        #else
-        return nil
-        #endif
-    }
-
     /// DEL-132 (Phase 3): Letzter Ruhepuls aus HealthKit, in BPM. Identische
     /// nil-on-failure-Semantik wie die Body-Composition-Reader. Fehler
     /// landen in `lastError`, der Caller kriegt nil — die UI rendert dann

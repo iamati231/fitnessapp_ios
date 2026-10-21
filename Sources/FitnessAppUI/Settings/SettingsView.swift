@@ -305,7 +305,7 @@ public struct SettingsView: View {
         // Settings-Epic Phase 5 (Teil 6): derselbe Fall fuer den Pausen-Timer
         // (Live Activity pro Satz, unabhaengig vom Zeitformat-Lauf oben) —
         // vorher ueberlebte eine laufende Pause-Activity den Reset.
-        await restTimerActivity.endRestTimer(reason: .skipped)
+        restTimerActivity.endRestTimer(reason: .skipped)
 
         // 1) Navigation-State sofort zuruecksetzen — entfernt @Bindable-
         //    References auf gleich-zu-loeschende UserBodyProfile/Plan/Day.
@@ -401,7 +401,7 @@ public struct SettingsView: View {
 
     private func formattedWeight(_ kg: Double) -> String {
         if weightUnitRaw == "lbs" {
-            let lbs = kg / 0.453592
+            let lbs = WeightUnit.lbs.fromKg(kg)
             return "\(lbs.formattedWeightInput()) lbs"
         }
         return "\(kg.formattedWeightInput()) kg"

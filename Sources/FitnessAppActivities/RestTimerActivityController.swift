@@ -33,6 +33,17 @@ public final class RestTimerActivityController {
     private var current: Activity<RestTimerAttributes>?
     #endif
 
+    /// Bugfix (Audit): `startRestTimer`/`endRestTimer` are `async`, and the UI
+    /// fires them from separate, un-awaited `Task { }` blocks (set-save →
+    /// end-then-start back to back). Without serialization, `endRestTimer`'s
+    /// first `await` can suspend, let `startRestTimer` run and set `current`,
+    /// and then resume and overwrite it with `nil` — the next "Pause vorbei"
+    /// banner then falls back to `setNumber ?? 1, totalSets ?? 1`, a 1/1
+    /// regression of the bug DEL-112 already fixed once. Same `enqueue()`
+    /// pattern as `TimedWorkoutActivityController`, which has the identical
+    /// race on the same ActivityKit calls.
+    private var queueTail: Task<Void, Never>?
+
     public init() {
         refreshAvailability()
     }
@@ -67,7 +78,32 @@ public final class RestTimerActivityController {
         setNumber: Int,
         totalSets: Int,
         endDate: Date,
-        originalSeconds: Int
+        originalSeconds: Int,
+        texts: RestTimerLiveTexts
+    ) {
+        enqueue { [self] in
+            await performStartRestTimer(
+                exerciseName: exerciseName, setNumber: setNumber, totalSets: totalSets,
+                endDate: endDate, originalSeconds: originalSeconds, texts: texts
+            )
+        }
+    }
+
+    private func enqueue(_ operation: @escaping @MainActor () async -> Void) {
+        let previous = queueTail
+        queueTail = Task { @MainActor in
+            await previous?.value
+            await operation()
+        }
+    }
+
+    private func performStartRestTimer(
+        exerciseName: String,
+        setNumber: Int,
+        totalSets: Int,
+        endDate: Date,
+        originalSeconds: Int,
+        texts: RestTimerLiveTexts
     ) async {
         #if os(iOS)
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
@@ -80,7 +116,8 @@ public final class RestTimerActivityController {
             endDate: endDate,
             originalSeconds: originalSeconds,
             setNumber: setNumber,
-            totalSets: totalSets
+            totalSets: totalSets,
+            texts: texts
         )
         // staleDate leicht hinter endDate — iOS rendert den "vorbei"-State
         // kurz weiter, selbst wenn wir vor dem expliziten End-Call crashen.
@@ -130,7 +167,13 @@ public final class RestTimerActivityController {
     /// Ends the current activity with a dismissal-policy that depends on the reason.
     /// DEL-044: Defensiv auch fuer Skip — alle stale Activities aufraeumen,
     /// damit kein Geister-Timer auf dem Lock-Screen weiterlaeuft.
-    public func endRestTimer(reason: RestTimerEndReason = .skipped) async {
+    public func endRestTimer(reason: RestTimerEndReason = .skipped) {
+        enqueue { [self] in
+            await performEndRestTimer(reason: reason)
+        }
+    }
+
+    private func performEndRestTimer(reason: RestTimerEndReason) async {
         #if os(iOS)
         switch reason {
         case .skipped:
@@ -151,7 +194,8 @@ public final class RestTimerActivityController {
                 originalSeconds: 0,
                 setNumber: lastState?.setNumber ?? 1,
                 totalSets: lastState?.totalSets ?? 1,
-                isFinished: true
+                isFinished: true,
+                texts: lastState?.texts ?? .empty
             )
             let finalContent = ActivityContent(
                 state: finalState,
@@ -182,7 +226,13 @@ public final class RestTimerActivityController {
     /// in flight just means the celebration only goes via local notification.
     /// DEL-044: stale activities werden hard-killt, nur die getrackte
     /// `current` bekommt den Celebration-Linger.
-    public func endRestTimerWithPR(prMessage: String) async {
+    public func endRestTimerWithPR(prMessage: String) {
+        enqueue { [self] in
+            await performEndRestTimerWithPR(prMessage: prMessage)
+        }
+    }
+
+    private func performEndRestTimerWithPR(prMessage: String) async {
         #if os(iOS)
         // DEL-112: setNumber/totalSets aus letztem bekannten State preserven.
         let lastState = current?.content.state
@@ -192,7 +242,8 @@ public final class RestTimerActivityController {
             setNumber: lastState?.setNumber ?? 1,
             totalSets: lastState?.totalSets ?? 1,
             isFinished: true,
-            prMessage: prMessage
+            prMessage: prMessage,
+            texts: lastState?.texts ?? .empty
         )
         let celebrationContent = ActivityContent(
             state: celebrationState,

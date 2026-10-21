@@ -1921,11 +1921,7 @@ public struct WorkoutSummaryView: View {
         if log.resolvedIsTimeBased {
             return "\(log.reps) \(secUnit)"
         }
-        return "\(formatWeight(log.weight)) kg × \(log.reps)"
-    }
-
-    private func formatWeight(_ w: Double) -> String {
-        w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
+        return "\(log.weight.formattedWholeOrTwoDecimals) kg × \(log.reps)"
     }
 
     // MARK: Delete + re-index
@@ -2048,7 +2044,7 @@ private struct PRBadge: View {
         let isLowerBetter: Bool = (record.kind == .fastestPace || record.kind == .fastestTime)
         let raw = record.deltaPercent
         let improvement = isLowerBetter ? -raw : raw
-        return "+\(formatDelta(improvement))"
+        return "+\(improvement.formattedPercentRounded)"
     }
 
     /// Handoff 1.10 (ein Akzent): unterscheidet die PR-Art jetzt allein ueber
@@ -2106,26 +2102,26 @@ private struct PRBadge: View {
             return "\(record.reps) \(secUnit) (\(prev) \(prevSec) \(secUnit))"
 
         case .estimated1RM, .heaviestWeight, .bestSet:
-            let weightStr = formatWeight(record.weightKg)
+            let weightStr = record.weightKg.formattedWholeOrTwoDecimals
             let prevStr: String = {
                 switch record.kind {
-                case .bestSet:        return "\(formatWeight(record.previousValue)) \(volSfx)"
-                default:              return "\(formatWeight(record.previousValue)) kg"
+                case .bestSet:        return "\(record.previousValue.formattedWholeOrTwoDecimals) \(volSfx)"
+                default:              return "\(record.previousValue.formattedWholeOrTwoDecimals) kg"
                 }
             }()
             let nowStr: String = {
                 switch record.kind {
-                case .bestSet:        return "\(formatWeight(record.newValue)) \(volSfx)"
-                default:              return "\(formatWeight(record.newValue)) kg"
+                case .bestSet:        return "\(record.newValue.formattedWholeOrTwoDecimals) \(volSfx)"
+                default:              return "\(record.newValue.formattedWholeOrTwoDecimals) kg"
                 }
             }()
             return "\(weightStr) kg × \(record.reps) → \(nowStr) (\(prev) \(prevStr))"
 
         // DEL-064 Cardio-PRs
         case .longestDistance:
-            return "\(formatKm(record.newValue)) km (\(prev) \(formatKm(record.previousValue)) km)"
+            return "\(record.newValue.formattedWholeOrTwoDecimals) km (\(prev) \(record.previousValue.formattedWholeOrTwoDecimals) km)"
         case .fastestPace:
-            return "\(formatPace(record.newValue)) (\(prev) \(formatPace(record.previousValue)))"
+            return "\(PaceCalculator.formatPace(record.newValue)) (\(prev) \(PaceCalculator.formatPace(record.previousValue)))"
 
         // Zeitformate (README 2.9)
         case .mostRounds:
@@ -2146,27 +2142,6 @@ private struct PRBadge: View {
     /// (dieselbe Funktion ruft die Datei bereits an anderer Stelle, Z. 1923).
     private func formatDuration(_ totalSeconds: Double) -> String {
         PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
-    }
-
-    /// DEL-064: km-Formatter — Integer wenn ganzzahlig, sonst 2 Nachkommastellen.
-    private func formatKm(_ km: Double) -> String {
-        km == km.rounded() ? "\(Int(km))" : km.truncated(to: 2).formattedTwoDecimals
-    }
-
-    /// DEL-064: Pace-Formatter (min/km Double → "5:42 /km"-String).
-    private func formatPace(_ minutesPerKm: Double) -> String {
-        guard minutesPerKm.isFinite, minutesPerKm > 0 else { return "—:——" }
-        let total = Int((minutesPerKm * 60.0).rounded())
-        return String(format: "%d:%02d /km", total / 60, total % 60)
-    }
-
-    private func formatWeight(_ w: Double) -> String {
-        w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
-    }
-
-    private func formatDelta(_ percent: Double) -> String {
-        // Round to nearest %, integer display
-        "\(Int((percent * 100).rounded())) %"
     }
 }
 
@@ -2310,7 +2285,7 @@ private struct ProgressionBadge: View {
             return deltaString
         }
         return String(format: String(localized: "progression.detail.newTargetFormat", bundle: .module),
-                      formatWeight(newWeight))
+                      newWeight.formattedWholeOrTwoDecimals)
     }
 
     private var deltaPill: some View {
@@ -2323,15 +2298,7 @@ private struct ProgressionBadge: View {
     private var deltaString: String {
         let delta = outcome.action.weightDelta
         let sign = delta > 0 ? "+" : (delta < 0 ? "−" : "")
-        let absVal = abs(delta)
-        let valStr = absVal == absVal.rounded()
-            ? "\(Int(absVal))"
-            : absVal.truncated(to: 2).formattedTwoDecimals
-        return "\(sign)\(valStr) kg"
-    }
-
-    private func formatWeight(_ w: Double) -> String {
-        w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
+        return "\(sign)\(abs(delta).formattedWholeOrTwoDecimals) kg"
     }
 }
 
@@ -2580,11 +2547,7 @@ private struct SetSummaryRow: View {
             let secUnit = String(localized: "unit.seconds.short", bundle: .module)
             return "\(log.reps) \(secUnit) (RIR \(log.rir.formattedRIR))"
         }
-        return "\(formatWeight(log.weight)) kg × \(log.reps) (RIR \(log.rir.formattedRIR))"
-    }
-
-    private func formatWeight(_ w: Double) -> String {
-        w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
+        return "\(log.weight.formattedWholeOrTwoDecimals) kg × \(log.reps) (RIR \(log.rir.formattedRIR))"
     }
 }
 

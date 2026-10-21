@@ -39,6 +39,9 @@ public struct RestTimerAttributes: ActivityAttributes {
         public let totalSets: Int
         public let isFinished: Bool
         public let prMessage: String?
+        /// Bugfix (Audit): fertig uebersetzte Anzeige-Texte — das Widget-
+        /// Target hat keinen String-Katalog (siehe `RestTimerLiveTexts`).
+        public let texts: RestTimerLiveTexts
 
         public init(
             endDate: Date,
@@ -46,7 +49,8 @@ public struct RestTimerAttributes: ActivityAttributes {
             setNumber: Int = 1,
             totalSets: Int = 1,
             isFinished: Bool = false,
-            prMessage: String? = nil
+            prMessage: String? = nil,
+            texts: RestTimerLiveTexts
         ) {
             self.endDate = endDate
             self.originalSeconds = originalSeconds
@@ -54,6 +58,7 @@ public struct RestTimerAttributes: ActivityAttributes {
             self.totalSets = totalSets
             self.isFinished = isFinished
             self.prMessage = prMessage
+            self.texts = texts
         }
     }
 

@@ -217,17 +217,6 @@ public actor HealthKitService {
         )
     }
 
-    public func latestBodyFatPercent() async throws -> Double? {
-        guard let sample = try await latestSample(of: Self.bodyFatType) else { return nil }
-        let fraction = sample.quantity.doubleValue(for: HKUnit.percent())
-        return fraction * 100.0
-    }
-
-    public func latestLeanBodyMassKg() async throws -> Double? {
-        guard let sample = try await latestSample(of: Self.leanMassType) else { return nil }
-        return sample.quantity.doubleValue(for: .gramUnit(with: .kilo))
-    }
-
     /// DEL-132 (Phase 3): Letzter Ruhepuls in BPM. Apple Watch schreibt
     /// einen neuen Wert ca. einmal pro Tag (errechnet aus den niedrigsten
     /// Stunden-Mittelwerten der vergangenen Tage). Wir nehmen einfach den

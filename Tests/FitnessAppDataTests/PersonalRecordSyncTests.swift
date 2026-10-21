@@ -293,6 +293,31 @@ final class PersonalRecordSyncTests: XCTestCase {
         XCTAssertTrue(try allPREs().isEmpty)
     }
 
+    /// Regression (Audit-Fund): `fetchHistoricalLifts` zaehlte vorher JEDE
+    /// andere abgeschlossene Session als Historie, auch eine mit SPAETEREM
+    /// `startTime` — z.B. wenn ein Nutzer eine Session nachtraeglich
+    /// rueckdatiert und `recordPRs` danach fuer die rueckdatierte (aeltere)
+    /// Session laeuft, waehrend die juengere Session schon im Store steckt.
+    /// `rebuild(in:)` sieht pro Session dagegen nur Lifts STRIKT DAVOR. Vor
+    /// dem Fix wichen die beiden Pfade hier auseinander: session1 (day 1,
+    /// 80kg) haette faelschlich KEINEN Baseline-PR bekommen, weil die
+    /// spaetere session2 (day 2, 100kg) als Historie mitzaehlte.
+    func testForwardSaveIgnoresLaterSessionsAsHistory() throws {
+        makeSession(weight: 100, reps: 5, date: day(2))
+        let session1 = makeSession(weight: 80, reps: 5, date: day(1))
+        try context.save()
+
+        let detected = PersonalRecordSync.recordPRs(for: session1, in: context)
+        try context.save()
+
+        XCTAssertFalse(detected.isEmpty,
+                       "session1 is chronologically first — it must get a baseline PR, " +
+                       "matching rebuild(in:)'s chronological semantics")
+        let heaviest = detected.first { $0.kind == .heaviestWeight }
+        XCTAssertNotNil(heaviest)
+        XCTAssertEqual(heaviest?.newValue, 80)
+    }
+
     // MARK: - Cross-cutting: bodyweight + time-based
 
     func testRebuildHandlesBodyweightExerciseMaxRepsPR() throws {

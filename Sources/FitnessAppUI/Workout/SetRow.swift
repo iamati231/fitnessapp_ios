@@ -1656,7 +1656,7 @@ private struct PlatePopoverContent: View {
                     .font(.headline)
                     .symbolRenderingMode(.hierarchical)
                 Spacer()
-                Text("\(formatWeight(targetWeight)) \(unit.rawValue)")
+                Text("\(targetWeight.formattedWholeOrTwoDecimals) \(unit.rawValue)")
                     .font(.title3.bold().monospacedDigit())
                     .foregroundStyle(Color.deltiqOrange)
             }
@@ -1684,7 +1684,7 @@ private struct PlatePopoverContent: View {
                 Self.rememberBarType(newValue, for: exerciseName)
             }
 
-            Text("Stange: \(formatWeight(effectiveBarWeight)) \(unit.rawValue)")
+            Text("Stange: \(effectiveBarWeight.formattedWholeOrTwoDecimals) \(unit.rawValue)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -1714,7 +1714,7 @@ private struct PlatePopoverContent: View {
             }
 
             if abs(actualWeight - targetWeight) > 0.01 {
-                Text("Erreichbar: \(formatWeight(actualWeight)) \(unit.rawValue) (Δ \(formatWeight(actualWeight - targetWeight)) \(unit.rawValue))")
+                Text("Erreichbar: \(actualWeight.formattedWholeOrTwoDecimals) \(unit.rawValue) (Δ \((actualWeight - targetWeight).formattedWholeOrTwoDecimals) \(unit.rawValue))")
                     .font(.caption2)
                     .foregroundStyle(.orange)
             }
@@ -1738,12 +1738,8 @@ private struct PlatePopoverContent: View {
     private func perSideText(_ plates: [PlateConfig], unit: PlateCalculator.Unit) -> String {
         let parts = plates
             .sorted { $0.weight > $1.weight }
-            .map { p in "\(p.count)× \(formatWeight(p.weight))" }
+            .map { p in "\(p.count)× \(p.weight.formattedWholeOrTwoDecimals)" }
         return "Pro Seite: " + parts.joined(separator: " · ") + " \(unit.rawValue)"
-    }
-
-    private func formatWeight(_ w: Double) -> String {
-        w == w.rounded() ? "\(Int(w))" : w.truncated(to: 2).formattedTwoDecimals
     }
 }
 
