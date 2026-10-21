@@ -1,6 +1,17 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-21 (zweiundzwanzigster Durchgang: Paket 3 vom Auftraggeber
+Stand: 2026-10-21 (dreiundzwanzigster Durchgang: Paket 3a — vom
+Auftraggeber konkret spezifizierter, begrenzter erster Ausbau des Pakets-3-
+Scope-Vorschlags — umgesetzt und CI-grün auf HEAD `85fa8d6`. Ein
+datenqualitätsgesicherter Dashboard-Hinweis für wiederholt nicht
+protokollierte Laufgelegenheiten mit Einstieg in den bestehenden
+Paket-1-Anpassungspfad, reine Beobachtung ohne Ursachenzuschreibung, keine
+automatische Plan-Mutation. Alle 10 vom Auftraggeber verbindlich benannten
+Testfälle grün. Kein frischer TestingBot-Gerätenachweis in diesem
+Durchgang — explizit begründet, siehe Abschnitt „Paket 3a:
+Laufversäumnis-Hinweis" unten. Paket 3 darüber hinaus (3b/3c/adaptive
+Steigerung/Reduktion) bewusst NICHT begonnen. Davor zweiundzwanzigster
+Durchgang: Paket 3 vom Auftraggeber
 grundsätzlich freigegeben ("begrenzt zuschneiden lassen"), ohne eigene
 Detailspezifikation. Reine Scope-/Abhängigkeitsplanung erarbeitet und
 dokumentiert, NICHT umgesetzt — kein Code, kein Commit über diese
@@ -125,6 +136,183 @@ Runde 7 korrekt eingeordnet und gefixt. Gesamtabnahme weiterhin offen
 (kein vollständiger Abschluss aller 46 Fälle). Paket 1 (Coach-Aktivierung →
 Plananpassung) ist seit der Geräteabnahme unten vollständig gerätebestätigt,
 alle 9 geforderten Nachweise bestanden, kein Bug gefunden.**
+
+## Paket 3a: Laufversäumnis-Hinweis
+
+**Status: umgesetzt, CI-grün (HEAD `85fa8d6`), alle 10 geforderten
+Testfälle bestanden. Kein frischer Gerätenachweis in diesem Durchgang —
+explizit begründet (siehe unten). Paket 3 darüber hinaus (3b/3c, adaptive
+Steigerung/Reduktion) bewusst NICHT begonnen.**
+
+Der Auftraggeber hat den im vorigen Durchgang vorgeschlagenen Paket-3-
+Zuschnitt (Abschnitt „Paket 3: Scope-Vorschlag" unten) konkret spezifiziert
+und dabei EINEN Punkt ausdrücklich korrigiert: „Keine neue Heuristik" war
+im ursprünglichen Vorschlag falsch formuliert — Fenster, Mindestdaten und
+Auslöseschwelle sind bewusst festgelegte, NEUE Produktregeln (keine
+automatisch gelernte/adaptive Heuristik, aber sehr wohl eine bewusste
+Schwellwertlogik). Ebenso korrigiert: der Vorschlag hatte vorgeschlagen,
+den CTA nach einer bereits übernommenen Paket-1-Anpassung dauerhaft
+auszublenden — das ist jetzt explizit zurückgenommen.
+
+### Zuordnung bestehender Bausteine (vor der Umsetzung geprüft)
+
+- **`PlanParticipationEvaluator` (P6.2)** ist für Lauf-Gelegenheiten
+  GEEIGNET, inklusive seines flexiblen Kadenz-Modus: Letzterer behauptet
+  nie einen konkreten „Tag X wurde verfehlt", sondern liefert nur eine
+  Gesamtzahl fälliger/erfüllter Gelegenheiten — erfüllt die Vorgabe „keine
+  festen Tagesversäumnisse aus einem flexiblen Plan erfinden" bereits durch
+  sein bestehendes Design. Kein zusätzlicher Blockade-Guard für unbekannte
+  Schedule-Kinds nötig. `activatedAt` ist laut eigener Typ-Doku nur ein
+  Periodenstart-Parameter (gleiche Wiederverwendung wie
+  `FourWeekReviewAssembler` für Blockgrenzen) — das neue
+  `MissedRunDayEvaluator` clamped ihn für ein rollierendes 14-Tage-Fenster
+  NUR nach vorne (`max(activatedAt, windowStart)`), erfindet also nie eine
+  frühere Aktivierung.
+- **ECHTER, zu Beginn nicht offensichtlicher Befund:** der Basis-Evaluator
+  ist bewusst sport-agnostisch (jede reale Session zählt für jeden
+  Plan-Tag). Für eine lauf-spezifische Projektion reicht das NICHT — eine
+  Kraft- oder Ad-hoc-Session ohne Tag-Bezug darf keinen verfehlten Lauf-Tag
+  „abdecken". `MissedRunDayEvaluator` übernimmt deshalb NUR Sessions mit
+  echter Tag-Referenz auf einen bereits als Lauf-Tag identifizierten
+  `TrainingDay` (Vorwärts-Traversal, keine Ad-hoc-Zuordnung) — eine kleine,
+  aber notwendige Ergänzung zur reinen Wiederverwendung, kein Konflikt.
+- **Lauf-Tag-Identifikation**: ausschließlich über `enduranceSportKind ==
+  .running` (Exercise- oder Tages-Ebene), NIE aus Tagesname/-typ
+  hergeleitet — deckt sich mit dem Paket-2-Legacy-Vertrag
+  (`testEnduranceSportKindDefaultsToNilOnRoundtripAndIsNotDerivedFromDayName`).
+  Ein Cardio-Tag ohne gesetztes Feld (Altbestand) zählt bewusst NICHT als
+  Lauf-Tag — unterzählt im Zweifel, erfindet nie.
+- **Fingerprint-Muster** (`UserBodyProfile.cardioFeasibilityDismissedFingerprint`/
+  `cardioPlanAdjustmentFingerprint`, Paket 1) ist wiederverwendbar, ABER mit
+  einer wichtigen Korrektur gegenüber einer naiven Übernahme: eine
+  Fingerprint-Gleichheit darf hier NICHT auf dem rollierenden
+  Fenster-`periodStart` basieren (der wandert täglich weiter, auch ohne
+  neue Beobachtung — eine Unterdrückung würde sonst täglich fälschlich
+  ablaufen). Stattdessen bindet `CardioCoachingAdvisor.missedRunHintFingerprint`
+  an den ECHTEN `TrainingPlan.activatedAt` (Planfassung, ändert sich nur
+  bei Re-Aktivierung/Planwechsel) + die verwendete Schedule-Art (ändert
+  sich bei Strukturänderung) + `missedCount` (neue Beobachtung) — ein
+  neues, drittes Feld `UserBodyProfile.missedRunHintDismissedFingerprint`
+  (NICHT eines der beiden bestehenden, andere Semantik). Keine technische
+  Lücke gefunden, die den geforderten Vertrag nicht abbilden könnte — der
+  Fingerprint-Mechanismus trägt ihn vollständig, sobald die richtigen
+  Eingaben einfließen.
+- **`CoachingTypes.swift`** kennt keinen Typ namens „CoachingReason" — die
+  tatsächliche Dashboard-Hinweis-Infrastruktur heißt `CoachingContext`
+  (Fälle wie `cardioVolumeSpike`/`cardioMissedLongRun`). Neuer Fall
+  `cardioMissedRunDays` nach demselben Schema ergänzt.
+- **Koordination gegen konkurrierende Hinweise**: die bestehende
+  `activeSoftCoachingContext`-Prioritätskette in `DashboardView` ist
+  bereits ein striktes Ein-Treffer-Schema (genau ein Kontext gewinnt). Der
+  neue Fall ist dort eingeordnet (vor `cardioMissedLongRun`, nach
+  `volumeRecord`) — das IST die Koordination, kein zusätzlicher Abgleich
+  nötig.
+- Git-Status vor der Bearbeitung geprüft: Branch war aktuell, keine
+  parallelen/konkurrierenden Änderungen.
+
+### Umsetzung
+
+- `CardioCoachingAdvisor` (Core): `missedRunWindowDays` (14 Tage),
+  `minimumMissedRunDaysToFlag` (2), `isRecurringMissedRunDays` (reine
+  Schwellwert-Entscheidung), `missedRunHintFingerprint` (Planfassung +
+  Beobachtung, siehe oben).
+- `MissedRunDayEvaluator` (FitnessAppData, neu): projiziert nur Lauf-Tage
+  eines Plans in `PlanParticipationEvaluator.Input`, inkl. explizitem
+  P9-Fetch-Fehler-Schutz (kein stillschweigendes „keine Sessions" bei
+  echtem Fetch-Fehler).
+- `MissedRunDaysCardModel` (FitnessAppUI, neu): bündelt Signal +
+  Suppression + Paket-1-CTA-Verfügbarkeit (`CoachAdjustmentCardModel`,
+  unverändert) zu einem einzigen, testbaren `make`/`dismiss`-Modell — exakt
+  nach dem etablierten `CardioFeasibilityCardModel`/`CoachAdjustmentCardModel`-
+  Muster.
+- `UserBodyProfile.missedRunHintDismissedFingerprint` (neues Feld).
+- `DashboardView`: neuer `CoachingContext.cardioMissedRunDays`-Fall in der
+  bestehenden Prioritätskette, CTA-Button öffnet `CoachAdjustmentPreviewView`
+  (identisch zum Paket-1-Pfad in `ProfileEditorView`), „Nicht jetzt"-Button
+  ruft nur `dismiss()` auf.
+- `Localizable.xcstrings`: neue Catalog-Keys (de/en/tr) für drei Tonfälle
+  plus die beiden Button-Texte, nach dem Muster von
+  `coaching.soft.cardioMissedLongRun.*`.
+- Keine Schema-Änderung über das eine neue Fingerprint-Feld hinaus, kein
+  zweiter Mutationspfad auf `TrainingDay`/`TrainingPlan`.
+
+### Testabdeckung (alle 10 geforderten Fälle, einzeln benannt)
+
+Core (`CardioCoachingAdvisorTests`) + Data
+(`MissedRunDayEvaluatorTests`) + UI (`MissedRunDaysCardModelTests`):
+
+1. **Coach aus → kein Hinweis** — `testCoachOffYieldsNoHint`.
+2. **Unzureichende/unklare Daten → kein Hinweis** —
+   `testAmbiguousSportKindYieldsNoHint` (Cardio-Tag ohne
+   `enduranceSportKind`) + `testUnknownActivationAnchorYieldsNoHint`.
+3. **Schwelle erreicht → genau ein verständlicher Hinweis** —
+   `testThresholdReachedYieldsExactlyOneUnderstandableHint`.
+4. **Teiltraining/laufende Session/Pause → nicht pauschal verfehlt** —
+   `testPartialStartedOrPausedPlanIsNotCountedAsFlatOutMissed`.
+5. **Planwechsel → keine falsche Übernahme alter Versäumnisse** —
+   `testPlanSwitchDoesNotInheritPreviousPlansMissedDays`.
+6. **Ablehnen übersteht Kaltstart, unterdrückt sofortiges erneutes
+   Anzeigen** — `testDismissSurvivesColdStartAndSuppressesImmediateReappearance`.
+7. **Neue Beobachtung + abgelaufene Unterdrückung → Neubewertung** —
+   `testNewObservationAfterDismissAllowsReappearance`.
+8. **Frühere Annahme ist KEINE dauerhafte CTA-Sperre** —
+   `testPreviousCoachAdjustmentAcceptanceDoesNotPermanentlyBlockCTA`.
+9. **Öffnen und Abbrechen verändert keinen Plan** —
+   `testOpeningAndCancellingChangesNoPlan`.
+10. **Übernahme bleibt ausschließlich im Paket-1-Pfad** —
+    `testAdoptionStaysExclusivelyInThePackageOneAdjustmentPath`.
+
+Zusätzlich (über die 10 geforderten Fälle hinaus, aus der Eignungsprüfung
+in Schritt 1): `MissedRunDayEvaluatorTests.testOnlyClearlyIdentifiedRunningDaysAreCounted`
+(Radfahr-Tag und Altbestands-Tag ohne `enduranceSportKind` zählen NICHT
+mit) und `testPlanWithNoIdentifiableRunningDayIsNotReliablyEvaluable`,
+sowie Fingerprint-Grenzfälle in `CardioCoachingAdvisorTests`
+(u. a. `testFingerprintIsStableAcrossRollingWindowDrift` — belegt, dass
+die Unterdrückung NICHT täglich durch das rollierende Fenster selbst
+abläuft).
+
+### CI-Fund (kein Feature-Bug)
+
+Ein `swift test`-Lauf auf dem GitHub-Actions-Runner kopiert
+`Localizable.xcstrings` nur ROH in den Ressourcen-Bundle ("Copying
+Localizable.xcstrings"), statt es wie ein echter Xcode-App-Build zu
+kompilieren. `CoachingMessageProvider`s `String(localized:bundle:)`-
+Auflösung liefert unter diesem Build-Pfad für JEDEN Catalog-Key (nicht nur
+neue) den Key unverändert zurück — ein ursprünglich geplanter Test, der den
+AUFGELÖSTEN Hinweistext prüfen sollte, schlug deshalb fehl, bevor er
+entfernt wurde (siehe Commit `85fa8d6`). Im selben CI-Lauf bestätigt: der
+tatsächliche App-Build (`xcodebuild` über das generierte Xcode-Projekt)
+verwendet `CompileXCStrings`/`xcstringstool compile` korrekt — die neuen
+Catalog-Einträge lösen im echten App-Build auf, nur `swift test` selbst
+kompiliert keine String-Kataloge. Betrifft die gesamte bestehende
+`CoachingMessageProvider`-Infrastruktur (nicht nur Paket 3a) und war vorher
+nie getestet (siehe Kommentar in `CoachingTypesTests.swift`) — außerhalb
+des Scopes dieses Durchgangs, hier nur dokumentiert.
+
+### Gerätenachweis: bewusst entfallen, begründet
+
+Kein frischer TestingBot-Nachweis in diesem Durchgang. Begründung:
+
+- Die gesamte Signal-/Suppression-/CTA-Verfügbarkeits-Logik ist über echte
+  `ModelContainer`/SwiftData-Objekte unit-getestet (keine Mocks) — exakt
+  dieselben Typen (`MissedRunDaysCardModel`, `MissedRunDayEvaluator`,
+  `CoachAdjustmentCardModel`), die `DashboardView` tatsächlich aufruft.
+- Die einzige NEUE sichtbare UI-Fläche sind zwei Buttons
+  („Plan prüfen"/„Nicht jetzt") in der bereits bestehenden Coaching-
+  Hinweis-Karte, mit demselben `Button`/`.buttonStyle`-Muster wie der
+  bereits existierende Deload-Apply-Button in derselben Karte.
+- Der CTA öffnet exakt dieselbe `CoachAdjustmentPreviewView`/dasselbe
+  `.sheet(isPresented:)`-Muster wie der in Paket 1 bereits vollständig
+  gerätebestätigte Pfad (9 Nachweise, siehe oben) — keine neue
+  Interaktionskomplexität, kein neues Gesture-/Navigationsmuster.
+- Die Priorisierungskette (`activeSoftCoachingContext`), in die der neue
+  Fall eingehängt ist, ist dieselbe bereits produktiv laufende Mechanik wie
+  für `cardioVolumeSpike`/`cardioMissedLongRun`.
+
+Verbleibend offen, falls gewünscht: ein visueller Nachweis, dass der
+Hinweistext selbst (drei Tonfälle, drei Sprachen) im laufenden Simulator
+korrekt rendert — rein kosmetisch, keine Verhaltenslogik, aus den
+genannten Gründen nicht Teil dieses Durchgangs.
 
 ## Paket 3: Scope-Vorschlag (noch nicht umgesetzt)
 
