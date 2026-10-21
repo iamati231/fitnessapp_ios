@@ -1255,6 +1255,10 @@ public enum DataImportService {
             // "kein Wizard-Tag" (siehe Feld-Dokumentation auf TrainingDay).
             let generationFingerprint = row.optionalString("generation_fingerprint")
             let generatorSequenceIndex = row.int("generator_sequence_index")
+            // Paket 2 (Sportart-Unterscheidung): additive Spalte, siehe
+            // DataExportService.buildDays - aeltere ZIPs ohne sie -> nil,
+            // der Bestandsfall "nicht festgelegt".
+            let enduranceSportKind = row.optionalString("endurance_sport_kind").flatMap(TrainingTypeKind.init(rawValue:))
 
             let day = TrainingDay(
                 name: name,
@@ -1275,6 +1279,7 @@ public enum DataImportService {
                 enduranceWorkDurationSeconds: enduranceWorkDurationSeconds,
                 enduranceWorkDistanceKm: enduranceWorkDistanceKm,
                 enduranceRestDurationSeconds: enduranceRestDurationSeconds,
+                enduranceSportKind: enduranceSportKind,
                 generationFingerprint: generationFingerprint,
                 generatorSequenceIndex: generatorSequenceIndex
             )
@@ -1481,6 +1486,12 @@ public enum DataImportService {
             )
             if let cardioEquipRaw = row.optionalString("cardio_equipment") {
                 e.cardioEquipmentRaw = cardioEquipRaw
+            }
+            // Paket 2 (Sportart-Unterscheidung): additive Spalte, aeltere
+            // ZIPs ohne sie -> bleibt nil, der Bestandsfall "nicht
+            // festgelegt".
+            if let sportKindRaw = row.optionalString("endurance_sport_kind") {
+                e.enduranceSportKindRaw = sportKindRaw
             }
             // DEL-208: Deload-Zustand normalisieren. Wurde das Backup mitten
             // in einer Deload-Woche (DEL-200) erstellt, enthält

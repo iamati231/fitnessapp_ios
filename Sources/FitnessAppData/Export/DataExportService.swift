@@ -544,7 +544,10 @@ public enum DataExportService {
             "endurance_warmup_seconds", "endurance_cooldown_seconds",
             "endurance_interval_rounds", "endurance_work_duration_seconds",
             "endurance_work_distance_km", "endurance_rest_duration_seconds",
-            "generation_fingerprint", "generator_sequence_index"
+            "generation_fingerprint", "generator_sequence_index",
+            // Paket 2 (Sportart-Unterscheidung): additive Spalte, gleiches
+            // Muster wie oben.
+            "endurance_sport_kind"
         ])
         for d in items {
             w.appendRow([
@@ -568,7 +571,8 @@ public enum DataExportService {
                 CSVWriter.decimal(d.enduranceWorkDistanceKm),
                 d.enduranceRestDurationSeconds.map(String.init) ?? "",
                 d.generationFingerprint ?? "",
-                d.generatorSequenceIndex.map(String.init) ?? ""
+                d.generatorSequenceIndex.map(String.init) ?? "",
+                d.enduranceSportKind?.rawValue ?? ""
             ])
         }
         return w.data()
@@ -604,7 +608,10 @@ public enum DataExportService {
             // Übung. Ohne die Spalte war das Original nach einem Restore nicht
             // mehr herleitbar — der User konnte den Tausch nicht
             // zurücknehmen. Enthält die Export-ID der Original-Übung.
-            "swapped_from_original"
+            "swapped_from_original",
+            // Paket 2 (Sportart-Unterscheidung): additive Spalte, gleiches
+            // Muster wie bei den Tagen.
+            "endurance_sport_kind"
         ])
         for e in items {
             // Imperatives Append statt großem Array-Literal — Swift's
@@ -648,6 +655,7 @@ public enum DataExportService {
             row.append(CSVWriter.decimal(e.deloadOriginalWeight))
             // DEL-225: Referenz auf die Original-Übung als Export-ID.
             row.append(e.swappedFromOriginal.map { id($0) } ?? "")
+            row.append(e.enduranceSportKindRaw ?? "")
             w.appendRow(row)
         }
         return w.data()

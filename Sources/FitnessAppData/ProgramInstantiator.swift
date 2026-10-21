@@ -160,7 +160,8 @@ public enum ProgramInstantiator {
                 enduranceIntervalRounds: daySpec.enduranceIntervalRounds,
                 enduranceWorkDurationSeconds: daySpec.enduranceWorkDurationSeconds,
                 enduranceWorkDistanceKm: daySpec.enduranceWorkDistanceKm,
-                enduranceRestDurationSeconds: daySpec.enduranceRestDurationSeconds
+                enduranceRestDurationSeconds: daySpec.enduranceRestDurationSeconds,
+                enduranceSportKind: daySpec.enduranceSportKind
             )
             context.insert(day)
 

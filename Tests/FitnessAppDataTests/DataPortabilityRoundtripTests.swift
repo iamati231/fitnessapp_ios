@@ -517,9 +517,21 @@ final class DataPortabilityRoundtripTests: XCTestCase {
             enduranceIntervalRounds: 5,
             enduranceWorkDurationSeconds: nil,
             enduranceWorkDistanceKm: 1.0,
-            enduranceRestDurationSeconds: 120
+            enduranceRestDurationSeconds: 120,
+            enduranceSportKind: .cycling
         )
         ctx.insert(day)
+        // Sportart-Unterscheidung gilt auch auf Exercise-Ebene (einfache
+        // Ausdauereinheiten) - hier an einem Tag mit anderem Format
+        // mitgeprueft, damit kein zweiter fast identischer Test noetig ist.
+        let simpleRunDay = TrainingDay(name: "Easy Run", weekday: 5, type: .cardio, plan: plan)
+        ctx.insert(simpleRunDay)
+        let runExercise = Exercise(
+            name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1,
+            isCardio: true, targetDurationMinutes: 30, day: simpleRunDay
+        )
+        runExercise.enduranceSportKind = .running
+        ctx.insert(runExercise)
         let phaseEnd = Date(timeIntervalSince1970: 1_760_500_090)
         let session = WorkoutSession(
             startTime: Date(timeIntervalSince1970: 1_760_500_000),
@@ -545,7 +557,11 @@ final class DataPortabilityRoundtripTests: XCTestCase {
             strategy: .appendOnly
         )
 
-        let importedDay = try target.mainContext.fetch(FetchDescriptor<TrainingDay>()).first
+        let importedDays = try target.mainContext.fetch(FetchDescriptor<TrainingDay>())
+        let importedDay = importedDays.first { $0.timeFormat == .enduranceIntervals }
+        XCTAssertEqual(importedDay?.enduranceSportKind, .cycling)
+        let importedRunDay = importedDays.first { $0.name == "Easy Run" }
+        XCTAssertEqual(importedRunDay?.exercises.first?.enduranceSportKind, .running)
         XCTAssertEqual(importedDay?.timeFormat, .enduranceIntervals)
         XCTAssertEqual(importedDay?.enduranceWarmupDurationSeconds, 600)
         XCTAssertEqual(importedDay?.enduranceCooldownDurationSeconds, 300)

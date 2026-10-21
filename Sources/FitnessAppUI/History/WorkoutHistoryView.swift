@@ -349,7 +349,11 @@ struct HistorySessionRow: View {
         case .emom: return "checkmark.circle"
         case .forTime: return "flag.checkered"
         case .circuit: return "arrow.triangle.2.circlepath"
-        case .enduranceIntervals: return "figure.run"
+        case .enduranceIntervals:
+            // Paket 2 (Sportart-Unterscheidung): war hartcodiert auf
+            // "figure.run", unabhaengig von der tatsaechlichen Sportart -
+            // zeigte faelschlich ein Lauf-Icon auch fuer Rad-Einheiten.
+            return session.contentSnapshotEnduranceSportKind == .cycling ? "figure.outdoor.cycle" : "figure.run"
         }
     }
 

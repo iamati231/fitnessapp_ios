@@ -142,6 +142,9 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
     public let enduranceWorkDurationSeconds: Int?
     public let enduranceWorkDistanceKm: Double?
     public let enduranceRestDurationSeconds: Int?
+    /// Paket 2 (Sportart-Unterscheidung): wie die anderen `endurance*`-Felder
+    /// oben additiv, gleiche Begruendung.
+    public let enduranceSportKind: TrainingTypeKind?
     /// Geordnete, VOLLSTÄNDIGE Liste — eine leere Liste ist ein gültiger
     /// Zustand (z. B. ein Ad-hoc-Training im Moment der Erzeugung, bevor die
     /// erste Übung hinzugefügt wurde), kein Fehler und keine Datenlücke.
@@ -164,6 +167,7 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
         enduranceWorkDurationSeconds: Int? = nil,
         enduranceWorkDistanceKm: Double? = nil,
         enduranceRestDurationSeconds: Int? = nil,
+        enduranceSportKind: TrainingTypeKind? = nil,
         exercises: [ExerciseEntry]
     ) {
         self.schemaVersion = Self.currentSchemaVersion
@@ -183,6 +187,7 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
         self.enduranceWorkDurationSeconds = enduranceWorkDurationSeconds
         self.enduranceWorkDistanceKm = enduranceWorkDistanceKm
         self.enduranceRestDurationSeconds = enduranceRestDurationSeconds
+        self.enduranceSportKind = enduranceSportKind
         self.exercises = exercises
     }
 
@@ -210,6 +215,7 @@ public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
             enduranceWorkDurationSeconds: enduranceWorkDurationSeconds,
             enduranceWorkDistanceKm: enduranceWorkDistanceKm,
             enduranceRestDurationSeconds: enduranceRestDurationSeconds,
+            enduranceSportKind: enduranceSportKind,
             exercises: exercises
         )
     }

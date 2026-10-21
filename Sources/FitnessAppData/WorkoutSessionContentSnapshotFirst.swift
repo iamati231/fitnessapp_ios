@@ -74,6 +74,13 @@ extension WorkoutSession {
         contentSnapshotFirst({ $0.enduranceRestDurationSeconds }, liveFallback: { day?.enduranceRestDurationSeconds })
     }
 
+    /// Paket 2 (Sportart-Unterscheidung): reine Anzeige (Laufen/Radfahren-
+    /// Kontext im Player/in der Historie), beeinflusst keine Timer-/
+    /// Phasenlogik - gleiches Snapshot-first-Prinzip wie oben.
+    public var contentSnapshotEnduranceSportKind: TrainingTypeKind? {
+        contentSnapshotFirst({ $0.enduranceSportKind }, liveFallback: { day?.enduranceSportKind })
+    }
+
     /// P8 Stufe-2-Nachbesserung (Geräteabnahme-Befund, Block D): steuert,
     /// welcher Player überhaupt geöffnet wird (`WorkoutRootView`) und,
     /// innerhalb eines Zeitformat-Tags, welcher der vier Unterspieler

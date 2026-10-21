@@ -295,6 +295,7 @@ public enum TrainingDayContentSnapshotWriter {
             enduranceWorkDurationSeconds: day.enduranceWorkDurationSeconds,
             enduranceWorkDistanceKm: day.enduranceWorkDistanceKm,
             enduranceRestDurationSeconds: day.enduranceRestDurationSeconds,
+            enduranceSportKind: day.enduranceSportKind,
             exercises: exercises
         )
     }

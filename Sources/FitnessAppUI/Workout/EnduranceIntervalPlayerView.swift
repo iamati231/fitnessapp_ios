@@ -89,8 +89,16 @@ struct EnduranceIntervalPlayerView: View {
         }
     }
 
+    /// Paket 2 (Sportart-Unterscheidung): zeigt Laufen/Radfahren statt der
+    /// generischen "Intervalle"-Beschriftung, sobald die Sportart bekannt
+    /// ist (reuse von `TrainingTypeKind.titleKey`, keine neuen Strings
+    /// noetig). Altbestand ohne Sportart (`nil`) faellt auf den bisherigen
+    /// generischen Text zurueck.
     private var pillLabel: String {
-        String(localized: "timedWorkout.enduranceIntervals.pillLabel", bundle: .module)
+        guard let sportKind = session.contentSnapshotEnduranceSportKind else {
+            return String(localized: "timedWorkout.enduranceIntervals.pillLabel", bundle: .module)
+        }
+        return String(localized: String.LocalizationValue(sportKind.titleKey), bundle: .module)
     }
 
     private var phaseDisplayName: String {
