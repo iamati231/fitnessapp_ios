@@ -167,7 +167,9 @@ public struct NutritionGoalsView: View {
             profile: profile.profile
         )
         let tdee = BodyCalculations.tdee(bmr: bmr, activityFactor: tdeeActivity.factor)
-        profile.dailyCalorieGoalKcal = Int(tdee.rounded())
+        // Final-review ruling: project-wide truncate-not-round convention
+        // (DoubleFormatting.swift) applies here too, not just rounding.
+        profile.dailyCalorieGoalKcal = Int(tdee.truncated(to: 0))
     }
 
     private func ageYears(for profile: UserBodyProfile) -> Int {
