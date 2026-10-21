@@ -32,6 +32,19 @@ final class MealDraftTests: XCTestCase {
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<MealEntry>()), 0)
     }
 
+    // Final-review fix (important): einzelne Position entfernen, ohne die
+    // uebrigen anzufassen.
+    func testRemoveItemRemovesOnlyThatItem() {
+        let draft = MealDraft(date: Date(), mealType: .lunch)
+        draft.addItem(catalogID: "a", nameSnapshot: "A", quantity: 100, unit: .gram, nutrients: .zero)
+        draft.addItem(catalogID: "b", nameSnapshot: "B", quantity: 50, unit: .gram, nutrients: .zero)
+        let idToRemove = draft.items[0].id
+
+        draft.removeItem(id: idToRemove)
+
+        XCTAssertEqual(draft.items.map(\.nameSnapshot), ["B"])
+    }
+
     func testSecondSaveCallIsNoOpAfterFirstSucceeds() throws {
         // Doppeltap-Schutz: zwei aufeinanderfolgende save()-Aufrufe (wie bei
         // zwei schnellen Taps, bevor die UI den Button deaktivieren konnte)

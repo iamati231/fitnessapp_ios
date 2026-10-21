@@ -254,6 +254,14 @@ public struct AddMealView: View {
                 }
                 .listRowBackground(Color.Deltiq.surface)
             }
+            // Final-review fix (important): bisher gab es keinen Weg, eine
+            // einzelne Position wieder zu entfernen, weder im Neuanlage-
+            // noch im Edit-Flow.
+            .onDelete { offsets in
+                for index in offsets {
+                    draft.removeItem(id: draft.items[index].id)
+                }
+            }
         } header: {
             Text("nutrition.addMeal.positionsSection", bundle: .module)
         }

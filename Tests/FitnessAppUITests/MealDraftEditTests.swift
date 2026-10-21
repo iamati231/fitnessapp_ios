@@ -21,7 +21,7 @@ final class MealDraftEditTests: XCTestCase {
         try context.save()
 
         let draft = MealDraft(editing: meal)
-        draft.items.removeAll()
+        for item in draft.items { draft.removeItem(id: item.id) }
         draft.addItem(catalogID: nil, nameSnapshot: "Neu", quantity: 200, unit: .gram, nutrients: .zero)
         let result = draft.save(into: context)
 
@@ -65,7 +65,7 @@ final class MealDraftEditTests: XCTestCase {
         let draft = MealDraft(editing: meal)
         draft.date = Date(timeIntervalSinceNow: 86_400)
         draft.mealType = .dinner
-        draft.items.removeAll()
+        for item in draft.items { draft.removeItem(id: item.id) }
         draft.addItem(catalogID: nil, nameSnapshot: "Wuerde-gespeichert", quantity: 50, unit: .gram, nutrients: .zero)
 
         let result = draft.save(into: context) { _ in throw Boom() }

@@ -40,9 +40,7 @@ public final class MealDraft: ObservableObject {
 
     @Published public var date: Date
     @Published public var mealType: MealType
-    // internal(set) statt private(set): MealDraftEditTests (@testable) muss
-    // fuer den Edit-Test `draft.items.removeAll()` aufrufen koennen.
-    @Published public internal(set) var items: [Item] = []
+    @Published public private(set) var items: [Item] = []
     /// Doppeltap-Schutz: sobald `save()` einmal erfolgreich war, ist jeder
     /// weitere Aufruf ein Context-freies No-Op (siehe `save(into:persist:)`).
     @Published public private(set) var didSaveSuccessfully: Bool = false
@@ -78,6 +76,14 @@ public final class MealDraft: ObservableObject {
 
     public func addItem(catalogID: String?, nameSnapshot: String, quantity: Double, unit: FoodUnit, nutrients: NutrientValues) {
         items.append(Item(catalogID: catalogID, nameSnapshot: nameSnapshot, quantity: quantity, unit: unit, nutrients: nutrients))
+    }
+
+    /// Final-review fix (important): einzelne Position wieder entfernen —
+    /// vorher gab es dafuer in der UI keinen Weg, weder im Neuanlage- noch
+    /// im Edit-Flow. Ersetzt das Test-only `draft.items.removeAll()`
+    /// (`items` ist dafuer wieder `private(set)`).
+    public func removeItem(id: Item.ID) {
+        items.removeAll { $0.id == id }
     }
 
     /// Summe aller Positionen — REIN lesend. Kein `ModelContext`-Zugriff,
