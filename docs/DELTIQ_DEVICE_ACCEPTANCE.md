@@ -1,6 +1,10 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-21 (zwanzigster Durchgang: Paket 2, Schritt 3 umgesetzt und
+Stand: 2026-10-21 (einundzwanzigster Durchgang: Paket 2 um die Sportart-
+Unterscheidung Laufen/Radfahren als begrenzten Restumfang ergänzt und
+gerätebestätigt, CI-grün auf HEAD `8b6a931`. Siehe Abschnitt „Paket 2:
+Sportart-Unterscheidung — finaler Abschluss" unten. Davor zwanzigster
+Durchgang: Paket 2, Schritt 3 umgesetzt und
 gerätebestätigt — `EnduranceIntervalPlayerView` (Komponente 3) inkl.
 WorkoutSession-Ergebnisfeldern, Snapshot-/CSV-Anbindung, CI-grün
 (Fix-Runde: `String.LocalizationValue` für dynamischen Hint-Key), HEAD
@@ -402,6 +406,174 @@ UI, Vorschau-Abgleich) bleiben **teilweise** bis zum empfohlenen
 dedizierten Gerätefenster oben. Komponente 4 (Sportartauswahl Laufen/
 Radfahren) ist kein Testumfang, sondern ein offener Produktbefund, der an
 den Auftraggeber zurückgeht. Kein Merge, kein Release. Paket 3 nicht
+begonnen.
+
+## Paket 2: Sportart-Unterscheidung — finaler Abschluss
+
+Diese Runde schließt genau die in "Punkt 4 eingeordnet" oben beschriebene
+Lücke: Laufen/Radfahren war strukturell nicht unterscheidbar, nur über den
+frei editierbaren Tagesnamen. Umgesetzt als begrenzter Restumfang, nicht als
+neue Diagnostik/Coaching-Logik (Paket 3 weiterhin nicht begonnen).
+
+### Umsetzung
+
+Wiederverwendet wird das bestehende `TrainingTypeKind` (bereits Basis von
+`PlanGeneratorTypeSelection.kind`) — **kein zweites, konkurrierendes
+Sportartmodell**. Durchgereicht durch die gesamte Kette: Generator
+(`PlanGenerator.cardioCandidates`/`timedCardioCandidates`) → Vorlagen
+(`ProgramTemplates.swift`) → `DaySpec`/`ExerciseSpec` → `TrainingDay`/
+`Exercise` (SwiftData) → Editor (`DayEditorView`/`ExerciseEditorView`,
+inkl. Autosave-Discard-Schutz in `ExerciseSnapshot`) → Fingerprint
+(`currentContentFingerprint`, schützt eine manuelle Korrektur vor
+stillem Überschreiben durch "neu rechnen") → Session-Start-Snapshot
+(`TrainingDayContentSnapshot`/`-Writer`, das, was der Player tatsächlich
+liest, nicht die live `TrainingDay`) → Player-Anzeige
+(`EnduranceIntervalPlayerView.pillLabel`) → Historie
+(`WorkoutHistoryView.timedFormatIcon`) → CSV-Export/-Import (je eine
+additive Spalte `endurance_sport_kind` auf Tag- und Übungsebene, exaktes
+Muster der bestehenden additiven Felder).
+
+Bewusst **kein stiller Default**: der Sportart-Picker zeigt einen eigenen
+"Nicht festgelegt"-Eintrag, solange der Wert `nil` ist, statt (wie der
+bestehende `circuitMode`-Picker) auf einen Platzhalterwert zu fallen —
+ein bloßes Öffnen des Editors legt also nie unbemerkt eine Sportart fest.
+Altbestand und manuell ohne Auswahl angelegte Einheiten bleiben `nil` und
+werden **nie** aus dem Tagesnamen zurückgeraten (per Unit-Test belegt,
+siehe unten).
+
+### Anforderungszuordnung (6 Nutzer-Vorgaben)
+
+| # | Anforderung | Status |
+|---|---|---|
+| 1 | Vorhandene Modelle wiederverwenden, Sportart nicht aus Tagesname ableiten | **Erfüllt** — `TrainingTypeKind` wiederverwendet; Gerätetest zeigte explizit "Nicht festgelegt" bei einem Tag namens "Cycling" (keine Namensableitung), Unit-Test `testEnduranceSportKindDefaultsToNilOnRoundtripAndIsNotDerivedFromDayName` belegt dasselbe für den Tagnamen "Radfahren" |
+| 2 | Konfiguration: Sportart eindeutig, Generator-Handoff ohne Rückfrage, manuell bewusste Auswahl, EINE Sportart pro gesamter Einheit | **Erfüllt** — Gerätetest: generiertes "Easy Run" zeigte sofort "Running" (keine Rückfrage), manuell angelegte Intervall-Einheit zeigte "Not set" bis zur bewussten Auswahl; kein Picker pro Intervall-Segment vorhanden (bewusst nicht gebaut) |
+| 3 | Durchgängigkeit über Konfiguration/Vorschau/Player/Ergebnis/Historie/Export; Zeit/Distanz/Reps/Skips überleben Sportartwechsel; keine Fehlinterpretation sportartspezifischer Werte | **Erfüllt** — Gerätetest: Edit→Save→Reopen (Exercise- UND Day-Ebene) persistiert korrekt; Vorschau (Day-Editor "Sport: Cycling") deckt sich mit gestartetem Player (Eyebrow "CYCLING"); Historie zeigt nach Sport getrenntes Icon; Export/Import-Roundtrip-Test grün |
+| 4 | Altbestand ohne Sportart lesbar, keine Auto-Zuweisung aus Namen, "nicht festgelegt" bis bewusste Wahl; Migration/CSV-Kompatibilität getestet; bestehender Roundtrip-Test erweitert statt dupliziert | **Erfüllt** — `testEnduranceIntervalsDayAndSessionSurviveRoundtrip` um `enduranceSportKind` (Tag- UND Übungs-Ebene) erweitert statt verdoppelt; neuer, kleiner Legacy-Test nach etabliertem `…DefaultsToNilOnRoundtrip`-Muster (wie `testGenerationSourceDefaultsToManualOnRoundtrip`) belegt den Alt-/Namens-Fall separat |
+| 5 | Gebündeltes Gerätefenster: Edit/Save/Reopen, Vorschau=Player, Laufen+Radfahren eindeutig, streckenbasiert/offen manuell beendbar, Ergebnis inkl. Skips nach Kaltstart aus Historie korrekt; bestehende Player-Nachweise nicht wiederholt | **Erfüllt**, siehe Gerätenachweis unten |
+| 6 | Budget vor neuem Geräteblock aktualisieren, keine Zusatzsession nur zur Budgetklärung | **Erfüllt** — `GET /v1/user` unmittelbar vor dem Fenster geprüft (17.404 s), siehe Budget unten |
+
+### Zuordnung der ursprünglichen 8 Paket-2-Anforderungen (Gesamtstand inkl. Sportart)
+
+| # | Anforderung | Status nach dieser Runde |
+|---|---|---|
+| 1 | Einfache Einheit (ein Hauptblock, Zeit/Strecke/offen) | Abgedeckt (unverändert, s. o.) |
+| 2 | Konfiguration bearbeiten/speichern/erneut öffnen | **Jetzt gerätebestätigt** (war zuvor offene Lücke) — inkl. Sportart-Feld auf Exercise- und Day-Ebene |
+| 3 | Planvorschau entspricht gestartetem Player | **Jetzt explizit gerätebestätigt** (war zuvor nur plausibilisiert) — inkl. Sportart |
+| 4 | Laufen UND Radfahren mit jeweils gewählter Sportart | **Geschlossen** — war offener Produktbefund, jetzt strukturell umgesetzt und gerätebestätigt |
+| 5 | Streckenbasierte/offene Abschnitte manuell beendbar ohne erfundene Distanz | **Jetzt gerätebestätigt** (war zuvor nur Code-Review) |
+| 6 | Coach aus: strukturierte Einheit bleibt ausführbar | Abgedeckt (unverändert) |
+| 7 | Abgeschlossene Ergebnisse inkl. Skips bleiben nach Kaltstart aus Historie korrekt | **Jetzt gerätebestätigt** (war zuvor nur Datenebene) |
+| 8 | Bestehende einfache Ausdauereinheiten bleiben kompatibel | Abgedeckt (unverändert) |
+
+### Gerätenachweis (EIN TestingBot-Fenster, iPhone 15 / iOS 18.0, max_concurrent=1)
+
+Build: GitHub-Actions-Artefakt zu Commit `620d45c` (CI-Run `39575408642`,
+erfolgreich), per TestingBot-Storage-API hochgeladen
+(`tb://cfbb1ce17966e4fa37b5f325`). Eine einzelne Appium-Session, am Ende
+sauber per `DELETE /session` beendet.
+
+1. **Config edit/save/reopen**: "Easy Run" (generiert) zeigte sofort
+   "Sport: Running"; auf "Cycling" geändert, gespeichert, Editor
+   verlassen und erneut geöffnet → "Cycling" persistiert; zurück auf
+   "Running" gesetzt. Zweiter Fall: manuell auf `.enduranceIntervals`
+   umgestelltes Tagesformat zeigte "Sport: Not set" (trotz Tagesname
+   "Cycling" — keine Namensableitung), auf "Cycling" gesetzt, gespeichert,
+   erneut geöffnet → persistiert korrekt inkl. aller übrigen Felder
+   (Warm-up/Rounds/Effort target/Recovery/Cool-down unverändert).
+2. **Vorschau = Player**: Day-Editor zeigte "Sport: Cycling" vor dem
+   Start; der gestartete Player zeigte denselben Wert als Eyebrow-Label
+   ("CYCLING") über dem Tagesnamen.
+3. **Laufen UND Radfahren eindeutig bis Historie**: generierte Einheiten
+   "Easy Run" (Sport: Running) und "Outdoor Cycling" (Sport: Cycling)
+   beide korrekt gesetzt; die manuell auf Cycling konfigurierte
+   Intervall-Einheit erschien nach Abschluss in der Historie mit
+   fahrrad-spezifischem Icon statt des generischen Lauf-Icons.
+4. **Streckenbasiert/offener Abschnitt manuell beendbar**: Belastungsziel
+   "Open" ("No fixed target") im laufenden Intervall-Player per "Done"
+   manuell beendet (kein Skip, kein erfundener Distanzwert) → Übergang zur
+   Recovery-Phase korrekt.
+5. **Ergebnis inkl. Skips nach Kaltstart aus Historie korrekt**: komplette
+   Einheit (5 Runden, mehrere "Skip" auf Recovery-Phasen) bis zur Summary
+   durchlaufen ("5 ROUNDS COMPLETED", Dauer 3:19), gespeichert. App per
+   `mobile: terminateApp`/`mobile: launchApp` hart beendet und neu
+   gestartet (echter Kaltstart, kein Resume-Pfad). Historie zeigte die
+   Session danach weiterhin korrekt mit fahrrad-spezifischem Icon und
+   Rundenzahl (Anzeige lokalisierte dabei zu "Radfahren" — Sportart-Logik
+   unabhängig von Locale bestätigt).
+
+Die vier bereits bestandenen Schritt-3-Player-Nachweise (Easy-Run-
+Normalfall, Pause/Fortsetzen, übersprungener Abschnitt, Kaltstart während
+Belastung) wurden **nicht wiederholt**, wie vorgegeben.
+
+**Dabei gefundener und sofort gefixter Bug**: `EnduranceIntervalPlayerView.
+untimedWorkCard` zeigte für die "kein festes Ziel"-Karte unabhängig von der
+Sportart hartcodiert `figure.run` — bei der Cycling-Einheit sichtbar ein
+Lauf-Icon statt eines Rad-Icons. Gleicher Fehlertyp wie der bereits in
+`WorkoutHistoryView.timedFormatIcon` behobene. Fix in Commit `495e1b7`
+(sportartabhängig `figure.outdoor.cycle`/`figure.run`), CI-grün zusammen
+mit dem Legacy-Test in Commit `8b6a931` (Run `39580529802`, erfolgreich;
+der Vorlauf-Run `39580010390` für `495e1b7` allein wurde als überholt
+abgebrochen, kein separater Gerätenachweis für den reinen Icon-Fix
+nachgeholt — Code-Review + CI-Test gelten hierfür als ausreichend, da rein
+optische Änderung ohne Logikänderung; Trennung Code-Review/Geräte-Nachweis
+bewusst eingehalten).
+
+### CI-Status (alle Commits dieser Runde)
+
+| Commit | Inhalt | Run | Ergebnis |
+|---|---|---|---|
+| `939a151` | Datenmodell + Editor | `39574708789` | abgebrochen (durch `620d45c` überholt, redundant) |
+| `620d45c` | Durchgängigkeit (Snapshot/Export/Player/Historie) | `39575408642` | **erfolgreich** (Gerätetest-Build) |
+| `41e0e10` | Generator-Unit-Tests | `39575547582` | **erfolgreich** |
+| `495e1b7` | Icon-Fix (Player, Cycling) | `39580010390` | abgebrochen (durch `8b6a931` überholt, redundant) |
+| `8b6a931` | Legacy-Test (Namensableitung) | `39580529802` | **erfolgreich** (aktueller HEAD) |
+
+### Budget
+
+**Vor diesem Geräteblock**: `GET /v1/user` → 17.404 s (bestätigt unmittelbar
+vor Sessionstart, Rückgang gegenüber dem vorherigen Stand von 18.493 s
+zeigt, dass die vier Schritt-3-Sessions aus der vorherigen Runde
+inzwischen abgerechnet wurden — deren Einzel-Dauern/IDs bleiben wie bereits
+dokumentiert nicht mehr rekonstruierbar, kein Nacherfassungsversuch ohne
+Primärdaten).
+**Nach diesem Geräteblock**: genau EINE Session in diesem Fenster (kein
+weiterer Geräte-Lauf für den Icon-Fix, siehe oben), aktiv per
+`DELETE /session` beendet; Session-Dauer ca. 21 Minuten (09:29–09:50 UTC).
+Konto-Stand nach Abrechnung noch nicht erneut abgefragt (bekannte
+Abrechnungs-Verzögerung dieses Anbieters) — keine Zusatzabfrage nur zur
+Bestätigung, nächster Abgleich beim nächsten ohnehin fälligen
+Gerätedurchgang.
+
+### Zurück-Navigation / Entwurf-Beobachtung: weiterhin unverändert
+
+Die bereits mehrfach dokumentierte "Zurück verwirft den Entwurf"-
+Beobachtung bleibt wie eingeordnet: vollständige Code-Analyse (Commit
+`8bbec96`) ergab **keinen Bug** — `goToPreviousStep()` ändert nur den
+Wizard-Schritt, `generatePreviewIfNeeded()` regeneriert den Entwurf
+ausschließlich bei tatsächlich geänderter Struktur-Eingabe. Keine neue
+Prüfung in dieser Runde, wird hier nur zur Vollständigkeit erneut
+genannt.
+
+### Verbleibende konkrete Grenzen
+
+- Kein Sportart-Picker pro Intervall-Segment — bewusst nicht gebaut, eine
+  Sportart gilt für die gesamte Einheit (Vorgabe 2).
+- Keine zusätzliche Leistungsdiagnostik, keine Rad-Leistungssteuerung,
+  keine Paket-3-Coaching-Logik — bewusst nicht erweitert (Vorgabe 3).
+- Vorbestehende, von dieser Runde unberührte Lücke (nicht neu, nicht
+  behoben): `ExerciseSubstitutionEngine.swift`,
+  `PlanEquipmentAdaptationApplier.swift` und `PlansListView.swift`
+  konstruieren `DaySpec`-ähnliche Objekte, die bei `circuitMode` enden und
+  keines der `endurance*`-Felder (inkl. `enduranceSportKind`) durchreichen
+  — bestand bereits vor dieser Runde für alle anderen `endurance*`-Felder,
+  kein neues Risiko durch diese Ergänzung, aber nicht Gegenstand dieses
+  begrenzten Restumfangs.
+- Reiner Icon-Fix (`495e1b7`) ist CI-, aber nicht erneut gerätebestätigt
+  (s. o. — bewusste, begründete Ausnahme).
+
+**Paket 2 gilt mit dieser Ergänzung vollständig umgesetzt und
+gerätebestätigt für alle 8 ursprünglichen Anforderungen plus die
+Sportart-Unterscheidung.** Kein Merge, kein Release. Paket 3 nicht
 begonnen.
 
 ## Paket 2: ursprünglicher Umsetzungsplan (strukturierte Ausdauereinheiten)
