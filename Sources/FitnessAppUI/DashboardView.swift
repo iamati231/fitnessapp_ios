@@ -547,15 +547,40 @@ public struct DashboardView: View {
     @ViewBuilder
     private var nutritionCard: some View {
         if todayMeals.isEmpty {
-            DashboardEmptyState(
-                icon: "fork.knife",
-                // Titel wiederverwendet aus NutritionDayView (Task 8) — kein
-                // neuer Key noetig, Beschreibung + CTA sind Task-9-eigene Keys.
-                title: "nutrition.day.empty.title",
-                description: "nutrition.dashboard.empty.message",
-                ctaTitle: "nutrition.dashboard.addMeal.button",
-                ctaAction: { showingAddMealFromDashboard = true }
-            )
+            // Final-review fix (important): die Empty-State-Karte fuehrte
+            // bisher nirgendwohin ausser zum Erfassungs-Sheet — ohne eine
+            // heutige Mahlzeit gab es keinen Weg in die Tagesuebersicht
+            // (und von dort in vergangene Tage/Goals). Gleiche NavigationLink-
+            // + Button-Geschwister-Struktur wie im Daten-Zweig unten (Spec
+            // 3: "tapping the tile opens the day overview").
+            VStack(alignment: .leading, spacing: 12) {
+                NavigationLink {
+                    NutritionDayView()
+                } label: {
+                    DashboardEmptyState(
+                        icon: "fork.knife",
+                        // Titel wiederverwendet aus NutritionDayView (Task 8) —
+                        // kein neuer Key noetig, Beschreibung ist ein
+                        // Task-9-eigener Key.
+                        title: "nutrition.day.empty.title",
+                        description: "nutrition.dashboard.empty.message"
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showingAddMealFromDashboard = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("nutrition.dashboard.addMeal.button", bundle: .module)
+                        Spacer()
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+                .buttonStyle(.plain)
+            }
             .deltiqCardStyle()
         } else {
             VStack(alignment: .leading, spacing: 12) {
