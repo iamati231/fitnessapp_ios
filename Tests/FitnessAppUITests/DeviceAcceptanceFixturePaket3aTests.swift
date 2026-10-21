@@ -16,13 +16,19 @@ import FitnessAppCore
 @MainActor
 final class DeviceAcceptanceFixturePaket3aTests: XCTestCase {
 
-    private func makeContext() throws -> ModelContext {
-        let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        return container.mainContext
+    // Als Instanzeigenschaft gehalten (gleiches Muster wie
+    // `MissedRunDaysCardModelTests`) — ein nur lokal gehaltener Container
+    // wird sonst deallokiert, sobald die Helper-Funktion zurückkehrt, und der
+    // zurückgegebene `ModelContext` zeigt danach ins Leere (Crash-Ursache
+    // des ersten CI-Laufs dieser Datei: Signal 5 in beiden Tests).
+    var container: ModelContainer!
+    private var context: ModelContext { container.mainContext }
+
+    override func setUpWithError() throws {
+        container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
     func testSeedProducesAMissedRunDaysCardHitForTheAffectedPlanOnly() throws {
-        let context = try makeContext()
         DeviceAcceptanceFixturePaket3a.seed(in: context)
 
         let profiles = try context.fetch(FetchDescriptor<UserBodyProfile>())
@@ -56,7 +62,6 @@ final class DeviceAcceptanceFixturePaket3aTests: XCTestCase {
     }
 
     func testSeedIsIdempotentAcrossAColdStart() throws {
-        let context = try makeContext()
         DeviceAcceptanceFixturePaket3a.seed(in: context)
         let firstActivatedAt = try context.fetch(FetchDescriptor<TrainingPlan>())
             .first { $0.customName == DeviceAcceptanceFixturePaket3a.affectedPlanName }?.activatedAt
