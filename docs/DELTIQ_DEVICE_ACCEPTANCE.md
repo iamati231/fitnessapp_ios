@@ -1,6 +1,17 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-21 (dreiundzwanzigster Durchgang: Paket 3a — vom
+Stand: 2026-10-21 (vierundzwanzigster Durchgang: Paket 3a —
+vier vom Auftraggeber gezielt benannte Restpunkte aus dem dreiundzwanzigsten
+Durchgang geschlossen — Re-Trigger-Korrektur (gedeckelter `missedCount`
+erkennt eine neue, abgeschlossene Lauf-Gelegenheit jetzt zuverlässig),
+Planbindungs-Nachweis für die In-Place-Übernahme DESSELBEN Plans, expliziter
+CSV-Export/-Import-Vertrag für `missedRunHintDismissedFingerprint` (bewusst
+NICHT exportiert, eigenständig getestet) und ein gezielter
+Swift-Integrationstest für die neue Karte→Plan→Vorschau-Verdrahtung. Kein
+frischer TestingBot-Gerätenachweis in diesem Durchgang — siehe Abschnitt
+„Paket 3a: Restpunkte (vierundzwanzigster Durchgang)" unten für Details,
+Tests und die Abwägung dazu. Paket 3b/3c weiterhin NICHT begonnen, kein
+Merge, kein Release. Davor dreiundzwanzigster Durchgang: Paket 3a — vom
 Auftraggeber konkret spezifizierter, begrenzter erster Ausbau des Pakets-3-
 Scope-Vorschlags — umgesetzt und CI-grün auf HEAD `85fa8d6`. Ein
 datenqualitätsgesicherter Dashboard-Hinweis für wiederholt nicht
@@ -313,6 +324,172 @@ Verbleibend offen, falls gewünscht: ein visueller Nachweis, dass der
 Hinweistext selbst (drei Tonfälle, drei Sprachen) im laufenden Simulator
 korrekt rendert — rein kosmetisch, keine Verhaltenslogik, aus den
 genannten Gründen nicht Teil dieses Durchgangs.
+
+## Paket 3a: Restpunkte (vierundzwanzigster Durchgang)
+
+**Status: alle 4 vom Auftraggeber gezielt benannten Restpunkte umgesetzt/
+nachgewiesen. Kein frischer TestingBot-Gerätenachweis in diesem Durchgang —
+Begründung bei Punkt 4. Paket 3b/3c weiterhin NICHT begonnen.** Vor der
+Bearbeitung: `git status`/Branch-Abgleich geprüft, keine parallelen
+Änderungen.
+
+### 1. Re-Trigger korrigieren
+
+**Problem:** `missedRunHintFingerprint` band „neue Beobachtung" bisher
+ausschließlich an `summary.missedCount`. Dieser Wert SÄTTIGT sich aber an
+der Obergrenze des rollierenden 14-Tage-Fensters, sobald ein Plan länger als
+das Fenster aktiv ist: mit jedem neuen Tag fällt gleichzeitig eine alte
+Gelegenheit aus dem Fenster heraus, während eine neue hinzukommt — bleibt
+auch die neue verfehlt, bleibt `missedCount` unverändert, obwohl tatsächlich
+eine neue, abgeschlossene Lauf-Gelegenheit stattgefunden hat.
+
+**Abgeleiteter zusätzlicher Datenpunkt (aus den tatsächlichen Datenmodellen,
+nicht geraten):** `TrainingDay`/`WorkoutSession` liefern keinen fertigen
+"Zeitpunkt der letzten ausgewerteten Session" — eine verfehlte Gelegenheit
+hat per Definition KEINE Session, ein Zeitstempel-Ansatz würde also genau
+den Fall nicht erkennen, der hier das Problem ist. Tragfähig ist stattdessen
+eine reine KALENDER-Größe, die `PlanParticipationEvaluator` bereits selbst
+berechnet: `plannedCount` — aber UNGECLAMPT seit dem echten
+`TrainingPlan.activatedAt` (kein rollierendes Fenster). Dieser Wert hängt
+nur von `activatedAt`/der Schedule-Struktur/`now` ab, braucht keinen
+Sessions-Fetch und wächst monoton um genau 1, sobald eine weitere
+Gelegenheit kalendarisch verstreicht — unabhängig davon, ob sie erfüllt oder
+verfehlt wurde. Neu: `MissedRunDayEvaluator.totalConcludedRunOpportunities`
+(`Sources/FitnessAppData/MissedRunDayEvaluator.swift`) — ruft
+`PlanParticipationEvaluator.evaluate` ein zweites Mal mit demselben
+Schedule, aber OHNE Fenster-Clamping auf, kein neuer Analyse-Pfad.
+`CardioCoachingAdvisor.missedRunHintFingerprint` (Core) nimmt diesen Wert
+als zusätzliche Fingerprint-Komponente auf (`concludedOpportunityCount`,
+neuer Pflicht-Parameter) — NEBEN, nicht ANSTELLE von `missedCount`: die
+Auslöseschwelle bleibt ausschließlich über `missedCount`/
+`isRecurringMissedRunDays` entschieden, der neue Wert unterscheidet nur
+„neue Gelegenheit trotz gedeckeltem Zähler" von echtem Stillstand.
+
+**Tests (beide gefordert, zusätzlich zu reinen Fingerprint-Unit-Tests):**
+- `MissedRunDaysCardModelTests.testReappearsAfterDismissWhenNewOpportunityConcludedDespiteCappedMissedCount` —
+  gleicher Plan, `missedCount` bleibt bei 2 (Fenster-Obergrenze), eine Woche
+  später ist genau eine neue Gelegenheit verstrichen → Hinweis erscheint
+  wieder.
+- `MissedRunDaysCardModelTests.testStaysSuppressedWithoutNewOpportunityEvenAsTimePasses` —
+  einen Tag später (keine neue Gelegenheit verstrichen, `floor(62/7) ==
+  floor(61/7)`) → weiterhin unterdrückt.
+- Reine Kalenderrechnung zusätzlich isoliert bewiesen in
+  `MissedRunDayEvaluatorTests.testTotalConcludedRunOpportunitiesGrowsMonotonicallyAndIsNotWindowClamped`
+  (inkl. des Falls „ein Tag später, aber keine neue Gelegenheit") und
+  `testTotalConcludedRunOpportunitiesIsNilWithoutActivationAnchor`.
+- `CardioCoachingAdvisorTests.testFingerprintChangesWithDifferentConcludedOpportunityCountEvenWhenMissedCountIsCapped`/
+  `testFingerprintStableWhenConcludedOpportunityCountUnchanged` (reine
+  Fingerprint-Ebene, alle bisherigen Fingerprint-Tests auf die neue
+  Signatur angepasst).
+
+### 2. Planbindung geprüft
+
+**Frage:** was passiert mit der Beobachtungsbasis, wenn der Nutzer über
+Paket 1 eine Anpassung DESSELBEN Plans annimmt (`activatedAt` bleibt gleich,
+kein Planwechsel)? `CoachAdjustmentCardModel.accept` (Merge-Pfad) ändert nur
+Inhalt bereits vorhandener, noch nie bespielter (`day.sessions.isEmpty`)
+Cardio-Tage — bestätigt per Code-Lesen von
+`RunCoachPlanAdjustment.isEligibleForAdjustment`/`PlanGeneratorInstantiator.
+applyCoachCardioAdjustment`: `activatedAt` wird dabei nie angefasst. Echter,
+vor der Umsetzung nicht offensichtlicher Befund: ein bislang NICHT als
+Lauf-Tag erkannter Cardio-Tag (z. B. Radfahren) kann durch die neu
+eingesetzten `newCardioDays` erstmals zum Lauf-Tag werden — seine ebenfalls
+nie geloggte Vergangenheit würde dann RÜCKWIRKEND als verfehlt in die
+Auswertung einfließen, unmittelbar NACHDEM der Nutzer gerade reagiert hat.
+`CoachAdjustmentPreviewView` ruft an keiner Stelle `MissedRunDaysCardModel.
+dismiss(...)` auf (bestätigt durch Lesen der View) — ohne Gegenmaßnahme wäre
+der Hinweis also nicht gegen dieses Szenario geschützt.
+
+**Lösung (kein Schema-Change — der bestehende Fingerprint-/Dismiss-
+Mechanismus trägt es vollständig):** `CoachAdjustmentCardModel.accept`
+berechnet nach erfolgreicher Übernahme den JETZT aktuellen
+`MissedRunDaysCardModel` für denselben `(profile, plan)` neu und ruft darauf
+`dismiss(profile:)` auf — reiner Reuse des bestehenden Mechanismus, markiert
+den Post-Anpassungs-Zustand als bereits gesehen. Ein echter NEUER
+Versäumnis-Fall NACH der Anpassung hebt die Unterdrückung über Restpunkt 1
+ganz regulär wieder auf. `accept(...)` bekommt dafür zwei neue, optionale
+Parameter `now`/`calendar` (Default = echtes `Date()`/`.current`, identisches
+Muster wie `MissedRunDaysCardModel.make`) — nur für deterministische Tests
+gebraucht, Produktivverhalten unverändert. Bestehende Aufrufer
+(`CoachAdjustmentPreviewView`, alle bisherigen Tests) bleiben unverändert
+kompatibel (Default-Parameter).
+
+**Test (nicht nur behauptet):**
+`MissedRunDaysCardModelTests.testAcceptingAdjustmentOnSamePlanDoesNotImmediatelyRetriggerHintFromStaleMisses` —
+Plan mit bestehenden, nie geloggten Versäumnissen (Schwelle erreicht,
+Hinweis sichtbar), `coachAdjustment.accept(...)` übernommen, `activatedAt`
+danach nachweislich unverändert, UNMITTELBAR danach (identisches `now`)
+liefert `MissedRunDaysCardModel.make` `nil` — die alten Versäumnisse
+poppen nicht sofort wieder auf.
+
+### 3. Persistenz/Import festgelegt
+
+**Vertrag (bewusst, nicht zufällig — eigenständig verifiziert, NICHT vom
+`cardioPlanAdjustmentFingerprint`-Präzedenzfall übernommen):**
+`UserBodyProfile.missedRunHintDismissedFingerprint` wird beim CSV-Export/
+-Import bewusst NICHT mitgenommen. Geprüft durch Lesen von
+`DataExportService.buildProfile` (Spaltenliste) UND `DataImportService`s
+Zeilen-Mapping: das Feld taucht in KEINEM von beiden auf — ein Import
+(`.appendOnly` wie `.replaceAll`) liefert für dieses Feld immer den
+Konstruktor-Default `nil`, unabhängig vom exportierten Zustand. Nach einem
+Restore/einer Neuinstallation kann ein bereits abgelehnter Hinweis also
+erneut erscheinen — das ist die bewusst gewählte, sichere Richtung: ein zu
+Unrecht dauerhaft unterdrückter ECHTER Versäumnis-Hinweis wäre das
+schlechtere Fehlverhalten als ein einmalig erneut gezeigter, bereits
+bekannter Hinweis. Dokumentiert direkt am Feld in `UserBodyProfile.swift`.
+
+**Tests (Kaltstart UND Importverhalten, beide tatsächlich ausgeführt):**
+- `DataPortabilityRoundtripTests.testMissedRunHintDismissedFingerprintDefaultsToNilOnColdStart` —
+  frisch angelegtes Profil, kein Export/Import im Spiel.
+- `DataPortabilityRoundtripTests.testMissedRunHintDismissedFingerprintResetsOnImport` —
+  Feld vor dem Export gesetzt, nach einem vollständigen Export/Import-
+  Roundtrip (`.appendOnly`) nachweislich wieder `nil`.
+
+### 4. Neue UI-Anbindung gezielt geprüft
+
+**Abwägung gegen einen neuen TestingBot-Gerätenachweis:**
+`CoachAdjustmentPreviewView` ist eine rein daten-getriebene SwiftUI-View
+ohne eigene Logik über das bereits getestete `CoachAdjustmentCardModel`
+hinaus (liest nur `CoachAdjustmentCardModel.make(for:activePlan:)`, ruft
+`accept()`/`dismiss()` auf) — und ist selbst bereits 9-fach gerätebestätigt
+(Paket 1). Der eigentliche Risikopunkt dieses Pakets ist NICHT die
+View-Darstellung, sondern ob `DashboardView` zuverlässig DENSELBEN Plan an
+Karte UND Sheet durchreicht, insbesondere bei mehreren gleichzeitig aktiven
+Plänen (bewusstes, bereits an anderer Stelle dokumentiertes
+Produktverhalten) — das ist ohne jedes UI-Rendering mit echten
+SwiftData-Objekten vollständig prüfbar. Ein zusätzliches TestingBot-Fenster
+nur für diesen Punkt wäre unverhältnismäßig; **kein Budget verbraucht**.
+
+Neuer, gezielter Swift-Integrationstest (nicht die Paket-1-Gerätefälle
+wiederholt): `Tests/FitnessAppUITests/MissedRunDaysCardAdjustmentWiringTests.swift`,
+mit ZWEI gleichzeitig aktiven Plänen unter einem Profil (unterschiedliche
+`activatedAt`, damit eine falsch durchgereichte Plan-Referenz nicht
+zufällig unauffällig bliebe):
+- `testCardReferencesCorrectPlanThroughToPreviewAndCancelChangesNothing` —
+  Karte→`CoachAdjustmentCardModel.make`-Aufruf (exakt das, was die Vorschau
+  intern macht) liefert denselben Vorschlag (gleicher Fingerprint), dessen
+  anfassbare Tage nachweislich NUR zum referenzierten Plan gehören (nie zum
+  anderen aktiven Plan); „Abbrechen" (nur lesen, kein `accept()`/
+  `dismiss()`) lässt BEIDE Pläne unverändert.
+- `testRejectSurvivesColdStartAndDoesNotLeakSuppressionToTheOtherActivePlan` —
+  „Nicht jetzt" übersteht einen Kaltstart UND unterdrückt nicht fälschlich
+  den eigenständigen Hinweis des ANDEREN aktiven Plans (unterschiedlicher
+  Fingerprint durch unterschiedliches `activatedAt`).
+
+**Bewusst offen gelassen:** ein visueller Nachweis, dass der
+AUSLÖSEZUSTAND (Hinweis tatsächlich sichtbar, nicht nur die Verdrahtung)
+auf echtem Gerät/Simulator erreichbar ist. Dafür müsste erst ein
+realistischer, mehrwöchiger Trainingsverlauf mit echten Versäumnissen auf
+einem TestingBot-Gerät aufgebaut werden — unverhältnismäßiger Aufwand für
+eine reine Verdrahtungsprüfung, bei der die Verdrahtung selbst bereits
+Swift-seitig lückenlos nachgewiesen ist.
+
+### CI
+
+Alle vier Punkte in einem gebündelten Nachbesserungs-Commit (plus
+Dokumentation separat), CI-Lauf nach dem Bündel ausgelöst statt nach jedem
+Einzelpunkt — Status siehe Commit-Historie/GitHub-Actions-Lauf dieses
+Durchgangs.
 
 ## Paket 3: Scope-Vorschlag (noch nicht umgesetzt)
 
