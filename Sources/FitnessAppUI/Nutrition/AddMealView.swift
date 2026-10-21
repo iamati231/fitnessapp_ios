@@ -223,22 +223,23 @@ public struct AddMealView: View {
             Button {
                 addSelectedEntry()
             } label: {
+                // Geraetetest-Fund: .deltiqButtonStyle() allein (angewendet
+                // NACH .buttonStyle(.plain), aussen auf den Button) macht die
+                // Zeile nur VISUELL vollbreit — sein eigenes
+                // frame(maxWidth: .infinity) greift zu spaet, der Tap-Bereich
+                // blieb auf die intrinsische Text-Glyphe in der Mitte
+                // begrenzt (raw-coordinate Taps links/rechts neben "Add" kamen
+                // nicht bei addSelectedEntry() an; .contentShape(Rectangle())
+                // half NICHT, da es dieselbe bereits zu kleine Button-Geometrie
+                // nur nachzeichnet). Fix: die Breite schon hier im Label selbst
+                // aufspannen (gleiches Prinzip wie DeltiqSegmentedPicker intern),
+                // damit Button+.buttonStyle(.plain) seine Hit-Area direkt aus
+                // der vollen Label-Breite ableitet.
                 Text("common.add", bundle: .module)
+                    .frame(maxWidth: .infinity)
             }
-            // Deltiq-CTA statt Ad-hoc-HStack: .deltiqButtonStyle() spannt die
-            // Label-Breite per frame(maxWidth: .infinity) auf und zeichnet den
-            // vollbreiten Gradient-Hintergrund (gleiches Muster wie
-            // DataExportView.startExport). Das macht die Zeile aber nur
-            // VISUELL breit — der Tap-Bereich von Button+.buttonStyle(.plain)
-            // bleibt ohne explizites .contentShape(Rectangle()) auf die
-            // intrinsische Text-Glyphe begrenzt (Geraetetest-Fund: Taps links/
-            // rechts neben "Add" im sichtbar orangenen Bereich kamen NICHT bei
-            // addSelectedEntry() an). Exakt derselbe Audit-Fund wie zuvor bei
-            // der Spacer()-HStack-Variante, nur diesmal durch den Modifier
-            // verursacht statt durch Spacer().
             .buttonStyle(.plain)
             .deltiqButtonStyle()
-            .contentShape(Rectangle())
             .disabled((quantity ?? 0) <= 0)
         }
         .deltiqCardStyle()
