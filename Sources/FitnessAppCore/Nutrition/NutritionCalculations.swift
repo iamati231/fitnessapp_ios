@@ -17,4 +17,56 @@ public enum NutritionCalculations {
         guard weightKg > 0 else { return 0 }
         return Int((weightKg * multiplier).rounded())
     }
+
+    /// Naehrwerte fuer eine gegebene Menge eines `FoodCatalogItem` (Spec 4.2).
+    ///
+    /// Alle Einheiten rechnen zuerst auf Gramm um, dann greift dieselbe
+    /// Gramm-Formel (`...Per100g * grams / 100`):
+    /// - `.gram`: `quantity` ist bereits Gramm.
+    /// - `.piece`: `quantity * item.pieceWeightGrams`; `nil` ohne gesetztes
+    ///   `pieceWeightGrams`.
+    /// - `.milliliter`: `quantity * item.densityGramsPerMl`; `nil` ohne
+    ///   gesetzte Dichte — NIEMALS 1 ml = 1 g annehmen.
+    ///
+    /// Gibt exakte, ungerundete Werte zurueck (kein Runden/Truncate hier —
+    /// das passiert erst bei der Anzeige, analog `TDEEView.tdee`).
+    public static func nutrients(
+        for item: FoodCatalogItem,
+        quantity: Double,
+        unit: FoodUnit
+    ) -> NutrientValues? {
+        guard quantity > 0 else { return nil }
+
+        let grams: Double
+        switch unit {
+        case .gram:
+            grams = quantity
+        case .piece:
+            guard let pieceWeightGrams = item.pieceWeightGrams else { return nil }
+            grams = quantity * pieceWeightGrams
+        case .milliliter:
+            guard let densityGramsPerMl = item.densityGramsPerMl else { return nil }
+            grams = quantity * densityGramsPerMl
+        }
+
+        return NutrientValues(
+            kcal: item.kcalPer100g * grams / 100,
+            proteinG: item.proteinPer100g * grams / 100,
+            carbsG: item.carbsPer100g * grams / 100,
+            fatG: item.fatPer100g * grams / 100
+        )
+    }
+}
+
+public extension FoodCatalogItem {
+    /// Ob diese Menge-Einheit fuer dieses Item sinnvoll ist (Spec 4.2) —
+    /// benutzt von Task 6, um im Mengen-Picker ausschliesslich zulaessige
+    /// Einheiten anzuzeigen.
+    func supports(_ unit: FoodUnit) -> Bool {
+        switch unit {
+        case .gram: return true
+        case .piece: return pieceWeightGrams != nil
+        case .milliliter: return densityGramsPerMl != nil
+        }
+    }
 }
