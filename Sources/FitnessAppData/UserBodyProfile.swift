@@ -13,6 +13,20 @@ public final class UserBodyProfile {
     public var profile: BodyFormulaProfile
     /// Target body weight entered during onboarding (Fat-Loss goal). Nil if not set (F153).
     public var goalWeightKg: Double?
+
+    /// Deltiq-Nutrition v1 (Task 5): taegliche Ernaehrungsziele. Flaches
+    /// Feld-pro-Wert-Muster wie ueberall sonst in diesem Typ (kein
+    /// Blob/Struct) — jedes Feld unabhaengig optional und unabhaengig
+    /// voneinander setzbar. Kein Konstruktor-Parameter noetig: reine
+    /// Lightweight-Migration, Default-Literal `nil` reicht wie bei
+    /// `goalWeightKg` oben. `dailyCalorieGoalKcal` kann ueber den "Aus TDEE
+    /// uebernehmen"-Button in `NutritionGoalsView` einmalig mit einem
+    /// Snapshot aus der TDEE-Berechnung befuellt werden — kein Live-Binding.
+    public var dailyCalorieGoalKcal: Int?
+    public var dailyProteinGoalG: Double?
+    public var dailyCarbGoalG: Double?
+    public var dailyFatGoalG: Double?
+
     /// Training location chosen in onboarding — drives plan recommendations (F154).
     public var environment: EnvironmentType
 
