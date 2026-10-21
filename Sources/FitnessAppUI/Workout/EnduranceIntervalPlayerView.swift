@@ -289,7 +289,10 @@ struct EnduranceIntervalPlayerView: View {
     private var untimedWorkCard: some View {
         DeltiqCard(accentEdge: true) {
             VStack(spacing: 8) {
-                Image(systemName: "figure.run")
+                // Paket 2 (Sportart-Unterscheidung): war hartcodiert auf
+                // "figure.run", unabhaengig von der tatsaechlichen Sportart -
+                // zeigte faelschlich ein Lauf-Icon auch fuer Rad-Einheiten.
+                Image(systemName: session.contentSnapshotEnduranceSportKind == .cycling ? "figure.outdoor.cycle" : "figure.run")
                     .font(.system(size: 56, weight: .heavy))
                     .foregroundStyle(Color.primary)
                 Text(workTargetLabel)
