@@ -83,7 +83,17 @@ enum DeviceAcceptanceFixturePaket3a {
         context.insert(affectedPlan)
 
         for (weekday, label) in [(2, "Ruhiger Lauf Mo"), (4, "Ruhiger Lauf Mi"), (6, "Ruhiger Lauf Fr")] {
-            let day = TrainingDay(name: label, weekday: weekday, type: .cardio, plan: affectedPlan, enduranceSportKind: .running)
+            // `customName` explizit gesetzt (nicht nur `name`): sonst greift
+            // `LibrarySeeder.backfillCustomNamesIfNeeded` (laeuft im selben
+            // `RootView.task` NACH diesem Seed) und setzt `customName`
+            // nachtraeglich auf `name` — das AENDERT `currentContentFingerprint`
+            // (der `customNamePart` enthaelt), NACHDEM `generationFingerprint`
+            // unten bereits den alten Stand eingefroren hat. Ohne dieses
+            // explizite Setzen bleibt der Tag dauerhaft "nicht anfassbar"
+            // (Fingerprint-Mismatch) — am Geraet reproduziert: die Vorschau
+            // zeigte faelschlich den generischen "kein anfassbarer Tag"-Text
+            // statt der tatsaechlichen Tagesnamen.
+            let day = TrainingDay(name: label, customName: label, weekday: weekday, type: .cardio, plan: affectedPlan, enduranceSportKind: .running)
             // Macht den Tag fuer `RunCoachPlanAdjustment.isEligibleForAdjustment`
             // "anfassbar" (wie ein echter Wizard-generierter Tag) — ohne das
             // zeigt die Vorschau nur den generischen "kein anfassbarer Tag"-

@@ -1,6 +1,27 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-21 (vierundzwanzigster Durchgang: Paket 3a —
+Stand: 2026-10-21 (fünfundzwanzigster Durchgang: Paket 3a — gezielter
+TestingBot-Gerätenachweis NUR für die neue Laufversäumnis-Karte und ihre
+tatsächliche UI-Anbindung, auf ausdrücklichen Wunsch nach vorigem
+Verzicht. Build/Commit `d5b9ed0` (enthält `a1a3d40`/`15441c9`). Kein
+vorhandener Debug-/Fixture-Seed-Weg gefunden — ein neuer, eng auf diesen
+einen Zweck begrenzter `#if DEBUG`+Launch-Argument-Fixture-Einstieg
+gebaut (`DeviceAcceptanceFixturePaket3a`), der die normale
+Evaluator-Kette unverändert durchlaufen lässt. Dabei ein echter, NUR die
+Fixture betreffender Bug gefunden und gefixt (Startup-Backfill machte
+Lauf-Tage nachträglich "nicht anfassbar"). Alle 5 geforderten Schritte
+A–E auf dem iPhone-15/iOS-18.0-Simulator bestanden (Karte sichtbar/
+textlich korrekt, CTA öffnet nachweislich den richtigen von zwei
+unterscheidbaren Plänen, Abbrechen ändert nichts, Ablehnen übersteht
+einen echten Kaltstart und lässt den zweiten Plan unberührt, Coach-aus
+blendet den Hinweis aus ohne Lauf-Einheiten zu löschen). Re-Trigger
+NICHT zusätzlich am Gerät geprüft (benannte, konkrete Geräte-Grenze:
+erfordert echtes Verstreichen von Kalenderzeit, bereits zweifach
+Swift-seitig bewiesen) — siehe Abschnitt „Paket 3a: Geräteabnahme
+(fünfundzwanzigster Durchgang)" unten. 3 TestingBot-Sessions (111 s +
+250 s + 316 s = 677 s), alle aktiv beendet, `max_concurrent=1`
+eingehalten. Paket 3b/3c weiterhin NICHT begonnen, kein Merge, kein
+Release. Davor vierundzwanzigster Durchgang: Paket 3a —
 vier vom Auftraggeber gezielt benannte Restpunkte aus dem dreiundzwanzigsten
 Durchgang geschlossen — Re-Trigger-Korrektur (gedeckelter `missedCount`
 erkennt eine neue, abgeschlossene Lauf-Gelegenheit jetzt zuverlässig),
@@ -490,6 +511,282 @@ Alle vier Punkte in einem gebündelten Nachbesserungs-Commit (plus
 Dokumentation separat), CI-Lauf nach dem Bündel ausgelöst statt nach jedem
 Einzelpunkt — Status siehe Commit-Historie/GitHub-Actions-Lauf dieses
 Durchgangs.
+
+## Paket 3a: Geräteabnahme (fünfundzwanzigster Durchgang)
+
+**Auftrag:** der Nutzer hat den im vorigen Durchgang unter Punkt 4
+("Abwägung gegen einen neuen TestingBot-Gerätenachweis") begründeten
+Verzicht ausdrücklich zurückgewiesen und einen GEZIELTEN
+TestingBot-Gerätenachweis NUR für die neue Karte und ihre tatsächliche
+UI-Anbindung verlangt (die neun bereits bestandenen Paket-1-Gerätefälle
+für `CoachAdjustmentPreviewView` selbst waren NICHT erneut Gegenstand).
+Ein reiner Swift-Integrationstest zählt dafür ausdrücklich nicht als
+Gerätenachweis.
+
+**Build/Commit:** CI-Artefakt fuer Commit `d5b9ed0` (enthält `a1a3d40`
+und `15441c9`, den aktuellen HEAD der Restpunkte-Runde, plus die in
+diesem Durchgang hinzugekommene Fixture — siehe unten), heruntergeladen
+aus GitHub-Actions-Run `39600304050`, als `FitnessApp-simulator.zip` zu
+TestingBot hochgeladen (`tb://4966f1e70b7a2d0e3083ece6`).
+
+### Auslösezustand: kein vorhandener Fixture-/Debug-Weg gefunden, gezielter Debug-Fixture-Einstieg gebaut
+
+Vor jeder Änderung `git status`/`git fetch` geprüft (keine parallelen
+Änderungen). Gezielt gesucht (siehe bereits dokumentierter Befund im
+Abschnitt "F01–F08: Erreichbarkeit ohne CSV-Export/Systemzeit geprüft"):
+kein Debug-Menü, kein Launch-Argument-Seed, keine Preview-Seed-Funktion
+im Produktcode, die einen Plan mit lange zurückliegenden, nicht
+geloggten Tagen anlegen könnte. CSV-Import (`DataImportService`) bleibt
+technisch denkbar, ist aber nur über einen vorherigen CSV-Export
+erreichbar, der auf dem TestingBot-Gerät in früheren Runden
+reproduzierbar hing (siehe „F01–F08"-Abschnitt) — kein neuer Lösungsweg
+in diesem Durchgang gefunden, daher nicht erneut versucht.
+
+**Gebaut:** `Sources/FitnessAppUI/DeviceAcceptanceFixturePaket3a.swift`
+(Commits `526b977`/`f43026f`/`d5b9ed0`) — ein einziger neuer Typ, aktiv
+nur wenn BEIDE Bedingungen gelten: `#if DEBUG` (jeder CI-/TestingBot-Build
+dieses Projekts ist ausschließlich Debug, siehe `project.yml`) UND das
+Launch-Argument `-deltiqDeviceAcceptanceFixturePaket3a` (kein regulärer
+Start setzt es). Eingehängt in `RootView.task` (ein `#if DEBUG`-Aufruf,
+No-Op in jedem regulären Start). Reines `context.insert(...)` auf
+bestehenden Modellen — kein Eingriff in
+Evaluator/Advisor/Card-Modell/UI. Isolierter Testbestand (frisches
+TestingBot-Gerät, `fullReset: true`, keine echten Nutzerdaten im Spiel).
+
+Erzeugt:
+- Profil `cardioCoachingEnabled = true`, Ziel Marathon, Renndatum 6
+  Monate voraus, Startvolumen 20 km/Woche.
+- Aktiven Plan "Marathon-Vorbereitung A", `activatedAt` vor 21 Tagen,
+  drei über `enduranceSportKind == .running` echte Lauf-Tage (Mo/Mi/Fr),
+  KEINE geloggten Sessions darauf — die normale Auswertungskette
+  (`MissedRunDayEvaluator` → `CardioCoachingAdvisor` →
+  `MissedRunDaysCardModel.make`) berechnet daraus selbst `missedCount ≈
+  9` (flexible Kadenz, 3 Lauf-Tage/Woche, 21+ Tage verstrichen) — weit
+  über der Schwelle von 2. KEIN erzwungenes `showCard = true`.
+- Einen zweiten, bewusst INAKTIVEN, klar anders benannten Plan
+  "Kraft-Grundlagen B" (1 Kraft-Tag) — für Schritt B's
+  Unterscheidbarkeits-Prüfung. Zwei GLEICHZEITIG aktive Pläne wurden
+  bewusst NICHT gewählt: diese Konfiguration ist eine
+  Paket-1/Dashboard-weite Architekturfrage (`DashboardView` liest
+  `activePlans.first`, dort selbst als "defensiv" dokumentiert), nicht
+  spezifisch zur neuen Karte/ihrer Anbindung, und bereits auf
+  Swift-Ebene mit zwei gleichzeitig aktiven Plänen abgedeckt
+  (`MissedRunDaysCardAdjustmentWiringTests`, voriger Durchgang) — diese
+  Wahl prüft trotzdem den eigentlichen Punkt des Auftrags (Vorschau
+  zeigt tatsächlich DIESES Plans Inhalt).
+
+**Selbstcheck vor dem Gerätefenster**
+(`DeviceAcceptanceFixturePaket3aTests.swift`, 3 Tests): die Fixture-Daten
+ergeben über die echte Auswertungskette tatsächlich einen
+`MissedRunDaysCardModel`-Treffer, sind über einen simulierten Kaltstart
+idempotent, und bleiben nach dem echten Startup-Backfill
+(`LibrarySeeder.backfillCustomNamesIfNeeded`) weiterhin "anfassbar" —
+letzteres ein ECHTER, erst am Gerät gefundener Bug (siehe unten).
+
+**Am Gerät gefundener und gefixter Bug:** die erste Geräte-Session
+(Build `tb://194564783ed4b11c4ae2a1de`) zeigte in der Vorschau
+fälschlich den generischen "kein anfassbarer Tag"-Text statt der
+erwarteten Lauf-Tagesnamen. Ursache: `LibrarySeeder.
+backfillCustomNamesIfNeeded` läuft im echten `RootView.task`
+UNMITTELBAR NACH dem Fixture-Seed und setzt `customName` auf jedem Tag
+mit `customName == nil` nachträglich auf `name` — das änderte
+`TrainingDay.currentContentFingerprint` NACHDEM die Fixture
+`generationFingerprint` bereits auf dem alten Stand eingefroren hatte
+(`RunCoachPlanAdjustment.isEligibleForAdjustment` vergleicht beide).
+Fix (Commit `d5b9ed0`): `customName` wird für die drei Lauf-Tage jetzt
+explizit mitgesetzt, bevor der Fingerprint eingefroren wird. Neuer
+Regressionstest (`testCardioDaysStayEligibleForAdjustmentEvenAfterTheRealStartupBackfillRuns`)
+lässt exakt dieselbe Backfill-Funktion über die Fixture-Daten laufen.
+CI nach dem Fix erneut grün (Run `39600304050`, Commit `d5b9ed0`) —
+dieser Bug betraf ausschließlich die neue Test-Fixture, nicht den
+Produktcode der Karte selbst (die Karte/der CTA liefen in beiden
+Sessions korrekt).
+
+### TestingBot-Sessions dieser Runde
+
+Alle `max_concurrent=1` eingehalten, jede Session aktiv beendet
+(`DELETE /session`, Status „success"). `autoAcceptAlerts: false`
+(bewusste Auswahl prüfbar, keine automatische Dialogbestätigung).
+
+| # | Zweck | Build/Commit | Dauer | Ergebnis |
+|---|---|---|---|---|
+| 1 | Kontaminationsprüfung + erste Vorschau | `tb://194564783ed4b11c4ae2a1de` / `526b977` | 111 s | Session beendet, `fullReset` als nötig erkannt |
+| 2 | Schritt A/B mit `fullReset: true` — Eligibility-Bug gefunden | `tb://194564783ed4b11c4ae2a1de` / `526b977` | 250 s | Bug gefunden (s.o.), kein weiterer Schritt auf diesem Build fortgesetzt |
+| 3 | Schritte A–E vollständig, nach Fix | `tb://4966f1e70b7a2d0e3083ece6` / `d5b9ed0` | 316 s | alle 5 Schritte bestanden |
+
+**Budget:** vor dieser Runde (Konto-API): 16.183 s. Verbraucht: 111 + 250
++ 316 = 677 s. Danach (Session-Summe): **15.506 s** — Konto-API zeigte
+unmittelbar danach weiterhin 16.183 s (derselbe bereits mehrfach
+dokumentierte Abrechnungsverzug, kein neuer Fehler), Abgleich beim
+nächsten regulären Abruf. Keine Zusatzkäufe, `max_concurrent=1`
+durchgehend eingehalten (nie mehr als 1 gleichzeitige Session).
+
+### Ergebnis je Schritt (Build `tb://4966f1e70b7a2d0e3083ece6`, Commit `d5b9ed0`, iPhone 15/iOS 18.0, Session 3)
+
+**A. Dashboard — bestanden.** Ausgangszustand: frischer, isolierter
+Fixture-Start (`fullReset: true`), Profil "Geräteabnahme", Coach an,
+Plan "Marathon-Vorbereitung A" aktiv. Ergebnis: Karte sichtbar,
+verständlich, bedienbar — exakter angezeigter Text (`coaching.soft.
+cardioMissedRunDays.analytical`, Default-Ton): „Several of your planned
+running sessions in the last 2 weeks have no logged entry. Your running
+coach can review the plan for this." Geprüft gegen die Anforderung:
+behauptet KEINE Überforderung (kein "overwhelmed"/"too much"), nennt
+fehlende Protokolle NICHT ungeprüft "bewusst übersprungene Trainings"
+(sagt nur "have no logged entry" — reine Datenqualitäts-Aussage, keine
+Verhaltenszuschreibung). Buttons „Review plan"/„Not now" sichtbar und
+aktiviert.
+
+**B. CTA — bestanden.** Ausgangszustand: Karte sichtbar wie in A, ZWEI
+Pläne im Store ("Marathon-Vorbereitung A" aktiv, "Kraft-Grundlagen B"
+inaktiv). Tap „Review plan" öffnete „Adjust plan" mit Status „Coach
+activated, plan not yet adjusted" / „Your goal is achievable" und einer
+„CURRENT"-Liste, die exakt die drei tatsächlichen Tagesnamen DIESES
+Plans durchgestrichen zeigte: „Ruhiger Lauf Mo", „Ruhiger Lauf Mi",
+„Ruhiger Lauf Fr" — nichts aus dem zweiten Plan ("Ganzkörper" nirgends
+sichtbar). Die Zuordnung zum betroffenen Plan ist damit anhand
+unterscheidbarer, tatsächlicher Tagesnamen eindeutig erkennbar, nicht
+nur anhand eines generischen Textes.
+
+**C. Abbrechen — bestanden.** Ausgangszustand: Vorschau aus B weiterhin
+offen. Tap „Keep as is" schloss die Vorschau. Ergebnis: Dashboard
+identisch zum Vorzustand — Karte mit unverändertem Text weiterhin
+sichtbar (NICHT als angenommen oder abgelehnt gewertet), „Next workout:
+Ruhiger Lauf Mo" unverändert, kein „Adjustment applied"-Status. Bloßes
+Öffnen+Schließen hat weder den Plan noch die Historie verändert.
+
+**D. Ablehnen — bestanden.** Ausgangszustand: Karte sichtbar wie in A.
+Tap „Not now" → Karte verschwand sofort, ersetzt durch einen anderen,
+generischen Coaching-Tipp. Danach `mobile: terminateApp` (echtes
+Kill, nicht Hintergrund) + `mobile: launchApp` (echter Kaltstart).
+Ergebnis: nach dem Neustart blieb die Unterdrückung erhalten — die
+Karte erschien NICHT wieder, derselbe generische Tipp war weiterhin
+sichtbar, Plan/„Next workout" unverändert. Auf dem „Plan"-Tab zeigte
+„2 PLANS" beide Pläne unverändert: „Marathon-Vorbereitung A" mit
+ACTIVE-Badge (7 days · 12 weeks · Gym) und „Kraft-Grundlagen B" ohne
+Badge (1 day · 12 weeks · Gym) — der zweite Plan blieb vom Ablehnen des
+ersten Plans vollständig unberührt.
+
+**E. Coach aus — bestanden.** Ausgangszustand: geeigneter Testzustand
+(Coach an, Plan mit Lauf-Tagen) nach dem Kaltstart aus D.
+`Settings → Male · 30 years → Cardio & Running Goals → Enable running
+coaching` ausgeschaltet, Bestätigungsdialog „Turn off running coach?"
+(Text: „Your running sessions and training data stay as they are. New
+coaching suggestions and automatic goal adjustments are turned off.")
+bestätigt → Zeile zeigte danach „Running coaching off". Zurück auf dem
+Dashboard: sowohl die Feasibility-Karte („Your running goal is
+achievable") als auch der Laufversäumnis-Hinweis waren vollständig
+verschwunden (per Accessibility-Tree bestätigt: weder „Review plan"
+noch „no logged entry" noch „achievable" im Baum vorhanden) — „Next
+workout: Ruhiger Lauf Mo" blieb dagegen unverändert sichtbar, die
+Lauf-Einheiten wurden NICHT gelöscht.
+
+**Re-Trigger (neue abgeschlossene Gelegenheit + abgelaufene
+Unterdrückung → Hinweis kommt zurück): NICHT zusätzlich am Gerät
+geprüft — konkrete Geräte-Grenze, nicht pauschal übersprungen.** Der
+vorhandene Testdatenweg (statischer Fixture-Seed, einmalig beim
+Start) kann das ohne echtes Verstreichen von Kalenderzeit nicht
+herstellen: `MissedRunDayEvaluator.totalConcludedRunOpportunities`
+wächst nur mit der echten `Date()` zur Laufzeit, und das Produkt bietet
+keine Systemzeit-Manipulation/keinen Zeitraffer. Ein zweites
+TestingBot-Gerätefenster nur um reale Tage verstreichen zu lassen wäre
+unverhältnismäßig für eine bereits auf Swift-Ebene zweifach bewiesene
+Rechenregel (`MissedRunDaysCardModelTests.
+testReappearsAfterDismissWhenNewOpportunityConcludedDespiteCappedMissedCount`/
+`testStaysSuppressedWithoutNewOpportunityEvenAsTimePasses`,
+`MissedRunDayEvaluatorTests.
+testTotalConcludedRunOpportunitiesGrowsMonotonicallyAndIsNotWindowClamped`)
+— dieser automatisierte Nachweis bleibt die Grundlage für den
+Re-Trigger-Fall, der visuelle Geräte-Nachweis dafür bleibt offen.
+
+**Kein Swift-Integrationstest wurde als Ersatz für diesen Gerätenachweis
+gewertet.** `MissedRunDaysCardAdjustmentWiringTests.swift` (voriger
+Durchgang) bleibt zusätzlicher automatisierter Nachweis für die
+Plan-Bindungs-Logik bei zwei gleichzeitig aktiven Plänen, ersetzt aber
+nicht die obigen fünf visuellen Geräte-Nachweise.
+
+**Damit ist Paket 3a jetzt sowohl auf Daten-/Logik-Ebene (alle 10
+Testfälle, vier Restpunkte) als auch auf Geräte-Ebene (A–E) vollständig
+bestätigt.** Verbleibend offen: der Re-Trigger-Fall als rein visueller
+Geräte-Nachweis (s.o., Swift-seitig bereits bewiesen). Paket 3b/3c
+weiterhin NICHT begonnen, kein Merge nach `main`, kein Release.
+
+### Konsolidierter Abschluss Paket 3a
+
+**Diese Doku-Ergänzung ist eine reine Zuordnung/Zusammenfassung bereits
+erbrachter Nachweise — kein neuer Code, kein neuer CI-Lauf, kein neues
+Gerätefenster.**
+
+**Nachweisarten getrennt geführt (nicht vermischt):**
+- **Tatsächliche Gerätebelege (TestingBot, visuell, Schritte A–E):**
+  siehe Abschnitt "Ergebnis je Schritt" oben — Dashboard-Text, CTA-Plan-
+  Zuordnung, Abbrechen ohne Mutation, Ablehnen übersteht echten
+  Kaltstart, Coach-aus entfernt den Hinweis. Alle fünf bestanden, Build
+  `tb://4966f1e70b7a2d0e3083ece6` / Commit `d5b9ed0`.
+- **Automatisierte Re-Trigger-Nachweise (Swift-Tests, kein Gerät):**
+  `MissedRunDaysCardModelTests.testReappearsAfterDismissWhenNewOpportunityConcludedDespiteCappedMissedCount`,
+  `testStaysSuppressedWithoutNewOpportunityEvenAsTimePasses`,
+  `MissedRunDayEvaluatorTests.testTotalConcludedRunOpportunitiesGrowsMonotonicallyAndIsNotWindowClamped`
+  — belegen die Re-Trigger-Regel vollständig auf Logik-Ebene. Der rein
+  visuelle Geräte-Nachweis dafür bleibt offen (konkrete, benannte
+  Grenze: kein Zeitraffer-/Systemzeit-Manipulationsweg im Produkt,
+  siehe Begründung oben), wird hier NICHT als gleichwertig mit A–E
+  geführt.
+
+**Eindeutige Zuordnung der drei angeforderten Punkte:**
+
+1. **Fixture-/Backfill-Fix (Commit `d5b9ed0`):** ausschließlich eine
+   **Debug-only-Änderung** — per `git show --stat d5b9ed0` verifiziert,
+   geändert wurden nur `Sources/FitnessAppUI/DeviceAcceptanceFixturePaket3a.swift`
+   (selbst vollständig hinter `#if DEBUG` + explizitem Launch-Argument)
+   und dessen Testdatei. Die betroffene **Produktionsfunktion**
+   `LibrarySeeder.backfillCustomNamesIfNeeded` (läuft reguläch bei jedem
+   App-Start in `RootView.task`) wurde selbst **nicht verändert** — der
+   Fix besteht darin, dass die Fixture `customName` jetzt explizit
+   mitsetzt, bevor sie den Fingerprint einfriert, statt sich auf den
+   späteren Backfill zu verlassen. Regressionstest:
+   `testCardioDaysStayEligibleForAdjustmentEvenAfterTheRealStartupBackfillRuns`
+   (lässt dieselbe Produktionsfunktion über die Fixture-Daten laufen).
+   Grüner Code-CI-Lauf danach: GitHub-Actions-Run `39600304050`,
+   Commit `d5b9ed0`, Status `success`.
+2. **Debug-Einstieg bleibt ausschließlich testbuildgebunden:** verifiziert
+   per Code-Lesen (`DeviceAcceptanceFixturePaket3a.swift` Z. 1/17–25,
+   `RootView.swift` Z. 78–84) — Typ existiert nur in `#if DEBUG`-Builds
+   (Release-/TestFlight-Build kompiliert ihn gar nicht ein, siehe
+   `testflight-release.yml` vs. `project.yml`), UND
+   `seedIfRequested(in:)` prüft zusätzlich zur Laufzeit explizit das
+   Launch-Argument `-deltiqDeviceAcceptanceFixturePaket3a`
+   (`ProcessInfo.processInfo.arguments.contains(...)`) — ohne dieses
+   Argument ein No-Op, verändert keinen bestehenden Datenbestand. Reguläre
+   App-Starts (Device-/TestFlight-/Store-Nutzer) setzen dieses Argument
+   nie.
+3. **Budget, zeitlich zugeordnet, nichts doppelt abgezogen:** Ausgangswert
+   (Konto-API, vor dieser Runde, Zeitpunkt siehe oben): **16.183 s**.
+   Diese Runde verbraucht: **677 s** (3 Sessions: 111 + 250 + 316 s,
+   siehe Tabelle oben). Rechnerischer Stand nach dieser Runde
+   (Session-Summe): **15.506 s**. Die Konto-API zeigte unmittelbar
+   danach weiterhin 16.183 s — als **ausstehende Abrechnung**, nicht als
+   aktueller Stand gekennzeichnet (bereits mehrfach dokumentierter
+   Abrechnungsverzug dieses Anbieters). Abgleich/Korrektur erst beim
+   nächsten regulären `GET /v1/user`-Abruf, kein Abzug wird hier doppelt
+   gebucht.
+
+**Arbeiten an Paket 3a sind hiermit beendet.** Paket 3b/3c werden NICHT
+automatisch begonnen — eine gesonderte Freigabe ist dafür erforderlich.
+Kein Merge nach `main`, kein Release.
+
+**Koordinationshinweis:** zeitgleich läuft in einer separaten Session
+Arbeit am Ernährungspaket auf diesem Repository. Diese Doku-Ergänzung
+wurde unmittelbar vor dem Commit per `git fetch`/`git status` gegen
+Fremdänderungen geprüft (keine gefunden) und bewusst eng auf den
+bestehenden "Paket 3a"-Abschnitt begrenzt — keine pauschale
+Staging-/Cleanup-Aktion, keine Berührung von Root-/Tab-Navigation,
+Lokalisierung, Import/Export oder gemeinsamen Modellen über das bereits
+in den vorherigen Paket-3a-Commits enthaltene Maß hinaus. TestingBot
+wurde in dieser Runde ausschließlich sequenziell genutzt
+(`max_concurrent=1`, nie mehr als 1 gleichzeitige Session); eine
+plattformseitige Kollision mit einer parallelen Gerätesession der
+Ernährungssession wäre ohnehin durch denselben Kontolimit verhindert
+worden.
 
 ## Paket 3: Scope-Vorschlag (noch nicht umgesetzt)
 

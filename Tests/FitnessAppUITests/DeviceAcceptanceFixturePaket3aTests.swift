@@ -61,6 +61,36 @@ final class DeviceAcceptanceFixturePaket3aTests: XCTestCase {
         XCTAssertNil(MissedRunDaysCardModel.make(for: profile, activePlan: otherPlan, in: context))
     }
 
+    /// Regressionstest fuer einen am Geraet gefundenen echten Bug: die
+    /// Lauf-Tage waren nach `seed(in:)` fuer sich genommen "anfassbar"
+    /// (`RunCoachPlanAdjustment.isEligibleForAdjustment`), aber
+    /// `LibrarySeeder.backfillCustomNamesIfNeeded` laeuft im echten
+    /// `RootView.task` UNMITTELBAR NACH diesem Seed und setzt `customName`
+    /// auf jedem Tag mit `customName == nil` nachtraeglich — das aenderte
+    /// `currentContentFingerprint` NACH dem Einfrieren von
+    /// `generationFingerprint` und liess die Vorschau am Geraet faelschlich
+    /// den generischen "kein anfassbarer Tag"-Text zeigen statt der
+    /// tatsaechlichen Tagesnamen. Fix: `customName` wird in `seed(in:)`
+    /// jetzt explizit gesetzt. Dieser Test laesst GENAU dieselbe
+    /// Backfill-Funktion wie `RootView.task` ueber die Fixture-Daten laufen.
+    func testCardioDaysStayEligibleForAdjustmentEvenAfterTheRealStartupBackfillRuns() throws {
+        DeviceAcceptanceFixturePaket3a.seed(in: context)
+        _ = LibrarySeeder.backfillCustomNamesIfNeeded(in: context)
+
+        let plans = try context.fetch(FetchDescriptor<TrainingPlan>())
+        guard let affectedPlan = plans.first(where: { $0.customName == DeviceAcceptanceFixturePaket3a.affectedPlanName }) else {
+            XCTFail("Fixture hat den betroffenen Plan nicht angelegt")
+            return
+        }
+
+        let analysis = RunCoachPlanAdjustment.analyze(plan: affectedPlan)
+        guard case .ready(let ids) = analysis.cardioAvailability else {
+            XCTFail("Lauf-Tage muessen nach dem Startup-Backfill weiterhin anfassbar sein, war: \(analysis.cardioAvailability)")
+            return
+        }
+        XCTAssertEqual(ids.count, 3, "alle drei Lauf-Tage, nicht nur ein Teil")
+    }
+
     func testSeedIsIdempotentAcrossAColdStart() throws {
         DeviceAcceptanceFixturePaket3a.seed(in: context)
         let firstActivatedAt = try context.fetch(FetchDescriptor<TrainingPlan>())
