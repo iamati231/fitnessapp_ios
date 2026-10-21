@@ -48,6 +48,14 @@ public final class TrainingDay {
     public var enduranceWorkDurationSeconds: Int?
     public var enduranceWorkDistanceKm: Double?
     public var enduranceRestDurationSeconds: Int?
+    /// Paket 2 (Sportart-Unterscheidung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// nur die beiden Cardio-Faelle (`.running`/`.cycling`) sind gueltig.
+    /// `nil` = nicht festgelegt (Altbestand vor dieser Ergaenzung, oder
+    /// manuell angelegt ohne Auswahl) - wird NIE automatisch aus `name`
+    /// zurueckgeraten, nur ueber eine bewusste Auswahl im Editor oder beim
+    /// Generator-Handoff gesetzt. Wiederverwendet `TrainingTypeKind` statt
+    /// einer dritten Enum - identisch zu `PlanGeneratorTypeSelection.kind`.
+    public var enduranceSportKind: TrainingTypeKind?
 
     /// README 2.20: Fingerprint des Tagesinhalts unmittelbar NACH der
     /// Erzeugung durch den "Plan bauen"-Assistenten. Nil = kein Wizard-Tag
@@ -138,7 +146,8 @@ public final class TrainingDay {
                     "\($0.sets)", "\($0.repsMin)", "\($0.repsMax)", "\($0.restSeconds)",
                     "\($0.targetRir)",
                     $0.targetDistanceKm.map { "\($0)" } ?? "-",
-                    $0.targetDurationMinutes.map { "\($0)" } ?? "-"
+                    $0.targetDurationMinutes.map { "\($0)" } ?? "-",
+                    $0.enduranceSportKindRaw ?? "-"
                 ].joined(separator: "|")
             }
             .joined(separator: ";")
@@ -152,7 +161,7 @@ public final class TrainingDay {
         // ueberforderte den Swift-Typchecker (CI-Fund: "unable to type-check
         // this expression in reasonable time").
         let enduranceWorkDistancePart = enduranceWorkDistanceKm.map { "\($0)" } ?? "-"
-        let endurancePart = "\(enduranceWarmupDurationSeconds.map(String.init) ?? "-")|\(enduranceCooldownDurationSeconds.map(String.init) ?? "-")|\(enduranceIntervalRounds.map(String.init) ?? "-")|\(enduranceWorkDurationSeconds.map(String.init) ?? "-")|\(enduranceWorkDistancePart)|\(enduranceRestDurationSeconds.map(String.init) ?? "-")"
+        let endurancePart = "\(enduranceWarmupDurationSeconds.map(String.init) ?? "-")|\(enduranceCooldownDurationSeconds.map(String.init) ?? "-")|\(enduranceIntervalRounds.map(String.init) ?? "-")|\(enduranceWorkDurationSeconds.map(String.init) ?? "-")|\(enduranceWorkDistancePart)|\(enduranceRestDurationSeconds.map(String.init) ?? "-")|\(enduranceSportKind?.rawValue ?? "-")"
         return "\(exercisePart)#\(timeFormatPart)#\(timeCapPart)#\(customNamePart)#\(weekday)#\(type.rawValue)#\(circuitPart)#\(endurancePart)"
     }
 
@@ -175,6 +184,7 @@ public final class TrainingDay {
         enduranceWorkDurationSeconds: Int? = nil,
         enduranceWorkDistanceKm: Double? = nil,
         enduranceRestDurationSeconds: Int? = nil,
+        enduranceSportKind: TrainingTypeKind? = nil,
         generationFingerprint: String? = nil,
         generatorSequenceIndex: Int? = nil
     ) {
@@ -196,6 +206,7 @@ public final class TrainingDay {
         self.enduranceWorkDurationSeconds = enduranceWorkDurationSeconds
         self.enduranceWorkDistanceKm = enduranceWorkDistanceKm
         self.enduranceRestDurationSeconds = enduranceRestDurationSeconds
+        self.enduranceSportKind = enduranceSportKind
         self.generationFingerprint = generationFingerprint
         self.generatorSequenceIndex = generatorSequenceIndex
     }

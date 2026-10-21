@@ -114,6 +114,18 @@ public final class Exercise {
         set { cardioEquipmentRaw = newValue.rawValue }
     }
 
+    /// Paket 2 (Sportart-Unterscheidung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+    /// nur fuer `isCardio`-Uebungen relevant, nur `.running`/`.cycling`
+    /// gueltig. `nil` = nicht festgelegt - wird NIE automatisch aus `name`
+    /// zurueckgeraten (anders als `cardioEquipment` nicht auf `.none`
+    /// defaulted, da es hier keinen sinnvollen neutralen Wert gibt).
+    public var enduranceSportKindRaw: String? = nil
+
+    public var enduranceSportKind: TrainingTypeKind? {
+        get { enduranceSportKindRaw.flatMap(TrainingTypeKind.init(rawValue:)) }
+        set { enduranceSportKindRaw = newValue?.rawValue }
+    }
+
     // MARK: - DEL-159 Custom-Exercise-Metadaten
 
     /// DEL-159: Primaer-Muskel-Override pro Uebung. Vorher lag der Muskel NUR

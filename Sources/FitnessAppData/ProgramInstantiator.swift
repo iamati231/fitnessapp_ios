@@ -240,7 +240,7 @@ public enum ProgramInstantiator {
         day: TrainingDay?
     ) -> Exercise {
         let librarySpec = librarySpecByName[spec.name]
-        return Exercise(
+        let exercise = Exercise(
             name: spec.name,
             sets: spec.sets,
             repsMin: spec.repsMin,
@@ -262,6 +262,11 @@ public enum ProgramInstantiator {
             recoveryClass: librarySpec?.recoveryClass ?? .medium,
             day: day
         )
+        // Paket 2 (Sportart-Unterscheidung): nach der Konstruktion gesetzt
+        // statt als weiterer Init-Parameter, um die bestehende, bereits sehr
+        // lange Aufrufliste nicht an allen Call-Sites anzufassen.
+        exercise.enduranceSportKind = spec.enduranceSportKind
+        return exercise
     }
 
     /// Baut die beiden Namens-Lookup-Sets, die `makeExercise` braucht -

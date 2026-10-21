@@ -58,6 +58,10 @@ public struct DaySpec: Sendable, Hashable {
     /// Erholung bleibt in dieser ersten Version bewusst zeitbasiert (alle
     /// bekannten Beispiele zeigen reine Zeit-Erholung zwischen Belastungen).
     public let enduranceRestDurationSeconds: Int?
+    /// Nur die beiden Cardio-Faelle (`.running`/`.cycling`) sind gueltig.
+    /// `nil` = nicht festgelegt - siehe `TrainingDay.enduranceSportKind`-Doku
+    /// (niemals aus `name` zurueckgeraten).
+    public let enduranceSportKind: TrainingTypeKind?
 
     public init(
         name: String,
@@ -75,7 +79,8 @@ public struct DaySpec: Sendable, Hashable {
         enduranceIntervalRounds: Int? = nil,
         enduranceWorkDurationSeconds: Int? = nil,
         enduranceWorkDistanceKm: Double? = nil,
-        enduranceRestDurationSeconds: Int? = nil
+        enduranceRestDurationSeconds: Int? = nil,
+        enduranceSportKind: TrainingTypeKind? = nil
     ) {
         self.name = name
         self.localizationKey = localizationKey
@@ -93,5 +98,6 @@ public struct DaySpec: Sendable, Hashable {
         self.enduranceWorkDurationSeconds = enduranceWorkDurationSeconds
         self.enduranceWorkDistanceKm = enduranceWorkDistanceKm
         self.enduranceRestDurationSeconds = enduranceRestDurationSeconds
+        self.enduranceSportKind = enduranceSportKind
     }
 }

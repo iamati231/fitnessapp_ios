@@ -632,7 +632,8 @@ public enum PlanGenerator {
                         name: "Radfahren (outdoor)",
                         sets: 1, repsMin: 0, repsMax: 0,
                         isCardio: true,
-                        targetDurationMinutes: selection.sessionDurationMinutes
+                        targetDurationMinutes: selection.sessionDurationMinutes,
+                        enduranceSportKind: .cycling
                     )],
                     timeFormat: nil,
                     timeCapMinutes: nil,
@@ -659,14 +660,16 @@ public enum PlanGenerator {
                     sets: 6, repsMin: 1, repsMax: 1,
                     restSeconds: 90,
                     isCardio: true,
-                    targetDistanceKm: 0.4
+                    targetDistanceKm: 0.4,
+                    enduranceSportKind: .running
                 )
             case .easy, .tempo:
                 exercise = ExerciseSpec(
                     name: zone.exerciseName,
                     sets: 1, repsMin: 0, repsMax: 0,
                     isCardio: true,
-                    targetDurationMinutes: selection.sessionDurationMinutes
+                    targetDurationMinutes: selection.sessionDurationMinutes,
+                    enduranceSportKind: .running
                 )
             }
             return Candidate(
@@ -741,7 +744,8 @@ public enum PlanGenerator {
                 exercises: [ExerciseSpec(
                     name: exerciseName,
                     sets: sets, repsMin: roundSeconds, repsMax: roundSeconds,
-                    isCardio: true
+                    isCardio: true,
+                    enduranceSportKind: selection.kind
                 )],
                 timeFormat: format,
                 timeCapMinutes: timeCapMinutes,

@@ -30,6 +30,12 @@ public struct ExerciseSpec: Sendable, Hashable {
     /// und Cooldown werden vom Progressions-Algorithmus geskippt.
     public let role: ExerciseRole
 
+    /// Paket 2 (Sportart-Unterscheidung): nur fuer `isCardio == true`
+    /// relevant, nur `.running`/`.cycling` gueltig. `nil` = nicht festgelegt
+    /// - siehe `TrainingDay.enduranceSportKind`-Doku (niemals aus `name`
+    /// zurueckgeraten).
+    public let enduranceSportKind: TrainingTypeKind?
+
     public init(
         name: String,
         sets: Int,
@@ -40,7 +46,8 @@ public struct ExerciseSpec: Sendable, Hashable {
         isCardio: Bool = false,
         targetDistanceKm: Double? = nil,
         targetDurationMinutes: Int? = nil,
-        role: ExerciseRole = .workingSet
+        role: ExerciseRole = .workingSet,
+        enduranceSportKind: TrainingTypeKind? = nil
     ) {
         self.name = name
         self.sets = sets
@@ -52,5 +59,6 @@ public struct ExerciseSpec: Sendable, Hashable {
         self.targetDistanceKm = targetDistanceKm
         self.targetDurationMinutes = targetDurationMinutes
         self.role = role
+        self.enduranceSportKind = enduranceSportKind
     }
 }

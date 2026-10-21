@@ -589,7 +589,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Plank",                        sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
             ]),
             DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30)
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
@@ -598,7 +598,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Bizeps-Curl (KH)",                      sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50)
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50, enduranceSportKind: .running)
             ])
         ],
         targetEnvironment: .gym,
@@ -616,7 +616,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Plank",                         sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30)
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
@@ -625,7 +625,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Bizeps-Curl (KH)",              sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50, enduranceSportKind: .running)
                 ])
             ]),
             // DEL-171: Kettlebell-Only-Variante. Cardio-Tage unverändert.
@@ -637,7 +637,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Plank",                         sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30)
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Kettlebell RDL",                sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
@@ -646,7 +646,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Halo",               sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.5)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50, enduranceSportKind: .running)
                 ])
             ])
         ]
@@ -675,7 +675,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35)
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 5,  repsMax: 6,  restSeconds: 180, targetRir: 3.0),
@@ -684,7 +684,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Bizeps-Curl (KH)",                      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70)
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
                 ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
@@ -724,7 +724,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)",  sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35)
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",     sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
@@ -733,7 +733,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Bizeps-Curl (KH)",                sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
                     ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
@@ -754,7 +754,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Halo",                 sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35)
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
@@ -763,7 +763,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Suitcase Carry",       sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
                     ExerciseSpec(name: "Kettlebell Goblet Squat",         sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
@@ -801,8 +801,8 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup),
-                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45),
+                ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup, enduranceSportKind: .running),
+                ExerciseSpec(name: "Easy Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45, enduranceSportKind: .running),
                 // P5.3: erster real erzeugter `.cooldown`-Eintrag im gesamten
                 // Katalog (vorher existierte der `ExerciseRole`-Case nur im
                 // Datenmodell + UI-Handling, aber kein Generator-/Template-Pfad
@@ -810,7 +810,7 @@ public enum ProgramTemplates {
                 // ("Gehen / Einlaufen") — ein Ausklang-Spaziergang nach dem
                 // Lauf ist physiologisch dieselbe Bewegung wie das Einlaufen
                 // davor, braucht also keinen neuen Katalog-Eintrag.
-                ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .cooldown)
+                ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .cooldown, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 4,  repsMax: 6,  restSeconds: 210, targetRir: 3.0),
@@ -819,7 +819,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Bizeps-Curl (KH)",                      sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Intervalle", localizationKey: "plan.day.intervals", type: .cardio, sequenceIndex: 4, exercises: [
-                ExerciseSpec(name: "Intervalle",                   sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30)
+                ExerciseSpec(name: "Intervalle",                   sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30, enduranceSportKind: .running)
             ]),
             DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 5, exercises: [
                 ExerciseSpec(name: "Kniebeuge",                    sets: 4, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
@@ -828,7 +828,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 2.0)
             ]),
             DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 6, exercises: [
-                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85)
+                ExerciseSpec(name: "Long Run",                     sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85, enduranceSportKind: .running)
             ])
         ],
         targetEnvironment: .gym,
@@ -849,8 +849,8 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)", sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup),
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
+                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup, enduranceSportKind: .running),
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 180, targetRir: 2.5),
@@ -859,7 +859,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Bizeps-Curl (KH)",              sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Intervalle", localizationKey: "plan.day.intervals", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30)
+                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 5, exercises: [
                     ExerciseSpec(name: "Goblet Squat",                 sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 150, targetRir: 2.5),
@@ -868,7 +868,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Farmer's Walk",                 sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 6, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85, enduranceSportKind: .running)
                 ])
             ]),
             // ── Kettlebell-Only (DEL-171) ─────────────────────────────────
@@ -884,8 +884,8 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Halo",                 sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.5)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
-                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup),
-                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45)
+                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup, enduranceSportKind: .running),
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
@@ -894,7 +894,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Suitcase Carry",       sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Intervalle", localizationKey: "plan.day.intervals", type: .cardio, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30)
+                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 5, exercises: [
                     ExerciseSpec(name: "Kettlebell Goblet Squat",         sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 150, targetRir: 2.5),
@@ -903,7 +903,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Kettlebell Suitcase Carry",       sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 6, exercises: [
-                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85)
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85, enduranceSportKind: .running)
                 ])
             ])
         ]

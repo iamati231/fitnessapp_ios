@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2294 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2296 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2294 / 2294** (100%) | 0 |
-| 🇬🇧 English (EN) | **2294 / 2294** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2294 / 2294** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2296 / 2296** (100%) | 0 |
+| 🇬🇧 English (EN) | **2296 / 2296** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2296 / 2296** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -761,7 +761,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboardSettings.section.inactive.title` | Inaktive Widgets | Inactive Widgets | Pasif Widget'lar |
 | `dashboardSettings.title` | Dashboard anpassen | Customize Dashboard | Panoyu Özelleştir |
 
-## `day.*`  (81 Keys)
+## `day.*`  (83 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -810,6 +810,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `day.editor.field.enduranceCooldown` | Auslaufen | Cool-down | Soğuma |
 | `day.editor.field.enduranceRest` | Erholung | Recovery | Dinlenme |
 | `day.editor.field.enduranceRounds` | Runden | Rounds | Tur |
+| `day.editor.field.enduranceSportKind` | Sportart | Sport | Spor dalı |
+| `day.editor.field.enduranceSportKind.notSet` | Nicht festgelegt | Not set | Belirlenmedi |
 | `day.editor.field.enduranceWarmup` | Einlaufen | Warm-up | Isınma |
 | `day.editor.field.enduranceWorkDistance` | Belastungsstrecke (km) | Effort distance (km) | Yüklenme mesafesi (km) |
 | `day.editor.field.enduranceWorkDuration` | Belastungsdauer | Effort duration | Yüklenme süresi |

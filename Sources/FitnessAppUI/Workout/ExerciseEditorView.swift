@@ -485,6 +485,24 @@ public struct ExerciseEditorView: View {
             CardioEquipmentPicker(selection: $exercise.cardioEquipment)
                 .disabled(isReadOnly)
                 .listRowBackground(Color.Deltiq.surface)
+            // Paket 2 (Sportart-Unterscheidung): bewusst ohne stillen
+            // Default, siehe DayEditorView.enduranceIntervalsFields-
+            // Kommentar fuer die identische Begruendung. Bei
+            // generator-erzeugten Einheiten bereits gesetzt (siehe
+            // `PlanGenerator.cardioCandidates`), hier nur angezeigt.
+            Picker(selection: $exercise.enduranceSportKind) {
+                if exercise.enduranceSportKind == nil {
+                    Text("day.editor.field.enduranceSportKind.notSet", bundle: .module).tag(TrainingTypeKind?.none)
+                }
+                Text(String(localized: String.LocalizationValue(TrainingTypeKind.running.titleKey), bundle: .module))
+                    .tag(TrainingTypeKind?.some(.running))
+                Text(String(localized: String.LocalizationValue(TrainingTypeKind.cycling.titleKey), bundle: .module))
+                    .tag(TrainingTypeKind?.some(.cycling))
+            } label: {
+                Text("day.editor.field.enduranceSportKind", bundle: .module)
+            }
+            .disabled(isReadOnly)
+            .listRowBackground(Color.Deltiq.surface)
         } header: {
             Text("editor.exercise.section.cardioTarget", bundle: .module)
         }
@@ -614,6 +632,7 @@ struct ExerciseSnapshot: Equatable {
     var targetDistanceKm: Double?
     var targetDurationMinutes: Int?
     var cardioEquipmentRaw: String?
+    var enduranceSportKindRaw: String?
     var notes: String?
     var primaryMuscleRaw: String?
     var equipmentRaw: String?
@@ -635,6 +654,7 @@ struct ExerciseSnapshot: Equatable {
             targetDistanceKm: exercise.targetDistanceKm,
             targetDurationMinutes: exercise.targetDurationMinutes,
             cardioEquipmentRaw: exercise.cardioEquipmentRaw,
+            enduranceSportKindRaw: exercise.enduranceSportKindRaw,
             notes: exercise.notes,
             primaryMuscleRaw: exercise.primaryMuscleRaw,
             equipmentRaw: exercise.equipmentRaw,
@@ -660,6 +680,7 @@ struct ExerciseSnapshot: Equatable {
         exercise.targetDistanceKm = targetDistanceKm
         exercise.targetDurationMinutes = targetDurationMinutes
         exercise.cardioEquipmentRaw = cardioEquipmentRaw
+        exercise.enduranceSportKindRaw = enduranceSportKindRaw
         exercise.notes = notes
         exercise.primaryMuscleRaw = primaryMuscleRaw
         exercise.equipmentRaw = equipmentRaw

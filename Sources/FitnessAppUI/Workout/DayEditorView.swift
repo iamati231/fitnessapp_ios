@@ -666,6 +666,27 @@ public struct DayEditorView: View {
     // angemessener Zeit durchzulaufen, siehe docs/DELTIQ_DEVICE_ACCEPTANCE.md).
     @ViewBuilder
     private var enduranceIntervalsFields: some View {
+        // Paket 2 (Sportart-Unterscheidung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
+        // bewusst OHNE stillen Default (`?? .running`) - ein nil-Wert zeigt
+        // den eigenen "nicht festgelegt"-Eintrag, statt beim blossen Oeffnen
+        // des Editors unbemerkt auf eine Sportart festzulegen. Bei
+        // Erstellung aus dem Generator-Pfad ist der Wert hier bereits
+        // gesetzt (siehe `PlanGenerator.cardioCandidates`) und wird nur
+        // angezeigt, nicht erneut abgefragt.
+        Picker(selection: $day.enduranceSportKind) {
+            if day.enduranceSportKind == nil {
+                Text("day.editor.field.enduranceSportKind.notSet", bundle: .module).tag(TrainingTypeKind?.none)
+            }
+            Text(String(localized: String.LocalizationValue(TrainingTypeKind.running.titleKey), bundle: .module))
+                .tag(TrainingTypeKind?.some(.running))
+            Text(String(localized: String.LocalizationValue(TrainingTypeKind.cycling.titleKey), bundle: .module))
+                .tag(TrainingTypeKind?.some(.cycling))
+        } label: {
+            Text("day.editor.field.enduranceSportKind", bundle: .module)
+        }
+        .disabled(isReadOnly)
+        .listRowBackground(Color.Deltiq.surface)
+
         Stepper(value: Binding(
             get: { (day.enduranceWarmupDurationSeconds ?? defaultEnduranceWarmupSeconds()) / 60 },
             set: { day.enduranceWarmupDurationSeconds = $0 * 60 }
