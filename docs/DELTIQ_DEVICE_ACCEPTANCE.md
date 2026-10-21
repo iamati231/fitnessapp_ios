@@ -1,13 +1,20 @@
 # Deltiq – TestingBot-Geräteabnahme (konsolidierter Stand)
 
-Stand: 2026-10-21 (neunzehnter Durchgang: Paket 2, Schritt 2 umgesetzt —
+Stand: 2026-10-21 (zwanzigster Durchgang: Paket 2, Schritt 3 umgesetzt und
+gerätebestätigt — `EnduranceIntervalPlayerView` (Komponente 3) inkl.
+WorkoutSession-Ergebnisfeldern, Snapshot-/CSV-Anbindung, CI-grün
+(Fix-Runde: `String.LocalizationValue` für dynamischen Hint-Key), HEAD
+`898d326`. Vier risikobasierte Gerätenachweise auf echtem iOS-Simulator
+(TestingBot) alle bestanden: Kaltstart bei laufendem Intervall,
+Pause/Fortsetzen, übersprungener Abschnitt, Easy-Run-Normalfall. Siehe
+Abschnitt „Paket 2, Schritt 3" unten. Davor neunzehnter Durchgang: Paket 2,
+Schritt 2 umgesetzt —
 Konfigurations-UI für strukturierte Ausdauereinheiten in `DayEditorView`
 (Einlaufen/Auslaufen, Rundenzahl, Belastungsziel Zeit/Strecke/offen,
 Erholungsdauer), Struktur-Picker bietet `.enduranceIntervals` jetzt an.
 CI-grün nach einer vorsorglichen Vereinfachung (sechs Views in einem
 `switch`-Case in kleinere `@ViewBuilder`-Properties ausgelagert), HEAD
-`5abfe6d`. Noch kein Geräte-Nachtest nötig (reine Konfigurations-UI ohne
-Player). Siehe Abschnitt „Paket 2, Schritt 2" unten. Davor achtzehnter
+`5abfe6d`. Siehe Abschnitt „Paket 2, Schritt 2" unten. Davor achtzehnter
 Durchgang: Paket 2, Schritt 1 umgesetzt —
 Datenmodell für strukturierte Ausdauereinheiten (`WorkoutTimeFormat.
 enduranceIntervals`, `DaySpec`/`TrainingDay`-Felder, Fingerprint,
@@ -193,6 +200,105 @@ Verhaltensänderung für bestehende Formate).
 
 **Nächster Schritt:** `EnduranceIntervalPlayerView` (Komponente 3),
 danach risikobasierte Geräte-Nachweise.
+
+## Paket 2, Schritt 3: EnduranceIntervalPlayerView + Gerätenachweise (Commit `898d326`)
+
+**Datenmodell/Snapshot/CSV (Commit `f5c0f3f`):** neue `EnduranceIntervalPhase`
+(warmup/work/rest/cooldown) und sieben `WorkoutSession`-Ergebnisfelder
+(`endurancePhase` als "schon gestartet"-Marker analog `circuitRoundsCompleted`,
+`enduranceCurrentRoundNumber` als Position getrennt vom Ergebnis-Zähler
+`enduranceRoundsCompleted`, `endurancePhaseEndDate`,
+`endurancePausedRemainingSeconds` für Pause/Fortsetzen,
+`enduranceWarmupSkipped`/`enduranceCooldownSkipped`). `TrainingDayContentSnapshot`
+und `WorkoutSessionContentSnapshotFirst` um die sechs `endurance*`-
+Konfigurationsfelder erweitert (P8-Stufe-2-Snapshot-first-Pfad, wie beim
+Zirkel). CSV-Export/-Import für beide Feldgruppen additiv ergänzt (sonst
+Datenverlust bei jedem Backup-Roundtrip, Komponente 4).
+
+**Player (Commit `f373a49`, Fix `898d326`):** `EnduranceIntervalPlayerView`
+neu, ersetzt den Platzhalter in `TimedWorkoutPlayerView`. Kein
+Übungsbezug — die Einheit selbst ist die Übung. Erfüllt Komponente 3
+explizit:
+
+- aktueller Abschnitt + Rundenkontext jederzeit sichtbar
+  (`DeltiqContextRow`, "RUNDE N/M" bei Belastung/Erholung)
+- Pause/Fortsetzen für jede gezeitete Phase über einen Wanduhr-Pause-
+  Mechanismus (`endurancePausedRemainingSeconds` friert die Restzeit ein,
+  Fortsetzen berechnet einen neuen Enddatum-Anker — kein Zurücksetzen auf
+  die volle Dauer)
+- manuelles Abschnittsende jederzeit möglich ("Überspringen" bei
+  gezeiteten Phasen, "Fertig" bei ungezeiteter Belastung)
+- keine automatische Distanz-/Pace-Erfindung: eine Belastungsphase ohne
+  Zeit-Ziel zeigt nur das konfigurierte Streckenziel als Info, keinen
+  Timer
+- übersprungene Abschnitte zählen nicht als abgeschlossen —
+  `enduranceRoundsCompleted` erhöht sich nur bei regulär (nicht
+  übersprungen) beendeter Belastung
+- Kaltstart-/Hintergrund-Überleben nach demselben etablierten Muster wie
+  `CircuitPlayerView` (Wanduhr-Anker, `try? modelContext.save()` nach
+  jeder Mutation, `session.endurancePhase` als Resume-Marker)
+
+Ein CI-Fix nötig: `phaseHintKey` (zur Laufzeit berechneter String) brauchte
+`String.LocalizationValue(stringLiteral:)` statt eines direkten
+`String(localized:)`-Aufrufs (Run `39564720275` → Fix → Run `39566110139`
+grün).
+
+**Risikobasierte Gerätenachweise (TestingBot, iPhone 15 / iOS 18
+Simulator, CI-Build HEAD `898d326`, App-Upload `tb://1d197497c55353e242322fb7`):**
+neue Onboarding-Instanz durchlaufen (Fresh-Install-Test als Nebeneffekt:
+Onboarding funktionierte durchgehend fehlerfrei bis zum generierten Plan),
+Tag „Lower & Core" im generierten Plan auf Struktur „Intervals" umgestellt
+— Konfigurations-UI aus Schritt 2 bestätigt sich dabei ein zweites Mal
+unabhängig auf echtem Gerät (Stepper/Picker rendern und übernehmen
+korrekt). Mit stark verkürzten Werten (Einlaufen 0 Min, 2 Runden,
+Belastung 15 Sek. Zeit-Ziel, Erholung 15–90 Sek. je nach Fall, Auslaufen
+0 Min) vier Fälle geprüft:
+
+1. **Easy-Run-Normalfall:** voller Durchlauf Einlaufen (automatisch
+   übersprungen bei 0 Min) → Belastung → Erholung → Belastung → Erholung
+   → Auslaufen → Summary. Kein Absturz, kein Hänger, Summary erreicht.
+2. **Pause/Fortsetzen:** während laufender Erholungsphase pausiert — Ring
+   und Sekundenzahl blieben über mehrere Sekunden exakt eingefroren
+   ("PAUSED"), kein Weiterzählen im Hintergrund. Fortsetzen setzte den
+   Countdown exakt beim eingefrorenen Wert fort (nicht neu gestartet, nicht
+   übersprungen).
+3. **Übersprungener Abschnitt:** eine Belastungsphase wurde über
+   „Skip" vorzeitig beendet. Die abschließende Zusammenfassung zeigte
+   korrekt **1/2 Runden geschafft** — die übersprungene Runde zählte
+   nachweislich NICHT als abgeschlossen, exakt die in Komponente 3
+   geforderte Trennung von Position und Ergebnis.
+4. **Kaltstart bei laufendem Intervall:** App per `mobile: terminateApp`
+   während der Belastungsphase hart beendet, mehrere Sekunden gewartet,
+   per `mobile: activateApp` kalt neu gestartet. Dashboard zeigte korrekt
+   den Crash-Recovery-Banner "Currently running — Lower & Core" mit
+   "Resume running workout". Nach Fortsetzen zeigte der Player den
+   korrekten Zustand: Phase auf „RECOVERY" vorgerückt (die Belastung war
+   waehrend des Kills regulär abgelaufen), Runde weiterhin korrekt
+   "1/2", und der Countdown-Ring zeigte die über die Wanduhr korrekt
+   fortgeschriebene Restzeit (36 von 90 Sek.) — kein Reset auf die volle
+   Dauer, kein Stehenbleiben auf dem Stand vor dem Kill.
+
+Alle vier Fälle bestanden ohne Fund. TestingBot-Budget vor dem Block per
+`GET /v1/user` geprüft: 18.493s (unverändert zum zuletzt bekannten Stand —
+die Anzeige aktualisiert sich offenbar nicht in Echtzeit; kein Hinweis auf
+ein tatsächliches Problem, da die Session selbst erfolgreich lief und
+regulär beendet wurde).
+
+**Offen/bewusst nicht Teil dieser Runde:** Live-Activity-Text während
+Einlaufen/Auslaufen zeigt noch den Rundenkontext-Text ("Runde 1/N" bzw.
+"Runde N/N") statt einer eigenen Phase-Bezeichnung — dokumentierter,
+bewusst in Kauf genommener kleiner Schönheitsfehler auf der sekundären
+Live-Activity-Oberfläche (siehe Kommentar in `TimedWorkoutBackground.swift`),
+der Player selbst zeigt den Abschnitt korrekt. Kein Gerätetest für
+Live Activity / Hintergrund-Audio selbst in dieser Runde (aus
+Zeitgründen zurückgestellt, kein funktionaler Unterschied zum bereits
+gerätebestätigten Zirkel-Muster, das dieselbe Infrastruktur nutzt).
+
+**Paket 2 gilt damit funktional vollständig umgesetzt und gerätebestätigt**
+für Komponenten 1–4 der ursprünglichen Spezifikation. Komponente 5
+(Abgrenzung zu Paket 3) wurde durchgehend eingehalten: keine neue
+adaptive Coaching-/Progressionslogik, `PRDetector` liefert für
+`.enduranceIntervals` weiterhin bewusst `nil`.
 
 ## Paket 2: ursprünglicher Umsetzungsplan (strukturierte Ausdauereinheiten)
 
