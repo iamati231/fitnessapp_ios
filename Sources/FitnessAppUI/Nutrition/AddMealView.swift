@@ -223,23 +223,32 @@ public struct AddMealView: View {
             Button {
                 addSelectedEntry()
             } label: {
-                // Geraetetest-Fund: .deltiqButtonStyle() allein (angewendet
-                // NACH .buttonStyle(.plain), aussen auf den Button) macht die
-                // Zeile nur VISUELL vollbreit — sein eigenes
-                // frame(maxWidth: .infinity) greift zu spaet, der Tap-Bereich
-                // blieb auf die intrinsische Text-Glyphe in der Mitte
-                // begrenzt (raw-coordinate Taps links/rechts neben "Add" kamen
-                // nicht bei addSelectedEntry() an; .contentShape(Rectangle())
-                // half NICHT, da es dieselbe bereits zu kleine Button-Geometrie
-                // nur nachzeichnet). Fix: die Breite schon hier im Label selbst
-                // aufspannen (gleiches Prinzip wie DeltiqSegmentedPicker intern),
-                // damit Button+.buttonStyle(.plain) seine Hit-Area direkt aus
-                // der vollen Label-Breite ableitet.
-                Text("common.add", bundle: .module)
-                    .frame(maxWidth: .infinity)
+                HStack {
+                    Spacer()
+                    Text("common.add", bundle: .module)
+                    Spacer()
+                }
+                // Audit-Fund (siehe NutritionDayView.mealEntryRow /
+                // DashboardView-Nutrition-Tile): ein Spacer()-aufgespanntes
+                // HStack ist ausserhalb eines Form/List nicht automatisch
+                // hit-testable — ohne explizites .contentShape(Rectangle())
+                // reagiert nur die Text-Glyphe selbst auf Taps, nicht die
+                // ganze Button-Breite.
+                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .deltiqButtonStyle()
+            // Task B (Deltiq-Designsystem): bewusst BEI .buttonStyle(.borderedProminent)
+            // geblieben statt auf .deltiqButtonStyle() zu wechseln. Zwei Anläufe im
+            // Geraetetest (TestingBot, iPhone 15/iOS 18) zeigten, dass
+            // .buttonStyle(.plain) + .deltiqButtonStyle() die Zeile nur VISUELL
+            // vollbreit macht: weder ein nachtraeglich angehaengtes
+            // .contentShape(Rectangle()) noch ein frame(maxWidth: .infinity) direkt
+            // im Label stellten einen wirklich kantenbeidseitig tappbaren Bereich
+            // her — raw-coordinate-Taps links/rechts neben "Add" blieben wirkungslos,
+            // nur die Mitte (Text-Glyphe) reagierte. Die hier bereits vorhandene
+            // Spacer()+.contentShape(Rectangle())-Loesung ist nachweislich
+            // vollbreit tappbar (siehe vorheriger Commit a90939c) — kein Fine-Tuning
+            // um des Fine-Tunings willen.
+            .buttonStyle(.borderedProminent)
             .disabled((quantity ?? 0) <= 0)
         }
         .deltiqCardStyle()
