@@ -15,7 +15,7 @@ import XCTest
 /// Uebersetzung im Katalog — das testet diese Datei.
 final class FoodCatalogLocalizationTests: XCTestCase {
     private func resolvedName(_ key: String, locale: Locale) -> String {
-        String(localized: String.LocalizationValue(key), locale: locale, bundle: .module)
+        String(localized: String.LocalizationValue(key), bundle: .module, locale: locale)
     }
 
     func testWaterResolvesPerLocaleIncludingTurkish() throws {
