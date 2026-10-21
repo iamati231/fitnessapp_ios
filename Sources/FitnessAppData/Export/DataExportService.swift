@@ -129,6 +129,8 @@ public enum DataExportService {
         let measurements = try context.fetch(FetchDescriptor<BodyMeasurement>())
         let waters      = try context.fetch(FetchDescriptor<WaterEntry>())
         let checkIns    = try context.fetch(FetchDescriptor<PeriodicCheckIn>())
+        let meals       = try context.fetch(FetchDescriptor<MealEntry>())
+        let mealItems   = try context.fetch(FetchDescriptor<MealItem>())
         // Custom-Exercises: alle ExerciseTemplates mit isCustom=true. Die System-
         // Library wird vom App-Bundle bei jedem Start neu seedet, exportieren wir
         // nicht.
@@ -142,6 +144,8 @@ public enum DataExportService {
         files.append(("measurements.csv",     buildMeasurements(measurements, id: id)))
         files.append(("water_log.csv",        buildWaterLog(waters, id: id)))
         files.append(("periodic_checkins.csv", buildPeriodicCheckIns(checkIns, id: id)))
+        files.append(("meals.csv",            buildMeals(meals, id: id)))
+        files.append(("meal_items.csv",       buildMealItems(mealItems, id: id)))
         files.append(("plans.csv",            buildPlans(plans, id: id)))
         files.append(("plan_days.csv",        buildDays(days, id: id)))
         files.append(("plan_exercises.csv",   buildExercises(exercises, id: id)))
@@ -155,7 +159,7 @@ public enum DataExportService {
         files.append(("settings.csv",         buildSettings()))
 
         let totalRows = profiles.count + measurements.count + waters.count
-            + checkIns.count
+            + checkIns.count + meals.count + mealItems.count
             + plans.count + days.count + exercises.count
             + sessions.count + logs.count + prs.count
             + gears.count + customExercises.count
@@ -310,7 +314,13 @@ public enum DataExportService {
             // Importer ignorieren sie, aeltere ZIPs liefern beim Import ""
             // (kein explizites Unknown aus dieser Zeile, identisch zum
             // Vorher-Verhalten).
-            "equipment_unknown_items"
+            "equipment_unknown_items",
+            // Audit-Fund (Deltiq-Ernaehrungsassistent): vier weitere additive
+            // Spalten fuer die Tagesziele — gleiches Prinzip, aeltere
+            // Importer ignorieren sie, aeltere ZIPs liefern beim Import nil
+            // (noch kein Ziel gesetzt).
+            "daily_calorie_goal_kcal", "daily_protein_goal_g",
+            "daily_carb_goal_g", "daily_fat_goal_g"
         ])
         for p in profiles {
             w.appendRow([
@@ -357,7 +367,11 @@ public enum DataExportService {
                 p.equipmentUnavailableItemsRaw.joined(separator: ";"),
                 p.equipmentItemCountsRaw.joined(separator: ";"),
                 CSVWriter.bool(p.equipmentProfileConfirmedComplete),
-                p.equipmentUnknownItemsRaw.joined(separator: ";")
+                p.equipmentUnknownItemsRaw.joined(separator: ";"),
+                p.dailyCalorieGoalKcal.map(String.init) ?? "",
+                p.dailyProteinGoalG.map { CSVWriter.decimal($0) } ?? "",
+                p.dailyCarbGoalG.map { CSVWriter.decimal($0) } ?? "",
+                p.dailyFatGoalG.map { CSVWriter.decimal($0) } ?? ""
             ])
         }
         return w.data()
@@ -446,6 +460,46 @@ public enum DataExportService {
                 c.complaintsNote ?? "",
                 c.goalStillCurrent.map(CSVWriter.bool) ?? "",
                 c.exertionFeedbackRaw.map(String.init) ?? ""
+            ])
+        }
+        return w.data()
+    }
+
+    private static func buildMeals(
+        _ items: [MealEntry],
+        id: (AnyObject) -> String
+    ) -> Data {
+        var w = CSVWriter(headers: ["id", "date_utc", "meal_type"])
+        for m in items {
+            w.appendRow([
+                id(m),
+                CSVWriter.iso8601(m.date),
+                m.mealTypeRaw
+            ])
+        }
+        return w.data()
+    }
+
+    private static func buildMealItems(
+        _ items: [MealItem],
+        id: (AnyObject) -> String
+    ) -> Data {
+        var w = CSVWriter(headers: [
+            "id", "meal_id", "catalog_id", "name_snapshot", "quantity", "unit",
+            "kcal_snapshot", "protein_g_snapshot", "carbs_g_snapshot", "fat_g_snapshot"
+        ])
+        for i in items {
+            w.appendRow([
+                id(i),
+                i.meal.map { id($0) } ?? "",
+                i.catalogID ?? "",
+                i.nameSnapshot,
+                CSVWriter.decimal(i.quantity),
+                i.unitRaw,
+                CSVWriter.decimal(i.kcalSnapshot),
+                CSVWriter.decimal(i.proteinGSnapshot),
+                CSVWriter.decimal(i.carbsGSnapshot),
+                CSVWriter.decimal(i.fatGSnapshot)
             ])
         }
         return w.data()

@@ -1058,6 +1058,84 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(imported.maxHeartRateBpm, 188)
     }
 
+    /// Audit-Fund (Deltiq-Ernaehrungsassistent): die 4 Tagesziel-Felder
+    /// fehlten in `buildProfile`'s CSV-Spalten — ein Backup/Restore liess
+    /// sie stillschweigend verschwinden, auch wenn das `UserBodyProfile`-
+    /// Objekt selbst korrekt wiederhergestellt wurde.
+    func testNutritionGoalFieldsSurviveRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
+        )
+        profile.dailyCalorieGoalKcal = 2_400
+        profile.dailyProteinGoalG = 160
+        profile.dailyCarbGoalG = 250.5
+        profile.dailyFatGoalG = 80
+        ctx.insert(profile)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first)
+        XCTAssertEqual(imported.dailyCalorieGoalKcal, 2_400)
+        XCTAssertEqual(imported.dailyProteinGoalG, 160)
+        XCTAssertEqual(imported.dailyCarbGoalG, 250.5)
+        XCTAssertEqual(imported.dailyFatGoalG, 80)
+    }
+
+    /// Audit-Fund (Deltiq-Ernaehrungsassistent): `MealEntry`/`MealItem`
+    /// fehlten komplett im Export/Import — ein Backup/Restore verlor den
+    /// gesamten Ernaehrungs-Log eines Nutzers.
+    func testMealsAndItemsSurviveExportImportRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let meal = MealEntry(date: Date(timeIntervalSince1970: 1_750_100_000), mealType: .lunch)
+        ctx.insert(meal)
+        ctx.insert(MealItem(
+            catalogID: "chicken_breast", nameSnapshot: "Haehnchenbrust", quantity: 150, unit: .gram,
+            nutrients: NutrientValues(kcal: 248, proteinG: 46.5, carbsG: 0, fatG: 5.4), meal: meal
+        ))
+        ctx.insert(MealItem(
+            catalogID: nil, nameSnapshot: "Freier Eintrag", quantity: 1, unit: .piece,
+            nutrients: NutrientValues(kcal: 300, proteinG: 10, carbsG: 30, fatG: 12), meal: meal
+        ))
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+        XCTAssertEqual(result.errorRows, 0)
+
+        let tctx = target.mainContext
+        XCTAssertEqual(try tctx.fetchCount(FetchDescriptor<MealEntry>()), 1)
+        XCTAssertEqual(try tctx.fetchCount(FetchDescriptor<MealItem>()), 2)
+
+        let importedMeal = try XCTUnwrap(try tctx.fetch(FetchDescriptor<MealEntry>()).first)
+        XCTAssertEqual(importedMeal.mealType, .lunch)
+        XCTAssertEqual(importedMeal.items.count, 2, "meal_id-FK muss ueber die idMap resolven")
+
+        let chicken = try XCTUnwrap(importedMeal.items.first { $0.catalogID == "chicken_breast" })
+        XCTAssertEqual(chicken.nameSnapshot, "Haehnchenbrust")
+        XCTAssertEqual(chicken.quantity, 150)
+        XCTAssertEqual(chicken.unit, .gram)
+        XCTAssertEqual(chicken.kcalSnapshot, 248)
+        XCTAssertEqual(chicken.proteinGSnapshot, 46.5)
+
+        let freeEntry = try XCTUnwrap(importedMeal.items.first { $0.catalogID == nil })
+        XCTAssertEqual(freeEntry.nameSnapshot, "Freier Eintrag")
+        XCTAssertEqual(freeEntry.unit, .piece)
+    }
+
     /// DEL-250: ein Profil OHNE Cardio-Ziele (Default-Zustand, z.B.
     /// Bestandsnutzer nach einem Update) darf beim Roundtrip nicht
     /// versehentlich Werte "erfinden" — alle sechs Felder bleiben auf
@@ -1905,12 +1983,17 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(try target.mainContext.fetchCount(FetchDescriptor<ExerciseLog>()), sessionCount * 3)
     }
 
-    /// Befund RS-03a: `UserDataWipe.deleteSharedUserData` darf GENAU die 10
-    /// mit dem Replace-Import gemeinsamen Typen loeschen — `ExerciseTemplate`
+    /// Befund RS-03a: `UserDataWipe.deleteSharedUserData` darf GENAU die mit
+    /// dem Replace-Import gemeinsamen Typen loeschen — `ExerciseTemplate`
     /// (System UND Custom) muss unberuehrt bleiben, weil Reset und
     /// Replace-Import dafuer bewusst unterschiedliche, separat behandelte
     /// Umfaenge haben (siehe `SettingsView.resetApp`/
     /// `DataImportService.wipeAllUserData`).
+    ///
+    /// Audit-Fund: `PeriodicCheckIn`/`MealEntry`/`MealItem` fehlten in dieser
+    /// Liste — "App zuruecksetzen" liess Check-ins und den kompletten
+    /// Ernaehrungs-Log unberuehrt zurueck, obwohl die UI Vollstaendigkeit
+    /// verspricht.
     func testUserDataWipeDeletesOnlyTheSharedScope() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
@@ -1919,6 +2002,13 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         let customTemplate = ExerciseTemplate(name: "Eigene Uebung", equipment: .dumbbell, primaryMuscle: .chest, isCustom: true)
         ctx.insert(systemTemplate)
         ctx.insert(customTemplate)
+        ctx.insert(PeriodicCheckIn(date: Date(timeIntervalSince1970: 1_750_000_000)))
+        let meal = MealEntry(date: Date(timeIntervalSince1970: 1_750_000_000), mealType: .lunch)
+        ctx.insert(meal)
+        ctx.insert(MealItem(
+            catalogID: nil, nameSnapshot: "Testgericht", quantity: 1, unit: .piece,
+            nutrients: NutrientValues(kcal: 500, proteinG: 30, carbsG: 40, fatG: 15), meal: meal
+        ))
         try ctx.save()
 
         try UserDataWipe.deleteSharedUserData(in: ctx)
@@ -1934,6 +2024,9 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<BodyMeasurement>()), 0)
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<Gear>()), 0)
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<UserBodyProfile>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<PeriodicCheckIn>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<MealEntry>()), 0)
+        XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<MealItem>()), 0)
         // Der eigentliche Punkt des Tests: beide Templates ueberleben.
         XCTAssertEqual(try ctx.fetchCount(FetchDescriptor<ExerciseTemplate>()), 2)
     }

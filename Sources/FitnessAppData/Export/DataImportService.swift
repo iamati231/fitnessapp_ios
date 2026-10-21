@@ -375,8 +375,10 @@ public enum DataImportService {
             "measurements.csv",
             "water_log.csv",
             "periodic_checkins.csv",
+            "meals.csv",
             "plan_days.csv",
             "workouts.csv",
+            "meal_items.csv",
             "plan_exercises.csv",
             "workout_sets.csv",
             "personal_records.csv",
@@ -459,6 +461,13 @@ public enum DataImportService {
                 errorBuffer.append(file: "periodic_checkins.csv", errors: errs)
             }
         }
+        try await tick("meals.csv") {
+            if let csv = files["meals.csv"] {
+                let (ok, dup, errs) = try importMeals(csv: csv, context: context, idMap: &idMap)
+                imported["meals.csv"] = ok; skipped["meals.csv"] = dup
+                errorBuffer.append(file: "meals.csv", errors: errs)
+            }
+        }
 
         // 5) PASS 2 — Objekte mit FKs in Pass-1.
         try await tick("plan_days.csv") {
@@ -473,6 +482,13 @@ public enum DataImportService {
                 let (ok, dup, errs) = try importWorkouts(csv: csv, context: context, idMap: &idMap)
                 imported["workouts.csv"] = ok; skipped["workouts.csv"] = dup
                 errorBuffer.append(file: "workouts.csv", errors: errs)
+            }
+        }
+        try await tick("meal_items.csv") {
+            if let csv = files["meal_items.csv"] {
+                let (ok, dup, errs) = try importMealItems(csv: csv, context: context, idMap: idMap)
+                imported["meal_items.csv"] = ok; skipped["meal_items.csv"] = dup
+                errorBuffer.append(file: "meal_items.csv", errors: errs)
             }
         }
 
@@ -750,6 +766,15 @@ public enum DataImportService {
             p.baselineLegsSelfAssessmentRaw = row.optionalString("baseline_legs_self_assessment")
             p.baselinePullSelfAssessmentRaw = row.optionalString("baseline_pull_self_assessment")
             p.baselineDesiredFirstWeekIntensityRaw = row.optionalString("baseline_desired_first_week_intensity")
+
+            // Audit-Fund (Deltiq-Ernaehrungsassistent): vier additive
+            // Spalten, gleiches Prinzip — fehlen sie (aelterer Export) oder
+            // sind sie leer, liefert der jeweilige Row-Accessor nil, was
+            // hier "noch kein Ziel gesetzt" bedeutet, nie ein erfundener Wert.
+            p.dailyCalorieGoalKcal = row.int("daily_calorie_goal_kcal")
+            p.dailyProteinGoalG = row.double("daily_protein_goal_g")
+            p.dailyCarbGoalG = row.double("daily_carb_goal_g")
+            p.dailyFatGoalG = row.double("daily_fat_goal_g")
 
             if target == nil {
                 context.insert(p)
@@ -1201,6 +1226,59 @@ public enum DataImportService {
             }
             context.insert(checkIn)
             dupSet.insert(rowKey)
+            imported += 1
+        }
+        return (imported, skipped, errors)
+    }
+
+    // MARK: - Pass 1: Meals
+
+    /// `meals.csv` — Dedup-Key wie bei `workouts.csv`: Sekunden-Granularitaet
+    /// auf `date` (kein User legt zwei Mahlzeiten in derselben Sekunde an),
+    /// plus `meal_type`, da `MealEntry` mehrere Eintraege desselben Typs am
+    /// selben Tag ausdruecklich erlaubt (siehe `MealEntry`-Doku) — nur der
+    /// exakt gleiche Zeitstempel UND Typ gilt als derselbe Export-Zeile.
+    /// Registriert jede Zeile (neu ODER Duplikat) in `idMap`, damit
+    /// `meal_items.csv` (Pass 2) den `meal_id`-FK aufloesen kann.
+    private static func importMeals(
+        csv: Data,
+        context: ModelContext,
+        idMap: inout [String: AnyObject]
+    ) throws -> (Int, Int, [RowError]) {
+        let text = String(data: csv, encoding: .utf8) ?? ""
+        let reader: CSVReader
+        do { reader = try CSVReader(text) } catch { return (0, 0, []) }
+
+        let existing = try context.fetch(FetchDescriptor<MealEntry>())
+        func key(_ date: Date, _ mealType: String) -> String {
+            "\(Int(date.timeIntervalSince1970))|\(mealType)"
+        }
+        var dupIndex: [String: MealEntry] = [:]
+        for m in existing {
+            dupIndex[key(m.date, m.mealTypeRaw)] = m
+        }
+
+        var errors: [RowError] = []
+        var imported = 0
+        var skipped  = 0
+
+        for row in reader.rows() {
+            let exportID = row["id"]
+            guard let date = row.date("date_utc") else {
+                errors.append(.init(line: row.lineNumber, reason: "missing date_utc"))
+                continue
+            }
+            let mealType = MealType(rawValue: row["meal_type"]) ?? .snack
+            let rowKey = key(date, mealType.rawValue)
+            if let dup = dupIndex[rowKey] {
+                if !exportID.isEmpty { idMap[exportID] = dup }
+                skipped += 1
+                continue
+            }
+            let meal = MealEntry(date: date, mealType: mealType)
+            context.insert(meal)
+            dupIndex[rowKey] = meal
+            if !exportID.isEmpty { idMap[exportID] = meal }
             imported += 1
         }
         return (imported, skipped, errors)
@@ -1690,6 +1768,74 @@ public enum DataImportService {
         let d = logDate.map { Int($0.timeIntervalSince1970) } ?? -1
         let n = nameSnapshot ?? ""
         return "\(s)|\(d)|\(setIndex)|\(n)"
+    }
+
+    // MARK: - Pass 2: Meal Items
+
+    /// `meal_items.csv` — analog zu `importLogs`: Dedup ueber den Inhalt
+    /// (Eltern-Anker `meal.date` + Katalog-ID/Name/Menge/Einheit), NICHT
+    /// ueber die Eltern-Identitaet, aus demselben Grund wie dort (ein
+    /// dupliziertes `MealEntry` traegt denselben Inhalt noch einmal ein,
+    /// waehrend eine Eltern-ID-basierte Pruefung bei jedem neu angelegten
+    /// `MealEntry` leer anliefe und nichts mehr als Duplikat erkennen
+    /// wuerde).
+    private static func importMealItems(
+        csv: Data,
+        context: ModelContext,
+        idMap: [String: AnyObject]
+    ) throws -> (Int, Int, [RowError]) {
+        let text = String(data: csv, encoding: .utf8) ?? ""
+        let reader: CSVReader
+        do { reader = try CSVReader(text) } catch { return (0, 0, []) }
+
+        func key(mealDate: Date?, catalogID: String?, name: String, quantity: Double, unit: String) -> String {
+            let d = mealDate.map { Int($0.timeIntervalSince1970) } ?? -1
+            return "\(d)|\(catalogID ?? "-")|\(name)|\(quantity)|\(unit)"
+        }
+
+        let existing = try context.fetch(FetchDescriptor<MealItem>())
+        var dupSet = Set<String>()
+        for i in existing {
+            dupSet.insert(key(
+                mealDate: i.meal?.date, catalogID: i.catalogID,
+                name: i.nameSnapshot, quantity: i.quantity, unit: i.unitRaw
+            ))
+        }
+
+        var errors: [RowError] = []
+        var imported = 0
+        var skipped  = 0
+
+        for row in reader.rows() {
+            let meal = idMap[row["meal_id"]] as? MealEntry
+            guard let name = row.optionalString("name_snapshot"), !name.isEmpty,
+                  let quantity = row.double("quantity") else {
+                errors.append(.init(line: row.lineNumber, reason: "missing name_snapshot or quantity"))
+                continue
+            }
+            let catalogID = row.optionalString("catalog_id")
+            let unitRaw = row["unit"]
+            let dupKey = key(mealDate: meal?.date, catalogID: catalogID, name: name, quantity: quantity, unit: unitRaw)
+            if dupSet.contains(dupKey) {
+                skipped += 1
+                continue
+            }
+            let unit = FoodUnit(rawValue: unitRaw) ?? .gram
+            let nutrients = NutrientValues(
+                kcal: row.double("kcal_snapshot") ?? 0,
+                proteinG: row.double("protein_g_snapshot") ?? 0,
+                carbsG: row.double("carbs_g_snapshot") ?? 0,
+                fatG: row.double("fat_g_snapshot") ?? 0
+            )
+            let item = MealItem(
+                catalogID: catalogID, nameSnapshot: name, quantity: quantity,
+                unit: unit, nutrients: nutrients, meal: meal
+            )
+            context.insert(item)
+            dupSet.insert(dupKey)
+            imported += 1
+        }
+        return (imported, skipped, errors)
     }
 
     // MARK: - Pass 3: PRs

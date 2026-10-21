@@ -37,4 +37,20 @@ final class HealthKitControllerLastSyncTests: XCTestCase {
         let lastSyncDate = await MainActor.run { HealthKitController(userDefaults: defaults).lastSyncDate }
         XCTAssertNil(lastSyncDate)
     }
+
+    /// Audit-Fund: `fetchWorkoutWindows` warf frueher auf einer Plattform ohne
+    /// HealthKit (hier: `swift test` laeuft auf macOS) still `[]` zurueck, statt
+    /// wie die eigene Doc-Aussage ("THROWS instead of returning [] on failure")
+    /// zu werfen — der Caller (`WorkoutHealthExportService.prepare`) haette eine
+    /// fehlgeschlagene Abfrage faelschlich als "noch nichts in Health" gelesen
+    /// und beim naechsten Export-Versuch Duplikate geschrieben.
+    func testFetchWorkoutWindowsThrowsRatherThanReturningEmptyWhenHealthKitIsUnavailable() async {
+        let controller = await MainActor.run { HealthKitController(userDefaults: makeDefaults()) }
+        do {
+            _ = try await controller.fetchWorkoutWindows(from: Date(), to: Date())
+            XCTFail("Expected fetchWorkoutWindows to throw when HealthKit is unavailable, not return a value")
+        } catch {
+            // Any thrown error is correct here — the contract is "never silently empty".
+        }
+    }
 }

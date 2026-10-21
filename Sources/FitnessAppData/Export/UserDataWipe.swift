@@ -19,7 +19,7 @@ import FitnessAppCore
 
 public enum UserDataWipe {
 
-    /// Loescht die 10 User-Daten-Typen, deren Loeschumfang zwischen App-Reset
+    /// Loescht die User-Daten-Typen, deren Loeschumfang zwischen App-Reset
     /// und destruktivem Replace-Import identisch ist — Children-first
     /// ordering, per-instance-Delete (nicht `delete(model:)`/
     /// `NSBatchDeleteRequest`, das `@Relationship`-Cascade/Nullify-Regeln
@@ -38,6 +38,11 @@ public enum UserDataWipe {
         try deleteEach(of: TrainingPlan.self,        in: context)
         try deleteEach(of: WaterEntry.self,          in: context)
         try deleteEach(of: BodyMeasurement.self,     in: context)
+        try deleteEach(of: PeriodicCheckIn.self,     in: context)
+        // MealItem vor MealEntry (dessen Parent), analog zu ExerciseLog vor
+        // WorkoutSession oben — Children-first trotz .cascade-Regel.
+        try deleteEach(of: MealItem.self,            in: context)
+        try deleteEach(of: MealEntry.self,           in: context)
         // DEL-219: Gear muss NACH ExerciseLog/WorkoutSession stehen, damit
         // deren nullify-Relationship zu Gear schon aufgeloest ist, bevor
         // Gear selbst geloescht wird.

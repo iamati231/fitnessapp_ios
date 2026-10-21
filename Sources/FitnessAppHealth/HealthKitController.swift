@@ -311,10 +311,10 @@ public final class HealthKitController {
     /// — see `HealthKitService.fetchWorkoutWindows`.
     public func fetchWorkoutWindows(from start: Date, to end: Date) async throws -> [HealthWorkoutWindow] {
         #if canImport(HealthKit)
-        guard let service else { return [] }
+        guard let service else { throw HealthKitError.unavailable }
         return try await service.fetchWorkoutWindows(from: start, to: end)
         #else
-        return []
+        throw HealthKitError.unavailable
         #endif
     }
 
