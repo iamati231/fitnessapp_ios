@@ -61,6 +61,9 @@ public struct AddMealView: View {
                     itemsSection
                     previewSection
                 }
+                if editingMeal != nil {
+                    deleteSection
+                }
             }
             .scrollContentBackground(.hidden)
             .background(Color.Deltiq.background.ignoresSafeArea())
@@ -77,26 +80,6 @@ public struct AddMealView: View {
                         dismiss()
                     } label: {
                         Text("nutrition.addMeal.cancel", bundle: .module)
-                    }
-                }
-                if editingMeal != nil {
-                    // Loeschen der GESAMTEN Mahlzeit ist eine separate, simplere
-                    // Operation als das Editieren ihrer Positionen — laeuft
-                    // deshalb bewusst nicht ueber MealDraft, siehe deleteMeal().
-                    ToolbarItem(placement: .destructiveAction) {
-                        // Final-review fix (important): Global Constraint
-                        // verlangt sichtbar textbeschriftete Controls statt
-                        // einem reinen Icon + Accessibility-Label.
-                        Button(role: .destructive) {
-                            showingDeleteConfirm = true
-                        } label: {
-                            Label {
-                                Text("nutrition.editMeal.delete", bundle: .module)
-                            } icon: {
-                                Image(systemName: "trash")
-                            }
-                        }
-                        .labelStyle(.titleAndIcon)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
@@ -299,6 +282,33 @@ public struct AddMealView: View {
                 .fitnessNumberStyle()
         }
         .listRowBackground(Color.Deltiq.surface)
+    }
+
+    /// Audit-Fund (Geraetetest): als Toolbar-Icon+Text-`Label` kollabierte
+    /// dieser Button auf echten Geraeten still auf reines Icon (iOS
+    /// komprimiert ein `.destructiveAction`-Toolbar-Item neben
+    /// `.confirmationAction`, wenn der Platz knapp wird) — die Global-
+    /// Constraint-Vorgabe "sichtbar textbeschriftete Controls" war dadurch
+    /// faktisch nicht erfuellt. Als eigene Formular-Zeile (gleiches Muster
+    /// wie `SettingsView.dangerZoneSection`) kann iOS den Text nicht mehr
+    /// wegkuerzen.
+    private var deleteSection: some View {
+        Section {
+            Button(role: .destructive) {
+                showingDeleteConfirm = true
+            } label: {
+                HStack {
+                    Spacer()
+                    Label {
+                        Text("nutrition.editMeal.delete", bundle: .module)
+                    } icon: {
+                        Image(systemName: "trash")
+                    }
+                    Spacer()
+                }
+            }
+            .listRowBackground(Color.Deltiq.surface)
+        }
     }
 
     // MARK: Derived

@@ -608,6 +608,12 @@ public struct DashboardView: View {
                             .font(.caption.weight(.bold))
                             .foregroundStyle(.tertiary)
                     }
+                    // Audit-Fund (Geraetetest): ohne contentShape war nur das
+                    // Icon tappbar — der Spacer/Chevron-Bereich (der optisch
+                    // groesste Teil der Zeile) reagierte auf keinen Tipp.
+                    // Gleiches Muster wie die "Recent Workouts"-Zeile oben
+                    // (siehe .contentShape(Rectangle()) dort).
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
 
