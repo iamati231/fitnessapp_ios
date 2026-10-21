@@ -133,6 +133,9 @@ final class PlanGeneratorTests: XCTestCase {
         let result = PlanGenerator.generate(from: input([selection(.running, days: 3)]))
         let exerciseNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
         XCTAssertEqual(exerciseNames, ["Easy Run", "Long Run", "Intervalle"])
+        // Paket 2 (Sportart-Unterscheidung): muss am Entstehungsort gesetzt
+        // werden, nicht erst spaeter aus dem Namen zurueckgeraten.
+        XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .running } })
     }
 
     func testRunningTwoDaysNeverPlacesTwoHardZonesTogether() {
@@ -146,6 +149,7 @@ final class PlanGeneratorTests: XCTestCase {
         let result = PlanGenerator.generate(from: input([selection(.cycling, days: 2)]))
         XCTAssertEqual(result.days.count, 2)
         XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.map(\.name) == ["Radfahren (outdoor)"] })
+        XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .cycling } })
     }
 
     // MARK: - DEL-098-Datentreue: keine erfundenen Uebungsnamen
@@ -380,6 +384,7 @@ final class PlanGeneratorTests: XCTestCase {
             XCTAssertEqual(day.spec.timeFormat, .amrap)
             XCTAssertEqual(day.spec.exercises.map(\.name), ["Lauf-Intervall"])
             XCTAssertEqual(day.spec.exercises.first?.sets, 1, "AMRAP zaehlt Runden live, nicht ueber `sets`")
+            XCTAssertEqual(day.spec.exercises.first?.enduranceSportKind, .running)
         }
     }
 
