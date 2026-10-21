@@ -236,6 +236,13 @@ public struct AddMealView: View {
                     Text("common.add", bundle: .module)
                     Spacer()
                 }
+                // Audit-Fund (siehe NutritionDayView.mealEntryRow /
+                // DashboardView-Nutrition-Tile): ein Spacer()-aufgespanntes
+                // HStack ist ausserhalb eines Form/List nicht automatisch
+                // hit-testable — ohne explizites .contentShape(Rectangle())
+                // reagiert nur die Text-Glyphe selbst auf Taps, nicht die
+                // ganze Button-Breite.
+                .contentShape(Rectangle())
             }
             .buttonStyle(.borderedProminent)
             .disabled((quantity ?? 0) <= 0)
