@@ -26,6 +26,10 @@ public struct SettingsDataConnectionsView: View {
     private var healthWriteStrengthEnabled: Bool = HealthWritePreferences.defaultStrengthEnabled
     @AppStorage(HealthWritePreferences.cardioEnabledKey)
     private var healthWriteCardioEnabled: Bool = HealthWritePreferences.defaultCardioEnabled
+    /// Opt-in fuer die Online-Suche unbekannter Lebensmittel (Task 4/5,
+    /// FitnessAppFoodLookup/Open Food Facts) — gleiches Persistenz-Muster wie
+    /// `externalWorkoutImportEnabled` oben: @AppStorage, Default aus.
+    @AppStorage("onlineFoodLookupEnabled") private var onlineFoodLookupEnabled: Bool = false
 
     public init() {}
 
@@ -39,6 +43,7 @@ public struct SettingsDataConnectionsView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     healthKitSection
+                    onlineFoodLookupSection
                     privacySection
                 }
                 .padding(.horizontal, 16)
@@ -125,6 +130,35 @@ public struct SettingsDataConnectionsView: View {
                     String(localized: "settings.health.workoutImport.footer", bundle: .module)
                 ].joined(separator: "\n")
             )
+        }
+    }
+
+    /// Online-Food-Lookup (Task 3, docs/superpowers/sdd/2026-10-22-online-food-lookup):
+    /// Opt-in-Toggle fuer die kommende Online-Suche unbekannter Lebensmittel
+    /// (Task 4/5, FitnessAppFoodLookup/Open Food Facts) + Pflicht-Lizenzhinweis.
+    /// Noch keine Such-UI hier — nur der Schalter, den Task 4/5 ausliest.
+    private var onlineFoodLookupSection: some View {
+        DeltiqSection(String(localized: "settings.section.onlineFoodLookup", bundle: .module).uppercased()) {
+            DeltiqControlRow(
+                icon: "magnifyingglass",
+                label: String(localized: "settings.foodLookup.toggle", bundle: .module),
+                showsDivider: false
+            ) {
+                Toggle(isOn: $onlineFoodLookupEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.foodLookup.toggle", bundle: .module))
+            }
+            NavigationLink {
+                OnlineFoodLookupCreditsView()
+            } label: {
+                DeltiqRow(
+                    icon: "info.circle",
+                    label: String(localized: "settings.foodLookup.credits.row", bundle: .module),
+                    showsChevron: true,
+                    showsDivider: false
+                )
+            }
+            hintRow(String(localized: "settings.foodLookup.toggle.footer", bundle: .module))
         }
     }
 
