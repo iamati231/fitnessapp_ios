@@ -1,10 +1,10 @@
-# Online-Lebensmittelsuche (Open Food Facts) Implementation Plan
+# Lebensmittel-Katalog-Erweiterung: Online-Suche + Eigenes Lebensmittel Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Wenn ein Lebensmittel lokal keinen Treffer hat, kann der Nutzer — nach explizitem Opt-in und nur bei Netzverfügbarkeit — über Open Food Facts online suchen, einen Treffer wählen, die Nährwerte vor dem Speichern prüfen/korrigieren und erst nach Bestätigung einen neuen lokalen Katalogeintrag anlegen.
+**Goal:** Wenn ein Lebensmittel lokal keinen Treffer hat, kann der Nutzer entweder (a) — nach explizitem Opt-in und nur bei Netzverfügbarkeit — über Open Food Facts online suchen, einen Treffer wählen, die Nährwerte vor dem Speichern prüfen/korrigieren und erst nach Bestätigung einen neuen lokalen Katalogeintrag anlegen, oder (b) jederzeit, auch offline, ein eigenes Lebensmittel manuell mit Name und Nährwerten anlegen.
 
-**Architecture:** Ein neues, isoliertes SPM-Modul `FitnessAppFoodLookup` kapselt den gesamten Netzwerkzugriff (einzige Netzwerk-Komponente der App, keine Abhängigkeit zu/von `FitnessAppAI`). `FoodCatalogEntry` bekommt zwei additive Felder (`displayName`, `isOnlineImported`), damit online importierte Einträge Klartext-Namen statt xcstrings-Keys tragen und als Nutzerdaten (Export/Wipe) statt Katalogdaten behandelt werden. Die UI verdrahtet zwei bestehende "kein Treffer"-Zustände in `AddMealView.swift` auf denselben Suchen→Wählen→Vorschau→Bestätigen-Flow.
+**Architecture:** Ein neues, isoliertes SPM-Modul `FitnessAppFoodLookup` kapselt den gesamten Netzwerkzugriff (einzige Netzwerk-Komponente der App, keine Abhängigkeit zu/von `FitnessAppAI`). `FoodCatalogEntry` bekommt zwei additive Felder (`displayName`, `source: FoodCatalogEntrySource` mit Fällen `.seeded`/`.onlineImported`/`.userCreated`), damit online importierte UND manuell angelegte Einträge Klartext-Namen statt xcstrings-Keys tragen und einheitlich als Nutzerdaten (Export/Wipe) statt Katalogdaten behandelt werden. Die UI verdrahtet drei Einstiegspunkte in `AddMealView.swift` (0-Treffer-Zustand der manuellen Suche, KI-Kandidat ohne Katalogtreffer, jederzeit sichtbare "Eigenes Lebensmittel"-Aktion) auf zwei getrennte, aber dieselbe Datenbasis nutzende Flows.
 
 **Tech Stack:** Swift 6 / SwiftUI / SwiftData, `URLSession` (erster Netzwerk-Code der App), Open Food Facts / Search-a-licious REST-API.
 
@@ -20,8 +20,9 @@
 - Neuer Katalogeintrag entsteht ausschließlich nach expliziter Bestätigung in einer Vorschau (kein Auto-Save aus dem Suchergebnis).
 - Jeder neue sichtbare Text geht über `Sources/FitnessAppUI/Resources/Localizable.xcstrings` (DE/EN/TR).
 - Rundung/Formatierung ausschließlich über `Sources/FitnessAppCore/Numerics/DoubleFormatting.swift` — keine neue Rundungslogik.
-- SwiftData: rein additive Felder auf `FoodCatalogEntry`, kein `VersionedSchema`/`SchemaMigrationPlan`.
-- Online importierte Katalogeinträge (`isOnlineImported == true`) sind Nutzerdaten: von `UserDataWipe`/`DataExportService`/`DataImportService` erfasst; die ~100 seedierten Einträge bleiben davon unberührt.
+- SwiftData: rein additive Felder auf `FoodCatalogEntry`, kein `VersionedSchema`/`SchemaMigrationPlan`. Keine bestehenden Daten werden gelöscht/zurückgesetzt.
+- Katalogeinträge mit `source != .seeded` (online importiert ODER manuell angelegt) sind Nutzerdaten: von `UserDataWipe`/`DataExportService`/`DataImportService` erfasst; die ~100 seedierten Einträge bleiben davon unberührt.
+- "Eigenes Lebensmittel anlegen" braucht KEINEN Opt-in und KEIN Netz — rein lokale Aktion, jederzeit erreichbar.
 - ODbL-Attribution für Open Food Facts ist sichtbar, sobald das Feature genutzt wird.
 - Kein Merge, kein Release, kein Push zu main als Teil dieses Plans — jede Task endet mit lokalem Commit, Push nur zu diesem bestehenden Feature-Branch für CI-Zugriff (siehe Ruling im Ledger des vorherigen Plans).
 - Verifikation ausschließlich über macOS-CI (`swift build`/`swift test` via `apple-ci-comparison.yml`) — **keine TestingBot-Gerätetests** für diesen Plan (explizite Nutzervorgabe).
@@ -33,6 +34,8 @@
 - **Rate-Limit/Doppeltipp:** schnelles wiederholtes Tippen auf "Online suchen" darf nicht mehrere parallele Anfragen auslösen (Rate-Limit 10/Min) — Aktion während laufender Anfrage deaktivieren, analog zum bereits gelösten KI-Doppeltipp-Schutz aus Task E des vorherigen Plans.
 - **Export/Wipe-Fehlklassifizierung:** ein Bug, der `isOnlineImported`-Einträge nicht korrekt von seedierten Katalogeinträgen unterscheidet, könnte entweder Nutzerdaten beim Reset behalten (Datenschutz-Erwartung verletzt) oder versehentlich seedierte Katalogdaten löschen (App bricht) — beide Richtungen brauchen einen Test.
 - **Kein Netz beim Tippen auf "Online suchen":** darf nie zu einem leeren/hängenden Ladezustand führen — sofortiger, lokalisierter Hinweis plus funktionierender Rückweg zur manuellen Erfassung.
+- **Mehrfachtap beim manuellen Speichern (Task 6):** Doppeltipp auf den Speichern-Button für ein eigenes Lebensmittel darf keine zwei Katalogeinträge erzeugen — gleiche Sorgfalt wie beim bereits gelösten KI-Doppeltipp-Schutz.
+- **Fehlendes Stückgewicht/Dichte bei "Eigenes Lebensmittel":** ein ohne diese optionalen Felder angelegter Eintrag darf später nie Stück/ml als wählbare Einheit anbieten — leicht zu übersehen, da der Implementierer gerade erst das Formular gebaut hat und annehmen könnte, "der Nutzer hat ja alles ausgefüllt".
 
 ---
 
@@ -111,9 +114,9 @@ git commit -m "feat: add FitnessAppFoodLookup module for Open Food Facts search"
 
 ---
 
-### Task 2: `FoodCatalogEntry` — Klartext-Namen, Online-Import-Markierung, Nutzerdaten-Scope
+### Task 2: `FoodCatalogEntry` — Klartext-Namen, Herkunfts-Markierung, Nutzerdaten-Scope
 
-**Voraussetzung:** keine (unabhängig von Task 1, kann parallel geplant werden, läuft aber danach in der Sequenz dieses Plans, da Task 4 beide Interfaces braucht).
+**Voraussetzung:** keine (unabhängig von Task 1, kann parallel geplant werden, läuft aber danach in der Sequenz dieses Plans, da Task 4/6 diese Interfaces brauchen).
 
 **Files:**
 - Modify: `Sources/FitnessAppData/FoodCatalogEntry.swift`
@@ -121,58 +124,80 @@ git commit -m "feat: add FitnessAppFoodLookup module for Open Food Facts search"
 - Modify: `Sources/FitnessAppData/Export/UserDataWipe.swift`
 - Modify: `Sources/FitnessAppData/Export/DataExportService.swift`
 - Modify: `Sources/FitnessAppData/Export/DataImportService.swift`
-- Test: `Tests/FitnessAppDataTests/FoodCatalogEntryOnlineImportTests.swift`
+- Test: `Tests/FitnessAppDataTests/FoodCatalogEntrySourceTests.swift`
 
 **Interfaces:**
-- Konsumiert: `OnlineFoodCandidate` aus Task 1 (nur als Parameter-Typ für den neuen Initializer, keine SwiftData-Abhängigkeit auf `FitnessAppFoodLookup` — `FitnessAppData` importiert `FitnessAppFoodLookup` nicht; der Initializer nimmt stattdessen einfache Skalare entgegen, die UI-Schicht in Task 4 mappt `OnlineFoodCandidate` auf diese Parameter).
-- Produziert (für Task 4/5):
+- Konsumiert: `OnlineFoodCandidate` aus Task 1 (nur als Parameter-Typ für den neuen Initializer, keine SwiftData-Abhängigkeit auf `FitnessAppFoodLookup` — `FitnessAppData` importiert `FitnessAppFoodLookup` nicht; der Initializer nimmt stattdessen einfache Skalare entgegen, die UI-Schicht in Task 4/6 mappt `OnlineFoodCandidate` bzw. Formular-Eingaben auf diese Parameter).
+- Produziert (für Task 4/5/6):
   ```swift
+  public enum FoodCatalogEntrySource: String, Codable, Sendable {
+      case seeded
+      case onlineImported
+      case userCreated
+  }
+
   extension FoodCatalogEntry {
-      public var isOnlineImported: Bool { get set }   // Default false bei bestehendem init(from:)
-      public var displayName: String? { get set }     // nil bei bestehendem init(from:)
+      public var source: FoodCatalogEntrySource { get set }  // Default .seeded bei bestehendem init(from:) und bestehenden Zeilen
+      public var displayName: String? { get set }            // nil bei bestehendem init(from:)
       public convenience init(
           displayName: String,
+          source: FoodCatalogEntrySource,   // .onlineImported oder .userCreated — niemals .seeded hier
           category: FoodCategory,
           kcalPer100g: Double,
           proteinPer100g: Double,
           carbsPer100g: Double,
-          fatPer100g: Double
-      )  // generiert eine neue UUID als catalogID, setzt isOnlineImported = true
+          fatPer100g: Double,
+          pieceWeightGrams: Double? = nil,
+          densityGramsPerMl: Double? = nil
+      )  // generiert eine neue UUID als catalogID
   }
   ```
 
-- [ ] **Step 1: Failing Test — Namensauflösung bevorzugt `displayName`**
+- [ ] **Step 1: Failing Tests — Namensauflösung und Herkunft**
 
 ```swift
-func testResolvedNamePrefersDisplayNameOverNameKey() {
-    let entry = FoodCatalogEntry(displayName: "Linsensuppe", category: .other,
+func testUserCreatedEntry_hasDisplayNameAndCorrectSource() {
+    let entry = FoodCatalogEntry(displayName: "Linsensuppe", source: .userCreated, category: .other,
                                   kcalPer100g: 90, proteinPer100g: 5, carbsPer100g: 12, fatPer100g: 2)
-    XCTAssertTrue(entry.isOnlineImported)
+    XCTAssertEqual(entry.source, .userCreated)
     XCTAssertEqual(entry.displayName, "Linsensuppe")
+}
+
+func testOnlineImportedEntry_hasCorrectSource() {
+    let entry = FoodCatalogEntry(displayName: "Nutella", source: .onlineImported, category: .other,
+                                  kcalPer100g: 539, proteinPer100g: 6.3, carbsPer100g: 57.5, fatPer100g: 30.9)
+    XCTAssertEqual(entry.source, .onlineImported)
+}
+
+func testExistingSeededEntries_defaultToSeededSource() throws {
+    // Ein ueber init(from: FoodCatalogItem) angelegter Eintrag (bestehender Pfad,
+    // repraesentiert auch bereits migrierte/bestehende Zeilen) hat source == .seeded.
+    let entry = FoodCatalogEntry(from: FoodCatalogData.all.first!)
+    XCTAssertEqual(entry.source, .seeded)
 }
 ```
 (Die eigentliche `resolvedName(for:)`-Präzedenz wird in `Tests/FitnessAppUITests/` getestet, da die Funktion `private` in `AddMealView` ist — siehe Step 3.)
 
-- [ ] **Step 2: Test laufen lassen, Fehlschlag bestätigen**
+- [ ] **Step 2: Tests laufen lassen, Fehlschlag bestätigen**
 
-Run: `swift test --filter FoodCatalogEntryOnlineImportTests`
-Expected: FAIL (Initializer/Felder existieren noch nicht).
+Run: `swift test --filter FoodCatalogEntrySourceTests`
+Expected: FAIL (Enum/Initializer/Felder existieren noch nicht).
 
 - [ ] **Step 3: Implementieren**
 
-`isOnlineImported: Bool = false` und `displayName: String? = nil` additiv auf `FoodCatalogEntry` ergänzen (SwiftData-Migration bleibt additiv, kein `VersionedSchema`). Neuer `convenience init` wie oben, generiert `catalogID` über `UUID().uuidString`. In `AddMealView.swift:589-591` `resolvedName(for:)` erweitern: `entry.displayName ?? String(localized: ...)` — `displayName` hat Vorrang. `UserDataWipe.swift`'s `deleteSharedUserData` löscht `FoodCatalogEntry`-Zeilen mit `isOnlineImported == true` (Fetch-Predicate, keine pauschale Löschung aller `FoodCatalogEntry`). `DataExportService.swift`/`DataImportService.swift` bekommen eine neue `online_food_catalog.csv`-Export-/Import-Funktion nach dem Muster von `buildMeals`/`meals.csv` (`DataExportService.swift:147`) — nur Zeilen mit `isOnlineImported == true`.
+`FoodCatalogEntrySource`-Enum wie oben. `source: FoodCatalogEntrySource = .seeded` und `displayName: String? = nil` additiv auf `FoodCatalogEntry` ergänzen (SwiftData-Migration bleibt additiv, kein `VersionedSchema` — bestehende Zeilen bekommen automatisch den Default `.seeded`). Neuer `convenience init` wie oben, generiert `catalogID` über `UUID().uuidString`. In `AddMealView.swift:589-591` `resolvedName(for:)` erweitern: `entry.displayName ?? String(localized: ...)` — `displayName` hat Vorrang. `UserDataWipe.swift`'s `deleteSharedUserData` löscht `FoodCatalogEntry`-Zeilen mit `source != .seeded` (Fetch-Predicate, keine pauschale Löschung aller `FoodCatalogEntry`). `DataExportService.swift`/`DataImportService.swift` bekommen eine neue `custom_food_catalog.csv`-Export-/Import-Funktion nach dem Muster von `buildMeals`/`meals.csv` (`DataExportService.swift:147`) — nur Zeilen mit `source != .seeded`, `source`-Wert wird mitexportiert.
 
 - [ ] **Step 4: Tests laufen lassen, Erfolg bestätigen + Export/Wipe-Regressionstest**
 
-Zusätzlicher Test: ein geseedeter Katalogeintrag (`isOnlineImported == false`) UND ein online importierter Eintrag existieren gleichzeitig — nach `deleteSharedUserData` ist nur der online importierte weg, der geseedete bleibt. Export erfasst nur den online importierten in `online_food_catalog.csv`.
-Run: `swift test --filter FoodCatalogEntryOnlineImportTests`
+Zusätzlicher Test: ein geseedeter Katalogeintrag (`source == .seeded`) UND je ein online importierter UND ein manuell angelegter Eintrag existieren gleichzeitig — nach `deleteSharedUserData` sind nur die beiden nicht-seedierten weg, der geseedete bleibt. Export erfasst beide nicht-seedierten in `custom_food_catalog.csv` samt korrektem `source`-Wert; Re-Import stellt denselben `source` wieder her.
+Run: `swift test --filter FoodCatalogEntrySourceTests`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add Sources/FitnessAppData Sources/FitnessAppUI/Nutrition/AddMealView.swift Tests/FitnessAppDataTests
-git commit -m "feat: add online-imported food catalog entries as user data"
+git commit -m "feat: add food catalog entry source tracking for online-imported and user-created entries"
 ```
 
 ---
@@ -226,7 +251,7 @@ git commit -m "feat: add opt-in setting and attribution for online food lookup"
 
 - [ ] **Step 1: Failing Tests**
 
-Mindestens: `onlineFoodLookupEnabled == false` → keine "Online suchen"-Aktion sichtbar (heutiges Verhalten unverändert); `== true` + kein Netz → lokalisierter Hinweis statt leerem Ladezustand, manuelle Erfassung bleibt bedienbar; `== true` + Netz + mehrere Treffer → Trefferliste zeigt alle, ein Tap auf einen bestimmten Treffer wählt GENAU diesen aus (Regressionstest gegen C1 — mit einem Fake, der 3+ Candidates liefert, prüfen, dass jeder einzeln antippbar ist und nicht der letzte immer gewinnt); Bestätigen in der Vorschau legt einen `FoodCatalogEntry` mit `isOnlineImported == true` an und fügt ihn der aktuellen Mahlzeit hinzu über den bestehenden `addItem`-Pfad (keine neue Persistenz-Logik); Abbrechen in der Vorschau legt NICHTS an.
+Mindestens: `onlineFoodLookupEnabled == false` → keine "Online suchen"-Aktion sichtbar (heutiges Verhalten unverändert); `== true` + kein Netz → lokalisierter Hinweis statt leerem Ladezustand, manuelle Erfassung bleibt bedienbar; `== true` + Netz + mehrere Treffer → Trefferliste zeigt alle, ein Tap auf einen bestimmten Treffer wählt GENAU diesen aus (Regressionstest gegen C1 — mit einem Fake, der 3+ Candidates liefert, prüfen, dass jeder einzeln antippbar ist und nicht der letzte immer gewinnt); Bestätigen in der Vorschau legt einen `FoodCatalogEntry` mit `source == .onlineImported` an und fügt ihn der aktuellen Mahlzeit hinzu über den bestehenden `addItem`-Pfad (keine neue Persistenz-Logik); Abbrechen in der Vorschau legt NICHTS an.
 
 - [ ] **Step 2: Tests laufen lassen, Fehlschlag bestätigen**
 
@@ -283,4 +308,43 @@ Run: CI-Lauf, Expected: PASS. Dead-Key-Audit erneut: `UNUSED: 0` bestätigen.
 ```bash
 git add Sources/FitnessAppUI/Nutrition/AddMealView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests
 git commit -m "feat: add online food search from AI candidate with no catalog match"
+```
+
+---
+
+### Task 6: `AddMealView` — Eigenes Lebensmittel manuell anlegen
+
+**Voraussetzung:** Task 2 abgeschlossen (braucht `FoodCatalogEntrySource`/`displayName`/den erweiterten Initializer). Unabhängig von Tasks 1, 3, 4, 5 — kein Netz, keine Online-Suche, kein Opt-in nötig. Kann parallel zu Task 1/3/4/5 geplant werden, sofern keine Dateiüberschneidung mit deren jeweiligem Implementierungsstand besteht (vor Start den tatsächlichen Stand von `AddMealView.swift` prüfen, nicht pauschal Unabhängigkeit annehmen — siehe Plan-Vorbemerkung zu Dateiüberschneidungen).
+
+**Files:**
+- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift`
+- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
+- Test: Erweiterung von `Tests/FitnessAppUITests/`
+
+**Interfaces:**
+- Konsumiert: `FoodCatalogEntry`'s erweiterten `convenience init` aus Task 2 (mit `source: .userCreated`).
+- Produziert: nichts für andere Tasks — dies ist das letzte Blatt im Abhängigkeitsbaum dieses Plans.
+
+- [ ] **Step 1: Failing Tests**
+
+Mindestens: Formular mit allen Pflichtfeldern gültig ausgefüllt → Speichern-Button aktiv, legt `FoodCatalogEntry` mit `source == .userCreated`, korrektem `displayName` und den eingegebenen Makros an; ein Pflichtfeld fehlt/ungültig (z.B. negativer Wert) → Speichern-Button bleibt deaktiviert; Doppeltipp auf Speichern erzeugt GENAU EINEN Eintrag, nicht zwei (Button deaktiviert sich nach erstem Tap); ohne Stückgewicht/Dichte angegeben → der neue Eintrag bietet in der Mengenauswahl später korrekt nur Gramm an, nicht Stück/ml (Regressionstest gegen die in der Spec explizit genannte Übersehens-Gefahr); Kaltstart-Persistenz: nach Neuerstellen des `ModelContainer` (In-Memory-Test-Container neu aufgebaut) ist der Eintrag weiterhin über die normale Katalogsuche auffindbar.
+
+- [ ] **Step 2: Tests laufen lassen, Fehlschlag bestätigen**
+
+Run: CI-Lauf (`apple-ci-comparison.yml`).
+Expected: FAIL.
+
+- [ ] **Step 3: Implementieren**
+
+Jederzeit sichtbare, text-beschriftete Aktion "Eigenes Lebensmittel anlegen" im Lebensmittel-Suchbereich von `AddMealView` (nicht nur im 0-Treffer-Zustand — siehe Spec-Einstiegspunkt-Abschnitt) plus zusätzlich an den beiden bestehenden "kein Treffer"-Stellen (manuelle Suche 0 Treffer, KI-Kandidat ohne Katalogtreffer — dort vorausgefüllt mit dem Such-/`foodText`). Formular: Name + 4 Pflicht-Makros pro 100g + optionales Stückgewicht/Dichte, Validierung vor Aktivierung des Speichern-Buttons. Speichern-Button deaktiviert sich beim ersten Tap bis zum Abschluss der Persistenz (gleiches Pattern wie Task E's Doppeltipp-Schutz). Bei Speicherfehler: Entwurf bleibt erhalten, kein Erfolgs-Feedback.
+
+- [ ] **Step 4: Tests laufen lassen, Erfolg bestätigen**
+
+Run: CI-Lauf, Expected: PASS. Dead-Key-Audit: `python .scripts/dead_catalog_v3.py`, `UNUSED: 0` bestätigen (reales Ergebnis zeigen).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add Sources/FitnessAppUI/Nutrition/AddMealView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests
+git commit -m "feat: add manual custom food creation independent of network/AI"
 ```
