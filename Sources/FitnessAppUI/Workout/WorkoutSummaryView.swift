@@ -2418,9 +2418,7 @@ private struct SetSummaryRow: View {
                 .multilineTextAlignment(.leading)
                 .font(.system(size: 18, weight: .semibold))
                 .fitnessNumberStyle()
-                #if os(iOS)
-                .keyboardType(.decimalPad)
-                #endif
+                .decimalKeyboard()
             Text("km").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
@@ -2487,9 +2485,7 @@ private struct SetSummaryRow: View {
                 .multilineTextAlignment(.leading)
                 .font(.system(size: 18, weight: .semibold))
                 .fitnessNumberStyle()
-                #if os(iOS)
-                .keyboardType(.decimalPad)
-                #endif
+                .decimalKeyboard()
             Text("kg").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }

@@ -643,7 +643,9 @@ struct SetRow: View {
 
     private var repsInput: some View {
         TextField("-", value: $reps, format: .number, prompt: Text("-"))
-            .decimalKeyboard()
+            #if os(iOS)
+            .keyboardType(.numberPad)
+            #endif
             .monospacedDigit()
             .frame(width: SetRowColumns.repsFieldWidth)
             .padding(.horizontal, SetRowColumns.fieldHorizontalPadding)
