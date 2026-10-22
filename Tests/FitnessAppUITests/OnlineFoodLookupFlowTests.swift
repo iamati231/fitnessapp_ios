@@ -253,8 +253,30 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
         let buttonCount = block.components(separatedBy: "Button {").count - 1
         let borderlessCount = block.components(separatedBy: ".buttonStyle(.borderless)").count - 1
-        XCTAssertEqual(buttonCount, 2, "erwartet: 'manuell suchen' + 'online suchen' Button in diesem Zweig")
+        // Task 6 added a third ("eigenes Lebensmittel anlegen") button to this
+        // same shared Form-row VStack, alongside Task 4/5's "manuell suchen"
+        // and "online suchen".
+        XCTAssertEqual(buttonCount, 3, "erwartet: 'manuell suchen' + 'online suchen' + 'eigenes Lebensmittel anlegen' Button in diesem Zweig")
         XCTAssertEqual(borderlessCount, buttonCount, "jeder Button in diesem gemeinsamen Form-Row-VStack braucht .buttonStyle(.borderless), sonst C1-Regression")
+    }
+
+    // MARK: - Task 6: third, network/AI-independent entry point reuses the same AddMealView state
+
+    /// Step 1 (Task 6 brief): the `hasNoCatalogMatch` branch must ALSO offer
+    /// "eigenes Lebensmittel anlegen", prefilled with `candidate.foodText`,
+    /// via the SAME `showingCustomFoodEntry`/`customFoodPrefillName` state
+    /// the always-visible search-section entry point uses (no second,
+    /// divergent sheet-presentation wiring).
+    func testAICandidateNoMatchOffersCustomFoodEntryPrefilledWithFoodText() throws {
+        let source = try contents(of: "Nutrition/AddMealView.swift")
+        guard let noMatchRange = source.range(of: "if candidate.hasNoCatalogMatch {") else {
+            XCTFail("kein `if candidate.hasNoCatalogMatch` Zweig in aiCandidateRow gefunden")
+            return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
+        XCTAssertTrue(block.contains("customFoodPrefillName = candidate.foodText"))
+        XCTAssertTrue(block.contains("showingCustomFoodEntry = true"))
+        XCTAssertTrue(source.contains("\"nutrition.addMeal.customFood.action\""))
     }
 
     /// `OnlineFoodSearchController.search` ist der einzige Ort, der

@@ -45,6 +45,11 @@ public struct AddMealView: View {
     @State private var showingSaveError: Bool = false
     @State private var showingDeleteConfirm: Bool = false
 
+    // Task 6: manuelles Anlegen eines eigenen Lebensmittels — unabhaengig
+    // von Netz/KI (siehe `CustomFoodEntrySheet`/`CustomFoodDraft`).
+    @State private var showingCustomFoodEntry: Bool = false
+    @State private var customFoodPrefillName: String = ""
+
     // Task E: local AI-assisted free-text meal draft parsing.
     @State private var aiInputText: String = ""
     @State private var isExtracting: Bool = false
@@ -160,6 +165,22 @@ public struct AddMealView: View {
                     onCancel: { onlineSearch.dismissPreview() }
                 )
             }
+            // Task 6: manuelles Anlegen — `CustomFoodEntrySheet` persistiert
+            // den `FoodCatalogEntry(source: .userCreated)` bereits selbst
+            // (siehe `CustomFoodDraft.save`); `onSave` routet ihn nur noch
+            // durch denselben `selectEntry` -> `quantityBottomBar`-Pfad.
+            .sheet(isPresented: $showingCustomFoodEntry) {
+                CustomFoodEntrySheet(
+                    prefillName: customFoodPrefillName,
+                    onSave: { entry in
+                        showingCustomFoodEntry = false
+                        selectEntry(entry)
+                    },
+                    onCancel: {
+                        showingCustomFoodEntry = false
+                    }
+                )
+            }
         }
     }
 
@@ -198,6 +219,12 @@ public struct AddMealView: View {
             )
             .autocorrectionDisabled()
             .listRowBackground(Color.Deltiq.surface)
+
+            // Task 6: jederzeit sichtbar — NICHT nur im 0-Treffer-Zweig
+            // darunter (Brief-Vorgabe) — unabhaengig von Netz/KI, deshalb
+            // ausserhalb des `onlineFoodLookupEnabled`-Gates.
+            customFoodButton
+                .listRowBackground(Color.Deltiq.surface)
 
             if filteredEntries.isEmpty {
                 Text("nutrition.addMeal.noResults", bundle: .module)
@@ -264,6 +291,19 @@ public struct AddMealView: View {
             }
         }
         .disabled(onlineSearch.isSearching)
+    }
+
+    /// Task 6: oeffnet `CustomFoodEntrySheet`, vorausgefuellt mit dem
+    /// aktuellen Suchtext (leer, falls noch nichts getippt wurde) — kein
+    /// Netz, keine KI, kein Opt-in noetig (anders als `onlineSearchButton`
+    /// oben, daher auch ausserhalb von dessen `onlineFoodLookupEnabled`-Gate).
+    private var customFoodButton: some View {
+        Button {
+            customFoodPrefillName = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            showingCustomFoodEntry = true
+        } label: {
+            Text("nutrition.addMeal.customFood.action", bundle: .module)
+        }
     }
 
     /// Task E: lokale KI-gestuetzte Freitext-Erfassung. Bei `.unavailable`
@@ -390,6 +430,19 @@ public struct AddMealView: View {
 
                     OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
                 }
+
+                // Task 6: dritter, von Netz/KI unabhaengiger Einstiegspunkt
+                // fuer EXAKT diesen Kandidaten — vorausgefuellt mit
+                // `candidate.foodText`, gleiches `.borderless`-Muster wie die
+                // beiden Buttons darueber in diesem gemeinsamen Form-Row-VStack.
+                Button {
+                    customFoodPrefillName = candidate.foodText
+                    showingCustomFoodEntry = true
+                    removeAICandidate(candidate)
+                } label: {
+                    Text("nutrition.addMeal.customFood.action", bundle: .module)
+                }
+                .buttonStyle(.borderless)
             } else if candidate.isAmbiguous {
                 Text("nutrition.addMeal.aiDraft.ambiguous", bundle: .module)
                     .font(.caption)
