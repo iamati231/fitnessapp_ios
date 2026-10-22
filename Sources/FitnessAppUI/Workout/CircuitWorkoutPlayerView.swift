@@ -211,6 +211,9 @@ struct CircuitPlayerView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-fix: .navigationBarBackButtonHidden(true) also disables the swipe-back
+        // gesture; re-enable it. See deltiqSwipeBackEnabled() in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .onAppear {
             if prerollRemaining > 0 {
                 playPrerollTone(remaining: prerollRemaining, enabled: timerSoundEnabled)

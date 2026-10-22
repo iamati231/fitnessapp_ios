@@ -84,6 +84,9 @@ public struct FourWeekReviewEntryView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-fix: .navigationBarBackButtonHidden(true) also disables the swipe-back
+        // gesture; re-enable it. See deltiqSwipeBackEnabled() in Theme.swift.
+        .deltiqSwipeBackEnabled()
     }
 
     /// Einfache Auswahlliste — jede Zeile ein eigenständiger, gleichartiger
@@ -125,6 +128,9 @@ public struct FourWeekReviewEntryView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-fix: .navigationBarBackButtonHidden(true) also disables the swipe-back
+        // gesture; re-enable it. See deltiqSwipeBackEnabled() in Theme.swift.
+        .deltiqSwipeBackEnabled()
     }
 
     /// Reiner Lesezugriff auf bereits geladene Felder — KEINE Mutation

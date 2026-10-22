@@ -100,6 +100,9 @@ public struct FourWeekReviewView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-fix: .navigationBarBackButtonHidden(true) also disables the swipe-back
+        // gesture; re-enable it. See deltiqSwipeBackEnabled() in Theme.swift.
+        .deltiqSwipeBackEnabled()
         .task { reload() }
         .sheet(item: $comebackAssessment) { assessment in
             ComebackPromptSheet(assessment: assessment) { factor in
