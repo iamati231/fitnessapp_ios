@@ -675,14 +675,45 @@ public struct PlanEditorView: View {
     }
 
     /// UI-Refactor (DeltiqHeader-Muster): Autosave-Screen (siehe
-    /// `ExerciseEditorView`) — kein echter Speicher-Schritt, reines
-    /// "Fertig". Kein Validitaets-Gate auf diesem Screen → kein `isDisabled`.
+    /// `ExerciseEditorView`). Ruft seit dem Plan-Editor-Persistenzbugfix
+    /// `saveAndDismiss()` auf (siehe dortige Dokumentation) — vorher war das
+    /// ein reines "Fertig" ohne eigenen Speicher-Schritt. Kein Validitaets-
+    /// Gate auf diesem Screen → kein `isDisabled`.
     private var saveAction: DeltiqHeaderAction {
         DeltiqHeaderAction(
             systemImage: "checkmark",
             accessibilityLabel: String(localized: "common.done", bundle: .module)
         ) {
+            saveAndDismiss()
+        }
+    }
+
+    /// Bugfix (Plan-Editor-Persistenzbug, derselbe Musterfehler wie beim
+    /// Day-Editor, siehe `DayEditorView.saveAndDismiss()`): `plan` ist
+    /// `@Bindable` und wurde von allen Formular-Feldern (Wochen-Stepper,
+    /// Trainingsort-Picker, Name-Feld, Active-Toggle, Progressions-RIR, ...)
+    /// bereits direkt im Live-Objektgraphen mutiert, BEVOR der Haekchen-Tap
+    /// hier ankommt. `@Bindable` ruft dabei selbst NIE `context.save()` auf
+    /// — die Typ-Doku oben an `DayRow`/dieser View nannte das faelschlich
+    /// "autosaved direkt in SwiftData". Der implizite SwiftData-Autosave ist
+    /// nicht zuverlaessig garantiert, VOR einem direkt anschliessenden
+    /// Kaltstart/App-Kill schon gelaufen zu sein. Ein fehlgeschlagener Save
+    /// dismisst deshalb jetzt NICHT mehr — der User soll nicht glauben,
+    /// seine Aenderung sei gesichert, waehrend sie es nicht ist (sichtbarer
+    /// Fehlerhinweis ueber den bereits bestehenden `showTransientToast`-Pfad
+    /// statt eines irrefuehrenden "Fertig"). Die bereits mutierten Felder
+    /// bleiben dabei unveraendert im Objektgraphen stehen (kein Revert) —
+    /// `isDirty` vergleicht weiterhin gegen `snapshot` und bleibt deshalb
+    /// nach einem fehlgeschlagenen Save korrekt `true`, der Discard-Dialog
+    /// bleibt also intakt. Erneutes Tippen ruft `context.save()` einfach
+    /// nochmal auf demselben, bereits mutierten Objekt auf — ein Update,
+    /// kein Insert, also idempotent (kein Duplikat, kein zweiter Datensatz).
+    private func saveAndDismiss() {
+        do {
+            try modelContext.save()
             dismiss()
+        } catch {
+            showTransientToast(String(localized: "planEditor.save.failed", bundle: .module))
         }
     }
 
@@ -1109,12 +1140,16 @@ private struct DayRow: View {
     }
 }
 
-/// UI-Refactor (Korrektur): `TrainingPlan` ist `@Bindable` und autosaved
-/// direkt in SwiftData. Deckt ALLE Formular-Felder ab (inklusive
-/// `targetEnvironment`/`isActive`) — siehe die Begruendung bei
-/// `PlanEditorView.snapshot`/`revertToSnapshot()`. `internal` statt
-/// `private`, damit gezielte Tests (siehe `Tests/FitnessAppUITests`) die
-/// Capture/Apply-Logik per `@testable import` direkt pruefen koennen.
+/// UI-Refactor (Korrektur): `TrainingPlan` ist `@Bindable` — die Bindings
+/// mutieren den LIVE-Objektgraphen sofort, aber `@Bindable` ruft dabei
+/// selbst NIE `context.save()` auf (siehe `PlanEditorView.saveAndDismiss()`
+/// fuer den Persistenzbugfix, der diese frueher hier stehende, falsche
+/// "autosaved direkt in SwiftData"-Annahme korrigiert hat). Deckt ALLE
+/// Formular-Felder ab (inklusive `targetEnvironment`/`isActive`) — siehe die
+/// Begruendung bei `PlanEditorView.snapshot`/`revertToSnapshot()`.
+/// `internal` statt `private`, damit gezielte Tests (siehe
+/// `Tests/FitnessAppUITests`) die Capture/Apply-Logik per `@testable import`
+/// direkt pruefen koennen.
 @available(iOS 17.0, macOS 14.0, *)
 struct PlanMetaSnapshot: Equatable {
     var customName: String?

@@ -51982,6 +51982,29 @@
         }
       }
     },
+    "planEditor.save.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern fehlgeschlagen. Bitte erneut versuchen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save failed. Please try again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydetme başarısız oldu. Lütfen tekrar deneyin."
+          }
+        }
+      }
+    },
     "plans.delete.blockedActiveSession": {
       "extractionState": "manual",
       "localizations": {
