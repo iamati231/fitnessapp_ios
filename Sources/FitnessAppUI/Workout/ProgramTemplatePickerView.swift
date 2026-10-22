@@ -24,53 +24,59 @@ public struct ProgramTemplatePickerView: View {
 
     public var body: some View {
         NavigationStack {
-            List {
-                // DEL-055: gruppiert per `focus` — z.B. "Hybrid & Athletik"
-                // landet als eigene Section. Ordnung ueber die in
-                // `ProgramTemplates.all` etablierte Display-Reihenfolge.
-                ForEach(groupedTemplates, id: \.focus) { group in
-                    Section {
-                        ForEach(group.templates) { template in
-                            // DEL-037: Tap oeffnet die Preview, kein direktes
-                            // instantiate mehr. Erst nach "Plan uebernehmen"
-                            // in der Preview wird die Tiefkopie erstellt.
-                            NavigationLink {
-                                TemplatePreviewView(
-                                    template: template,
-                                    userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
-                                    goal: profiles.first?.trainingGoal ?? .hybrid,
-                                    experienceTrack: profiles.first?.experienceTrack,
-                                    isEquipmentAssumption: equipmentPlanningContext.isAssumption
-                                ) { selection in
-                                    instantiate(template, selection: selection)
+            VStack(spacing: 0) {
+                // UI-Refactor (DeltiqHeader-Muster fuer Sheets, Task 7
+                // docs/superpowers/sdd/2026-10-22-ui-consistency): ersetzt das
+                // vormals native Cancel-Toolbar. Reine Auswahl-Liste ohne
+                // Entwurfszustand — der Chevron schliesst deshalb immer sofort,
+                // kein Discard-Dialog noetig (unveraenderte Abbrechen-Semantik).
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
+                    title: String(localized: "picker.plan.title", bundle: .module),
+                    onBack: { dismiss() }
+                )
+                List {
+                    // DEL-055: gruppiert per `focus` — z.B. "Hybrid & Athletik"
+                    // landet als eigene Section. Ordnung ueber die in
+                    // `ProgramTemplates.all` etablierte Display-Reihenfolge.
+                    ForEach(groupedTemplates, id: \.focus) { group in
+                        Section {
+                            ForEach(group.templates) { template in
+                                // DEL-037: Tap oeffnet die Preview, kein direktes
+                                // instantiate mehr. Erst nach "Plan uebernehmen"
+                                // in der Preview wird die Tiefkopie erstellt.
+                                NavigationLink {
+                                    TemplatePreviewView(
+                                        template: template,
+                                        userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
+                                        goal: profiles.first?.trainingGoal ?? .hybrid,
+                                        experienceTrack: profiles.first?.experienceTrack,
+                                        isEquipmentAssumption: equipmentPlanningContext.isAssumption
+                                    ) { selection in
+                                        instantiate(template, selection: selection)
+                                    }
+                                } label: {
+                                    ProgramRow(template: template)
                                 }
-                            } label: {
-                                ProgramRow(template: template)
                             }
+                        } header: {
+                            Text(group.focus)
                         }
-                    } header: {
-                        Text(group.focus)
                     }
-                }
 
-                Section {
-                    EmptyView()
-                } footer: {
-                    Text(String(format: String(localized: "picker.plan.filterFootnote", bundle: .module), userEnvironmentLabel))
-                        .font(.footnote)
-                }
-            }
-            .navigationTitle(Text("picker.plan.title", bundle: .module))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Text("common.cancel", bundle: .module)
+                    Section {
+                        EmptyView()
+                    } footer: {
+                        Text(String(format: String(localized: "picker.plan.filterFootnote", bundle: .module), userEnvironmentLabel))
+                            .font(.footnote)
                     }
                 }
             }
+            .background(Color.Deltiq.background.ignoresSafeArea())
+            #if os(iOS)
+            .toolbar(.hidden, for: .navigationBar)
+            #endif
+            .navigationBarBackButtonHidden(true)
         }
     }
 

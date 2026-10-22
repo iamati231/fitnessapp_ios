@@ -42,29 +42,49 @@ public struct DayPickerSheet: View {
         self._selected = State(initialValue: Set(initialSelection))
     }
 
+    /// UI-Refactor (DeltiqHeader-Muster, Task 7 docs/superpowers/sdd/2026-10-22-ui-consistency):
+    /// reine Auswahl ohne Entwurfszustand — "etwas zu verlieren" liegt vor,
+    /// sobald der User von der Vorbelegung abgewichen ist (gleiches Prinzip
+    /// wie `PlanBuilderView.isDirty`).
+    private var isDirty: Bool {
+        selected != Set(initialSelection)
+    }
+
+    @State private var showingDiscardConfirm = false
+
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    headerSection
-                    dayGrid
-                    actionButton
+            VStack(spacing: 0) {
+                // UI-Refactor (DeltiqHeader-Muster fuer Sheets): ersetzt das
+                // vormals native Cancel-Toolbar. `onCancel` bleibt die
+                // unveraenderte Abbrechen-Aktion des Aufrufers.
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
+                    title: String(localized: "dayPicker.title", bundle: .module),
+                    onBack: { isDirty ? (showingDiscardConfirm = true) : onCancel() }
+                )
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        headerSection
+                        dayGrid
+                        actionButton
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
             }
             .background(Color.Deltiq.background.ignoresSafeArea())
-            .navigationTitle(Text("dayPicker.title", bundle: .module))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(action: onCancel) {
-                        Text("common.cancel", bundle: .module)
-                    }
-                }
+            .navigationBarBackButtonHidden(true)
+            .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+                onCancel()
             }
+            // UI-Refactor: interaktives Wegziehen des Sheets ist sonst ein
+            // ungesicherter Verlassen-Weg am Discard-Dialog vorbei. Ohne
+            // abweichende Auswahl (`!isDirty`) bleibt es normal moeglich.
+            .interactiveDismissDisabled(isDirty)
         }
     }
 

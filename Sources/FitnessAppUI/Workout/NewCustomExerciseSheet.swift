@@ -38,12 +38,21 @@ struct NewCustomExerciseSheet: View {
     @State private var primaryMuscle: MuscleGroup = .chest
     @State private var equipment: Equipment = .bodyweight
     @State private var isCompound: Bool = false
+    /// UI-Refactor (DeltiqHeader-Muster, Task 7 docs/superpowers/sdd/2026-10-22-ui-consistency):
+    /// siehe `ExerciseLibraryEditorSheet`/`BodyDataEditorView` fuer dasselbe Muster.
+    @State private var showingDiscardConfirm = false
+
+    /// Name beim Oeffnen (vorausgefuellt aus dem Picker-Suchtext) — Referenz
+    /// fuer `isDirty`, damit ein unveraenderter Vorbelegungs-Name nicht faelschlich
+    /// als "etwas zu verlieren" gilt.
+    private let initialTrimmedName: String
 
     /// Liefert den fertigen Draft, wenn der User "Hinzufuegen" tippt.
     let onCommit: (CustomExerciseDraft) -> Void
 
     init(initialName: String, onCommit: @escaping (CustomExerciseDraft) -> Void) {
         _name = State(initialValue: initialName)
+        self.initialTrimmedName = initialName.trimmingCharacters(in: .whitespacesAndNewlines)
         self.onCommit = onCommit
     }
 
@@ -51,78 +60,103 @@ struct NewCustomExerciseSheet: View {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// UI-Refactor (DeltiqHeader-Muster): Chevron fragt nur nach, wenn der
+    /// User den Vorbelegungs-Namen oder einen der Metadaten-Defaults
+    /// tatsaechlich geaendert hat (gleiches Prinzip wie
+    /// `ExerciseLibraryEditorSheet.isDirty` im Create-Modus).
+    private var isDirty: Bool {
+        trimmedName != initialTrimmedName
+            || primaryMuscle != .chest
+            || equipment != .bodyweight
+            || isCompound != false
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField(
-                        String(localized: "picker.exercise.namePlaceholder", bundle: .module),
-                        text: $name
-                    )
-                    .listRowBackground(Color.Deltiq.surface)
-                } header: {
-                    Text("customExercise.section.name", bundle: .module)
-                }
-                .listRowSeparatorTint(Color.Deltiq.divider)
-
-                Section {
-                    Picker(selection: $primaryMuscle) {
-                        ForEach(MuscleGroup.allCases, id: \.self) { muscle in
-                            Text(muscle.localizedName).tag(muscle)
+            VStack(spacing: 0) {
+                // UI-Refactor (DeltiqHeader-Muster fuer Editoren): ersetzt das
+                // vormals native Cancel/Hinzufuegen-Toolbar. Das
+                // `isDisabled: trimmedName.isEmpty`-Gate des bisherigen
+                // "Hinzufuegen"-Buttons wandert unveraendert in die neue
+                // `DeltiqHeaderAction`.
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
+                    title: String(localized: "customExercise.title", bundle: .module),
+                    onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                    actions: [
+                        DeltiqHeaderAction(
+                            systemImage: "checkmark",
+                            isDisabled: trimmedName.isEmpty,
+                            accessibilityLabel: String(localized: "customExercise.add", bundle: .module)
+                        ) {
+                            onCommit(CustomExerciseDraft(
+                                name: trimmedName,
+                                primaryMuscle: primaryMuscle,
+                                equipment: equipment,
+                                isCompound: isCompound
+                            ))
+                            dismiss()
                         }
-                    } label: {
-                        Text("customExercise.field.muscle", bundle: .module)
+                    ]
+                )
+                Form {
+                    Section {
+                        TextField(
+                            String(localized: "picker.exercise.namePlaceholder", bundle: .module),
+                            text: $name
+                        )
+                        .listRowBackground(Color.Deltiq.surface)
+                    } header: {
+                        Text("customExercise.section.name", bundle: .module)
                     }
-                    .listRowBackground(Color.Deltiq.surface)
+                    .listRowSeparatorTint(Color.Deltiq.divider)
 
-                    Picker(selection: $equipment) {
-                        ForEach(Equipment.allCases, id: \.self) { equip in
-                            Text(equip.localizedName).tag(equip)
+                    Section {
+                        Picker(selection: $primaryMuscle) {
+                            ForEach(MuscleGroup.allCases, id: \.self) { muscle in
+                                Text(muscle.localizedName).tag(muscle)
+                            }
+                        } label: {
+                            Text("customExercise.field.muscle", bundle: .module)
                         }
-                    } label: {
-                        Text("customExercise.field.equipment", bundle: .module)
-                    }
-                    .listRowBackground(Color.Deltiq.surface)
+                        .listRowBackground(Color.Deltiq.surface)
 
-                    Toggle(isOn: $isCompound) {
-                        Text("customExercise.field.compound", bundle: .module)
+                        Picker(selection: $equipment) {
+                            ForEach(Equipment.allCases, id: \.self) { equip in
+                                Text(equip.localizedName).tag(equip)
+                            }
+                        } label: {
+                            Text("customExercise.field.equipment", bundle: .module)
+                        }
+                        .listRowBackground(Color.Deltiq.surface)
+
+                        Toggle(isOn: $isCompound) {
+                            Text("customExercise.field.compound", bundle: .module)
+                        }
+                        .tint(Color.deltiqOrange)
+                        .listRowBackground(Color.Deltiq.surface)
+                    } header: {
+                        Text("customExercise.section.metadata", bundle: .module)
+                    } footer: {
+                        Text("customExercise.section.metadataFooter", bundle: .module)
                     }
-                    .tint(Color.deltiqOrange)
-                    .listRowBackground(Color.Deltiq.surface)
-                } header: {
-                    Text("customExercise.section.metadata", bundle: .module)
-                } footer: {
-                    Text("customExercise.section.metadataFooter", bundle: .module)
+                    .listRowSeparatorTint(Color.Deltiq.divider)
                 }
-                .listRowSeparatorTint(Color.Deltiq.divider)
+                .scrollContentBackground(.hidden)
             }
-            .scrollContentBackground(.hidden)
             .background(Color.Deltiq.background.ignoresSafeArea())
-            .navigationTitle(Text("customExercise.title", bundle: .module))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Text("common.cancel", bundle: .module)
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        onCommit(CustomExerciseDraft(
-                            name: trimmedName,
-                            primaryMuscle: primaryMuscle,
-                            equipment: equipment,
-                            isCompound: isCompound
-                        ))
-                        dismiss()
-                    } label: {
-                        Text("customExercise.add", bundle: .module)
-                    }
-                    .disabled(trimmedName.isEmpty)
-                }
+            .navigationBarBackButtonHidden(true)
+            .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+                dismiss()
             }
+            // UI-Refactor (gleiches Prinzip wie ExerciseLibraryEditorSheet):
+            // interaktives Wegziehen des Sheets ist sonst ein ungesicherter
+            // Verlassen-Weg am Discard-Dialog vorbei. Ohne Aenderungen
+            // (`!isDirty`) bleibt es normal moeglich.
+            .interactiveDismissDisabled(isDirty)
         }
     }
 }
