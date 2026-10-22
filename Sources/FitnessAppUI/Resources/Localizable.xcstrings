@@ -1865,29 +1865,6 @@
         }
       }
     },
-    "tab.tools": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tools"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Werkzeuge"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Araçlar"
-          }
-        }
-      }
-    },
     "tab.more": {
       "extractionState": "manual",
       "localizations": {
@@ -21066,6 +21043,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Yardım & Bilgi"
+          }
+        }
+      }
+    },
+    "settings.group.tools": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Werkzeuge"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tools"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Araçlar"
           }
         }
       }

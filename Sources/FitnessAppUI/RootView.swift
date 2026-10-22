@@ -324,8 +324,19 @@ struct MainTabView: View {
             }
             .tag(AppTab.measurement)
 
-            NavigationStack {
+            // main-navigation Plan, 2026-10-22, Task 3: path-bound auf
+            // `toolsPath`, damit der Wassertracker-Deep-Link weiterhin per
+            // einem einzigen Pfad-Push bis zum WaterTracker durchreicht —
+            // jetzt eine Ebene tiefer, da CalculatorsView nicht mehr die
+            // Stack-Wurzel ist, sondern unter SettingsView haengt.
+            NavigationStack(path: $navigation.toolsPath) {
                 SettingsView()
+                    .navigationDestination(for: CalculatorsRoute.self) { route in
+                        switch route {
+                        case .waterTracker:
+                            WaterTrackerView()
+                        }
+                    }
             }
             .tabItem {
                 Label {
@@ -352,13 +363,17 @@ struct MainTabView: View {
         guard let route = notificationRouter.consumePendingRoute() else { return }
         switch route {
         case .waterTracker:
-            // main-navigation Plan, 2026-10-22, Task 1: der Werkzeuge-Tab
-            // (`.tools`) ist mit diesem Task entfallen, CalculatorsView zieht
-            // laut Plan in Task 3 eine Ebene tief unter "Mehr". Bis dahin
-            // landet der Deep-Link nur auf der Mehr-Tab-Wurzel statt direkt
-            // im WaterTracker — der echte Ein-Tap-Sprung ist explizit Task 3s
-            // Aufgabe (neue Navigation-Path-Entscheidung dort noetig).
+            // main-navigation Plan, 2026-10-22, Task 3: CalculatorsView haengt
+            // jetzt eine Ebene tief unter "Mehr" statt einer eigenen Tab-
+            // Wurzel. Reset + Push auf `toolsPath` (gebunden an die Settings-
+            // NavigationStack) landet ueber die oben registrierte
+            // `navigationDestination(for: CalculatorsRoute.self)` weiterhin
+            // in einem einzigen Schritt direkt im WaterTracker, ohne
+            // CalculatorsView sichtbar zu durchlaufen — derselbe Ein-Tap-
+            // Sprung wie vor dem Werkzeuge-Tab (Nachtrag 6. August).
             navigation.selectedTab = .settings
+            navigation.toolsPath = NavigationPath()
+            navigation.toolsPath.append(CalculatorsRoute.waterTracker)
         case .measurement:
             navigation.selectedTab = .measurement
         }

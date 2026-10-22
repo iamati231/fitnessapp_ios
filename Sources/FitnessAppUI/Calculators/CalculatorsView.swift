@@ -4,12 +4,14 @@ import SwiftUI
 /// Hub for the utility calculators. Pure dispatcher — each row pushes onto the same
 /// NavigationStack so the user gets the standard back-swipe affordance.
 ///
-/// Nachtrag 6. August (README.md, "der Start-Tab weicht den Werkzeugen"):
-/// Wurzel des vierten Tabs ("Werkzeuge") statt eine Ebene tief unter "Mehr"
-/// gepusht — daher kein `onBack`/`dismiss()` mehr, eine Tab-Wurzel hat
-/// nichts zum Zurueckspringen.
+/// main-navigation Plan, 2026-10-22, Task 3: zieht vom entfallenen
+/// Werkzeuge-Tab eine Ebene tief unter "Mehr" (`SettingsView`) ein — analog
+/// zum Vor-6.-August-Stand. Braucht deshalb wieder `onBack`/`dismiss()` und
+/// die Swipe-Back-Geste (siehe `ExerciseLibraryView` fuer dasselbe Muster).
 @available(iOS 17.0, macOS 14.0, *)
 public struct CalculatorsView: View {
+
+    @Environment(\.dismiss) private var dismiss
 
     /// Handoff 2.3: der Footer-Text "Alle Rechner arbeiten mit deiner
     /// eingestellten Einheit" wird zur Kontextzeile. Der Vorschlag "EINHEIT:
@@ -24,8 +26,9 @@ public struct CalculatorsView: View {
     public var body: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
-                eyebrow: String(localized: "tab.tools", bundle: .module).uppercased(),
-                title: String(localized: "calc.index.title", bundle: .module)
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "calc.index.title", bundle: .module),
+                onBack: { dismiss() }
             )
 
             VStack(alignment: .leading, spacing: 18) {
@@ -82,6 +85,10 @@ public struct CalculatorsView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
+        // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
+        // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
+        .deltiqSwipeBackEnabled()
     }
 }
 

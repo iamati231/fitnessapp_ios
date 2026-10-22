@@ -17,11 +17,12 @@ public final class AppNavigation {
     public var selectedTab: AppTab = .dashboard
     public var workoutPath = NavigationPath()
 
-    /// DEL-212, angepasst fuers Signature-Screen-Geruest (Nachtrag 6. August:
-    /// "Werkzeuge"-Tab statt "Start"): NavigationPath des vierten Tabs
-    /// (`CalculatorsView` als Wurzel). Erlaubt den Deep-Push aus der
-    /// Wasser-Erinnerungs-Notification direkt bis zum WaterTracker, ohne den
-    /// User nur auf dem Tab abzusetzen.
+    /// DEL-212, main-navigation Plan Task 3 (2026-10-22): NavigationPath der
+    /// Settings-("Mehr")-Tab-NavigationStack, unter der `CalculatorsView`
+    /// jetzt eine Ebene tief haengt (statt einer eigenen Tab-Wurzel vor
+    /// diesem Task). Erlaubt den Deep-Push aus der Wasser-Erinnerungs-
+    /// Notification direkt bis zum WaterTracker, ohne den User nur auf dem
+    /// Tab abzusetzen.
     public var toolsPath = NavigationPath()
 
     public init() {}
@@ -35,11 +36,13 @@ public final class AppNavigation {
 }
 
 /// DEL-212: Push-Route fuer den Wassertracker-Deep-Link. Der normale,
-/// getippte Weg (Werkzeuge → Wassertracker) laeuft ueber eine gewoehnliche
-/// `NavigationLink(destination:)`-Push in `CalculatorsView` und braucht
-/// diesen Typ nicht — er existiert nur fuer den programmatischen
+/// getippte Weg (Mehr → Werkzeuge → Wassertracker) laeuft ueber gewoehnliche
+/// `NavigationLink(destination:)`-Pushes in `SettingsView`/`CalculatorsView`
+/// und braucht diesen Typ nicht — er existiert nur fuer den programmatischen
 /// Ein-Tap-Sprung aus der lokalen Erinnerungs-Notification, aufgeloest
-/// von der `navigationDestination(for:)`-Registrierung in RootView.
+/// von der `navigationDestination(for:)`-Registrierung in RootView
+/// (auf der Settings-NavigationStack, parallel zur getippten CalculatorsView-
+/// Ebene — beide Wege landen in derselben `WaterTrackerView`).
 @available(iOS 17.0, macOS 14.0, *)
 public enum CalculatorsRoute: Hashable, Sendable {
     case waterTracker

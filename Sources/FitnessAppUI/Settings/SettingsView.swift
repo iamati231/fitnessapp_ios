@@ -187,6 +187,19 @@ public struct SettingsView: View {
                 DeltiqRow(
                     icon: "questionmark.circle",
                     label: String(localized: "settings.group.helpInfo", bundle: .module),
+                    showsChevron: true
+                )
+            }
+            // main-navigation Plan, 2026-10-22, Task 3: CalculatorsView zieht
+            // vom entfallenen Werkzeuge-Tab eine Ebene tief unter "Mehr" ein,
+            // gleiches NavigationLink+DeltiqRow-Muster wie die 4 Eintraege
+            // oben.
+            NavigationLink {
+                CalculatorsView()
+            } label: {
+                DeltiqRow(
+                    icon: "wrench.and.screwdriver",
+                    label: String(localized: "settings.group.tools", bundle: .module),
                     showsChevron: true,
                     showsDivider: false
                 )
