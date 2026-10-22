@@ -1779,19 +1779,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dashboard"
+            "value": "Today"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dashboard"
+            "value": "Heute"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Panel"
+            "value": "Bugün"
           }
         }
       }
@@ -1802,19 +1802,42 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plan"
+            "value": "Training"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plan"
+            "value": "Training"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plan"
+            "value": "Antrenman"
+          }
+        }
+      }
+    },
+    "tab.nutrition": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutrition"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ernährung"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beslenme"
           }
         }
       }
@@ -1825,19 +1848,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Measurement"
+            "value": "Progress"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Messung"
+            "value": "Fortschritt"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ölçüm"
+            "value": "İlerleme"
           }
         }
       }

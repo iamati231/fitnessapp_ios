@@ -75,14 +75,28 @@ public struct NutritionDayView: View {
     @State private var insightText: String?
     @State private var isGeneratingInsight = false
 
-    public init() {}
+    /// main-navigation Plan, 2026-10-22, Task 1: seit diesem Tab-Root-Einsatz
+    /// braucht der Screen zwei Modi, analog zu `MeasurementView.isEditMode`
+    /// (Tab-Root -> kein Zurueck-Chevron, der sonst nichts taete). `false`
+    /// bleibt der Default fuer den bestehenden Dashboard-Push
+    /// (`NavigationLink { NutritionDayView() }`).
+    private let isTabRoot: Bool
+
+    public init(isTabRoot: Bool = false) {
+        self.isTabRoot = isTabRoot
+    }
 
     public var body: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
-                eyebrow: String(localized: "calc.index.title", bundle: .module).uppercased(),
+                // main-navigation Plan, 2026-10-22, Task 1: Ernaehrung ist
+                // jetzt ein eigener Tab, kein Calculators-Unterpunkt mehr -
+                // die Eyebrow muss das eigene Tab-Label zeigen, nicht
+                // "Rechner" (selbe Konvention wie CalculatorsView, deren
+                // Eyebrow ebenfalls der eigene Tab-Name ist).
+                eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
                 title: String(localized: "nutrition.day.title", bundle: .module),
-                onBack: { dismiss() },
+                onBack: isTabRoot ? nil : { dismiss() },
                 actions: [
                     DeltiqHeaderAction(
                         systemImage: "plus",

@@ -258,10 +258,9 @@ public struct RootView: View {
     }
 }
 
-/// Top-level container for the post-onboarding flow. Tab order (Signature-
-/// Geruest, Nachtrag 6. August: "der Start-Tab weicht den Werkzeugen"):
-/// Dashboard → Plan → Messung → Werkzeuge → Mehr. Cross-tab navigation runs
-/// through `AppNavigation`.
+/// Top-level container for the post-onboarding flow. Tab order (main-
+/// navigation Plan, 2026-10-22, Task 1): Heute → Training → Ernaehrung →
+/// Fortschritt → Mehr. Cross-tab navigation runs through `AppNavigation`.
 @available(iOS 17.0, macOS 14.0, *)
 struct MainTabView: View {
     @Environment(AppNavigation.self) private var navigation
@@ -298,6 +297,21 @@ struct MainTabView: View {
                 }
                 .tag(AppTab.plan)
 
+            // main-navigation Plan, 2026-10-22, Task 1: eigener Ernaehrungs-
+            // Tab zwischen Training und Fortschritt, statt nur ueber die
+            // Dashboard-Kachel erreichbar zu sein.
+            NavigationStack {
+                NutritionDayView(isTabRoot: true)
+            }
+            .tabItem {
+                Label {
+                    Text("tab.nutrition", bundle: .module)
+                } icon: {
+                    Image(systemName: "fork.knife")
+                }
+            }
+            .tag(AppTab.nutrition)
+
             NavigationStack {
                 MeasurementView()
             }
@@ -309,31 +323,6 @@ struct MainTabView: View {
                 }
             }
             .tag(AppTab.measurement)
-
-            // Nachtrag 6. August (README.md, "der Start-Tab weicht den
-            // Werkzeugen"): Rechner bekommt den frei gewordenen Platz 4
-            // zurueck, mit eigenem NavigationStack/Path statt einer Ebene
-            // tief unter "Mehr". Label "Werkzeuge" statt "Rechner", weil der
-            // Wassertracker misst statt rechnet. Die Wasser-Erinnerungs-
-            // Notification pusht darueber weiterhin direkt bis zum
-            // WaterTracker, jetzt nur noch eine Ebene statt zwei.
-            NavigationStack(path: $navigation.toolsPath) {
-                CalculatorsView()
-                    .navigationDestination(for: CalculatorsRoute.self) { route in
-                        switch route {
-                        case .waterTracker:
-                            WaterTrackerView()
-                        }
-                    }
-            }
-            .tabItem {
-                Label {
-                    Text("tab.tools", bundle: .module)
-                } icon: {
-                    Image(systemName: "square.grid.2x2")
-                }
-            }
-            .tag(AppTab.tools)
 
             NavigationStack {
                 SettingsView()
@@ -363,11 +352,13 @@ struct MainTabView: View {
         guard let route = notificationRouter.consumePendingRoute() else { return }
         switch route {
         case .waterTracker:
-            // DEL-212: Tab-Swap + Deep-Push direkt in den WaterTracker.
-            // Path wird ersetzt (nicht appended), damit wiederholte Taps
-            // keinen Stack aus mehreren Tracker-Screens aufbauen.
-            navigation.selectedTab = .tools
-            navigation.toolsPath = NavigationPath([CalculatorsRoute.waterTracker])
+            // main-navigation Plan, 2026-10-22, Task 1: der Werkzeuge-Tab
+            // (`.tools`) ist mit diesem Task entfallen, CalculatorsView zieht
+            // laut Plan in Task 3 eine Ebene tief unter "Mehr". Bis dahin
+            // landet der Deep-Link nur auf der Mehr-Tab-Wurzel statt direkt
+            // im WaterTracker — der echte Ein-Tap-Sprung ist explizit Task 3s
+            // Aufgabe (neue Navigation-Path-Entscheidung dort noetig).
+            navigation.selectedTab = .settings
         case .measurement:
             navigation.selectedTab = .measurement
         }

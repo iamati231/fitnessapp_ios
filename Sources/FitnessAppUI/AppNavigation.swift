@@ -45,20 +45,17 @@ public enum CalculatorsRoute: Hashable, Sendable {
     case waterTracker
 }
 
-/// Fuenf Tabs (Signature-Screen-Geruest, Nachtrag 6. August: "der Start-Tab
-/// weicht den Werkzeugen"): der vorherige `start`-Tab war die einzige
-/// Tab-"Aktion" statt eines Ziels — dieselbe Aktion liegt bereits als
-/// Hauptknopf auf dem Dashboard und als Banner in der Plan-Liste, ein
-/// eigenes Tab-Symbol dafuer war redundant. Der frei gewordene Platz geht
-/// an `tools` (Label "Werkzeuge", nicht "Rechner" — der Wassertracker misst
-/// nur, rechnet nichts): `CalculatorsView` als eigene Tab-Wurzel mit
-/// eigenem `NavigationStack`, statt eine Ebene tief unter "Mehr" zu haengen.
+/// Fuenf Tabs (main-navigation Plan, 2026-10-22, Task 1): Heute/Training/
+/// Ernaehrung/Fortschritt/Mehr. Ablauf der vorherigen Werkzeuge-Tab-Aera
+/// (Signature-Screen-Geruest, Nachtrag 6. August) — `tools` weicht einem
+/// eigenen Ernaehrungs-Tab; `CalculatorsView` zieht laut Plan in Task 3 eine
+/// Ebene tief unter "Mehr" (Settings), analog zum alten Vor-6.-August-Stand.
 @available(iOS 17.0, macOS 14.0, *)
 public enum AppTab: Hashable, Sendable {
     case dashboard
     case plan
+    case nutrition
     case measurement
-    case tools
     case settings
 }
 
