@@ -64,6 +64,17 @@ public struct AddMealView: View {
     @StateObject private var onlineSearch = OnlineFoodSearchController(
         searcher: OpenFoodFactsSearchClient(userAgent: "Deltiq/1.0 (a.isik@atamya.com)")
     )
+    /// Final-review fix (important): `onlineSearch` is ONE shared controller
+    /// for both entry points (manual search + any unmatched AI candidate),
+    /// so its `candidates`/`errorMessage`/`isSearching` alone can't say WHICH
+    /// row started the running/last search. This tracks that, so the
+    /// results list/error/spinner render under exactly one row instead of
+    /// every unmatched candidate (and the manual section) at once.
+    private enum OnlineSearchOrigin: Equatable {
+        case manual
+        case aiCandidate(MealDraftCandidate)
+    }
+    @State private var onlineSearchOrigin: OnlineSearchOrigin?
 
     public init(date: Date = Date(), mealType: MealType = .snack) {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
@@ -241,14 +252,20 @@ public struct AddMealView: View {
                     onlineSearchButton
                         .listRowBackground(Color.Deltiq.surface)
 
-                    if let message = onlineSearch.errorMessage {
-                        Text(message)
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                            .listRowBackground(Color.Deltiq.surface)
-                    }
+                    // I1 fix: only render this search's own results/error
+                    // here when THIS (manual) entry point actually started
+                    // it — otherwise an AI candidate's active search would
+                    // also show up here.
+                    if onlineSearchOrigin == .manual {
+                        if let message = onlineSearch.errorMessage {
+                            Text(message)
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                                .listRowBackground(Color.Deltiq.surface)
+                        }
 
-                    OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+                        OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+                    }
                 }
             } else {
                 // DEL-Picker-Muster (siehe ExerciseLibraryView.filtered):
@@ -280,10 +297,10 @@ public struct AddMealView: View {
     /// `aiSection`'s Extraktions-Button).
     private var onlineSearchButton: some View {
         Button {
-            runOnlineSearch()
+            runOnlineSearch(origin: .manual)
         } label: {
             HStack {
-                if onlineSearch.isSearching {
+                if onlineSearch.isSearching && onlineSearchOrigin == .manual {
                     ProgressView()
                         .controlSize(.small)
                 }
@@ -409,10 +426,10 @@ public struct AddMealView: View {
                 // `foodText` instead of the manual search field.
                 if onlineFoodLookupEnabled {
                     Button {
-                        runOnlineSearch(query: candidate.foodText)
+                        runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)
                     } label: {
                         HStack {
-                            if onlineSearch.isSearching {
+                            if onlineSearch.isSearching && onlineSearchOrigin == .aiCandidate(candidate) {
                                 ProgressView()
                                     .controlSize(.small)
                             }
@@ -422,13 +439,20 @@ public struct AddMealView: View {
                     .buttonStyle(.borderless)
                     .disabled(onlineSearch.isSearching)
 
-                    if let message = onlineSearch.errorMessage {
-                        Text(message)
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                    }
+                    // I1 fix: with several unmatched candidates sharing this
+                    // one controller, only render THIS candidate's results/
+                    // error under THIS row — never under every unmatched
+                    // candidate, and never here while the manual search
+                    // entry point is the one active.
+                    if onlineSearchOrigin == .aiCandidate(candidate) {
+                        if let message = onlineSearch.errorMessage {
+                            Text(message)
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
 
-                    OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+                        OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+                    }
                 }
 
                 // Task 6: dritter, von Netz/KI unabhaengiger Einstiegspunkt
@@ -739,9 +763,14 @@ public struct AddMealView: View {
     /// own `candidates`/`errorMessage` at the start of every call, so a new
     /// search from either entry point can never show the OTHER entry
     /// point's stale results.
-    private func runOnlineSearch(query rawQuery: String? = nil) {
+    ///
+    /// Final-review fix (important): `origin` records WHICH row started this
+    /// search, so the shared `onlineSearch` state only ever renders under
+    /// that one row (see `searchSection`/`aiCandidateRow`).
+    private func runOnlineSearch(origin: OnlineSearchOrigin, query rawQuery: String? = nil) {
         let query = (rawQuery ?? searchText).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return }
+        onlineSearchOrigin = origin
         Task { @MainActor in
             await onlineSearch.search(query: query, locale: locale, errorText: onlineSearchErrorText)
         }
@@ -760,10 +789,18 @@ public struct AddMealView: View {
 
     /// Confirm in `OnlineFoodCandidatePreviewSheet`: creates exactly ONE
     /// `FoodCatalogEntry` (`source == .onlineImported`) and routes it into
-    /// the SAME `selectEntry` -> `quantityBottomBar` -> `addSelectedEntry` ->
-    /// `draft.addItem` path a manual/AI catalog pick already uses — no new
-    /// persistence logic, no quantity guessed here (brief: no quantity field
-    /// in the preview sheet, the existing bottom bar still asks for it).
+    /// the SAME `selectEntry`/`applyAICandidate` -> `quantityBottomBar` ->
+    /// `addSelectedEntry` -> `draft.addItem` path a manual/AI catalog pick
+    /// already uses — no new persistence logic.
+    ///
+    /// Final-review fix (important): when this import originated from an
+    /// unmatched AI candidate (`onlineSearchOrigin == .aiCandidate`), it must
+    /// be removed from `aiCandidates` on success — same as its sibling
+    /// "manuell suchen"/"eigenes Lebensmittel anlegen" buttons already do —
+    /// and its extracted quantity/unit must carry over instead of being
+    /// dropped to `nil`, exactly like `applyAICandidate` already does for a
+    /// normal catalog match. Reusing `applyAICandidate` itself (instead of
+    /// duplicating that carry-over logic here) guarantees both.
     private func confirmOnlineImport(_ values: OnlineFoodImportValues) {
         let entry = FoodCatalogEntry(
             displayName: values.name,
@@ -775,9 +812,16 @@ public struct AddMealView: View {
             fatPer100g: values.fatPer100g
         )
         modelContext.insert(entry)
+        let origin = onlineSearchOrigin
         onlineSearch.dismissPreview()
         onlineSearch.reset()
-        selectEntry(entry)
+        onlineSearchOrigin = nil
+
+        if case .aiCandidate(let candidate) = origin {
+            applyAICandidate(candidate, entry: entry)
+        } else {
+            selectEntry(entry)
+        }
     }
 
     private func saveMeal() {

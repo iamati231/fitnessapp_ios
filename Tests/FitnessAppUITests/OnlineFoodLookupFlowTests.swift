@@ -171,13 +171,13 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         // Komposition aus denselben public APIs, keine neue Persistenz-
         // Logik): FoodCatalogEntry(displayName:source:...) -> insert ->
         // NutritionCalculations.nutrients(for:quantity:unit:) -> draft.addItem.
-        let values = OnlineFoodImportValues(
+        let values = try XCTUnwrap(OnlineFoodImportValues(
             name: "Nutella",
             kcalPer100g: 539,
             proteinPer100g: 6.3,
             carbsPer100g: 57.5,
             fatPer100g: 30.9
-        )
+        ))
 
         let entry = FoodCatalogEntry(
             displayName: values.name,
@@ -228,8 +228,10 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         // Gleicher Gate-Key wie Task 4 (kein eigener/divergenter Toggle).
         XCTAssertTrue(block.contains("if onlineFoodLookupEnabled {"))
         // Vorausgefuellt mit `foodText`, ueber dieselbe (nicht duplizierte)
-        // `runOnlineSearch`-Funktion wie der manuelle Einstiegspunkt.
-        XCTAssertTrue(block.contains("runOnlineSearch(query: candidate.foodText)"))
+        // `runOnlineSearch`-Funktion wie der manuelle Einstiegspunkt (jetzt
+        // mit `origin:`, siehe Final-Review-Fix I1 — trackt, WELCHE Zeile die
+        // Suche gestartet hat).
+        XCTAssertTrue(block.contains("runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)"))
         // Wiederverwendet Task 4's Trefferlisten-/Fehler-Komponenten 1:1,
         // keine zweite, abweichende Implementierung.
         XCTAssertTrue(block.contains("OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)"))
@@ -304,6 +306,100 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         // vom vorherigen Aufruf uebernommen.
         XCTAssertNil(successController.errorMessage)
         XCTAssertEqual(successController.candidates.count, 3)
+    }
+
+    // MARK: - Final-review fix (C1): missing nutrients must never be fabricated as 0
+
+    /// A candidate with kcal present but protein/carbs/fat missing must not
+    /// be constructible as `OnlineFoodImportValues` at all — the only path
+    /// `OnlineFoodCandidatePreviewSheet.confirm()` has to create one, and the
+    /// same condition gates its "Add" button's `.disabled`. No
+    /// `FoodCatalogEntry` can come from a `nil` result.
+    func testPartialCandidateCannotBeConfirmedAndCreatesNothing() throws {
+        let values = OnlineFoodImportValues(
+            name: "Teilprodukt",
+            kcalPer100g: 100,
+            proteinPer100g: nil,
+            carbsPer100g: nil,
+            fatPer100g: nil
+        )
+        XCTAssertNil(values, "fehlende Makros duerfen nicht als 0 bestaetigbar sein")
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<FoodCatalogEntry>()), 0)
+    }
+
+    func testNegativeMacroCandidateCannotBeConfirmed() {
+        let values = OnlineFoodImportValues(
+            name: "Teilprodukt",
+            kcalPer100g: 100,
+            proteinPer100g: -1,
+            carbsPer100g: 5,
+            fatPer100g: 2
+        )
+        XCTAssertNil(values, "ein negativer Makrowert darf nicht bestaetigbar sein")
+    }
+
+    func testBlankNameCandidateCannotBeConfirmed() {
+        let values = OnlineFoodImportValues(
+            name: "   ",
+            kcalPer100g: 100,
+            proteinPer100g: 1,
+            carbsPer100g: 5,
+            fatPer100g: 2
+        )
+        XCTAssertNil(values, "ein leerer Name darf nicht bestaetigbar sein")
+    }
+
+    // MARK: - Final-review fix (I1): online-search results must be scoped to the entry point that started them
+
+    func testManualSearchResultsAreScopedToManualOrigin() throws {
+        let source = try contents(of: "Nutrition/AddMealView.swift")
+        guard let gateRange = source.range(of: "if onlineFoodLookupEnabled {") else {
+            XCTFail("kein onlineFoodLookupEnabled-Gate in searchSection gefunden")
+            return
+        }
+        let gatedBlock = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: gateRange.upperBound))
+        XCTAssertTrue(
+            gatedBlock.contains("if onlineSearchOrigin == .manual {"),
+            "Ergebnisse/Fehler der manuellen Suche duerfen nicht sichtbar sein, waehrend ein KI-Kandidat die aktive Suche gestartet hat"
+        )
+    }
+
+    func testAICandidateOnlineSearchResultsAreScopedToThatCandidatesOwnOrigin() throws {
+        let source = try contents(of: "Nutrition/AddMealView.swift")
+        guard let noMatchRange = source.range(of: "if candidate.hasNoCatalogMatch {") else {
+            XCTFail("kein `if candidate.hasNoCatalogMatch` Zweig gefunden")
+            return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
+        guard let gateRange = block.range(of: "if onlineFoodLookupEnabled {") else {
+            XCTFail("kein verschachteltes onlineFoodLookupEnabled-Gate in aiCandidateRow gefunden")
+            return
+        }
+        let gatedBlock = try XCTUnwrap(Self.matchingBraceBlock(in: block, afterOpenBrace: gateRange.upperBound))
+        XCTAssertTrue(
+            gatedBlock.contains("if onlineSearchOrigin == .aiCandidate(candidate) {"),
+            "Ergebnisse/Fehler duerfen nur unter GENAU diesem Kandidaten erscheinen, nicht unter jedem unmatched Kandidaten"
+        )
+        XCTAssertTrue(gatedBlock.contains("runOnlineSearch(origin: .aiCandidate(candidate)"))
+    }
+
+    /// Second part of I1: a successful import that originated from an AI
+    /// candidate must remove that candidate (like its sibling "manuell
+    /// suchen"/"eigenes Lebensmittel anlegen" buttons already do) and carry
+    /// over its quantity/unit via the SAME `applyAICandidate` a normal
+    /// catalog match uses, instead of leaving them `nil`.
+    func testConfirmOnlineImportFromAICandidateReusesApplyAICandidate() throws {
+        let source = try contents(of: "Nutrition/AddMealView.swift")
+        guard let confirmRange = source.range(of: "private func confirmOnlineImport(_ values: OnlineFoodImportValues) {") else {
+            XCTFail("confirmOnlineImport nicht gefunden")
+            return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: confirmRange.upperBound))
+        XCTAssertTrue(block.contains("case .aiCandidate(let candidate)"), "muss zwischen manuellem und KI-Kandidaten-Ursprung unterscheiden")
+        XCTAssertTrue(
+            block.contains("applyAICandidate(candidate, entry: entry)"),
+            "muss Menge/Einheit ueber denselben Pfad wie ein normaler KI-Treffer uebernehmen, statt sie auf nil zu lassen, und dabei den Kandidaten entfernen"
+        )
     }
 
     // MARK: - Fixtures

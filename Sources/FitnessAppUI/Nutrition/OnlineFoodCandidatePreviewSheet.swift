@@ -13,6 +13,27 @@ struct OnlineFoodImportValues: Equatable {
     let proteinPer100g: Double
     let carbsPer100g: Double
     let fatPer100g: Double
+
+    /// Final-review fix (C1): the only way to get an `OnlineFoodImportValues`
+    /// is through here — fails unless the name is non-blank AND all four
+    /// macros are present (non-nil) and `>= 0`. Mirrors
+    /// `CustomFoodDraft.isValid` exactly, so a candidate missing a nutrient
+    /// (common — Open Food Facts is crowd-sourced) can never be silently
+    /// coerced to 0 via `?? 0` on confirm.
+    init?(name: String, kcalPer100g: Double?, proteinPer100g: Double?, carbsPer100g: Double?, fatPer100g: Double?) {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty,
+              let kcal = kcalPer100g, kcal >= 0,
+              let protein = proteinPer100g, protein >= 0,
+              let carbs = carbsPer100g, carbs >= 0,
+              let fat = fatPer100g, fat >= 0
+        else { return nil }
+        self.name = trimmedName
+        self.kcalPer100g = kcal
+        self.proteinPer100g = protein
+        self.carbsPer100g = carbs
+        self.fatPer100g = fat
+    }
 }
 
 /// Task 4/5 reusable component: preview + confirm/cancel for one tapped
@@ -75,7 +96,10 @@ struct OnlineFoodCandidatePreviewSheet: View {
                     } label: {
                         Text("common.add", bundle: .module)
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    // C1 fix: disabled whenever any macro is still missing/
+                    // negative, not just on an empty name — same gate
+                    // `CustomFoodEntrySheet` applies via `draft.isValid`.
+                    .disabled(pendingValues == nil)
                 }
             }
         }
@@ -87,8 +111,9 @@ struct OnlineFoodCandidatePreviewSheet: View {
             Spacer()
             // Left blank when `nil` (missing Open Food Facts field) instead
             // of prefilling "0" — Global Constraint: never fabricate a
-            // nutrient value. Confirming with a field still blank stores 0,
-            // same as leaving a manual-entry field untouched elsewhere.
+            // nutrient value. A field still blank at confirm time keeps
+            // "Add" disabled (see `pendingValues`), it is never silently
+            // stored as 0.
             TextField("", value: value, format: .number)
                 .decimalKeyboard()
                 .multilineTextAlignment(.trailing)
@@ -96,14 +121,22 @@ struct OnlineFoodCandidatePreviewSheet: View {
         }
     }
 
+    /// `nil` while the name is blank or a macro is missing/negative — the
+    /// single source of truth for both the "Add" button's `.disabled` and
+    /// `confirm()` itself, so the two can never disagree.
+    private var pendingValues: OnlineFoodImportValues? {
+        OnlineFoodImportValues(
+            name: name,
+            kcalPer100g: kcalPer100g,
+            proteinPer100g: proteinPer100g,
+            carbsPer100g: carbsPer100g,
+            fatPer100g: fatPer100g
+        )
+    }
+
     private func confirm() {
-        onConfirm(OnlineFoodImportValues(
-            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-            kcalPer100g: kcalPer100g ?? 0,
-            proteinPer100g: proteinPer100g ?? 0,
-            carbsPer100g: carbsPer100g ?? 0,
-            fatPer100g: fatPer100g ?? 0
-        ))
+        guard let values = pendingValues else { return }
+        onConfirm(values)
     }
 }
 #endif
