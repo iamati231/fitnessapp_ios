@@ -100,4 +100,28 @@ final class NutritionCalculationsTests: XCTestCase {
         // Defensive — uninitialized profile or division-by-something edge case
         XCTAssertEqual(NutritionCalculations.dailyWaterTargetMl(weightKg: -5), 0)
     }
+
+    // MARK: GoalProgress — shared by the progress-bar UI and the AI insight prompt
+
+    /// The reported bug's exact numbers: 40g of a 150g protein goal is
+    /// 26.7% / 110g remaining, not the "super"/near-complete progress the AI
+    /// insight previously implied by never being told the percentage at all.
+    func testGoalProgress_40Of150_isRoughly27PercentWith110Remaining() throws {
+        let progress = try XCTUnwrap(NutritionCalculations.goalProgress(current: 40, goal: 150))
+        XCTAssertEqual(progress.percent, 27) // 26.666...% rounded
+        XCTAssertEqual(progress.remaining, 110, accuracy: 0.0001)
+        XCTAssertEqual(progress.fraction, 40.0 / 150.0, accuracy: 0.0001)
+    }
+
+    func testGoalProgress_goalExceeded_remainingFlooredAtZero_percentNotCappedAt100() throws {
+        let progress = try XCTUnwrap(NutritionCalculations.goalProgress(current: 160, goal: 150))
+        XCTAssertEqual(progress.percent, 107) // 106.66...% rounded, stated plainly past 100
+        XCTAssertEqual(progress.remaining, 0)
+        XCTAssertEqual(progress.fraction, 1.0) // capped, for the progress bar
+    }
+
+    func testGoalProgress_zeroOrNegativeGoal_returnsNil() {
+        XCTAssertNil(NutritionCalculations.goalProgress(current: 40, goal: 0))
+        XCTAssertNil(NutritionCalculations.goalProgress(current: 40, goal: -10))
+    }
 }

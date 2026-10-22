@@ -449,6 +449,16 @@ public struct NutritionDayView: View {
         )
     }
 
+    /// Computes the deterministic percent-of-goal/remaining fact for one
+    /// nutrient via the shared `NutritionCalculations.goalProgress` (same
+    /// formula as `GoalRow.fraction` above) and hands it to the AI prompt as
+    /// a plain pre-computed number — the model never calculates this itself.
+    /// `nil` whenever the goal itself is `nil`/not set.
+    private func insightGoalProgress(current: Double, goal: Double?) -> NutritionInsightInput.GoalProgress? {
+        guard let goal, let progress = NutritionCalculations.goalProgress(current: current, goal: goal) else { return nil }
+        return NutritionInsightInput.GoalProgress(percent: progress.percent, remaining: progress.remaining)
+    }
+
     /// Minimal context only (Brief: "nur die fuer DIESE Analyse noetigen
     /// Werte") — the day's total plus whichever goals are actually set, never
     /// the full meal history.
@@ -464,7 +474,11 @@ public struct NutritionDayView: View {
             calorieGoalKcal: context.calorieGoal,
             proteinGoalG: context.proteinGoal,
             carbGoalG: context.carbGoal,
-            fatGoalG: context.fatGoal
+            fatGoalG: context.fatGoal,
+            calorieGoalProgress: insightGoalProgress(current: context.total.kcal, goal: context.calorieGoal.map(Double.init)),
+            proteinGoalProgress: insightGoalProgress(current: context.total.proteinG, goal: context.proteinGoal),
+            carbGoalProgress: insightGoalProgress(current: context.total.carbsG, goal: context.carbGoal),
+            fatGoalProgress: insightGoalProgress(current: context.total.fatG, goal: context.fatGoal)
         )
         isGeneratingInsight = true
         // `.unavailable` can't happen here (just checked by `showsInsightSection`
@@ -487,8 +501,10 @@ public struct NutritionDayView: View {
         let goal: Double
         let unit: String
 
+        // Shared with the AI insight prompt's percent/remaining facts — see
+        // `NutritionCalculations.GoalProgress`'s doc comment.
         var fraction: Double {
-            goal > 0 ? min(current / goal, 1.0) : 0
+            NutritionCalculations.goalProgress(current: current, goal: goal)?.fraction ?? 0
         }
     }
 

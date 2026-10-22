@@ -21,6 +21,28 @@ public struct NutritionInsightInput: Sendable, Equatable {
     public let proteinGoalG: Double?
     public let carbGoalG: Double?
     public let fatGoalG: Double?
+    public let calorieGoalProgress: GoalProgress?
+    public let proteinGoalProgress: GoalProgress?
+    public let carbGoalProgress: GoalProgress?
+    public let fatGoalProgress: GoalProgress?
+
+    /// Deterministic percent-of-goal + remaining-amount for ONE nutrient,
+    /// pre-computed by the caller (`NutritionDayView`, via the single shared
+    /// `NutritionCalculations.goalProgress` that also drives the progress-bar
+    /// UI — `FitnessAppAI` has no dependency on `FitnessAppCore` on purpose,
+    /// see the doc comment above, so this plain DTO carries only the two
+    /// numbers across, never the calculation itself). `nil` exactly when the
+    /// corresponding goal is `nil` — a model must never see a percentage for
+    /// a goal that was never set.
+    public struct GoalProgress: Sendable, Equatable {
+        public let percent: Int
+        public let remaining: Double
+
+        public init(percent: Int, remaining: Double) {
+            self.percent = percent
+            self.remaining = remaining
+        }
+    }
 
     public init(
         totalKcal: Double,
@@ -30,7 +52,11 @@ public struct NutritionInsightInput: Sendable, Equatable {
         calorieGoalKcal: Int?,
         proteinGoalG: Double?,
         carbGoalG: Double?,
-        fatGoalG: Double?
+        fatGoalG: Double?,
+        calorieGoalProgress: GoalProgress? = nil,
+        proteinGoalProgress: GoalProgress? = nil,
+        carbGoalProgress: GoalProgress? = nil,
+        fatGoalProgress: GoalProgress? = nil
     ) {
         self.totalKcal = totalKcal
         self.totalProteinG = totalProteinG
@@ -40,6 +66,10 @@ public struct NutritionInsightInput: Sendable, Equatable {
         self.proteinGoalG = proteinGoalG
         self.carbGoalG = carbGoalG
         self.fatGoalG = fatGoalG
+        self.calorieGoalProgress = calorieGoalProgress
+        self.proteinGoalProgress = proteinGoalProgress
+        self.carbGoalProgress = carbGoalProgress
+        self.fatGoalProgress = fatGoalProgress
     }
 }
 
@@ -85,9 +115,16 @@ public struct NutritionInsightGenerator: Sendable {
     Use ONLY the numbers given to you below — never calculate, estimate, \
     convert, or guess any number yourself. Some goals are marked "not set": \
     for those, never state a number and never say the goal was reached or \
-    missed — simply don't mention that goal at all. Give only brief, general, \
-    non-medical observations and encouragement. Never give a diagnosis, a \
-    treatment recommendation, or any other medical advice.
+    missed — simply don't mention that goal at all. When a "Progress toward \
+    goals" line gives a percentage for a nutrient, that percentage — never \
+    your own judgment of the raw numbers — decides your tone for it: below \
+    roughly 50% with a meaningful amount still remaining, describe it as \
+    early or in-progress and encourage without calling it sufficient, \
+    "excellent", "great job", or "super", as if the goal were already nearly \
+    met. Only once the stated percentage is close to or at/over 100% is a \
+    clearly positive, congratulatory tone appropriate. Give only brief, \
+    general, non-medical observations and encouragement. Never give a \
+    diagnosis, a treatment recommendation, or any other medical advice.
     """
 
     /// I2 fix: a plain "respond in the user's language" instruction left the
@@ -126,6 +163,14 @@ public struct NutritionInsightGenerator: Sendable {
         if let goal = input.proteinGoalG { numbers.insert(safeInt(goal)) }
         if let goal = input.carbGoalG { numbers.insert(safeInt(goal)) }
         if let goal = input.fatGoalG { numbers.insert(safeInt(goal)) }
+        // The percent/remaining facts stated in the "Progress toward goals"
+        // block are real, pre-computed numbers too — the model repeating one
+        // back verbatim is not a fabrication (see `prompt(for:)` below).
+        for progress in [input.calorieGoalProgress, input.proteinGoalProgress, input.carbGoalProgress, input.fatGoalProgress] {
+            guard let progress else { continue }
+            numbers.insert(progress.percent)
+            numbers.insert(safeInt(progress.remaining))
+        }
         return numbers
     }
 
@@ -138,7 +183,7 @@ public struct NutritionInsightGenerator: Sendable {
     /// decides what the model is allowed to see. A `nil` goal always becomes
     /// the literal marker below, never a number (Step 1 test asserts this).
     static func prompt(for input: NutritionInsightInput) -> String {
-        """
+        var text = """
         Today's totals:
         Calories: \(safeInt(input.totalKcal)) kcal
         Protein: \(safeInt(input.totalProteinG)) g
@@ -151,6 +196,11 @@ public struct NutritionInsightGenerator: Sendable {
         Carb goal: \(goalText(input.carbGoalG, unit: "g"))
         Fat goal: \(goalText(input.fatGoalG, unit: "g"))
         """
+        let progressLines = progressLines(for: input)
+        if !progressLines.isEmpty {
+            text += "\n\nProgress toward goals:\n" + progressLines.joined(separator: "\n")
+        }
+        return text
     }
 
     private static let notSetMarker = "not set"
@@ -158,6 +208,27 @@ public struct NutritionInsightGenerator: Sendable {
     private static func goalText(_ value: Double?, unit: String) -> String {
         guard let value else { return notSetMarker }
         return "\(safeInt(value)) \(unit)"
+    }
+
+    /// One plain-stated fact per nutrient that has BOTH a goal and a
+    /// pre-computed progress (the two are always set together by the
+    /// caller — see `NutritionInsightInput.GoalProgress`'s doc comment) —
+    /// e.g. "Protein: 40 g of 150 g goal (27% reached, 110 g remaining)".
+    /// The model is handed the percentage and the remaining amount as given
+    /// facts so it never has to judge "is 40 of 150 good progress" itself —
+    /// see `baseInstructions`'s tone-calibration rule below.
+    private static func progressLines(for input: NutritionInsightInput) -> [String] {
+        [
+            progressLine(label: "Calories", current: safeInt(input.totalKcal), goal: input.calorieGoalKcal, unit: "kcal", progress: input.calorieGoalProgress),
+            progressLine(label: "Protein", current: safeInt(input.totalProteinG), goal: input.proteinGoalG.map(safeInt), unit: "g", progress: input.proteinGoalProgress),
+            progressLine(label: "Carbs", current: safeInt(input.totalCarbsG), goal: input.carbGoalG.map(safeInt), unit: "g", progress: input.carbGoalProgress),
+            progressLine(label: "Fat", current: safeInt(input.totalFatG), goal: input.fatGoalG.map(safeInt), unit: "g", progress: input.fatGoalProgress)
+        ].compactMap { $0 }
+    }
+
+    private static func progressLine(label: String, current: Int, goal: Int?, unit: String, progress: NutritionInsightInput.GoalProgress?) -> String? {
+        guard let goal, let progress else { return nil }
+        return "\(label): \(current) \(unit) of \(goal) \(unit) goal (\(progress.percent)% reached, \(safeInt(progress.remaining)) \(unit) remaining)"
     }
 
     /// M1 fix: `Int(Double)` traps on NaN/infinity/out-of-range magnitudes.

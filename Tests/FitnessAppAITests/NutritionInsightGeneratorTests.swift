@@ -196,6 +196,79 @@ final class NutritionInsightGeneratorTests: XCTestCase {
         XCTAssertEqual(text, "You had 1850 kcal, 120g protein toward your 140g and 2200 kcal goals.")
     }
 
+    // MARK: Tone-calibration bugfix — stated percent-of-goal/remaining facts
+
+    /// Reported bug: 40g of a 150g protein goal (26.7% / 110g remaining) was
+    /// called "super" by the model because the prompt only ever gave it the
+    /// two raw numbers, never the percentage. Proves the real prompt-building
+    /// code now states the computed fact literally, so the model never has to
+    /// infer or compute it itself.
+    func testPrompt_includesStatedPercentAndRemaining_forTheReportedBugCase() {
+        let input = NutritionInsightInput(
+            totalKcal: 1850, totalProteinG: 40, totalCarbsG: 180, totalFatG: 60,
+            calorieGoalKcal: 2200, proteinGoalG: 150, carbGoalG: 220, fatGoalG: 70,
+            proteinGoalProgress: .init(percent: 27, remaining: 110)
+        )
+        let prompt = NutritionInsightGenerator.prompt(for: input)
+        XCTAssertTrue(
+            prompt.contains("Protein: 40 g of 150 g goal (27% reached, 110 g remaining)"),
+            "expected the stated progress fact, got:\n\(prompt)"
+        )
+    }
+
+    /// A nutrient with a goal but no progress supplied (shouldn't happen from
+    /// the real caller, but the prompt must stay crash-free and simply omit
+    /// the fact rather than show a half-built line) never gets a line.
+    func testPrompt_goalWithoutProgress_omitsTheProgressLineForThatNutrient() {
+        let input = NutritionInsightInput(
+            totalKcal: 1850, totalProteinG: 40, totalCarbsG: 180, totalFatG: 60,
+            calorieGoalKcal: 2200, proteinGoalG: 150, carbGoalG: 220, fatGoalG: 70
+        )
+        let prompt = NutritionInsightGenerator.prompt(for: input)
+        XCTAssertFalse(prompt.contains("Progress toward goals"))
+    }
+
+    /// No goals at all -> no "Progress toward goals" section whatsoever.
+    func testPrompt_noGoals_noProgressSection() {
+        let prompt = NutritionInsightGenerator.prompt(for: noGoalsInput)
+        XCTAssertFalse(prompt.contains("Progress toward goals"))
+    }
+
+    /// The stated percent/remaining numbers must be allowed, not flagged as
+    /// hallucinated, when the model legitimately repeats them back.
+    func testOnlyContainsVerifiedNumbers_allowsTheStatedPercentAndRemaining() {
+        let input = NutritionInsightInput(
+            totalKcal: 1850, totalProteinG: 40, totalCarbsG: 180, totalFatG: 60,
+            calorieGoalKcal: 2200, proteinGoalG: 150, carbGoalG: 220, fatGoalG: 70,
+            proteinGoalProgress: .init(percent: 27, remaining: 110)
+        )
+        XCTAssertTrue(NutritionInsightGenerator.onlyContainsVerifiedNumbers(
+            "You're at 27% of your 150g protein goal, 110g to go.", input: input
+        ))
+    }
+
+    /// A percent/remaining number that does NOT match the real computed
+    /// progress is still rejected — adding the new allowed numbers must not
+    /// widen the guard into accepting arbitrary numbers.
+    func testOnlyContainsVerifiedNumbers_stillRejectsAFabricatedPercent() {
+        let input = NutritionInsightInput(
+            totalKcal: 1850, totalProteinG: 40, totalCarbsG: 180, totalFatG: 60,
+            calorieGoalKcal: 2200, proteinGoalG: 150, carbGoalG: 220, fatGoalG: 70,
+            proteinGoalProgress: .init(percent: 27, remaining: 110)
+        )
+        XCTAssertFalse(NutritionInsightGenerator.onlyContainsVerifiedNumbers(
+            "You're already at 99% of your protein goal!", input: input
+        ))
+    }
+
+    /// Tone-calibration instruction must actually be present, matching the
+    /// existing style/language of `baseInstructions` (English, imperative).
+    func testInstructions_containToneCalibrationRule() {
+        let instructions = NutritionInsightGenerator.instructions(for: Locale(identifier: "en"))
+        XCTAssertTrue(instructions.contains("Progress toward"))
+        XCTAssertTrue(instructions.contains("50%"))
+    }
+
     // MARK: M1 — extreme/non-finite values never crash the prompt/verification
 
     func testExtremeValues_neverCrashPromptOrVerification() {
