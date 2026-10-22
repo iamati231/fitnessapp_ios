@@ -67,7 +67,14 @@ public struct CalculatorsView: View {
                             showsChevron: true
                         )
                     }
-                    NavigationLink(destination: WaterTrackerView()) {
+                    // main-navigation Plan, 2026-10-22, Task 3, Fix-Runde 1:
+                    // wertbasiert (`CalculatorsRoute.waterTracker`, aufgeloest
+                    // von der `navigationDestination(for:)`-Registrierung in
+                    // RootView) statt `NavigationLink(destination:)` — dieselbe
+                    // Route-Maschinerie wie der Wassertracker-Deep-Link, damit
+                    // kein Mix aus wert- und view-basierten Pushes zwischen
+                    // SettingsView und WaterTrackerView uebrig bleibt.
+                    NavigationLink(value: CalculatorsRoute.waterTracker) {
                         DeltiqRow(
                             icon: "drop.fill",
                             label: String(localized: "calc.index.water.title", bundle: .module),
@@ -97,6 +104,16 @@ public struct CalculatorsView: View {
 #Preview {
     NavigationStack {
         CalculatorsView()
+            // Wassertracker-Zeile ist jetzt wertbasiert (Fix-Runde 1) — ohne
+            // diese Registrierung wuerde der Tap im Preview ins Leere laufen.
+            .navigationDestination(for: CalculatorsRoute.self) { route in
+                switch route {
+                case .calculators:
+                    CalculatorsView()
+                case .waterTracker:
+                    WaterTrackerView()
+                }
+            }
     }
     .modelContainer(PreviewSeed.dashboardContainer)
 }

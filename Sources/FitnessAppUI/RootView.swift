@@ -324,15 +324,21 @@ struct MainTabView: View {
             }
             .tag(AppTab.measurement)
 
-            // main-navigation Plan, 2026-10-22, Task 3: path-bound auf
-            // `toolsPath`, damit der Wassertracker-Deep-Link weiterhin per
-            // einem einzigen Pfad-Push bis zum WaterTracker durchreicht —
-            // jetzt eine Ebene tiefer, da CalculatorsView nicht mehr die
-            // Stack-Wurzel ist, sondern unter SettingsView haengt.
+            // main-navigation Plan, 2026-10-22, Task 3 (Fix-Runde 1: komplett
+            // wertbasiert statt mit view-basierten NavigationLinks gemischt,
+            // siehe `CalculatorsRoute`-Doku): path-bound auf `toolsPath`. Die
+            // "Werkzeuge"-Zeile in SettingsView pusht `.calculators`, die
+            // Wassertracker-Zeile in CalculatorsView pusht `.waterTracker` —
+            // beide ueber dieselbe hier registrierte `navigationDestination`.
+            // Der Deep-Link (`applyPendingRouteIfAny`) resettet `toolsPath`
+            // und haengt `.waterTracker` direkt an, landet also unabhaengig
+            // vom vorherigen Navigationszustand garantiert im WaterTracker.
             NavigationStack(path: $navigation.toolsPath) {
                 SettingsView()
                     .navigationDestination(for: CalculatorsRoute.self) { route in
                         switch route {
+                        case .calculators:
+                            CalculatorsView()
                         case .waterTracker:
                             WaterTrackerView()
                         }

@@ -35,16 +35,23 @@ public final class AppNavigation {
     }
 }
 
-/// DEL-212: Push-Route fuer den Wassertracker-Deep-Link. Der normale,
-/// getippte Weg (Mehr → Werkzeuge → Wassertracker) laeuft ueber gewoehnliche
-/// `NavigationLink(destination:)`-Pushes in `SettingsView`/`CalculatorsView`
-/// und braucht diesen Typ nicht — er existiert nur fuer den programmatischen
-/// Ein-Tap-Sprung aus der lokalen Erinnerungs-Notification, aufgeloest
-/// von der `navigationDestination(for:)`-Registrierung in RootView
-/// (auf der Settings-NavigationStack, parallel zur getippten CalculatorsView-
-/// Ebene — beide Wege landen in derselben `WaterTrackerView`).
+/// DEL-212, main-navigation Plan Task 3 Fix-Runde 1 (2026-10-22): Wertbasierte
+/// Pushes fuer den Teilpfad SettingsView → CalculatorsView → WaterTrackerView,
+/// registriert als `navigationDestination(for: CalculatorsRoute.self)` auf
+/// der Settings-NavigationStack in RootView (`toolsPath`). Sowohl der getippte
+/// Weg (Mehr → Werkzeuge-Zeile → `.calculators` → Wassertracker-Zeile →
+/// `.waterTracker`) als auch der programmatische Ein-Tap-Sprung aus der
+/// Wasser-Erinnerungs-Notification (Reset + Append von `.waterTracker` direkt,
+/// ohne `.calculators`) laufen ueber dieselbe Route-Maschinerie — bewusst KEIN
+/// Mix aus wert- und view-basierten Pushes auf diesem Teilpfad mehr, damit ein
+/// `toolsPath`-Reset zuverlaessig jeden vorherigen Navigationszustand aufraeumt,
+/// bevor der Deep-Link seinen eigenen Push anhaengt.
 @available(iOS 17.0, macOS 14.0, *)
 public enum CalculatorsRoute: Hashable, Sendable {
+    /// SettingsView → CalculatorsView (die "Werkzeuge"-Zeile unter "Mehr").
+    case calculators
+    /// CalculatorsView → WaterTrackerView, auch via Deep-Link direkt aus
+    /// SettingsView erreichbar (Reset + alleiniges Append dieses Falls).
     case waterTracker
 }
 

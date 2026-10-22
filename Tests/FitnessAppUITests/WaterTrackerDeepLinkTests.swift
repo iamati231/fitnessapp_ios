@@ -64,9 +64,10 @@ final class WaterTrackerDeepLinkTests: XCTestCase {
     }
 
     /// Verifies the Settings tab's `NavigationStack` is the one bound to
-    /// `toolsPath` and the one that resolves `CalculatorsRoute` to
-    /// `WaterTrackerView` — not a leftover from the removed `.tools` tab.
-    func testSettingsNavigationStackIsBoundToToolsPathAndResolvesWaterTracker() throws {
+    /// `toolsPath` and resolves BOTH `CalculatorsRoute` cases — `.calculators`
+    /// to `CalculatorsView` and `.waterTracker` to `WaterTrackerView` — not a
+    /// leftover from the removed `.tools` tab.
+    func testSettingsNavigationStackIsBoundToToolsPathAndResolvesBothRoutes() throws {
         let rootViewSource = try source("RootView.swift")
         guard let stackStart = rootViewSource.range(of: "NavigationStack(path: $navigation.toolsPath) {") else {
             XCTFail("Settings tab's NavigationStack must be bound to navigation.toolsPath")
@@ -83,11 +84,15 @@ final class WaterTrackerDeepLinkTests: XCTestCase {
         )
         XCTAssertTrue(
             settingsTabBlock.contains(".navigationDestination(for: CalculatorsRoute.self)"),
-            "The Settings tab's stack must resolve CalculatorsRoute, so the deep-link push lands somewhere."
+            "The Settings tab's stack must resolve CalculatorsRoute, so pushes onto toolsPath land somewhere."
         )
         XCTAssertTrue(
-            settingsTabBlock.contains("WaterTrackerView()"),
-            "CalculatorsRoute.waterTracker must resolve to WaterTrackerView directly, not to CalculatorsView."
+            settingsTabBlock.contains("case .calculators:") && settingsTabBlock.contains("CalculatorsView()"),
+            "CalculatorsRoute.calculators must resolve to CalculatorsView."
+        )
+        XCTAssertTrue(
+            settingsTabBlock.contains("case .waterTracker:") && settingsTabBlock.contains("WaterTrackerView()"),
+            "CalculatorsRoute.waterTracker must resolve to WaterTrackerView."
         )
     }
 
@@ -100,9 +105,12 @@ final class WaterTrackerDeepLinkTests: XCTestCase {
     }
 
     /// Verifies the normal, tapped path: a 5th row in SettingsView's grouped
-    /// navigation pushes to CalculatorsView, the same DeltiqRow/NavigationLink
-    /// convention as the 4 existing rows.
-    func testSettingsGroupNavigationLinksToCalculatorsView() throws {
+    /// navigation pushes to CalculatorsView — value-based via
+    /// `CalculatorsRoute.calculators`, the same mechanism the deep link uses,
+    /// NOT a plain `NavigationLink(destination:)`/`NavigationLink { ... }`
+    /// (fix round 1: eliminates the risky mix of value- and view-based pushes
+    /// on the toolsPath-bound stack that the review flagged).
+    func testSettingsGroupNavigationLinksToCalculatorsViewViaRoute() throws {
         let settingsSource = try source("Settings/SettingsView.swift")
         guard let start = settingsSource.range(of: "private var groupNavigationSection: some View {") else {
             XCTFail("groupNavigationSection not found in SettingsView.swift")
@@ -114,13 +122,43 @@ final class WaterTrackerDeepLinkTests: XCTestCase {
         }
         let sectionBody = String(settingsSource[start.upperBound..<end.lowerBound])
         XCTAssertTrue(
-            sectionBody.contains("CalculatorsView()"),
-            "groupNavigationSection must gain a 5th NavigationLink to CalculatorsView (Werkzeuge moves under Mehr)."
+            sectionBody.contains("NavigationLink(value: CalculatorsRoute.calculators)"),
+            "The Werkzeuge row must push CalculatorsRoute.calculators (value-based), matching the mechanism toolsPath already uses for the water-tracker deep link."
         )
-        let navigationLinkCount = sectionBody.components(separatedBy: "NavigationLink {").count - 1
+        XCTAssertFalse(
+            sectionBody.contains("NavigationLink {\n                CalculatorsView()"),
+            "The Werkzeuge row must not use a plain view-based NavigationLink to CalculatorsView anymore."
+        )
+        // The 4 pre-existing groups stay view-based (out of this fix's scope) —
+        // only the count of plain `NavigationLink {` pushes should be unchanged at 4.
+        let plainNavigationLinkCount = sectionBody.components(separatedBy: "NavigationLink {").count - 1
         XCTAssertEqual(
-            navigationLinkCount, 5,
-            "groupNavigationSection should now have 5 NavigationLinks: the 4 existing groups plus CalculatorsView."
+            plainNavigationLinkCount, 4,
+            "Only the 4 pre-existing group links should remain plain/view-based NavigationLinks; CalculatorsView must be value-based."
+        )
+    }
+
+    /// Pins fix round 1's core requirement: no plain, view-based
+    /// `NavigationLink(destination:)` is left anywhere on the chain between
+    /// `SettingsView` and `WaterTrackerView` — both hops (SettingsView →
+    /// CalculatorsView, CalculatorsView → WaterTrackerView) must go through
+    /// `CalculatorsRoute` + `.navigationDestination(for:)`, so a `toolsPath`
+    /// reset reliably pops the ENTIRE chain regardless of how the user
+    /// reached it, before the deep link appends its own push.
+    func testNoPlainDestinationNavigationLinkBetweenSettingsAndWaterTracker() throws {
+        let settingsSource = try source("Settings/SettingsView.swift")
+        let calculatorsSource = try source("Calculators/CalculatorsView.swift")
+        XCTAssertFalse(
+            settingsSource.contains("NavigationLink(destination: CalculatorsView()"),
+            "SettingsView must not push CalculatorsView via a plain NavigationLink(destination:)."
+        )
+        XCTAssertFalse(
+            calculatorsSource.contains("NavigationLink(destination: WaterTrackerView()"),
+            "CalculatorsView must not push WaterTrackerView via a plain NavigationLink(destination:) anymore."
+        )
+        XCTAssertTrue(
+            calculatorsSource.contains("NavigationLink(value: CalculatorsRoute.waterTracker)"),
+            "CalculatorsView's water-tracker row must push CalculatorsRoute.waterTracker (value-based)."
         )
     }
 

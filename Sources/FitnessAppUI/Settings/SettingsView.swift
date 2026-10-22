@@ -151,7 +151,9 @@ public struct SettingsView: View {
         return parts.joined(separator: " • ")
     }
 
-    /// Settings-Epic Phase 3: die 4 Gruppen-Seiten (siehe Datei-Kommentar).
+    /// Settings-Epic Phase 3: die 4 Gruppen-Seiten (siehe Datei-Kommentar) —
+    /// plus (main-navigation Plan, 2026-10-22, Task 3) ein 5. Eintrag,
+    /// Werkzeuge/CalculatorsView.
     private var groupNavigationSection: some View {
         DeltiqSection(String(localized: "settings.section.more", bundle: .module).uppercased()) {
             NavigationLink {
@@ -190,13 +192,17 @@ public struct SettingsView: View {
                     showsChevron: true
                 )
             }
-            // main-navigation Plan, 2026-10-22, Task 3: CalculatorsView zieht
-            // vom entfallenen Werkzeuge-Tab eine Ebene tief unter "Mehr" ein,
-            // gleiches NavigationLink+DeltiqRow-Muster wie die 4 Eintraege
-            // oben.
-            NavigationLink {
-                CalculatorsView()
-            } label: {
+            // main-navigation Plan, 2026-10-22, Task 3, Fix-Runde 1: CalculatorsView
+            // zieht vom entfallenen Werkzeuge-Tab eine Ebene tief unter "Mehr" ein.
+            // Anders als die 4 Eintraege oben wertbasiert (`NavigationLink(value:)` +
+            // `CalculatorsRoute`/`navigationDestination(for:)`, registriert in
+            // RootView) statt view-basiert — dieselbe Route-Maschinerie, die der
+            // Wassertracker-Deep-Link benutzt. Damit landet jeder Zustand auf
+            // diesem Teilpfad zuverlaessig in `toolsPath`, und ein Reset+Append
+            // des Deep-Links trifft garantiert exakt den WaterTracker, egal wie
+            // der User vorher manuell navigiert hat — kein Mix aus wert- und
+            // view-basierten Pushes mehr zwischen SettingsView und WaterTrackerView.
+            NavigationLink(value: CalculatorsRoute.calculators) {
                 DeltiqRow(
                     icon: "wrench.and.screwdriver",
                     label: String(localized: "settings.group.tools", bundle: .module),
@@ -431,6 +437,16 @@ public struct SettingsView: View {
 #Preview("Mit Profil") {
     NavigationStack {
         SettingsView()
+            // Werkzeuge-Zeile ist jetzt wertbasiert (Fix-Runde 1) — ohne diese
+            // Registrierung wuerde der Tap im Preview ins Leere laufen.
+            .navigationDestination(for: CalculatorsRoute.self) { route in
+                switch route {
+                case .calculators:
+                    CalculatorsView()
+                case .waterTracker:
+                    WaterTrackerView()
+                }
+            }
     }
     .modelContainer(PreviewSeed.dashboardContainer)
     .environment(AppNavigation())
@@ -441,6 +457,14 @@ public struct SettingsView: View {
 #Preview("Ohne Profil") {
     NavigationStack {
         SettingsView()
+            .navigationDestination(for: CalculatorsRoute.self) { route in
+                switch route {
+                case .calculators:
+                    CalculatorsView()
+                case .waterTracker:
+                    WaterTrackerView()
+                }
+            }
     }
     .modelContainer(PreviewSeed.emptyContainer)
     .environment(AppNavigation())
