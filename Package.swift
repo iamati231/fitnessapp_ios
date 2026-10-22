@@ -14,7 +14,8 @@ let package = Package(
         .library(name: "FitnessAppHealth",     targets: ["FitnessAppHealth"]),
         .library(name: "FitnessAppActivities", targets: ["FitnessAppActivities"]),
         .library(name: "FitnessAppUI",         targets: ["FitnessAppUI"]),
-        .library(name: "FitnessAppAI",         targets: ["FitnessAppAI"])
+        .library(name: "FitnessAppAI",         targets: ["FitnessAppAI"]),
+        .library(name: "FitnessAppFoodLookup", targets: ["FitnessAppFoodLookup"])
     ],
     // DEL-173: ZIPFoundation für on-device ZIP-Erstellung beim CSV-Export.
     // Pure-Swift, MIT-Lizenz, weit verbreitet — wird nur von FitnessAppData
@@ -82,6 +83,15 @@ let package = Package(
             name: "FitnessAppAI",
             path: "Sources/FitnessAppAI"
         ),
+        .target(
+            // Only network-capable module in the app (Open Food Facts search).
+            // Depends on Core only, never on FitnessAppAI and vice versa — a
+            // reviewer should be able to tell from the module graph alone that
+            // exactly this target makes network calls.
+            name: "FitnessAppFoodLookup",
+            dependencies: ["FitnessAppCore"],
+            path: "Sources/FitnessAppFoodLookup"
+        ),
         .testTarget(
             name: "FitnessAppAITests",
             dependencies: ["FitnessAppAI"],
@@ -116,6 +126,13 @@ let package = Package(
             name: "FitnessAppUITests",
             dependencies: ["FitnessAppUI", "FitnessAppCore", "FitnessAppData", "FitnessAppAI"],
             path: "Tests/FitnessAppUITests"
+        ),
+        .testTarget(
+            // Pure URLSession+Foundation, no SwiftData/UIKit — runs locally on
+            // Windows too, unlike most of the other test targets here.
+            name: "FitnessAppFoodLookupTests",
+            dependencies: ["FitnessAppFoodLookup"],
+            path: "Tests/FitnessAppFoodLookupTests"
         )
     ]
 )
