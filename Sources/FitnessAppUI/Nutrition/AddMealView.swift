@@ -224,12 +224,8 @@ public struct AddMealView: View {
 
     private var searchSection: some View {
         Section {
-            TextField(
-                String(localized: "nutrition.addMeal.searchPlaceholder", bundle: .module),
-                text: $searchText
-            )
-            .autocorrectionDisabled()
-            .listRowBackground(Color.Deltiq.surface)
+            searchField
+                .listRowBackground(Color.Deltiq.surface)
 
             // Task 6: jederzeit sichtbar — NICHT nur im 0-Treffer-Zweig
             // darunter (Brief-Vorgabe) — unabhaengig von Netz/KI, deshalb
@@ -289,6 +285,42 @@ public struct AddMealView: View {
             }
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Task 3 (docs/superpowers/sdd/2026-10-22-ui-consistency): same
+    /// icon+clear-button+`Color.Deltiq.fill` chrome as
+    /// `ExerciseLibraryView.searchField` — duplicated rather than extracted
+    /// into a shared component, since that view renders its search field
+    /// standalone (outside any List/Form row), while this one lives inside
+    /// a `Form` `Section` row; a shared component would need to paper over
+    /// that difference for one call site each, more risk than value given
+    /// how many other interdependent UI states this file already has.
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+            TextField(
+                String(localized: "nutrition.addMeal.searchPlaceholder", bundle: .module),
+                text: $searchText
+            )
+            .font(.system(size: 15))
+            .foregroundStyle(Color.primary)
+            .autocorrectionDisabled()
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Color.Deltiq.textTertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Color.Deltiq.fill)
+        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
     }
 
     /// Task 4: "Online suchen" in the manual-search 0-Treffer state —
