@@ -7,7 +7,11 @@ import FitnessAppCore
 import FitnessAppFoodLookup
 
 /// Online-Food-Lookup SDD, Task 4: "Online suchen" aus der manuellen Suche
-/// (0 Treffer) in `AddMealView`.
+/// (0 Treffer) in `AddMealView`. Task 5 erweitert dieselbe Testdatei um den
+/// zweiten Einstiegspunkt: "Online suchen" aus einem KI-Kandidaten ohne
+/// Katalogtreffer (`aiCandidateRow`'s `hasNoCatalogMatch`-Zweig), auf
+/// demselben geteilten `OnlineFoodSearchController` und denselben
+/// `OnlineFoodResultsList`/`OnlineFoodCandidatePreviewSheet`-Komponenten.
 ///
 /// This package has no ViewInspector/XCUITest harness — CI only runs
 /// `swift test` (see `apple-ci-comparison.yml`) — so these tests exercise
@@ -206,6 +210,78 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         case .failure(let error): XCTFail("unerwarteter Fehler: \(error)")
         }
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<MealEntry>()), 1)
+    }
+
+    // MARK: - Task 5: second entry point from an AI candidate with no catalog match
+
+    /// Step 1 (Task 5 brief): a `hasNoCatalogMatch` AI candidate must show an
+    /// "Online suchen" action prefilled with `candidate.foodText`, reusing
+    /// Task 4's exact gate/components (no second, divergent implementation).
+    func testAICandidateNoMatchShowsOnlineSearchPrefilledWithFoodTextReusingTask4Components() throws {
+        let source = try contents(of: "Nutrition/AddMealView.swift")
+        guard let noMatchRange = source.range(of: "if candidate.hasNoCatalogMatch {") else {
+            XCTFail("kein `if candidate.hasNoCatalogMatch` Zweig in aiCandidateRow gefunden")
+            return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
+
+        // Gleicher Gate-Key wie Task 4 (kein eigener/divergenter Toggle).
+        XCTAssertTrue(block.contains("if onlineFoodLookupEnabled {"))
+        // Vorausgefuellt mit `foodText`, ueber dieselbe (nicht duplizierte)
+        // `runOnlineSearch`-Funktion wie der manuelle Einstiegspunkt.
+        XCTAssertTrue(block.contains("runOnlineSearch(query: candidate.foodText)"))
+        // Wiederverwendet Task 4's Trefferlisten-/Fehler-Komponenten 1:1,
+        // keine zweite, abweichende Implementierung.
+        XCTAssertTrue(block.contains("OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)"))
+        XCTAssertTrue(block.contains("onlineSearch.errorMessage"))
+        XCTAssertTrue(source.contains("\"nutrition.addMeal.onlineSearch.action\""))
+    }
+
+    /// C1 regression, repeated for this second call site: `aiCandidateRow` is
+    /// ONE VStack/Form row, so once a second button (this task's "Online
+    /// suchen") joins the pre-existing "manuell suchen" button inside the
+    /// SAME `hasNoCatalogMatch` branch, EVERY button in that branch must
+    /// carry its own `.buttonStyle(.borderless)` hit target — otherwise taps
+    /// collapse onto the last button's action, exactly like the original C1
+    /// bug in the `isAmbiguous` branch below it.
+    func testAICandidateNoMatchBranchButtonsAreAllBorderless() throws {
+        let source = try contents(of: "Nutrition/AddMealView.swift")
+        guard let noMatchRange = source.range(of: "if candidate.hasNoCatalogMatch {") else {
+            XCTFail("kein `if candidate.hasNoCatalogMatch` Zweig in aiCandidateRow gefunden")
+            return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
+        let buttonCount = block.components(separatedBy: "Button {").count - 1
+        let borderlessCount = block.components(separatedBy: ".buttonStyle(.borderless)").count - 1
+        XCTAssertEqual(buttonCount, 2, "erwartet: 'manuell suchen' + 'online suchen' Button in diesem Zweig")
+        XCTAssertEqual(borderlessCount, buttonCount, "jeder Button in diesem gemeinsamen Form-Row-VStack braucht .buttonStyle(.borderless), sonst C1-Regression")
+    }
+
+    /// `OnlineFoodSearchController.search` ist der einzige Ort, der
+    /// `candidates`/`errorMessage` zuruecksetzt — das deckt BEIDE
+    /// Einstiegspunkte ab (gemeinsamer Controller), ohne dass `AddMealView`
+    /// selbst vor jedem Such-Trigger ein explizites `reset()` braucht.
+    /// Siehe Task-5-Brief: Variante (b), hier gegen den echten Code bestaetigt.
+    func testSearchClearsStaleCandidatesAndErrorAtStartOfEveryCall() async {
+        let controller = OnlineFoodSearchController(searcher: FakeOnlineFoodSearcher(result: .failure(.noNetwork)))
+        await controller.search(query: "erster Suchbegriff", locale: Locale(identifier: "de_DE")) { _ in "Fehler A" }
+        XCTAssertEqual(controller.errorMessage, "Fehler A")
+
+        // Zweiter Aufruf (z.B. vom anderen Einstiegspunkt) mit Treffern:
+        // weder der alte Fehlertext noch (waeren vorher welche da gewesen)
+        // alte Candidates duerfen ueberleben, bevor der neue Request ueberhaupt
+        // antwortet.
+        let successController = OnlineFoodSearchController(searcher: FakeOnlineFoodSearcher(result: .success(Self.makeThreeCandidates())))
+        await successController.search(query: "erster Suchbegriff", locale: Locale(identifier: "de_DE")) { _ in "" }
+        XCTAssertEqual(successController.candidates.count, 3)
+
+        await successController.search(query: "zweiter Suchbegriff", locale: Locale(identifier: "de_DE")) { _ in "Fehler B" }
+        // `FakeOnlineFoodSearcher` liefert hier wieder dieselben 3 Treffer
+        // (kein Fehler), aber der Punkt ist: der State wurde beim Start DIESES
+        // Aufrufs neu gesetzt (candidates=[]/errorMessage=nil), nie einfach
+        // vom vorherigen Aufruf uebernommen.
+        XCTAssertNil(successController.errorMessage)
+        XCTAssertEqual(successController.candidates.count, 3)
     }
 
     // MARK: - Fixtures

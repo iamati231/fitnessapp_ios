@@ -355,6 +355,41 @@ public struct AddMealView: View {
                 } label: {
                     Text("nutrition.addMeal.aiDraft.searchManually", bundle: .module)
                 }
+                // C1 fix (see the `isAmbiguous` branch below for the full
+                // explanation): this button now shares `aiCandidateRow`'s one
+                // VStack/Form-row with the Task 5 "Online suchen" button
+                // added right below, so each needs its own `.buttonStyle(.borderless)`
+                // hit target.
+                .buttonStyle(.borderless)
+
+                // Task 5 (docs/superpowers/sdd/2026-10-22-online-food-lookup):
+                // second entry point for Task 4's online lookup — same
+                // `onlineFoodLookupEnabled` gate, same shared `onlineSearch`
+                // controller/components, prefilled with this candidate's
+                // `foodText` instead of the manual search field.
+                if onlineFoodLookupEnabled {
+                    Button {
+                        runOnlineSearch(query: candidate.foodText)
+                    } label: {
+                        HStack {
+                            if onlineSearch.isSearching {
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                            Text("nutrition.addMeal.onlineSearch.action", bundle: .module)
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(onlineSearch.isSearching)
+
+                    if let message = onlineSearch.errorMessage {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    }
+
+                    OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+                }
             } else if candidate.isAmbiguous {
                 Text("nutrition.addMeal.aiDraft.ambiguous", bundle: .module)
                     .font(.caption)
@@ -642,12 +677,17 @@ public struct AddMealView: View {
         aiCandidates.remove(at: index)
     }
 
-    /// Task 4: searches Open Food Facts for the CURRENT manual search text
-    /// (that's what produced the 0-Treffer state in the first place) — no
-    /// separate online-query field. `OnlineFoodSearchController.search`
-    /// already no-ops on a double tap while one request is in flight.
-    private func runOnlineSearch() {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    /// Task 4/5: searches Open Food Facts for `rawQuery`, or (Task 4's
+    /// original call site, `onlineSearchButton`) the CURRENT manual search
+    /// text when `rawQuery` is omitted. Task 5's AI-candidate entry point
+    /// passes the candidate's `foodText` instead — same function, no
+    /// duplicated flow logic. `OnlineFoodSearchController.search` already
+    /// no-ops on a double tap while one request is in flight, and clears its
+    /// own `candidates`/`errorMessage` at the start of every call, so a new
+    /// search from either entry point can never show the OTHER entry
+    /// point's stale results.
+    private func runOnlineSearch(query rawQuery: String? = nil) {
+        let query = (rawQuery ?? searchText).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return }
         Task { @MainActor in
             await onlineSearch.search(query: query, locale: locale, errorText: onlineSearchErrorText)
