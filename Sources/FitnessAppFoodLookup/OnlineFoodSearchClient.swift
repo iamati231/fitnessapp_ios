@@ -163,7 +163,7 @@ private struct Hit: Decodable {
             id: code ?? UUID().uuidString,
             name: name,
             brand: (joinedBrand?.isEmpty ?? true) ? nil : joinedBrand,
-            kcalPer100g: nutriments?.energyKcal100g,
+            kcalPer100g: nutriments?.kcalPer100g,
             proteinPer100g: nutriments?.proteins100g,
             carbsPer100g: nutriments?.carbohydrates100g,
             fatPer100g: nutriments?.fat100g
@@ -173,14 +173,22 @@ private struct Hit: Decodable {
 
 private struct Nutriments: Decodable {
     let energyKcal100g: Double?
+    let energyKj100g: Double?
     let proteins100g: Double?
     let carbohydrates100g: Double?
     let fat100g: Double?
 
     enum CodingKeys: String, CodingKey {
         case energyKcal100g = "energy-kcal_100g"
+        case energyKj100g = "energy-kj_100g"
         case proteins100g = "proteins_100g"
         case carbohydrates100g = "carbohydrates_100g"
         case fat100g = "fat_100g"
+    }
+
+    // Some real OFF products report energy only in kJ; converting (standard
+    // factor, 1 kcal = 4.184 kJ) beats showing "missing" for a real value.
+    var kcalPer100g: Double? {
+        energyKcal100g ?? energyKj100g.map { $0 / 4.184 }
     }
 }

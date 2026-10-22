@@ -111,6 +111,35 @@ final class OnlineFoodSearchClientTests: XCTestCase {
         XCTAssertNil(result[0].brand)
     }
 
+    // MARK: kJ-only energy -> converted to kcal, not nil
+
+    func test_search_withOnlyEnergyKj_fallsBackToConvertedKcal() async throws {
+        let json = """
+        {"hits":[{"code":"789","product_name":"KJ Only Product",
+        "nutriments":{"energy-kj_100g":1673,"proteins_100g":5,"carbohydrates_100g":20,"fat_100g":3}}]}
+        """
+        stub(status: 200, body: Data(json.utf8))
+
+        let result = try await makeClient().search(query: "kjonly", locale: Locale(identifier: "en_US"))
+
+        XCTAssertEqual(result.count, 1)
+        // 1673 kJ / 4.184 ≈ 399.86 kcal
+        XCTAssertEqual(result[0].kcalPer100g ?? -1, 399.86, accuracy: 0.1)
+    }
+
+    func test_search_withBothEnergyKcalAndKj_usesKcalAsIsNotKj() async throws {
+        let json = """
+        {"hits":[{"code":"790","product_name":"Both Energy Product",
+        "nutriments":{"energy-kcal_100g":400,"energy-kj_100g":9999,"proteins_100g":5,"carbohydrates_100g":20,"fat_100g":3}}]}
+        """
+        stub(status: 200, body: Data(json.utf8))
+
+        let result = try await makeClient().search(query: "bothenergy", locale: Locale(identifier: "en_US"))
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].kcalPer100g, 400)
+    }
+
     // MARK: Empty hits -> noResults
 
     func test_search_withEmptyHits_throwsNoResults() async throws {
