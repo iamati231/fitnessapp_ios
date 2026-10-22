@@ -279,6 +279,7 @@ private struct GearEditorView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        .keyboardDismissToolbar()
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
             dismiss()
         }

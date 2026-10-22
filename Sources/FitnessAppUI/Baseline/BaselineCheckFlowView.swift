@@ -667,6 +667,7 @@ struct BaselineCheckFlowView: View {
                 }
             }
         }
+        .keyboardDismissToolbar()
     }
 
     @ViewBuilder

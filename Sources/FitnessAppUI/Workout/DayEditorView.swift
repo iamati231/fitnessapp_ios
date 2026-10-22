@@ -148,6 +148,7 @@ public struct DayEditorView: View {
         // Verlassen-Weg, der am Discard-Dialog vorbeigeht. Ohne Aenderungen
         // (`!isDirty`) funktioniert sie weiter normal (direktes Schliessen).
         .deltiqSwipeBackEnabled(!isDirty)
+        .keyboardDismissToolbar()
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
             revertToSnapshot()
         }
