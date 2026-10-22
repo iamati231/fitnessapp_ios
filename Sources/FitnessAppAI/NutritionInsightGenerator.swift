@@ -162,13 +162,16 @@ public struct NutritionInsightGenerator: Sendable {
 
     /// M1 fix: `Int(Double)` traps on NaN/infinity/out-of-range magnitudes.
     /// Goals/quantities have no enforced upper bound elsewhere in the app, so
-    /// an extreme value must not crash the day view. Mirrors the guard
-    /// `Double.formattedRIR` already uses in `DoubleFormatting.swift` — not
+    /// an extreme value must not crash the day view. Mirrors the EXACT guard
+    /// `Double.formattedRIR` already uses in `DoubleFormatting.swift` (not
     /// reused directly since `FitnessAppAI` deliberately has no dependency on
-    /// `FitnessAppCore` (see `NutritionInsightInput`'s doc comment above).
+    /// `FitnessAppCore` — see `NutritionInsightInput`'s doc comment above).
+    /// `Double(Int.max)` itself rounds UP to 2^63 (not exactly representable),
+    /// so clamping a value via `Int(min(value, Double(Int.max)))` would still
+    /// crash — the bound must only ever be used as a comparison, never
+    /// converted back to `Int`.
     private static func safeInt(_ value: Double) -> Int {
-        guard value.isFinite else { return 0 }
-        let clamped = Swift.max(Swift.min(value, Double(Int.max - 1)), Double(Int.min + 1))
-        return Int(clamped)
+        guard value.isFinite, abs(value) < Double(Int.max) else { return 0 }
+        return Int(value)
     }
 }
