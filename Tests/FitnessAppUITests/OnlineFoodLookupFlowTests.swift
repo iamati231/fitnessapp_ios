@@ -73,8 +73,12 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
             return
         }
         let gatedBlock = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: gateRange.upperBound))
-        XCTAssertTrue(gatedBlock.contains("nutrition.addMeal.onlineSearch.action"))
+        // `onlineSearchButton` is an extracted property (not inlined here,
+        // same style as `detailsSection`/`aiSection`) — check its own body
+        // separately for the visible text-label key the brief requires.
+        XCTAssertTrue(gatedBlock.contains("onlineSearchButton"))
         XCTAssertTrue(gatedBlock.contains("OnlineFoodResultsList"))
+        XCTAssertTrue(source.contains("\"nutrition.addMeal.onlineSearch.action\""))
     }
 
     // MARK: - Step 1 (C1 regression): Trefferliste baut Buttons nicht in EINER Row zusammen
