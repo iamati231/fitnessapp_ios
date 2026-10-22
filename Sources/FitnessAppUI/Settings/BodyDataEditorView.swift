@@ -248,7 +248,6 @@ struct BodyDataEditorView: View {
     private func save() {
         guard !isSaving else { return }
         isSaving = true
-        defer { isSaving = false }
 
         profile.heightCm = draftHeightCm
         profile.goalWeightKg = draftGoalWeightKg
@@ -283,6 +282,7 @@ struct BodyDataEditorView: View {
                 modelContext.delete(insertedMeasurement)
             }
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            isSaving = false
             return
         }
         dismiss()

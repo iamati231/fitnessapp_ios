@@ -213,7 +213,6 @@ struct TrainingLocationEquipmentEditorView: View {
     private func save() {
         guard !isSaving else { return }
         isSaving = true
-        defer { isSaving = false }
 
         // P5.1: VOR dem Schreiben erfassen — danach ist `profile.equipmentProfile`
         // bereits der neue Wert und ein Vergleich waere immer `false`.
@@ -236,6 +235,7 @@ struct TrainingLocationEquipmentEditorView: View {
             try modelContext.save()
         } catch {
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            isSaving = false
             return
         }
 
@@ -254,6 +254,12 @@ struct TrainingLocationEquipmentEditorView: View {
         let resolvedProfile = profile.equipmentProfile
         if equipmentChanged, hasAnyPlanWithEquipmentGap(against: resolvedProfile) {
             pendingEquipmentAdaptation = resolvedProfile
+            // Fix-Runde 1 (Befund 1): dieser Zweig dismisst NICHT -- der
+            // `confirmationDialog` unten kann durch Wegtippen (ausserhalb,
+            // ohne Confirm/Cancel-Button) geschlossen werden, ohne dass
+            // `dismiss()` je aufgerufen wird. Ohne dieses Reset bliebe der
+            // Speichern-Haken dann fuer immer deaktiviert.
+            isSaving = false
             return
         }
         dismiss()

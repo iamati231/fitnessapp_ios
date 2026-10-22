@@ -117,7 +117,16 @@ public struct PeriodicCheckInView: View {
                 actions: [
                     DeltiqHeaderAction(
                         systemImage: "checkmark",
-                        isDisabled: isSaving,
+                        // Fix-Runde 1 (Befund 1): dieser Screen dismisst NICHT
+                        // bei Erfolg (bleibt offen fuer den naechsten
+                        // Rueckblick) -- `isSaving` allein kann einen echten
+                        // Doppeltap deshalb nie blocken (ein zweiter Tap wird
+                        // erst verarbeitet, NACHDEM `save()` bereits komplett
+                        // zurueckgekehrt ist). Nach einem erfolgreichen Save
+                        // bleibt der Haken deshalb zusaetzlich gesperrt, bis
+                        // der User tatsaechlich wieder etwas aendert
+                        // (`isDirty` wird dadurch wieder `true`).
+                        isDisabled: isSaving || (didJustSave && !isDirty),
                         accessibilityLabel: String(localized: "common.save", bundle: .module)
                     ) {
                         save()
@@ -342,7 +351,6 @@ public struct PeriodicCheckInView: View {
     private func save() {
         guard !isSaving else { return }
         isSaving = true
-        defer { isSaving = false }
         saveErrorMessage = nil
 
         let checkIn = PeriodicCheckIn(
@@ -406,6 +414,7 @@ public struct PeriodicCheckInView: View {
         } catch {
             modelContext.delete(checkIn)
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            isSaving = false
             return
         }
 
@@ -427,6 +436,10 @@ public struct PeriodicCheckInView: View {
         complaintsNote = ""
         goalAnswer = .skip
         didJustSave = true
+        // Fix-Runde 1 (Befund 1): dieser Screen dismisst nicht -- die
+        // eigentliche Doppeltap-Sperre nach einem Erfolg ist jetzt
+        // `didJustSave && !isDirty` oben im Header-Button, nicht `isSaving`.
+        isSaving = false
     }
 }
 

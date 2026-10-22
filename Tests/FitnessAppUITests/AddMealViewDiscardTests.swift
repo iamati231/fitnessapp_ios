@@ -110,54 +110,103 @@ final class AddMealViewDiscardTests: XCTestCase {
 
     /// Reproduziert `AddMealView.isDirty` exakt (siehe dortige Doku) --
     /// bewusst keine View-Instanz, siehe Dateikopf fuer die Begruendung.
+    ///
+    /// Fix-Runde 1 (Befund 2): `dateNow`/`dateAtOpen` und `mealTypeNow`/
+    /// `mealTypeAtOpen` ergaenzt -- `MealDraft.save()` schreibt im Edit-Mode
+    /// auch diese beiden Felder zurueck, `isDirty` hat sie vorher nicht
+    /// geprueft.
     private func isDirtyFormula(
         itemsNow: [MealDraftItemFieldsSnapshot],
         itemsAtOpen: [MealDraftItemFieldsSnapshot],
         selectedEntryIsSet: Bool,
         quantityIsSet: Bool,
         aiInputText: String,
-        aiCandidatesIsEmpty: Bool
+        aiCandidatesIsEmpty: Bool,
+        dateNow: Date,
+        dateAtOpen: Date,
+        mealTypeNow: MealType,
+        mealTypeAtOpen: MealType
     ) -> Bool {
         itemsNow != itemsAtOpen
             || selectedEntryIsSet
             || quantityIsSet
             || !aiInputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || !aiCandidatesIsEmpty
+            || dateNow != dateAtOpen
+            || mealTypeNow != mealTypeAtOpen
     }
+
+    private static let referenceDate = Date(timeIntervalSince1970: 1_700_000_000)
 
     func testIsDirtyFormulaIsFalseWhenNothingWasEntered() {
         XCTAssertFalse(isDirtyFormula(
             itemsNow: [], itemsAtOpen: [], selectedEntryIsSet: false, quantityIsSet: false,
-            aiInputText: "   ", aiCandidatesIsEmpty: true
+            aiInputText: "   ", aiCandidatesIsEmpty: true,
+            dateNow: Self.referenceDate, dateAtOpen: Self.referenceDate,
+            mealTypeNow: .lunch, mealTypeAtOpen: .lunch
         ))
     }
 
     func testIsDirtyFormulaIsTrueForSelectedCatalogEntryWithoutAddTap() {
         XCTAssertTrue(isDirtyFormula(
             itemsNow: [], itemsAtOpen: [], selectedEntryIsSet: true, quantityIsSet: false,
-            aiInputText: "", aiCandidatesIsEmpty: true
+            aiInputText: "", aiCandidatesIsEmpty: true,
+            dateNow: Self.referenceDate, dateAtOpen: Self.referenceDate,
+            mealTypeNow: .lunch, mealTypeAtOpen: .lunch
         ), "ein angewaehlter Katalog-Eintrag in der Bottom-Bar allein muss schon dirty machen")
     }
 
     func testIsDirtyFormulaIsTrueForTypedQuantityWithoutAddTap() {
         XCTAssertTrue(isDirtyFormula(
             itemsNow: [], itemsAtOpen: [], selectedEntryIsSet: false, quantityIsSet: true,
-            aiInputText: "", aiCandidatesIsEmpty: true
+            aiInputText: "", aiCandidatesIsEmpty: true,
+            dateNow: Self.referenceDate, dateAtOpen: Self.referenceDate,
+            mealTypeNow: .lunch, mealTypeAtOpen: .lunch
         ))
     }
 
     func testIsDirtyFormulaIsTrueForUnextractedAIFreeText() {
         XCTAssertTrue(isDirtyFormula(
             itemsNow: [], itemsAtOpen: [], selectedEntryIsSet: false, quantityIsSet: false,
-            aiInputText: "2 Eier und Toast", aiCandidatesIsEmpty: true
+            aiInputText: "2 Eier und Toast", aiCandidatesIsEmpty: true,
+            dateNow: Self.referenceDate, dateAtOpen: Self.referenceDate,
+            mealTypeNow: .lunch, mealTypeAtOpen: .lunch
         ), "getippter, noch nicht extrahierter KI-Freitext muss dirty machen")
     }
 
     func testIsDirtyFormulaIsTrueForPendingAICandidates() {
         XCTAssertTrue(isDirtyFormula(
             itemsNow: [], itemsAtOpen: [], selectedEntryIsSet: false, quantityIsSet: false,
-            aiInputText: "", aiCandidatesIsEmpty: false
+            aiInputText: "", aiCandidatesIsEmpty: false,
+            dateNow: Self.referenceDate, dateAtOpen: Self.referenceDate,
+            mealTypeNow: .lunch, mealTypeAtOpen: .lunch
         ), "bereits extrahierte, aber noch nicht uebernommene KI-Kandidaten muessen dirty machen")
+    }
+
+    /// Fix-Runde 1 (Befund 2, Kernvertrag): ein im Edit-Mode auf einen
+    /// anderen Tag verschobenes Datum -- sonst NICHTS veraendert -- muss
+    /// allein schon dirty machen, sonst geht die Verschiebung beim Abbrechen
+    /// kommentarlos verloren.
+    func testIsDirtyFormulaIsTrueForDateOnlyChangeInEditMode() {
+        let movedDate = Self.referenceDate.addingTimeInterval(86_400)
+        XCTAssertTrue(isDirtyFormula(
+            itemsNow: [], itemsAtOpen: [], selectedEntryIsSet: false, quantityIsSet: false,
+            aiInputText: "", aiCandidatesIsEmpty: true,
+            dateNow: movedDate, dateAtOpen: Self.referenceDate,
+            mealTypeNow: .lunch, mealTypeAtOpen: .lunch
+        ), "ein verschobenes Datum allein muss im Edit-Mode dirty machen")
+    }
+
+    /// Fix-Runde 1 (Befund 2, Kernvertrag): ein im Edit-Mode geaenderter
+    /// Mahlzeittyp -- sonst NICHTS veraendert -- muss allein schon dirty
+    /// machen.
+    func testIsDirtyFormulaIsTrueForMealTypeOnlyChangeInEditMode() {
+        XCTAssertTrue(isDirtyFormula(
+            itemsNow: [], itemsAtOpen: [], selectedEntryIsSet: false, quantityIsSet: false,
+            aiInputText: "", aiCandidatesIsEmpty: true,
+            dateNow: Self.referenceDate, dateAtOpen: Self.referenceDate,
+            mealTypeNow: .dinner, mealTypeAtOpen: .lunch
+        ), "ein geaenderter Mahlzeittyp allein muss im Edit-Mode dirty machen")
     }
 }
 #endif

@@ -229,7 +229,6 @@ struct ExerciseLibraryEditorSheet: View {
     private func save() {
         guard !isSaving, !trimmedName.isEmpty else { return }
         isSaving = true
-        defer { isSaving = false }
 
         var insertedTemplate: ExerciseTemplate?
         if let existing {
@@ -261,6 +260,7 @@ struct ExerciseLibraryEditorSheet: View {
                 modelContext.delete(insertedTemplate)
             }
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            isSaving = false
             return
         }
         dismiss()

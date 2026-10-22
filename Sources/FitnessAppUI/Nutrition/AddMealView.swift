@@ -76,6 +76,16 @@ public struct AddMealView: View {
     /// startet immer leer. Gleiches Prinzip wie `MeasurementView.fieldsAtOpen`.
     private let itemsAtOpen: [MealDraftItemFieldsSnapshot]
 
+    /// Fix-Runde 1 (Befund 2): `draft.date`/`draft.mealType` sind echte Felder,
+    /// die `MealDraft.save()` im Edit-Mode mit zurueckschreibt (siehe
+    /// `MealDraft.save(into:)` -- `meal.date = date; meal.mealType = mealType`),
+    /// aber `isDirty` hat sie bisher nicht geprueft -- ein Verschieben auf
+    /// einen anderen Tag/Mahlzeittyp ging beim Abbrechen kommentarlos
+    /// verloren, ohne Verwerfen-Rueckfrage. Snapshot nach demselben Prinzip
+    /// wie `itemsAtOpen` oben.
+    private let dateAtOpen: Date
+    private let mealTypeAtOpen: MealType
+
     // Task 6: manuelles Anlegen eines eigenen Lebensmittels — unabhaengig
     // von Netz/KI (siehe `CustomFoodEntrySheet`/`CustomFoodDraft`).
     @State private var showingCustomFoodEntry: Bool = false
@@ -111,6 +121,8 @@ public struct AddMealView: View {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
         self.editingMeal = nil
         self.itemsAtOpen = []
+        self.dateAtOpen = date
+        self.mealTypeAtOpen = mealType
     }
 
     public init(editing meal: MealEntry) {
@@ -118,6 +130,8 @@ public struct AddMealView: View {
         _draft = StateObject(wrappedValue: newDraft)
         self.editingMeal = meal
         self.itemsAtOpen = MealDraftItemFieldsSnapshot.capture(from: newDraft.items)
+        self.dateAtOpen = meal.date
+        self.mealTypeAtOpen = meal.mealType
     }
 
     public var body: some View {
@@ -751,6 +765,11 @@ public struct AddMealView: View {
     ///   * `aiInputText` -- getippter, noch nicht extrahierter KI-Freitext.
     ///   * `aiCandidates` -- bereits extrahierte, aber noch nicht uebernommene
     ///     KI-Kandidaten (Mehrdeutigkeits-Auswahl/Mengen-Rueckfrage offen).
+    ///   * `draft.date`/`draft.mealType` -- Fix-Runde 1 (Befund 2): beide
+    ///     werden von `MealDraft.save()` im Edit-Mode tatsaechlich
+    ///     mitpersistiert (siehe dortige Doku), fehlten hier aber bisher --
+    ///     ein Verschieben auf einen anderen Tag/Mahlzeittyp zaehlte dadurch
+    ///     nicht als Aenderung und ging beim Abbrechen kommentarlos verloren.
     /// `searchText` (reiner Filter, kein Eingabe-Risiko), die aktiven
     /// Online-Suchergebnisse selbst sowie `showingCustomFoodEntry`/
     /// `onlineSearch.selectedCandidate` zaehlen bewusst NICHT: Letztere sind
@@ -764,6 +783,8 @@ public struct AddMealView: View {
             || quantity != nil
             || !aiInputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || !aiCandidates.isEmpty
+            || draft.date != dateAtOpen
+            || draft.mealType != mealTypeAtOpen
     }
 
     private var filteredEntries: [FoodCatalogEntry] {

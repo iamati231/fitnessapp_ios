@@ -1011,7 +1011,6 @@ public struct MeasurementView: View {
     private func save(profile: UserBodyProfile) {
         guard !isSaving, let weightKg, canSave(profile: profile) else { return }
         isSaving = true
-        defer { isSaving = false }
         saveErrorMessage = nil
 
         if let existing = editingMeasurement {
@@ -1115,6 +1114,7 @@ public struct MeasurementView: View {
                 try modelContext.save()
             } catch {
                 saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                isSaving = false
                 return
             }
 
@@ -1148,6 +1148,7 @@ public struct MeasurementView: View {
             } catch {
                 modelContext.delete(measurement)
                 saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                isSaving = false
                 return
             }
 
@@ -1166,6 +1167,12 @@ public struct MeasurementView: View {
             }
 
             resetFields()
+            // New-Mode dismisst nicht (bleibt bewusst offen fuer den naechsten
+            // Eintrag) -- der eigentliche Doppeltap-Schutz hier ist
+            // `resetFields()` oben, das `canSave(profile:)` ueber `weightKg`
+            // bereits wieder `false` macht. `isSaving` kann deshalb gefahrlos
+            // zurueckgesetzt werden, statt den Haken dauerhaft zu sperren.
+            isSaving = false
         }
     }
 

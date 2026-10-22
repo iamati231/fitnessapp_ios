@@ -147,8 +147,18 @@ struct CardioGoalEditorView: View {
             ) {
                 Button(role: .destructive) {
                     profile.cardioCoachingEnabled = false
-                    try? modelContext.save()
-                    dismiss()
+                    // Fix-Runde 1 (Befund 3): `try?` verschluckte den Fehler
+                    // bisher komplett -- `dismiss()` lief unconditional, der
+                    // Nutzer sah "Coach aus", obwohl die Aenderung evtl. nie
+                    // persistiert wurde. Gleiches Muster wie `save()` oben
+                    // (kein Rollback der `profile`-Mutation bei Fehler -- wie
+                    // ueberall sonst in dieser Datei).
+                    do {
+                        try modelContext.save()
+                        dismiss()
+                    } catch {
+                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                    }
                 } label: {
                     Text("profile.cardio.coachOff.confirm", bundle: .module)
                 }
@@ -199,7 +209,6 @@ struct CardioGoalEditorView: View {
     private func save() {
         guard !isSaving else { return }
         isSaving = true
-        defer { isSaving = false }
 
         // Paket 1, Komponente 5: nur ECHTES Aktivieren (vorher aus, jetzt
         // an) loest die Anpassungsvorschau aus - ein Speichern, bei dem der
@@ -224,6 +233,7 @@ struct CardioGoalEditorView: View {
             try modelContext.save()
         } catch {
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            isSaving = false
             return
         }
 

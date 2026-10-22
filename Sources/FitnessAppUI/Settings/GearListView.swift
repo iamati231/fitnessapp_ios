@@ -396,7 +396,6 @@ private struct GearEditorView: View {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         guard !isSaving, !trimmed.isEmpty else { return }
         isSaving = true
-        defer { isSaving = false }
 
         var insertedGear: Gear?
         switch mode {
@@ -428,6 +427,7 @@ private struct GearEditorView: View {
                 modelContext.delete(insertedGear)
             }
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            isSaving = false
             return
         }
         dismiss()

@@ -71,6 +71,12 @@ public struct ProgramTemplatePickerView: View {
                             .font(.footnote)
                     }
                 }
+                // Fix-Runde 1 (Befund 4): ohne das hier schimmerte der
+                // native gruppierte List-Hintergrund unter dem neuen
+                // DeltiqHeader durch -- sichtbare Nahtstelle. Gleiches Muster
+                // wie die anderen auf DeltiqHeader umgestellten Sheets dieser
+                // Epic (siehe z.B. `ExerciseLibraryEditorSheet`s `Form`).
+                .scrollContentBackground(.hidden)
             }
             .background(Color.Deltiq.background.ignoresSafeArea())
             #if os(iOS)
