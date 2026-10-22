@@ -540,22 +540,31 @@ public struct DashboardView: View {
     /// Gleiche Doppel-Branch-Logik wie `trophyRoomCard`/`historyCard`: ohne
     /// heutige Mahlzeiten rendert `DashboardEmptyState` mit CTA, sonst eine
     /// kompakte Teaser-Row (Tagessumme in kcal) + separater "Mahlzeit
-    /// hinzufuegen"-Button. NavigationLink und Button sind bewusst
-    /// Geschwister (nicht verschachtelt) in der VStack — vermeidet den
-    /// SwiftUI-Gestenkonflikt, den ein Button innerhalb eines
-    /// NavigationLink-Labels haben kann.
+    /// hinzufuegen"-Button. Beide Buttons sind bewusst Geschwister (nicht
+    /// verschachtelt) in der VStack — vermeidet den SwiftUI-Gestenkonflikt,
+    /// den ein Button innerhalb eines anderen Buttons haben kann.
+    ///
+    /// Main-navigation plan (2026-10-22), Task 2: der Tap setzt
+    /// `navigation.selectedTab = .nutrition` statt einen zweiten
+    /// `NutritionDayView` auf den Dashboard-eigenen Stack zu pushen — die
+    /// Ernaehrung-Tab hostet `NutritionDayView(isTabRoot: true)` bereits als
+    /// eigene Wurzel (Task 1).
     @ViewBuilder
     private var nutritionCard: some View {
         if todayMeals.isEmpty {
             // Final-review fix (important): die Empty-State-Karte fuehrte
             // bisher nirgendwohin ausser zum Erfassungs-Sheet — ohne eine
             // heutige Mahlzeit gab es keinen Weg in die Tagesuebersicht
-            // (und von dort in vergangene Tage/Goals). Gleiche NavigationLink-
-            // + Button-Geschwister-Struktur wie im Daten-Zweig unten (Spec
-            // 3: "tapping the tile opens the day overview").
+            // (und von dort in vergangene Tage/Goals). Gleiche Button-
+            // Geschwister-Struktur wie im Daten-Zweig unten (Spec 3:
+            // "tapping the tile opens the day overview").
             VStack(alignment: .leading, spacing: 12) {
-                NavigationLink {
-                    NutritionDayView()
+                // Main-navigation plan (2026-10-22), Task 2: switch to the
+                // nutrition tab instead of pushing a second NutritionDayView
+                // onto the dashboard's own stack (that tab already hosts it
+                // as its root, per Task 1).
+                Button {
+                    navigation.selectedTab = .nutrition
                 } label: {
                     DashboardEmptyState(
                         icon: "fork.knife",
@@ -584,8 +593,9 @@ public struct DashboardView: View {
             .deltiqCardStyle()
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                NavigationLink {
-                    NutritionDayView()
+                // Task 2 (main-navigation plan): tab-switch, not a stack push.
+                Button {
+                    navigation.selectedTab = .nutrition
                 } label: {
                     HStack(spacing: 12) {
                         Image(systemName: "fork.knife")
