@@ -77,9 +77,12 @@ public struct NutritionDayView: View {
 
     /// main-navigation Plan, 2026-10-22, Task 1: seit diesem Tab-Root-Einsatz
     /// braucht der Screen zwei Modi, analog zu `MeasurementView.isEditMode`
-    /// (Tab-Root -> kein Zurueck-Chevron, der sonst nichts taete). `false`
-    /// bleibt der Default fuer den bestehenden Dashboard-Push
-    /// (`NavigationLink { NutritionDayView() }`).
+    /// (Tab-Root -> kein Zurueck-Chevron, der sonst nichts taete). `true`
+    /// wird vom Ernaehrungs-Tab-Root in `RootView.MainTabView`
+    /// (`NutritionDayView(isTabRoot: true)`) gesetzt — der fruehere
+    /// Dashboard-Push wurde in Task 2 durch einen Tab-Wechsel
+    /// (`navigation.selectedTab = .nutrition`) ersetzt. `false` bleibt der
+    /// Default fuer jedes andere Embedding, aktuell nur die Previews unten.
     private let isTabRoot: Bool
 
     public init(isTabRoot: Bool = false) {
@@ -139,6 +142,20 @@ public struct NutritionDayView: View {
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
         .deltiqSwipeBackEnabled()
+        // Fix-Runde 1 (Finding 1): als Tab-Root ueberlebt dieser Screen
+        // TabView-Selektionswechsel (siehe `isTabRoot`-Doku oben) -
+        // `selectedDate` wurde daher nie auf "heute" zurueckgesetzt, wenn
+        // der User zu einem frueheren Tag navigiert, den Tab wechselt und
+        // zurueckkehrt (Spec: "Standarddatum: heute"). `.onAppear` feuert
+        // bei jedem Tab-(Wieder-)Eintritt erneut — anders als bei einem
+        // Sheet oder einem gepushten Child —, daher NUR hier gated auf
+        // `isTabRoot`, nicht bei jedem Embedding (z.B. nicht beim
+        // Dashboard-Push, falls der je zurueckkaeme).
+        .onAppear {
+            if isTabRoot {
+                selectedDate = Date()
+            }
+        }
         // Task F: re-generates only when the underlying facts actually
         // change (not on every re-render) — `.task(id:)` also cancels any
         // in-flight generation for the previous id first, so there's never

@@ -13,9 +13,15 @@ import UIKit
 /// umgebaut auf gruppierte Navigation (5 Gruppen) statt 10 flacher Sections —
 /// jede Gruppe ihre eigene Seite (`SettingsAppExperienceView`/
 /// `SettingsDataConnectionsView`/`SettingsLibraryEquipmentView`/
-/// `SettingsHelpInfoView`), reine Verschiebung bestehender Inhalte, kein neues
-/// Routing-Konzept (dieselben `NavigationLink`+`DeltiqRow`-Konventionen wie
-/// ueberall sonst). "Profil & Training" hat nur EINEN Eintrag (den
+/// `SettingsHelpInfoView`), reine Verschiebung bestehender Inhalte — dieselben
+/// `NavigationLink`+`DeltiqRow`-Konventionen wie ueberall sonst, MIT EINER
+/// Ausnahme: main-navigation Plan, 2026-10-22, Task 3 (Fix-Runde 1) macht die
+/// "Werkzeuge"-Zeile in `groupNavigationSection` wertbasiert
+/// (`NavigationLink(value: CalculatorsRoute.calculators)` statt eines
+/// plain `NavigationLink { ... }`) — sie muss per Deep-Link aus der
+/// Wasser-Erinnerung direkt bis zum WaterTracker durchgeschaltet werden
+/// koennen, die anderen 4 Gruppen-Zeilen brauchen das nicht und bleiben
+/// view-basiert. "Profil & Training" hat nur EINEN Eintrag (den
 /// Profil-Editor, der jetzt auch Koerperdaten + Trainingsort/Ausstattung
 /// als eigene Unterseiten traegt) und bleibt deshalb ein direkter Link statt
 /// einer eigenen Gruppen-Seite — eine zusaetzliche Navigationsebene fuer
@@ -328,9 +334,11 @@ public struct SettingsView: View {
 
         // 1) Navigation-State sofort zuruecksetzen — entfernt @Bindable-
         //    References auf gleich-zu-loeschende UserBodyProfile/Plan/Day.
-        // Bugfix (Audit): `toolsPath` fehlte hier - ohne Reset konnte der
-        // Werkzeuge-Tab nach einem Reset in einer veralteten Detail-Ansicht
-        // (z.B. Wassertracker) statt der Uebersicht landen, weil
+        // Bugfix (Audit): `toolsPath` fehlte hier - ohne Reset konnte die
+        // "Werkzeuge"-Unterseite (main-navigation Plan, 2026-10-22, Task 3:
+        // gehoert jetzt der Mehr/Settings-Tab-eigenen NavigationStack, kein
+        // eigener Tab mehr) nach einem Reset in einer veralteten Detail-
+        // Ansicht (z.B. Wassertracker) statt der Uebersicht landen, weil
         // `AppNavigation` als langlebiges @State den Onboarding<->Main-Swap
         // ueberlebt.
         navigation.workoutPath = NavigationPath()

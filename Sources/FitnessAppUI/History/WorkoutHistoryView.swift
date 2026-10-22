@@ -24,10 +24,13 @@ public struct WorkoutHistoryView: View {
     public var body: some View {
         VStack(spacing: 0) {
             // Signature-Geruest 1.2: direkt vom Dashboard gepusht (kein
-            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
-            // DashboardSettingsView/DataExportView unter "Mehr".
+            // eigener Zwischen-Hub).
+            // Fix-Runde 1 (Finding 3): die Eyebrow nutzte bisher den
+            // `tab.dashboard`-Key, dessen Wert main-navigation Task 1 auf
+            // "Heute" umbenannt hat — diese Liste ist aber eine All-Time-
+            // Historie, kein Tages-Scope. Eigener `history.eyebrow`-Key.
             DeltiqHeader(
-                eyebrow: String(localized: "tab.dashboard", bundle: .module).uppercased(),
+                eyebrow: String(localized: "history.eyebrow", bundle: .module).uppercased(),
                 title: String(localized: "dashboard.history.title", bundle: .module),
                 onBack: { dismiss() }
             )

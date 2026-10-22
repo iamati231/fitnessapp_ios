@@ -47,10 +47,13 @@ public struct PRHistoryView: View {
     public var body: some View {
         VStack(spacing: 0) {
             // Signature-Geruest 1.2: direkt vom Dashboard gepusht (kein
-            // eigener Zwischen-Hub) - Eyebrow zeigt den Tab, selbes Muster wie
-            // WorkoutHistoryView.
+            // eigener Zwischen-Hub).
+            // Fix-Runde 1 (Finding 3): die Eyebrow nutzte bisher den
+            // `tab.dashboard`-Key, dessen Wert main-navigation Task 1 auf
+            // "Heute" umbenannt hat — diese Liste ist aber eine All-Time-
+            // Rekordliste, kein Tages-Scope. Eigener `trophy.eyebrow`-Key.
             DeltiqHeader(
-                eyebrow: String(localized: "tab.dashboard", bundle: .module).uppercased(),
+                eyebrow: String(localized: "trophy.eyebrow", bundle: .module).uppercased(),
                 title: String(localized: "dashboard.trophy.title", bundle: .module),
                 onBack: { dismiss() },
                 actions: [
