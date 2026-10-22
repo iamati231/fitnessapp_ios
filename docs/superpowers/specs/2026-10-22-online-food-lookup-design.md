@@ -1,15 +1,29 @@
-# Online-Lebensmittelsuche (Open Food Facts) Design
+# Lebensmittel-Katalog-Erweiterung: Online-Suche + Eigenes Lebensmittel (Design)
 
-**Status:** Entwurf — wartet auf Review durch den Nutzer.
+**Status:** Freigegeben (Online-Suche: ursprünglich freigegeben; Amendment
+vom 2026-10-22 ergänzt "Eigenes Lebensmittel anlegen" als zweiten,
+unabhängigen Weg, explizit vom Nutzer nachgefordert — siehe Abschnitt
+"Eigenes Lebensmittel anlegen (manuell)").
 
 ## Ziel
 
-Wenn ein Lebensmittel weder im lokalen ~100-Eintrag-Katalog noch über die
-KI-Freitext-Erfassung (Task E) einen eindeutigen Treffer hat, soll der
-Nutzer — nach explizitem Opt-in und nur bei verfügbarem Netz — online nach
-dem Lebensmittel suchen, einen Treffer aus einer offenen Lebensmittel-
-Datenbank auswählen, die Nährwerte vor dem Speichern sehen/korrigieren und
-erst nach Bestätigung einen neuen lokalen Katalogeintrag anlegen.
+Zwei unabhängige, aber dieselbe Grundlage teilende Wege, einen fehlenden
+Katalogtreffer zu beheben:
+
+1. **Online-Suche** (Open Food Facts): Wenn ein Lebensmittel weder im
+   lokalen ~100-Eintrag-Katalog noch über die KI-Freitext-Erfassung
+   (Task E) einen eindeutigen Treffer hat, soll der Nutzer — nach
+   explizitem Opt-in und nur bei verfügbarem Netz — online suchen, einen
+   Treffer auswählen, die Nährwerte vor dem Speichern sehen/korrigieren
+   und erst nach Bestätigung einen neuen lokalen Katalogeintrag anlegen.
+2. **Eigenes Lebensmittel anlegen** (manuell, kein Netz/KI nötig): der
+   Nutzer kann jederzeit — unabhängig von Online-Suche, KI-Verfügbarkeit
+   oder Internetzugang — ein Lebensmittel von Hand mit Name und
+   Nährwerten pro 100g anlegen, lokal speichern und später wiederfinden.
+
+Beide Wege erzeugen denselben Ergebnistyp (einen neuen, lokal
+gespeicherten `FoodCatalogEntry`) über denselben erweiterten Mechanismus
+— siehe "`FoodCatalogEntry` — additive Erweiterung" unten.
 
 Dieses Feature ist bewusst **unabhängig von `FitnessAppAI`/Foundation
 Models** (Tasks D-F dieses Repos): es braucht kein Apple-Intelligence-
@@ -62,32 +76,56 @@ Eigenständiges SPM-Target, analog zur Isolation von `FitnessAppAI`:
 
 ### `FoodCatalogEntry` — additive Erweiterung
 
-Zwei neue, optionale Felder (additiv, kein `VersionedSchema` nötig,
-Projekt-Konvention):
+**Amendment-Entscheidung:** statt eines reinen `isOnlineImported: Bool`
+(ursprünglicher Entwurf) bekommt `FoodCatalogEntry` ein allgemeineres
+Herkunfts-Feld, das online importierte UND manuell angelegte Einträge
+einheitlich abdeckt — keine zwei leicht unterschiedlichen
+"Custom-Food"-Mechanismen nebeneinander:
+
+```swift
+public enum FoodCatalogEntrySource: String, Codable, Sendable {
+    case seeded          // einer der ~100 mitgelieferten Katalogeintraege
+    case onlineImported  // via Open-Food-Facts-Suche uebernommen
+    case userCreated     // manuell vom Nutzer angelegt
+}
+```
+
+Zwei neue, additive Felder (kein `VersionedSchema` nötig, Projekt-
+Konvention — bestehende `FoodCatalogEntry`-Zeilen ohne dieses Feld gelten
+implizit als `.seeded`, siehe Migrations-Hinweis unten):
 
 - `displayName: String?` — wenn gesetzt, zeigt die UI diesen Klartext-Namen
   statt `nameKey` über `String(localized:)` aufzulösen. Online importierte
-  Einträge haben keinen xcstrings-Key (kann zur Laufzeit nicht angelegt
-  werden) und brauchen deshalb einen echten Namen statt eines Lookup-Keys.
-  `resolvedName(for:)` in `AddMealView.swift` wird entsprechend erweitert:
-  `displayName` hat Vorrang vor der `nameKey`-Auflösung.
-- `isOnlineImported: Bool` (Default `false`) — markiert Einträge, die über
-  dieses Feature entstanden sind, im Unterschied zu den ~100 seedierten
-  Katalogeinträgen. Wird gebraucht, um diese Einträge als Nutzerdaten statt
-  Katalogdaten zu behandeln (siehe nächster Abschnitt).
+  UND manuell angelegte Einträge haben keinen xcstrings-Key (kann zur
+  Laufzeit nicht angelegt werden) und brauchen deshalb einen echten Namen
+  statt eines Lookup-Keys. `resolvedName(for:)` in `AddMealView.swift`
+  wird entsprechend erweitert: `displayName` hat Vorrang vor der
+  `nameKey`-Auflösung.
+- `source: FoodCatalogEntrySource` (Default `.seeded` für bestehende
+  Zeilen) — ersetzt das ursprünglich geplante `isOnlineImported: Bool`.
+  Wird gebraucht, um online importierte und manuell angelegte Einträge
+  einheitlich als Nutzerdaten statt Katalogdaten zu behandeln (siehe
+  nächster Abschnitt).
+
+**Migrations-Hinweis:** da SwiftData ein additives, nicht-optionales Feld
+mit Default-Wert bei bestehenden Zeilen automatisch auf den Default setzt
+(kein `VersionedSchema` nötig, Projekt-Konvention), bekommen alle ~100
+bereits seedierten Zeilen beim ersten Start nach dem Update automatisch
+`source == .seeded` — kein manueller Backfill nötig.
 
 ### Nutzerdaten-Scope (Export/Wipe)
 
-Online importierte Einträge gelten als **Nutzerdaten**, nicht als
-Katalogdaten:
+Einträge mit `source != .seeded` (also `.onlineImported` UND
+`.userCreated`) gelten als **Nutzerdaten**, nicht als Katalogdaten:
 
 - `Sources/FitnessAppData/Export/UserDataWipe.swift`: `deleteSharedUserData`
-  löscht `FoodCatalogEntry`-Zeilen mit `isOnlineImported == true` mit (die
+  löscht `FoodCatalogEntry`-Zeilen mit `source != .seeded` mit (die
   seedierten ~100 Einträge bleiben unberührt — kein globales Löschen aller
   `FoodCatalogEntry`).
-- `DataExportService.swift`/`DataImportService.swift`: online importierte
-  Einträge werden mit exportiert/importiert (gleiches Muster wie
-  `meals.csv`/`meal_items.csv` aus dem vorherigen Plan), seedierte
+- `DataExportService.swift`/`DataImportService.swift`: Einträge mit
+  `source != .seeded` werden mit exportiert/importiert (gleiches Muster
+  wie `meals.csv`/`meal_items.csv` aus dem vorherigen Plan, `source`-Wert
+  wird mitexportiert, damit Import die Unterscheidung behält), seedierte
   Katalogeinträge weiterhin nicht (sie kommen über `FoodCatalogSeeder`
   zurück, nicht über Import).
 
@@ -136,13 +174,13 @@ Beide münden im selben Flow:
    vorausgefüllt aus den Open-Food-Facts-Nährwerten, falls vorhanden —
    fehlende Felder bleiben leer, nie geraten/interpoliert).
 4. Explizite Bestätigung legt einen neuen `FoodCatalogEntry` an
-   (`isOnlineImported = true`, `displayName` gesetzt) und fügt ihn direkt
+   (`source = .onlineImported`, `displayName` gesetzt) und fügt ihn direkt
    wie einen normalen Katalogtreffer der aktuellen Mahlzeit hinzu (über den
    bestehenden `addItem`/`save()`-Pfad — keine neue Persistenz-Logik).
 5. Danach ist der Eintrag ein normaler, lokal gespeicherter Katalogeintrag
    — auch für künftige Suchen sofort auffindbar.
 
-### Fehlerfälle
+### Fehlerfälle (Online-Suche)
 
 - Kein Netz: Aktion "Online suchen" ist ausgeblendet oder zeigt einen
   kurzen Hinweis statt eines leeren/blockierten Zustands (analog zum
@@ -153,39 +191,111 @@ Beide münden im selben Flow:
 - Keine Treffer bei Open Food Facts: lokalisierter Hinweis, kein
   automatisches Anlegen eines leeren/geratenen Eintrags.
 
+## Eigenes Lebensmittel anlegen (manuell)
+
+Dritter Weg neben Katalogsuche und Online-Suche, **ohne Netz/KI-
+Abhängigkeit** — jederzeit erreichbar, auch offline.
+
+### Einstiegspunkt
+
+Zusätzliche, sichtbar beschriftete Aktion "Eigenes Lebensmittel anlegen"
+an denselben beiden Stellen wie die Online-Suche
+(`nutrition.addMeal.noResults`-Zustand der manuellen Suche UND in der
+KI-Kandidaten-Zeile ohne Katalogtreffer), PLUS — da dieser Weg nie an
+Opt-in/Netz/KI gebunden ist — als eigenständig jederzeit sichtbare Aktion
+im Lebensmittel-Suchbereich selbst (nicht nur im "0 Treffer"-Zustand),
+damit der Nutzer auch ohne vorherige erfolglose Suche direkt ein eigenes
+Lebensmittel anlegen kann.
+
+### Formular
+
+- **Pflicht:** Name (Klartext → `displayName`), Nährwertbasis (fest:
+  Angabe pro 100g, konsistent mit allen bestehenden Katalogeinträgen —
+  keine abweichende Basis wie "pro Portion" zur Auswahl, um
+  Inkonsistenz im Katalog zu vermeiden), kcal/Protein/Kohlenhydrate/Fett
+  pro 100g.
+- **Optional:** Stückgewicht in Gramm (`pieceWeightGrams`) UND/ODER
+  Dichte in g/ml (`densityGramsPerMl`) — nur wenn der Nutzer sie explizit
+  einträgt; ohne Angabe bleiben Stück-/ml-Einheiten für diesen Eintrag
+  nicht verfügbar (gleiche Regel wie für seedierte Katalogeinträge: "Stück
+  nur mit definiertem Stückgewicht, Milliliter nur mit explizit
+  lebensmittelspezifischer Dichte — niemals pauschal 1 ml = 1 g").
+- Validierung: alle Pflichtfelder gesetzt und numerisch plausibel (keine
+  negativen Werte) — nutzt dieselbe Validierungs-/Formatierungs-Logik wie
+  bestehende Zahlen-Eingabefelder in der App (siehe auch Abschnitt
+  "Appweite UI-Konsistenz" im zugehörigen separaten Arbeitspaket für
+  Tastatur-/Eingabe-Standards).
+
+### Speichern
+
+- Explizite Bestätigung (sichtbar beschrifteter Speichern-Button, kein
+  Auto-Save) legt `FoodCatalogEntry` mit `source = .userCreated` an.
+- **Schutz gegen Mehrfachtap:** Speichern-Aktion deaktiviert sich sofort
+  nach dem ersten Tap bis die Persistenz abgeschlossen ist (gleiches
+  Pattern wie der bestehende Doppeltipp-Schutz aus Task E) — keine
+  stillen Duplikate.
+- Bei Speicherfehler: Entwurf bleibt erhalten, keine Erfolgsmeldung
+  (gleiche Regel wie der bestehende Mahlzeiten-Speicherpfad).
+- Nach Bestätigung: Eintrag ist sofort normaler, lokal gespeicherter
+  Katalogeintrag — auffindbar über die normale Katalogsuche, übersteht
+  Kaltstart (reguläre SwiftData-Persistenz, kein Sonderfall).
+
+### Fehlerfälle (Eigenes Lebensmittel)
+
+- Kein Netz: betrifft dieses Feature nicht — funktioniert immer.
+- Ungültige/unvollständige Eingabe: Speichern-Button bleibt deaktiviert,
+  lokalisierter Hinweis welches Feld fehlt/ungültig ist.
+
 ## Global Constraints (dieses Feature)
 
 - Netzwerkzugriff NUR in `FitnessAppFoodLookup`, nie in `FitnessAppAI`,
-  `FitnessAppCore`, `FitnessAppData` oder UI-Code direkt.
-- Netzwerkzugriff NUR nach explizitem Opt-in — Standard ist aus.
+  `FitnessAppCore`, `FitnessAppData` oder UI-Code direkt. "Eigenes
+  Lebensmittel anlegen" macht NIE einen Netzwerkzugriff — rein lokale
+  SwiftData-Persistenz.
+- Netzwerkzugriff (Online-Suche) NUR nach explizitem Opt-in — Standard
+  ist aus. "Eigenes Lebensmittel anlegen" braucht KEINEN Opt-in (keine
+  Netzwerkkomponente).
 - Jede Netzwerkanfrage trägt einen identifizierenden `User-Agent`.
-- Kein Nährwert wird je erfunden/interpoliert — fehlende Felder bleiben
-  leer, nie ein Platzhalterwert.
+- Kein Nährwert wird je erfunden/interpoliert — fehlende Felder (Online-
+  Suche) bleiben leer, nie ein Platzhalterwert; bei "Eigenes Lebensmittel"
+  sind alle vier Makro-Felder Pflicht (der Nutzer selbst ist die Quelle).
 - Neuer Katalogeintrag entsteht ausschließlich nach expliziter
-  Nutzerbestätigung (Vorschau + Bestätigen) — kein Auto-Save direkt aus
-  dem Suchergebnis.
+  Nutzerbestätigung (Vorschau + Bestätigen bzw. expliziter
+  Speichern-Tap) — kein Auto-Save.
 - Jeder neue sichtbare Text geht über `Localizable.xcstrings` (DE/EN/TR).
 - Rundung/Formatierung ausschließlich über bestehende
   `DoubleFormatting.swift`-Extensions.
 - Keine Logs von Suchbegriffen, Nährwerten oder Rohantworten der API.
-- ODbL-Attribution ist sichtbar, sobald das Feature genutzt wird.
+- ODbL-Attribution ist sichtbar, sobald die Online-Suche genutzt wird
+  (gilt nicht für "Eigenes Lebensmittel", da keine Fremddaten beteiligt
+  sind).
+- Keine bestehenden Daten werden beim Hinzufügen dieses Features gelöscht
+  oder zurückgesetzt — additive SwiftData-Änderung, bestehende seedierte
+  Katalogeinträge und alle Nutzerdaten bleiben unverändert erreichbar.
 
 ## Review Focus
 
 - Rate-Limit-Verhalten unter schneller Wiederholung (Doppeltipp auf
   "Online suchen") — Debounce/Disable während laufender Anfrage, analog
-  zum bereits in Task E gelösten Doppeltipp-Schutz.
+  zum bereits in Task E gelösten Doppeltipp-Schutz. Gleiches gilt für den
+  Speichern-Button bei "Eigenes Lebensmittel anlegen" (Mehrfachtap darf
+  keine Duplikate erzeugen).
 - Der in der finalen Branch-Review gefundene Mehrfach-Button-in-einer-Row-
   Bug (C1) darf in der neuen Trefferliste nicht wiederholt werden.
 - Teilweise fehlende Nährwerte in der Open-Food-Facts-Antwort (z.B. nur
   kcal, keine Makros) — UI muss das sichtbar machen, nicht stillschweigend
   mit 0 auffüllen.
-- Export/Import/Wipe-Pfade müssen `isOnlineImported`-Einträge korrekt von
-  seedierten Katalogeinträgen unterscheiden — ein Bug hier könnte entweder
-  Nutzerdaten beim Reset behalten (Datenschutz-Erwartung verletzt) oder
-  seedierte Katalogdaten versehentlich löschen (App bricht).
+- Export/Import/Wipe-Pfade müssen Einträge mit `source != .seeded`
+  korrekt von seedierten Katalogeinträgen unterscheiden — ein Bug hier
+  könnte entweder Nutzerdaten beim Reset behalten (Datenschutz-Erwartung
+  verletzt) oder seedierte Katalogdaten versehentlich löschen (App
+  bricht). Gilt gleichermaßen für `.onlineImported` und `.userCreated`.
 - Lokalisierung des `displayName`-Felds: da es Klartext statt eines
-  xcstrings-Keys ist, bleibt es in der Sprache, in der der Nutzer gesucht
-  hat — das ist beabsichtigt (keine automatische Übersetzung
+  xcstrings-Keys ist, bleibt es in der Sprache, in der der Nutzer gesucht/
+  eingegeben hat — das ist beabsichtigt (keine automatische Übersetzung
   nutzergenerierter Namen), sollte aber explizit im Implementierungsplan
   als bewusste Entscheidung festgehalten werden, nicht als Lücke.
+- "Eigenes Lebensmittel anlegen" ohne Stückgewicht/Dichte darf für diesen
+  Eintrag später in der Mengenauswahl NICHT Stück/ml als Option anbieten
+  — dieselbe Regel wie für seedierte Einträge, hier aber leicht zu
+  übersehen, da der Nutzer gerade erst alle Felder selbst ausgefüllt hat.
