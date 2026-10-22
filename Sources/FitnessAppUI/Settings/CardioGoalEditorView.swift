@@ -42,6 +42,12 @@ struct CardioGoalEditorView: View {
     @State private var showingDiscardConfirm = false
     @State private var pendingCardioBaseline: CardioBaselineCalculator.Result?
     @State private var retroSyncEmptyNoticeVisible = false
+    /// Task 5 (docs/superpowers/sdd/2026-10-22-ui-consistency): Doppeltap-
+    /// Schutz fuer `save()`.
+    @State private var isSaving = false
+    /// Task 5: sichtbare Fehlermeldung statt des bisher verschluckten
+    /// `try? modelContext.save()`-Fehlers.
+    @State private var saveErrorMessage: String?
 
     /// Paket 1 (Laufcoach-Plananpassung, Komponente 5):
     /// "Coach aus"-Bestätigung (eigener, sofort wirksamer Weg - siehe
@@ -74,6 +80,13 @@ struct CardioGoalEditorView: View {
                     actions: [
                         DeltiqHeaderAction(
                             systemImage: "checkmark",
+                            // Task 5 (d): Freitext-Zahlenfeld `draftFiveKReferenceText`
+                            // (MM:SS) muss vor dem Speichern valide sein, sonst
+                            // wuerde eine ungueltige Eingabe von `save()` still
+                            // auf `nil` fallen (siehe `PaceCalculator.
+                            // parseDurationToSeconds`) statt den Nutzer auf den
+                            // Tippfehler hinzuweisen.
+                            isDisabled: !canSave || isSaving,
                             accessibilityLabel: String(localized: "common.save", bundle: .module)
                         ) {
                             save()
@@ -82,6 +95,9 @@ struct CardioGoalEditorView: View {
                 )
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
+                        if let saveErrorMessage {
+                            errorRow(saveErrorMessage)
+                        }
                         cardioFields
                     }
                     .padding()
@@ -167,7 +183,24 @@ struct CardioGoalEditorView: View {
             || draftFiveKReferenceText != (profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? "")
     }
 
+    /// Task 5 (d): gate fuer das Save-Haekchen — das einzige Freitext-
+    /// Zahlenfeld dieses Editors (`draftFiveKReferenceText`, MM:SS) muss
+    /// entweder leer (keine Referenzzeit) oder ueber `PaceCalculator.
+    /// parseDurationToSeconds` parsbar sein. Die uebrigen Zahlenfelder
+    /// (`draftWeeklyBaseVolumeKm`/`draftMaxHeartRateBpm`) sind bereits ueber
+    /// typisierte `TextField(value:)`-Bindings gegen ungueltige Eingaben
+    /// geschuetzt und brauchen keine zusaetzliche Pruefung hier.
+    private var canSave: Bool {
+        guard draftCardioCoachingEnabled else { return true }
+        let text = draftFiveKReferenceText.trimmingCharacters(in: .whitespaces)
+        return text.isEmpty || PaceCalculator.parseDurationToSeconds(text) != nil
+    }
+
     private func save() {
+        guard !isSaving else { return }
+        isSaving = true
+        defer { isSaving = false }
+
         // Paket 1, Komponente 5: nur ECHTES Aktivieren (vorher aus, jetzt
         // an) loest die Anpassungsvorschau aus - ein Speichern, bei dem der
         // Coach schon vorher an war (z. B. nur Renndatum geaendert), zeigt
@@ -185,7 +218,14 @@ struct CardioGoalEditorView: View {
         // bei einem Kaltstart kurz danach wieder verloren (SwiftDatas
         // impliziter Autosave kam nicht reproduzierbar rechtzeitig durch) -
         // derselbe Musterfehler wie in `MeasurementPersistenceTests`/E01.
-        try? modelContext.save()
+        // Task 5: `try?` verschluckte den Fehler bisher komplett — der
+        // Nutzer sah "Erfolg", obwohl nichts persistiert wurde.
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return
+        }
 
         if coachJustActivated, let plan = activePlans.first {
             planForAdjustmentPreview = plan
@@ -467,6 +507,13 @@ struct CardioGoalEditorView: View {
             .padding(.horizontal, 14)
             .padding(.top, 4)
             .padding(.bottom, 8)
+    }
+
+    /// Task 5: identisches Inline-Fehler-Muster wie `GearListView.gearCard`.
+    private func errorRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 13))
+            .foregroundStyle(Color.Deltiq.error)
     }
 }
 #endif

@@ -46,6 +46,15 @@ struct TrainingLocationEquipmentEditorView: View {
     @State private var equipmentTouched = false
     /// UI-Refactor (DeltiqHeader-Muster): siehe `BodyDataEditorView`.
     @State private var showingDiscardConfirm = false
+    /// Task 5 (docs/superpowers/sdd/2026-10-22-ui-consistency): Doppeltap-
+    /// Schutz fuer `save()`.
+    @State private var isSaving = false
+    /// Task 5: sichtbare Fehlermeldung — es gab bisher GAR keinen
+    /// `modelContext.save()`-Aufruf (`profile` ist `@Bindable`, mutiert nur
+    /// den Live-Objektgraphen). Besonders wichtig hier: `applyEquipment-
+    /// Adaptations` (Plan-Uebungs-Tausch) darf erst feuern, NACHDEM dieser
+    /// Save tatsaechlich bestaetigt ist — siehe `save()`.
+    @State private var saveErrorMessage: String?
 
     init(profile: UserBodyProfile) {
         self.profile = profile
@@ -65,6 +74,7 @@ struct TrainingLocationEquipmentEditorView: View {
                     actions: [
                         DeltiqHeaderAction(
                             systemImage: "checkmark",
+                            isDisabled: isSaving,
                             accessibilityLabel: String(localized: "common.save", bundle: .module)
                         ) {
                             save()
@@ -73,6 +83,9 @@ struct TrainingLocationEquipmentEditorView: View {
                 )
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
+                        if let saveErrorMessage {
+                            errorRow(saveErrorMessage)
+                        }
                         locationSection
                         equipmentSection
                     }
@@ -102,7 +115,13 @@ struct TrainingLocationEquipmentEditorView: View {
                 Text("profile.equipmentSwap.title", bundle: .module),
                 isPresented: Binding(
                     get: { pendingEquipmentAdaptation != nil },
-                    set: { if !$0 { pendingEquipmentAdaptation = nil; dismiss() } }
+                    // Task 5: `dismiss()` wanderte aus diesem Setter heraus
+                    // in die beiden Buttons unten — sonst wuerde SwiftUIs
+                    // eigenes "Dialog schliesst sich nach Button-Tap"-
+                    // Verhalten den Editor IMMER verlassen, auch wenn der
+                    // Confirm-Button-Handler unten gerade einen fehl-
+                    // geschlagenen Save meldet (siehe dortiger Kommentar).
+                    set: { if !$0 { pendingEquipmentAdaptation = nil } }
                 )
             ) {
                 Button {
@@ -110,7 +129,20 @@ struct TrainingLocationEquipmentEditorView: View {
                         applyEquipmentAdaptations(against: newProfile)
                     }
                     pendingEquipmentAdaptation = nil
-                    dismiss()
+                    // Task 5: `applyEquipmentAdaptations` mutiert/inserted
+                    // direkt auf `modelContext`, ohne selbst zu speichern
+                    // (`PlanEquipmentAdaptationApplier.apply` speichert
+                    // nicht) — ohne diesen expliziten Save haengt der
+                    // Uebungs-Tausch an SwiftDatas implizitem Autosave. Bei
+                    // einem Fehler bleibt der Editor bewusst OFFEN (kein
+                    // `dismiss()`) — der Nutzer soll nicht glauben, der
+                    // Tausch sei uebernommen, waehrend er es nicht ist.
+                    do {
+                        try modelContext.save()
+                        dismiss()
+                    } catch {
+                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                    }
                 } label: {
                     Text("profile.envSwap.confirm", bundle: .module)
                 }
@@ -179,6 +211,10 @@ struct TrainingLocationEquipmentEditorView: View {
     }
 
     private func save() {
+        guard !isSaving else { return }
+        isSaving = true
+        defer { isSaving = false }
+
         // P5.1: VOR dem Schreiben erfassen — danach ist `profile.equipmentProfile`
         // bereits der neue Wert und ein Vergleich waere immer `false`.
         let equipmentChanged = draftEquipmentProfile != profile.equipmentProfile
@@ -187,6 +223,20 @@ struct TrainingLocationEquipmentEditorView: View {
         profile.equipmentProfile = draftEquipmentProfile
         if equipmentTouched {
             profile.confirmEquipmentProfileComplete()
+        }
+
+        // Task 5: vorher GAR kein `context.save()` — `profile` ist
+        // `@Bindable` und mutiert nur den Live-Objektgraphen. Besonders
+        // wichtig: der Equipment-Anpassungs-Dialog (und damit
+        // `applyEquipmentAdaptations`) darf erst NACH einem bestaetigten
+        // Save ueberhaupt in Betracht gezogen werden — sonst wuerde ein
+        // fehlgeschlagener Profil-Save trotzdem einen Plan-Uebungs-Tausch
+        // anbieten, der auf einem nie persistierten Profilstand basiert.
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return
         }
 
         // Ab hier IMMER `profile.equipmentProfile` verwenden, nie mehr den
@@ -239,6 +289,13 @@ struct TrainingLocationEquipmentEditorView: View {
             .padding(.horizontal, 14)
             .padding(.top, 4)
             .padding(.bottom, 8)
+    }
+
+    /// Task 5: identisches Inline-Fehler-Muster wie `GearListView.gearCard`.
+    private func errorRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 13))
+            .foregroundStyle(Color.Deltiq.error)
     }
 }
 #endif

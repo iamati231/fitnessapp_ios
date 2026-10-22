@@ -74,6 +74,17 @@ public struct PeriodicCheckInView: View {
     /// nur ein UI-Signal fuer diesen einen Speichern-Tap.
     @State private var didJustSave = false
 
+    /// Task 5 (docs/superpowers/sdd/2026-10-22-ui-consistency): Doppeltap-
+    /// Schutz — `save()` legt per `insert()` einen neuen `PeriodicCheckIn`
+    /// an, ohne Guard koennten zwei schnell aufeinanderfolgende Taps zwei
+    /// Rueckblicke fuer denselben Moment anlegen.
+    @State private var isSaving = false
+    /// Task 5: sichtbare Fehlermeldung — `save()` rief bisher GAR kein
+    /// `modelContext.save()` auf, ein fehlgeschlagener Schreibvorgang sah
+    /// fuer den Nutzer wie Erfolg aus (`didJustSave` wurde unconditional
+    /// direkt nach `insert()` gesetzt).
+    @State private var saveErrorMessage: String?
+
     /// Nachbesserung: dieser Screen hatte ursprünglich GAR keinen Verwerfen-
     /// Schutz — anders als jeder andere Editor dieser Epic (`MeasurementView`,
     /// `BodyDataEditorView`, ...) konnte eine bereits begonnene, aber noch
@@ -106,6 +117,7 @@ public struct PeriodicCheckInView: View {
                 actions: [
                     DeltiqHeaderAction(
                         systemImage: "checkmark",
+                        isDisabled: isSaving,
                         accessibilityLabel: String(localized: "common.save", bundle: .module)
                     ) {
                         save()
@@ -187,7 +199,13 @@ public struct PeriodicCheckInView: View {
                 triBoolPicker($goalAnswer)
             }
             hintRow(loc("periodicCheckIn.footer"))
-            if didJustSave {
+            if let saveErrorMessage {
+                Text(saveErrorMessage)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.error)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 12)
+            } else if didJustSave {
                 Text(loc("periodicCheckIn.saved.confirmation"))
                     .font(.system(size: 13))
                     .foregroundStyle(Color.Deltiq.success)
@@ -322,6 +340,11 @@ public struct PeriodicCheckInView: View {
     }
 
     private func save() {
+        guard !isSaving else { return }
+        isSaving = true
+        defer { isSaving = false }
+        saveErrorMessage = nil
+
         let checkIn = PeriodicCheckIn(
             frequencyFeedback: {
                 switch frequencyAnswer {
@@ -369,6 +392,23 @@ public struct PeriodicCheckInView: View {
             }()
         )
         modelContext.insert(checkIn)
+
+        // Task 5: vorher wurde `didJustSave = true` UNCONDITIONAL direkt
+        // nach `insert()` gesetzt, ohne je `modelContext.save()` aufzurufen
+        // — ein fehlgeschlagener (oder schlicht noch nicht persistierter)
+        // Schreibvorgang sah fuer den Nutzer exakt wie Erfolg aus. Jetzt
+        // zeigt die Bestaetigung erst NACH einem tatsaechlich erfolgreichen
+        // Save; bei einem Fehler wird der eingefuegte Eintrag zurueckgerollt
+        // und die bereits eingetragenen Antworten bleiben fuer einen
+        // erneuten Versuch erhalten (kein Reset auf `.skip`).
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(checkIn)
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return
+        }
+
         // Ersetzt die fruehere `@Query`-Live-Aktualisierung (siehe Typ-
         // Dokumentation): der "zuletzt gespeichert"-Hinweis zeigt den
         // gerade gespeicherten Eintrag sofort, ohne dafuer eine neue

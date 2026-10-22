@@ -254,6 +254,17 @@ private struct GearEditorView: View {
     @State private var didInit: Bool = false
     /// UI-Refactor (DeltiqHeader-Muster): siehe `BodyDataEditorView`.
     @State private var showingDiscardConfirm = false
+    /// Task 5 (docs/superpowers/sdd/2026-10-22-ui-consistency): Doppeltap-
+    /// Schutz — `save()` legt im `.new`-Modus per `insert()` ein neues
+    /// `Gear` an; ohne Guard koennten zwei schnell aufeinanderfolgende Taps
+    /// zwei Eintraege anlegen.
+    @State private var isSaving = false
+    /// Task 5: sichtbare Fehlermeldung — `save()` rief bisher GAR kein
+    /// `modelContext.save()` auf (verliess sich komplett auf SwiftDatas
+    /// impliziten Autosave), ein fehlgeschlagener Schreibvorgang sah fuer
+    /// den Nutzer wie Erfolg aus. Gleiches Inline-Muster wie
+    /// `GearListView.deleteErrorMessage` oben im selben File.
+    @State private var saveErrorMessage: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -266,7 +277,7 @@ private struct GearEditorView: View {
                 actions: [
                     DeltiqHeaderAction(
                         systemImage: "checkmark",
-                        isDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty,
+                        isDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty || isSaving,
                         accessibilityLabel: String(localized: "common.save", bundle: .module)
                     ) {
                         save()
@@ -337,6 +348,14 @@ private struct GearEditorView: View {
                     .font(.footnote)
             }
             .listRowSeparatorTint(Color.Deltiq.divider)
+            if let saveErrorMessage {
+                Section {
+                    Text(saveErrorMessage)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.Deltiq.error)
+                        .listRowBackground(Color.Deltiq.surface)
+                }
+            }
         }
         .scrollContentBackground(.hidden)
         .background(Color.Deltiq.background.ignoresSafeArea())
@@ -375,7 +394,11 @@ private struct GearEditorView: View {
 
     private func save() {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
+        guard !isSaving, !trimmed.isEmpty else { return }
+        isSaving = true
+        defer { isSaving = false }
+
+        var insertedGear: Gear?
         switch mode {
         case .new:
             let gear = Gear(
@@ -386,12 +409,26 @@ private struct GearEditorView: View {
                 isActive: isActive
             )
             modelContext.insert(gear)
+            insertedGear = gear
         case .edit(let gear):
             gear.name = trimmed
             gear.type = type
             gear.maxDistanceKm = maxDistance
             gear.currentDistanceKm = currentDistance
             gear.isActive = isActive
+        }
+        // Task 5: vorher GAR kein `context.save()` hier — verliess sich
+        // komplett auf SwiftDatas impliziten Autosave (derselbe Musterfehler
+        // wie `DayEditorView.saveAndDismiss()`/`GearListView.confirmDelete`
+        // oben im selben File, das den Save bereits korrekt macht).
+        do {
+            try modelContext.save()
+        } catch {
+            if let insertedGear {
+                modelContext.delete(insertedGear)
+            }
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return
         }
         dismiss()
     }

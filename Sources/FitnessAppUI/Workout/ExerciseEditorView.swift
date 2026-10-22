@@ -31,6 +31,11 @@ public struct ExerciseEditorView: View {
     /// DEL-160: Confirm-Gate fuer das Loeschen einer Custom-Uebung.
     @State private var showingDeleteConfirm = false
 
+    /// Task 5 (docs/superpowers/sdd/2026-10-22-ui-consistency): sichtbare
+    /// Fehlermeldung — `deleteCustomExercise()` verschluckte den Fehler
+    /// bisher per `try?` und rief `dismiss()` trotzdem unconditional auf.
+    @State private var deleteErrorMessage: String?
+
     /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
     /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
     /// wird, statt sofort zu schliessen.
@@ -283,6 +288,12 @@ public struct ExerciseEditorView: View {
                         .frame(maxWidth: .infinity)
                     }
                     .listRowBackground(Color.Deltiq.surface)
+                    if let deleteErrorMessage {
+                        Text(deleteErrorMessage)
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.Deltiq.error)
+                            .listRowBackground(Color.Deltiq.surface)
+                    }
                 }
                 .listRowSeparatorTint(Color.Deltiq.divider)
             }
@@ -357,7 +368,15 @@ public struct ExerciseEditorView: View {
 
         // 2) Die bearbeitete Exercise-Instanz loeschen (Logs nullify-ueberleben).
         modelContext.delete(exercise)
-        try? modelContext.save()
+        // Task 5: `try?` verschluckte den Fehler bisher komplett — `dismiss()`
+        // lief unconditional, der Nutzer sah "geloescht", obwohl die
+        // Loeschung evtl. nie auf der Store-Datei ankam.
+        do {
+            try modelContext.save()
+        } catch {
+            deleteErrorMessage = String(localized: "day.editor.exercise.delete.saveFailed", bundle: .module)
+            return
+        }
 
         dismiss()
     }

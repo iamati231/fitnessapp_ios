@@ -114,6 +114,17 @@ public struct MeasurementView: View {
     /// irrelevant, da dort kein Zurueck-Chevron existiert.
     @State private var fieldsAtOpen = MeasurementFieldSnapshot()
 
+    /// Task 5 (docs/superpowers/sdd/2026-10-22-ui-consistency): Doppeltap-
+    /// Schutz — im New-Mode legt `save(profile:)` per `insert()` einen
+    /// neuen `BodyMeasurement` an und bleibt danach (bewusst) offen fuer den
+    /// naechsten Eintrag; ohne Guard koennte ein schneller Doppeltap zwei
+    /// Messungen fuer denselben Moment anlegen.
+    @State private var isSaving = false
+    /// Task 5: sichtbare Fehlermeldung statt des bisher verschluckten
+    /// `try? modelContext.save()`-Fehlers (Edit-Mode) bzw. des komplett
+    /// fehlenden Save-Aufrufs (New-Mode).
+    @State private var saveErrorMessage: String?
+
     public init() {
         self.editingMeasurement = nil
     }
@@ -348,7 +359,7 @@ public struct MeasurementView: View {
         return [
             DeltiqHeaderAction(
                 systemImage: "checkmark",
-                isDisabled: !canSave(profile: profile),
+                isDisabled: !canSave(profile: profile) || isSaving,
                 accessibilityLabel: String(localized: "common.save", bundle: .module)
             ) {
                 save(profile: profile)
@@ -725,7 +736,11 @@ public struct MeasurementView: View {
                 .buttonStyle(.plain)
             }
 
-            if let lastSavedAt {
+            if let saveErrorMessage {
+                Text(saveErrorMessage)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.error)
+            } else if let lastSavedAt {
                 // DEL-107: %@-Placeholder fuer das formatierte Datum.
                 let stamp = lastSavedAt.formatted(date: .abbreviated, time: .shortened)
                 Text(isEditMode
@@ -994,7 +1009,10 @@ public struct MeasurementView: View {
     // MARK: - Save / Delete
 
     private func save(profile: UserBodyProfile) {
-        guard let weightKg, canSave(profile: profile) else { return }
+        guard !isSaving, let weightKg, canSave(profile: profile) else { return }
+        isSaving = true
+        defer { isSaving = false }
+        saveErrorMessage = nil
 
         if let existing = editingMeasurement {
             // Settings-Epic Phase 3: am tatsaechlichen Feldstand entscheiden,
@@ -1090,7 +1108,15 @@ public struct MeasurementView: View {
             // Autosave, der einen App-Kaltstart kurz danach nicht
             // zuverlaessig schon durchlaufen haben muss — die Aenderung
             // waere dann nach Neustart wieder auf dem alten Stand.
-            try? modelContext.save()
+            // Task 5: `try?` verschluckte den Fehler bisher komplett —
+            // `dismiss()` lief unconditional, der Nutzer sah "gespeichert",
+            // obwohl die Aenderung evtl. nie persistiert wurde.
+            do {
+                try modelContext.save()
+            } catch {
+                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                return
+            }
 
             lastSavedAt = Date()
             dismiss()
@@ -1110,6 +1136,21 @@ public struct MeasurementView: View {
                 calfCm: calfCm
             )
             modelContext.insert(measurement)
+            // Task 5: vorher GAR kein `context.save()` im New-Mode-Zweig —
+            // verliess sich komplett auf SwiftDatas impliziten Autosave
+            // (derselbe Musterfehler wie der Edit-Zweig oben vor seinem
+            // eigenen, bereits vorhandenen — wenn auch `try?`-verschluckten —
+            // Save). Ein fehlgeschlagener Save rollt die Neuanlage zurueck
+            // und laesst die eingegebenen Felder fuer einen erneuten
+            // Versuch stehen (kein `resetFields()`).
+            do {
+                try modelContext.save()
+            } catch {
+                modelContext.delete(measurement)
+                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                return
+            }
+
             lastSavedAt = measurement.date
 
             let bodyFatPct = measurement.selectedBodyFatPct
@@ -1136,7 +1177,15 @@ public struct MeasurementView: View {
     private func deleteCurrentMeasurement() {
         guard let existing = editingMeasurement else { return }
         modelContext.delete(existing)
-        try? modelContext.save()
+        // Task 5: `try?` verschluckte den Fehler bisher komplett — `dismiss()`
+        // lief unconditional, der Nutzer sah "geloescht", obwohl die
+        // Loeschung evtl. nie auf der Store-Datei ankam.
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return
+        }
         dismiss()
     }
 

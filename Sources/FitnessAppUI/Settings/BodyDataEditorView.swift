@@ -48,6 +48,15 @@ struct BodyDataEditorView: View {
     /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
     /// wird, statt sofort zu schliessen.
     @State private var showingDiscardConfirm = false
+    /// Task 5 (docs/superpowers/sdd/2026-10-22-ui-consistency): Doppeltap-
+    /// Schutz — `save()` legt bei gesetztem `weightTouched` eine neue
+    /// `BodyMeasurement` an; ohne Guard koennten zwei schnell aufeinander-
+    /// folgende Taps auf den Haekchen-Button zwei Zeilen anlegen.
+    @State private var isSaving = false
+    /// Task 5: sichtbare Fehlermeldung statt eines verschluckten Fehlers —
+    /// bisher gab es hier GAR keinen `modelContext.save()`-Aufruf, ein
+    /// fehlgeschlagener Save sah fuer den Nutzer wie Erfolg aus.
+    @State private var saveErrorMessage: String?
 
     init(profile: UserBodyProfile) {
         self.profile = profile
@@ -72,7 +81,7 @@ struct BodyDataEditorView: View {
                     actions: [
                         DeltiqHeaderAction(
                             systemImage: "checkmark",
-                            isDisabled: !canSave,
+                            isDisabled: !canSave || isSaving,
                             accessibilityLabel: String(localized: "common.save", bundle: .module)
                         ) {
                             save()
@@ -81,6 +90,9 @@ struct BodyDataEditorView: View {
                 )
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
+                        if let saveErrorMessage {
+                            errorRow(saveErrorMessage)
+                        }
                         heightSection
                         weightSection
                         goalSection
@@ -234,12 +246,17 @@ struct BodyDataEditorView: View {
     private static let heightRange: ClosedRange<Double> = 100...250
 
     private func save() {
+        guard !isSaving else { return }
+        isSaving = true
+        defer { isSaving = false }
+
         profile.heightCm = draftHeightCm
         profile.goalWeightKg = draftGoalWeightKg
         // Groesse/Zielgewicht allein (oder ein nie angefasstes Gewichtsfeld)
         // legen bewusst KEINEN neuen Gewichtseintrag an — nur eine
         // tatsaechliche Eingabe tut das, auch wenn sie zufaellig dem letzten
         // bekannten Wert entspricht (Pflicht-Vorgabe).
+        var insertedMeasurement: BodyMeasurement?
         if weightTouched, let weightKg = draftWeightKg, weightKg > 0 {
             let ageYears = Calendar.current.dateComponents([.year], from: profile.birthDate, to: Date()).year ?? 0
             let measurement = BodyMeasurement.makeWeightOnly(
@@ -249,6 +266,24 @@ struct BodyDataEditorView: View {
                 profile: profile.profile
             )
             modelContext.insert(measurement)
+            insertedMeasurement = measurement
+        }
+
+        // Task 5: vorher GAR kein `context.save()` hier — Groesse/Zielgewicht
+        // (per `@Bindable` bereits mutiert) UND ein frisch eingefuegter
+        // Gewichtseintrag haengten komplett an SwiftDatas implizitem
+        // Autosave, der einen Kaltstart kurz danach nicht zuverlaessig
+        // ueberstehen muss (derselbe Musterfehler wie `DayEditorView.
+        // saveAndDismiss()`). Ein fehlgeschlagener Save dismisst jetzt NICHT
+        // mehr, der frisch eingefuegte Eintrag wird zurueckgerollt.
+        do {
+            try modelContext.save()
+        } catch {
+            if let insertedMeasurement {
+                modelContext.delete(insertedMeasurement)
+            }
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return
         }
         dismiss()
     }
@@ -261,6 +296,14 @@ struct BodyDataEditorView: View {
             .padding(.horizontal, 14)
             .padding(.top, 4)
             .padding(.bottom, 8)
+    }
+
+    /// Task 5: identisches Inline-Fehler-Muster wie `GearListView.gearCard`s
+    /// `deleteErrorMessage` — kein neuer Toast/Alert-Mechanismus noetig.
+    private func errorRow(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 13))
+            .foregroundStyle(Color.Deltiq.error)
     }
 }
 #endif

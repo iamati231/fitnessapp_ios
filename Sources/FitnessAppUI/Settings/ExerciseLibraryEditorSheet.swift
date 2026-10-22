@@ -28,6 +28,12 @@ struct ExerciseLibraryEditorSheet: View {
     @State private var isCompound: Bool
     /// UI-Refactor (DeltiqHeader-Muster): siehe `BodyDataEditorView`.
     @State private var showingDiscardConfirm = false
+    /// Task 5 (docs/superpowers/sdd/2026-10-22-ui-consistency): Doppeltap-
+    /// Schutz fuer `save()` (Create legt sonst zwei Templates an).
+    @State private var isSaving = false
+    /// Task 5: sichtbare Fehlermeldung statt des bisher verschluckten
+    /// `try? modelContext.save()`-Fehlers.
+    @State private var saveErrorMessage: String?
 
     init(template: ExerciseTemplate?) {
         self.existing = template
@@ -78,7 +84,7 @@ struct ExerciseLibraryEditorSheet: View {
                     actions: isReadOnly ? [] : [
                         DeltiqHeaderAction(
                             systemImage: "checkmark",
-                            isDisabled: trimmedName.isEmpty,
+                            isDisabled: trimmedName.isEmpty || isSaving,
                             accessibilityLabel: String(localized: isCreate ? "customExercise.add" : "common.done", bundle: .module)
                         ) {
                             save()
@@ -90,6 +96,14 @@ struct ExerciseLibraryEditorSheet: View {
                         readOnlyContent
                     } else {
                         editableContent
+                    }
+                    if let saveErrorMessage {
+                        Section {
+                            Text(saveErrorMessage)
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.Deltiq.error)
+                                .listRowBackground(Color.Deltiq.surface)
+                        }
                     }
                 }
                 .scrollContentBackground(.hidden)
@@ -213,7 +227,11 @@ struct ExerciseLibraryEditorSheet: View {
     // MARK: Save
 
     private func save() {
-        guard !trimmedName.isEmpty else { return }
+        guard !isSaving, !trimmedName.isEmpty else { return }
+        isSaving = true
+        defer { isSaving = false }
+
+        var insertedTemplate: ExerciseTemplate?
         if let existing {
             // Edit: Felder zurueckschreiben (nur Custom erreicht diesen Pfad).
             existing.name = trimmedName
@@ -231,8 +249,20 @@ struct ExerciseLibraryEditorSheet: View {
                 isSystemProvided: false
             )
             modelContext.insert(template)
+            insertedTemplate = template
         }
-        try? modelContext.save()
+        // Task 5: `try?` verschluckte den Fehler bisher komplett — ein
+        // fehlgeschlagener Save sah fuer den Nutzer wie Erfolg aus
+        // (`dismiss()` lief unconditional).
+        do {
+            try modelContext.save()
+        } catch {
+            if let insertedTemplate {
+                modelContext.delete(insertedTemplate)
+            }
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return
+        }
         dismiss()
     }
 }
