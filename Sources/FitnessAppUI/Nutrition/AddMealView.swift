@@ -4,6 +4,7 @@ import SwiftData
 import FitnessAppCore
 import FitnessAppData
 import FitnessAppAI
+import FitnessAppFoodLookup
 
 /// Task 6: Erfassungs-Sheet fuer eine neue Mahlzeit. Sammelt Positionen in
 /// einem `MealDraft` (reine Vorschau, siehe dortige Doku) und persistiert
@@ -49,6 +50,15 @@ public struct AddMealView: View {
     @State private var isExtracting: Bool = false
     @State private var aiCandidates: [MealDraftCandidate] = []
     @State private var aiErrorMessage: String?
+
+    /// Task 4 (docs/superpowers/sdd/2026-10-22-online-food-lookup): same
+    /// AppStorage key/default Task 3 already declared in
+    /// `SettingsDataConnectionsView` — today's behavior (no toggle = no
+    /// online action at all) stays exactly as-is when this is `false`.
+    @AppStorage("onlineFoodLookupEnabled") private var onlineFoodLookupEnabled: Bool = false
+    @StateObject private var onlineSearch = OnlineFoodSearchController(
+        searcher: OpenFoodFactsSearchClient(userAgent: "Deltiq/1.0 (a.isik@atamya.com)")
+    )
 
     public init(date: Date = Date(), mealType: MealType = .snack) {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
@@ -139,6 +149,17 @@ public struct AddMealView: View {
                     Text("common.cancel", bundle: .module)
                 }
             }
+            // Task 4: preview/confirm for a tapped online-search result.
+            // `OnlineFoodCandidate` is `Identifiable`, so `.sheet(item:)`
+            // both presents it and clears `selectedCandidate` on swipe-to-
+            // dismiss — same effect as `onlineSearch.dismissPreview()`.
+            .sheet(item: $onlineSearch.selectedCandidate) { candidate in
+                OnlineFoodCandidatePreviewSheet(
+                    candidate: candidate,
+                    onConfirm: { confirmOnlineImport($0) },
+                    onCancel: { onlineSearch.dismissPreview() }
+                )
+            }
         }
     }
 
@@ -182,6 +203,26 @@ public struct AddMealView: View {
                 Text("nutrition.addMeal.noResults", bundle: .module)
                     .foregroundStyle(Color.Deltiq.textSecondary)
                     .listRowBackground(Color.Deltiq.surface)
+
+                // Task 4: opt-in-only (Settings > Daten & Verbindungen),
+                // default off — with the toggle off this whole branch is
+                // gone, today's behavior unchanged. Deliberately its OWN
+                // Section row (not nested inside the Text above's row) so
+                // `OnlineFoodResultsList` below gets one real Form row per
+                // candidate instead of sharing this row's tap target.
+                if onlineFoodLookupEnabled {
+                    onlineSearchButton
+                        .listRowBackground(Color.Deltiq.surface)
+
+                    if let message = onlineSearch.errorMessage {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .listRowBackground(Color.Deltiq.surface)
+                    }
+
+                    OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+                }
             } else {
                 // DEL-Picker-Muster (siehe ExerciseLibraryView.filtered):
                 // Live-Filter ueber die aufgeloeste Katalog-Bezeichnung.
@@ -204,6 +245,25 @@ public struct AddMealView: View {
             }
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Task 4: "Online suchen" in the manual-search 0-Treffer state —
+    /// sichtbarer Text-Label (nicht icon-only, Brief-Vorgabe), deaktiviert
+    /// waehrend eine Anfrage laeuft (gleicher Doppeltap-Schutz wie
+    /// `aiSection`'s Extraktions-Button).
+    private var onlineSearchButton: some View {
+        Button {
+            runOnlineSearch()
+        } label: {
+            HStack {
+                if onlineSearch.isSearching {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Text("nutrition.addMeal.onlineSearch.action", bundle: .module)
+            }
+        }
+        .disabled(onlineSearch.isSearching)
     }
 
     /// Task E: lokale KI-gestuetzte Freitext-Erfassung. Bei `.unavailable`
@@ -580,6 +640,51 @@ public struct AddMealView: View {
     private func removeAICandidate(_ candidate: MealDraftCandidate) {
         guard let index = aiCandidates.firstIndex(of: candidate) else { return }
         aiCandidates.remove(at: index)
+    }
+
+    /// Task 4: searches Open Food Facts for the CURRENT manual search text
+    /// (that's what produced the 0-Treffer state in the first place) — no
+    /// separate online-query field. `OnlineFoodSearchController.search`
+    /// already no-ops on a double tap while one request is in flight.
+    private func runOnlineSearch() {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return }
+        Task { @MainActor in
+            await onlineSearch.search(query: query, locale: locale, errorText: onlineSearchErrorText)
+        }
+    }
+
+    private func onlineSearchErrorText(_ error: OnlineFoodSearchError) -> String {
+        switch error {
+        case .noNetwork:
+            return String(localized: "nutrition.addMeal.onlineSearch.noNetwork", bundle: .module)
+        case .noResults:
+            return String(localized: "nutrition.addMeal.onlineSearch.noResults", bundle: .module)
+        case .rateLimited, .invalidResponse:
+            return String(localized: "nutrition.addMeal.onlineSearch.error", bundle: .module)
+        }
+    }
+
+    /// Confirm in `OnlineFoodCandidatePreviewSheet`: creates exactly ONE
+    /// `FoodCatalogEntry` (`source == .onlineImported`) and routes it into
+    /// the SAME `selectEntry` -> `quantityBottomBar` -> `addSelectedEntry` ->
+    /// `draft.addItem` path a manual/AI catalog pick already uses — no new
+    /// persistence logic, no quantity guessed here (brief: no quantity field
+    /// in the preview sheet, the existing bottom bar still asks for it).
+    private func confirmOnlineImport(_ values: OnlineFoodImportValues) {
+        let entry = FoodCatalogEntry(
+            displayName: values.name,
+            source: .onlineImported,
+            category: .other,
+            kcalPer100g: values.kcalPer100g,
+            proteinPer100g: values.proteinPer100g,
+            carbsPer100g: values.carbsPer100g,
+            fatPer100g: values.fatPer100g
+        )
+        modelContext.insert(entry)
+        onlineSearch.dismissPreview()
+        onlineSearch.reset()
+        selectEntry(entry)
     }
 
     private func saveMeal() {

@@ -59,7 +59,10 @@ let package = Package(
                            // Task E: AddMealView calls NutritionAIService/MealTextExtractor
                            // directly. Still a one-way dependency — FitnessAppAI itself
                            // depends on nothing, so a broken AI layer can't break Core/Data.
-                           "FitnessAppAI"],
+                           "FitnessAppAI",
+                           // Task 4: AddMealView's online food search talks to
+                           // OnlineFoodSearching/OpenFoodFactsSearchClient directly.
+                           "FitnessAppFoodLookup"],
             path: "Sources/FitnessAppUI",
             // ExerciseGifs liegt bewusst NICHT unter Resources/: `.process()`
             // flacht verschachtelte Ordner ab (alle Dateien landen direkt im
@@ -124,7 +127,7 @@ let package = Package(
             // compiliert das SwiftUI-abhaengige FitnessAppUI leer, diese Tests
             // beruehren nur Foundation und laufen echt auf Codemagic-Mac.
             name: "FitnessAppUITests",
-            dependencies: ["FitnessAppUI", "FitnessAppCore", "FitnessAppData", "FitnessAppAI"],
+            dependencies: ["FitnessAppUI", "FitnessAppCore", "FitnessAppData", "FitnessAppAI", "FitnessAppFoodLookup"],
             path: "Tests/FitnessAppUITests"
         ),
         .testTarget(
