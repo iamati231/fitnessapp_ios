@@ -67,6 +67,9 @@ struct BaselineCheckFlowView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var path: [Route] = []
+    /// Task 8 (docs/superpowers/sdd/2026-10-22-ui-consistency): siehe
+    /// `isDirty`/`discardChangesConfirmation` unten.
+    @State private var showingDiscardConfirm = false
 
     // Sicherheit — UX-Fix vereinfacht auf 2 Antworten (das Datenmodell
     // `SafetyStatus` ist ohnehin binaer; die vorige 3-Options-Frage
@@ -143,15 +146,50 @@ struct BaselineCheckFlowView: View {
                 #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
+                        // Task 8: ohne bereits erfasste Fortschritte
+                        // weiterhin sofortiges kommentarloses Schliessen
+                        // (`isDirty == false`) -- mit mindestens einer
+                        // bereits bearbeiteten Bewegungsfamilie (oder
+                        // Sicherheitsfrage/Wochenintensitaet) fragt derselbe
+                        // Button jetzt erst per `discardChangesConfirmation`
+                        // nach.
                         Button {
-                            onFinish(nil)
-                            dismiss()
+                            if isDirty {
+                                showingDiscardConfirm = true
+                            } else {
+                                onFinish(nil)
+                                dismiss()
+                            }
                         } label: {
                             Text("common.close", bundle: .module)
                         }
                     }
                 }
+                .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+                    onFinish(nil)
+                    dismiss()
+                }
+                // Task 8: interaktives Wegziehen des Sheets ist sonst ein
+                // ungesicherter Verlassen-Weg am Discard-Dialog vorbei.
+                // Ohne Fortschritt (`!isDirty`) bleibt es normal moeglich.
+                .interactiveDismissDisabled(isDirty)
         }
+    }
+
+    /// Task 8: "bereits bearbeitete Bewegungsfamilie" (oder Sicherheitsfrage/
+    /// Wochenintensitaet) als Entwurfs-Signal -- reine Navigation im `path`
+    /// OHNE erfasste Daten zaehlt bewusst NICHT (Epic-Vorgabe "nie ein Gate":
+    /// frei herumklicken ohne etwas einzugeben soll keine Rueckfrage ausloesen).
+    /// Reuses `familyStatus` (bereits die Open/Recorded/Skipped-Wahrheit pro
+    /// Familie) statt eine zweite, parallele Pruefung zu erfinden.
+    private var isDirty: Bool {
+        safetyStatus != nil
+            || familyStatus(.push) != .open
+            || familyStatus(.legs) != .open
+            || familyStatus(.pull) != .open
+            || familyStatus(.core) != .open
+            || familyStatus(.cardio) != .open
+            || intensity != .comfortablyChallenging
     }
 
     @ViewBuilder

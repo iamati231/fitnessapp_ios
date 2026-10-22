@@ -6,6 +6,28 @@ import FitnessAppData
 import FitnessAppAI
 import FitnessAppFoodLookup
 
+/// Task 8 (docs/superpowers/sdd/2026-10-22-ui-consistency): Feldwerte einer
+/// `MealDraft.Item`-Position fuer `AddMealView.isDirty` -- `MealDraft.Item`
+/// selbst ist nicht `Equatable` (siehe dortige Doku), und Edit-Mode startet
+/// mit vorbefuellten Items aus der bestehenden Mahlzeit, die fuer sich allein
+/// NICHT dirty machen duerfen (Vergleich gegen `itemsAtOpen`). `internal`
+/// statt `private`, damit ein Test (siehe `Tests/FitnessAppUITests`) die
+/// Capture-Logik per `@testable import` direkt pruefen kann -- gleiches
+/// Prinzip wie `ExerciseSnapshot`/`MeasurementFieldSnapshot`.
+@available(iOS 17.0, macOS 14.0, *)
+struct MealDraftItemFieldsSnapshot: Equatable {
+    let catalogID: String?
+    let nameSnapshot: String
+    let quantity: Double
+    let unit: FoodUnit
+
+    static func capture(from items: [MealDraft.Item]) -> [MealDraftItemFieldsSnapshot] {
+        items.map {
+            MealDraftItemFieldsSnapshot(catalogID: $0.catalogID, nameSnapshot: $0.nameSnapshot, quantity: $0.quantity, unit: $0.unit)
+        }
+    }
+}
+
 /// Task 6: Erfassungs-Sheet fuer eine neue Mahlzeit. Sammelt Positionen in
 /// einem `MealDraft` (reine Vorschau, siehe dortige Doku) und persistiert
 /// erst beim expliziten "Speichern"-Tap ueber `MealDraft.save(into:)`.
@@ -44,6 +66,15 @@ public struct AddMealView: View {
     @State private var selectedUnit: FoodUnit = .gram
     @State private var showingSaveError: Bool = false
     @State private var showingDeleteConfirm: Bool = false
+    /// Task 8 (docs/superpowers/sdd/2026-10-22-ui-consistency): siehe
+    /// `isDirty`/`discardChangesConfirmation` unten.
+    @State private var showingDiscardConfirm: Bool = false
+
+    /// Task 8: Positionen beim Oeffnen -- Vergleichsbasis fuer `isDirty` im
+    /// Edit-Mode (Task 7), wo `draft.items` von Anfang an vorbefuellt ist und
+    /// deshalb allein NICHT als "etwas zu verlieren" zaehlen darf. New-Mode
+    /// startet immer leer. Gleiches Prinzip wie `MeasurementView.fieldsAtOpen`.
+    private let itemsAtOpen: [MealDraftItemFieldsSnapshot]
 
     // Task 6: manuelles Anlegen eines eigenen Lebensmittels — unabhaengig
     // von Netz/KI (siehe `CustomFoodEntrySheet`/`CustomFoodDraft`).
@@ -79,11 +110,14 @@ public struct AddMealView: View {
     public init(date: Date = Date(), mealType: MealType = .snack) {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
         self.editingMeal = nil
+        self.itemsAtOpen = []
     }
 
     public init(editing meal: MealEntry) {
-        _draft = StateObject(wrappedValue: MealDraft(editing: meal))
+        let newDraft = MealDraft(editing: meal)
+        _draft = StateObject(wrappedValue: newDraft)
         self.editingMeal = meal
+        self.itemsAtOpen = MealDraftItemFieldsSnapshot.capture(from: newDraft.items)
     }
 
     public var body: some View {
@@ -119,10 +153,13 @@ public struct AddMealView: View {
             .keyboardDismissToolbar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    // Verwirft den MealDraft kommentarlos — bewusst KEIN
-                    // save()-Aufruf hier, also keine Spur im ModelContext.
+                    // Task 8: verwirft den MealDraft weiterhin kommentarlos
+                    // OHNE Entwurfsdaten (kein save()-Aufruf, keine Spur im
+                    // ModelContext) -- MIT Entwurfsdaten (siehe `isDirty`)
+                    // fragt derselbe Button jetzt erst per
+                    // `discardChangesConfirmation` nach.
                     Button {
-                        dismiss()
+                        isDirty ? (showingDiscardConfirm = true) : dismiss()
                     } label: {
                         Text("nutrition.addMeal.cancel", bundle: .module)
                     }
@@ -165,6 +202,14 @@ public struct AddMealView: View {
                     Text("common.cancel", bundle: .module)
                 }
             }
+            .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
+                dismiss()
+            }
+            // Task 8: interaktives Wegziehen des Sheets ist sonst ein
+            // ungesicherter Verlassen-Weg am Discard-Dialog vorbei (gleiches
+            // Prinzip wie ExerciseLibraryEditorSheet/NewCustomExerciseSheet).
+            // Ohne Entwurfsdaten (`!isDirty`) bleibt es normal moeglich.
+            .interactiveDismissDisabled(isDirty)
             // Task 4: preview/confirm for a tapped online-search result.
             // `OnlineFoodCandidate` is `Identifiable`, so `.sheet(item:)`
             // both presents it and clears `selectedCandidate` on swipe-to-
@@ -690,6 +735,36 @@ public struct AddMealView: View {
     }
 
     // MARK: Derived
+
+    /// Task 8 (docs/superpowers/sdd/2026-10-22-ui-consistency): muss ALLE
+    /// Entwurfs-Quellen erfassen, nicht nur eine -- geprueft gegen den
+    /// aktuellen Stand der Datei (Task 6/7/Online-Food-Lookup haben seitdem
+    /// mehrere unabhaengige Entwurfs-Pfade hinzugefuegt):
+    ///   * `draft.items` -- bereits per "Add" uebernommene Positionen,
+    ///     verglichen gegen `itemsAtOpen` (Edit-Mode startet vorbefuellt).
+    ///   * `selectedEntry`/`quantity` -- ein in der `quantityBottomBar`
+    ///     angewaehlter Katalog-Eintrag mit (optional) eingetippter Menge,
+    ///     der noch NICHT per "Add" in `draft.items` uebernommen wurde. Jeder
+    ///     Eintrittspunkt (manuelle Suche, KI-Kandidat, Online-Import) landet
+    ///     ueber `selectEntry`/`applyAICandidate` hier, ein einziger Check
+    ///     deckt also alle drei ab.
+    ///   * `aiInputText` -- getippter, noch nicht extrahierter KI-Freitext.
+    ///   * `aiCandidates` -- bereits extrahierte, aber noch nicht uebernommene
+    ///     KI-Kandidaten (Mehrdeutigkeits-Auswahl/Mengen-Rueckfrage offen).
+    /// `searchText` (reiner Filter, kein Eingabe-Risiko), die aktiven
+    /// Online-Suchergebnisse selbst sowie `showingCustomFoodEntry`/
+    /// `onlineSearch.selectedCandidate` zaehlen bewusst NICHT: Letztere sind
+    /// je ihr eigenes modales Sheet mit eigenem Save/Cancel -- waehrend eines
+    /// davon offen ist, ist dieser Screen's eigener Cancel-Button ohnehin
+    /// nicht erreichbar, und ein erfolgreicher Import/Uebernahme landet
+    /// bereits ueber `selectEntry`/`applyAICandidate` in `selectedEntry`.
+    private var isDirty: Bool {
+        MealDraftItemFieldsSnapshot.capture(from: draft.items) != itemsAtOpen
+            || selectedEntry != nil
+            || quantity != nil
+            || !aiInputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !aiCandidates.isEmpty
+    }
 
     private var filteredEntries: [FoodCatalogEntry] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
