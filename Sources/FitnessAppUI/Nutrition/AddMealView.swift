@@ -610,7 +610,11 @@ public struct AddMealView: View {
     // MARK: Localization helpers
 
     private func resolvedName(for entry: FoodCatalogEntry) -> String {
-        String(localized: String.LocalizationValue(entry.nameKey), bundle: .module)
+        // Online-importierte/manuell angelegte Eintraege haben einen
+        // Klartext-Namen statt eines xcstrings-Keys (kein Lokalisierungs-
+        // Key fuer vom Nutzer/einer Online-Quelle stammenden Text) — der hat
+        // Vorrang vor `nameKey`.
+        entry.displayName ?? String(localized: String.LocalizationValue(entry.nameKey), bundle: .module)
     }
 
     private func mealTypeLabel(_ type: MealType) -> String {

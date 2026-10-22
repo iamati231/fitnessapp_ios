@@ -16,6 +16,9 @@ public enum FoodCategory: String, Codable, Sendable, CaseIterable {
     case fat
     case beverage
     case sweet
+    /// Online-Food-Lookup / manuelle Erfassung: Faenger fuer Eintraege, die
+    /// in keine der obigen Gruppen passen (z.B. Fertiggerichte, Mischrezepte).
+    case other
 
     /// xcstrings-Lookup-Key: `nutrition.category.{rawValue}.name`.
     public var localizationKey: String {

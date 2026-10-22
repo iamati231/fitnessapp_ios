@@ -131,6 +131,11 @@ public enum DataExportService {
         let checkIns    = try context.fetch(FetchDescriptor<PeriodicCheckIn>())
         let meals       = try context.fetch(FetchDescriptor<MealEntry>())
         let mealItems   = try context.fetch(FetchDescriptor<MealItem>())
+        // Online-Food-Lookup: nur online importierte/manuell angelegte
+        // Katalogeintraege exportieren, niemals die ~100 geseedeten (die
+        // kommen beim Import ohnehin wieder aus FoodCatalogSeeder).
+        let customFoodCatalogEntries = try context.fetch(FetchDescriptor<FoodCatalogEntry>())
+            .filter { $0.source != .seeded }
         // Custom-Exercises: alle ExerciseTemplates mit isCustom=true. Die System-
         // Library wird vom App-Bundle bei jedem Start neu seedet, exportieren wir
         // nicht.
@@ -146,6 +151,7 @@ public enum DataExportService {
         files.append(("periodic_checkins.csv", buildPeriodicCheckIns(checkIns, id: id)))
         files.append(("meals.csv",            buildMeals(meals, id: id)))
         files.append(("meal_items.csv",       buildMealItems(mealItems, id: id)))
+        files.append(("custom_food_catalog.csv", buildCustomFoodCatalog(customFoodCatalogEntries)))
         files.append(("plans.csv",            buildPlans(plans, id: id)))
         files.append(("plan_days.csv",        buildDays(days, id: id)))
         files.append(("plan_exercises.csv",   buildExercises(exercises, id: id)))
@@ -162,7 +168,7 @@ public enum DataExportService {
             + checkIns.count + meals.count + mealItems.count
             + plans.count + days.count + exercises.count
             + sessions.count + logs.count + prs.count
-            + gears.count + customExercises.count
+            + gears.count + customExercises.count + customFoodCatalogEntries.count
 
         return FilesSnapshot(files: files, totalRows: totalRows)
     }
@@ -500,6 +506,37 @@ public enum DataExportService {
                 CSVWriter.decimal(i.proteinGSnapshot),
                 CSVWriter.decimal(i.carbsGSnapshot),
                 CSVWriter.decimal(i.fatGSnapshot)
+            ])
+        }
+        return w.data()
+    }
+
+    /// Online-Food-Lookup: nur online importierte/manuell angelegte
+    /// Katalogeintraege (`source != .seeded`, bereits beim Fetch gefiltert).
+    /// `catalog_id` ist die stabile, beim Anlegen einmalig generierte UUID —
+    /// braucht keine zusaetzliche Export-Lauf-lokale `id`-Spalte, weil kein
+    /// anderes CSV per FK auf diese Zeilen verweist (`meal_items.catalog_id`
+    /// referenziert dieselbe stabile ID direkt, siehe `buildMealItems`).
+    private static func buildCustomFoodCatalog(
+        _ items: [FoodCatalogEntry]
+    ) -> Data {
+        var w = CSVWriter(headers: [
+            "catalog_id", "display_name", "source", "category",
+            "kcal_per_100g", "protein_per_100g", "carbs_per_100g", "fat_per_100g",
+            "piece_weight_grams", "density_grams_per_ml"
+        ])
+        for e in items {
+            w.appendRow([
+                e.catalogID,
+                e.displayName ?? "",
+                e.source.rawValue,
+                e.category.rawValue,
+                CSVWriter.decimal(e.kcalPer100g),
+                CSVWriter.decimal(e.proteinPer100g),
+                CSVWriter.decimal(e.carbsPer100g),
+                CSVWriter.decimal(e.fatPer100g),
+                CSVWriter.decimal(e.pieceWeightGrams),
+                CSVWriter.decimal(e.densityGramsPerMl)
             ])
         }
         return w.data()

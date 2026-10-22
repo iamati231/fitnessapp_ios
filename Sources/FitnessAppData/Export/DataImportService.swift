@@ -376,6 +376,7 @@ public enum DataImportService {
             "water_log.csv",
             "periodic_checkins.csv",
             "meals.csv",
+            "custom_food_catalog.csv",
             "plan_days.csv",
             "workouts.csv",
             "meal_items.csv",
@@ -466,6 +467,14 @@ public enum DataImportService {
                 let (ok, dup, errs) = try importMeals(csv: csv, context: context, idMap: &idMap)
                 imported["meals.csv"] = ok; skipped["meals.csv"] = dup
                 errorBuffer.append(file: "meals.csv", errors: errs)
+            }
+        }
+
+        try await tick("custom_food_catalog.csv") {
+            if let csv = files["custom_food_catalog.csv"] {
+                let (ok, dup, errs) = try importCustomFoodCatalog(csv: csv, context: context)
+                imported["custom_food_catalog.csv"] = ok; skipped["custom_food_catalog.csv"] = dup
+                errorBuffer.append(file: "custom_food_catalog.csv", errors: errs)
             }
         }
 
@@ -1279,6 +1288,71 @@ public enum DataImportService {
             context.insert(meal)
             dupIndex[rowKey] = meal
             if !exportID.isEmpty { idMap[exportID] = meal }
+            imported += 1
+        }
+        return (imported, skipped, errors)
+    }
+
+    // MARK: - Pass 1: Custom Food Catalog
+
+    /// Online-importierte/manuell angelegte Katalogeintraege — niemals
+    /// `.seeded` (die kommen aus `FoodCatalogSeeder`, nicht aus einem
+    /// Backup). Dedup ueber `catalog_id`, die stabile UUID aus
+    /// `FoodCatalogEntry.init(displayName:source:...)`: anders als z.B.
+    /// Gear/Messungen gibt es hier keinen fachlichen Dedup-Schluessel
+    /// (zwei Nutzer-Eintraege koennen denselben Namen+Naehrwerte haben,
+    /// z.B. zwei unabhaengig erfasste "Linsensuppe"-Rezepte) — die
+    /// catalog_id selbst ist der einzig verlaessliche Schluessel, exakt wie
+    /// `template_id` bei `importCustomExercises`.
+    private static func importCustomFoodCatalog(
+        csv: Data,
+        context: ModelContext
+    ) throws -> (Int, Int, [RowError]) {
+        let text = String(data: csv, encoding: .utf8) ?? ""
+        let reader: CSVReader
+        do { reader = try CSVReader(text) } catch { return (0, 0, []) }
+
+        var existingIDs = Set(try context.fetch(FetchDescriptor<FoodCatalogEntry>()).map(\.catalogID))
+
+        var errors: [RowError] = []
+        var imported = 0
+        var skipped  = 0
+
+        for row in reader.rows() {
+            let catalogID = row.optionalString("catalog_id") ?? ""
+            let displayName = row.optionalString("display_name") ?? ""
+            guard !catalogID.isEmpty,
+                  !displayName.isEmpty,
+                  let source = FoodCatalogEntrySource(rawValue: row["source"]), source != .seeded,
+                  let category = FoodCategory(rawValue: row["category"]),
+                  let kcal = row.double("kcal_per_100g"),
+                  let protein = row.double("protein_per_100g"),
+                  let carbs = row.double("carbs_per_100g"),
+                  let fat = row.double("fat_per_100g") else {
+                errors.append(.init(line: row.lineNumber, reason: "missing or invalid catalog_id/display_name/source/category/nutrients"))
+                continue
+            }
+            if existingIDs.contains(catalogID) {
+                skipped += 1
+                continue
+            }
+            let entry = FoodCatalogEntry(
+                displayName: displayName,
+                source: source,
+                category: category,
+                kcalPer100g: kcal,
+                proteinPer100g: protein,
+                carbsPer100g: carbs,
+                fatPer100g: fat,
+                pieceWeightGrams: row.double("piece_weight_grams"),
+                densityGramsPerMl: row.double("density_grams_per_ml")
+            )
+            // Stabile ID aus dem Backup wiederherstellen (der Init oben
+            // generiert per Default eine frische) — sonst loest
+            // `meal_items.catalog_id` nach einem Restore ins Leere.
+            entry.catalogID = catalogID
+            context.insert(entry)
+            existingIDs.insert(catalogID)
             imported += 1
         }
         return (imported, skipped, errors)

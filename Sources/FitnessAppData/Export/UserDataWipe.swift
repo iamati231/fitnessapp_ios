@@ -48,6 +48,17 @@ public enum UserDataWipe {
         // Gear selbst geloescht wird.
         try deleteEach(of: Gear.self,                in: context)
         try deleteEach(of: UserBodyProfile.self,     in: context)
+        // Online-Food-Lookup: NUR online importierte/manuell angelegte
+        // Katalogeintraege loeschen, niemals die ~100 geseedeten
+        // Referenz-Eintraege (source == .seeded, kommen aus FoodCatalogSeeder
+        // und werden nicht reseedet). In-memory gefiltert statt per
+        // `#Predicate` — die Vergleichbarkeit eines Codable-Enums ueber die
+        // Predicate-Macro-Maschinerie ist hier nicht zweifelsfrei genug fuer
+        // einen destruktiven Loeschpfad, die Fetch-Groesse (~100 Zeilen) ist
+        // fuer in-memory-Filterung irrelevant.
+        for entry in try context.fetch(FetchDescriptor<FoodCatalogEntry>()) where entry.source != .seeded {
+            context.delete(entry)
+        }
     }
 
     /// Fetcht jede Instanz von `T` und loescht sie einzeln. Oeffentlich, damit
