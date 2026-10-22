@@ -358,8 +358,8 @@ public struct AddMealView: View {
                 // C1 fix (see the `isAmbiguous` branch below for the full
                 // explanation): this button now shares `aiCandidateRow`'s one
                 // VStack/Form-row with the Task 5 "Online suchen" button
-                // added right below, so each needs its own `.buttonStyle(.borderless)`
-                // hit target.
+                // added right below, so each needs its own borderless button
+                // style as an independently tappable hit target.
                 .buttonStyle(.borderless)
 
                 // Task 5 (docs/superpowers/sdd/2026-10-22-online-food-lookup):
