@@ -691,8 +691,26 @@ public struct AddMealView: View {
             // NUT-01: Ist der Edit committet, aber der Cleanup offen, zeigt
             // die Positionen-Liste den GESPEICHERTEN Stand (alte + neue) —
             // nicht den Entwurf, der nach einem Retry schon anders aussieht.
-            if let stored = showsStoredStateInsteadOfDraft ? storedMealItems : nil {
-                ForEach(stored) { item in
+            if showsStoredStateInsteadOfDraft {
+                // Alte (noch nicht entfernte) Positionen — nur per
+                // mitgesicherten Werten, keine Objekt-Referenz.
+                ForEach(draft.pendingCleanupSummaries) { stale in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(stale.name)
+                                .foregroundStyle(Color.primary)
+                            Text("\(stale.quantity.truncated(to: 2).formattedTwoDecimals) \(unitLabel(stale.unit))")
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Spacer()
+                        Text(NutritionDisplay.text(stale.kcal, unit: "kcal", decimals: 0))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
+                }
+                ForEach(draft.items) { item in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.nameSnapshot)
@@ -702,7 +720,7 @@ public struct AddMealView: View {
                                 .foregroundStyle(Color.Deltiq.textSecondary)
                         }
                         Spacer()
-                        Text(NutritionDisplay.text(item.nutrientsSnapshot.kcal, unit: "kcal", decimals: 0))
+                        Text(NutritionDisplay.text(item.nutrients.kcal, unit: "kcal", decimals: 0))
                             .foregroundStyle(Color.Deltiq.textSecondary)
                             .fitnessNumberStyle()
                     }
@@ -850,16 +868,11 @@ public struct AddMealView: View {
     /// Mahlzeit im Edit-Modus. Vor dem ersten Speichern (`itemsVersion == 0`)
     /// ist der Entwurf die einzige Quelle; danach (Cleanup-Fehler, Retry)
     /// zeigt die Ansicht den gespeicherten Stand.
-    private var storedMealItems: [MealItem]? {
-        guard let editingMeal, draft.itemsVersion > 0 else { return nil }
-        return MealDraft.storedItems(forMealID: editingMeal.persistentModelID, in: modelContext)
-    }
-
     /// NUT-01: `true`, solange der Edit committet ist, aber die alten
     /// Positionen noch im Store stehen — die Ansicht zeigt den gespeicherten
     /// Stand (alte + neue) und erklaert das.
     private var showsStoredStateInsteadOfDraft: Bool {
-        editingMeal != nil && draft.hasPendingCleanup && storedMealItems != nil
+        editingMeal != nil && draft.hasPendingCleanup
     }
 
     private var filteredEntries: [FoodCatalogEntry] {
@@ -1058,6 +1071,9 @@ public struct AddMealView: View {
     /// reisst alle `MealItem`s also automatisch mit.
     private func deleteMeal() {
         guard let editingMeal else { return }
+        // NUT-01: Offener Cleanup haette nach dem Loeschen nichts mehr zu
+        // adressieren — die Positionen gehen per Cascade mit.
+        draft.clearPendingCleanupAfterDelete()
         modelContext.delete(editingMeal)
         do {
             try modelContext.save()

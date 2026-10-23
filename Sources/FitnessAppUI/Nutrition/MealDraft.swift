@@ -62,6 +62,38 @@ public final class MealDraft: ObservableObject {
     /// Speicher-Fehlerpfad der View geschrieben.
     public private(set) var pendingCleanupItemIDs: [PersistentIdentifier]?
 
+    /// NUT-01: IDs + NAME/Kalorien der noch zu entfernenden alten Positionen.
+    /// Die Namen werden beim Sperren mitgesichert, weil die zugehoerigen
+    /// Model-Objekte nach dem Commit nicht mehr lebend adressierbar sein
+    /// muessen (Zugriff auf eine tote Row beendet den Prozess) — die UI soll
+    /// die alten Positionen aber benennen koennen.
+    public private(set) var pendingCleanupSummaries: [PendingItemSummary] = []
+
+    /// Offene alte Position (nur Anzeigeinformation, keine Objekt-Referenz).
+    public struct PendingItemSummary: Sendable, Equatable, Identifiable {
+        public let id: PersistentIdentifier
+        public let name: String
+        public let quantity: Double
+        public let unit: FoodUnit
+        public let kcal: KnownValue
+
+        public init(id: PersistentIdentifier, name: String, quantity: Double, unit: FoodUnit, kcal: KnownValue) {
+            self.id = id
+            self.name = name
+            self.quantity = quantity
+            self.unit = unit
+            self.kcal = kcal
+        }
+    }
+
+    /// NUT-01: Nach dem Loeschen der Mahlzeit gibt es keinen offenen Cleanup
+    /// mehr (die Positionen sind per Cascade weg).
+    public func clearPendingCleanupAfterDelete() {
+        pendingCleanupItemIDs = nil
+        pendingCleanupSummaries = []
+        checkpointBetriebsbereit = true
+    }
+
     /// NUT-01: Beim Speichern bleibt der Save-Button aktiv, damit ein offener
     /// Cleanup per erneutem Tap aufgeraeumt werden kann, ohne Positionen zu
     /// duplizieren. Das Flag wird nur gesetzt, wenn der Edit den offenen
@@ -219,6 +251,17 @@ public final class MealDraft: ObservableObject {
             let oldMealType = meal.mealType
             let oldItems = meal.items
             let oldItemIDs = oldItems.map(\.persistentModelID)
+            // Werte JETZT sichern (vor dem Commit) — nach dem Commit duerfen
+            // die Objekte unlesbar sein.
+            let oldSummaries = oldItems.map { item in
+                PendingItemSummary(
+                    id: item.persistentModelID,
+                    name: item.nameSnapshot,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    kcal: item.nutrientsSnapshot.kcal
+                )
+            }
 
             meal.date = date
             meal.mealType = mealType
@@ -263,6 +306,7 @@ public final class MealDraft: ObservableObject {
             guard !oldItems.isEmpty else { return .success(()) }
 
             pendingCleanupItemIDs = oldItemIDs
+            pendingCleanupSummaries = oldSummaries
             // Regel 2 (Typ-Doku): den Zustand festnageln (CHECKPOINT, KEIN
             // `rollback()` — der Edit ist committet und darf nicht
             // zurueckgedreht werden), dann die Positionen genau einmal
@@ -332,6 +376,7 @@ public final class MealDraft: ObservableObject {
         let pendingIDs = unresolved.filter { Self.storedRowExists($0, in: context) }
         guard !pendingIDs.isEmpty else {
             pendingCleanupItemIDs = nil
+            pendingCleanupSummaries = []
             notifyItemCountChanged()
             return .success(())
         }
@@ -356,6 +401,7 @@ public final class MealDraft: ObservableObject {
             return .failure(MealDraftItemCleanupError(underlying: error))
         }
         pendingCleanupItemIDs = nil
+        pendingCleanupSummaries = []
         notifyItemCountChanged()
         return .success(())
     }
