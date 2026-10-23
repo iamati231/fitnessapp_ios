@@ -61,11 +61,12 @@ final class AddMealViewSaveErrorStyleTests: XCTestCase {
     /// one consistent "inline error text" look across this screen family.
     func testSaveErrorRowStyleMatchesEstablishedInlineErrorStyleInThisFile() throws {
         let source = try addMealViewSource
-        let errorRowBlock = """
-        Text(saveErrorMessage)
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-        """
+        // Built with explicit "\n" (not a triple-quote literal) so the
+        // expected indentation isn't silently reshaped by Swift's multiline
+        // string dedenting -- this must match AddMealView.swift byte-for-byte.
+        let errorRowBlock = "Text(saveErrorMessage)\n"
+            + "                            .font(.caption)\n"
+            + "                            .foregroundStyle(Color.Deltiq.textSecondary)"
         XCTAssertTrue(
             source.contains(errorRowBlock),
             "saveErrorMessage row must use the same .font(.caption) + Color.Deltiq.textSecondary style as AddMealView's own aiErrorMessage/onlineSearch.errorMessage rows."

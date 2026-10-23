@@ -64,7 +64,7 @@ public struct AddMealView: View {
     @State private var selectedEntry: FoodCatalogEntry?
     @State private var quantity: Double?
     @State private var selectedUnit: FoodUnit = .gram
-    /// UI-Konsistenz-Fix: war vorher ein blockierendes `.alert()` -- als
+    /// UI-Konsistenz-Fix: war vorher ein blockierendes SwiftUI-Alert -- als
     /// einziger Form-Editor im ganzen Repo wich `AddMealView` damit vom
     /// etablierten Muster ab (inline-Fehlertext als Form-Row), das sowohl
     /// das eigene `aiErrorMessage`/`onlineSearch.errorMessage` in dieser
@@ -154,7 +154,7 @@ public struct AddMealView: View {
                 if editingMeal != nil {
                     deleteSection
                 }
-                // UI-Konsistenz-Fix: ersetzt das vormalige `.alert()` unten
+                // UI-Konsistenz-Fix: ersetzt den vormaligen SwiftUI-Alert
                 // -- gleiche Section-Form wie `CustomFoodEntrySheet`s eigene
                 // `saveErrorMessage`-Row.
                 if let saveErrorMessage {
