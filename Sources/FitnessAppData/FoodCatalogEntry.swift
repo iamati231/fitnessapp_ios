@@ -31,10 +31,19 @@ public final class FoodCatalogEntry {
     public var servingNameKey: String?
     public var pieceWeightGrams: Double?
     public var densityGramsPerMl: Double?
-    /// Additiv. Default `.seeded` greift automatisch fuer alle bestehenden
-    /// Zeilen UND fuer jeden ueber `init(from:)` angelegten Eintrag (die
-    /// Seed-Quelle) — niemals explizit hier gesetzt.
-    public var source: FoodCatalogEntrySource = FoodCatalogEntrySource.seeded
+    /// Additiv, als rohe `String` gespeichert (nicht als Enum direkt) —
+    /// gleiches Muster wie `MealItem.unitRaw`/`unit`: ein neues Nicht-Optional
+    /// `@Model`-Feld vom Typ eines `Codable`-Enums bekommt bei SwiftDatas
+    /// Lightweight-Migration auf bereits bestehenden Zeilen KEINEN
+    /// zuverlaessigen Default und fuehrt beim Lesen zu einem
+    /// `swift_dynamicCastFailure`-Crash (siehe TestFlight-Crash Build 173,
+    /// `FoodCatalogEntry.source.getter`). Ein primitiver `String`-Default wird
+    /// dagegen zuverlaessig fuer Alt-Zeilen zurueckgegeben.
+    public var sourceRaw: String = FoodCatalogEntrySource.seeded.rawValue
+    public var source: FoodCatalogEntrySource {
+        get { FoodCatalogEntrySource(rawValue: sourceRaw) ?? .seeded }
+        set { sourceRaw = newValue.rawValue }
+    }
     /// Additiv, `nil` fuer geseedete Eintraege (die nutzen `nameKey` ueber
     /// `Localizable.xcstrings`). Online-importierte/manuell angelegte
     /// Eintraege haben keinen Lokalisierungs-Key — der Klartext-Name vom

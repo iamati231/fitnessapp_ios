@@ -56,6 +56,18 @@ final class FoodCatalogEntrySourceTests: XCTestCase {
         XCTAssertTrue(reloaded.allSatisfy { $0.displayName == nil })
     }
 
+    /// Regression fuer TestFlight-Crash Build 173: `source` darf nie force-casten.
+    /// Simuliert eine Alt-Zeile, deren rohe Spalte leer/unbekannt ist (wie bei
+    /// einer per Lightweight-Migration nachtraeglich hinzugefuegten Spalte
+    /// ohne Wert) — `source` muss `.seeded` liefern statt zu crashen.
+    func testUnknownOrEmptySourceRaw_fallsBackToSeededInsteadOfCrashing() throws {
+        let entry = FoodCatalogEntry(from: FoodCatalogData.all.first!)
+        entry.sourceRaw = ""
+        XCTAssertEqual(entry.source, .seeded)
+        entry.sourceRaw = "some-future-unknown-case"
+        XCTAssertEqual(entry.source, .seeded)
+    }
+
     // MARK: - Step 4: Wipe-Regression
 
     func testDeleteSharedUserData_removesOnlyNonSeededFoodCatalogEntries() throws {
