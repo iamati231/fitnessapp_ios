@@ -24,14 +24,14 @@ final class NutritionCalculationsTests: XCTestCase {
 
     func testGramScalesLinearly() {
         let result = NutritionCalculations.nutrients(for: chicken, quantity: 200, unit: .gram)
-        XCTAssertEqual(result?.kcal.value, 330)
-        XCTAssertEqual(result?.proteinG.value, 62)
+        XCTAssertEqual(result?.kcal.value ?? -1, 330, accuracy: 0.0001)
+        XCTAssertEqual(result?.proteinG.value ?? -1, 62, accuracy: 0.0001)
     }
 
     func testMillilitersUsesExplicitDensityNotOneToOne() throws {
         // 100 ml Milch wiegt 103 g, nicht 100 g — Spec 4.2
         let result = NutritionCalculations.nutrients(for: milk, quantity: 100, unit: .milliliter)
-        XCTAssertEqual(try XCTUnwrap(result).kcal.value, 64 * 1.03, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(try XCTUnwrap(result).kcal.value), 64 * 1.03, accuracy: 0.0001)
     }
 
     func testMillilitersWithoutDensityReturnsNil() {
@@ -44,7 +44,7 @@ final class NutritionCalculationsTests: XCTestCase {
 
     func testPieceUsesPieceWeight() throws {
         let result = NutritionCalculations.nutrients(for: egg, quantity: 2, unit: .piece)
-        XCTAssertEqual(try XCTUnwrap(result).kcal.value, 155 * 1.2, accuracy: 0.0001) // 2 × 60g = 120g
+        XCTAssertEqual(try XCTUnwrap(try XCTUnwrap(result).kcal.value), 155 * 1.2, accuracy: 0.0001) // 2 × 60g = 120g
     }
 
     func testNonPositiveQuantityReturnsNil() {
@@ -57,7 +57,7 @@ final class NutritionCalculationsTests: XCTestCase {
         let b = NutrientValues(kcal: 50, proteinG: 2, carbsG: 8, fatG: 1)
         let total = NutrientValues.sum([a, b])
         XCTAssertEqual(total.kcal.value, 150)
-        XCTAssertEqual(total.carbsG, 13)
+        XCTAssertEqual(total.carbsG.value, 13)
     }
 
     func testSupportsReflectsAvailableUnitsOnly() {
@@ -142,7 +142,7 @@ final class NutritionCalculationsTests: XCTestCase {
 
         XCTAssertEqual(total.kcal.value, 150)
         XCTAssertEqual(total.carbsG.value, 13)
-        XCTAssertTrue(total.proteinG.isUnknown, "unbekannt + bekannt bleibt unbekannt — nie eine zu kleine Summe")
+        XCTAssertNil(total.proteinG.value, "unbekannt + bekannt bleibt unbekannt — nie eine zu kleine Summe")
         XCTAssertTrue(total.partiallyKnown)
         XCTAssertFalse(NutrientValues.sum([a]).partiallyKnown)
     }
