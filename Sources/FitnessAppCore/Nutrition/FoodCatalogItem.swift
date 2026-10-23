@@ -20,10 +20,14 @@ public struct FoodCatalogItem: Identifiable, Sendable, Codable {
 
     public let category: FoodCategory
 
-    public let kcalPer100g: Double
-    public let proteinPer100g: Double
-    public let carbsPer100g: Double
-    public let fatPer100g: Double
+    /// Naehrwerte pro 100 g/ml. Bekannt fuer jeden Katalogeintrag; `.unknown`
+    /// ist nur fuer Eintraege moeglich, die aus Open Food Facts uebernommen
+    /// wurden und einzelne Werte nicht liefern (Befund OFF-01) — ein
+    /// fehlender Wert wird NIE als 0 gefuehrt.
+    public let kcalPer100g: KnownValue
+    public let proteinPer100g: KnownValue
+    public let carbsPer100g: KnownValue
+    public let fatPer100g: KnownValue
 
     /// Optionale Default-Portionsgroesse in Gramm (z. B. fuer "1 Portion"-UI).
     public let defaultServingGrams: Double?
@@ -53,16 +57,58 @@ public struct FoodCatalogItem: Identifiable, Sendable, Codable {
         pieceWeightGrams: Double? = nil,
         densityGramsPerMl: Double? = nil
     ) {
+        self.init(
+            id: id,
+            nameKey: nameKey,
+            category: category,
+            nutrientsPer100g: NutrientValues(kcal: kcalPer100g, proteinG: proteinPer100g, carbsG: carbsPer100g, fatG: fatPer100g),
+            defaultServingGrams: defaultServingGrams,
+            servingNameKey: servingNameKey,
+            pieceWeightGrams: pieceWeightGrams,
+            densityGramsPerMl: densityGramsPerMl
+        )
+    }
+
+    /// OFF-01: Variante mit explizit unbekannten Werten — der Weg, auf dem
+    /// online uebernommene Open-Food-Facts-Eintraege mit Luecken in Core
+    /// abgebildet werden (die statischen Katalog-Literale nutzen weiterhin
+    /// den Vollstaendig-Konstruktor oben).
+    public init(
+        id: String,
+        nameKey: String,
+        category: FoodCategory,
+        nutrientsPer100g: NutrientValues,
+        defaultServingGrams: Double? = nil,
+        servingNameKey: String? = nil,
+        pieceWeightGrams: Double? = nil,
+        densityGramsPerMl: Double? = nil
+    ) {
         self.id = id
         self.nameKey = nameKey
         self.category = category
-        self.kcalPer100g = kcalPer100g
-        self.proteinPer100g = proteinPer100g
-        self.carbsPer100g = carbsPer100g
-        self.fatPer100g = fatPer100g
+        self.kcalPer100g = nutrientsPer100g.kcal
+        self.proteinPer100g = nutrientsPer100g.proteinG
+        self.carbsPer100g = nutrientsPer100g.carbsG
+        self.fatPer100g = nutrientsPer100g.fatG
         self.defaultServingGrams = defaultServingGrams
         self.servingNameKey = servingNameKey
         self.pieceWeightGrams = pieceWeightGrams
         self.densityGramsPerMl = densityGramsPerMl
+    }
+
+    /// Gibt eine Kopie mit ersetzten Naehrwerten zurueck (alle anderen Felder
+    /// unveraendert). Gebraucht fuer den Rueckweg `FoodCatalogEntry` →
+    /// `FoodCatalogItem` mit unbekannten Werten.
+    public func withNutrients(_ values: NutrientValues) -> FoodCatalogItem {
+        FoodCatalogItem(
+            id: id,
+            nameKey: nameKey,
+            category: category,
+            nutrientsPer100g: values,
+            defaultServingGrams: defaultServingGrams,
+            servingNameKey: servingNameKey,
+            pieceWeightGrams: pieceWeightGrams,
+            densityGramsPerMl: densityGramsPerMl
+        )
     }
 }

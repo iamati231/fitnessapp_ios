@@ -206,7 +206,9 @@ public struct AddMealView: View {
                     // UI-seitige Zusatz-Absicherung — die eigentlichen
                     // Garantien (Doppeltap-Schutz, leere-Items-Guard) sitzen
                     // in MealDraft.save() selbst.
-                    .disabled(draft.didSaveSuccessfully || draft.items.isEmpty)
+                    // NUT-01: `hasPendingCleanup` laesst den Tap offen, damit
+                    // ein gescheiterter Cleanup erneut versucht wird.
+                    .disabled((draft.didSaveSuccessfully && !draft.hasPendingCleanup) || draft.items.isEmpty)
                 }
             }
             .confirmationDialog(
@@ -240,7 +242,20 @@ public struct AddMealView: View {
                 OnlineFoodCandidatePreviewSheet(
                     candidate: candidate,
                     onConfirm: { confirmOnlineImport($0) },
-                    onCancel: { onlineSearch.dismissPreview() }
+                    onCancel: { onlineSearch.dismissPreview() },
+                    // OFF-01: manueller Weg aus der Vorschau heraus, wenn
+                    // die Datenlage fuer einen Import nicht reicht.
+                    onCreateManually: { prefill in
+                        let origin = onlineSearchOrigin
+                        onlineSearch.dismissPreview()
+                        onlineSearch.reset()
+                        onlineSearchOrigin = nil
+                        if case .aiCandidate(let pending) = origin {
+                            removeAICandidate(pending)
+                        }
+                        customFoodPrefillName = prefill.trimmingCharacters(in: .whitespacesAndNewlines)
+                        showingCustomFoodEntry = true
+                    }
                 )
             }
             // Task 6: manuelles Anlegen — `CustomFoodEntrySheet` persistiert
@@ -683,7 +698,9 @@ public struct AddMealView: View {
                             .foregroundStyle(Color.Deltiq.textSecondary)
                     }
                     Spacer()
-                    Text("\(item.nutrients.kcal.truncated(to: 0).formattedTwoDecimals) kcal")
+                    // OFF-01: ein unbekannter Naehrwert darf nicht als 0 in
+                    // der Positionszeile erscheinen.
+                    Text(NutritionDisplay.text(item.nutrients.kcal, unit: "kcal", decimals: 0))
                         .foregroundStyle(Color.Deltiq.textSecondary)
                         .fitnessNumberStyle()
                 }
@@ -712,17 +729,25 @@ public struct AddMealView: View {
             previewRow(String(localized: "nutrition.goals.protein.label", bundle: .module), value: total.proteinG)
             previewRow(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: total.carbsG)
             previewRow(String(localized: "nutrition.goals.fat.label", bundle: .module), value: total.fatG)
+            // OFF-01: sagt an der Vorschau, dass mindestens eine Position
+            // einen unbekannten Wert enthaelt (die Summe ist dann „-").
+            if total.partiallyKnown {
+                Text("nutrition.day.total.incomplete", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            }
         } header: {
             Text("nutrition.addMeal.previewSection", bundle: .module)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
-    private func previewRow(_ label: String, value: Double) -> some View {
+    private func previewRow(_ label: String, value: KnownValue) -> some View {
         HStack {
             Text(label).foregroundStyle(Color.primary)
             Spacer()
-            Text(value.truncated(to: 2).formattedTwoDecimals)
+            Text(NutritionDisplay.text(value))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .fitnessNumberStyle()
         }
@@ -937,6 +962,9 @@ public struct AddMealView: View {
     /// dropped to `nil`, exactly like `applyAICandidate` already does for a
     /// normal catalog match. Reusing `applyAICandidate` itself (instead of
     /// duplicating that carry-over logic here) guarantees both.
+    /// OFF-01: Fehlende Naehrwerte werden als `nil` (unbekannt) gespeichert —
+    /// `FoodCatalogEntry`/`MealItem` unterscheiden das ueber eine additive
+    /// Bitzmaske. Es gibt hier bewusst KEIN `?? 0`.
     private func confirmOnlineImport(_ values: OnlineFoodImportValues) {
         let entry = FoodCatalogEntry(
             displayName: values.name,
@@ -965,8 +993,20 @@ public struct AddMealView: View {
         switch result {
         case .success:
             dismiss()
-        case .failure:
-            saveErrorMessage = String(localized: "nutrition.addMeal.saveFailed.message", bundle: .module)
+        case .failure(let error):
+            // NUT-01: Der Edit selbst (Datum/Typ + Positionen) IST gespeichert,
+            // nur das Entfernen der alten Positionen ist gescheitert — dann
+            // nicht „nichts geändert" behaupten, sondern den gespeicherten
+            // Stand benennen (eigener Hinweis-Key). Das Sheet bleibt offen,
+            // weil `draft.save()` beim nächsten Tap erneut aufräumt
+            // (`finishPendingCleanup`), statt Positionen zu duplizieren.
+            saveErrorMessage = error is MealDraftItemCleanupError
+                ? String(localized: "nutrition.addMeal.saveFailed.cleanupMessage", bundle: .module)
+                : String(localized: "nutrition.addMeal.saveFailed.message", bundle: .module)
+            // Ein erneuter Tap ist nach dem Fehler wieder möglich: der Button
+            // war per `didSaveSuccessfully` deaktiviert, das ist für den
+            // Cleanup-Retry nicht sinnvoll.
+            draft.enableRetryAfterFailedCleanup()
         }
     }
 

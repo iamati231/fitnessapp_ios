@@ -20,7 +20,7 @@ final class MealDraftTests: XCTestCase {
                       nutrients: NutrientValues(kcal: 100, proteinG: 10, carbsG: 5, fatG: 2))
         draft.addItem(catalogID: "b", nameSnapshot: "B", quantity: 50, unit: .gram,
                       nutrients: NutrientValues(kcal: 50, proteinG: 2, carbsG: 8, fatG: 1))
-        XCTAssertEqual(draft.totalPreview.kcal, 150)
+        XCTAssertEqual(draft.totalPreview.kcal.value, 150)
     }
 
     func testPreviewDoesNotPersistAnything() throws {

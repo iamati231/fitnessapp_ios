@@ -280,4 +280,43 @@ final class NutritionInsightGeneratorTests: XCTestCase {
         _ = NutritionInsightGenerator.prompt(for: extreme)
         XCTAssertTrue(NutritionInsightGenerator.onlyContainsVerifiedNumbers("no numbers here", input: extreme))
     }
+
+    // MARK: OFF-01 — unbekannte Tagessummen (fehlende OFF-Werte)
+
+    /// OFF-01: Eine unbekannte Summe steht im Prompt als `unknown`, nie als 0
+    /// — das Modell soll keine Aussage ueber einen Wert treffen, den die App
+    /// nicht kennt.
+    func testUnknownTotal_isStatedAsUnknownNeverAsZero() {
+        let input = NutritionInsightInput(
+            totalKcal: 1850, totalProteinG: nil, totalCarbsG: 180, totalFatG: nil,
+            calorieGoalKcal: nil, proteinGoalG: 150, carbGoalG: nil, fatGoalG: nil
+        )
+        let prompt = NutritionInsightGenerator.prompt(for: input)
+        XCTAssertTrue(prompt.contains("Protein: unknown"))
+        XCTAssertTrue(prompt.contains("Fat: unknown"))
+        XCTAssertTrue(prompt.contains("Calories: 1850 kcal"), "bekannte Werte bleiben unveraendert")
+        XCTAssertFalse(prompt.contains("Protein: 0 g"), "ein unbekannter Wert darf nie als 0 erscheinen")
+        XCTAssertFalse(prompt.contains("Protein: 0 g of"), "ohne bekannte Summe keine Prozent-/Restzeile")
+    }
+
+    /// OFF-01: Eine erfundene 0 fuer eine UNBEKANNTE Summe muss die
+    /// Zahlen-Verifikation durchfallen lassen (sonst waere „0 g Fett"
+    /// zulaessig, obwohl Fett unbekannt ist).
+    func testFabricatedZeroForUnknownTotal_isRejected() {
+        let input = NutritionInsightInput(
+            totalKcal: 1850, totalProteinG: 120, totalCarbsG: 180, totalFatG: nil,
+            calorieGoalKcal: nil, proteinGoalG: nil, carbGoalG: nil, fatGoalG: nil
+        )
+        XCTAssertFalse(NutritionInsightGenerator.onlyContainsVerifiedNumbers(
+            "Du hast heute 0 g Fett gegessen, 1850 kcal und 120 g Protein.", input: input
+        ), "die 0 fuer den unbekannten Fett-Wert darf nicht als verifiziert gelten")
+    }
+
+    /// OFF-01: Die Anweisung sagt dem Modell explizit, dass „unknown"
+    /// unvollstaendige Daten sind und nicht als 0 zu behandeln sind.
+    func testInstructions_explainUnknownMarker() {
+        let instructions = NutritionInsightGenerator.instructions(for: Locale(identifier: "de"))
+        XCTAssertTrue(instructions.contains("unknown"))
+        XCTAssertTrue(instructions.contains("never treat it as zero"))
+    }
 }

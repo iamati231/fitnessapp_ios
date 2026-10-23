@@ -608,7 +608,9 @@ public struct DashboardView: View {
                             Text("widget.nutrition.name", bundle: .module)
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(.primary)
-                            Text("\(todayNutritionTotal.kcal.truncated(to: 0).formattedTwoDecimals) kcal")
+                            // OFF-01: unbekannte Tagessumme (fehlende OFF-Werte
+                            // in mindestens einer Position) als "–", nie als 0.
+                            Text(NutritionDisplay.text(todayNutritionTotal.kcal, unit: "kcal", decimals: 0))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .fitnessNumberStyle()

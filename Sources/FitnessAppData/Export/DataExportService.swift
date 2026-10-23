@@ -490,11 +490,20 @@ public enum DataExportService {
         _ items: [MealItem],
         id: (AnyObject) -> String
     ) -> Data {
+        // OFF-01: `known_nutrients` ist die additive Spalte, die "0 g" von
+        // "unbekannt" unterscheidet (Bitzmaske, Default 0b1111 = alles
+        // bekannt). Ein Backup von vor OFF-01 kennt die Spalte nicht — der
+        // Importer liest dann "alle bekannt", was fuer Alt-Backups exakt
+        // stimmt. Die Werte-Spalten tragen bei unbekannt den Platzhalter.
         var w = CSVWriter(headers: [
             "id", "meal_id", "catalog_id", "name_snapshot", "quantity", "unit",
-            "kcal_snapshot", "protein_g_snapshot", "carbs_g_snapshot", "fat_g_snapshot"
+            "kcal_snapshot", "protein_g_snapshot", "carbs_g_snapshot", "fat_g_snapshot",
+            "known_nutrients"
         ])
         for i in items {
+            // Kein `nutrientsSnapshot`-Roundtrip hier: die Snapshot-Felder
+            // werden 1:1 geschrieben, die Maske sagt, welche davon Inhalt
+            // sind (OFF-01).
             w.appendRow([
                 id(i),
                 i.meal.map { id($0) } ?? "",
@@ -505,7 +514,8 @@ public enum DataExportService {
                 CSVWriter.decimal(i.kcalSnapshot),
                 CSVWriter.decimal(i.proteinGSnapshot),
                 CSVWriter.decimal(i.carbsGSnapshot),
-                CSVWriter.decimal(i.fatGSnapshot)
+                CSVWriter.decimal(i.fatGSnapshot),
+                String(i.knownNutrientMaskRaw)
             ])
         }
         return w.data()
@@ -520,10 +530,14 @@ public enum DataExportService {
     private static func buildCustomFoodCatalog(
         _ items: [FoodCatalogEntry]
     ) -> Data {
+        // OFF-01: `known_nutrients` markiert unbekannte Werte (Bit 0 = kcal,
+        // 1 = Protein, 2 = Kohlenhydrate, 3 = Fett; Default/fehlend = alle
+        // bekannt). Ohne die Spalte waere "fehlend" nach einem Restore eine
+        // erfundene 0.
         var w = CSVWriter(headers: [
             "catalog_id", "display_name", "source", "category",
             "kcal_per_100g", "protein_per_100g", "carbs_per_100g", "fat_per_100g",
-            "piece_weight_grams", "density_grams_per_ml"
+            "piece_weight_grams", "density_grams_per_ml", "known_nutrients"
         ])
         for e in items {
             w.appendRow([
@@ -536,7 +550,8 @@ public enum DataExportService {
                 CSVWriter.decimal(e.carbsPer100g),
                 CSVWriter.decimal(e.fatPer100g),
                 CSVWriter.decimal(e.pieceWeightGrams),
-                CSVWriter.decimal(e.densityGramsPerMl)
+                CSVWriter.decimal(e.densityGramsPerMl),
+                String(e.knownNutrientMaskRaw)
             ])
         }
         return w.data()

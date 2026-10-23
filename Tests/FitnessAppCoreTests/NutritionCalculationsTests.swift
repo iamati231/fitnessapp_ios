@@ -24,14 +24,14 @@ final class NutritionCalculationsTests: XCTestCase {
 
     func testGramScalesLinearly() {
         let result = NutritionCalculations.nutrients(for: chicken, quantity: 200, unit: .gram)
-        XCTAssertEqual(result?.kcal, 330)
-        XCTAssertEqual(result?.proteinG, 62)
+        XCTAssertEqual(result?.kcal.value, 330)
+        XCTAssertEqual(result?.proteinG.value, 62)
     }
 
     func testMillilitersUsesExplicitDensityNotOneToOne() throws {
         // 100 ml Milch wiegt 103 g, nicht 100 g — Spec 4.2
         let result = NutritionCalculations.nutrients(for: milk, quantity: 100, unit: .milliliter)
-        XCTAssertEqual(try XCTUnwrap(result).kcal, 64 * 1.03, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(result).kcal.value, 64 * 1.03, accuracy: 0.0001)
     }
 
     func testMillilitersWithoutDensityReturnsNil() {
@@ -44,7 +44,7 @@ final class NutritionCalculationsTests: XCTestCase {
 
     func testPieceUsesPieceWeight() throws {
         let result = NutritionCalculations.nutrients(for: egg, quantity: 2, unit: .piece)
-        XCTAssertEqual(try XCTUnwrap(result).kcal, 155 * 1.2, accuracy: 0.0001) // 2 × 60g = 120g
+        XCTAssertEqual(try XCTUnwrap(result).kcal.value, 155 * 1.2, accuracy: 0.0001) // 2 × 60g = 120g
     }
 
     func testNonPositiveQuantityReturnsNil() {
@@ -56,7 +56,7 @@ final class NutritionCalculationsTests: XCTestCase {
         let a = NutrientValues(kcal: 100, proteinG: 10, carbsG: 5, fatG: 2)
         let b = NutrientValues(kcal: 50, proteinG: 2, carbsG: 8, fatG: 1)
         let total = NutrientValues.sum([a, b])
-        XCTAssertEqual(total.kcal, 150)
+        XCTAssertEqual(total.kcal.value, 150)
         XCTAssertEqual(total.carbsG, 13)
     }
 
@@ -123,5 +123,59 @@ final class NutritionCalculationsTests: XCTestCase {
     func testGoalProgress_zeroOrNegativeGoal_returnsNil() {
         XCTAssertNil(NutritionCalculations.goalProgress(current: 40, goal: 0))
         XCTAssertNil(NutritionCalculations.goalProgress(current: 40, goal: -10))
+    }
+
+    // MARK: OFF-01 — unknown ist nicht 0 (docs/AUDIT_2026-10-23_DELTIQ.md)
+
+    func testKnownValue_distinguishesZeroFromUnknown() {
+        XCTAssertEqual(KnownValue(0).value, 0)
+        XCTAssertFalse(KnownValue(0).isUnknown)
+        XCTAssertNil(KnownValue(nil).value)
+        XCTAssertTrue(KnownValue(nil).isUnknown)
+    }
+
+    func testSumWithUnknownValue_isUnknownInThatDimensionOnly() {
+        let a = NutrientValues(kcal: 100, proteinG: 10, carbsG: 5, fatG: 2)
+        let b = NutrientValues(kcal: 50, proteinG: nil, carbsG: 8, fatG: 1)
+
+        let total = NutrientValues.sum([a, b])
+
+        XCTAssertEqual(total.kcal.value, 150)
+        XCTAssertEqual(total.carbsG.value, 13)
+        XCTAssertTrue(total.proteinG.isUnknown, "unbekannt + bekannt bleibt unbekannt — nie eine zu kleine Summe")
+        XCTAssertTrue(total.partiallyKnown)
+        XCTAssertFalse(NutrientValues.sum([a]).partiallyKnown)
+    }
+
+    func testSumOfEmptyList_isFullyKnownZero() {
+        let total = NutrientValues.sum([])
+        XCTAssertEqual(total, .zero)
+        XCTAssertFalse(total.partiallyKnown)
+    }
+
+    /// Ein unbekannter Wert im Katalog-Eintrag (nur bei Online-Importen
+    /// moeglich) bleibt beim Skalieren auf die Menge unbekannt — ausser bei
+    /// Menge 0, denn 0 g eines Lebensmittels enthalten 0 g Fett, auch wenn
+    /// der Gehalt pro 100 g unbekannt ist.
+    func testScalingUnknownCatalogValue_keepsUnknownUnlessQuantityIsZero() throws {
+        let partial = FoodCatalogItem(
+            id: "partial", nameKey: "x", category: .other,
+            nutrientsPer100g: NutrientValues(kcal: 100, proteinG: nil, carbsG: 5, fatG: nil)
+        )
+        let scaled = try XCTUnwrap(NutritionCalculations.nutrients(for: partial, quantity: 200, unit: .gram))
+        XCTAssertEqual(scaled.kcal.value, 200)
+        XCTAssertEqual(scaled.carbsG.value, 10)
+        XCTAssertTrue(scaled.proteinG.isUnknown)
+        XCTAssertTrue(scaled.fatG.isUnknown)
+
+        XCTAssertEqual(NutrientValues.scaled(.unknown, by: 0), .known(0))
+    }
+
+    /// Der Vollstaendig-Konstruktor (alle statischen Katalogeintraege) bleibt
+    /// vollstaendig bekannt — die OFF-01-Aenderung darf den Normalfall nicht
+    /// veraendern.
+    func testCompleteCatalogItem_hasNoUnknownValues() throws {
+        let result = try XCTUnwrap(NutritionCalculations.nutrients(for: chicken, quantity: 150, unit: .gram))
+        XCTAssertFalse(result.partiallyKnown)
     }
 }

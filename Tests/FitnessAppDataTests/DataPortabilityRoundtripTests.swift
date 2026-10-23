@@ -1136,6 +1136,59 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(freeEntry.unit, .piece)
     }
 
+    /// OFF-01 (docs/AUDIT_2026-10-23_DELTIQ.md): Unbekannte Naehrwerte
+    /// ueberleben einen Export/Import-Roundtrip als unbekannt — sie werden
+    /// NICHT zu 0. Frueher hätte `?? 0` beim Import aus jedem fehlenden Wert
+    /// stillschweigend eine 0 gemacht.
+    func testUnknownNutrientValuesSurviveExportImportRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let partial = FoodCatalogEntry(
+            displayName: "Teilprodukt",
+            source: .onlineImported,
+            category: .other,
+            kcalPer100g: 250,
+            proteinPer100g: nil,
+            carbsPer100g: 12,
+            fatPer100g: nil
+        )
+        ctx.insert(partial)
+
+        let meal = MealEntry(date: Date(timeIntervalSince1970: 1_750_100_000), mealType: .snack)
+        ctx.insert(meal)
+        ctx.insert(MealItem(
+            catalogID: partial.catalogID, nameSnapshot: "Teilprodukt", quantity: 100, unit: .gram,
+            nutrients: NutrientValues(kcal: 250, proteinG: nil, carbsG: 12, fatG: nil), meal: meal
+        ))
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+        XCTAssertEqual(result.errorRows, 0)
+
+        let tctx = target.mainContext
+
+        // Nur DIESER Eintrag (der Container ist frisch).
+        let importedEntry = try XCTUnwrap(
+            try tctx.fetch(FetchDescriptor<FoodCatalogEntry>()).first { $0.displayName == "Teilprodukt" }
+        )
+        XCTAssertEqual(importedEntry.displayName, "Teilprodukt")
+        XCTAssertEqual(importedEntry.nutrientsPer100g.kcal.value, 250)
+        XCTAssertEqual(importedEntry.nutrientsPer100g.carbsG.value, 12)
+        XCTAssertTrue(importedEntry.nutrientsPer100g.proteinG.isUnknown)
+        XCTAssertTrue(importedEntry.nutrientsPer100g.fatG.isUnknown)
+
+        let importedItem = try XCTUnwrap(try tctx.fetch(FetchDescriptor<MealItem>()).first)
+        XCTAssertEqual(importedItem.nutrientsSnapshot.kcal.value, 250)
+        XCTAssertEqual(importedItem.nutrientsSnapshot.carbsG.value, 12)
+        XCTAssertTrue(importedItem.nutrientsSnapshot.proteinG.isUnknown, "fehlendes Protein darf nach dem Restore nicht 0 sein")
+        XCTAssertTrue(importedItem.nutrientsSnapshot.fatG.isUnknown, "fehlendes Fett darf nach dem Restore nicht 0 sein")
+    }
+
     /// DEL-250: ein Profil OHNE Cardio-Ziele (Default-Zustand, z.B.
     /// Bestandsnutzer nach einem Update) darf beim Roundtrip nicht
     /// versehentlich Werte "erfinden" — alle sechs Felder bleiben auf
