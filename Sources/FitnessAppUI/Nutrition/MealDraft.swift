@@ -416,20 +416,12 @@ public final class MealDraft: ObservableObject {
     /// Zeile im Context registriert ist (`registeredModel`); nur dann wird
     /// geloescht.
     private func removeStaleItem(_ id: PersistentIdentifier, in context: ModelContext) {
-        guard let registered = context.registeredModel(for: id) as? MealItem else { return }
+        let live: MealItem? = context.registeredModel(for: id)
+        guard let registered = live else { return }
         if registered.meal != nil {
             registered.meal = nil
         }
         context.delete(registered)
-    }
-
-    /// NUT-01: Der tatsaechlich gespeicherte Stand dieser Mahlzeit, gelesen
-    /// ueber einen FRISCHEN Context (kein Cache, keine toten Objekte des
-    /// bearbeitenden Contexts). `nil`, wenn die Mahlzeit nicht lesbar ist.
-    public static func storedItems(forMealID mealID: PersistentIdentifier, in context: ModelContext) -> [MealItem]? {
-        let reader = ModelContext(context.container)
-        guard let meal = reader.model(for: mealID) as? MealEntry else { return nil }
-        return meal.items
     }
 
     /// NUT-01: `true`, wenn im Store noch eine Zeile mit dieser ID existiert.
@@ -439,7 +431,8 @@ public final class MealDraft: ObservableObject {
     /// abstuerzen).
     private static func storedRowExists(_ id: PersistentIdentifier, in context: ModelContext) -> Bool {
         let reader = ModelContext(context.container)
-        return (reader.model(for: id) as? MealItem) != nil
+        let stored: MealItem? = reader.model(for: id)
+        return stored != nil
     }
 
     /// Feuert, nachdem die gespeicherten Positionen sich geaendert haben —
