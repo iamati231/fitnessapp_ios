@@ -363,10 +363,17 @@ public final class MealDraft: ObservableObject {
 
     /// Laedt die Mahlzeit-Beziehung aus dem Store, damit die Anzeige immer
     /// die tatsaechlich gespeicherten Positionen zeigt (NUT-01).
+    ///
+    /// `ModelContext` hat (iOS 17) kein `refresh(_:)` — deshalb wird
+    /// `meal.items` gegen die GESPEICHERTEN Positionen abgeglichen: alle
+    /// `MealItem`-Zeilen mit `meal == diese Mahlzeit`, frisch gefetcht.
+    /// Idempotent — es wird nichts eingefuegt, nur die Beziehungsliste
+    /// nachgezogen.
     private func refreshOriginalMeal(in context: ModelContext) {
-        guard let originalMealID, let meal = context.model(for: originalMealID) as? MealEntry else { return }
-        context.delete(meal)
-        context.refresh(meal, mergeChanges: false)
+        guard let originalMealID else { return }
+        guard let meal = context.model(for: originalMealID) as? MealEntry else { return }
+        guard let stored = try? context.fetch(FetchDescriptor<MealItem>()) else { return }
+        meal.items = stored.filter { $0.meal?.persistentModelID == originalMealID }
     }
 }
 
