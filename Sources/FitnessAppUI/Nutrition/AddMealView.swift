@@ -688,6 +688,31 @@ public struct AddMealView: View {
 
     private var itemsSection: some View {
         Section {
+            // NUT-01: Ist der Edit committet, aber der Cleanup offen, zeigt
+            // die Positionen-Liste den GESPEICHERTEN Stand (alte + neue) —
+            // nicht den Entwurf, der nach einem Retry schon anders aussieht.
+            if let stored = showsStoredStateInsteadOfDraft ? storedMealItems : nil {
+                ForEach(stored) { item in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.nameSnapshot)
+                                .foregroundStyle(Color.primary)
+                            Text("\(item.quantity.truncated(to: 2).formattedTwoDecimals) \(unitLabel(item.unit))")
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Spacer()
+                        Text(NutritionDisplay.text(item.nutrientsSnapshot.kcal, unit: "kcal", decimals: 0))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
+                }
+                Text("nutrition.addMeal.saveFailed.cleanupMessage", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            } else {
             ForEach(draft.items) { item in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
@@ -713,6 +738,7 @@ public struct AddMealView: View {
                 for index in offsets {
                     draft.removeItem(id: draft.items[index].id)
                 }
+            }
             }
         } header: {
             Text("nutrition.addMeal.positionsSection", bundle: .module)
@@ -818,6 +844,22 @@ public struct AddMealView: View {
             || !aiCandidates.isEmpty
             || draft.date != dateAtOpen
             || draft.mealType != mealTypeAtOpen
+    }
+
+    /// NUT-01: Die Positionen, die der Store tatsaechlich enthaelt, fuer eine
+    /// Mahlzeit im Edit-Modus. Vor dem ersten Speichern (`itemsVersion == 0`)
+    /// ist der Entwurf die einzige Quelle; danach (Cleanup-Fehler, Retry)
+    /// zeigt die Ansicht den gespeicherten Stand.
+    private var storedMealItems: [MealItem]? {
+        guard let editingMeal, draft.itemsVersion > 0 else { return nil }
+        return MealDraft.storedItems(forMealID: editingMeal.persistentModelID, in: modelContext)
+    }
+
+    /// NUT-01: `true`, solange der Edit committet ist, aber die alten
+    /// Positionen noch im Store stehen — die Ansicht zeigt den gespeicherten
+    /// Stand (alte + neue) und erklaert das.
+    private var showsStoredStateInsteadOfDraft: Bool {
+        editingMeal != nil && draft.hasPendingCleanup && storedMealItems != nil
     }
 
     private var filteredEntries: [FoodCatalogEntry] {

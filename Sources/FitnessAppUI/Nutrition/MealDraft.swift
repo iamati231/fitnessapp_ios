@@ -41,6 +41,11 @@ public final class MealDraft: ObservableObject {
     @Published public var date: Date
     @Published public var mealType: MealType
     @Published public private(set) var items: [Item] = []
+    /// NUT-01: zaehlt hoch, sobald sich die GESPEICHERTEN Positionen geaendert
+    /// haben (Cleanup-Erfolg, Cleanup-Fehler). Die View haengt daran ihre
+    /// Anzeige des tatsaechlichen Store-Stands auf, statt dem Draft zu
+    /// glauben.
+    @Published public private(set) var itemsVersion: Int = 0
     /// Doppeltap-Schutz: sobald `save()` einmal erfolgreich war, ist jeder
     /// weitere Aufruf ein Context-freies No-Op (siehe `save(into:persist:)`).
     @Published public private(set) var didSaveSuccessfully: Bool = false
@@ -258,17 +263,14 @@ public final class MealDraft: ObservableObject {
             guard !oldItems.isEmpty else { return .success(()) }
 
             pendingCleanupItemIDs = oldItemIDs
-            // Regel 2 (Typ-Doku): den alten Stand im Context ersetzen, damit
-            // `meal.items` genau dem gespeicherten Zustand entspricht. Dazu
-            // werden die alten Positionen aus dem Context geloest, der
-            // Zustand per CHECKPOINT festgenagelt (kein `rollback()`) und die
-            // Mahlzeit frisch aus dem Store geladen.
-            for id in oldItemIDs {
-                removeStaleItem(id, in: context)
-            }
+            // Regel 2 (Typ-Doku): den Zustand festnageln (CHECKPOINT, KEIN
+            // `rollback()` — der Edit ist committet und darf nicht
+            // zurueckgedreht werden), dann die Positionen genau einmal
+            // entfernen und den Stand nachziehen. Die alten Objekte bleiben
+            // bis hierher unangetastet im Context — ein bereits totes Objekt
+            // laesst sich nicht mehr adressieren.
             _ = try? checkpoint(context)
-            refreshOriginalMeal(in: context)
-
+            notifyItemCountChanged()
             return finishPendingCleanup(in: context, cleanup: cleanup, checkpoint: checkpoint)
         }
 
@@ -320,8 +322,17 @@ public final class MealDraft: ObservableObject {
         cleanup: (ModelContext) throws -> Void,
         checkpoint: (ModelContext) throws -> Void
     ) -> Result<Void, Error> {
-        guard let pendingIDs = pendingCleanupItemIDs, !pendingIDs.isEmpty else {
+        guard let unresolved = pendingCleanupItemIDs, !unresolved.isEmpty else {
             pendingCleanupItemIDs = nil
+            return .success(())
+        }
+        // Nur Zeilen, die im STORE noch existieren, sind offen. Was bereits
+        // weg ist (Cleanup-Save des vorigen Versuchs ging doch durch) oder nie
+        // registriert war, wird NICHT angefasst.
+        let pendingIDs = unresolved.filter { Self.storedRowExists($0, in: context) }
+        guard !pendingIDs.isEmpty else {
+            pendingCleanupItemIDs = nil
+            notifyItemCountChanged()
             return .success(())
         }
         for id in pendingIDs {
@@ -330,50 +341,65 @@ public final class MealDraft: ObservableObject {
         do {
             try cleanup(context)
         } catch {
-            refreshOriginalMeal(in: context)
+            notifyItemCountChanged()
             return .failure(MealDraftItemCleanupError(underlying: error))
         }
         // Der Edit ist bereits committet und darf NICHT zurueckgedreht
         // werden — deshalb hier kein `rollback()`. Der CHECKPOINT-Save nagelt
-        // den Zustand fest (er ist bei einem zweiphasigen Store-Commit der
-        // endgueltige Schreibvorgang). Scheitert auch er, bleibt der
-        // Cleanup offen und `checkpointBetriebsbereit` auf `false`; dann
-        // versucht KEIN spaeterer automatischer Save mehr das Aufraeumen.
+        // den Zustand fest (bei einem zweiphasigen Store-Commit ist er der
+        // endgueltige Schreibvorgang).
         do {
             try checkpoint(context)
         } catch {
             checkpointBetriebsbereit = false
-            refreshOriginalMeal(in: context)
+            notifyItemCountChanged()
             return .failure(MealDraftItemCleanupError(underlying: error))
         }
         pendingCleanupItemIDs = nil
-        refreshOriginalMeal(in: context)
+        notifyItemCountChanged()
         return .success(())
     }
 
     /// Entfernt genau EINE alte Position: loest die Beziehung, damit kein
     /// Cascade-/Inverse-Effekt die Mahlzeit beruehrt, und loescht das Objekt.
+    ///
+    /// Wichtig (Apple-CI-Fund): `context.model(for:)` erzeugt fuer eine bereits
+    /// geloeschte bzw. nicht mehr registrierte Row ein FAULT, dessen Zugriff
+    /// mit `Fatal error: This model instance was invalidated...` abstuerzt.
+    /// Deshalb wird zuerst geprueft, ob die ID ueberhaupt noch als lebende
+    /// Zeile im Context registriert ist (`registeredModel`); nur dann wird
+    /// geloescht.
     private func removeStaleItem(_ id: PersistentIdentifier, in context: ModelContext) {
-        guard let stale = context.model(for: id) as? MealItem else { return }
-        if stale.meal != nil {
-            stale.meal = nil
+        guard let registered = context.registeredModel(for: id) as? MealItem else { return }
+        if registered.meal != nil {
+            registered.meal = nil
         }
-        context.delete(stale)
+        context.delete(registered)
     }
 
-    /// Laedt die Mahlzeit-Beziehung aus dem Store, damit die Anzeige immer
-    /// die tatsaechlich gespeicherten Positionen zeigt (NUT-01).
-    ///
-    /// `ModelContext` hat (iOS 17) kein `refresh(_:)` — deshalb wird
-    /// `meal.items` gegen die GESPEICHERTEN Positionen abgeglichen: alle
-    /// `MealItem`-Zeilen mit `meal == diese Mahlzeit`, frisch gefetcht.
-    /// Idempotent — es wird nichts eingefuegt, nur die Beziehungsliste
-    /// nachgezogen.
-    private func refreshOriginalMeal(in context: ModelContext) {
-        guard let originalMealID else { return }
-        guard let meal = context.model(for: originalMealID) as? MealEntry else { return }
-        guard let stored = try? context.fetch(FetchDescriptor<MealItem>()) else { return }
-        meal.items = stored.filter { $0.meal?.persistentModelID == originalMealID }
+    /// NUT-01: Der tatsaechlich gespeicherte Stand dieser Mahlzeit, gelesen
+    /// ueber einen FRISCHEN Context (kein Cache, keine toten Objekte des
+    /// bearbeitenden Contexts). `nil`, wenn die Mahlzeit nicht lesbar ist.
+    public static func storedItems(forMealID mealID: PersistentIdentifier, in context: ModelContext) -> [MealItem]? {
+        let reader = ModelContext(context.container)
+        guard let meal = reader.model(for: mealID) as? MealEntry else { return nil }
+        return meal.items
+    }
+
+    /// NUT-01: `true`, wenn im Store noch eine Zeile mit dieser ID existiert.
+    /// Das entscheidet, ob ein Cleanup-Retry noch etwas zu tun hat —
+    /// unabhaengig davon, ob der bearbeitende Context die Zeile registriert
+    /// hat (nicht registrierte Rows sind Faults und wuerden beim Zugriff
+    /// abstuerzen).
+    private static func storedRowExists(_ id: PersistentIdentifier, in context: ModelContext) -> Bool {
+        let reader = ModelContext(context.container)
+        return (reader.model(for: id) as? MealItem) != nil
+    }
+
+    /// Feuert, nachdem die gespeicherten Positionen sich geaendert haben —
+    /// die UI liest den Store daraufhin neu (siehe `AddMealView`).
+    private func notifyItemCountChanged() {
+        itemsVersion &+= 1
     }
 }
 
