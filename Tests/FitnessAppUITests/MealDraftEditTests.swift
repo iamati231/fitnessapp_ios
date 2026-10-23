@@ -209,27 +209,31 @@ final class MealDraftEditTests: XCTestCase {
         // nicht mehr sicher adressierbar).
         XCTAssertEqual(draft.pendingCleanupSummaries.map(\.name), ["Original"])
 
-        // Frischer Context = der tatsächliche Store: die alte Zeile ist
-        // bereits endgültig gelöscht, die neue ist gespeichert (kein
-        // Duplikat, kein Zombie).
+        // Ehrlich: der erste Versuch konnte den Zustand nicht entfernen. Alte
+        // UND neue Position sind da — aber jede genau EINMAL (keine
+        // Duplikate, kein Datenverlust).
         let storeAfterFailure = try ModelContext(container).fetch(FetchDescriptor<MealItem>())
-        XCTAssertEqual(storeAfterFailure.map(\.nameSnapshot), ["Neu"],
-                       "keine doppelten Positionen nach dem fehlgeschlagenen Cleanup")
+        XCTAssertEqual(Set(storeAfterFailure.map(\.nameSnapshot)), ["Original", "Neu"])
+        XCTAssertEqual(storeAfterFailure.count, 2, "keine Duplikate nach dem fehlgeschlagenen Cleanup")
 
-        // 2) Ein späterer, unabhängiger Save verändert nichts.
+        // 2) Ein erneuter Aufruf räumt auf — die UI (Retry-Tap) löst genau
+        // diesen Weg aus, weil `hasPendingCleanup` den Save freigibt.
+        let retry = draft.save(into: context)
+        if case .failure(let error) = retry { XCTFail("Cleanup-Retry sollte gelingen: \(error)") }
+        XCTAssertFalse(draft.hasPendingCleanup)
+        XCTAssertTrue(draft.pendingCleanupSummaries.isEmpty)
+
+        let afterRetry = try ModelContext(container).fetch(FetchDescriptor<MealItem>())
+        XCTAssertEqual(afterRetry.map(\.nameSnapshot), ["Neu"], "genau die neue Position, die alte ist entfernt")
+
+        // 3) Ein späterer, unabhängiger Save verändert nichts mehr.
         try context.save()
         let afterForeignSave = try ModelContext(container).fetch(FetchDescriptor<MealItem>())
         XCTAssertEqual(afterForeignSave.count, 1, "keine Duplikate durch einen fremden Save")
         XCTAssertEqual(afterForeignSave.map(\.nameSnapshot), ["Neu"])
 
-        // 3) Zweiter Versuch räumt auf — genau einmal.
-        let second = draft.save(into: context)
-        if case .failure(let error) = second { XCTFail("Cleanup-Retry sollte gelingen: \(error)") }
-        XCTAssertFalse(draft.hasPendingCleanup)
-
-        let finalItems = try ModelContext(container).fetch(FetchDescriptor<MealItem>())
-        XCTAssertEqual(finalItems.map(\.nameSnapshot), ["Neu"], "genau die neue Position, die alte ist entfernt")
-        XCTAssertEqual(try ModelContext(container).fetch(FetchDescriptor<MealEntry>()).count, 1)
+        XCTAssertEqual(try ModelContext(container).fetch(FetchDescriptor<MealEntry>()).count, 1,
+                       "der Edit darf keine zweite Mahlzeit anlegen")
 
         // 4) Nach erfolgreichem Aufräumen ist ein weiteres Speichern No-Op.
         _ = draft.save(into: context)
