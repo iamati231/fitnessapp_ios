@@ -12,6 +12,15 @@ import FitnessAppFoodLookup
 /// Button per `ForEach`-at-Section-level row doesn't exhibit that bug on its
 /// own (see `filteredEntries`) — belt and suspenders for a list Task 5 reuses
 /// from a second call site.
+///
+/// Settings-Restructure-Task (2026-10-23), Teil C2: Open Food Facts verlangt
+/// Attribution auf JEDER Seite/jedem Screen, der ihre Daten zeigt — nicht nur
+/// auf der dedizierten Credits-Seite (`OnlineFoodLookupCreditsView`). Dieser
+/// `attributionRow` haengt hier statt an jedem der zwei `AddMealView`-
+/// Aufrufer, damit beide Einstiegspunkte (manuelle Suche + AI-Kandidat) ihn
+/// automatisch bekommen. Nur sichtbar, wenn `candidates` tatsaechlich etwas
+/// zeigt (nicht beim leeren/noch-nicht-ausgefuehrten Suchzustand) — eigene
+/// Zeile, reiner Text, kein Tap-Target (kein C1-Risiko).
 @available(iOS 17.0, macOS 14.0, *)
 struct OnlineFoodResultsList: View {
     let candidates: [OnlineFoodCandidate]
@@ -37,6 +46,12 @@ struct OnlineFoodResultsList: View {
             }
             .buttonStyle(.borderless)
             .listRowBackground(Color.Deltiq.surface)
+        }
+        if !candidates.isEmpty {
+            Text("nutrition.addMeal.onlineSearch.attribution", bundle: .module)
+                .font(.system(size: 11))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .listRowBackground(Color.Deltiq.surface)
         }
     }
 }

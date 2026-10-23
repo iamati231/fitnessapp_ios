@@ -4,6 +4,13 @@ import SwiftUI
 /// Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Teil 3): Gruppe
 /// "Hilfe & Informationen" — Version, Bundle-ID, Übungs-GIF-Credits. Reine
 /// Verschiebung aus `SettingsView.aboutSection`.
+///
+/// Settings-Restructure-Task (2026-10-23): der Open-Food-Facts-Lizenzhinweis
+/// (`OnlineFoodLookupCreditsView`) zieht aus `SettingsDataConnectionsView`
+/// hierher um — Attribution/Credits gehoeren wie `ExerciseMediaCreditsView`
+/// hierher, nicht in die Gruppe mit dem funktionalen Opt-in-Toggle. Der
+/// Toggle selbst (`onlineFoodLookupEnabled`) bleibt unveraendert in
+/// `SettingsDataConnectionsView`.
 @available(iOS 17.0, macOS 14.0, *)
 public struct SettingsHelpInfoView: View {
 
@@ -54,6 +61,15 @@ public struct SettingsHelpInfoView: View {
                 DeltiqRow(
                     icon: "photo.on.rectangle.angled",
                     label: String(localized: "settings.about.exerciseMediaCredit", bundle: .module),
+                    showsChevron: true
+                )
+            }
+            NavigationLink {
+                OnlineFoodLookupCreditsView()
+            } label: {
+                DeltiqRow(
+                    icon: "info.circle",
+                    label: String(localized: "settings.foodLookup.credits.row", bundle: .module),
                     showsChevron: true,
                     showsDivider: false
                 )

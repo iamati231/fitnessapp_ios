@@ -135,8 +135,10 @@ public struct SettingsDataConnectionsView: View {
 
     /// Online-Food-Lookup (Task 3, docs/superpowers/sdd/2026-10-22-online-food-lookup):
     /// Opt-in-Toggle fuer die kommende Online-Suche unbekannter Lebensmittel
-    /// (Task 4/5, FitnessAppFoodLookup/Open Food Facts) + Pflicht-Lizenzhinweis.
-    /// Noch keine Such-UI hier — nur der Schalter, den Task 4/5 ausliest.
+    /// (Task 4/5, FitnessAppFoodLookup/Open Food Facts). Der Pflicht-Lizenzhinweis
+    /// (`OnlineFoodLookupCreditsView`) lebt seit der Settings-Restructure-Task
+    /// (2026-10-23) als Link in `SettingsHelpInfoView` — Attribution gehoert
+    /// inhaltlich zu "Hilfe & Informationen", nicht zum funktionalen Opt-in hier.
     private var onlineFoodLookupSection: some View {
         DeltiqSection(String(localized: "settings.section.onlineFoodLookup", bundle: .module).uppercased()) {
             DeltiqControlRow(
@@ -147,16 +149,6 @@ public struct SettingsDataConnectionsView: View {
                 Toggle(isOn: $onlineFoodLookupEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
                     .accessibilityLabel(Text("settings.foodLookup.toggle", bundle: .module))
-            }
-            NavigationLink {
-                OnlineFoodLookupCreditsView()
-            } label: {
-                DeltiqRow(
-                    icon: "info.circle",
-                    label: String(localized: "settings.foodLookup.credits.row", bundle: .module),
-                    showsChevron: true,
-                    showsDivider: false
-                )
             }
             // Footer reacts to the toggle state (like `externalWorkoutImportEnabled`'s
             // `.onChange` sync feedback above) — without this, flipping the toggle had

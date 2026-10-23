@@ -12,7 +12,7 @@ import UIKit
 /// Settings hub. Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Teil 3):
 /// umgebaut auf gruppierte Navigation (5 Gruppen) statt 10 flacher Sections —
 /// jede Gruppe ihre eigene Seite (`SettingsAppExperienceView`/
-/// `SettingsDataConnectionsView`/`SettingsLibraryEquipmentView`/
+/// `SettingsLibraryEquipmentView`/`SettingsDataConnectionsView`/
 /// `SettingsHelpInfoView`), reine Verschiebung bestehender Inhalte — dieselben
 /// `NavigationLink`+`DeltiqRow`-Konventionen wie ueberall sonst, MIT EINER
 /// Ausnahme: main-navigation Plan, 2026-10-22, Task 3 (Fix-Runde 1) macht die
@@ -21,7 +21,10 @@ import UIKit
 /// plain `NavigationLink { ... }`) — sie muss per Deep-Link aus der
 /// Wasser-Erinnerung direkt bis zum WaterTracker durchgeschaltet werden
 /// koennen, die anderen 4 Gruppen-Zeilen brauchen das nicht und bleiben
-/// view-basiert. "Profil & Training" hat nur EINEN Eintrag (den
+/// view-basiert. Reihenfolge der Gruppen-Zeilen (Settings-Restructure-Task,
+/// 2026-10-23): App-Erlebnis, Bibliothek & Ausstattung, Werkzeuge,
+/// Daten & Verbindungen, Hilfe & Informationen (siehe
+/// `groupNavigationSection`). "Profil & Training" hat nur EINEN Eintrag (den
 /// Profil-Editor, der jetzt auch Koerperdaten + Trainingsort/Ausstattung
 /// als eigene Unterseiten traegt) und bleibt deshalb ein direkter Link statt
 /// einer eigenen Gruppen-Seite — eine zusaetzliche Navigationsebene fuer
@@ -159,7 +162,10 @@ public struct SettingsView: View {
 
     /// Settings-Epic Phase 3: die 4 Gruppen-Seiten (siehe Datei-Kommentar) —
     /// plus (main-navigation Plan, 2026-10-22, Task 3) ein 5. Eintrag,
-    /// Werkzeuge/CalculatorsView.
+    /// Werkzeuge/CalculatorsView. Reihenfolge (Settings-Restructure-Task,
+    /// 2026-10-23): App-Erlebnis, Bibliothek & Ausstattung, Werkzeuge,
+    /// Daten & Verbindungen, Hilfe & Informationen — Hilfe & Informationen
+    /// steht bewusst zuletzt (`showsDivider: false` wandert mit).
     private var groupNavigationSection: some View {
         DeltiqSection(String(localized: "settings.section.more", bundle: .module).uppercased()) {
             NavigationLink {
@@ -168,6 +174,32 @@ public struct SettingsView: View {
                 DeltiqRow(
                     icon: "slider.horizontal.3",
                     label: String(localized: "settings.group.appExperience", bundle: .module),
+                    showsChevron: true
+                )
+            }
+            NavigationLink {
+                SettingsLibraryEquipmentView()
+            } label: {
+                DeltiqRow(
+                    icon: "figure.strengthtraining.traditional",
+                    label: String(localized: "settings.group.libraryEquipment", bundle: .module),
+                    showsChevron: true
+                )
+            }
+            // main-navigation Plan, 2026-10-22, Task 3, Fix-Runde 1: CalculatorsView
+            // zieht vom entfallenen Werkzeuge-Tab eine Ebene tief unter "Mehr" ein.
+            // Anders als die 4 Eintraege hier wertbasiert (`NavigationLink(value:)` +
+            // `CalculatorsRoute`/`navigationDestination(for:)`, registriert in
+            // RootView) statt view-basiert — dieselbe Route-Maschinerie, die der
+            // Wassertracker-Deep-Link benutzt. Damit landet jeder Zustand auf
+            // diesem Teilpfad zuverlaessig in `toolsPath`, und ein Reset+Append
+            // des Deep-Links trifft garantiert exakt den WaterTracker, egal wie
+            // der User vorher manuell navigiert hat — kein Mix aus wert- und
+            // view-basierten Pushes mehr zwischen SettingsView und WaterTrackerView.
+            NavigationLink(value: CalculatorsRoute.calculators) {
+                DeltiqRow(
+                    icon: "wrench.and.screwdriver",
+                    label: String(localized: "settings.group.tools", bundle: .module),
                     showsChevron: true
                 )
             }
@@ -181,37 +213,11 @@ public struct SettingsView: View {
                 )
             }
             NavigationLink {
-                SettingsLibraryEquipmentView()
-            } label: {
-                DeltiqRow(
-                    icon: "figure.strengthtraining.traditional",
-                    label: String(localized: "settings.group.libraryEquipment", bundle: .module),
-                    showsChevron: true
-                )
-            }
-            NavigationLink {
                 SettingsHelpInfoView()
             } label: {
                 DeltiqRow(
                     icon: "questionmark.circle",
                     label: String(localized: "settings.group.helpInfo", bundle: .module),
-                    showsChevron: true
-                )
-            }
-            // main-navigation Plan, 2026-10-22, Task 3, Fix-Runde 1: CalculatorsView
-            // zieht vom entfallenen Werkzeuge-Tab eine Ebene tief unter "Mehr" ein.
-            // Anders als die 4 Eintraege oben wertbasiert (`NavigationLink(value:)` +
-            // `CalculatorsRoute`/`navigationDestination(for:)`, registriert in
-            // RootView) statt view-basiert — dieselbe Route-Maschinerie, die der
-            // Wassertracker-Deep-Link benutzt. Damit landet jeder Zustand auf
-            // diesem Teilpfad zuverlaessig in `toolsPath`, und ein Reset+Append
-            // des Deep-Links trifft garantiert exakt den WaterTracker, egal wie
-            // der User vorher manuell navigiert hat — kein Mix aus wert- und
-            // view-basierten Pushes mehr zwischen SettingsView und WaterTrackerView.
-            NavigationLink(value: CalculatorsRoute.calculators) {
-                DeltiqRow(
-                    icon: "wrench.and.screwdriver",
-                    label: String(localized: "settings.group.tools", bundle: .module),
                     showsChevron: true,
                     showsDivider: false
                 )

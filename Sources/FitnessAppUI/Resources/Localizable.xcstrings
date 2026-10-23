@@ -57372,6 +57372,52 @@
         }
       }
     },
+    "settings.credits.onlineFoodLookup.copyright": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "© Open Food Facts Mitwirkende"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(c) Open Food Facts contributors"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "© Open Food Facts katkıda bulunanlar"
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.onlineSearch.attribution": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten: © Open Food Facts"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data: © Open Food Facts"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veri: © Open Food Facts"
+          }
+        }
+      }
+    },
     "nutrition.addMeal.onlineSearch.action": {
       "extractionState": "manual",
       "localizations": {
