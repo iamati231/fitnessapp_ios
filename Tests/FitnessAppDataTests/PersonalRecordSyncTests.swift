@@ -624,5 +624,134 @@ final class PersonalRecordSyncTests: XCTestCase {
 
         XCTAssertTrue(detected.isEmpty, "No ExerciseLogs on a timed-format session — nothing for recordPRs to detect")
     }
+
+    // MARK: - Legacy logs without a snapshot (Audit Fix 1b)
+
+    /// Strips the snapshot fields from the single `ExerciseLog` of `session`
+    /// to simulate a pre-DEL-051 row (or an unmatched backfill) that still
+    /// has a live `exercise` link — the only way `resolvedExerciseName`
+    /// falls back to the live relationship instead of a stored snapshot.
+    private func stripSnapshot(from session: WorkoutSession) {
+        guard let log = session.logs.first else {
+            return XCTFail("Expected session to have exactly one log")
+        }
+        log.exerciseNameSnapshot = nil
+        log.exerciseTemplateIDSnapshot = nil
+    }
+
+    /// Regression (Audit-Fix 1b): a legacy log with no snapshot but still
+    /// linked to the SAME live `Exercise` as the one being logged this
+    /// session must still be found — via the new `Exercise`-table lookup +
+    /// `.logs` relationship traversal, not a full `ExerciseLog` table scan.
+    func testForwardSaveFindsLegacyNoSnapshotHistoryViaLiveExercise() throws {
+        let exercise = Exercise(name: "Bankdruecken", isCardio: false, isTimeBased: false)
+        context.insert(exercise)
+        let historySession = makeSession(for: exercise, weight: 80, reps: 5, date: day(1))
+        try context.save()
+        stripSnapshot(from: historySession)
+        try context.save()
+
+        let session = makeSession(for: exercise, weight: 85, reps: 5, date: day(2))
+        try context.save()
+
+        let detected = PersonalRecordSync.recordPRs(for: session, in: context)
+        try context.save()
+
+        let heaviest = detected.first { $0.kind == .heaviestWeight }
+        XCTAssertNotNil(heaviest, "A no-snapshot log still linked to the same live Exercise must count as history")
+        XCTAssertEqual(heaviest?.previousValue, 80)
+        XCTAssertEqual(heaviest?.newValue, 85)
+    }
+
+    /// Regression (Audit-Fix 1b): a legacy no-snapshot log linked to a
+    /// DIFFERENT, unrelated `Exercise` (not used in this session, and not
+    /// sharing its name or template ID) must be ignored — proves the new
+    /// `Exercise`-table lookup doesn't fall back to scanning every Exercise.
+    func testForwardSaveIgnoresLegacyNoSnapshotHistoryOfUnrelatedExercise() throws {
+        let unrelated = Exercise(name: "Kreuzheben", isCardio: false, isTimeBased: false)
+        context.insert(unrelated)
+        let unrelatedSession = makeSession(for: unrelated, weight: 999, reps: 1, date: day(1))
+        try context.save()
+        stripSnapshot(from: unrelatedSession)
+        try context.save()
+
+        let exercise = Exercise(name: "Bankdruecken", isCardio: false, isTimeBased: false)
+        context.insert(exercise)
+        let historySession = makeSession(for: exercise, weight: 80, reps: 5, date: day(1))
+        try context.save()
+
+        let session = makeSession(for: exercise, weight: 85, reps: 5, date: day(2))
+        try context.save()
+
+        let detected = PersonalRecordSync.recordPRs(for: session, in: context)
+        try context.save()
+
+        let heaviest = detected.first { $0.kind == .heaviestWeight }
+        XCTAssertNotNil(heaviest)
+        XCTAssertEqual(heaviest?.previousValue, 80,
+                       "Must compare against Bankdruecken's own 80kg, not Kreuzheben's unrelated 999kg legacy log")
+    }
+
+    /// Regression (Audit-Fix 1b): a legacy log that is BOTH snapshot-less AND
+    /// orphaned (`exercise == nil`) can never resolve a name and must not
+    /// affect detection — proves skipping its fetch entirely (rather than
+    /// fetching and then discarding it) changes nothing observable.
+    func testForwardSaveIgnoresFullyOrphanedLegacyLog() throws {
+        let exercise = Exercise(name: "Bankdruecken", isCardio: false, isTimeBased: false)
+        context.insert(exercise)
+        let orphanSession = makeSession(for: exercise, weight: 999, reps: 1, date: day(1))
+        try context.save()
+        stripSnapshot(from: orphanSession)
+        orphanSession.logs.first?.exercise = nil
+        try context.save()
+
+        let realHistory = makeSession(exerciseName: "Bankdruecken", weight: 80, reps: 5, date: day(1))
+        try context.save()
+        _ = realHistory
+
+        let session = makeSession(exerciseName: "Bankdruecken", weight: 85, reps: 5, date: day(2))
+        try context.save()
+
+        let detected = PersonalRecordSync.recordPRs(for: session, in: context)
+        try context.save()
+
+        let heaviest = detected.first { $0.kind == .heaviestWeight }
+        XCTAssertNotNil(heaviest)
+        XCTAssertEqual(heaviest?.previousValue, 80,
+                       "The fully-orphaned 999kg log must never be seen as history (it has no resolvable name)")
+    }
+
+    /// Regression (Audit-Fix 1b): `exerciseTemplateID` is "shared by multiple
+    /// instances" per `Exercise.swift` — the same logical exercise can exist
+    /// as separate `Exercise` rows (e.g. one per plan) sharing one template
+    /// ID, and each row's `name` can have drifted independently since (a
+    /// local rename on just one occurrence). Gives the two instances
+    /// DIFFERENT names specifically so this can only pass via the
+    /// template-ID-based `Exercise` lookup, not the name-based one — proving
+    /// that path is actually exercised, not redundant with it.
+    func testForwardSaveFindsLegacyNoSnapshotHistoryAcrossSharedTemplateID() throws {
+        let templateID = UUID()
+        let otherInstance = Exercise(name: "Flachbankdruecken", exerciseTemplateID: templateID, isCardio: false, isTimeBased: false)
+        context.insert(otherInstance)
+        let historySession = makeSession(for: otherInstance, weight: 80, reps: 5, date: day(1))
+        try context.save()
+        stripSnapshot(from: historySession)
+        try context.save()
+
+        // A SEPARATE Exercise row, same template ID but a different (locally
+        // renamed) current name, as if the user logs this exercise from a
+        // different plan.
+        let thisInstance = Exercise(name: "Bankdruecken", exerciseTemplateID: templateID, isCardio: false, isTimeBased: false)
+        context.insert(thisInstance)
+        let session = makeSession(for: thisInstance, weight: 85, reps: 5, date: day(2))
+        try context.save()
+
+        let detected = PersonalRecordSync.recordPRs(for: session, in: context)
+        try context.save()
+
+        let heaviest = detected.first { $0.kind == .heaviestWeight }
+        XCTAssertNotNil(heaviest, "A legacy log on a different, differently-named Exercise row sharing the template ID must still count")
+        XCTAssertEqual(heaviest?.previousValue, 80)
+    }
 }
 #endif

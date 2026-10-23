@@ -21,9 +21,10 @@ import FitnessAppCore
 /// (autosave or explicit) decides when changes hit disk.
 public enum PersonalRecordSync {
 
-    /// Sentinel fuer die `exerciseTemplateIDSnapshot`-Vorfilterung in
-    /// `fetchHistoricalLifts`: ein Platzhalter, den kein echtes
-    /// `Exercise.exerciseTemplateID` je annimmt. Macht aus
+    /// Sentinel fuer die `exerciseTemplateID`-Vorfilterung in
+    /// `fetchHistoricalLifts` (sowohl auf `ExerciseLog.exerciseTemplateIDSnapshot`
+    /// als auch auf `Exercise.exerciseTemplateID`): ein Platzhalter, den kein
+    /// echtes `exerciseTemplateID` je annimmt. Macht aus
     /// `optionalField == capturedValue` ein reines `??`-dann-Gleichheits-
     /// Predicate (`(field ?? sentinel) == id`) — bewusst KEIN direkter
     /// Optional-zu-Nicht-Optional-Vergleich und KEIN Force-Unwrap innerhalb
@@ -256,12 +257,42 @@ public enum PersonalRecordSync {
     /// stattdessen pro relevanter Identitaet ein einzelner, einfacher
     /// Gleichheits-Fetch (`== name` / `== id`), exakt das bereits an anderer
     /// Stelle (`ExternalWorkoutImportService`, `ExerciseEditorView`)
-    /// verwendete Predicate-Muster. Zusaetzlich ein Fetch fuer
-    /// `exerciseNameSnapshot == nil` als Sicherheitsnetz fuer Alt-Logs von
-    /// vor diesem Snapshot-Feld, deren Identitaet sich nicht vorab anhand
-    /// des gespeicherten Felds bestimmen laesst (sie werden wie zuvor
-    /// ungefiltert durchgereicht). Ergebnis wird am Ende nach Datum
-    /// sortiert, um die vorherige Reihenfolge exakt zu erhalten.
+    /// verwendete Predicate-Muster.
+    ///
+    /// **Alt-Logs ohne Snapshot** (`exerciseNameSnapshot == nil`, vor DEL-051
+    /// angelegt oder ein Backfill-Fall ohne Treffer) brauchen eine zweite
+    /// Strategie, weil ihre Identitaet nicht in einem gespeicherten Feld
+    /// steht, sondern erst ueber die LEBENDE `exercise`-Relationship aufgeloest
+    /// wird (`resolvedExerciseName`/`resolvedExerciseTemplateID` fallen in
+    /// genau diesem Fall darauf zurueck). Zwei Unterfaelle:
+    ///   - `exercise == nil` UND `exerciseNameSnapshot == nil` (vollstaendig
+    ///     verwaist, kein Snapshot, keine lebende Referenz mehr): liefert
+    ///     `resolvedExerciseName == nil` und wird vom `compactMap`-Filter
+    ///     unten ohnehin verworfen — so ein Log kann NIE zu einem Treffer
+    ///     werden, ein Fetch dafuer waere reine Verschwendung. Bewusst NICHT
+    ///     gefetcht.
+    ///   - `exercise != nil` (noch lebend verlinkt): die Identitaet IST die
+    ///     der lebenden `Exercise` (`.name`/`.exerciseTemplateID`) — genau
+    ///     diese Objekte lassen sich ueber dieselben Gleichheits-Predicates
+    ///     wie oben finden, nur auf der (viel kleineren, nicht mit der
+    ///     Trainingshistorie wachsenden) `Exercise`-Tabelle statt auf
+    ///     `ExerciseLog`. `exerciseTemplateID` wird laut Exercise.swift
+    ///     "von mehreren Instanzen geteilt" (dieselbe Uebung kann als
+    ///     mehrere separate `Exercise`-Zeilen in verschiedenen Plaenen
+    ///     existieren) — deshalb reicht die `Exercise`-Zeile dieser Session
+    ///     allein nicht; Treffer per Name UND per ID werden gebraucht, genau
+    ///     wie bei den Snapshot-Predicates oben. Pro Treffer liefert
+    ///     `.logs` (lebende Relationship, bereits auf GENAU diese Uebung
+    ///     beschraenkt) dann in-memory nur dessen Alt-Logs
+    ///     (`exerciseNameSnapshot == nil`) — keine weitere SwiftData-
+    ///     Abfrage noetig.
+    /// Damit bleibt kein ungefilterter Fetch der gesamten `exerciseNameSnapshot
+    /// == nil`-Gruppe uebrig: jeder potenziell relevante Alt-Log ist entweder
+    /// ueber eine passende `Exercise`-Zeile erreichbar, oder er ist beweisbar
+    /// irrelevant (keine aufloesbare Identitaet).
+    ///
+    /// Ergebnis wird am Ende nach Datum sortiert, um die vorherige
+    /// Reihenfolge exakt zu erhalten.
     private static func fetchHistoricalLifts(
         for sessionLifts: [LiftAttempt],
         excluding session: WorkoutSession,
@@ -294,10 +325,33 @@ public enum PersonalRecordSync {
             )
             appendUnique((try? context.fetch(descriptor)) ?? [])
         }
-        let legacyDescriptor = FetchDescriptor<ExerciseLog>(
-            predicate: #Predicate<ExerciseLog> { $0.exerciseNameSnapshot == nil }
-        )
-        appendUnique((try? context.fetch(legacyDescriptor)) ?? [])
+
+        // Alt-Logs ohne Snapshot, aber noch lebend an eine relevante
+        // `Exercise` verlinkt (siehe Doku oben) — gefunden ueber dieselbe
+        // Identitaet, diesmal auf `Exercise` statt `ExerciseLog`.
+        var seenExerciseIDs = Set<PersistentIdentifier>()
+        var relevantExercises: [Exercise] = []
+        func appendUniqueExercise(_ fetched: [Exercise]) {
+            for exercise in fetched where seenExerciseIDs.insert(exercise.persistentModelID).inserted {
+                relevantExercises.append(exercise)
+            }
+        }
+        for name in relevantNames {
+            let descriptor = FetchDescriptor<Exercise>(
+                predicate: #Predicate<Exercise> { $0.name == name }
+            )
+            appendUniqueExercise((try? context.fetch(descriptor)) ?? [])
+        }
+        for id in relevantTemplateIDs {
+            let sentinel = Self.nilTemplateIDSentinel
+            let descriptor = FetchDescriptor<Exercise>(
+                predicate: #Predicate<Exercise> { ($0.exerciseTemplateID ?? sentinel) == id }
+            )
+            appendUniqueExercise((try? context.fetch(descriptor)) ?? [])
+        }
+        for exercise in relevantExercises {
+            appendUnique(exercise.logs.filter { $0.exerciseNameSnapshot == nil })
+        }
 
         return logs
             .sorted { $0.date < $1.date }
