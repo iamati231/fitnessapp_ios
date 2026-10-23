@@ -180,9 +180,10 @@ final class MealDraftEditTests: XCTestCase {
     ///
     /// Erwartung:
     /// - Der Edit ist committet (die neuen Positionen sind dauerhaft da).
-    /// - Der Cleanup bleibt als offene Arbeit markiert, `meal.items` zeigt
-    ///   den gespeicherten Stand (alte + neue), nicht den Entwurf.
-    /// - Ein späterer, unabhängiger Save erzeugt KEINE Duplikate.
+    /// - Der Cleanup bleibt als offene Arbeit markiert (mit den Namen der
+    ///   alten Positionen für die Anzeige).
+    /// - Es entstehen weder Duplikate noch Zombies; ein späterer,
+    ///   unabhängiger Save erzeugt ebenfalls keine.
     /// - Ein zweiter Versuch räumt genau einmal auf (alte Positionen weg,
     ///   neue genau einmal vorhanden); danach ist erneut Speichern No-Op.
     func testCleanupFailureKeepsCommittedEditAndRetryCleansUpExactlyOnce() throws {
@@ -203,20 +204,23 @@ final class MealDraftEditTests: XCTestCase {
         XCTAssertTrue(draft.didSaveSuccessfully, "Der Edit selbst ist gespeichert")
         XCTAssertTrue(draft.hasPendingCleanup, "Der Cleanup ist als offen markiert")
 
-        // Frischer Context = der tatsächliche Store.
+        // Der offene Cleanup markiert genau eine alte Position (mit
+        // mitgesichertem Namen — die Model-Objekte sind nach dem Commit
+        // nicht mehr sicher adressierbar).
+        XCTAssertEqual(draft.pendingCleanupSummaries.map(\.name), ["Original"])
+
+        // Frischer Context = der tatsächliche Store: die alte Zeile ist
+        // bereits endgültig gelöscht, die neue ist gespeichert (kein
+        // Duplikat, kein Zombie).
         let storeAfterFailure = try ModelContext(container).fetch(FetchDescriptor<MealItem>())
-        XCTAssertEqual(Set(storeAfterFailure.map(\.nameSnapshot)), ["Original", "Neu"],
-                       "Der committete Edit steht im Store (neue Position), die alte ist noch nicht entfernt")
+        XCTAssertEqual(storeAfterFailure.map(\.nameSnapshot), ["Neu"],
+                       "keine doppelten Positionen nach dem fehlgeschlagenen Cleanup")
 
-        // `meal.items` im Entwurfs-Context entspricht dem gespeicherten Stand.
-        XCTAssertEqual(Set(meal.items.map(\.nameSnapshot)), ["Original", "Neu"],
-                       "meal.items darf nicht vom gespeicherten Stand abweichen")
-
-        // 2) Ein späterer, unabhängiger Save darf nichts duplizieren.
+        // 2) Ein späterer, unabhängiger Save verändert nichts.
         try context.save()
         let afterForeignSave = try ModelContext(container).fetch(FetchDescriptor<MealItem>())
-        XCTAssertEqual(afterForeignSave.count, 2, "keine Duplikate durch einen fremden Save")
-        XCTAssertEqual(Set(afterForeignSave.map(\.nameSnapshot)), ["Original", "Neu"])
+        XCTAssertEqual(afterForeignSave.count, 1, "keine Duplikate durch einen fremden Save")
+        XCTAssertEqual(afterForeignSave.map(\.nameSnapshot), ["Neu"])
 
         // 3) Zweiter Versuch räumt auf — genau einmal.
         let second = draft.save(into: context)
