@@ -487,9 +487,15 @@ public struct AddMealView: View {
                 Text("nutrition.addMeal.aiDraft.header", bundle: .module)
             }
             .listRowSeparatorTint(Color.Deltiq.divider)
-        default:
+        case let unavailable:
+            // AI-01 (Audit 2026-10-23, P2): Der Grund wird BENANNT, statt
+            // jedes „nicht verfuegbar" als „dieses Geraet kann es nicht" zu
+            // verkaufen. Der manuelle Weg (Suche darunter) ist in jedem Fall
+            // derselbe — deshalb steht er in allen Texten.
             Section {
-                Text("nutrition.addMeal.aiDraft.unavailable", bundle: .module)
+                Text(LocalizedStringKey(unavailable.unavailableReasonKey?.captureHintLocalizationKey
+                        ?? "nutrition.addMeal.aiDraft.unavailable.device"),
+                     bundle: .module)
                     .font(.caption)
                     .foregroundStyle(Color.Deltiq.textSecondary)
                     .listRowBackground(Color.Deltiq.surface)

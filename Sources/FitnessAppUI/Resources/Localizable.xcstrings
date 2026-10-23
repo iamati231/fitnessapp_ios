@@ -56613,29 +56613,6 @@
         }
       }
     },
-    "nutrition.addMeal.aiDraft.unavailable": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "KI-Entwurf ist auf diesem Gerät nicht verfügbar. Nutze stattdessen die Suche unten, um Lebensmittel manuell hinzuzufügen."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI draft isn't available on this device. Use the search below instead to add food manually."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bu cihazda yapay zeka taslağı kullanılamıyor. Bunun yerine yiyecekleri manuel olarak eklemek için aşağıdaki aramayı kullanın."
-          }
-        }
-      }
-    },
     "nutrition.day.insight.header": {
       "extractionState": "manual",
       "localizations": {
@@ -58012,6 +57989,98 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bunun yerine besini kendin oluştur"
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.unavailable.device": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KI-Entwurf ist auf diesem Gerät nicht verfügbar (iOS 26 und ein kompatibles Gerät sind nötig). Nutze stattdessen die Suche unten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI draft isn't available on this device (iOS 26 and a compatible device are required). Use the search below instead."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yapay zeka taslağı bu cihazda kullanılamıyor (iOS 26 ve uyumlu bir cihaz gerekli). Bunun yerine aşağıdaki aramayı kullan."
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.unavailable.disabled": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KI-Entwurf ist aus: Apple Intelligence ist in den iOS-Einstellungen nicht aktiviert. Nutze die Suche unten — oder aktiviere Apple Intelligence dort."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI draft is off: Apple Intelligence isn't enabled in iOS Settings. Use the search below — or enable Apple Intelligence there."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yapay zeka taslağı kapalı: Apple Intelligence, iOS ayarlarında etkin değil. Aşağıdaki aramayı kullan — ya da Apple Intelligence'ı orada etkinleştir."
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.unavailable.language": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KI-Entwurf unterstützt die aktuelle App-Sprache noch nicht (das Gerät selbst kann es). Nutze die Suche unten oder stelle die Sprache auf Deutsch oder Englisch."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI draft doesn't support the current app language yet (the device itself can do it). Use the search below, or switch to German or English."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yapay zeka taslağı geçerli uygulama dilini henüz desteklemiyor (cihaz destekliyor). Aşağıdaki aramayı kullan ya da uygulama dilini Almanca veya İngilizce yap."
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.aiDraft.unavailable.pending": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KI-Entwurf wird gerade vorbereitet (Modell lädt noch). Versuche es in einigen Minuten erneut oder nutze die Suche unten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI draft is being prepared (the model is still loading). Try again in a few minutes, or use the search below."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yapay zeka taslağı hazırlanıyor (model hâlâ yükleniyor). Birkaç dakika sonra tekrar dene ya da aşağıdaki aramayı kullan."
           }
         }
       }

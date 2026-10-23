@@ -109,6 +109,13 @@ struct SetRow: View {
     /// Mechanismus wie `weight_unit` — ueberlebt per `@AppStorage`/
     /// `UserDefaults` jeden Kaltstart.
     @AppStorage("pref_set_display_mode") private var setDisplayModeRaw: String = "column"
+    /// SET-01 (Audit docs/AUDIT_2026-10-23_DELTIQ.md, P2): derselbe Key wie
+    /// `SettingsAppExperienceView`/`ExerciseEditorView`. Der Schalter
+    /// beschreibt „Zeigt kurze Erklaerungen beim Einstellen der Intensitaet"
+    /// — deshalb muss er GENAU diesen Hilfetext unter dem RIR-Regler
+    /// steuern. Bis hierher wurde er nur im Plan-Editor gelesen, im Training
+    /// war der Text immer sichtbar.
+    @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
 
     enum HoldState: Equatable {
         case idle
@@ -774,11 +781,11 @@ struct SetRow: View {
     /// damit auf `weightInput`/`repsInput`, also genau die Felder, in die
     /// man gerade tippt. Jetzt eine normale Zeile UNTER dem Regler mit
     /// reservierter Mindesthoehe statt eines Timer-gesteuerten Overlays -
-    /// `RIRTooltipController`/`RIRTooltipBloop.isVisible`/`showRirTooltips`
-    /// werden hier nicht mehr gebraucht. Bleiben unveraendert im Einsatz
-    /// fuer `ExerciseEditorView.targetRIRSliderRow` (eigene Instanz dort) -
-    /// der Regler steht dort allein in einer Section und verdeckt nichts,
-    /// eine bewusst eigene Entscheidung.
+    /// `RIRTooltipController`/`RIRTooltipBloop.isVisible` werden hier nicht
+    /// gebraucht (kein Overlay), `showRirTooltips` dagegen SEHR WOHL:
+    /// SET-01 (Audit 2026-10-23) - der Hilfetext unten haengt an diesem
+    /// Schalter, genau wie der Tooltip-Bloop in
+    /// `ExerciseEditorView.targetRIRSliderRow`.
     ///
     /// Dazu eine sichtbare Skala, weil der Regler vorher nicht sagte, was
     /// er misst (Label "RIR" ohne Erklaerung, keine Enden-Beschriftung,
@@ -825,11 +832,14 @@ struct SetRow: View {
             }
             .font(.system(size: 10))
             .foregroundStyle(.tertiary)
-            Text(LocalizedStringKey(RIRTooltipBloop.tooltipKey(for: rir)), bundle: .module)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(minHeight: 32, alignment: .topLeading)
+            // SET-01: nur wenn die Einstellung „RIR-Hilfetext" an ist.
+            if showRirTooltips {
+                Text(LocalizedStringKey(RIRTooltipBloop.tooltipKey(for: rir)), bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(minHeight: 32, alignment: .topLeading)
+            }
         }
     }
 

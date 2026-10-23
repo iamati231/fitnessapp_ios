@@ -69,6 +69,57 @@ public protocol NutritionAIAvailabilityChecking: Sendable {
     func availability(for locale: Locale) -> NutritionAIAvailability
 }
 
+/// AI-01 (Audit docs/AUDIT_2026-10-23_DELTIQ.md, P2): Was die UI sagen muss,
+/// wenn die lokale KI gerade nicht arbeitet — EIN Grund pro Zustand statt
+/// „Geraet nicht verfuegbar" fuer alles.
+///
+/// Der `.available`-Fall hat bewusst keinen Key: dann rendert die Section
+/// gar keinen Hinweis, sondern den Entwurfs-Eingabebereich.
+public enum NutritionAIUnavailableReasonKey: Sendable, Equatable {
+    /// OS aelter als 26 / Framework fehlt / Hardware nicht berechtigt.
+    case deviceNotSupported
+    /// Geraet geeignet, Apple Intelligence ist in den Systemeinstellungen aus.
+    case appleIntelligenceNotEnabled
+    /// Modell unterstuetzt die AKTIVE App-Sprache nicht (z. B. TR vor
+    /// iOS 26.1). Geraet und Einstellung sind in Ordnung.
+    case languageNotSupported
+    /// Modell laedt noch / voruebergehend nicht bereit.
+    case temporarilyUnavailable
+
+    /// xcstrings-Key fuer den Hinweistext in der Erfassung
+    /// (`AddMealView.aiSection`).
+    public var captureHintLocalizationKey: String {
+        switch self {
+        case .deviceNotSupported:
+            return "nutrition.addMeal.aiDraft.unavailable.device"
+        case .appleIntelligenceNotEnabled:
+            return "nutrition.addMeal.aiDraft.unavailable.disabled"
+        case .languageNotSupported:
+            return "nutrition.addMeal.aiDraft.unavailable.language"
+        case .temporarilyUnavailable:
+            return "nutrition.addMeal.aiDraft.unavailable.pending"
+        }
+    }
+}
+
+public extension NutritionAIAvailability {
+    /// `nil` bei `.available` — sonst der Grund, den die UI nennen soll.
+    var unavailableReasonKey: NutritionAIUnavailableReasonKey? {
+        switch self {
+        case .available:
+            return nil
+        case .deviceNotSupported:
+            return .deviceNotSupported
+        case .appleIntelligenceNotEnabled:
+            return .appleIntelligenceNotEnabled
+        case .languageNotSupported:
+            return .languageNotSupported
+        case .temporarilyUnavailable:
+            return .temporarilyUnavailable
+        }
+    }
+}
+
 /// Real check against `SystemLanguageModel.default`.
 public struct SystemNutritionAIAvailabilityChecker: NutritionAIAvailabilityChecking {
     public init() {}

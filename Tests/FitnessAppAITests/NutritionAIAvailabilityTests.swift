@@ -27,6 +27,38 @@ final class NutritionAIAvailabilityTests: XCTestCase {
         NutritionAIService(availabilityChecker: FixedAvailability(status: status), generator: spy)
     }
 
+    // MARK: AI-01 (Audit 2026-10-23) — jeder Grund nennt sich selbst
+
+    /// AI-01: Die UI darf „nicht verfuegbar" nicht mehr als einen Satz fuer
+    /// alle Faelle zeigen. Jeder Zustand hat einen eigenen Grund; nur
+    /// `.available` hat keinen.
+    func testEachUnavailableStateMapsToItsOwnReasonKey() {
+        XCTAssertNil(NutritionAIAvailability.available.unavailableReasonKey)
+
+        let keys = Self.unavailableStates.compactMap { $0.unavailableReasonKey?.captureHintLocalizationKey }
+        XCTAssertEqual(keys.count, Self.unavailableStates.count, "jeder Zustand braucht einen Grund")
+        XCTAssertEqual(Set(keys).count, keys.count, "die Gründe müssen sich unterscheiden")
+    }
+
+    func testUnavailableReasonKeysMatchTheCatalogContract() {
+        XCTAssertEqual(
+            NutritionAIAvailability.deviceNotSupported.unavailableReasonKey?.captureHintLocalizationKey,
+            "nutrition.addMeal.aiDraft.unavailable.device"
+        )
+        XCTAssertEqual(
+            NutritionAIAvailability.appleIntelligenceNotEnabled.unavailableReasonKey?.captureHintLocalizationKey,
+            "nutrition.addMeal.aiDraft.unavailable.disabled"
+        )
+        XCTAssertEqual(
+            NutritionAIAvailability.languageNotSupported.unavailableReasonKey?.captureHintLocalizationKey,
+            "nutrition.addMeal.aiDraft.unavailable.language"
+        )
+        XCTAssertEqual(
+            NutritionAIAvailability.temporarilyUnavailable.unavailableReasonKey?.captureHintLocalizationKey,
+            "nutrition.addMeal.aiDraft.unavailable.pending"
+        )
+    }
+
     func testServiceReportsInjectedStatus() {
         for status in Self.unavailableStates + [.available] {
             XCTAssertEqual(service(status, SpyGenerator()).availability(), status)
