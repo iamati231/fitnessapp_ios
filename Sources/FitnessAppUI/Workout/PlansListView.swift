@@ -630,6 +630,32 @@ public struct PlansListView: View {
             deletePlanErrorMessage = String(localized: "plans.delete.blockedActiveSession", bundle: .module)
             return
         }
+        // Bugfix (Geräte-Nachweis, TestingBot): Löschen des AKTIVEN Plans
+        // crashte reproduzierbar (App faellt auf den Home-Screen zurueck) —
+        // ein zweiter, von der PlanRow-Loesung oben nicht abgedeckter Crash-
+        // Pfad. `DashboardView` (als Tab-Geschwister staendig im Speicher,
+        // SwiftUI's `TabView` haelt alle Tabs aktiv) liest an >10 Stellen
+        // direkt `activePlans.first`-Properties (`.displayName`, `.days`,
+        // tief verschachtelt bis zu `.activeExercises`) — exakt dieselbe
+        // Gefahrenklasse wie der `PlanRow`-Crash oben, nur in einer fuer
+        // einen vollstaendigen Werte-Schnappschuss viel zu grossen, tief
+        // verschachtelten View (kein kleiner, gezielter Fix dort moeglich,
+        // ohne Dashboards gesamte Plan-/Tag-/Uebungs-Logik umzubauen).
+        // Fix nach demselben bereits bewaehrten Muster wie `session.day =
+        // nil` vor einem Plan-Delete (siehe Git-Historie dieser Datei,
+        // Commit "SwiftData 'Context is missing'"): die abhaengige
+        // Eigenschaft (`isActive`) SYNCHRON, VOR jedem Save, auf den
+        // sicheren Wert setzen. SwiftData/`@Query` spiegeln In-Memory-
+        // Aenderungen am Context sofort wider, auch vor einem `save()` —
+        // jeder nachfolgende Lesezugriff auf `activePlans` (gleich durch
+        // welchen Ausloeser: den Query-eigenen Refresh ODER eine durch die
+        // Objekt-Invalidierung erneut aufgerufene Dashboard-`body`) sieht
+        // diesen Plan dann bereits als inaktiv und `activePlans.first`
+        // liefert ihn nicht mehr — die riskanten Properties werden nie
+        // mehr gelesen.
+        for plan in plansToDelete where plan.isActive {
+            plan.isActive = false
+        }
         for plan in plansToDelete {
             for day in plan.days {
                 modelContext.delete(day)

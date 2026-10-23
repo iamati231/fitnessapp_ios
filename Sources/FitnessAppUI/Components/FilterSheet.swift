@@ -117,6 +117,15 @@ struct FilterToggleRow: View {
                     .font(.title3)
                     .foregroundStyle(isOn ? Color.deltiqOrange : Color.Deltiq.textSecondary)
             }
+            // Bugfix (TestingBot-Geraetebefund, PlanBuilderView-Ausstattungs-
+            // Checkboxen reagierten nicht auf Taps): ohne `.contentShape` ist
+            // bei `.buttonStyle(.plain)` nur der sichtbare Inhalt (Text,
+            // Icon) selbst tappbar, NICHT die vom `Spacer()` aufgespannte
+            // Leerflaeche dazwischen — bei einer breiten Zeile (langer Label-
+            // Text wie "Langhantel") faellt ein Tap in der Zeilenmitte damit
+            // oft in diese tote Zone. Macht das gesamte `HStack`-Rechteck
+            // tappbar.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
