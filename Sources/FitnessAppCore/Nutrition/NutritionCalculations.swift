@@ -30,6 +30,10 @@ public enum NutritionCalculations {
     ///
     /// Gibt exakte, ungerundete Werte zurueck (kein Runden/Truncate hier —
     /// das passiert erst bei der Anzeige, analog `TDEEView.tdee`).
+    ///
+    /// OFF-01: Ein unbekannter Wert im Item (nur bei online importierten
+    /// Eintraegen mit unvollstaendigen Open-Food-Facts-Daten moeglich) bleibt
+    /// in jeder resultierenden Dimension unbekannt — nie 0.
     public static func nutrients(
         for item: FoodCatalogItem,
         quantity: Double,
@@ -49,11 +53,12 @@ public enum NutritionCalculations {
             grams = quantity * densityGramsPerMl
         }
 
+        let factor = grams / 100
         return NutrientValues(
-            kcal: item.kcalPer100g * grams / 100,
-            proteinG: item.proteinPer100g * grams / 100,
-            carbsG: item.carbsPer100g * grams / 100,
-            fatG: item.fatPer100g * grams / 100
+            kcal: NutrientValues.scaled(item.kcalPer100g, by: factor),
+            proteinG: NutrientValues.scaled(item.proteinPer100g, by: factor),
+            carbsG: NutrientValues.scaled(item.carbsPer100g, by: factor),
+            fatG: NutrientValues.scaled(item.fatPer100g, by: factor)
         )
     }
 }

@@ -43,11 +43,55 @@ final class NutritionDayAggregationTests: XCTestCase {
         try context.save()
 
         let total = NutritionDayAggregator.dailyTotal(meals: [meal1, meal2])
-        XCTAssertEqual(total.kcal, 150)
+        XCTAssertEqual(total.kcal.value, 150)
     }
 
     func testEmptyDayReturnsZeroTotal() {
         XCTAssertEqual(NutritionDayAggregator.dailyTotal(meals: []), .zero)
+        XCTAssertFalse(NutritionDayAggregator.dailyTotal(meals: []).partiallyKnown)
+    }
+
+    // MARK: OFF-01 — Tagesbilanz mit unbekannten Werten
+
+    /// OFF-01: Hat eine Position einen unbekannten Wert (fehlendes
+    /// Open-Food-Facts-Makro), ist die Tagessumme dieser Dimension
+    /// unbekannt — und die UI kann das ueber `partiallyKnown` kennzeichnen.
+    func testDailyTotalIsPartiallyKnownWhenOneItemHasAnUnknownValue() throws {
+        let meal = MealEntry(date: Date(), mealType: .lunch)
+        context.insert(meal)
+        context.insert(MealItem(catalogID: nil, nameSnapshot: "Voll", quantity: 1, unit: .gram,
+                                nutrients: NutrientValues(kcal: 100, proteinG: 10, carbsG: 5, fatG: 2), meal: meal))
+        context.insert(MealItem(catalogID: nil, nameSnapshot: "Teilweise", quantity: 1, unit: .gram,
+                                nutrients: NutrientValues(kcal: 50, proteinG: nil, carbsG: 8, fatG: 1), meal: meal))
+        try context.save()
+
+        let total = NutritionDayAggregator.dailyTotal(meals: [meal])
+
+        XCTAssertEqual(total.kcal.value, 150)
+        XCTAssertEqual(total.carbsG.value, 13)
+        XCTAssertTrue(total.proteinG.isUnknown, "unbekanntes Protein darf nie als 0 in die Tagessumme einfliessen")
+        XCTAssertTrue(total.partiallyKnown)
+        XCTAssertTrue(NutritionDayAggregator.hasUnknownNutrients(meals: [meal]))
+    }
+
+    func testDayWithOnlyKnownValuesIsFullyKnown() throws {
+        let meal = MealEntry(date: Date(), mealType: .lunch)
+        context.insert(meal)
+        context.insert(MealItem(catalogID: nil, nameSnapshot: "Voll", quantity: 1, unit: .gram,
+                                nutrients: NutrientValues(kcal: 100, proteinG: 10, carbsG: 5, fatG: 2), meal: meal))
+        try context.save()
+
+        XCTAssertFalse(NutritionDayAggregator.dailyTotal(meals: [meal]).partiallyKnown)
+        XCTAssertFalse(NutritionDayAggregator.hasUnknownNutrients(meals: [meal]))
+    }
+
+    /// OFF-01: Die Anzeige-Regel — unbekannt ist „-", bekannt bleibt die
+    /// bisherige Formatierung mit Einheit.
+    func testNutritionDisplayShowsDashForUnknownAndValueForKnown() {
+        XCTAssertEqual(NutritionDisplay.text(KnownValue(nil), unit: "g"), NutritionDisplay.unknownValue)
+        XCTAssertEqual(NutritionDisplay.unknownValue, "–")
+        XCTAssertTrue(NutritionDisplay.text(KnownValue(12.3), unit: "g").hasPrefix("12"))
+        XCTAssertTrue(NutritionDisplay.text(KnownValue(12.3), unit: "g").hasSuffix(" g"))
     }
 }
 #endif

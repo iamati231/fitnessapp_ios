@@ -57900,6 +57900,121 @@
           }
         }
       }
+    },
+    "nutrition.addMeal.saveFailed.cleanupMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Änderungen wurden gespeichert, aber die alten Positionen konnten nicht entfernt werden. Prüfe die Mahlzeit bitte erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your changes were saved, but the old items could not be removed. Please check the meal again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değişikliklerin kaydedildi, ancak eski girdiler kaldırılamadı. Lütfen öğünü tekrar kontrol et."
+          }
+        }
+      }
+    },
+    "nutrition.day.total.incomplete": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unvollständig: Für mindestens einen Eintrag fehlen Nährwerte. Die Summen sind deshalb lückenhaft."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incomplete: nutrient values are missing for at least one item, so these totals have gaps."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eksik: En az bir giriş için besin değerleri yok. Bu nedenle toplamlar eksik."
+          }
+        }
+      }
+    },
+    "nutrition.onlineImport.unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unbekannt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unknown"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bilinmiyor"
+          }
+        }
+      }
+    },
+    "nutrition.onlineImport.incomplete.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mindestens ein Nährwert fehlt in der Quelle. Fehlende Werte werden als unbekannt übernommen – nicht als 0 – und die Tagesbilanz gilt dann als unvollständig."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least one nutrient is missing at the source. Missing values are stored as unknown — not as 0 — and the day's totals are then marked as incomplete."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaynakta en az bir besin değeri eksik. Eksik değerler 0 olarak değil, bilinmiyor olarak kaydedilir ve günün toplamları eksik olarak işaretlenir."
+          }
+        }
+      }
+    },
+    "nutrition.onlineImport.createManually": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stattdessen eigenes Lebensmittel anlegen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create the food manually instead"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bunun yerine besini kendin oluştur"
+          }
+        }
+      }
     }
   }
 }

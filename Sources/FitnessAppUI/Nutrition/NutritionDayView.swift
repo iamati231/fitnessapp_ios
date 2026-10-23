@@ -17,6 +17,13 @@ public enum NutritionDayAggregator {
         Dictionary(grouping: meals, by: \.mealType)
     }
 
+    /// OFF-01: `true`, sobald an mindestens einer Position mindestens ein
+    /// Naehrwert unbekannt ist — dann sind die Tagessummen lueckenhaft und
+    /// die UI sagt das (statt eine zu kleine Zahl als Tatsache zu zeigen).
+    public static func hasUnknownNutrients(meals: [MealEntry]) -> Bool {
+        meals.contains { meal in meal.items.contains { $0.nutrientsSnapshot.partiallyKnown } }
+    }
+
     public static func dailyTotal(meals: [MealEntry]) -> NutrientValues {
         NutrientValues.sum(meals.flatMap { $0.items.map(\.nutrientsSnapshot) })
     }
@@ -228,18 +235,29 @@ public struct NutritionDayView: View {
                 nutrientRow(String(localized: "nutrition.goals.protein.label", bundle: .module), value: total.proteinG, unit: "g")
                 nutrientRow(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: total.carbsG, unit: "g")
                 nutrientRow(String(localized: "nutrition.goals.fat.label", bundle: .module), value: total.fatG, unit: "g")
+                // OFF-01: Die Tagessumme ist nur vollstaendig, wenn jeder
+                // einzelne Wert bekannt ist. Sonst sagen wir das hier
+                // ausdruecklich, statt eine zu kleine Zahl als Tatsache
+                // hinzustellen.
+                if total.partiallyKnown || NutritionDayAggregator.hasUnknownNutrients(meals: mealsForSelectedDate) {
+                    Text("nutrition.day.total.incomplete", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private func nutrientRow(_ label: String, value: Double, unit: String) -> some View {
+    /// OFF-01: Unbekannte Werte erscheinen als „-" (ueber
+    /// `NutritionDisplay.unknownValue`), nie als 0.
+    private func nutrientRow(_ label: String, value: KnownValue, unit: String) -> some View {
         HStack {
             Text(label)
                 .font(.system(size: 15))
                 .foregroundStyle(Color.primary)
             Spacer()
-            Text("\(value.truncated(to: 2).formattedTwoDecimals) \(unit)")
+            Text(NutritionDisplay.text(value, unit: unit))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .fitnessNumberStyle()
         }
@@ -257,6 +275,15 @@ public struct NutritionDayView: View {
                 ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                     goalProgressRow(row, showsDivider: index < rows.count - 1)
                 }
+                // OFF-01: mindestens ein Ziel-Fortschritt ist unbekannt, weil
+                // die Tagessumme dieser Dimension unvollstaendig ist.
+                if rows.contains(where: { $0.current.isUnknown }) {
+                    Text("nutrition.day.total.incomplete", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                }
             }
         }
     }
@@ -269,13 +296,24 @@ public struct NutritionDayView: View {
                         .font(.system(size: 15))
                         .foregroundStyle(Color.primary)
                     Spacer()
-                    Text("\(row.current.truncated(to: 0).formattedTwoDecimals) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                        .fitnessNumberStyle()
+                    // OFF-01: unbekannte Tagessumme → "– / 150 g", kein
+                    // Fortschrittsbalken (er wuerde 0 % suggerieren).
+                    if let current = row.current.value {
+                        Text("\(current.truncated(to: 0).formattedTwoDecimals) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    } else {
+                        Text("\(NutritionDisplay.unknownValue) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    }
                 }
-                ProgressView(value: row.fraction)
-                    .tint(Color.deltiqOrange)
+                if row.current.value != nil {
+                    ProgressView(value: row.fraction)
+                        .tint(Color.deltiqOrange)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
@@ -361,7 +399,7 @@ public struct NutritionDayView: View {
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("\(mealTotal(meal).kcal.truncated(to: 0).formattedTwoDecimals) kcal")
+                        Text(NutritionDisplay.text(mealTotal(meal).kcal, unit: "kcal"))
                             .font(.system(size: 15))
                             .foregroundStyle(Color.Deltiq.textSecondary)
                             .fitnessNumberStyle()
@@ -454,8 +492,11 @@ public struct NutritionDayView: View {
     /// formula as `GoalRow.fraction` above) and hands it to the AI prompt as
     /// a plain pre-computed number — the model never calculates this itself.
     /// `nil` whenever the goal itself is `nil`/not set.
-    private func insightGoalProgress(current: Double, goal: Double?) -> NutritionInsightInput.GoalProgress? {
-        guard let goal, let progress = NutritionCalculations.goalProgress(current: current, goal: goal) else { return nil }
+    private func insightGoalProgress(current currentValue: KnownValue, goal: Double?) -> NutritionInsightInput.GoalProgress? {
+        // OFF-01: ohne bekannte Tagessumme keine Prozent-/Restaussage an die KI.
+        guard let current = currentValue.value,
+              let goal,
+              let progress = NutritionCalculations.goalProgress(current: current, goal: goal) else { return nil }
         return NutritionInsightInput.GoalProgress(percent: progress.percent, remaining: progress.remaining)
     }
 
@@ -467,10 +508,10 @@ public struct NutritionDayView: View {
         guard showsInsightSection else { return }
         let context = insightContext
         let input = NutritionInsightInput(
-            totalKcal: context.total.kcal,
-            totalProteinG: context.total.proteinG,
-            totalCarbsG: context.total.carbsG,
-            totalFatG: context.total.fatG,
+            totalKcal: context.total.kcal.value,
+            totalProteinG: context.total.proteinG.value,
+            totalCarbsG: context.total.carbsG.value,
+            totalFatG: context.total.fatG.value,
             calorieGoalKcal: context.calorieGoal,
             proteinGoalG: context.proteinGoal,
             carbGoalG: context.carbGoal,
@@ -497,14 +538,17 @@ public struct NutritionDayView: View {
 
     private struct GoalRow {
         let label: String
-        let current: Double
+        /// OFF-01: `.unknown`, sobald die Tagessumme dieser Dimension nicht
+        /// vollstaendig ist.
+        let current: KnownValue
         let goal: Double
         let unit: String
 
         // Shared with the AI insight prompt's percent/remaining facts — see
         // `NutritionCalculations.GoalProgress`'s doc comment.
         var fraction: Double {
-            NutritionCalculations.goalProgress(current: current, goal: goal)?.fraction ?? 0
+            guard let current = current.value else { return 0 }
+            return NutritionCalculations.goalProgress(current: current, goal: goal)?.fraction ?? 0
         }
     }
 

@@ -202,7 +202,7 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
 
         XCTAssertEqual(draft.items.count, 1)
         XCTAssertEqual(draft.items.first?.catalogID, entry.catalogID)
-        XCTAssertEqual(draft.items.first?.nutrients.kcal, 539 * 50 / 100)
+        XCTAssertEqual(draft.items.first?.nutrients.kcal.value, 539 * 50 / 100)
 
         let result = draft.save(into: context)
         switch result {
@@ -308,27 +308,79 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         XCTAssertEqual(successController.candidates.count, 3)
     }
 
-    // MARK: - Final-review fix (C1): missing nutrients must never be fabricated as 0
+    // MARK: - OFF-01: unbekannte Naehrwerte sind zulaessig, aber nie 0
 
-    /// A candidate with kcal present but protein/carbs/fat missing must not
-    /// be constructible as `OnlineFoodImportValues` at all — the only path
-    /// `OnlineFoodCandidatePreviewSheet.confirm()` has to create one, and the
-    /// same condition gates its "Add" button's `.disabled`. No
-    /// `FoodCatalogEntry` can come from a `nil` result.
-    func testPartialCandidateCannotBeConfirmedAndCreatesNothing() throws {
-        let values = OnlineFoodImportValues(
+    /// OFF-01 (docs/AUDIT_2026-10-23_DELTIQ.md): Ein Treffer mit einem
+    /// fehlenden Makro ist uebernehmbar — der fehlende Wert bleibt `nil`
+    /// (unbekannt), wird NICHT als 0 gespeichert und die Vorschau markiert
+    /// ihn als unvollstaendig. Vorher war genau dieser Fall eine Sackgasse.
+    func testPartialCandidateIsImportableWithUnknownValuesStoredAsUnknown() throws {
+        let values = try XCTUnwrap(OnlineFoodImportValues(
             name: "Teilprodukt",
             kcalPer100g: 100,
+            proteinPer100g: nil,
+            carbsPer100g: 5,
+            fatPer100g: nil
+        ))
+        XCTAssertTrue(values.hasUnknownValues, "fehlende Makros muessen als unvollstaendig markiert sein")
+        XCTAssertFalse(values.isComplete)
+
+        let entry = FoodCatalogEntry(
+            displayName: values.name,
+            source: .onlineImported,
+            category: .other,
+            kcalPer100g: values.kcalPer100g,
+            proteinPer100g: values.proteinPer100g,
+            carbsPer100g: values.carbsPer100g,
+            fatPer100g: values.fatPer100g
+        )
+        context.insert(entry)
+        try context.save()
+
+        let stored = try XCTUnwrap(context.fetch(FetchDescriptor<FoodCatalogEntry>()).first)
+        let nutrients = stored.nutrientsPer100g
+        XCTAssertEqual(nutrients.kcal.value, 100)
+        XCTAssertEqual(nutrients.carbsG.value, 5)
+        XCTAssertTrue(nutrients.proteinG.isUnknown, "fehlendes Protein bleibt unbekannt, nicht 0")
+        XCTAssertTrue(nutrients.fatG.isUnknown, "fehlendes Fett bleibt unbekannt, nicht 0")
+        XCTAssertTrue(nutrients.partiallyKnown)
+
+        // Der Snapshot in der Mahlzeit traegt die Unbekannt-Markierung mit.
+        let itemNutrients = try XCTUnwrap(NutritionCalculations.nutrients(for: stored.asCatalogItem, quantity: 100, unit: .gram))
+        let meal = MealEntry(date: Date(), mealType: .lunch)
+        context.insert(meal)
+        let item = MealItem(catalogID: stored.catalogID, nameSnapshot: "Teilprodukt", quantity: 100, unit: .gram,
+                            nutrients: itemNutrients, meal: meal)
+        context.insert(item)
+        try context.save()
+
+        XCTAssertTrue(item.nutrientsSnapshot.fatG.isUnknown)
+        XCTAssertEqual(item.nutrientsSnapshot.kcal.value, 100)
+    }
+
+    /// OFF-01: Ein Eintrag ganz ohne Naehrwerte traegt keine Information und
+    /// bleibt nicht bestaetigbar (die Vorschau bietet stattdessen den Weg
+    /// zum manuellen Anlegen an).
+    func testCandidateWithoutAnyNutrientValueCannotBeConfirmed() throws {
+        // Nur der unbekannte Fall: ein Negativwert ist ein Eingabefehler und
+        // keine Luecke — in Swift unterscheidet der Compiler die beiden
+        // `init?`-Varianten anhand des Parameter-Typs, hier bewusst `nil`.
+        let values: OnlineFoodImportValues? = OnlineFoodImportValues(
+            name: "Ohne Werte",
+            kcalPer100g: nil,
             proteinPer100g: nil,
             carbsPer100g: nil,
             fatPer100g: nil
         )
-        XCTAssertNil(values, "fehlende Makros duerfen nicht als 0 bestaetigbar sein")
+        XCTAssertNil(values, "ohne jeden Naehrwert gibt es nichts zu uebernehmen")
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<FoodCatalogEntry>()), 0)
     }
 
     func testNegativeMacroCandidateCannotBeConfirmed() {
-        let values = OnlineFoodImportValues(
+        // Expliziter `Double?`-Kontext, damit die `Double?`-Variante von
+        // `OnlineFoodImportValues.init?` gewaehlt wird (die `Double`-Variante
+        // wuerde die Absicht — „negativ = ungueltig" — nur zufaellig treffen).
+        let values: OnlineFoodImportValues? = OnlineFoodImportValues(
             name: "Teilprodukt",
             kcalPer100g: 100,
             proteinPer100g: -1,
@@ -339,7 +391,7 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
     }
 
     func testBlankNameCandidateCannotBeConfirmed() {
-        let values = OnlineFoodImportValues(
+        let values: OnlineFoodImportValues? = OnlineFoodImportValues(
             name: "   ",
             kcalPer100g: 100,
             proteinPer100g: 1,

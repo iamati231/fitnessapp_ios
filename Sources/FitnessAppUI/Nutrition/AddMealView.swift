@@ -206,7 +206,9 @@ public struct AddMealView: View {
                     // UI-seitige Zusatz-Absicherung — die eigentlichen
                     // Garantien (Doppeltap-Schutz, leere-Items-Guard) sitzen
                     // in MealDraft.save() selbst.
-                    .disabled(draft.didSaveSuccessfully || draft.items.isEmpty)
+                    // NUT-01: `hasPendingCleanup` laesst den Tap offen, damit
+                    // ein gescheiterter Cleanup erneut versucht wird.
+                    .disabled((draft.didSaveSuccessfully && !draft.hasPendingCleanup) || draft.items.isEmpty)
                 }
             }
             .confirmationDialog(
@@ -240,7 +242,20 @@ public struct AddMealView: View {
                 OnlineFoodCandidatePreviewSheet(
                     candidate: candidate,
                     onConfirm: { confirmOnlineImport($0) },
-                    onCancel: { onlineSearch.dismissPreview() }
+                    onCancel: { onlineSearch.dismissPreview() },
+                    // OFF-01: manueller Weg aus der Vorschau heraus, wenn
+                    // die Datenlage fuer einen Import nicht reicht.
+                    onCreateManually: { prefill in
+                        let origin = onlineSearchOrigin
+                        onlineSearch.dismissPreview()
+                        onlineSearch.reset()
+                        onlineSearchOrigin = nil
+                        if case .aiCandidate(let pending) = origin {
+                            removeAICandidate(pending)
+                        }
+                        customFoodPrefillName = prefill.trimmingCharacters(in: .whitespacesAndNewlines)
+                        showingCustomFoodEntry = true
+                    }
                 )
             }
             // Task 6: manuelles Anlegen — `CustomFoodEntrySheet` persistiert
@@ -673,6 +688,49 @@ public struct AddMealView: View {
 
     private var itemsSection: some View {
         Section {
+            // NUT-01: Ist der Edit committet, aber der Cleanup offen, zeigt
+            // die Positionen-Liste den GESPEICHERTEN Stand (alte + neue) —
+            // nicht den Entwurf, der nach einem Retry schon anders aussieht.
+            if showsStoredStateInsteadOfDraft {
+                // Alte (noch nicht entfernte) Positionen — nur per
+                // mitgesicherten Werten, keine Objekt-Referenz.
+                ForEach(draft.pendingCleanupSummaries) { stale in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(stale.name)
+                                .foregroundStyle(Color.primary)
+                            Text("\(stale.quantity.truncated(to: 2).formattedTwoDecimals) \(unitLabel(stale.unit))")
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Spacer()
+                        Text(NutritionDisplay.text(stale.kcal, unit: "kcal", decimals: 0))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
+                }
+                ForEach(draft.items) { item in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.nameSnapshot)
+                                .foregroundStyle(Color.primary)
+                            Text("\(item.quantity.truncated(to: 2).formattedTwoDecimals) \(unitLabel(item.unit))")
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Spacer()
+                        Text(NutritionDisplay.text(item.nutrients.kcal, unit: "kcal", decimals: 0))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
+                }
+                Text("nutrition.addMeal.saveFailed.cleanupMessage", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            } else {
             ForEach(draft.items) { item in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
@@ -683,7 +741,9 @@ public struct AddMealView: View {
                             .foregroundStyle(Color.Deltiq.textSecondary)
                     }
                     Spacer()
-                    Text("\(item.nutrients.kcal.truncated(to: 0).formattedTwoDecimals) kcal")
+                    // OFF-01: ein unbekannter Naehrwert darf nicht als 0 in
+                    // der Positionszeile erscheinen.
+                    Text(NutritionDisplay.text(item.nutrients.kcal, unit: "kcal", decimals: 0))
                         .foregroundStyle(Color.Deltiq.textSecondary)
                         .fitnessNumberStyle()
                 }
@@ -696,6 +756,7 @@ public struct AddMealView: View {
                 for index in offsets {
                     draft.removeItem(id: draft.items[index].id)
                 }
+            }
             }
         } header: {
             Text("nutrition.addMeal.positionsSection", bundle: .module)
@@ -712,17 +773,25 @@ public struct AddMealView: View {
             previewRow(String(localized: "nutrition.goals.protein.label", bundle: .module), value: total.proteinG)
             previewRow(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: total.carbsG)
             previewRow(String(localized: "nutrition.goals.fat.label", bundle: .module), value: total.fatG)
+            // OFF-01: sagt an der Vorschau, dass mindestens eine Position
+            // einen unbekannten Wert enthaelt (die Summe ist dann „-").
+            if total.partiallyKnown {
+                Text("nutrition.day.total.incomplete", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            }
         } header: {
             Text("nutrition.addMeal.previewSection", bundle: .module)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
-    private func previewRow(_ label: String, value: Double) -> some View {
+    private func previewRow(_ label: String, value: KnownValue) -> some View {
         HStack {
             Text(label).foregroundStyle(Color.primary)
             Spacer()
-            Text(value.truncated(to: 2).formattedTwoDecimals)
+            Text(NutritionDisplay.text(value))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .fitnessNumberStyle()
         }
@@ -793,6 +862,17 @@ public struct AddMealView: View {
             || !aiCandidates.isEmpty
             || draft.date != dateAtOpen
             || draft.mealType != mealTypeAtOpen
+    }
+
+    /// NUT-01: Die Positionen, die der Store tatsaechlich enthaelt, fuer eine
+    /// Mahlzeit im Edit-Modus. Vor dem ersten Speichern (`itemsVersion == 0`)
+    /// ist der Entwurf die einzige Quelle; danach (Cleanup-Fehler, Retry)
+    /// zeigt die Ansicht den gespeicherten Stand.
+    /// NUT-01: `true`, solange der Edit committet ist, aber die alten
+    /// Positionen noch im Store stehen — die Ansicht zeigt den gespeicherten
+    /// Stand (alte + neue) und erklaert das.
+    private var showsStoredStateInsteadOfDraft: Bool {
+        editingMeal != nil && draft.hasPendingCleanup
     }
 
     private var filteredEntries: [FoodCatalogEntry] {
@@ -937,6 +1017,9 @@ public struct AddMealView: View {
     /// dropped to `nil`, exactly like `applyAICandidate` already does for a
     /// normal catalog match. Reusing `applyAICandidate` itself (instead of
     /// duplicating that carry-over logic here) guarantees both.
+    /// OFF-01: Fehlende Naehrwerte werden als `nil` (unbekannt) gespeichert —
+    /// `FoodCatalogEntry`/`MealItem` unterscheiden das ueber eine additive
+    /// Bitzmaske. Es gibt hier bewusst KEIN `?? 0`.
     private func confirmOnlineImport(_ values: OnlineFoodImportValues) {
         let entry = FoodCatalogEntry(
             displayName: values.name,
@@ -965,8 +1048,20 @@ public struct AddMealView: View {
         switch result {
         case .success:
             dismiss()
-        case .failure:
-            saveErrorMessage = String(localized: "nutrition.addMeal.saveFailed.message", bundle: .module)
+        case .failure(let error):
+            // NUT-01: Der Edit selbst (Datum/Typ + Positionen) IST gespeichert,
+            // nur das Entfernen der alten Positionen ist gescheitert — dann
+            // nicht „nichts geändert" behaupten, sondern den gespeicherten
+            // Stand benennen (eigener Hinweis-Key). Das Sheet bleibt offen,
+            // weil `draft.save()` beim nächsten Tap erneut aufräumt
+            // (`finishPendingCleanup`), statt Positionen zu duplizieren.
+            saveErrorMessage = error is MealDraftItemCleanupError
+                ? String(localized: "nutrition.addMeal.saveFailed.cleanupMessage", bundle: .module)
+                : String(localized: "nutrition.addMeal.saveFailed.message", bundle: .module)
+            // Ein erneuter Tap ist nach dem Fehler wieder möglich: der Button
+            // war per `didSaveSuccessfully` deaktiviert, das ist für den
+            // Cleanup-Retry nicht sinnvoll.
+            draft.enableRetryAfterFailedCleanup()
         }
     }
 
@@ -976,6 +1071,9 @@ public struct AddMealView: View {
     /// reisst alle `MealItem`s also automatisch mit.
     private func deleteMeal() {
         guard let editingMeal else { return }
+        // NUT-01: Offener Cleanup haette nach dem Loeschen nichts mehr zu
+        // adressieren — die Positionen gehen per Cascade mit.
+        draft.clearPendingCleanupAfterDelete()
         modelContext.delete(editingMeal)
         do {
             try modelContext.save()

@@ -13,10 +13,16 @@ import Foundation
 /// A `nil` goal means "not set, user never configured it" — never "zero" or
 /// "not reached". See `NutritionInsightGenerator.prompt(for:)`.
 public struct NutritionInsightInput: Sendable, Equatable {
-    public let totalKcal: Double
-    public let totalProteinG: Double
-    public let totalCarbsG: Double
-    public let totalFatG: Double
+    /// OFF-01: `nil` bedeutet **unbekannt** (mindestens eine Position des
+    /// Tages hat fuer diese Dimension keinen Wert, z. B. ein online
+    /// importiertes Open-Food-Facts-Lebensmittel ohne Fett-Angabe). Der
+    /// Prompt schreibt dann "unknown" statt einer erfundenen 0 und laesst
+    /// Prozent/Restmenge fuer diese Dimension weg — das Modell soll daraus
+    /// keine Aussage ableiten.
+    public let totalKcal: Double?
+    public let totalProteinG: Double?
+    public let totalCarbsG: Double?
+    public let totalFatG: Double?
     public let calorieGoalKcal: Int?
     public let proteinGoalG: Double?
     public let carbGoalG: Double?
@@ -45,10 +51,10 @@ public struct NutritionInsightInput: Sendable, Equatable {
     }
 
     public init(
-        totalKcal: Double,
-        totalProteinG: Double,
-        totalCarbsG: Double,
-        totalFatG: Double,
+        totalKcal: Double?,
+        totalProteinG: Double?,
+        totalCarbsG: Double?,
+        totalFatG: Double?,
         calorieGoalKcal: Int?,
         proteinGoalG: Double?,
         carbGoalG: Double?,
@@ -113,7 +119,9 @@ public struct NutritionInsightGenerator: Sendable {
     private static let baseInstructions = """
     You summarize one day's already-computed nutrition numbers for the user. \
     Use ONLY the numbers given to you below — never calculate, estimate, \
-    convert, or guess any number yourself. Some goals are marked "not set": \
+    convert, or guess any number yourself. Any value stated as "unknown" means \
+    the data is incomplete for that nutrient: never treat it as zero, never \
+    mention a number for it, and never claim the goal was reached or missed. Some goals are marked "not set": \
     for those, never state a number and never say the goal was reached or \
     missed — simply don't mention that goal at all. When a "Progress toward \
     goals" line gives a percentage for a nutrient, that percentage — never \
@@ -155,14 +163,17 @@ public struct NutritionInsightGenerator: Sendable {
     }
 
     private static func allowedNumbers(for input: NutritionInsightInput) -> Set<Int> {
-        var numbers: Set<Int> = [
-            safeInt(input.totalKcal), safeInt(input.totalProteinG),
-            safeInt(input.totalCarbsG), safeInt(input.totalFatG)
-        ]
+        // OFF-01: eine unbekannte Tagessumme steht im Prompt als "unknown",
+        // taucht also nicht als Zahl auf — sie gehoert nicht in die Menge der
+        // erlaubten Zahlen (sonst waere eine erfundene 0 "zulaessig").
+        var numbers: Set<Int> = Set(
+            [safeInt(input.totalKcal), safeInt(input.totalProteinG),
+             safeInt(input.totalCarbsG), safeInt(input.totalFatG)].compactMap { $0 }
+        )
         if let goal = input.calorieGoalKcal { numbers.insert(goal) }
-        if let goal = input.proteinGoalG { numbers.insert(safeInt(goal)) }
-        if let goal = input.carbGoalG { numbers.insert(safeInt(goal)) }
-        if let goal = input.fatGoalG { numbers.insert(safeInt(goal)) }
+        if let goal = input.proteinGoalG.map(safeInt) { numbers.insert(goal) }
+        if let goal = input.carbGoalG.map(safeInt) { numbers.insert(goal) }
+        if let goal = input.fatGoalG.map(safeInt) { numbers.insert(goal) }
         // The percent/remaining facts stated in the "Progress toward goals"
         // block are real, pre-computed numbers too — the model repeating one
         // back verbatim is not a fabrication (see `prompt(for:)` below).
@@ -185,10 +196,10 @@ public struct NutritionInsightGenerator: Sendable {
     static func prompt(for input: NutritionInsightInput) -> String {
         var text = """
         Today's totals:
-        Calories: \(safeInt(input.totalKcal)) kcal
-        Protein: \(safeInt(input.totalProteinG)) g
-        Carbs: \(safeInt(input.totalCarbsG)) g
-        Fat: \(safeInt(input.totalFatG)) g
+        Calories: \(totalText(input.totalKcal, unit: "kcal"))
+        Protein: \(totalText(input.totalProteinG, unit: "g"))
+        Carbs: \(totalText(input.totalCarbsG, unit: "g"))
+        Fat: \(totalText(input.totalFatG, unit: "g"))
 
         Goals:
         Calorie goal: \(goalText(input.calorieGoalKcal.map(Double.init), unit: "kcal"))
@@ -204,6 +215,17 @@ public struct NutritionInsightGenerator: Sendable {
     }
 
     private static let notSetMarker = "not set"
+
+    /// OFF-01: Marker fuer eine Summe, die wegen fehlender Werte in
+    /// mindestens einer Position nicht berechenbar ist. Bewusst ein Wort und
+    /// keine Zahl — das Modell darf daraus nichts ableiten (siehe
+    /// `baseInstructions`).
+    private static let unknownMarker = "unknown"
+
+    private static func totalText(_ value: Double?, unit: String) -> String {
+        guard let value else { return unknownMarker }
+        return "\(safeInt(value)) \(unit)"
+    }
 
     private static func goalText(_ value: Double?, unit: String) -> String {
         guard let value else { return notSetMarker }
@@ -226,8 +248,12 @@ public struct NutritionInsightGenerator: Sendable {
         ].compactMap { $0 }
     }
 
-    private static func progressLine(label: String, current: Int, goal: Int?, unit: String, progress: NutritionInsightInput.GoalProgress?) -> String? {
-        guard let goal, let progress else { return nil }
+    /// OFF-01: `current` ist `nil`, sobald die Tagessumme dieser Dimension
+    /// unbekannt ist — dann keine Prozent-/Rest-Aussage (auch dann nicht,
+    /// wenn ein Ziel gesetzt waere).
+
+    private static func progressLine(label: String, current: Int?, goal: Int?, unit: String, progress: NutritionInsightInput.GoalProgress?) -> String? {
+        guard let current, let goal, let progress else { return nil }
         return "\(label): \(current) \(unit) of \(goal) \(unit) goal (\(progress.percent)% reached, \(safeInt(progress.remaining)) \(unit) remaining)"
     }
 
@@ -244,5 +270,12 @@ public struct NutritionInsightGenerator: Sendable {
     private static func safeInt(_ value: Double) -> Int {
         guard value.isFinite, abs(value) < Double(Int.max) else { return 0 }
         return Int(value)
+    }
+
+    /// OFF-01: unbekannte Summe → `nil` (kein Zahlenwert im Prompt), sonst
+    /// unveraendert der bisherige, overflow-sichere Weg.
+    private static func safeInt(_ value: Double?) -> Int? {
+        guard let value else { return nil }
+        return safeInt(value)
     }
 }
