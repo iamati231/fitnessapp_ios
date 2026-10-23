@@ -64,7 +64,14 @@ public struct AddMealView: View {
     @State private var selectedEntry: FoodCatalogEntry?
     @State private var quantity: Double?
     @State private var selectedUnit: FoodUnit = .gram
-    @State private var showingSaveError: Bool = false
+    /// UI-Konsistenz-Fix: war vorher ein blockierendes `.alert()` -- als
+    /// einziger Form-Editor im ganzen Repo wich `AddMealView` damit vom
+    /// etablierten Muster ab (inline-Fehlertext als Form-Row), das sowohl
+    /// das eigene `aiErrorMessage`/`onlineSearch.errorMessage` in dieser
+    /// Datei als auch `CustomFoodEntrySheet.saveErrorMessage` (selbe Datei-
+    /// Familie, ebenfalls natives Form+NavigationStack-Geruest) bereits
+    /// verwenden. Gleicher Stil: `.font(.caption)` + `Color.Deltiq.textSecondary`.
+    @State private var saveErrorMessage: String?
     @State private var showingDeleteConfirm: Bool = false
     /// Task 8 (docs/superpowers/sdd/2026-10-22-ui-consistency): siehe
     /// `isDirty`/`discardChangesConfirmation` unten.
@@ -147,6 +154,18 @@ public struct AddMealView: View {
                 if editingMeal != nil {
                     deleteSection
                 }
+                // UI-Konsistenz-Fix: ersetzt das vormalige `.alert()` unten
+                // -- gleiche Section-Form wie `CustomFoodEntrySheet`s eigene
+                // `saveErrorMessage`-Row.
+                if let saveErrorMessage {
+                    Section {
+                        Text(saveErrorMessage)
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .listRowBackground(Color.Deltiq.surface)
+                    }
+                    .listRowSeparatorTint(Color.Deltiq.divider)
+                }
             }
             // Task A: Mengenbereich haengt NICHT mehr im scrollenden Form-Flow
             // (vorher musste man die bis zu ~130 Eintraege lange Trefferliste
@@ -189,17 +208,6 @@ public struct AddMealView: View {
                     // in MealDraft.save() selbst.
                     .disabled(draft.didSaveSuccessfully || draft.items.isEmpty)
                 }
-            }
-            .alert(
-                Text("nutrition.addMeal.saveFailed.title", bundle: .module),
-                isPresented: $showingSaveError
-            ) {
-                Button {
-                } label: {
-                    Text("common.close", bundle: .module)
-                }
-            } message: {
-                Text("nutrition.addMeal.saveFailed.message", bundle: .module)
             }
             .confirmationDialog(
                 Text("nutrition.editMeal.deleteConfirm", bundle: .module),
@@ -958,7 +966,7 @@ public struct AddMealView: View {
         case .success:
             dismiss()
         case .failure:
-            showingSaveError = true
+            saveErrorMessage = String(localized: "nutrition.addMeal.saveFailed.message", bundle: .module)
         }
     }
 
@@ -973,7 +981,7 @@ public struct AddMealView: View {
             try modelContext.save()
             dismiss()
         } catch {
-            showingSaveError = true
+            saveErrorMessage = String(localized: "nutrition.addMeal.saveFailed.message", bundle: .module)
         }
     }
 

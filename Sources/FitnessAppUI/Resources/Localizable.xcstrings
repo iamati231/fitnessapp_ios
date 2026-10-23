@@ -57073,29 +57073,6 @@
         }
       }
     },
-    "nutrition.addMeal.saveFailed.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mahlzeit konnte nicht gespeichert werden"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Meal Couldn't Be Saved"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Öğün Kaydedilemedi"
-          }
-        }
-      }
-    },
     "nutrition.addMeal.saveFailed.message": {
       "extractionState": "manual",
       "localizations": {
