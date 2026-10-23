@@ -416,7 +416,7 @@ public final class MealDraft: ObservableObject {
     /// Zeile im Context registriert ist (`registeredModel`); nur dann wird
     /// geloescht.
     private func removeStaleItem(_ id: PersistentIdentifier, in context: ModelContext) {
-        let live: MealItem? = context.registeredModel(for: id)
+        let live = context.registeredModel(for: id) as? MealItem
         guard let registered = live else { return }
         if registered.meal != nil {
             registered.meal = nil
@@ -431,7 +431,7 @@ public final class MealDraft: ObservableObject {
     /// abstuerzen).
     private static func storedRowExists(_ id: PersistentIdentifier, in context: ModelContext) -> Bool {
         let reader = ModelContext(context.container)
-        let stored: MealItem? = reader.model(for: id)
+        let stored = reader.model(for: id) as? MealItem
         return stored != nil
     }
 
