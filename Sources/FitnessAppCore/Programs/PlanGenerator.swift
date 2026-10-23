@@ -276,12 +276,35 @@ public enum PlanGenerator {
             var hardness = 0.0
             var muscleCursor = dayIndex
             var guardCount = 0
-            while exercises.count < exerciseCount, guardCount < muscleOrder.count * 3 {
+            // Bugfix (Epic #3.3): tracks how many exercises have already been
+            // taken from EACH muscle this day. Previously every revisit to a
+            // muscle re-read `group[dayIndex % group.count]` — the exact same
+            // index every time, since `dayIndex` never changes within this
+            // loop — so a muscle contributed AT MOST one exercise per day no
+            // matter how many eligible candidates it actually had, capping
+            // `exercises.count` at the number of distinct muscle groups with
+            // any exercise at all. That ceiling can be far below
+            // `exerciseCount`: e.g. Kettlebell/Anfaenger has 9 exercises
+            // across only 4 muscle groups (4 Schulter-Uebungen alone) — a
+            // 100-Minuten-Plan (exerciseCount=7) still only ever got 4,
+            // regardless of the chosen duration. Tracking a per-muscle offset
+            // lets a second (and third, ...) pass pick the NEXT distinct
+            // exercise from a muscle that still has one, once every muscle
+            // has had its first pick — duration keeps mattering wherever the
+            // library actually has the variety to support it, with no
+            // artificial padding where it doesn't (a muscle with only one
+            // eligible exercise is simply skipped on later passes).
+            var picksByMuscle: [MuscleGroup: Int] = [:]
+            let maxPicksForAnyMuscle = byMuscle.values.map(\.count).max() ?? 1
+            while exercises.count < exerciseCount, guardCount < muscleOrder.count * maxPicksForAnyMuscle {
                 defer { guardCount += 1 }
                 let muscle = muscleOrder[muscleCursor % muscleOrder.count]
                 muscleCursor += 1
                 guard let group = byMuscle[muscle], !group.isEmpty else { continue }
-                let spec = group[dayIndex % group.count]
+                let picks = picksByMuscle[muscle, default: 0]
+                guard picks < group.count else { continue }
+                let spec = group[(dayIndex + picks) % group.count]
+                picksByMuscle[muscle] = picks + 1
                 if exercises.contains(where: { $0.name == spec.name }) { continue }
                 exercises.append(ExerciseSpec(
                     name: spec.name,

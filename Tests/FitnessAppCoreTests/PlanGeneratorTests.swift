@@ -514,4 +514,69 @@ final class PlanGeneratorTests: XCTestCase {
         let result = PlanGenerator.Result(days: [day])
         XCTAssertNil(result.explanationKey)
     }
+
+    // MARK: - Bugfix Epic #3.3: duration must matter for beginners too
+
+    /// Regression: Kettlebell/Anfaenger has 9 exercises across only 4 muscle
+    /// groups (4 of them alone in "Schulter") — verified against the real
+    /// library (`ExerciseLibraryData`). Before this fix, the picker only ever
+    /// took ONE exercise per muscle group per day, so a long session
+    /// (exerciseCount target 7) still only ever got 4, identical to a short
+    /// one. This is the exact "15 und 100 Minuten fuehren zur gleichen
+    /// Uebungsanzahl" bug report for Beginner.
+    func testBeginnerKettlebellLongSessionGetsMoreExercisesThanShortOne() {
+        let shortResult = PlanGenerator.generate(from: input(
+            [selection(.kettlebell, days: 1, minutes: 15, experience: .beginner)]
+        ))
+        let longResult = PlanGenerator.generate(from: input(
+            [selection(.kettlebell, days: 1, minutes: 100, experience: .beginner)]
+        ))
+        let shortCount = shortResult.days.first?.spec.exercises.count ?? 0
+        let longCount = longResult.days.first?.spec.exercises.count ?? 0
+        XCTAssertGreaterThan(longCount, shortCount,
+                              "a 100-minute beginner session must get more exercises than a 15-minute one")
+        // The real library has 9 beginner kettlebell exercises total — the
+        // long session's target (exerciseCount = 7) should now be fully
+        // reachable, and the short session's target (3) reachable as before.
+        XCTAssertEqual(shortCount, 3)
+        XCTAssertEqual(longCount, 7)
+    }
+
+    /// A muscle group's SECOND (etc.) pick must be a genuinely different
+    /// exercise, never a repeat of the first.
+    func testRevisitingAMuscleGroupNeverPicksADuplicateExercise() {
+        let result = PlanGenerator.generate(from: input(
+            [selection(.kettlebell, days: 1, minutes: 100, experience: .beginner)]
+        ))
+        let names = result.days.first?.spec.exercises.map(\.name) ?? []
+        XCTAssertEqual(names.count, Set(names).count, "no exercise should appear twice in the same day")
+    }
+
+    /// Regression / honesty check: Barbell/Anfaenger has only 2 exercises in
+    /// the entire real library (one Bizeps-, one Schulter-Uebung) — this is a
+    /// genuine data ceiling, not an algorithm bug, and must stay exactly 2
+    /// regardless of duration. The fix must not invent exercises that don't
+    /// exist ("keine kuenstliche Auffuellung", Epic #3.3 acceptance).
+    func testBeginnerBarbellStaysAtTheRealDataCeilingRegardlessOfDuration() {
+        for minutes in [15, 45, 100] {
+            let result = PlanGenerator.generate(from: input(
+                [selection(.barbell, days: 1, minutes: minutes, experience: .beginner)]
+            ))
+            XCTAssertEqual(result.days.first?.spec.exercises.count, 2,
+                           "barbell/beginner has exactly 2 real exercises in the library — \(minutes) min")
+        }
+    }
+
+    /// Existing intermediate/advanced duration-scaling behavior (already
+    /// working per the bug report) must be unaffected by this fix.
+    func testIntermediateDumbbellDurationScalingIsUnaffected() {
+        let shortResult = PlanGenerator.generate(from: input(
+            [selection(.dumbbell, days: 1, minutes: 15, experience: .intermediate)]
+        ))
+        let longResult = PlanGenerator.generate(from: input(
+            [selection(.dumbbell, days: 1, minutes: 100, experience: .intermediate)]
+        ))
+        XCTAssertEqual(shortResult.days.first?.spec.exercises.count, 3)
+        XCTAssertEqual(longResult.days.first?.spec.exercises.count, 7)
+    }
 }

@@ -80,6 +80,54 @@ public enum GoalDrivenPlanSelectionBuilder {
         return .bodyweight
     }
 
+    /// Bugfix (Epic #3.1): `preferredStrengthKind` above picks exactly ONE
+    /// kind by priority (Langhantel > Kurzhantel > Kettlebell > Koerpergewicht)
+    /// and discards the rest — selecting "Kurzhantel + Kettlebell" silently
+    /// produced a Kurzhantel-only plan, and the selection ORDER (which
+    /// equipment the user happened to tap first) had no bearing on this, it
+    /// was always the fixed priority list. This plural variant returns EVERY
+    /// `TrainingTypeKind` the user actually selected (in the same priority
+    /// order, for stable day-distribution below), so `makeSelections` can
+    /// give each one its own share of the week instead of only the top
+    /// priority match. Falls back to `[.bodyweight]` under the same
+    /// conditions `preferredStrengthKind` falls back to it (no matching
+    /// equipment selected).
+    ///
+    /// `machine`/`cable`/`band` are not included: the Plan Generator's
+    /// `TrainingTypeKind` has no corresponding case for them yet (its four
+    /// cases map 1:1 to Equipment — see `TrainingTypeKind.equipmentFilter`).
+    /// Selecting only those three equipment types still falls through to
+    /// `[.bodyweight]`, same as before this fix — a known, scoped-out
+    /// limitation (needs new `TrainingTypeKind` cases, UI, and localization
+    /// keys to resolve properly, which is a larger change than this
+    /// targeted fix), not a regression introduced here.
+    public static func preferredStrengthKinds(from equipmentPreferences: Set<Equipment>) -> [TrainingTypeKind] {
+        let priorityOrder: [(Equipment, TrainingTypeKind)] = [
+            (.barbell, .barbell), (.dumbbell, .dumbbell), (.kettlebell, .kettlebell), (.bodyweight, .bodyweight)
+        ]
+        let matched = priorityOrder.filter { equipmentPreferences.contains($0.0) }.map(\.1)
+        return matched.isEmpty ? [.bodyweight] : matched
+    }
+
+    /// Bugfix (Epic #3.1): splits `totalDays` as evenly as possible across
+    /// `kinds`, giving the leftover days (if `totalDays` doesn't divide
+    /// evenly) to the first kinds in priority order — same "extra day goes
+    /// to the higher-priority discipline" convention already used for
+    /// Hybrid's Kraft/Ausdauer split above. A kind that ends up with 0 days
+    /// (more kinds selected than days available) is dropped rather than
+    /// producing an empty-exercises day — "nicht jede Ausstattung muss in
+    /// jedem einzelnen Training verwendet werden" (Epic #3.1 acceptance).
+    private static func distributeDaysAcrossKinds(
+        totalDays: Int, kinds: [TrainingTypeKind]
+    ) -> [(kind: TrainingTypeKind, days: Int)] {
+        guard totalDays > 0, !kinds.isEmpty else { return [] }
+        let base = totalDays / kinds.count
+        let remainder = totalDays % kinds.count
+        return kinds.enumerated()
+            .map { index, kind in (kind, base + (index < remainder ? 1 : 0)) }
+            .filter { $0.days > 0 }
+    }
+
     /// Baut die vollstaendige Auswahl fuer `PlanGeneratorInput.selections`.
     ///
     /// - `enduranceModality` ist nur fuer `.endurance`/`.hybrid` relevant und
@@ -110,11 +158,13 @@ public enum GoalDrivenPlanSelectionBuilder {
 
         switch goal {
         case .hypertrophy, .strength, .functional, .weightLoss:
-            let kind = preferredStrengthKind(from: equipmentPreferences)
-            return [PlanGeneratorTypeSelection(
-                kind: kind, daysPerWeek: totalDaysPerWeek,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
-            )]
+            let kinds = preferredStrengthKinds(from: equipmentPreferences)
+            return distributeDaysAcrossKinds(totalDays: totalDaysPerWeek, kinds: kinds).map { kind, days in
+                PlanGeneratorTypeSelection(
+                    kind: kind, daysPerWeek: days,
+                    sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                )
+            }
 
         case .endurance:
             return enduranceSelections(
