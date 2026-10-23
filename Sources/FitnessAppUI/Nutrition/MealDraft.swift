@@ -181,36 +181,39 @@ public final class MealDraft: ObservableObject {
     ///   wie `PlanGeneratorInstantiator`-Typ-Doku/`PlansListView.deletePlans`).
     ///
     ///   **NUT-01-Fix (Audit docs/AUDIT_2026-10-23_DELTIQ.md): Rueckbau
-    ///   geschieht INNERHALB der Commit-Grenze, nicht danach.** Bisher wurde
-    ///   vor dem Save geloescht und im Fehlerfall als Kopie neu eingefuegt,
-    ///   ohne zu speichern: der Store behielt die alten Zeilen, `meal.items`
-    ///   zeigte schon auf die Kopien — der naechste fremde Save schrieb den
+    ///   geschieht INNERHALB der Commit-Grenze.** Bisher wurde vor dem Save
+    ///   geloescht und im Fehlerfall als Kopie neu eingefuegt, ohne zu
+    ///   speichern: der Store behielt die alten Zeilen, `meal.items` zeigte
+    ///   schon auf die Kopien — der naechste fremde Save schrieb den
     ///   Mischstand mit.
     ///
-    ///   Zwei verworfene Varianten, damit sie nicht neu erprobt werden:
-    ///   - `persist` im Fehlerpfad: bestaetigt fremde, offene Aenderungen im
-    ///     selben Context.
-    ///   - **Die Mahlzeit waehrend des Saves zu wechseln** (alte Positionen
-    ///     temporaer aus `meal.items` haengen, damit zwei aufeinanderfolgende
-    ///     Commits sich nicht ueberlappen): haengt an einer
-    ///     voruebergehenden Modellmutation, die wie ein Fehler aussieht;
-    ///     der Zustand „Cleanup noch offen" wird dadurch nur in Wiederholungs-
-    ///     faellen erreicht und ist dort nicht eindeutig pruefbar.
+    ///   Bewusst NICHT gewaehlt: ein `persist` im Fehlerpfad (bestaetigt
+    ///   fremde, offene Aenderungen im selben Context).
     ///
-    ///   Deshalb drei Regeln:
-    ///   1. Alle Aenderungen von `meal.items` sind relativ (anhaengen bzw.
-    ///      entfernen genau des eigenen Objekts). Ein alter Stand im laufenden
-    ///      Context erzeugt dadurch nie Duplikate, auch nicht, wenn der
-    ///      Cleanup noch offen ist.
-    ///   2. Nach dem Commit des Edits ist der Zustand VORHANDEN, als
-    ///      „Cleanup offen" markiert und mit `meal.items` neu geladen. Die
-    ///      alten Positionen sind damit aus dem Context geraeumt. Ein
-    ///      CHECKPOINT-Save (`context.save()`, ohne `rollback()`) macht
-    ///      einen zweiphasigen SwiftData-Commit entgueltig, und `rollback()`
-    ///      reicht fuer einen einphasigen — nie wird eine bereits committete
-    ///      Aenderung zurueckgerollt.
-    ///   3. Jeder Aufruf von `save()` raeumt einen noch offenen Cleanup auf
-    ///      (Retry), statt ihn als No-Op zu behandeln.
+    ///   Ablauf:
+    ///   1. Nur `date`/`mealType` werden vor dem Commit geschrieben (reine
+    ///      Attribute, exakt rueckrollbar); alte Positionen und ihre
+    ///      Anzeigewerte werden gesichert.
+    ///   2. Neue Positionen werden eingefuegt. `persist` = Commit-Grenze.
+    ///      Fehler: neue Positionen verlassen den Context, Datum/Typ zurueck
+    ///      — nichts Halbes bleibt (in-memory geprueft, ohne Save).
+    ///   3. Erfolg: `didSaveSuccessfully = true`, die IDs der alten
+    ///      Positionen sind als offener Cleanup markiert. Ein CHECKPOINT-Save
+    ///      (KEIN `rollback()`) nagelt den Commit fest, dann werden die alten
+    ///      Positionen ueber ihre IDs genau EINMAL geloescht und per
+    ///      `cleanup` gespeichert.
+    ///      Fehler: es entstehen nie Duplikate oder Zombies (IDs werden nur
+    ///      geloescht, nie neu eingefuegt). Der offene Cleanup bleibt
+    ///      markiert, die UI zeigt den gespeicherten Stand und erklaert ihn;
+    ///      der naechste `save()`-Aufruf wiederholt das Aufraeumen.
+    ///   4. Laeuft ein Cleanup-Retry ins Leere (Zeile war im Store schon weg),
+    ///      wird er ohne Fehler abgeschlossen.
+    ///
+    ///   Wichtig fuer Apple-CI/Laufzeit: `context.model(for:)` und
+    ///   `registeredModel(for:)` auf eine invalidierte Row loesen einen
+    ///   `Fatal error` aus. Alte Positionen werden deshalb nur ueber
+    ///   `registeredModel` (bearbeitender Context) bzw. stille Existenzpruefung
+    ///   im Store angefasst.
     ///
     ///   `persist`, `cleanup` und `checkpoint` sind Test-Seams (Default
     ///   jeweils `context.save()`), damit der Cleanup-Fehler getrennt vom
