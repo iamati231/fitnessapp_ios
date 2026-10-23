@@ -782,12 +782,7 @@ private struct AMRAPPlayerView: View {
     /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
     /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
     private func startBackground() {
-        background.begin(
-            sessionKey: session.backgroundSessionKey,
-            format: .amrap,
-            dayName: session.displayDayName,
-            soundEnabled: timerSoundEnabled
-        )
+        background.begin(for: session, format: .amrap, soundEnabled: timerSoundEnabled)
         syncBackground()
     }
 
@@ -1428,12 +1423,7 @@ private struct EMOMPlayerView: View {
     /// ob das Hintergrund-Audio laeuft (siehe `scheduleBackgroundSignals`).
     @discardableResult
     private func startBackground() -> Bool {
-        background.begin(
-            sessionKey: session.backgroundSessionKey,
-            format: .emom,
-            dayName: session.displayDayName,
-            soundEnabled: timerSoundEnabled
-        )
+        background.begin(for: session, format: .emom, soundEnabled: timerSoundEnabled)
         syncBackground()
         return TimedWorkoutBackground.shared.isAudioRunning
     }
@@ -2030,12 +2020,7 @@ private struct ForTimePlayerView: View {
     /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
     /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
     private func startBackground() {
-        background.begin(
-            sessionKey: session.backgroundSessionKey,
-            format: .forTime,
-            dayName: session.displayDayName,
-            soundEnabled: timerSoundEnabled
-        )
+        background.begin(for: session, format: .forTime, soundEnabled: timerSoundEnabled)
         syncBackground()
     }
 

@@ -452,12 +452,7 @@ struct CircuitPlayerView: View {
     /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
     /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
     private func startBackground() {
-        background.begin(
-            sessionKey: session.backgroundSessionKey,
-            format: .circuit,
-            dayName: session.displayDayName,
-            soundEnabled: timerSoundEnabled
-        )
+        background.begin(for: session, format: .circuit, soundEnabled: timerSoundEnabled)
         syncBackground()
     }
 

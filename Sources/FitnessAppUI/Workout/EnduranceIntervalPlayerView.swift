@@ -535,12 +535,7 @@ struct EnduranceIntervalPlayerView: View {
     // MARK: - Hintergrund-Lauf (stilles Audio + Live Activity)
 
     private func startBackground() {
-        background.begin(
-            sessionKey: session.backgroundSessionKey,
-            format: .enduranceIntervals,
-            dayName: session.displayDayName,
-            soundEnabled: timerSoundEnabled
-        )
+        background.begin(for: session, format: .enduranceIntervals, soundEnabled: timerSoundEnabled)
         syncBackground()
     }
 

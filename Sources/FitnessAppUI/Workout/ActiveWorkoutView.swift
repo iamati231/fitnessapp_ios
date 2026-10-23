@@ -123,6 +123,18 @@ public struct ActiveWorkoutView: View {
     @State private var exerciseToEdit: Exercise?
     @State private var exercisePendingDelete: Exercise?
 
+    /// Bugfix (Audit): `discardWorkout()` deletes `session` (and its ad-hoc
+    /// `day`) and calls `dismiss()`, which triggers this view's own
+    /// `.onDisappear { sweepEmptyAdHocSession() }` — that sweep re-reads
+    /// `session.isAdHoc`/`isCompleted`/`logs.isEmpty` on the very object just
+    /// marked for deletion (still readable pre-save) and, for an empty
+    /// ad-hoc session, all three still evaluate true, so it deletes `session`
+    /// and `day` a SECOND time. Harmless with SwiftData today, but relies on
+    /// undocumented behavior for a very common path (open an ad-hoc workout,
+    /// discard it immediately). This flag makes the sweep a deliberate no-op
+    /// once `discardWorkout()` has already handled cleanup.
+    @State private var isDiscarding = false
+
     public init(session: WorkoutSession) {
         self.session = session
     }
@@ -1102,6 +1114,10 @@ public struct ActiveWorkoutView: View {
 
     private func discardWorkout() {
         restTimerActivity.endRestTimer(reason: .skipped)
+        // Bugfix (Audit): verhindert, dass die `.onDisappear`-Sweep-Logik
+        // unten dieselbe Session/den Tag gleich nochmal loescht (siehe
+        // Kommentar bei `isDiscarding`).
+        isDiscarding = true
         // DEL-096: Ad-Hoc-Sessions schleppen einen ephemeren TrainingDay
         // mit sich — der muss bei Discard mit weg, sonst bleibt ein
         // verwaister Tag mit `plan: nil` im Store zurueck.
@@ -1249,6 +1265,11 @@ public struct ActiveWorkoutView: View {
     /// Eintraege in der History, wenn der User nur kurz reingeschaut und
     /// wieder rausnavigiert hat.
     private func sweepEmptyAdHocSession() {
+        // Bugfix (Audit): `discardWorkout()` already deleted `session` (and
+        // its ad-hoc `day`) and triggered this via `dismiss()` — without this
+        // guard, the still-readable-pre-save `session` would look exactly
+        // like "empty ad-hoc, not completed" and get deleted a second time.
+        guard !isDiscarding else { return }
         guard session.isAdHoc,
               !session.isCompleted,
               session.logs.isEmpty
