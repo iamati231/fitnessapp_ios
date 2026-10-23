@@ -416,12 +416,13 @@ public final class MealDraft: ObservableObject {
     /// Zeile im Context registriert ist (`registeredModel`); nur dann wird
     /// geloescht.
     private func removeStaleItem(_ id: PersistentIdentifier, in context: ModelContext) {
-        let live = context.registeredModel(for: id) as? MealItem
-        guard let registered = live else { return }
-        if registered.meal != nil {
-            registered.meal = nil
+        let live: MealItem? = context.registeredModel(for: id)
+        if let registered = live {
+            if registered.meal != nil {
+                registered.meal = nil
+            }
+            context.delete(registered)
         }
-        context.delete(registered)
     }
 
     /// NUT-01: `true`, wenn im Store noch eine Zeile mit dieser ID existiert.
