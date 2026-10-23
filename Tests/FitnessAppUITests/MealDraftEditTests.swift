@@ -68,7 +68,9 @@ final class MealDraftEditTests: XCTestCase {
         for item in draft.items { draft.removeItem(id: item.id) }
         draft.addItem(catalogID: nil, nameSnapshot: "Wuerde-gespeichert", quantity: 50, unit: .gram, nutrients: .zero)
 
-        let result = draft.save(into: context) { _ in throw Boom() }
+        // Nur der Edit-Save scheitert; `cleanup`/`checkpoint` bleiben die
+        // echten Seams.
+        let result = draft.save(into: context, persist: { _ in throw Boom() })
 
         switch result {
         case .success: XCTFail("Erwartet: Fehler")
