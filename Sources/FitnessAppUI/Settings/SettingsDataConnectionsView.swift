@@ -158,7 +158,14 @@ public struct SettingsDataConnectionsView: View {
                     showsDivider: false
                 )
             }
-            hintRow(String(localized: "settings.foodLookup.toggle.footer", bundle: .module))
+            // Footer reacts to the toggle state (like `externalWorkoutImportEnabled`'s
+            // `.onChange` sync feedback above) — without this, flipping the toggle had
+            // zero visible effect anywhere on this screen.
+            hintRow(
+                onlineFoodLookupEnabled
+                    ? String(localized: "settings.foodLookup.toggle.footer.on", bundle: .module)
+                    : String(localized: "settings.foodLookup.toggle.footer.off", bundle: .module)
+            )
         }
     }
 

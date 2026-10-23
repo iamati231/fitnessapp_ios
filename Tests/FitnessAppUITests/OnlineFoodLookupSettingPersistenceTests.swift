@@ -30,6 +30,44 @@ final class OnlineFoodLookupSettingPersistenceTests: XCTestCase {
         )
     }
 
+    func testOnlineFoodLookupToggleFooterReactsToToggleState() throws {
+        let source = try contents(of: "Settings/SettingsDataConnectionsView.swift")
+        XCTAssertTrue(
+            source.contains("settings.foodLookup.toggle.footer.off"),
+                "Der Help-Text braucht einen eigenen OFF-Text, sonst reagiert er nicht auf den Toggle-Zustand."
+        )
+        XCTAssertTrue(
+            source.contains("settings.foodLookup.toggle.footer.on"),
+                "Der Help-Text braucht einen eigenen ON-Text, sonst reagiert er nicht auf den Toggle-Zustand."
+        )
+        XCTAssertTrue(
+            source.contains("onlineFoodLookupEnabled\n                    ?"),
+                "Die beiden Footer-Texte muessen ueber den Toggle-Zustand " +
+                "`onlineFoodLookupEnabled` ausgewaehlt werden, sonst zeigt der Footer " +
+                "immer denselben Text, egal wie der Toggle steht."
+        )
+
+        let strings = try contents(of: "Resources/Localizable.xcstrings")
+        XCTAssertFalse(
+            strings.contains("\"settings.foodLookup.toggle.footer\":"),
+            "Der alte, zustandslose Einzel-Key darf nicht mehr existieren, sonst bleibt " +
+                "ungewiss, ob er noch irgendwo verwendet wird."
+        )
+        for key in ["settings.foodLookup.toggle.footer.off", "settings.foodLookup.toggle.footer.on"] {
+            XCTAssertTrue(
+                strings.contains("\"\(key)\": {"),
+                "Localizable.xcstrings muss den Key \(key) enthalten."
+            )
+        }
+        // Echte, unterschiedliche DE/EN/TR-Werte statt Platzhaltern fuer beide Keys.
+        XCTAssertTrue(strings.contains("Würde unbekannte Lebensmittel online bei Open Food Facts suchen"))
+        XCTAssertTrue(strings.contains("Would search Open Food Facts online for unknown foods"))
+        XCTAssertTrue(strings.contains("Bilinmeyen besinleri Open Food Facts üzerinden çevrimiçi arar. Arama sorguları harici bir hizmete gönderilirdi"))
+        XCTAssertTrue(strings.contains("Aktiv: Wird in der Lebensmittelsuche als Option angeboten"))
+        XCTAssertTrue(strings.contains("Active: offered as an option in food search"))
+        XCTAssertTrue(strings.contains("Aktif: Besin aramasında bir seçenek olarak sunulur"))
+    }
+
     func testOnlineFoodLookupCreditsViewExistsAndShowsODblAttribution() throws {
         let source = try contents(of: "Settings/OnlineFoodLookupCreditsView.swift")
         XCTAssertTrue(

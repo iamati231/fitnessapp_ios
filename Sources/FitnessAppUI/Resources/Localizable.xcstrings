@@ -57257,25 +57257,48 @@
         }
       }
     },
-    "settings.foodLookup.toggle.footer": {
+    "settings.foodLookup.toggle.footer.off": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sucht unbekannte Lebensmittel online bei Open Food Facts. Dabei werden Suchanfragen an einen externen Dienst gesendet."
+            "value": "Würde unbekannte Lebensmittel online bei Open Food Facts suchen. Dabei würden Suchanfragen an einen externen Dienst gesendet."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Searches Open Food Facts online for unknown foods. Search queries are sent to an external service."
+            "value": "Would search Open Food Facts online for unknown foods. Search queries would be sent to an external service."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bilinmeyen besinleri Open Food Facts üzerinden çevrimiçi arar. Arama sorguları harici bir hizmete gönderilir."
+            "value": "Bilinmeyen besinleri Open Food Facts üzerinden çevrimiçi arar. Arama sorguları harici bir hizmete gönderilirdi."
+          }
+        }
+      }
+    },
+    "settings.foodLookup.toggle.footer.on": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiv: Wird in der Lebensmittelsuche als Option angeboten. Suchanfragen gehen dabei an Open Food Facts."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active: offered as an option in food search. Search queries are sent to Open Food Facts."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktif: Besin aramasında bir seçenek olarak sunulur. Arama sorguları Open Food Facts'e gönderilir."
           }
         }
       }
