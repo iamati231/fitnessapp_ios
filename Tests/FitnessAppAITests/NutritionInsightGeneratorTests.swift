@@ -160,7 +160,12 @@ final class NutritionInsightGeneratorTests: XCTestCase {
     /// carry the locale-specific directive, proven via the same spy pattern
     /// as `NutritionAIAvailabilityTests`/`MealTextExtractorTests`.
     func testGenerateInsight_passesLocaleSpecificInstructionsToTheModel() async throws {
-        let spy = SpyGenerator()
+        // Device-Bugreport fix: generateInsight now also verifies the
+        // generated text is actually in the requested language (see
+        // matchesRequestedLanguage below) - the default English stub text
+        // would now be rejected for a Turkish locale, even though that's not
+        // what this test is about. Use a real Turkish sentence instead.
+        let spy = SpyGenerator(result: "Bugün kalori hedefine neredeyse ulaştın, harika gidiyorsun!")
         let generator = NutritionInsightGenerator(
             service: NutritionAIService(
                 availabilityChecker: FixedAvailability(status: .available),
