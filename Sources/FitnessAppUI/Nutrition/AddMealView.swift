@@ -533,41 +533,7 @@ public struct AddMealView: View {
                 // style as an independently tappable hit target.
                 .buttonStyle(.borderless)
 
-                // Task 5 (docs/superpowers/sdd/2026-10-22-online-food-lookup):
-                // second entry point for Task 4's online lookup — same
-                // `onlineFoodLookupEnabled` gate, same shared `onlineSearch`
-                // controller/components, prefilled with this candidate's
-                // `foodText` instead of the manual search field.
-                if onlineFoodLookupEnabled {
-                    Button {
-                        runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)
-                    } label: {
-                        HStack {
-                            if onlineSearch.isSearching && onlineSearchOrigin == .aiCandidate(candidate) {
-                                ProgressView()
-                                    .controlSize(.small)
-                            }
-                            Text("nutrition.addMeal.onlineSearch.action", bundle: .module)
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .disabled(onlineSearch.isSearching)
-
-                    // I1 fix: with several unmatched candidates sharing this
-                    // one controller, only render THIS candidate's results/
-                    // error under THIS row — never under every unmatched
-                    // candidate, and never here while the manual search
-                    // entry point is the one active.
-                    if onlineSearchOrigin == .aiCandidate(candidate) {
-                        if let message = onlineSearch.errorMessage {
-                            Text(message)
-                                .font(.caption)
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-
-                        OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
-                    }
-                }
+                onlineSearchFallback(for: candidate)
 
                 // Task 6: dritter, von Netz/KI unabhaengiger Einstiegspunkt
                 // fuer EXAKT diesen Kandidaten — vorausgefuellt mit
@@ -604,6 +570,17 @@ public struct AddMealView: View {
                         .buttonStyle(.borderless)
                     }
                 }
+                // Bugfix (writing-block.md 7.2, "Online-Suche muss immer als
+                // Alternative verfuegbar sein"): previously this entry point
+                // only existed in the `hasNoCatalogMatch` branch above — a
+                // candidate with SEVERAL local matches (e.g. "Haehnchenbrust"/
+                // "Haehnchenkeule" for "Haehnchen") had no way out if NONE of
+                // them was the right variant (the ticket's own example:
+                // "Haehnchenfluegel" missing from the local catalog). Local
+                // search stays tried first (the matches above are still
+                // shown); online search only ADDS an escape hatch at the
+                // bottom, it never replaces the local list.
+                onlineSearchFallback(for: candidate)
             } else if let match = candidate.matches.first,
                       let entry = catalogEntries.first(where: { $0.catalogID == match.catalogID }) {
                 Button {
@@ -614,6 +591,46 @@ public struct AddMealView: View {
             }
         }
         .listRowBackground(Color.Deltiq.surface)
+    }
+
+    /// Online-Such-Einstiegspunkt fuer EINEN AI-Kandidaten — ausgelagert aus
+    /// `aiCandidateRow`, weil er jetzt aus ZWEI Zweigen aufgerufen wird
+    /// (`hasNoCatalogMatch` UND `isAmbiguous`, siehe dortiger 7.2-Kommentar),
+    /// statt ihn ein zweites Mal hinzuschreiben.
+    @ViewBuilder
+    private func onlineSearchFallback(for candidate: MealDraftCandidate) -> some View {
+        // Task 5 (docs/superpowers/sdd/2026-10-22-online-food-lookup): selber
+        // `onlineFoodLookupEnabled`-Gate, selber geteilter `onlineSearch`-
+        // Controller/dieselben Komponenten wie der manuelle Such-Einstieg.
+        if onlineFoodLookupEnabled {
+            Button {
+                runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)
+            } label: {
+                HStack {
+                    if onlineSearch.isSearching && onlineSearchOrigin == .aiCandidate(candidate) {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Text("nutrition.addMeal.onlineSearch.action", bundle: .module)
+                }
+            }
+            .buttonStyle(.borderless)
+            .disabled(onlineSearch.isSearching)
+
+            // I1 fix: mit mehreren Kandidaten, die sich diesen EINEN
+            // Controller teilen, werden Ergebnisse/Fehler nur unter GENAU
+            // diesem Kandidaten gerendert — nie unter jedem Kandidaten, und
+            // nie hier, waehrend der manuelle Such-Einstieg der aktive ist.
+            if onlineSearchOrigin == .aiCandidate(candidate) {
+                if let message = onlineSearch.errorMessage {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+
+                OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+            }
+        }
     }
 
     /// Task A: Ersatz fuer das vormalige `quantitySection(for:)` — lebt jetzt
