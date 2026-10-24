@@ -122,6 +122,21 @@ public struct PlanBuilderView: View {
     /// die Entscheidung stattdessen direkt selbst, siehe `adoptPlan()`.
     private let onEnduranceModalityChosen: (@MainActor (EnduranceModality?, Bool) -> Void)?
 
+    /// Ticket "Gym: Alle Gewichte und Geraete standardmaessig beruecksichtigen":
+    /// `equipmentPreferences` startet sonst leer (siehe dortige Doku) - ein
+    /// Gym-Nutzer muesste sonst jede Ausstattung im Wizard einzeln antippen,
+    /// obwohl ein uebliches Studio praktisch alles davon hat. `true` nur,
+    /// wenn ein `initialInput` die Auswahl bereits explizit vorgibt (Cardio-
+    /// Handoff/"Plan anpassen"/Onboarding) - dort darf der Gym-Default sie
+    /// nie ueberschreiben.
+    private let hasExplicitEquipmentPreferences: Bool
+    /// Einmaliger Anwende-Schutz fuer den Gym-Default (siehe `.onAppear`
+    /// unten) - verhindert, dass ein spaeteres Leeren aller Checkboxen durch
+    /// den User beim naechsten `.onAppear` (Schritt-Wechsel feuert KEIN
+    /// erneutes `.onAppear`, aber defensiv) stillschweigend rueckgaengig
+    /// gemacht wird.
+    @State private var hasAppliedGymEquipmentDefault = false
+
     /// Handoff "Lauf-Coaching - Machbarkeits-Check", Nachtrag "Plan
     /// anpassen": seedet Schritt 1/2 aus einem vorhandenen Input statt der
     /// leeren Defaults - der Nutzer landet weiterhin bei Schritt 1, sieht
@@ -162,6 +177,7 @@ public struct PlanBuilderView: View {
     ) {
         self.onGenerated = onGenerated
         self.onEnduranceModalityChosen = onEnduranceModalityChosen
+        self.hasExplicitEquipmentPreferences = initialInput != nil
         if let initialInput {
             _selectedKinds = State(initialValue: initialInput.selections.map(\.kind))
             _configByKind = State(initialValue: Dictionary(
@@ -586,6 +602,30 @@ public struct PlanBuilderView: View {
                 Text(adoptSaveErrorMessage ?? "")
             }
         }
+        // Gym-Default (siehe `hasExplicitEquipmentPreferences`-Doku): feuert
+        // genau einmal beim Oeffnen dieses Sheets, nicht pro Wizard-Schritt -
+        // `currentStepView` schaltet nur den Inhalt EINER `Group` um, pusht
+        // keine neue View, also loest kein Schritt-Wechsel ein weiteres
+        // `.onAppear` aus.
+        .onAppear {
+            applyGymEquipmentDefaultIfNeeded()
+        }
+    }
+
+    /// Setzt `equipmentPreferences` einmalig auf "alles ausgewaehlt", wenn
+    /// dieser Builder OHNE vorgegebene Auswahl gestartet wurde (kein
+    /// `initialInput`) und das Profil Gym als Trainingsort fuehrt - der
+    /// Nutzer kann jedes Item danach weiterhin frei abwaehlen (siehe
+    /// `equipmentStep`/`alltagsrahmenStep`).
+    private func applyGymEquipmentDefaultIfNeeded() {
+        guard !hasAppliedGymEquipmentDefault, let profile = profiles.first,
+              let defaults = Equipment.defaultWizardSelection(
+                  forEnvironment: profile.environment,
+                  hasExplicitInput: hasExplicitEquipmentPreferences
+              )
+        else { return }
+        equipmentPreferences = defaults
+        hasAppliedGymEquipmentDefault = true
     }
 
     /// P3.1: Schritt 1/2 zeigen je nach Pfad unterschiedlichen Inhalt (siehe
