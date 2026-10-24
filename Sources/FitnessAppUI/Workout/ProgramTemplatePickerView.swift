@@ -639,64 +639,10 @@ public struct TemplatePreviewView: View {
         resolvedSelection.days.sorted { $0.sequenceIndex < $1.sequenceIndex }
     }
 
-    /// DEL-118: ExerciseSpec.name ist der deutsche Raw-String aus dem
-    /// Template-Source. Wenn er einen Library-Eintrag matched, holen wir
-    /// dessen `localizationKey` und resolven via Catalog. Sonst Fallback
-    /// auf den Raw-String (Custom-Plan-Strings ohne Library-Match).
-    private func localizedExerciseName(_ name: String) -> String {
-        if let entry = ExerciseLibraryData.all.first(where: { $0.name == name }),
-           let key = entry.localizationKey, !key.isEmpty {
-            return String(localized: String.LocalizationValue(key), bundle: .module)
-        }
-        return name
-    }
-
-    /// README 2.9 Phase 6: `ExerciseSpec` hat kein eigenes `isTimeBased`-Feld
-    /// - der `ProgramInstantiator` leitet das erst beim Materialisieren per
-    /// Namens-Lookup gegen `ExerciseLibraryData` her (siehe `timeBasedNames`
-    /// dort). Fuer die Vorschau, die noch vor der Instanziierung steht,
-    /// machen wir denselben Lookup hier.
-    private func isTimeBasedSpec(_ name: String) -> Bool {
-        ExerciseLibraryData.all.first(where: { $0.name == name })?.isTimeBased ?? false
-    }
-
-    /// DEL-118: format-string fuer die Detail-Zeile (Saetze × Wdh × Pause)
-    /// via xcstrings.
-    ///
-    /// README 2.10/19c-19d: Zeitformat-Tage (`dayFormat != nil`) zeigen
-    /// stattdessen nur das Ziel pro Runde (`timedFormatCircuitLabel`,
-    /// TimedWorkoutPlayerView.swift - dieselbe Fassung wie im Player und in
-    /// WorkoutSummaryView, keine dritte Implementierung). Sätze × Wdh ×
-    /// Pause ergeben bei einem AMRAP/EMOM/Auf-Zeit-Tag keinen Sinn: die Uhr
-    /// entscheidet ueber Runden, eine feste Pause steht im Plan gar nicht.
-    private func detailLine(for exercise: ExerciseSpec, dayFormat: WorkoutTimeFormat?) -> String {
-        if let dayFormat {
-            return timedFormatCircuitLabel(
-                repsMin: exercise.repsMin, isTimeBased: isTimeBasedSpec(exercise.name),
-                sets: exercise.sets, format: dayFormat
-            )
-        }
-        if exercise.isCardio {
-            return String(format: String(localized: "workout.detail.cardio", bundle: .module), exercise.restSeconds)
-        }
-        let repsText = exercise.repsMin == exercise.repsMax
-            ? "\(exercise.repsMin)"
-            : "\(exercise.repsMin)-\(exercise.repsMax)"
-        // Templates haben keinen `isTimeBased`-Flag pro ExerciseSpec —
-        // wir nutzen einheitlich die reps-Variante. Time-based Lifts in
-        // Templates (z.B. Plank) tragen Sekunden im repsMin/Max-Feld.
-        //
-        // DEL-118-Nachtrag (README 2.10): manuelle .one/.other-Auswahl statt
-        // eines einzelnen Format-Strings - sonst bleibt "Sätze" (DE) fuer
-        // exercise.sets == 1 stehen, weil replacingOccurrences keine echte
-        // Plural-Aufloesung ist (siehe PlanRow.pluralized fuer dasselbe Muster).
-        let key = exercise.sets == 1 ? "workout.detail.reps.one" : "workout.detail.reps.other"
-        let template = String(localized: String.LocalizationValue(key), bundle: .module)
-        return template
-            .replacingOccurrences(of: "%1$lld", with: "\(exercise.sets)")
-            .replacingOccurrences(of: "%2$@",   with: repsText)
-            .replacingOccurrences(of: "%3$lld", with: "\(exercise.restSeconds)")
-    }
+    // `localizedExerciseName(_:)`/`detailLine(for:dayFormat:)` moved to
+    // `Extensions/ExerciseSpec+DisplayName.swift` — `PlanBuilderView`'s
+    // Schritt-3-Vorschau needs the identical logic, so it's a shared
+    // top-level function now instead of a second, private copy here.
 }
 
 #if DEBUG

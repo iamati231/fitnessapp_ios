@@ -1829,7 +1829,50 @@ public struct PlanBuilderView: View {
         let spec = day.spec(sequenceIndex: 1)
         let currentIndex = draft?.index(of: day.id) ?? 0
         let totalDays = draft?.days.count ?? 0
-        return HStack(alignment: .top, spacing: 12) {
+        return VStack(alignment: .leading, spacing: 10) {
+            resultDayHeaderRow(spec: spec, day: day, loadLevel: loadLevel, currentIndex: currentIndex, totalDays: totalDays)
+            // Ticket "Schritt-3-Vorschau": vorher sah man pro Tag nur Name +
+            // Uebungsanzahl (`scopeLine`), nie die konkreten Uebungen - genau
+            // die Information, die der Nutzer laut Ticket zur Beurteilung vor
+            // dem Uebernehmen braucht. `spec.exercises` ist dieselbe Liste,
+            // die `PlanGeneratorInstantiator.createPlan` spaeter tatsaechlich
+            // speichert (kein separater Vorschau-Datensatz) - Vorschau und
+            // Ergebnis koennen damit nicht auseinanderlaufen. Gleiche
+            // Namens-/Detail-Aufloesung wie `ProgramTemplatePickerView.dayCard`
+            // (`Extensions/ExerciseSpec+DisplayName.swift`), keine zweite
+            // Darstellungslogik.
+            if !spec.exercises.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(spec.exercises.enumerated()), id: \.offset) { _, exercise in
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text(localizedExerciseName(exercise.name))
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                            Spacer(minLength: 8)
+                            Text(detailLine(for: exercise, dayFormat: spec.timeFormat))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.secondary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
+    }
+
+    /// Name, Fixierungs-Badges, Belastungs-Badge und das Aktionen-Menu — die
+    /// bisherige `resultDayRow`-Kopfzeile, unveraendert ausgelagert, damit
+    /// die neue Uebungsliste darunter Platz hat.
+    @ViewBuilder
+    private func resultDayHeaderRow(spec: DaySpec, day: DraftDay, loadLevel: PlanLoadLevel?, currentIndex: Int, totalDays: Int) -> some View {
+        HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     // DEL-247: `displayName` statt `.name` - loest den seit
@@ -1948,14 +1991,6 @@ public struct PlanBuilderView: View {
             }
             .accessibilityLabel(Text("planBuilder.result.dayActions", bundle: .module))
         }
-        .padding(12)
-        .background(Color.secondary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
     }
 
     /// Fasst Name/Umfang/Belastung/Fixierungsstatus in EINER Ansage zusammen
@@ -1980,6 +2015,10 @@ public struct PlanBuilderView: View {
         if day.isContentFixed {
             parts.append(String(localized: "planBuilder.result.fixed.content.badge", bundle: .module))
         }
+        // Schritt-3-Vorschau: die sichtbare Uebungsliste braucht dasselbe
+        // Pendant fuer VoiceOver, sonst bekommen sehende und blinde Nutzer
+        // unterschiedliche Informationstiefe fuer dieselbe Zeile.
+        parts.append(contentsOf: spec.exercises.map(\.name).map(localizedExerciseName))
         return parts.joined(separator: ", ")
     }
 
