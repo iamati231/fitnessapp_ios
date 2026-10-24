@@ -2,14 +2,27 @@ import Foundation
 
 /// README 2.20: "Trainingsart" fuer den Plan-Generator ("Plan bauen"). Kein
 /// Feld in der Uebungsbibliothek - eine reine Wizard-Vokabel, die der
-/// Generator auf Filterkriterien abbildet: die vier Kraft-Kinds mappen 1:1
+/// Generator auf Filterkriterien abbildet: die Kraft-Kinds mappen 1:1
 /// auf `Equipment`-Faelle, die zwei Cardio-Kinds haben keine Entsprechung
 /// in der Library (siehe `PlanGenerator.cardioCandidates`, das ueber
 /// `isCardio` + Lauf-Zonen-Namen statt Equipment filtert).
+///
+/// writing-block.md Punkt 3.2: `.cable`/`.band` haben weiterhin KEINEN
+/// Fall - der Katalog deckt fuer `.cable` keine einzige Bein-Uebung ab
+/// (0 von 19 Cable-Eintraegen fuer Quads/Hamstrings/Waden) und fuer
+/// `.band` nur 6 Uebungen über 4 von 10 Muskelgruppen (Brust/Schultern/
+/// Trizeps/Core/Hamstrings/Waden fehlen komplett) - ein eigener
+/// `TrainingTypeKind` wuerde dort nur eine andere Form desselben
+/// "fehlende Ausstattungskategorie wird stillschweigend durch etwas
+/// anderes ersetzt"-Problems erzeugen, das dieses Ticket beheben soll.
+/// `.machine` hat die mit Abstand beste Abdeckung (28 Uebungen, 9 von
+/// 10 Muskelgruppen, nur Gesaess fehlt) und bekommt deshalb als erstes
+/// einen eigenen Fall.
 public enum TrainingTypeKind: String, Codable, Sendable, CaseIterable {
     case barbell
     case dumbbell
     case kettlebell
+    case machine
     case bodyweight
     case running
     case cycling
@@ -25,6 +38,7 @@ public enum TrainingTypeKind: String, Codable, Sendable, CaseIterable {
         case .barbell:    return .barbell
         case .dumbbell:   return .dumbbell
         case .kettlebell: return .kettlebell
+        case .machine:    return .machine
         case .bodyweight: return .bodyweight
         case .running, .cycling: return nil
         }
@@ -44,6 +58,7 @@ public enum TrainingTypeKind: String, Codable, Sendable, CaseIterable {
         case .barbell:    return "planBuilder.type.barbell"
         case .dumbbell:   return "planBuilder.type.dumbbell"
         case .kettlebell: return "planBuilder.type.kettlebell"
+        case .machine:    return "planBuilder.type.machine"
         case .bodyweight: return "planBuilder.type.bodyweight"
         case .running:    return "planBuilder.type.running"
         case .cycling:    return "planBuilder.type.cycling"

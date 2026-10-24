@@ -67,43 +67,54 @@ public enum GoalDrivenPlanSelectionBuilder {
         return DistributionConflict(requiredDays: required, availableDays: totalDaysPerWeek)
     }
 
-    /// Welches der vier Kraft-`TrainingTypeKind`s fuer ein kraftorientiertes
-    /// Ziel verwendet wird — abgeleitet aus dem bereits erfassten
-    /// Equipment-Profil (`UserEquipmentProfile.legacyEquipmentPreferences`),
-    /// NICHT erneut vom User abgefragt. Prioritaet Langhantel > Kurzhantel >
-    /// Kettlebell > Koerpergewicht (strukturierteste/anspruchsvollste zuerst,
+    /// Welches Kraft-`TrainingTypeKind` fuer ein kraftorientiertes Ziel
+    /// verwendet wird — abgeleitet aus dem bereits erfassten Equipment-Profil
+    /// (`UserEquipmentProfile.legacyEquipmentPreferences`), NICHT erneut vom
+    /// User abgefragt. Prioritaet Langhantel > Kurzhantel > Kettlebell >
+    /// Maschine > Koerpergewicht (strukturierteste/anspruchsvollste zuerst,
     /// Koerpergewicht als universeller, immer gueltiger Fallback).
+    ///
+    /// writing-block.md Punkt 3.2: Maschine reiht sich hier NACH Kettlebell
+    /// und VOR Koerpergewicht ein - freie Gewichte bleiben die bevorzugte
+    /// Wahl, wenn mehrere Optionen vorhanden sind, aber eine Maschine ist
+    /// weiterhin "mehr Ausstattung" als der universelle Koerpergewicht-
+    /// Fallback.
     public static func preferredStrengthKind(from equipmentPreferences: Set<Equipment>) -> TrainingTypeKind {
         if equipmentPreferences.contains(.barbell) { return .barbell }
         if equipmentPreferences.contains(.dumbbell) { return .dumbbell }
         if equipmentPreferences.contains(.kettlebell) { return .kettlebell }
+        if equipmentPreferences.contains(.machine) { return .machine }
         return .bodyweight
     }
 
     /// Bugfix (Epic #3.1): `preferredStrengthKind` above picks exactly ONE
-    /// kind by priority (Langhantel > Kurzhantel > Kettlebell > Koerpergewicht)
-    /// and discards the rest — selecting "Kurzhantel + Kettlebell" silently
-    /// produced a Kurzhantel-only plan, and the selection ORDER (which
-    /// equipment the user happened to tap first) had no bearing on this, it
-    /// was always the fixed priority list. This plural variant returns EVERY
-    /// `TrainingTypeKind` the user actually selected (in the same priority
-    /// order, for stable day-distribution below), so `makeSelections` can
-    /// give each one its own share of the week instead of only the top
-    /// priority match. Falls back to `[.bodyweight]` under the same
-    /// conditions `preferredStrengthKind` falls back to it (no matching
-    /// equipment selected).
+    /// kind by priority and discards the rest — selecting "Kurzhantel +
+    /// Kettlebell" silently produced a Kurzhantel-only plan, and the
+    /// selection ORDER (which equipment the user happened to tap first) had
+    /// no bearing on this, it was always the fixed priority list. This
+    /// plural variant returns EVERY `TrainingTypeKind` the user actually
+    /// selected (in the same priority order, for stable day-distribution
+    /// below), so `makeSelections` can give each one its own share of the
+    /// week instead of only the top priority match. Falls back to
+    /// `[.bodyweight]` under the same conditions `preferredStrengthKind`
+    /// falls back to it (no matching equipment selected).
     ///
-    /// `machine`/`cable`/`band` are not included: the Plan Generator's
-    /// `TrainingTypeKind` has no corresponding case for them yet (its four
-    /// cases map 1:1 to Equipment — see `TrainingTypeKind.equipmentFilter`).
-    /// Selecting only those three equipment types still falls through to
-    /// `[.bodyweight]`, same as before this fix — a known, scoped-out
-    /// limitation (needs new `TrainingTypeKind` cases, UI, and localization
-    /// keys to resolve properly, which is a larger change than this
-    /// targeted fix), not a regression introduced here.
+    /// writing-block.md Punkt 3.2: `.machine` is included as of this fix
+    /// (28 Katalog-Uebungen, 9 von 10 Muskelgruppen abgedeckt). `cable`/
+    /// `band` are deliberately still not: the Plan Generator's
+    /// `TrainingTypeKind` has no corresponding case for them (see its own
+    /// doc comment for the concrete catalog-coverage numbers — `cable` has
+    /// zero leg exercises, `band` covers only 4 of 10 muscle groups). Adding
+    /// a case for either without first expanding the exercise library would
+    /// just trade today's "silently falls back to bodyweight" problem for a
+    /// differently-silent "plan with no leg day"/"plan missing half the
+    /// body" problem — a separate, larger piece of work, not a regression
+    /// introduced here. Selecting only `cable`/`band` still falls through to
+    /// `[.bodyweight]`, unchanged.
     public static func preferredStrengthKinds(from equipmentPreferences: Set<Equipment>) -> [TrainingTypeKind] {
         let priorityOrder: [(Equipment, TrainingTypeKind)] = [
-            (.barbell, .barbell), (.dumbbell, .dumbbell), (.kettlebell, .kettlebell), (.bodyweight, .bodyweight)
+            (.barbell, .barbell), (.dumbbell, .dumbbell), (.kettlebell, .kettlebell),
+            (.machine, .machine), (.bodyweight, .bodyweight)
         ]
         let matched = priorityOrder.filter { equipmentPreferences.contains($0.0) }.map(\.1)
         return matched.isEmpty ? [.bodyweight] : matched

@@ -473,6 +473,7 @@ public enum PlanGenerator {
         case .barbell:    return "Langhantel"
         case .dumbbell:   return "Kurzhantel"
         case .kettlebell: return "Kettlebell"
+        case .machine:    return "Maschine"
         case .bodyweight: return "Körpergewicht"
         case .running:    return "Laufen"
         case .cycling:    return "Radfahren"

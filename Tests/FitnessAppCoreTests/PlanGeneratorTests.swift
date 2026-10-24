@@ -46,6 +46,35 @@ final class PlanGeneratorTests: XCTestCase {
         XCTAssertEqual(indices, [1, 2, 3, 4])
     }
 
+    // MARK: - writing-block.md 3.2: Maschine als eigener TrainingTypeKind
+
+    /// Regression (Punkt 3.2): eine Maschine-Auswahl muss echte Uebungen
+    /// erzeugen - vor diesem Fix hatte `.machine` keinen `TrainingTypeKind`-
+    /// Fall und `strengthCandidates`/`equipmentFilter` haetten es gar nicht
+    /// erst erreicht.
+    func testMachineSelectionProducesRequestedDayCount() {
+        let result = PlanGenerator.generate(from: input([selection(.machine, days: 3)]))
+        XCTAssertEqual(result.days.count, 3)
+        XCTAssertTrue(result.days.allSatisfy { !$0.spec.exercises.isEmpty })
+    }
+
+    /// Kern des Bugs aus Punkt 3.2: eine Maschine-Auswahl darf NIE
+    /// Koerpergewicht- (oder andere Ausstattungs-)Uebungen enthalten - jede
+    /// generierte Uebung muss tatsaechlich im `.machine`-Pool der
+    /// Bibliothek stehen.
+    func testMachineSelectionOnlyUsesMachineEquipmentExercises() {
+        let machinePool = Set(ExerciseLibraryData.all.filter { $0.equipment == .machine }.map(\.name))
+        let result = PlanGenerator.generate(from: input([selection(.machine, days: 4)]))
+        let usedNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertFalse(usedNames.isEmpty)
+        XCTAssertTrue(usedNames.isSubset(of: machinePool), "jede generierte Uebung muss aus dem Maschine-Pool stammen, nicht aus Koerpergewicht/anderer Ausstattung")
+    }
+
+    func testMachineDayTitleUsesTheMachineLabel() {
+        let result = PlanGenerator.generate(from: input([selection(.machine, days: 1)]))
+        XCTAssertTrue(result.days[0].spec.name.hasPrefix("Maschine"), "Tagestitel sollte mit dem Maschine-Label beginnen, aktuell: \(result.days[0].spec.name)")
+    }
+
     // MARK: - README 2.20: Kettlebell-EMOM-Finisher
 
     func testKettlebellThreeDaysAddsExactlyOneEmomFinisher() {

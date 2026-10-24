@@ -943,6 +943,10 @@ public struct PlanBuilderView: View {
         case .barbell:    return "figure.strengthtraining.traditional"
         case .dumbbell:   return "dumbbell"
         case .kettlebell: return "figure.strengthtraining.functional"
+        // Gleiches Icon wie EquipmentItem.machineStation (DomainEnums+
+        // Localization.swift) - dieselbe Ausstattungskategorie, konsistente
+        // Darstellung.
+        case .machine:    return "gearshape"
         case .bodyweight: return "figure.core.training"
         case .running:    return "figure.run"
         case .cycling:    return "bicycle"

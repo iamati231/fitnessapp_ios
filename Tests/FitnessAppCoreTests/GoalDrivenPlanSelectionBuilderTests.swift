@@ -34,6 +34,15 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
         XCTAssertEqual(GoalDrivenPlanSelectionBuilder.preferredStrengthKind(from: []), .bodyweight)
     }
 
+    /// writing-block.md 3.2: Maschine reiht sich NACH Kettlebell und VOR
+    /// Koerpergewicht ein.
+    func testPreferredStrengthKindFallsBackToMachineWithoutFreeWeights() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKind(from: [.machine, .bodyweight]),
+            .machine
+        )
+    }
+
     // MARK: - preferredStrengthKinds (Bugfix Epic #3.1, plural)
 
     /// Regression (Epic-Fund #3.1): "Kurzhantel + Kettlebell" muss BEIDE
@@ -65,14 +74,45 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
     }
 
     func testPreferredStrengthKindsFallsBackToBodyweightForUnmappedEquipmentOnly() {
-        // Kabelzug/Maschine/Band haben (noch) keine TrainingTypeKind-
-        // Entsprechung — bekannter, dokumentierter Scope-Rand (Epic #3.2),
-        // kein Regress durch diesen Fix.
+        // Kabelzug/Band haben weiterhin keine TrainingTypeKind-Entsprechung
+        // — bekannter, dokumentierter Scope-Rand (writing-block.md 3.2,
+        // siehe TrainingTypeKind's eigener Doc-Kommentar fuer die konkreten
+        // Katalog-Abdeckungszahlen), kein Regress durch diesen Fix.
         XCTAssertEqual(
-            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.cable, .machine, .band]),
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.cable, .band]),
             [.bodyweight]
         )
         XCTAssertEqual(GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: []), [.bodyweight])
+    }
+
+    /// writing-block.md 3.2: `.machine` bekommt jetzt einen eigenen
+    /// `TrainingTypeKind` — anders als `.cable`/`.band` oben darf eine
+    /// reine Maschinen-Auswahl nicht mehr auf Koerpergewicht zurueckfallen.
+    func testPreferredStrengthKindsMapsMachineInsteadOfFallingBackToBodyweight() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.machine]),
+            [.machine]
+        )
+    }
+
+    /// Maschine + nicht-abgebildete Ausstattung: nur die abgebildeten
+    /// Anteile (hier Maschine) landen im Ergebnis, Kabelzug/Band werden wie
+    /// zuvor stillschweigend ignoriert, aber OHNE auf Koerpergewicht
+    /// zurueckzufallen (es gibt ja einen echten Treffer).
+    func testPreferredStrengthKindsMachinePlusUnmappedEquipmentStillMapsMachine() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.cable, .machine, .band]),
+            [.machine]
+        )
+    }
+
+    /// Prioritaetsreihenfolge Langhantel > Kurzhantel > Kettlebell > Maschine
+    /// > Koerpergewicht gilt auch, wenn Maschine Teil der Auswahl ist.
+    func testPreferredStrengthKindsOrdersMachineAfterKettlebellAndBeforeBodyweight() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.machine, .kettlebell, .bodyweight]),
+            [.kettlebell, .machine, .bodyweight]
+        )
     }
 
     // MARK: - makeSelections: mehrere Ausstattungsarten (Bugfix Epic #3.1)
@@ -109,6 +149,18 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
         XCTAssertEqual(selections.map(\.kind), [.barbell, .dumbbell, .kettlebell])
         XCTAssertEqual(selections.map(\.daysPerWeek), [2, 2, 2])
         XCTAssertEqual(selections.reduce(0) { $0 + $1.daysPerWeek }, 6)
+    }
+
+    /// writing-block.md 3.2: Maschine + Kurzhantel teilen sich die Woche wie
+    /// jede andere Zwei-Ausstattungs-Kombination (Epic #3.1-Mechanik).
+    func testStrengthGoalWithDumbbellAndMachineSplitsDaysAcrossBoth() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .strength, enduranceModality: nil, totalDaysPerWeek: 4,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.dumbbell, .machine]
+        )
+        XCTAssertEqual(selections.map(\.kind), [.dumbbell, .machine])
+        XCTAssertEqual(selections.map(\.daysPerWeek), [2, 2])
     }
 
     /// Mehr Ausstattungsarten als Tage: eine Ausstattung bekaeme 0 Tage und
