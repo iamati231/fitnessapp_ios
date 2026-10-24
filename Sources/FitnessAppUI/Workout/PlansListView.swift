@@ -653,6 +653,17 @@ public struct PlansListView: View {
         // diesen Plan dann bereits als inaktiv und `activePlans.first`
         // liefert ihn nicht mehr — die riskanten Properties werden nie
         // mehr gelesen.
+        //
+        // Nachtrag (echter TestingBot-Crash-Log, Loeschen des LETZTEN/
+        // einzigen Plans): dieser `isActive`-Fix deckt nur Lesezugriffe ab,
+        // die auf DERSELBEN Ebene wie `activePlans.first` liegen. Ein
+        // bereits VOR dem Delete gerendertes, tief verschachteltes
+        // ViewBuilder-Closure (`DashboardView.exercisesList`, liest
+        // `day.activeExercises`) kann SwiftUI/Observation unabhaengig davon
+        // erneut aufrufen, sobald die geloeschte `TrainingDay`-Relationship
+        // selbst ihre Aenderung meldet — das war entgegen der obigen Doku
+        // doch ein kleiner, gezielter Fix: siehe `PlanDayExerciseItem` in
+        // `DashboardView.swift`.
         for plan in plansToDelete where plan.isActive {
             plan.isActive = false
         }

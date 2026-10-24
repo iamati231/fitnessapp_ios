@@ -1218,6 +1218,26 @@ public struct DashboardView: View {
             // KEINE Ruhetage — sie zeigen den disabled "Training starten"-
             // Button mit Hint, dass Uebungen fehlen (DEL-021/023).
             let isRestDay = day.type == .rest
+            // TestingBot-Geraetebefund (Crash-Folgerunde, Absturz beim
+            // Loeschen des LETZTEN/einzigen Plans): der reale Crash-Log
+            // (Appium `crashlog`) zeigte einen Fatal Error in
+            // `TrainingDay.activeExercises.getter`, ausgeloest aus einer
+            // VERSCHACHTELTEN ViewBuilder-Closure (`exercisesList`), NICHT
+            // aus dieser obersten `planDayCard`-Auswertung selbst. SwiftUI/
+            // Observation kann so eine verschachtelte Closure unabhaengig
+            // vom `isActive = false`-Fix in `PlansListView.deletePlans` neu
+            // aufrufen, sobald die Relationship des gerade geloeschten
+            // `day` (`.exercises`) ihre eigene Aenderungs-Benachrichtigung
+            // feuert — der Re-Run liest dann `day.activeExercises` auf einer
+            // bereits invalidierten Instanz. `isRestDay` oben liest `day.type`
+            // bereits HIER, auf derselben Ebene wie `activePlans.first` -
+            // genau deshalb war das nie betroffen. `displayName`/die
+            // Uebungsliste lesen wir jetzt nach demselben Muster EINMAL hier,
+            // statt live in den verschachtelten Closures weiter unten -
+            // identischer Snapshot-Ansatz wie `PlanRowContent`
+            // (PlansListView.swift).
+            let displayName = day.displayName
+            let activeExerciseItems = PlanDayExerciseItem.makeList(from: day.activeExercises)
             let isCurrentlyRunning = runningDay != nil
             // Signature-Geruest 1.4: die Plan-Karte traegt die Hauptaussage
             // des Screens - die eine erlaubte Orange-Kante links pro Screen.
@@ -1256,7 +1276,7 @@ public struct DashboardView: View {
                             .foregroundStyle(.secondary)
                         // DEL-129: day.displayName statt .name — propagiert
                         // den localizationKey-Lookup ins Banner-Title.
-                        Text(day.displayName)
+                        Text(displayName)
                             .font(.title3.weight(.bold))
                     }
                     Spacer()
@@ -1271,8 +1291,8 @@ public struct DashboardView: View {
                     Text("dashboard.plan.restDay", bundle: .module)
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                } else if !day.activeExercises.isEmpty {
-                    exercisesList(for: day)
+                } else if !activeExerciseItems.isEmpty {
+                    exercisesList(activeExerciseItems)
                 }
 
                 if isRestDay {
@@ -2126,21 +2146,37 @@ public struct DashboardView: View {
         return sortedDays[idx]
     }
 
+    /// Crash-Fix-Snapshot (siehe `planDayCard`-Doku bei `activeExerciseItems`):
+    /// plain-value Stand-in fuer die paar Felder, die `exercisesList`
+    /// tatsaechlich braucht - niemals das live `Exercise`-Objekt selbst in
+    /// dieser verschachtelten `ForEach`-Closure halten. Internal (wie
+    /// `PlanRowContent` in `PlansListView.swift`) statt `private`, damit
+    /// `makeList(from:)` direkt regressionstestbar ist.
+    struct PlanDayExerciseItem: Identifiable, Equatable {
+        let id: PersistentIdentifier
+        let displayName: String
+
+        /// DEL-049: archivierte Snapshots (Urlaubs-Modus) gehoeren nicht in
+        /// die Dashboard-Vorschau — sonst zeigt der Card "Bankdruecken" auch
+        /// wenn der User nur noch Liegestuetze trainiert.
+        static func makeList(from exercises: [Exercise]) -> [PlanDayExerciseItem] {
+            exercises
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map { PlanDayExerciseItem(id: $0.persistentModelID, displayName: $0.displayName) }
+        }
+    }
+
     /// Nachtrag 6. August (README 2.1): ersetzt die alte Fliesszeile mit
     /// Auslassungspunkten (`names.joined(separator: ", ")` + " …") durch
     /// echte Zeilen. Erste drei Uebungen sind immer sichtbar; bei mehr als
     /// drei kommt darunter eine Umschaltzeile dazu, die den Rest ein- und
     /// wieder ausblendet.
     @ViewBuilder
-    private func exercisesList(for day: TrainingDay) -> some View {
-        // DEL-049: archivierte Snapshots (Urlaubs-Modus) gehoeren nicht in
-        // die Dashboard-Vorschau — sonst zeigt der Card "Bankdruecken" auch
-        // wenn der User nur noch Liegestuetze trainiert.
-        let sorted = day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
-        let remaining = sorted.count - 3
+    private func exercisesList(_ items: [PlanDayExerciseItem]) -> some View {
+        let remaining = items.count - 3
         VStack(alignment: .leading, spacing: 6) {
-            ForEach(sorted.prefix(isExercisesExpanded ? sorted.count : 3), id: \.persistentModelID) { exercise in
-                Text(exercise.displayName)   // DEL-111: lokalisierter Name fuer Library-Übungen
+            ForEach(items.prefix(isExercisesExpanded ? items.count : 3)) { item in
+                Text(item.displayName)   // DEL-111: lokalisierter Name fuer Library-Übungen
                     .font(.system(size: 14))
                     .foregroundStyle(Color.Deltiq.textSecondary)
             }
