@@ -182,7 +182,25 @@ public struct DashboardView: View {
                 eyebrow: String(localized: "tab.dashboard", bundle: .module).uppercased(),
                 title: dashboardGreeting,
                 actions: [
-                    DeltiqHeaderAction(systemImage: "plus") {
+                    // Bugfix (writing-block.md Punkt 1, "Plus-Symbol oben
+                    // rechts"): ein Plus wird ueblicherweise als "etwas
+                    // hinzufuegen" fuer den HAUPTINHALT dieses Screens
+                    // verstanden - das Dashboard zeigt aber keinen einzelnen
+                    // Inhaltstyp, den man so "hinzufuegen" wuerde, die Aktion
+                    // fuehrte unerwartet zur Messungserfassung. Keine der
+                    // anderen, bereits im Dashboard verlinkten Aktionen
+                    // (Training starten, Mahlzeit erfassen) ist hier klar
+                    // besser - jede hat schon einen eigenen, etablierten
+                    // Einstiegspunkt (planDayCard/resumeSessionTile bzw.
+                    // nutritionCard). Entscheidung (Ticket: "falls keine klar
+                    // bessere Aktion existiert, lasse die Position lieber
+                    // ohne Ersatzaktion"): dieselbe, weiterhin nuetzliche
+                    // Aktion bleibt erhalten, nur das irrefuehrende Icon
+                    // wechselt auf "ruler" - identisch zum Tab-Icon der
+                    // Messung selbst (`RootView.swift`, `tab.measurement`),
+                    // macht das Ziel am Icon selbst erkennbar statt es als
+                    // generisches "+" zu verstecken.
+                    DeltiqHeaderAction(systemImage: "ruler") {
                         showingNewMeasurement = true
                     }
                 ]
