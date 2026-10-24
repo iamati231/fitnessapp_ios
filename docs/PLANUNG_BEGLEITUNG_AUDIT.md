@@ -3096,3 +3096,24 @@ reiner Verifikationslauf gegen den bereits gepushten Stand (`a2ca5ff`).
 
 **Task #197:** abgeschlossen. Alle im Rahmen dieses Tasks vereinbarten UI-Pruefungen sind
 durchgefuehrt und bestanden; keine offenen Punkte mehr unter diesem Task.
+
+## Laufcoaching-Ticket als Fortsetzung von P3.4/P4.3 (2026-10-25)
+
+**Status:** Das Laufcoaching-Ticket (`docs/specs/claude-laufcoaching-integration.md`) wird nicht als paralleler Strang gebaut, sondern als Fortsetzung der offenen Punkte P3.1, P3.4 und P4.3 dieses Dokuments. Die Umsetzungsplanung liegt in `docs/superpowers/plans/2026-10-25-laufcoaching-plan-integration.md`. Dieser Abschnitt hält den Scope-Entscheid fest; der Phasenplan oben wird dafür nicht umgeschrieben.
+
+**Drei Nutzerentscheidungen (im Chat getroffen, 2026-10-25):**
+
+1. **Wiederholte Laufziel-Änderungen:** Bei wiederholten Änderungen mit einem aktiven, geeigneten Plan passt Deltiq den bestehenden Plan an (Pfad `CoachAdjustmentCardModel` / `RunCoachPlanAdjustment`), statt jedes Mal einen weiteren separaten Plan zu erzeugen. Abgeschlossene historische Trainings bleiben erhalten. Ohne aktiven, geeigneten Plan bleibt `CardioFeasibilityCardModel.accept()` als Weg zu einem neuen Plan erreichbar.
+2. **Dashboard-Karten:** Die neue Laufcoaching-Karte und die bestehende `cardioFeasibilityDashboardCard` werden zu einem zusammenhängenden Laufcoaching-Bereich mit genau einer Kartenposition konsolidiert, nicht zu zwei konkurrierenden Karten. Die Vorrangregel (aktiver Plan vor Feasibility-Karte) folgt Leitplanke 6 aus `docs/DELTIQ_DEVICE_ACCEPTANCE.md` (Paket 1).
+3. **Keine scheinpräzisen Tempi:** Ohne belastbare Referenzzeit (`current5kReferenceSeconds`) zeigt Deltiq eine verständliche qualitative Intensitätsvorgabe statt eines Tempos. Eine geeignete Baseline kann später erhoben werden. Zunächst wird keine KI für Berechnungen eingesetzt; deterministische Logik reicht aus.
+
+**Abbildung der Plan-Tasks auf die Phasen:**
+
+- **P3.1 (Ziel-Schritt, Generator-Anbindung):** Tasks 2, 3, 4 und 6 des Umsetzungsplans. Gemeint sind der Typ `CardioRunProfile`, die baseline-abhängige Tempo-Beschriftung in `PlanGenerator.cardioCandidates` sowie das Weiterreichen des Profils über `GoalDrivenPlanSelectionBuilder` und `PlanBuilderView`.
+- **P3.4 (Onboarding, Laufcoach-Entscheidung):** Task 5. Das Onboarding fragt das Laufziel, wenn der Laufcoach gewünscht ist.
+- **P4.3 (3-Wege-Entscheidung, Cardio-Seite):** Task 7 (`CardioFeasibilityCardModel.accept()` läuft über den bestehenden Anpassungspfad statt neue Pläne zu erzeugen) und Task 8 (Konsolidierung der fixen Dashboard-Cardio-Karte).
+- **Keiner Phasennummer zugeordnet:** Task 9 (Tempo-/Intensitätsanzeige im Trainingstag-Detail, setzt Entscheidung 3 um), Task 1 (diese Dokumentation) und Task 10 (Regressionslauf).
+
+**Abgrenzung:** P4.3 ist im Phasenplan gemeinsam für Cardio und Equipment beschrieben. Der Umsetzungsplan deckt nur die Cardio-Seite ab. Die Equipment-Seite sowie P4.1, P4.2 und P4.4 bleiben unberührt.
+
+**Verifikation:** Dieser Schritt ist eine reine Dokumentationsänderung. Es wurde kein Code geändert und kein Test ausgeführt.
