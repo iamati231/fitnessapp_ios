@@ -153,9 +153,9 @@ public struct TDEEView: View {
                     .frame(height: 1)
                     .padding(.vertical, 4)
 
-                resultRow(String(localized: "calc.tdee.cut", bundle: .module), value: tdee - 500, secondary: true)
-                resultRow(String(localized: "calc.tdee.maintenance", bundle: .module), value: tdee, secondary: true)
-                resultRow(String(localized: "calc.tdee.bulk", bundle: .module), value: tdee + 300, secondary: true, showsDivider: false)
+                resultRow(String(localized: "calc.tdee.cut", bundle: .module), value: Double(CalorieGoalType.cut.dailyGoalKcal(tdee: tdee)), secondary: true)
+                resultRow(String(localized: "calc.tdee.maintenance", bundle: .module), value: Double(CalorieGoalType.maintenance.dailyGoalKcal(tdee: tdee)), secondary: true)
+                resultRow(String(localized: "calc.tdee.bulk", bundle: .module), value: Double(CalorieGoalType.bulk.dailyGoalKcal(tdee: tdee)), secondary: true, showsDivider: false)
             } else {
                 Text("calc.tdee.weightRequired", bundle: .module)
                     .foregroundStyle(Color.Deltiq.textSecondary)
@@ -293,6 +293,49 @@ public enum ActivityLevel: String, CaseIterable, Sendable {
         case .moderate:   LocalizedStringResource("activity.moderate.description",   bundle: .module)
         case .active:     LocalizedStringResource("activity.active.description",     bundle: .module)
         case .veryActive: LocalizedStringResource("activity.veryActive.description", bundle: .module)
+        }
+    }
+}
+
+// MARK: - Calorie goal type (Bulk / Cut / Maintenance)
+
+/// writing-block.md Punkt 5 ("Tagesziel-Rechner um Bulk/Cut ergaenzen"): the
+/// cut (-500 kcal)/maintenance/bulk (+300 kcal) adjustment was previously
+/// three magic numbers inline in `resultsCard` below, with no way to pick
+/// one of them as the actual daily goal in `NutritionGoalsView` — that
+/// screen could only ever adopt the plain maintenance TDEE. Centralizing it
+/// here (same file/module as the already-established `ActivityLevel`
+/// precedent, which has the identical case+factor+localizedName shape)
+/// means both screens share one definition instead of duplicating the
+/// adjustment values.
+@available(iOS 17.0, macOS 14.0, *)
+public enum CalorieGoalType: String, CaseIterable, Sendable {
+    case cut
+    case maintenance
+    case bulk
+
+    /// kcal/day added to TDEE. Negative for `.cut` — a moderate, widely-used
+    /// deficit/surplus (not a clinical recommendation), matching the values
+    /// this calculator already showed before this ticket.
+    public var adjustmentKcal: Int {
+        switch self {
+        case .cut:         return -500
+        case .maintenance: return 0
+        case .bulk:        return 300
+        }
+    }
+
+    /// Final-review ruling: project-wide truncate-not-round convention
+    /// (DoubleFormatting.swift) applies here too, not just rounding.
+    public func dailyGoalKcal(tdee: Double) -> Int {
+        Int(tdee.truncated(to: 0)) + adjustmentKcal
+    }
+
+    public var localizedName: LocalizedStringResource {
+        switch self {
+        case .cut:         LocalizedStringResource("calc.tdee.cut",         bundle: .module)
+        case .maintenance: LocalizedStringResource("calc.tdee.maintenance", bundle: .module)
+        case .bulk:        LocalizedStringResource("calc.tdee.bulk",        bundle: .module)
         }
     }
 }
