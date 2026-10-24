@@ -1,4 +1,5 @@
 import Foundation
+import NaturalLanguage
 
 // Privacy: the input values and the generated insight text may contain
 // nutrition data — never print/debugPrint/log them anywhere in this module.
@@ -109,8 +110,19 @@ public struct NutritionInsightGenerator: Sendable {
     /// numbers (totals + any goals that were actually set) — a fabricated
     /// number is treated as a failed generation, never shown.
     public func generateInsight(for input: NutritionInsightInput) async throws -> String {
-        let text = try await service.generateText(instructions: Self.instructions(for: locale), prompt: Self.prompt(for: input))
+        let text = try await service.generateText(instructions: Self.instructions(for: locale), prompt: Self.prompt(for: input, locale: locale))
         guard Self.onlyContainsVerifiedNumbers(text, input: input) else {
+            throw NutritionAIError.generationFailed
+        }
+        // Device-Bugreport ("KI-Analyse bleibt auf Englisch"): a one-line
+        // "Respond only in X" instruction (below) was reliably outweighed by
+        // an entire English-language prompt - see `prompt(for:locale:)`,
+        // which is now itself localized for exactly this reason. This is the
+        // remaining safety net: if the model still answers in the wrong
+        // language despite both fixes, reject it the same way a fabricated
+        // number is rejected above, instead of silently showing an
+        // English paragraph to a German/Turkish user.
+        guard Self.matchesRequestedLanguage(text, locale: locale) else {
             throw NutritionAIError.generationFailed
         }
         return text
@@ -145,10 +157,35 @@ public struct NutritionInsightGenerator: Sendable {
         "\(languageDirective(for: locale)) \(baseInstructions)"
     }
 
-    static func languageDirective(for locale: Locale) -> String {
+    /// Only the app's three supported languages (Deutsch/Englisch/Tuerkisch,
+    /// see Global Constraints) are ever named explicitly - any other locale
+    /// falls back to English, matching `NutritionAIAvailability`'s own
+    /// supported-language gate (unsupported locales never reach this call in
+    /// the first place) and `NutritionAIService.extractionInstructions`'s
+    /// identical convention for the meal-text extractor.
+    static func targetLanguageCode(for locale: Locale) -> String {
         let code = locale.language.languageCode?.identifier ?? "en"
-        let languageName = Locale(identifier: "en_US").localizedString(forLanguageCode: code) ?? "English"
+        return ["de", "tr"].contains(code) ? code : "en"
+    }
+
+    static func languageDirective(for locale: Locale) -> String {
+        let languageName = Locale(identifier: "en_US").localizedString(forLanguageCode: targetLanguageCode(for: locale)) ?? "English"
         return "Respond only in \(languageName)."
+    }
+
+    /// Device-Bugreport ("KI-Analyse bleibt auf Englisch"): robust, code-level
+    /// check that the generated text is actually written in the requested
+    /// language - the last line of defence described at the `generateInsight`
+    /// call site above. `NLLanguageRecognizer` needs no network/model access
+    /// and is deterministic enough for the short paragraphs this generator
+    /// produces. A `nil`/undetermined result (very short or ambiguous text)
+    /// is let through rather than blocked - this guard exists to catch a
+    /// clearly wrong language, not to second-guess every borderline case.
+    static func matchesRequestedLanguage(_ text: String, locale: Locale) -> Bool {
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(text)
+        guard let detected = recognizer.dominantLanguage else { return true }
+        return detected.rawValue == targetLanguageCode(for: locale)
     }
 
     // MARK: I5 — code-level check that no number was invented
@@ -190,45 +227,89 @@ public struct NutritionInsightGenerator: Sendable {
             .compactMap { Int($0) }
     }
 
+    /// Device-Bugreport ("KI-Analyse bleibt auf Englisch"): the prompt's own
+    /// words used to be hardcoded English regardless of `locale` - a far
+    /// stronger signal to a small on-device model than the one-line
+    /// "Respond only in X" instruction above, since models tend to mirror
+    /// the dominant language of their input context. Every label is now
+    /// drawn from `PromptStrings.forLanguageCode`, keyed by the SAME target
+    /// language the instructions already use (`targetLanguageCode`), so the
+    /// whole prompt - not just the instruction - is consistently in the
+    /// requested language.
+    private struct PromptStrings {
+        let totalsHeading, calories, protein, carbs, fat: String
+        let goalsHeading, calorieGoal, proteinGoal, carbGoal, fatGoal: String
+        let progressHeading, of, goalWord, reached, remaining: String
+        let unknown, notSet: String
+
+        static func forLanguageCode(_ code: String) -> PromptStrings {
+            switch code {
+            case "de":
+                return PromptStrings(
+                    totalsHeading: "Heutige Summen:", calories: "Kalorien", protein: "Protein",
+                    carbs: "Kohlenhydrate", fat: "Fett",
+                    goalsHeading: "Ziele:", calorieGoal: "Kalorienziel", proteinGoal: "Proteinziel",
+                    carbGoal: "Kohlenhydratziel", fatGoal: "Fettziel",
+                    progressHeading: "Fortschritt zu den Zielen:", of: "von", goalWord: "Ziel",
+                    reached: "erreicht", remaining: "verbleibend",
+                    unknown: "unbekannt", notSet: "nicht gesetzt"
+                )
+            case "tr":
+                return PromptStrings(
+                    totalsHeading: "Bugünün toplamları:", calories: "Kalori", protein: "Protein",
+                    carbs: "Karbonhidrat", fat: "Yağ",
+                    goalsHeading: "Hedefler:", calorieGoal: "Kalori hedefi", proteinGoal: "Protein hedefi",
+                    carbGoal: "Karbonhidrat hedefi", fatGoal: "Yağ hedefi",
+                    progressHeading: "Hedeflere doğru ilerleme:", of: "/", goalWord: "hedef",
+                    reached: "ulaşıldı", remaining: "kaldı",
+                    unknown: "bilinmiyor", notSet: "belirlenmedi"
+                )
+            default:
+                return PromptStrings(
+                    totalsHeading: "Today's totals:", calories: "Calories", protein: "Protein",
+                    carbs: "Carbs", fat: "Fat",
+                    goalsHeading: "Goals:", calorieGoal: "Calorie goal", proteinGoal: "Protein goal",
+                    carbGoal: "Carb goal", fatGoal: "Fat goal",
+                    progressHeading: "Progress toward goals:", of: "of", goalWord: "goal",
+                    reached: "reached", remaining: "remaining",
+                    unknown: "unknown", notSet: "not set"
+                )
+            }
+        }
+    }
+
     /// Deterministic, side-effect-free prompt text — the single place that
     /// decides what the model is allowed to see. A `nil` goal always becomes
     /// the literal marker below, never a number (Step 1 test asserts this).
-    static func prompt(for input: NutritionInsightInput) -> String {
+    static func prompt(for input: NutritionInsightInput, locale: Locale) -> String {
+        let s = PromptStrings.forLanguageCode(targetLanguageCode(for: locale))
         var text = """
-        Today's totals:
-        Calories: \(totalText(input.totalKcal, unit: "kcal"))
-        Protein: \(totalText(input.totalProteinG, unit: "g"))
-        Carbs: \(totalText(input.totalCarbsG, unit: "g"))
-        Fat: \(totalText(input.totalFatG, unit: "g"))
+        \(s.totalsHeading)
+        \(s.calories): \(totalText(input.totalKcal, unit: "kcal", strings: s))
+        \(s.protein): \(totalText(input.totalProteinG, unit: "g", strings: s))
+        \(s.carbs): \(totalText(input.totalCarbsG, unit: "g", strings: s))
+        \(s.fat): \(totalText(input.totalFatG, unit: "g", strings: s))
 
-        Goals:
-        Calorie goal: \(goalText(input.calorieGoalKcal.map(Double.init), unit: "kcal"))
-        Protein goal: \(goalText(input.proteinGoalG, unit: "g"))
-        Carb goal: \(goalText(input.carbGoalG, unit: "g"))
-        Fat goal: \(goalText(input.fatGoalG, unit: "g"))
+        \(s.goalsHeading)
+        \(s.calorieGoal): \(goalText(input.calorieGoalKcal.map(Double.init), unit: "kcal", strings: s))
+        \(s.proteinGoal): \(goalText(input.proteinGoalG, unit: "g", strings: s))
+        \(s.carbGoal): \(goalText(input.carbGoalG, unit: "g", strings: s))
+        \(s.fatGoal): \(goalText(input.fatGoalG, unit: "g", strings: s))
         """
-        let progressLines = progressLines(for: input)
+        let progressLines = progressLines(for: input, strings: s)
         if !progressLines.isEmpty {
-            text += "\n\nProgress toward goals:\n" + progressLines.joined(separator: "\n")
+            text += "\n\n\(s.progressHeading)\n" + progressLines.joined(separator: "\n")
         }
         return text
     }
 
-    private static let notSetMarker = "not set"
-
-    /// OFF-01: Marker fuer eine Summe, die wegen fehlender Werte in
-    /// mindestens einer Position nicht berechenbar ist. Bewusst ein Wort und
-    /// keine Zahl — das Modell darf daraus nichts ableiten (siehe
-    /// `baseInstructions`).
-    private static let unknownMarker = "unknown"
-
-    private static func totalText(_ value: Double?, unit: String) -> String {
-        guard let value else { return unknownMarker }
+    private static func totalText(_ value: Double?, unit: String, strings: PromptStrings) -> String {
+        guard let value else { return strings.unknown }
         return "\(safeInt(value)) \(unit)"
     }
 
-    private static func goalText(_ value: Double?, unit: String) -> String {
-        guard let value else { return notSetMarker }
+    private static func goalText(_ value: Double?, unit: String, strings: PromptStrings) -> String {
+        guard let value else { return strings.notSet }
         return "\(safeInt(value)) \(unit)"
     }
 
@@ -239,12 +320,12 @@ public struct NutritionInsightGenerator: Sendable {
     /// The model is handed the percentage and the remaining amount as given
     /// facts so it never has to judge "is 40 of 150 good progress" itself —
     /// see `baseInstructions`'s tone-calibration rule below.
-    private static func progressLines(for input: NutritionInsightInput) -> [String] {
+    private static func progressLines(for input: NutritionInsightInput, strings: PromptStrings) -> [String] {
         [
-            progressLine(label: "Calories", current: safeInt(input.totalKcal), goal: input.calorieGoalKcal, unit: "kcal", progress: input.calorieGoalProgress),
-            progressLine(label: "Protein", current: safeInt(input.totalProteinG), goal: input.proteinGoalG.map(safeInt), unit: "g", progress: input.proteinGoalProgress),
-            progressLine(label: "Carbs", current: safeInt(input.totalCarbsG), goal: input.carbGoalG.map(safeInt), unit: "g", progress: input.carbGoalProgress),
-            progressLine(label: "Fat", current: safeInt(input.totalFatG), goal: input.fatGoalG.map(safeInt), unit: "g", progress: input.fatGoalProgress)
+            progressLine(label: strings.calories, current: safeInt(input.totalKcal), goal: input.calorieGoalKcal, unit: "kcal", progress: input.calorieGoalProgress, strings: strings),
+            progressLine(label: strings.protein, current: safeInt(input.totalProteinG), goal: input.proteinGoalG.map(safeInt), unit: "g", progress: input.proteinGoalProgress, strings: strings),
+            progressLine(label: strings.carbs, current: safeInt(input.totalCarbsG), goal: input.carbGoalG.map(safeInt), unit: "g", progress: input.carbGoalProgress, strings: strings),
+            progressLine(label: strings.fat, current: safeInt(input.totalFatG), goal: input.fatGoalG.map(safeInt), unit: "g", progress: input.fatGoalProgress, strings: strings)
         ].compactMap { $0 }
     }
 
@@ -252,9 +333,9 @@ public struct NutritionInsightGenerator: Sendable {
     /// unbekannt ist — dann keine Prozent-/Rest-Aussage (auch dann nicht,
     /// wenn ein Ziel gesetzt waere).
 
-    private static func progressLine(label: String, current: Int?, goal: Int?, unit: String, progress: NutritionInsightInput.GoalProgress?) -> String? {
+    private static func progressLine(label: String, current: Int?, goal: Int?, unit: String, progress: NutritionInsightInput.GoalProgress?, strings: PromptStrings) -> String? {
         guard let current, let goal, let progress else { return nil }
-        return "\(label): \(current) \(unit) of \(goal) \(unit) goal (\(progress.percent)% reached, \(safeInt(progress.remaining)) \(unit) remaining)"
+        return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached), \(safeInt(progress.remaining)) \(unit) \(strings.remaining))"
     }
 
     /// M1 fix: `Int(Double)` traps on NaN/infinity/out-of-range magnitudes.
