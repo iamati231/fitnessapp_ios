@@ -367,6 +367,18 @@ public struct PlanBuilderView: View {
     @State private var alternativesDialogDayID: DraftDayID?
     @State private var currentAlternativeOptions: [DaySpec] = []
 
+    /// UI-Ticket ("Plan Bauen Schritt 3: Übungsalternativen"): dasselbe
+    /// Muster wie oben, nur fuer eine EINZELNE Uebung statt eines ganzen
+    /// Tages - `ExerciseAlternativeTarget` identifiziert Tag + Uebung,
+    /// `currentExerciseAlternativeOptions` die gerade angebotenen Kandidaten
+    /// (`ExerciseAlternativeFinder.alternatives`).
+    private struct ExerciseAlternativeTarget: Equatable {
+        let dayID: DraftDayID
+        let exerciseID: DraftExerciseID
+    }
+    @State private var exerciseAlternativeTarget: ExerciseAlternativeTarget?
+    @State private var currentExerciseAlternativeOptions: [ExerciseTemplateSpec] = []
+
     /// Audit-Korrektur (Review nach P2.1): treibt den expliziten Fehler-
     /// Zustand, wenn `adoptPlan()` im eigenstaendigen Modus kein Profil
     /// findet — siehe dortigen Kommentar. `nil` = kein Fehler/Alert nicht
@@ -1618,6 +1630,32 @@ public struct PlanBuilderView: View {
                         Text("common.cancel", bundle: .module)
                     }
                 }
+                // UI-Ticket ("Plan Bauen Schritt 3: Übungsalternativen"):
+                // dasselbe Dialog-Muster wie oben, nur pro Uebung statt pro
+                // Tag - ausgeloest vom Alternative-Button jeder Uebungszeile
+                // in `resultDayRow`.
+                .confirmationDialog(
+                    Text("planBuilder.result.exerciseAlternatives.title", bundle: .module),
+                    isPresented: Binding(
+                        get: { exerciseAlternativeTarget != nil },
+                        set: { if !$0 { exerciseAlternativeTarget = nil } }
+                    ),
+                    titleVisibility: .visible
+                ) {
+                    ForEach(Array(currentExerciseAlternativeOptions.enumerated()), id: \.offset) { _, alternative in
+                        Button(localizedExerciseName(alternative.name)) {
+                            if let target = exerciseAlternativeTarget {
+                                applyExerciseAlternative(alternative, to: target)
+                            }
+                            exerciseAlternativeTarget = nil
+                        }
+                    }
+                    Button(role: .cancel) {
+                        exerciseAlternativeTarget = nil
+                    } label: {
+                        Text("common.cancel", bundle: .module)
+                    }
+                }
                 .overlay(alignment: .bottom) {
                     if let footerToastMessage {
                         Label(footerToastMessage, systemImage: footerToastSystemImage)
@@ -1723,6 +1761,47 @@ public struct PlanBuilderView: View {
         guard var currentDraft = draft else { return }
         guard currentDraft.replaceContent(of: dayID, with: alternative) else { return }
         loadLevelByDayID.removeValue(forKey: dayID)
+        draft = currentDraft
+    }
+
+    /// UI-Ticket ("Plan Bauen Schritt 3: Übungsalternativen"): Cardio- und
+    /// jeder Zeitformat-Tag (AMRAP/EMOM/Auf Zeit) bleibt wie bei
+    /// `ExerciseSubstitutionEngine.isEligibleForSubstitution` global
+    /// ausgeschlossen - der Dialog zeigt dafuer denselben verstaendlichen
+    /// "keine Alternative"-Hinweis wie ein Tag ohne echte Alternative
+    /// (`presentAlternatives` oben), statt eines stillen No-Ops.
+    private func presentExerciseAlternatives(
+        for exercise: ExerciseSpec, dayID: DraftDayID, exerciseID: DraftExerciseID, dayFormat: WorkoutTimeFormat?
+    ) {
+        let candidates: [ExerciseTemplateSpec] = dayFormat == nil
+            ? ExerciseAlternativeFinder.alternatives(
+                for: exercise.name, equipmentPool: equipmentPreferences, maxExperience: experience
+            )
+            : []
+        guard !candidates.isEmpty else {
+            showFooterToast(
+                String(localized: "planBuilder.result.noExerciseAlternatives.toast", bundle: .module),
+                systemImage: "exclamationmark.triangle.fill"
+            )
+            return
+        }
+        currentExerciseAlternativeOptions = candidates
+        exerciseAlternativeTarget = ExerciseAlternativeTarget(dayID: dayID, exerciseID: exerciseID)
+    }
+
+    /// Ersetzt NUR die eine betroffene Uebung (`PlanDraft.replaceExercise`,
+    /// verweigert bereits selbst bei `isContentFixed`) - alle anderen
+    /// Uebungen, ihre Reihenfolge und die Tagesstruktur bleiben unangetastet.
+    /// `ExerciseAlternativeFinder.adjustedSpec` entscheidet, ob Saetze/Wdh./
+    /// Pause der Original-Uebung fuer die Ersatz-Uebung noch passen. Gleiche
+    /// `loadLevelByDayID`-Invalidierung wie `applyAlternative` oben - der
+    /// bisherige Belastungs-Badge bezog sich auf die alte Uebung.
+    private func applyExerciseAlternative(_ alternative: ExerciseTemplateSpec, to target: ExerciseAlternativeTarget) {
+        guard var currentDraft = draft, let dayIndex = currentDraft.index(of: target.dayID) else { return }
+        guard let original = currentDraft.days[dayIndex].exercises.first(where: { $0.id == target.exerciseID })?.spec else { return }
+        let adjusted = ExerciseAlternativeFinder.adjustedSpec(replacing: original, with: alternative)
+        guard currentDraft.replaceExercise(dayID: target.dayID, exerciseID: target.exerciseID, with: adjusted) else { return }
+        loadLevelByDayID.removeValue(forKey: target.dayID)
         draft = currentDraft
     }
 
@@ -1835,24 +1914,56 @@ public struct PlanBuilderView: View {
         let totalDays = draft?.days.count ?? 0
         return VStack(alignment: .leading, spacing: 10) {
             resultDayHeaderRow(spec: spec, day: day, loadLevel: loadLevel, currentIndex: currentIndex, totalDays: totalDays)
-            // Ticket "Schritt-3-Vorschau": vorher sah man pro Tag nur Name +
-            // Uebungsanzahl (`scopeLine`), nie die konkreten Uebungen - genau
-            // die Information, die der Nutzer laut Ticket zur Beurteilung vor
-            // dem Uebernehmen braucht. `spec.exercises` ist dieselbe Liste,
-            // die `PlanGeneratorInstantiator.createPlan` spaeter tatsaechlich
-            // speichert (kein separater Vorschau-Datensatz) - Vorschau und
-            // Ergebnis koennen damit nicht auseinanderlaufen. Gleiche
-            // Namens-/Detail-Aufloesung wie `ProgramTemplatePickerView.dayCard`
-            // (`Extensions/ExerciseSpec+DisplayName.swift`), keine zweite
-            // Darstellungslogik.
-            if !spec.exercises.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(Array(spec.exercises.enumerated()), id: \.offset) { _, exercise in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(localizedExerciseName(exercise.name))
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
-                            exerciseDetailRow(for: exercise, dayFormat: spec.timeFormat)
+            // UI-Ticket ("Plan Bauen Schritt 3: Template-Layout und
+            // Übungsalternativen"): Typografie/Abstaende/Trennlinie jetzt
+            // IDENTISCH zu `ProgramTemplatePickerView.dayCard`s Uebungszeile
+            // (`.body.weight(.medium)`/`Color.primary` Name,
+            // `.caption`/`Color.Deltiq.textSecondary` Detail, 14/10pt
+            // Padding, `Color.Deltiq.divider` zwischen den Zeilen) statt
+            // einer eigens erfundenen Darstellung - gleiche
+            // `detailLine`-Aufloesung wie dort, keine zweite Logik. Iteriert
+            // `day.exercises` (statt `spec.exercises`), um die stabile
+            // `DraftExerciseID` fuer den Alternativen-Tausch zu behalten.
+            if !day.exercises.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(day.exercises.enumerated()), id: \.element.id) { index, draftExercise in
+                        VStack(alignment: .leading, spacing: 0) {
+                            Button {
+                                presentExerciseAlternatives(
+                                    for: draftExercise.spec, dayID: day.id, exerciseID: draftExercise.id,
+                                    dayFormat: spec.timeFormat
+                                )
+                            } label: {
+                                HStack(spacing: 8) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(localizedExerciseName(draftExercise.spec.name))
+                                            .font(.body.weight(.medium))
+                                            .foregroundStyle(Color.primary)
+                                        Text(detailLine(for: draftExercise.spec, dayFormat: spec.timeFormat))
+                                            .font(.caption)
+                                            .foregroundStyle(Color.Deltiq.textSecondary)
+                                    }
+                                    Spacer(minLength: 8)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(Color.Deltiq.textTertiary)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Text(
+                                String(
+                                    format: String(localized: "planBuilder.result.chooseExerciseAlternative", bundle: .module),
+                                    localizedExerciseName(draftExercise.spec.name)
+                                )
+                            ))
+                            if index < day.exercises.count - 1 {
+                                Rectangle()
+                                    .fill(Color.Deltiq.divider)
+                                    .frame(height: 1)
+                            }
                         }
                     }
                 }
@@ -1866,35 +1977,6 @@ public struct PlanBuilderView: View {
         .listRowSeparator(.hidden)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
-    }
-
-    /// UI-Ticket ("Platzoptimierung Schritt 3"): `detailLine`'s full phrase
-    /// ("3 Sätze • 8-12 Wdh • 90s Pause") wrapped onto 2-3 lines alongside a
-    /// long exercise name, and repeated the "Pause"/"mola"/"rest" word once
-    /// per exercise (5-6 times a day). Strength exercises (the common,
-    /// multi-exercise case this ticket is about) now show sets/reps as text
-    /// and the rest time as a timer icon + bare number instead - the icon
-    /// carries the meaning, so the word doesn't need repeating. Cardio and
-    /// timed-format days (AMRAP/EMOM/Auf Zeit) keep `detailLine`'s existing,
-    /// already-compact single-line phrase unchanged - those days have at
-    /// most one exercise, never the repeated-"Pause" clutter this ticket
-    /// reports.
-    @ViewBuilder
-    private func exerciseDetailRow(for exercise: ExerciseSpec, dayFormat: WorkoutTimeFormat?) -> some View {
-        if dayFormat != nil || exercise.isCardio {
-            Text(detailLine(for: exercise, dayFormat: dayFormat))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else {
-            HStack(spacing: 8) {
-                Text(setsRepsText(for: exercise))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Label("\(exercise.restSeconds)s", systemImage: "timer")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-        }
     }
 
     /// Name, Fixierungs-Badges, Belastungs-Badge und das Aktionen-Menu — die

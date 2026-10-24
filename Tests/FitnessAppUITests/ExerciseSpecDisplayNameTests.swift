@@ -41,26 +41,5 @@ final class ExerciseSpecDisplayNameTests: XCTestCase {
         let line = detailLine(for: exercise, dayFormat: .amrap)
         XCTAssertEqual(line, timedFormatCircuitLabel(repsMin: exercise.repsMin, isTimeBased: false, sets: exercise.sets, format: .amrap))
     }
-
-    // MARK: UI-Ticket "Platzoptimierung Schritt 3": setsRepsText (no rest clause)
-
-    func testSetsRepsTextDoesNotCrashAndReturnsText() {
-        let exercise = ExerciseSpec(name: "Ganz Erfundene Testuebung", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 90)
-        XCTAssertFalse(setsRepsText(for: exercise).isEmpty)
-    }
-
-    /// Same caution as the file comment above: avoid asserting the exact
-    /// resolved text, but the ONE/OTHER branch choice is a real behavioral
-    /// difference that must produce two distinct results either way.
-    func testSetsRepsTextDiffersBetweenSingleAndMultipleSets() {
-        let single = ExerciseSpec(name: "Ganz Erfundene Testuebung", sets: 1, repsMin: 8, repsMax: 12, restSeconds: 90)
-        let multiple = ExerciseSpec(name: "Ganz Erfundene Testuebung", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 90)
-        XCTAssertNotEqual(setsRepsText(for: single), setsRepsText(for: multiple))
-    }
-
-    func testSetsRepsTextHandlesEqualMinAndMaxRepsWithoutCrashing() {
-        let exercise = ExerciseSpec(name: "Ganz Erfundene Testuebung", sets: 3, repsMin: 10, repsMax: 10, restSeconds: 90)
-        XCTAssertFalse(setsRepsText(for: exercise).isEmpty)
-    }
 }
 #endif

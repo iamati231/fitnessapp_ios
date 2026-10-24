@@ -58039,48 +58039,71 @@
         }
       }
     },
-    "workout.detail.setsReps.one": {
+    "planBuilder.result.exerciseAlternatives.title": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld Satz • %2$@ Wdh"
+            "value": "Alternative für diese Übung wählen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld set • %2$@ reps"
+            "value": "Choose an alternative for this exercise"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld set • %2$@ tekrar"
+            "value": "Bu egzersiz için bir alternatif seç"
           }
         }
       }
     },
-    "workout.detail.setsReps.other": {
+    "planBuilder.result.noExerciseAlternatives.toast": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld Sätze • %2$@ Wdh"
+            "value": "Für diese Übung gibt es keine passende Alternative."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld sets • %2$@ reps"
+            "value": "No suitable alternative is available for this exercise."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld set • %2$@ tekrar"
+            "value": "Bu egzersiz için uygun bir alternatif yok."
+          }
+        }
+      }
+    },
+    "planBuilder.result.chooseExerciseAlternative": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alternative für %@ wählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an alternative for %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ için alternatif seç"
           }
         }
       }
