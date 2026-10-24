@@ -23,6 +23,20 @@ final class MehrInformationArchitectureTests: XCTestCase {
         try String(contentsOf: sourcesRoot.appendingPathComponent(relativePath), encoding: .utf8)
     }
 
+    private static func matchingBraceBlock(in source: String, afterOpenBrace start: String.Index) -> String? {
+        var depth = 1
+        var index = start
+        while index < source.endIndex {
+            let char = source[index]
+            if char == "{" { depth += 1 } else if char == "}" {
+                depth -= 1
+                if depth == 0 { return String(source[start..<index]) }
+            }
+            index = source.index(after: index)
+        }
+        return nil
+    }
+
     /// Both contextual entry points must reuse the exact same, existing
     /// `ExerciseLibraryView` (no `()`-free bare reference would also match a
     /// hypothetical second type with a similar name - this is deliberately a
@@ -77,11 +91,10 @@ final class MehrInformationArchitectureTests: XCTestCase {
             XCTFail("planBuilder.exerciseLibrary.action nicht gefunden")
             return
         }
-        guard let blockEnd = strings.range(of: "\n    },", range: keyRange.upperBound..<strings.endIndex) else {
-            XCTFail("Ende des planBuilder.exerciseLibrary.action-Eintrags nicht gefunden")
-            return
-        }
-        let block = strings[keyRange.upperBound..<blockEnd.lowerBound]
+        // Brace-counting statt eines auf ein nachfolgendes Komma angewiesenen
+        // Textmusters - dieser Key kann (und tut es hier) der letzte Eintrag
+        // der Datei sein, dessen schliessende Klammer KEIN Komma traegt.
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: strings, afterOpenBrace: keyRange.upperBound))
         for language in ["\"de\": {", "\"en\": {", "\"tr\": {"] {
             XCTAssertTrue(block.contains(language), "fehlende Lokalisierung: \(language)")
         }

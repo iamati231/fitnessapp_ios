@@ -121,11 +121,11 @@ final class SettingsGroupOrderAndAttributionTests: XCTestCase {
             XCTFail("settings.group.appExperience nicht gefunden")
             return
         }
-        guard let blockEnd = strings.range(of: "\n    },", range: keyRange.upperBound..<strings.endIndex) else {
-            XCTFail("Ende des settings.group.appExperience-Eintrags nicht gefunden")
-            return
-        }
-        let block = strings[keyRange.upperBound..<blockEnd.lowerBound]
+        // Brace-counting statt eines auf ein nachfolgendes Komma angewiesenen
+        // Textmusters - ein Eintrag am Dateiende hat keines (kein "\n    },",
+        // siehe `testExerciseLibraryActionLabelIsFullyLocalized`-Bugfix in
+        // `MehrInformationArchitectureTests`).
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: strings, afterOpenBrace: keyRange.upperBound))
         XCTAssertTrue(block.contains("App-Einstellungen"), "DE-Wert muss 'App-Einstellungen' sein")
         XCTAssertTrue(block.contains("App Settings"), "EN-Wert muss 'App Settings' sein")
         XCTAssertFalse(block.contains("App & Trainingserlebnis"), "der alte Name darf nicht mehr vorkommen")
