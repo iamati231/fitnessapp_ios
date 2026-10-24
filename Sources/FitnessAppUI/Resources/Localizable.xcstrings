@@ -21007,19 +21007,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "App & Trainingserlebnis"
+            "value": "App-Einstellungen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "App & Workout Experience"
+            "value": "App Settings"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uygulama & Antrenman Deneyimi"
+            "value": "Uygulama Ayarları"
           }
         }
       }
@@ -21112,29 +21112,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Araçlar"
-          }
-        }
-      }
-    },
-    "settings.section.more": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weitere Einstellungen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "More Settings"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diğer Ayarlar"
           }
         }
       }
@@ -58104,6 +58081,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ için alternatif seç"
+          }
+        }
+      }
+    },
+    "planBuilder.exerciseLibrary.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungsbibliothek"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercise Library"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hareket Kütüphanesi"
           }
         }
       }

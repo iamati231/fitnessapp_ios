@@ -40,6 +40,13 @@ final class SettingsGroupOrderAndAttributionTests: XCTestCase {
 
     // MARK: - (a) Group row order
 
+    /// UI-Ticket ("Mehr-Informationsarchitektur"): die 5 Gruppen sind jetzt
+    /// fuenf EIGENSTAENDIGE `DeltiqSection`s (`toolsSection`/
+    /// `libraryEquipmentSection`/`appExperienceSection`/
+    /// `dataConnectionsSection`/`helpInfoSection`) statt Zeilen unter einer
+    /// gemeinsamen "Weitere Einstellungen"-Section - `groupNavigationSection`
+    /// selbst ist nur noch ein `Group { ... }`, das sie in dieser Reihenfolge
+    /// auflistet.
     func testGroupNavigationSectionRowsAreInTheNewOrder() throws {
         let source = try contents(of: "Settings/SettingsView.swift")
         guard let sectionRange = source.range(of: "private var groupNavigationSection: some View {") else {
@@ -48,57 +55,80 @@ final class SettingsGroupOrderAndAttributionTests: XCTestCase {
         }
         let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: sectionRange.upperBound))
 
-        let rowsInOrder = [
-            "SettingsAppExperienceView()",
-            "SettingsLibraryEquipmentView()",
-            "NavigationLink(value: CalculatorsRoute.calculators)",
-            "SettingsDataConnectionsView()",
-            "SettingsHelpInfoView()"
+        let sectionsInOrder = [
+            "toolsSection",
+            "libraryEquipmentSection",
+            "appExperienceSection",
+            "dataConnectionsSection",
+            "helpInfoSection"
         ]
-        let positions = rowsInOrder.map { block.range(of: $0) }
+        let positions = sectionsInOrder.map { block.range(of: $0) }
         XCTAssertTrue(
             positions.allSatisfy { $0 != nil },
-            "Alle 5 Gruppen-Zeilen muessen in groupNavigationSection vorhanden sein."
+            "Alle 5 Gruppen-Sections muessen in groupNavigationSection referenziert sein."
         )
         let indices = positions.compactMap { $0?.lowerBound }
         XCTAssertEqual(
             indices, indices.sorted(),
-            "Gewuenschte Endreihenfolge: App-Erlebnis, Bibliothek & Ausstattung, Werkzeuge, "
+            "Gewuenschte Endreihenfolge: Werkzeuge, Bibliothek & Ausruestung, App-Einstellungen, "
                 + "Daten & Verbindungen, Hilfe & Informationen."
         )
     }
 
-    func testHelpInfoRowIsLastAndCarriesTheNoDividerModifier() throws {
+    /// Weder die gemeinsame "Weitere Einstellungen"-Ueberschrift noch die
+    /// zugehoerige `settings.section.more`-Resource duerfen noch verwendet
+    /// werden - das war die konkrete, fachlich falsche Zuordnung, die dieses
+    /// Ticket beheben sollte.
+    func testWeitereEinstellungenCollectiveSectionIsGone() throws {
         let source = try contents(of: "Settings/SettingsView.swift")
-        guard let sectionRange = source.range(of: "private var groupNavigationSection: some View {") else {
-            XCTFail("groupNavigationSection nicht gefunden")
-            return
-        }
-        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: sectionRange.upperBound))
-        guard let helpInfoRange = block.range(of: "SettingsHelpInfoView()") else {
-            XCTFail("SettingsHelpInfoView()-Zeile nicht gefunden")
-            return
-        }
-        let tail = block[helpInfoRange.upperBound...]
-        XCTAssertTrue(
-            tail.contains("showsDivider: false"),
-            "Die zuletzt stehende Zeile (Hilfe & Informationen) muss showsDivider: false tragen."
-        )
-        // Werkzeuge ist nicht mehr die letzte Zeile und darf showsDivider: false
-        // deshalb nicht mehr tragen (Default true greift wieder).
-        guard let toolsRange = block.range(of: "NavigationLink(value: CalculatorsRoute.calculators)") else {
-            XCTFail("Werkzeuge-Zeile nicht gefunden")
-            return
-        }
-        guard let toolsRowEnd = block.range(of: "}", range: toolsRange.upperBound..<block.endIndex) else {
-            XCTFail("Ende der Werkzeuge-Zeile nicht gefunden")
-            return
-        }
-        let toolsRow = block[toolsRange.lowerBound..<toolsRowEnd.upperBound]
         XCTAssertFalse(
-            toolsRow.contains("showsDivider: false"),
-            "Werkzeuge ist jetzt die dritte von fuenf Zeilen, nicht mehr die letzte — showsDivider: false muss weg sein."
+            source.contains("settings.section.more"),
+            "Die Sammelueberschrift 'Weitere Einstellungen' darf nicht mehr verwendet werden - "
+                + "Werkzeuge und Bibliothek & Ausruestung sind keine App-Einstellungen."
         )
+    }
+
+    /// Jede der 5 neuen Gruppen-Sections traegt genau EINE Zeile (ihre eigene
+    /// `DeltiqSection`), deshalb muss jede Zeile `showsDivider: false` tragen
+    /// - es gibt innerhalb der eigenen kleinen Karte nichts mehr, wovon sie
+    /// sich per Trennlinie abgrenzen muesste.
+    func testEachOfTheFiveGroupSectionsHasExactlyOneRowWithoutATrailingDivider() throws {
+        let source = try contents(of: "Settings/SettingsView.swift")
+        for sectionName in ["toolsSection", "libraryEquipmentSection", "appExperienceSection", "dataConnectionsSection", "helpInfoSection"] {
+            guard let range = source.range(of: "private var \(sectionName): some View {") else {
+                XCTFail("\(sectionName) nicht gefunden")
+                continue
+            }
+            let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: range.upperBound))
+            XCTAssertEqual(
+                block.components(separatedBy: "NavigationLink").count - 1, 1,
+                "\(sectionName) darf nur genau einen NavigationLink/eine Zeile enthalten."
+            )
+            XCTAssertTrue(
+                block.contains("showsDivider: false"),
+                "\(sectionName)s einzige Zeile muss showsDivider: false tragen."
+            )
+        }
+    }
+
+    /// UI-Ticket ("Mehr-Informationsarchitektur"): die Gruppe hiess vorher
+    /// "App & Trainingserlebnis" - umbenannt, weil "App-Einstellungen" genauer
+    /// beschreibt, was die Seite tatsaechlich zeigt (reine Konfiguration des
+    /// App-Verhaltens: Einheiten, Darstellung, Timer, Erinnerungen, ...).
+    func testAppExperienceGroupIsRenamedToAppSettingsInAllThreeLanguages() throws {
+        let strings = try contents(of: "Resources/Localizable.xcstrings")
+        guard let keyRange = strings.range(of: "\"settings.group.appExperience\": {") else {
+            XCTFail("settings.group.appExperience nicht gefunden")
+            return
+        }
+        guard let blockEnd = strings.range(of: "\n    },", range: keyRange.upperBound..<strings.endIndex) else {
+            XCTFail("Ende des settings.group.appExperience-Eintrags nicht gefunden")
+            return
+        }
+        let block = strings[keyRange.upperBound..<blockEnd.lowerBound]
+        XCTAssertTrue(block.contains("App-Einstellungen"), "DE-Wert muss 'App-Einstellungen' sein")
+        XCTAssertTrue(block.contains("App Settings"), "EN-Wert muss 'App Settings' sein")
+        XCTAssertFalse(block.contains("App & Trainingserlebnis"), "der alte Name darf nicht mehr vorkommen")
     }
 
     // MARK: - (b) Open-Food-Facts credits link moved to Hilfe & Informationen

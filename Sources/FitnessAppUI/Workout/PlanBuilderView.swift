@@ -379,6 +379,13 @@ public struct PlanBuilderView: View {
     @State private var exerciseAlternativeTarget: ExerciseAlternativeTarget?
     @State private var currentExerciseAlternativeOptions: [ExerciseTemplateSpec] = []
 
+    /// UI-Ticket ("Mehr-Informationsarchitektur"): kontextueller Zugang zur
+    /// bestehenden Uebungsbibliothek (`ExerciseLibraryView`, sonst nur unter
+    /// "Mehr") sowohl beim Bearbeiten eines Plans (per-Tag-Menu) als auch bei
+    /// der Auswahl einer Uebungsalternative (Dialog-Button unten) - derselbe
+    /// Screen, dieselben Daten, kein zweiter Bibliotheks-Screen.
+    @State private var showingExerciseLibrary = false
+
     /// Audit-Korrektur (Review nach P2.1): treibt den expliziten Fehler-
     /// Zustand, wenn `adoptPlan()` im eigenstaendigen Modus kein Profil
     /// findet — siehe dortigen Kommentar. `nil` = kein Fehler/Alert nicht
@@ -1650,10 +1657,25 @@ public struct PlanBuilderView: View {
                             exerciseAlternativeTarget = nil
                         }
                     }
+                    // UI-Ticket ("Mehr-Informationsarchitektur"): zweiter
+                    // kontextueller Zugang zur Uebungsbibliothek, direkt bei
+                    // der Alternativen-Auswahl - schliesst diesen Dialog und
+                    // oeffnet denselben Bibliotheks-Screen wie oben.
+                    Button {
+                        exerciseAlternativeTarget = nil
+                        showingExerciseLibrary = true
+                    } label: {
+                        Text("planBuilder.exerciseLibrary.action", bundle: .module)
+                    }
                     Button(role: .cancel) {
                         exerciseAlternativeTarget = nil
                     } label: {
                         Text("common.cancel", bundle: .module)
+                    }
+                }
+                .sheet(isPresented: $showingExerciseLibrary) {
+                    NavigationStack {
+                        ExerciseLibraryView()
                     }
                 }
                 .overlay(alignment: .bottom) {
@@ -2108,6 +2130,20 @@ public struct PlanBuilderView: View {
                     }
                 }
                 .disabled(day.isContentFixed)
+                // UI-Ticket ("Mehr-Informationsarchitektur"): kontextueller
+                // Zugang zur bestehenden Uebungsbibliothek beim Bearbeiten
+                // eines Plans - oeffnet dieselbe `ExerciseLibraryView` wie
+                // unter "Mehr" (keine zweite Implementierung), siehe
+                // `showingExerciseLibrary`.
+                Button {
+                    showingExerciseLibrary = true
+                } label: {
+                    Label {
+                        Text("planBuilder.exerciseLibrary.action", bundle: .module)
+                    } icon: {
+                        Image(systemName: "books.vertical")
+                    }
+                }
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .foregroundStyle(.secondary)

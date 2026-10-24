@@ -38,6 +38,9 @@ public struct PlanEditorView: View {
 
     // DEL-022 — Environment-Swap-State
     @State private var pendingEnvironmentSwap: PendingEnvironmentSwap?
+    /// UI-Ticket ("Mehr-Informationsarchitektur"): siehe `planMenuAction`/
+    /// `body`'s `.sheet` unten.
+    @State private var showingExerciseLibrary = false
     // DEL-049 — Restore-Prompt-State (Urlaubs-Modus zu Ende). Separat vom
     // adapt-State, weil das UI-Wording, die Buttons UND die ausgefuehrte
     // Aktion komplett andere sind.
@@ -310,6 +313,15 @@ public struct PlanEditorView: View {
                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
                     .padding(.bottom, 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        // UI-Ticket ("Mehr-Informationsarchitektur"): kontextueller Zugang
+        // zur bestehenden Uebungsbibliothek beim Bearbeiten eines Plans -
+        // oeffnet dieselbe `ExerciseLibraryView` wie unter "Mehr" und wie
+        // `PlanBuilderView`s Alternativen-Dialog, kein zweiter Screen.
+        .sheet(isPresented: $showingExerciseLibrary) {
+            NavigationStack {
+                ExerciseLibraryView()
             }
         }
     }
@@ -627,10 +639,12 @@ public struct PlanEditorView: View {
         return menuAction != nil ? [menuAction!, saveAction] : [saveAction]
     }
 
-    /// Ellipsis-Menu mit bis zu zwei Eintraegen: "Neu rechnen" (nur fuer
-    /// Plaene mit `generatorInput`) und Reorder-Start/-Ende (nur iOS, nur
-    /// wenn nicht readOnly und Tage vorhanden). `nil` wenn keiner von
-    /// beiden zutrifft — dann zeigt der Header nur den Save-Checkmark.
+    /// Ellipsis-Menu: "Neu rechnen" (nur fuer Plaene mit `generatorInput`),
+    /// Reorder-Start/-Ende (nur iOS, nur wenn nicht readOnly und Tage
+    /// vorhanden), plus (UI-Ticket "Mehr-Informationsarchitektur") immer
+    /// "Uebungsbibliothek" — anders als die ersten beiden kein bedingter
+    /// Eintrag, deshalb zeigt der Header ab jetzt IMMER dieses Menu (nicht
+    /// mehr `nil`, wenn weder Neu-rechnen noch Reorder zutrifft).
     private var planMenuAction: DeltiqHeaderAction? {
         let showsRecalculate = plan.generatorInput != nil
         #if os(iOS)
@@ -640,7 +654,6 @@ public struct PlanEditorView: View {
         let isEditing = false
         let showsReorder = false
         #endif
-        guard showsRecalculate || showsReorder else { return nil }
         return DeltiqHeaderAction(systemImage: "ellipsis", menu: {
             if showsRecalculate {
                 Button {
@@ -671,6 +684,15 @@ public struct PlanEditorView: View {
                 }
             }
             #endif
+            Button {
+                showingExerciseLibrary = true
+            } label: {
+                Label {
+                    Text("planBuilder.exerciseLibrary.action", bundle: .module)
+                } icon: {
+                    Image(systemName: "books.vertical")
+                }
+            }
         })
     }
 
