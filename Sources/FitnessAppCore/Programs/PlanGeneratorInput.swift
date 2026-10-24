@@ -82,18 +82,31 @@ public struct PlanGeneratorTypeSelection: Codable, Sendable, Hashable {
     /// rechnen" ohne Migration lesbar.
     public let timeFormat: WorkoutTimeFormat?
 
+    /// Device-Bugreport ("Plan wird nach Geraeteart statt Trainingstagen
+    /// aufgeteilt"): mehrere gewaehlte Kraft-Gerätearten (z. B. Kurzhantel +
+    /// Kettlebell) sollen EINEN gemeinsamen Uebungspool fuer alle Tage dieser
+    /// Selection bilden, statt dass jede Geraeteart ihre eigenen exklusiven
+    /// Tage bekommt. `nil`/leer heisst: nur `kind.equipmentFilter` gilt
+    /// (unveraendertes Verhalten bei genau einer Geraeteart). Wie
+    /// `timeFormat` oben decodiert ein fehlender Key in bereits gespeicherten
+    /// `generatorInputRaw`-Snapshots automatisch zu `nil` - "Neu rechnen"
+    /// bleibt fuer alte Plaene ohne Migration lesbar.
+    public let equipmentPool: Set<Equipment>?
+
     public init(
         kind: TrainingTypeKind,
         daysPerWeek: Int,
         sessionDurationMinutes: Int,
         experience: DifficultyLevel,
-        timeFormat: WorkoutTimeFormat? = nil
+        timeFormat: WorkoutTimeFormat? = nil,
+        equipmentPool: Set<Equipment>? = nil
     ) {
         self.kind = kind
         self.daysPerWeek = daysPerWeek
         self.sessionDurationMinutes = sessionDurationMinutes
         self.experience = experience
         self.timeFormat = timeFormat
+        self.equipmentPool = equipmentPool
     }
 }
 

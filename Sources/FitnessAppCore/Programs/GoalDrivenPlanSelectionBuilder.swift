@@ -93,11 +93,16 @@ public enum GoalDrivenPlanSelectionBuilder {
     /// selection ORDER (which equipment the user happened to tap first) had
     /// no bearing on this, it was always the fixed priority list. This
     /// plural variant returns EVERY `TrainingTypeKind` the user actually
-    /// selected (in the same priority order, for stable day-distribution
-    /// below), so `makeSelections` can give each one its own share of the
-    /// week instead of only the top priority match. Falls back to
-    /// `[.bodyweight]` under the same conditions `preferredStrengthKind`
-    /// falls back to it (no matching equipment selected).
+    /// selected (in priority order). `makeSelections` merges all of them
+    /// into ONE `PlanGeneratorTypeSelection.equipmentPool` covering the
+    /// whole week, rather than giving each kind its own exclusive days
+    /// (Device-Bugreport "Plan wird nach Geraeteart statt Trainingstagen
+    /// aufgeteilt": an earlier version of this fix DID give each kind its
+    /// own share of days, which solved "equipment silently dropped" but
+    /// introduced "every day uses exactly one equipment type" instead).
+    /// Falls back to `[.bodyweight]` under the same conditions
+    /// `preferredStrengthKind` falls back to it (no matching equipment
+    /// selected).
     ///
     /// writing-block.md Punkt 3.2: `.machine` is included as of this fix
     /// (28 Katalog-Uebungen, 9 von 10 Muskelgruppen abgedeckt). `cable`/
@@ -118,25 +123,6 @@ public enum GoalDrivenPlanSelectionBuilder {
         ]
         let matched = priorityOrder.filter { equipmentPreferences.contains($0.0) }.map(\.1)
         return matched.isEmpty ? [.bodyweight] : matched
-    }
-
-    /// Bugfix (Epic #3.1): splits `totalDays` as evenly as possible across
-    /// `kinds`, giving the leftover days (if `totalDays` doesn't divide
-    /// evenly) to the first kinds in priority order — same "extra day goes
-    /// to the higher-priority discipline" convention already used for
-    /// Hybrid's Kraft/Ausdauer split above. A kind that ends up with 0 days
-    /// (more kinds selected than days available) is dropped rather than
-    /// producing an empty-exercises day — "nicht jede Ausstattung muss in
-    /// jedem einzelnen Training verwendet werden" (Epic #3.1 acceptance).
-    private static func distributeDaysAcrossKinds(
-        totalDays: Int, kinds: [TrainingTypeKind]
-    ) -> [(kind: TrainingTypeKind, days: Int)] {
-        guard totalDays > 0, !kinds.isEmpty else { return [] }
-        let base = totalDays / kinds.count
-        let remainder = totalDays % kinds.count
-        return kinds.enumerated()
-            .map { index, kind in (kind, base + (index < remainder ? 1 : 0)) }
-            .filter { $0.days > 0 }
     }
 
     /// Baut die vollstaendige Auswahl fuer `PlanGeneratorInput.selections`.
@@ -169,13 +155,20 @@ public enum GoalDrivenPlanSelectionBuilder {
 
         switch goal {
         case .hypertrophy, .strength, .functional, .weightLoss:
+            // Device-Bugreport "Plan wird nach Geraeteart statt
+            // Trainingstagen aufgeteilt": ALLE gewaehlten Gerätearten bilden
+            // GEMEINSAM den Uebungspool einer einzigen Selection ueber die
+            // ganze Woche - sie sind kein Grund mehr, die Woche in separate,
+            // pro-Geraeteart exklusive Tage aufzuteilen (siehe
+            // `preferredStrengthKinds`-Doc oben).
             let kinds = preferredStrengthKinds(from: equipmentPreferences)
-            return distributeDaysAcrossKinds(totalDays: totalDaysPerWeek, kinds: kinds).map { kind, days in
-                PlanGeneratorTypeSelection(
-                    kind: kind, daysPerWeek: days,
-                    sessionDurationMinutes: sessionDurationMinutes, experience: experience
-                )
-            }
+            let pool: Set<Equipment>? = kinds.count > 1 ? Set(kinds.compactMap(\.equipmentFilter)) : nil
+            return [PlanGeneratorTypeSelection(
+                kind: preferredStrengthKind(from: equipmentPreferences),
+                daysPerWeek: totalDaysPerWeek,
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                equipmentPool: pool
+            )]
 
         case .endurance:
             return enduranceSelections(

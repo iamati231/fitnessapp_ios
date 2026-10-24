@@ -8,9 +8,13 @@ final class PlanGeneratorTests: XCTestCase {
         days: Int,
         minutes: Int = 45,
         experience: DifficultyLevel = .intermediate,
-        timeFormat: WorkoutTimeFormat? = nil
+        timeFormat: WorkoutTimeFormat? = nil,
+        equipmentPool: Set<Equipment>? = nil
     ) -> PlanGeneratorTypeSelection {
-        PlanGeneratorTypeSelection(kind: kind, daysPerWeek: days, sessionDurationMinutes: minutes, experience: experience, timeFormat: timeFormat)
+        PlanGeneratorTypeSelection(
+            kind: kind, daysPerWeek: days, sessionDurationMinutes: minutes, experience: experience,
+            timeFormat: timeFormat, equipmentPool: equipmentPool
+        )
     }
 
     private func input(
@@ -73,6 +77,76 @@ final class PlanGeneratorTests: XCTestCase {
     func testMachineDayTitleUsesTheMachineLabel() {
         let result = PlanGenerator.generate(from: input([selection(.machine, days: 1)]))
         XCTAssertTrue(result.days[0].spec.name.hasPrefix("Maschine"), "Tagestitel sollte mit dem Maschine-Label beginnen, aktuell: \(result.days[0].spec.name)")
+    }
+
+    // MARK: - Device-Bugreport: "Plan wird nach Geraeteart statt
+    // Trainingstagen aufgeteilt" (mehrere Gerätearten muessen EINEN
+    // gemeinsamen Uebungspool bilden, nicht pro-Geraeteart exklusive Tage)
+
+    func testMixedEquipmentPoolProducesRequestedDayCountNotOneDayPerEquipmentType() {
+        let pool: Set<Equipment> = [.barbell, .dumbbell, .kettlebell]
+        let result = PlanGenerator.generate(from: input([
+            selection(.barbell, days: 3, equipmentPool: pool)
+        ]))
+        XCTAssertEqual(result.days.count, 3, "3 Trainingstage angefordert - unabhaengig davon, wie viele Gerätearten gewaehlt wurden")
+    }
+
+    /// Kern des gemeldeten Bugs: jeder Tag darf Uebungen aus MEHREREN der
+    /// gewaehlten Gerätearten kombinieren, statt dass jede Geraeteart ihren
+    /// eigenen exklusiven Tag bekommt.
+    func testMixedEquipmentPoolCombinesMultipleEquipmentTypesWithinASingleDay() {
+        let pool: Set<Equipment> = [.barbell, .dumbbell, .kettlebell]
+        let equipmentByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0.equipment) })
+        let result = PlanGenerator.generate(from: input([
+            selection(.barbell, days: 3, equipmentPool: pool)
+        ]))
+        let equipmentUsedPerDay = result.days.map { day in
+            Set(day.spec.exercises.compactMap { equipmentByName[$0.name] })
+        }
+        XCTAssertTrue(
+            equipmentUsedPerDay.contains { $0.count > 1 },
+            "mindestens ein Tag sollte Uebungen aus mehr als einer gewaehlten Geraeteart kombinieren, tatsaechlich: \(equipmentUsedPerDay)"
+        )
+    }
+
+    /// Ausschluss: keine generierte Uebung darf aus einer NICHT gewaehlten
+    /// Geraeteart stammen (z. B. Maschine, wenn nur Langhantel/Kurzhantel/
+    /// Kettlebell im Pool sind).
+    func testMixedEquipmentPoolNeverUsesExercisesOutsideTheSelectedEquipment() {
+        let pool: Set<Equipment> = [.barbell, .dumbbell, .kettlebell]
+        let allowedNames = Set(ExerciseLibraryData.all.filter { pool.contains($0.equipment) }.map(\.name))
+        let result = PlanGenerator.generate(from: input([
+            selection(.barbell, days: 4, equipmentPool: pool)
+        ]))
+        let usedNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertFalse(usedNames.isEmpty)
+        XCTAssertTrue(usedNames.isSubset(of: allowedNames), "jede generierte Uebung muss aus einer der gewaehlten Gerätearten stammen")
+    }
+
+    /// Einzelne Geraeteart (kein `equipmentPool`) bleibt unveraendert - keine
+    /// Regression fuer den bisherigen, einfachen Fall.
+    func testSingleEquipmentTypeWithoutPoolBehavesExactlyAsBefore() {
+        let result = PlanGenerator.generate(from: input([selection(.dumbbell, days: 3)]))
+        let dumbbellPool = Set(ExerciseLibraryData.all.filter { $0.equipment == .dumbbell }.map(\.name))
+        let usedNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertTrue(usedNames.isSubset(of: dumbbellPool))
+        XCTAssertTrue(result.days[0].spec.name.hasPrefix("Kurzhantel"))
+    }
+
+    /// Akzeptanzkriterium 6: bei mehreren Gerätearten soll der Tages-Titel
+    /// den Trainingssplit beschreiben (z. B. "Push & Pull"), nicht pauschal
+    /// eine einzelne Geraeteart nennen, die den Tag gar nicht exklusiv traegt.
+    func testMixedEquipmentPoolDayTitleDescribesSplitNotASingleEquipmentType() {
+        let pool: Set<Equipment> = [.barbell, .dumbbell, .kettlebell]
+        let result = PlanGenerator.generate(from: input([
+            selection(.barbell, days: 3, equipmentPool: pool)
+        ]))
+        for day in result.days {
+            XCTAssertFalse(day.spec.name.hasPrefix("Langhantel"))
+            XCTAssertFalse(day.spec.name.hasPrefix("Kurzhantel"))
+            XCTAssertFalse(day.spec.name.hasPrefix("Kettlebell"))
+            XCTAssertFalse((day.spec.localizationKey ?? "").hasPrefix("planBuilder.type."))
+        }
     }
 
     // MARK: - README 2.20: Kettlebell-EMOM-Finisher

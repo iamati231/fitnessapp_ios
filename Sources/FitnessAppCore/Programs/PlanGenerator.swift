@@ -215,10 +215,14 @@ public enum PlanGenerator {
     /// Rekonstruiert, aus welcher `PlanGeneratorTypeSelection` ein bereits
     /// generierter Tag stammt - ueber Equipment-Pool-Zugehoerigkeit statt
     /// einer gespeicherten Referenz (es gibt bislang keine; `DaySpec`
-    /// traegt keine Herkunfts-ID, siehe Datei-Kommentar). Zuverlaessig, weil
-    /// jede Kraft-Art einen EIGENEN, disjunkten Equipment-Filter hat
-    /// (`TrainingTypeKind.equipmentFilter`) - ein Tag mit ausschliesslich
-    /// Kurzhantel-Uebungen kann nur aus der `.dumbbell`-Auswahl stammen.
+    /// traegt keine Herkunfts-ID, siehe Datei-Kommentar). Nutzt denselben
+    /// `strengthEquipmentPool` wie `strengthCandidates` - bei mehreren
+    /// gewaehlten Gerätearten (`equipmentPool`) ist dieser Pool nicht mehr
+    /// zwangslaeufig disjunkt zu anderen Selections, aber fuer die
+    /// `.strength`-Ziele (Hypertrophie/Kraft/Funktional/Gewichtsverlust)
+    /// gibt es ohnehin nur noch GENAU EINE Kraft-Selection pro Woche (siehe
+    /// `GoalDrivenPlanSelectionBuilder.makeSelections`), die Rekonstruktion
+    /// bleibt also eindeutig.
     private static func matchingSelection(
         for day: DaySpec,
         in selections: [PlanGeneratorTypeSelection]
@@ -226,10 +230,11 @@ public enum PlanGenerator {
         let dayExerciseNames = Set(day.exercises.map(\.name))
         guard !dayExerciseNames.isEmpty else { return nil }
         for selection in selections {
-            guard let equipment = selection.kind.equipmentFilter else { continue }
+            let equipmentSet = strengthEquipmentPool(for: selection)
+            guard !equipmentSet.isEmpty else { continue }
             let poolNames = Set(
                 ExerciseLibraryData.all
-                    .filter { $0.equipment == equipment && !$0.isCardio }
+                    .filter { equipmentSet.contains($0.equipment) && !$0.isCardio }
                     .map(\.name)
             )
             if dayExerciseNames.isSubset(of: poolNames) {
@@ -241,11 +246,23 @@ public enum PlanGenerator {
 
     // MARK: - Strength candidates
 
+    /// Device-Bugreport ("Plan wird nach Geraeteart statt Trainingstagen
+    /// aufgeteilt"): `selection.equipmentPool` (mehrere gewaehlte
+    /// Gerätearten) hat Vorrang vor `kind.equipmentFilter` (genau eine) -
+    /// siehe `PlanGeneratorTypeSelection`-Doc. Leer nur fuer die beiden
+    /// Cardio-Kinds, die diesen Pfad nie erreichen.
+    private static func strengthEquipmentPool(for selection: PlanGeneratorTypeSelection) -> Set<Equipment> {
+        if let pool = selection.equipmentPool, !pool.isEmpty { return pool }
+        if let single = selection.kind.equipmentFilter { return [single] }
+        return []
+    }
+
     private static func strengthCandidates(for selection: PlanGeneratorTypeSelection, shuffle: Bool) -> [Candidate] {
-        guard let equipment = selection.kind.equipmentFilter else { return [] }
+        let equipmentSet = strengthEquipmentPool(for: selection)
+        guard !equipmentSet.isEmpty else { return [] }
         let allowedDifficulties = difficultiesAtOrBelow(selection.experience)
         let pool = ExerciseLibraryData.all.filter {
-            $0.equipment == equipment && !$0.isCardio && allowedDifficulties.contains($0.difficultyLevel)
+            equipmentSet.contains($0.equipment) && !$0.isCardio && allowedDifficulties.contains($0.difficultyLevel)
         }
         guard !pool.isEmpty else { return [] }
 
@@ -255,6 +272,10 @@ public enum PlanGenerator {
         let (sets, repsMin, repsMax, restSeconds) = strengthVolume(for: selection.experience)
         let kindLabel = germanTypeLabel(selection.kind)
         let kindKey = selection.kind.titleKey
+        // Mehrere Gerätearten kombiniert: der Tages-Titel soll den
+        // Trainingssplit beschreiben ("Push & Pull"), nicht pauschal eine
+        // einzelne Geräteart nennen, die den Tag gar nicht exklusiv traegt.
+        let isMixedEquipment = equipmentSet.count > 1
 
         var result: [Candidate] = []
         for dayIndex in 0..<selection.daysPerWeek {
@@ -265,6 +286,7 @@ public enum PlanGenerator {
             if selection.kind == .kettlebell, selection.daysPerWeek >= 3, dayIndex == selection.daysPerWeek - 1 {
                 result.append(kettlebellEmomCandidate(
                     pool: pool, muscleOrder: muscleOrder, kindLabel: kindLabel, kindKey: kindKey,
+                    isMixedEquipment: isMixedEquipment,
                     sessionDurationMinutes: selection.sessionDurationMinutes,
                     shuffle: shuffle
                 ))
@@ -317,9 +339,11 @@ public enum PlanGenerator {
                 hardness += strengthHardness(spec, sets: sets, experience: selection.experience)
             }
 
+            let focusLabel = muscleFocusLabel(pickedMuscles, dayIndex: dayIndex)
+            let focusKey = muscleFocusKey(pickedMuscles, dayIndex: dayIndex)
             result.append(Candidate(
-                name: "\(kindLabel) · \(muscleFocusLabel(pickedMuscles, dayIndex: dayIndex))",
-                localizationKey: "\(kindKey)·\(muscleFocusKey(pickedMuscles, dayIndex: dayIndex))",
+                name: isMixedEquipment ? focusLabel : "\(kindLabel) · \(focusLabel)",
+                localizationKey: isMixedEquipment ? focusKey : "\(kindKey)·\(focusKey)",
                 exercises: exercises,
                 timeFormat: nil,
                 timeCapMinutes: nil,
@@ -383,6 +407,7 @@ public enum PlanGenerator {
         muscleOrder: [MuscleGroup],
         kindLabel: String,
         kindKey: String,
+        isMixedEquipment: Bool,
         sessionDurationMinutes: Int,
         shuffle: Bool
     ) -> Candidate {
@@ -401,8 +426,8 @@ public enum PlanGenerator {
             hardness += strengthHardness(spec, sets: 3, experience: .intermediate)
         }
         return Candidate(
-            name: "\(kindLabel) · \(fullBodyGermanLabel)",
-            localizationKey: "\(kindKey)·day_type.full_body",
+            name: isMixedEquipment ? fullBodyGermanLabel : "\(kindLabel) · \(fullBodyGermanLabel)",
+            localizationKey: isMixedEquipment ? "day_type.full_body" : "\(kindKey)·day_type.full_body",
             exercises: exercises,
             timeFormat: .emom,
             timeCapMinutes: min(30, max(10, sessionDurationMinutes)),

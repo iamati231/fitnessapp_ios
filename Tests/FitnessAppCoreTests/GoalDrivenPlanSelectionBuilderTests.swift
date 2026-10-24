@@ -115,66 +115,75 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
         )
     }
 
-    // MARK: - makeSelections: mehrere Ausstattungsarten (Bugfix Epic #3.1)
+    // MARK: - makeSelections: mehrere Ausstattungsarten (Device-Bugreport
+    // "Plan wird nach Geraeteart statt Trainingstagen aufgeteilt")
 
-    func testStrengthGoalWithTwoEquipmentTypesSplitsDaysAcrossBoth() {
+    /// Mehrere Gerätearten muessen in EINER Selection landen, die ALLE
+    /// gewaehlten Tage traegt — nicht mehr in separaten, pro-Geraeteart
+    /// exklusiven Selections (das war der gemeldete Bug: 3 Gerätearten
+    /// ergaben 3 reine Ein-Geraeteart-Tage statt eines gemischten Pools).
+    func testStrengthGoalWithTwoEquipmentTypesMergesIntoOneSelection() {
         let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
             goal: .strength, enduranceModality: nil, totalDaysPerWeek: 4,
             sessionDurationMinutes: 45, experience: .intermediate,
             equipmentPreferences: [.dumbbell, .kettlebell]
         )
-        XCTAssertEqual(selections.map(\.kind), [.dumbbell, .kettlebell])
-        XCTAssertEqual(selections.map(\.daysPerWeek), [2, 2])
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.kind, .dumbbell)
+        XCTAssertEqual(selections.first?.daysPerWeek, 4)
+        XCTAssertEqual(selections.first?.equipmentPool, [.dumbbell, .kettlebell])
     }
 
-    /// Ungerade Tageszahl: die erste (hoeher priorisierte) Ausstattung
-    /// bekommt den zusaetzlichen Tag — gleiche Konvention wie Hybrid/
-    /// Ausdauer oben, nicht Zufall.
-    func testStrengthGoalWithTwoEquipmentTypesGivesExtraDayToHigherPriority() {
-        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
-            goal: .hypertrophy, enduranceModality: nil, totalDaysPerWeek: 3,
-            sessionDurationMinutes: 45, experience: .intermediate,
-            equipmentPreferences: [.barbell, .dumbbell]
-        )
-        XCTAssertEqual(selections.map(\.kind), [.barbell, .dumbbell])
-        XCTAssertEqual(selections.map(\.daysPerWeek), [2, 1])
-    }
-
-    func testStrengthGoalWithThreeEquipmentTypesUsesAllThree() {
+    func testStrengthGoalWithThreeEquipmentTypesMergesIntoOneSelectionCoveringAll() {
         let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
             goal: .weightLoss, enduranceModality: nil, totalDaysPerWeek: 6,
             sessionDurationMinutes: 45, experience: .advanced,
             equipmentPreferences: [.barbell, .dumbbell, .kettlebell]
         )
-        XCTAssertEqual(selections.map(\.kind), [.barbell, .dumbbell, .kettlebell])
-        XCTAssertEqual(selections.map(\.daysPerWeek), [2, 2, 2])
-        XCTAssertEqual(selections.reduce(0) { $0 + $1.daysPerWeek }, 6)
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.kind, .barbell)
+        XCTAssertEqual(selections.first?.daysPerWeek, 6)
+        XCTAssertEqual(selections.first?.equipmentPool, [.barbell, .dumbbell, .kettlebell])
     }
 
-    /// writing-block.md 3.2: Maschine + Kurzhantel teilen sich die Woche wie
-    /// jede andere Zwei-Ausstattungs-Kombination (Epic #3.1-Mechanik).
-    func testStrengthGoalWithDumbbellAndMachineSplitsDaysAcrossBoth() {
+    /// writing-block.md 3.2: Maschine + Kurzhantel landen genauso in einem
+    /// gemeinsamen Pool wie jede andere Zwei-Ausstattungs-Kombination.
+    func testStrengthGoalWithDumbbellAndMachineMergesIntoOneSelection() {
         let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
             goal: .strength, enduranceModality: nil, totalDaysPerWeek: 4,
             sessionDurationMinutes: 45, experience: .intermediate,
             equipmentPreferences: [.dumbbell, .machine]
         )
-        XCTAssertEqual(selections.map(\.kind), [.dumbbell, .machine])
-        XCTAssertEqual(selections.map(\.daysPerWeek), [2, 2])
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.equipmentPool, [.dumbbell, .machine])
     }
 
-    /// Mehr Ausstattungsarten als Tage: eine Ausstattung bekaeme 0 Tage und
-    /// wird komplett weggelassen (keine leere `PlanGeneratorTypeSelection`),
-    /// statt still eine "0 Tage"-Auswahl zu erzeugen.
-    func testStrengthGoalDropsEquipmentThatWouldGetZeroDays() {
+    /// Mehr Ausstattungsarten als Tage ist kein Sonderfall mehr — alle
+    /// gewaehlten Gerätearten bleiben im gemeinsamen Pool, unabhaengig von
+    /// der Tageszahl (es gibt ja keine pro-Geraeteart-Tageszuteilung mehr,
+    /// die eine Ausstattung auf 0 Tage bringen koennte).
+    func testStrengthGoalKeepsAllEquipmentInPoolEvenWithFewerDaysThanEquipmentTypes() {
         let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
             goal: .strength, enduranceModality: nil, totalDaysPerWeek: 2,
             sessionDurationMinutes: 45, experience: .intermediate,
             equipmentPreferences: [.barbell, .dumbbell, .kettlebell]
         )
-        XCTAssertEqual(selections.map(\.kind), [.barbell, .dumbbell])
-        XCTAssertEqual(selections.map(\.daysPerWeek), [1, 1])
-        XCTAssertFalse(selections.contains { $0.kind == .kettlebell })
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.daysPerWeek, 2)
+        XCTAssertEqual(selections.first?.equipmentPool, [.barbell, .dumbbell, .kettlebell])
+    }
+
+    /// Genau eine Geraeteart darf weiterhin KEINEN `equipmentPool` setzen —
+    /// unveraendertes Verhalten, `PlanGenerator` faellt dann auf
+    /// `kind.equipmentFilter` zurueck (siehe dortige Doku).
+    func testStrengthGoalWithSingleEquipmentTypeLeavesEquipmentPoolNil() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .strength, enduranceModality: nil, totalDaysPerWeek: 3,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.kettlebell]
+        )
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertNil(selections.first?.equipmentPool)
     }
 
     // MARK: - makeSelections: reine Kraftziele
