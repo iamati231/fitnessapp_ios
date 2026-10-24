@@ -129,6 +129,32 @@ final class PlanBuilderResultDayRowTemplateAlignmentTests: XCTestCase {
         )
         XCTAssertTrue(body.contains("ExerciseAlternativeFinder.adjustedSpec"), "sets/reps/rest must be checked for fit, not copied blindly")
         XCTAssertTrue(body.contains("currentDraft.replaceExercise("), "must delegate to PlanDraft's single-exercise replacement")
+        XCTAssertTrue(body.contains("draft = currentDraft"), "the mutated draft must actually be written back into SwiftUI state")
+    }
+
+    /// Device-Bugreport ("Übungsalternative wird nicht übernommen"): the real
+    /// root cause was this function also calling
+    /// `loadLevelByDayID.removeValue(forKey: target.dayID)` - that made every
+    /// later `PlanDraftResultAdapter.makeResult` call (used by both
+    /// `currentResult` and `adoptPlan()`) throw `missingLoadLevel` for that
+    /// day, silently swallowed by `currentResult`'s `try?` into `nil`. The
+    /// "Plan übernehmen" button's `isDisabled` never checks `currentResult`,
+    /// so `adoptPlan()`'s `guard let result = currentResult else { return }`
+    /// then fired silently - tapping the button did nothing, for the rest of
+    /// that Step-3 draft. See `PlanDraftResultAdapterTests.
+    /// testMakeResultSucceedsAfterReplaceExerciseWithUnchangedLoadLevels` for
+    /// the Core-level proof that leaving the entry untouched actually fixes
+    /// reconstruction/persistence.
+    func testApplyExerciseAlternativeDoesNotInvalidateTheDaysLoadLevel() throws {
+        let source = try contents(of: "Workout/PlanBuilderView.swift")
+        let body = try functionBody(
+            startingAt: "private func applyExerciseAlternative(_ alternative: ExerciseTemplateSpec, to target: ExerciseAlternativeTarget) {",
+            in: source
+        )
+        XCTAssertFalse(
+            body.contains("loadLevelByDayID"),
+            "must not invalidate the day's loadLevel entry - that breaks PlanDraftResultAdapter.makeResult (and therefore currentResult/adoptPlan) for the rest of the session"
+        )
     }
 }
 #endif

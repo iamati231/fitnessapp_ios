@@ -1793,15 +1793,28 @@ public struct PlanBuilderView: View {
     /// verweigert bereits selbst bei `isContentFixed`) - alle anderen
     /// Uebungen, ihre Reihenfolge und die Tagesstruktur bleiben unangetastet.
     /// `ExerciseAlternativeFinder.adjustedSpec` entscheidet, ob Saetze/Wdh./
-    /// Pause der Original-Uebung fuer die Ersatz-Uebung noch passen. Gleiche
-    /// `loadLevelByDayID`-Invalidierung wie `applyAlternative` oben - der
-    /// bisherige Belastungs-Badge bezog sich auf die alte Uebung.
+    /// Pause der Original-Uebung fuer die Ersatz-Uebung noch passen.
+    ///
+    /// Bugfix (Device-Bugreport "Übungsalternative wird nicht übernommen"):
+    /// anders als `applyAlternative` oben entfernt dies den Tag NICHT aus
+    /// `loadLevelByDayID`. `PlanDraftResultAdapter.makeResult` (siehe dort)
+    /// verlangt fuer JEDEN Tag einen Eintrag und wirft sonst
+    /// `missingLoadLevel` - `currentResult` faengt das ueber `try?` zu `nil`
+    /// ab, OHNE jede sichtbare Fehlermeldung, UND der "Plan uebernehmen"-
+    /// Knopf bleibt dabei aktiviert (`isDisabled` prueft nicht `currentResult`).
+    /// Ergebnis: `adoptPlan()`s `guard let result = currentResult else {
+    /// return }` greift lautlos - ein Tap auf "Plan uebernehmen" tut dann
+    /// buchstaeblich nichts mehr, fuer die GESAMTE restliche Sitzung in
+    /// diesem Schritt-3-Entwurf. Eine einzelne ausgetauschte Uebung aendert
+    /// die Gesamt-Haerte eines Tages (anders als `replaceContent`s kompletter
+    /// Tagesaustausch) nur geringfuegig - die bestehende Einstufung fuer
+    /// diesen einen Tag beizubehalten ist eine kleine, aber UNGEFAEHRLICHE
+    /// Ungenauigkeit, verglichen mit dem kompletten Ausfall der Uebernahme.
     private func applyExerciseAlternative(_ alternative: ExerciseTemplateSpec, to target: ExerciseAlternativeTarget) {
         guard var currentDraft = draft, let dayIndex = currentDraft.index(of: target.dayID) else { return }
         guard let original = currentDraft.days[dayIndex].exercises.first(where: { $0.id == target.exerciseID })?.spec else { return }
         let adjusted = ExerciseAlternativeFinder.adjustedSpec(replacing: original, with: alternative)
         guard currentDraft.replaceExercise(dayID: target.dayID, exerciseID: target.exerciseID, with: adjusted) else { return }
-        loadLevelByDayID.removeValue(forKey: target.dayID)
         draft = currentDraft
     }
 

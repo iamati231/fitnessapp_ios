@@ -81,6 +81,48 @@ final class PlanDraftResultAdapterTests: XCTestCase {
         }
     }
 
+    /// Device-Bugreport ("Übungsalternative wird nicht übernommen"): the
+    /// exact end-to-end mechanism `PlanBuilderView.applyExerciseAlternative`
+    /// relies on - a single `replaceExercise` call must NOT break
+    /// `makeResult` for the rest of the session. The actual bug was the UI
+    /// handler also removing that day's `loadLevels` entry, which made this
+    /// exact call throw `missingLoadLevel` (see the test above) - swallowed
+    /// silently by `PlanBuilderView.currentResult`'s `try?`, so "Plan
+    /// übernehmen" did nothing. The fix keeps the day's existing loadLevel
+    /// entry untouched after a single-exercise swap (a far smaller change
+    /// than `replaceContent`'s whole-day swap), proven here by reconstructing
+    /// successfully with an UNCHANGED loadLevels map and the swapped exercise
+    /// actually present.
+    func testMakeResultSucceedsAfterReplaceExerciseWithUnchangedLoadLevels() throws {
+        let original = PlanGenerator.generate(from: input(.barbell, days: 2))
+        var draft = PlanDraft(generated: original.days.map(\.spec))
+        let levels = loadLevels(for: draft, matching: original)
+        let dayID = draft.days[0].id
+        let exerciseID = draft.days[0].exercises[0].id
+        let otherExerciseNames = draft.days[0].exercises.dropFirst().map(\.spec.name)
+        let secondDayExerciseNames = draft.days[1].exercises.map(\.spec.name)
+        let replacement = ExerciseSpec(name: "Ganz Erfundene Ersatzuebung", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 90)
+
+        XCTAssertTrue(draft.replaceExercise(dayID: dayID, exerciseID: exerciseID, with: replacement))
+
+        // Bugfix-Beweis: KEINE Entfernung aus `levels` (anders als der
+        // frühere, fehlerhafte `applyExerciseAlternative`-Code) - die Map
+        // bleibt exakt die urspruengliche.
+        let reconstructed = try PlanDraftResultAdapter.makeResult(from: draft, loadLevels: levels, explanationKey: nil)
+        let days = try XCTUnwrap(reconstructed?.days)
+
+        XCTAssertEqual(days.count, 2, "beide Tage muessen weiterhin rekonstruierbar sein, nicht nur der unveraenderte")
+        XCTAssertTrue(days[0].spec.exercises.map(\.name).contains("Ganz Erfundene Ersatzuebung"), "die ausgetauschte Uebung muss im rekonstruierten Ergebnis stehen")
+        XCTAssertEqual(
+            Set(days[0].spec.exercises.dropFirst().map(\.name)), Set(otherExerciseNames),
+            "alle anderen Uebungen desselben Tages bleiben unveraendert"
+        )
+        XCTAssertEqual(
+            days[1].spec.exercises.map(\.name), secondDayExerciseNames,
+            "der andere Tag bleibt vollstaendig unberuehrt"
+        )
+    }
+
     func testMakeResultReturnsNilForEmptyDraft() throws {
         let draft = PlanDraft(days: [])
         let result = try PlanDraftResultAdapter.makeResult(from: draft, loadLevels: [:], explanationKey: nil)
