@@ -71,10 +71,21 @@ public struct NutritionDayView: View {
     @Query(sort: \MealEntry.date, order: .reverse)
     private var allMeals: [MealEntry]
 
+    /// Bugfix (writing-block.md Punkt 6): fuer `resolvedMealItemName` — ein
+    /// katalogbasierter Mahlzeit-Eintrag muss seinen Namen per aktueller
+    /// `FoodCatalogEntry` (locale-abhaengig), nicht per eingefrorenem
+    /// `nameSnapshot` zeigen.
+    @Query(sort: \FoodCatalogEntry.catalogID)
+    private var catalogEntries: [FoodCatalogEntry]
+
     @State private var selectedDate: Date = Date()
     @State private var showingAddMeal = false
     @State private var showingGoals = false
     @State private var editingMeal: MealEntry?
+    /// Bugfix (writing-block.md 4.3, "Datum direkt auswaehlen"): die Pfeile
+    /// decken nur +/-1 Tag ab - umstaendlich, wenn mehrere Tage uebersprungen
+    /// werden sollen. Tippen auf das Datum oeffnet diesen Sheet.
+    @State private var showingDatePicker = false
 
     // Task F: optional local AI coaching text. `nil` = not (yet) shown, either
     // still generating or the last attempt failed — the rest of the screen
@@ -179,6 +190,44 @@ public struct NutritionDayView: View {
         .sheet(item: $editingMeal) { meal in
             AddMealView(editing: meal)
         }
+        .sheet(isPresented: $showingDatePicker) {
+            datePickerSheet
+        }
+    }
+
+    /// Bugfix (writing-block.md 4.3): `.graphical` DatePicker, dismissed
+    /// explizit ueber "Fertig" statt sofort beim ersten Tag-Tap - gleiches
+    /// Bestaetigungs-Prinzip wie jeder andere Editor in diesem Designsystem
+    /// (kein stiller Auto-Dismiss). `selectedDate` ist dieselbe Quelle, die
+    /// die Pfeile (`changeDay`) schon verwenden - bereits erfasste Mahlzeiten
+    /// werden rein ueber dieses eine Binding gefiltert (`filteredMeals`
+    /// unten), nie dupliziert oder umgeschrieben.
+    private var datePickerSheet: some View {
+        NavigationStack {
+            DatePicker(
+                String(localized: "summary.date", bundle: .module),
+                selection: $selectedDate,
+                displayedComponents: .date
+            )
+            .datePickerStyle(.graphical)
+            .labelsHidden()
+            .padding()
+            .background(Color.Deltiq.background.ignoresSafeArea())
+            .navigationTitle(Text("summary.date", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        showingDatePicker = false
+                    } label: {
+                        Text("common.done", bundle: .module)
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 
     // MARK: Sections
@@ -201,9 +250,14 @@ public struct NutritionDayView: View {
 
                 Spacer()
 
-                Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.primary)
+                Button {
+                    showingDatePicker = true
+                } label: {
+                    Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                }
+                .buttonStyle(.plain)
 
                 Spacer()
 
@@ -392,7 +446,13 @@ public struct NutritionDayView: View {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
                         ForEach(Array(meal.items.enumerated()), id: \.element.persistentModelID) { _, item in
-                            Text(item.nameSnapshot)
+                            // writing-block.md Punkt 6 ("Lebensmittelname
+                            // folgt nicht der aktuellen App-Sprache"): dies
+                            // ist die Tagesuebersicht - genau die Stelle, an
+                            // der ein vor Wochen in einer anderen Sprache
+                            // protokolliertes, katalogbasiertes Lebensmittel
+                            // bisher den eingefrorenen `nameSnapshot` zeigte.
+                            Text(resolvedMealItemName(nameSnapshot: item.nameSnapshot, catalogID: item.catalogID, catalogEntries: catalogEntries))
                                 .font(.system(size: 15))
                                 .foregroundStyle(Color.primary)
                         }

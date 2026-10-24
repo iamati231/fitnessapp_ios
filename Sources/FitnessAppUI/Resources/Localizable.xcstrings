@@ -56498,29 +56498,6 @@
         }
       }
     },
-    "nutrition.addMeal.cancel": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abbrechen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cancel"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "İptal"
-          }
-        }
-      }
-    },
     "nutrition.addMeal.aiDraft.header": {
       "extractionState": "manual",
       "localizations": {
@@ -58012,6 +57989,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bunun yerine besini kendin oluştur"
+          }
+        }
+      }
+    },
+    "calc.tdee.goalType": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zielausrichtung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal type"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedef türü"
           }
         }
       }

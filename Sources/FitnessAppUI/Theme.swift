@@ -838,6 +838,18 @@ public struct DeltiqSegmentedPicker<Value: Hashable>: View {
                                 ? Color(red: 0.102, green: 0.102, blue: 0.102)
                                 : Color.primary
                         )
+                        // Bugfix (writing-block.md 4.1, "Mahlzeittyp-Auswahl
+                        // bricht in mehrere Zeilen um"): ohne `.lineLimit`
+                        // wraps ein `Text` von sich aus — bei 4 gleich
+                        // breiten Segmenten auf einem schmalen iPhone reicht
+                        // das fuer laengere DE/TR-Uebersetzungen ("Abendessen",
+                        // "Öğle Yemeği") nicht aus. `.minimumScaleFactor`
+                        // schrumpft die Schrift statt umzubrechen - fuer die
+                        // kurzen, bereits funktionierenden Labels an jedem
+                        // anderen Aufrufer (ChartTimeRange, PlateCalculatorView,
+                        // OnboardingView) aendert sich dadurch nichts sichtbar.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(isSelected ? Color.deltiqOrange : Color.clear)

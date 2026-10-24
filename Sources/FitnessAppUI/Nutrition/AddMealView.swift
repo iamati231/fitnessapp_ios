@@ -143,74 +143,74 @@ public struct AddMealView: View {
 
     public var body: some View {
         NavigationStack {
-            Form {
-                detailsSection
-                aiSection
-                searchSection
-                if !draft.items.isEmpty {
-                    itemsSection
-                    previewSection
-                }
-                if editingMeal != nil {
-                    deleteSection
-                }
-                // UI-Konsistenz-Fix: ersetzt den vormaligen SwiftUI-Alert
-                // -- gleiche Section-Form wie `CustomFoodEntrySheet`s eigene
-                // `saveErrorMessage`-Row.
-                if let saveErrorMessage {
-                    Section {
-                        Text(saveErrorMessage)
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                            .listRowBackground(Color.Deltiq.surface)
+            VStack(spacing: 0) {
+                // Bugfix (writing-block.md 4.2, "Speichern und Abbrechen
+                // verwenden nicht die Deltiq-Standardnavigation"): ersetzt
+                // die native `.navigationTitle`/`ToolbarItem(.cancellation
+                // Action/.confirmationAction)`-Leiste durch dasselbe
+                // `DeltiqHeader`-Geruest, das "Neuer Plan"
+                // (`PlanBuilderView`) und die anderen Formular-Editoren
+                // (z.B. `TrainingLocationEquipmentEditorView`) bereits
+                // verwenden — Zurueck-Chevron links, Haken rechts statt
+                // System-Textbuttons. Semantik unveraendert: derselbe
+                // Verwerfen-Rueckfrage-Pfad fuer "Zurueck", derselbe
+                // `saveMeal()`/`disabled(...)`-Zustand fuer "Speichern".
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
+                    title: String(localized: editingMeal == nil ? "nutrition.addMeal.title" : "nutrition.editMeal.title", bundle: .module),
+                    onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                    actions: [
+                        DeltiqHeaderAction(
+                            systemImage: "checkmark",
+                            isDisabled: (draft.didSaveSuccessfully && !draft.hasPendingCleanup) || draft.items.isEmpty,
+                            accessibilityLabel: String(localized: editingMeal == nil ? "nutrition.addMeal.save" : "nutrition.editMeal.save", bundle: .module)
+                        ) {
+                            saveMeal()
+                        }
+                    ]
+                )
+                Form {
+                    detailsSection
+                    aiSection
+                    searchSection
+                    if !draft.items.isEmpty {
+                        itemsSection
+                        previewSection
                     }
-                    .listRowSeparatorTint(Color.Deltiq.divider)
+                    if editingMeal != nil {
+                        deleteSection
+                    }
+                    // UI-Konsistenz-Fix: ersetzt den vormaligen SwiftUI-Alert
+                    // -- gleiche Section-Form wie `CustomFoodEntrySheet`s eigene
+                    // `saveErrorMessage`-Row.
+                    if let saveErrorMessage {
+                        Section {
+                            Text(saveErrorMessage)
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                                .listRowBackground(Color.Deltiq.surface)
+                        }
+                        .listRowSeparatorTint(Color.Deltiq.divider)
+                    }
                 }
-            }
-            // Task A: Mengenbereich haengt NICHT mehr im scrollenden Form-Flow
-            // (vorher musste man die bis zu ~130 Eintraege lange Trefferliste
-            // ganz durchscrollen, um ihn ueberhaupt zu erreichen) — stattdessen
-            // unten verankert, unabhaengig vom Scroll-Stand der Suche. Exaktes
-            // Vorbild: ActiveWorkoutView.swift's RestTimerBar-safeAreaInset.
-            .safeAreaInset(edge: .bottom) {
-                if let selectedEntry {
-                    quantityBottomBar(for: selectedEntry)
+                // Task A: Mengenbereich haengt NICHT mehr im scrollenden Form-Flow
+                // (vorher musste man die bis zu ~130 Eintraege lange Trefferliste
+                // ganz durchscrollen, um ihn ueberhaupt zu erreichen) — stattdessen
+                // unten verankert, unabhaengig vom Scroll-Stand der Suche. Exaktes
+                // Vorbild: ActiveWorkoutView.swift's RestTimerBar-safeAreaInset.
+                .safeAreaInset(edge: .bottom) {
+                    if let selectedEntry {
+                        quantityBottomBar(for: selectedEntry)
+                    }
                 }
+                .scrollContentBackground(.hidden)
+                .keyboardDismissToolbar()
             }
-            .scrollContentBackground(.hidden)
             .background(Color.Deltiq.background.ignoresSafeArea())
-            .navigationTitle(Text(editingMeal == nil ? "nutrition.addMeal.title" : "nutrition.editMeal.title", bundle: .module))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             #endif
-            .keyboardDismissToolbar()
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    // Task 8: verwirft den MealDraft weiterhin kommentarlos
-                    // OHNE Entwurfsdaten (kein save()-Aufruf, keine Spur im
-                    // ModelContext) -- MIT Entwurfsdaten (siehe `isDirty`)
-                    // fragt derselbe Button jetzt erst per
-                    // `discardChangesConfirmation` nach.
-                    Button {
-                        isDirty ? (showingDiscardConfirm = true) : dismiss()
-                    } label: {
-                        Text("nutrition.addMeal.cancel", bundle: .module)
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        saveMeal()
-                    } label: {
-                        Text(editingMeal == nil ? "nutrition.addMeal.save" : "nutrition.editMeal.save", bundle: .module)
-                    }
-                    // UI-seitige Zusatz-Absicherung — die eigentlichen
-                    // Garantien (Doppeltap-Schutz, leere-Items-Guard) sitzen
-                    // in MealDraft.save() selbst.
-                    // NUT-01: `hasPendingCleanup` laesst den Tap offen, damit
-                    // ein gescheiterter Cleanup erneut versucht wird.
-                    .disabled((draft.didSaveSuccessfully && !draft.hasPendingCleanup) || draft.items.isEmpty)
-                }
-            }
+            .navigationBarBackButtonHidden(true)
             .confirmationDialog(
                 Text("nutrition.editMeal.deleteConfirm", bundle: .module),
                 isPresented: $showingDeleteConfirm,
@@ -730,7 +730,10 @@ public struct AddMealView: View {
                 ForEach(draft.items) { item in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(item.nameSnapshot)
+                            // writing-block.md Punkt 6: katalogbasierte Namen
+                            // folgen der aktuellen App-Sprache, nicht dem bei
+                            // `addItem` eingefrorenen Snapshot.
+                            Text(resolvedMealItemName(nameSnapshot: item.nameSnapshot, catalogID: item.catalogID, catalogEntries: catalogEntries))
                                 .foregroundStyle(Color.primary)
                             Text("\(item.quantity.truncated(to: 2).formattedTwoDecimals) \(unitLabel(item.unit))")
                                 .font(.caption)
@@ -751,7 +754,9 @@ public struct AddMealView: View {
             ForEach(draft.items) { item in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(item.nameSnapshot)
+                        // writing-block.md Punkt 6: siehe Kommentar im
+                        // `showsStoredStateInsteadOfDraft`-Zweig oben.
+                        Text(resolvedMealItemName(nameSnapshot: item.nameSnapshot, catalogID: item.catalogID, catalogEntries: catalogEntries))
                             .foregroundStyle(Color.primary)
                         Text("\(item.quantity.truncated(to: 2).formattedTwoDecimals) \(unitLabel(item.unit))")
                             .font(.caption)
@@ -1102,13 +1107,9 @@ public struct AddMealView: View {
 
     // MARK: Localization helpers
 
-    private func resolvedName(for entry: FoodCatalogEntry) -> String {
-        // Online-importierte/manuell angelegte Eintraege haben einen
-        // Klartext-Namen statt eines xcstrings-Keys (kein Lokalisierungs-
-        // Key fuer vom Nutzer/einer Online-Quelle stammenden Text) — der hat
-        // Vorrang vor `nameKey`.
-        entry.displayName ?? String(localized: String.LocalizationValue(entry.nameKey), bundle: .module)
-    }
+    // `resolvedName(for:)` moved to `Extensions/FoodCatalogEntry+DisplayName.swift`
+    // (writing-block.md Punkt 6) — `NutritionDayView` needs the identical
+    // logic, now a shared top-level function instead of a second copy.
 
     private func mealTypeLabel(_ type: MealType) -> String {
         String(localized: String.LocalizationValue(type.localizationKey), bundle: .module)
