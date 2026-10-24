@@ -19,6 +19,7 @@ import FitnessAppCore
 /// is only to prove WHICH branch (nameKey vs. frozen snapshot vs.
 /// displayName) was taken, not what the localized text ends up being.
 @available(iOS 17.0, macOS 14.0, *)
+@MainActor
 final class FoodCatalogEntryDisplayNameTests: XCTestCase {
 
     private func makeContainer() throws -> ModelContainer {
