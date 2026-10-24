@@ -40,20 +40,31 @@ final class PlanBuilderResultDayRowTemplateAlignmentTests: XCTestCase {
         return nil
     }
 
-    /// Finds `marker` (any unique, stable prefix of a function's signature -
-    /// does not need to include the parameter list or the trailing `{`,
-    /// which may wrap across lines) and brace-matches the body of the first
-    /// function whose signature starts there.
+    /// Finds `marker` (any unique, stable prefix of a function's signature)
+    /// and brace-matches the body of the first function whose signature
+    /// starts there. `marker` may already include the trailing opening `{`
+    /// (for a single-line signature) or stop right before it (letting this
+    /// helper find it, for a signature whose parameter list wraps across
+    /// lines) - either way the SAME brace is used as the body's start, never
+    /// one found by scanning further forward (which would silently pick up
+    /// the function's first NESTED brace, e.g. an early `if`/`guard`, as a
+    /// false start).
     private func functionBody(startingAt marker: String, in source: String) throws -> String {
         guard let markerRange = source.range(of: marker) else {
             XCTFail("\(marker) not found")
             return ""
         }
-        guard let braceIndex = source[markerRange.upperBound...].firstIndex(of: "{") else {
-            XCTFail("no opening brace found after \(marker)")
-            return ""
+        let openBraceIndex: String.Index
+        if marker.trimmingCharacters(in: .whitespaces).hasSuffix("{") {
+            openBraceIndex = source.index(before: markerRange.upperBound)
+        } else {
+            guard let found = source[markerRange.upperBound...].firstIndex(of: "{") else {
+                XCTFail("no opening brace found after \(marker)")
+                return ""
+            }
+            openBraceIndex = found
         }
-        guard let body = Self.matchingBraceBlock(in: source, afterOpenBrace: source.index(after: braceIndex)) else {
+        guard let body = Self.matchingBraceBlock(in: source, afterOpenBrace: source.index(after: openBraceIndex)) else {
             XCTFail("could not brace-match the body following \(marker)")
             return ""
         }
