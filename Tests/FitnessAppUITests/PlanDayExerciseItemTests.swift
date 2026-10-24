@@ -30,9 +30,13 @@ final class PlanDayExerciseItemTests: XCTestCase {
         let container = try makeContainer()
         let context = container.mainContext
 
-        let second = Exercise(name: "Kniebeuge", orderIndex: 1)
-        let first = Exercise(name: "Bankdruecken", orderIndex: 0)
-        let third = Exercise(name: "Kreuzheben", orderIndex: 2)
+        // Bewusst KEINE echten Katalog-Namen (z.B. "Kniebeuge") - die matchen
+        // `ExerciseLibraryData.all` und `displayName` loest dann ueber einen
+        // `localizationKey` auf, dessen Aufloesung im Test-Bundle-Kontext
+        // nicht denselben Rohstring liefert (CI-Fund).
+        let second = Exercise(name: "Testuebung B", orderIndex: 1)
+        let first = Exercise(name: "Testuebung A", orderIndex: 0)
+        let third = Exercise(name: "Testuebung C", orderIndex: 2)
         context.insert(second)
         context.insert(first)
         context.insert(third)
@@ -40,14 +44,14 @@ final class PlanDayExerciseItemTests: XCTestCase {
 
         let items = DashboardView.PlanDayExerciseItem.makeList(from: [second, first, third])
 
-        XCTAssertEqual(items.map(\.displayName), ["Bankdruecken", "Kniebeuge", "Kreuzheben"])
+        XCTAssertEqual(items.map(\.displayName), ["Testuebung A", "Testuebung B", "Testuebung C"])
     }
 
     func testMakeListPreservesPersistentIdentityAsID() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
-        let exercise = Exercise(name: "Klimmzug", orderIndex: 0)
+        let exercise = Exercise(name: "Testuebung", orderIndex: 0)
         context.insert(exercise)
         try context.save()
 
