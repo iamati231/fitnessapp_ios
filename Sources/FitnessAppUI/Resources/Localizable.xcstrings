@@ -58038,6 +58038,52 @@
           }
         }
       }
+    },
+    "workout.detail.setsReps.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld Satz • %2$@ Wdh"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld set • %2$@ reps"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld set • %2$@ tekrar"
+          }
+        }
+      }
+    },
+    "workout.detail.setsReps.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld Sätze • %2$@ Wdh"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld sets • %2$@ reps"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld set • %2$@ tekrar"
+          }
+        }
+      }
     }
   }
 }

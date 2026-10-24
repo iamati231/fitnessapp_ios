@@ -1846,16 +1846,13 @@ public struct PlanBuilderView: View {
             // (`Extensions/ExerciseSpec+DisplayName.swift`), keine zweite
             // Darstellungslogik.
             if !spec.exercises.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 8) {
                     ForEach(Array(spec.exercises.enumerated()), id: \.offset) { _, exercise in
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(localizedExerciseName(exercise.name))
                                 .font(.subheadline)
                                 .foregroundStyle(.primary)
-                            Spacer(minLength: 8)
-                            Text(detailLine(for: exercise, dayFormat: spec.timeFormat))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            exerciseDetailRow(for: exercise, dayFormat: spec.timeFormat)
                         }
                     }
                 }
@@ -1869,6 +1866,35 @@ public struct PlanBuilderView: View {
         .listRowSeparator(.hidden)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
+    }
+
+    /// UI-Ticket ("Platzoptimierung Schritt 3"): `detailLine`'s full phrase
+    /// ("3 Sätze • 8-12 Wdh • 90s Pause") wrapped onto 2-3 lines alongside a
+    /// long exercise name, and repeated the "Pause"/"mola"/"rest" word once
+    /// per exercise (5-6 times a day). Strength exercises (the common,
+    /// multi-exercise case this ticket is about) now show sets/reps as text
+    /// and the rest time as a timer icon + bare number instead - the icon
+    /// carries the meaning, so the word doesn't need repeating. Cardio and
+    /// timed-format days (AMRAP/EMOM/Auf Zeit) keep `detailLine`'s existing,
+    /// already-compact single-line phrase unchanged - those days have at
+    /// most one exercise, never the repeated-"Pause" clutter this ticket
+    /// reports.
+    @ViewBuilder
+    private func exerciseDetailRow(for exercise: ExerciseSpec, dayFormat: WorkoutTimeFormat?) -> some View {
+        if dayFormat != nil || exercise.isCardio {
+            Text(detailLine(for: exercise, dayFormat: dayFormat))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            HStack(spacing: 8) {
+                Text(setsRepsText(for: exercise))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Label("\(exercise.restSeconds)s", systemImage: "timer")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
     }
 
     /// Name, Fixierungs-Badges, Belastungs-Badge und das Aktionen-Menu — die

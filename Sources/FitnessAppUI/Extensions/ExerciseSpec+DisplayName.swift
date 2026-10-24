@@ -59,4 +59,21 @@ func detailLine(for exercise: ExerciseSpec, dayFormat: WorkoutTimeFormat?) -> St
         .replacingOccurrences(of: "%2$@",   with: repsText)
         .replacingOccurrences(of: "%3$lld", with: "\(exercise.restSeconds)")
 }
+
+/// Device-Bugreport ("Platzoptimierung Schritt 3"): sets × reps WITHOUT the
+/// rest clause — `PlanBuilderView.resultDayRow`'s compact strength-exercise
+/// row shows the rest time separately as an icon + number instead of
+/// repeating the localized "Pause"/"rest"/"mola" word on every one of a
+/// day's 5-6 exercises. Same sets/reps wording and `workout.detail.reps.*`
+/// pattern as `detailLine` above, just without the trailing `%3$lld` clause.
+func setsRepsText(for exercise: ExerciseSpec) -> String {
+    let repsText = exercise.repsMin == exercise.repsMax
+        ? "\(exercise.repsMin)"
+        : "\(exercise.repsMin)-\(exercise.repsMax)"
+    let key = exercise.sets == 1 ? "workout.detail.setsReps.one" : "workout.detail.setsReps.other"
+    let template = String(localized: String.LocalizationValue(key), bundle: .module)
+    return template
+        .replacingOccurrences(of: "%1$lld", with: "\(exercise.sets)")
+        .replacingOccurrences(of: "%2$@",   with: repsText)
+}
 #endif
