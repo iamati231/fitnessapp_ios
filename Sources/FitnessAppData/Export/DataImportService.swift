@@ -1432,6 +1432,11 @@ public enum DataImportService {
             // DataExportService.buildDays - aeltere ZIPs ohne sie -> nil,
             // der Bestandsfall "nicht festgelegt".
             let enduranceSportKind = row.optionalString("endurance_sport_kind").flatMap(TrainingTypeKind.init(rawValue:))
+            // Phase B (Laufcoaching Dual-Path, Task 5): additive Spalte,
+            // siehe DataExportService.buildDays - aeltere ZIPs ohne sie ->
+            // `false`, derselbe "kein Beweis" Bestandsfall wie bei jedem
+            // vor dieser Ergaenzung instanziierten Alt-Plan.
+            let isAutoFilledPlaceholder = row.bool("is_auto_filled_placeholder") ?? false
 
             let day = TrainingDay(
                 name: name,
@@ -1454,7 +1459,8 @@ public enum DataImportService {
                 enduranceRestDurationSeconds: enduranceRestDurationSeconds,
                 enduranceSportKind: enduranceSportKind,
                 generationFingerprint: generationFingerprint,
-                generatorSequenceIndex: generatorSequenceIndex
+                generatorSequenceIndex: generatorSequenceIndex,
+                isAutoFilledPlaceholder: isAutoFilledPlaceholder
             )
             context.insert(day)
             if !exportID.isEmpty { idMap[exportID] = day }

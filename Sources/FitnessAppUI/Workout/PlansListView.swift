@@ -853,7 +853,12 @@ public struct PlansListView: View {
                 timeCapMinutes: day.timeCapMinutes,
                 circuitRounds: day.circuitRounds,
                 circuitRestSeconds: day.circuitRestSeconds,
-                circuitMode: day.circuitMode
+                circuitMode: day.circuitMode,
+                // Phase B, Task 5: Herkunfts-Stempel wird dupliziert, nicht
+                // geraten - ein echter, unberuehrter Auto-Ruhetag bleibt nach
+                // dem Duplizieren eine eligible Einfuege-Stelle; ein bereits
+                // vom User angefasster Tag (false) bleibt es nicht.
+                isAutoFilledPlaceholder: day.isAutoFilledPlaceholder
             )
             modelContext.insert(dayCopy)
 

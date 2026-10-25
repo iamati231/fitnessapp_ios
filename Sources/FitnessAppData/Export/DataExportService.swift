@@ -653,7 +653,12 @@ public enum DataExportService {
             "generation_fingerprint", "generator_sequence_index",
             // Paket 2 (Sportart-Unterscheidung): additive Spalte, gleiches
             // Muster wie oben.
-            "endurance_sport_kind"
+            "endurance_sport_kind",
+            // Phase B (Laufcoaching Dual-Path, Task 5): additive Spalte,
+            // gleiches Muster wie oben - ohne sie wuerde ein exportierter
+            // und re-importierter Plan jeden echten Auto-Ruhetag
+            // stillschweigend auf `false` zuruecksetzen.
+            "is_auto_filled_placeholder"
         ])
         for d in items {
             w.appendRow([
@@ -678,7 +683,8 @@ public enum DataExportService {
                 d.enduranceRestDurationSeconds.map(String.init) ?? "",
                 d.generationFingerprint ?? "",
                 d.generatorSequenceIndex.map(String.init) ?? "",
-                d.enduranceSportKind?.rawValue ?? ""
+                d.enduranceSportKind?.rawValue ?? "",
+                CSVWriter.bool(d.isAutoFilledPlaceholder)
             ])
         }
         return w.data()

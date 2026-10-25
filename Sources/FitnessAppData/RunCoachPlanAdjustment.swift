@@ -52,6 +52,12 @@ public enum RunCoachPlanAdjustment {
     public struct Analysis: Equatable, Sendable {
         public let cardioAvailability: CardioAvailability
         public let legWork: LegWorkRecommendation
+        /// Phase B (Laufcoaching Dual-Path, Task 5): unabhaengig von
+        /// `cardioAvailability` - ein Plan kann GLEICHZEITIG einen
+        /// ersetzbaren Cardio-Tag (`.ready`) UND einfuegbare Ruhetage haben,
+        /// das eine schliesst das andere nicht aus. Siehe
+        /// `eligibleRestDaysForInsertion`.
+        public let insertableRestDays: [PersistentIdentifier]
     }
 
     /// Bein-Muskelgruppen laut bestehender `MuscleGroup`-Taxonomie
@@ -111,9 +117,38 @@ public enum RunCoachPlanAdjustment {
         plan.days.filter(isCardioDay).filter(isEligibleForAdjustment)
     }
 
+    /// Rest-Tage, in die ein neuer Cardio-Tag eingefuegt werden darf.
+    /// Herkunft wird durch `TrainingDay.isAutoFilledPlaceholder` bewiesen
+    /// (Auftraggeber-Entscheidung, Option (a) — siehe "Dritte Review-Runde"),
+    /// NICHT durch Name/Fingerprint/eine zufaellige Feldkombination geraten.
+    /// FUENF Bedingungen, ALLE erforderlich (fünfte Review-Runde, Präzisierung 3
+    /// — diese Funktion garantiert NUR die Tag-eigene Eignung; Plan-Zugehörigkeit
+    /// und ausreichende Anzahl sind eine SEPARATE Garantie von
+    /// `insertCoachCardioDays`, siehe dort): `isAutoFilledPlaceholder == true`
+    /// (historischer Herkunfts-Beweis — bleibt nach einer erfolgreichen
+    /// Einfuegung bewusst `true` stehen, exakt dasselbe Prinzip wie
+    /// `generationFingerprint`: ein permanenter Erzeugungs-Stempel, kein
+    /// "ist aktuell noch leer"-Live-Bit), `type == .rest`, `activeExercises.isEmpty`,
+    /// `sessions.isEmpty` (drei Live-Zustands-Pruefungen), UND `customName == nil`
+    /// (Vierte Review-Runde, Entscheidung 2: einziges ueber `DayEditorView`
+    /// erreichbares Feld, das eine bewusste Nutzer-Absicht fuer GENAU diesen
+    /// Tag ausdrueckt — unabhaengig von `isAutoFilledPlaceholder`, das nur die
+    /// Herkunft, nicht die seitherige Nutzer-Absicht beweist).
+    public static func isEligibleRestDayForInsertion(_ day: TrainingDay) -> Bool {
+        day.isAutoFilledPlaceholder
+            && day.type == .rest
+            && day.activeExercises.isEmpty
+            && day.sessions.isEmpty
+            && day.customName == nil
+    }
+
+    public static func eligibleRestDaysForInsertion(in plan: TrainingPlan) -> [TrainingDay] {
+        plan.days.filter(isEligibleRestDayForInsertion)
+    }
+
     public static func analyze(plan: TrainingPlan?) -> Analysis {
         guard let plan else {
-            return Analysis(cardioAvailability: .noActivePlan, legWork: .conflict)
+            return Analysis(cardioAvailability: .noActivePlan, legWork: .conflict, insertableRestDays: [])
         }
 
         let eligibleCardio = eligibleCardioDays(in: plan)
@@ -125,8 +160,9 @@ public enum RunCoachPlanAdjustment {
             $0.type != .rest && !isCardioDay($0) && isEligibleForAdjustment($0)
         }
         let legWork = legWorkRecommendation(eligibleStrengthDays: eligibleStrengthDays)
+        let insertableRestDays = eligibleRestDaysForInsertion(in: plan).map(\.persistentModelID)
 
-        return Analysis(cardioAvailability: cardioAvailability, legWork: legWork)
+        return Analysis(cardioAvailability: cardioAvailability, legWork: legWork, insertableRestDays: insertableRestDays)
     }
 
     private static func legWorkRecommendation(eligibleStrengthDays: [TrainingDay]) -> LegWorkRecommendation {
