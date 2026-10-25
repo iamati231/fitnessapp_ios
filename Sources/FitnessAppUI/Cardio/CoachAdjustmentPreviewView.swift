@@ -30,8 +30,23 @@ struct CoachAdjustmentPreviewView: View {
         CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
     }
 
-    private var newCardioDays: [DaySpec] {
-        CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: profile.cardioGoal)
+    /// Task 7 (Decision 3 Teil 2): die Vorschau muss dasselbe Ziel zeigen,
+    /// das `accept()` tatsaechlich anwendet - `model.proposedGoal` statt des
+    /// rohen, moeglicherweise nicht erreichbaren `profile.cardioGoal`
+    /// (Fallback nur, wenn kein kleineres Ziel mehr erreichbar ist, siehe
+    /// `CoachAdjustmentCardModel.proposedGoal`). `cardioRunProfile` wird
+    /// hier aus denselben Profil-Feldern gebaut wie in `accept()`, damit die
+    /// "Nachher"-Spalte ebenfalls eine Pace zeigt statt immer `nil`.
+    private func newCardioDays(for model: CoachAdjustmentCardModel) -> [DaySpec] {
+        let goal = model.proposedGoal ?? profile.cardioGoal
+        return CoachAdjustmentCardModel.cardioOnlyDaySpecs(
+            for: goal,
+            cardioRunProfile: CardioRunProfile(
+                goal: goal,
+                current5kReferenceSeconds: profile.current5kReferenceSeconds,
+                weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
+            )
+        )
     }
 
     var body: some View {
@@ -106,7 +121,7 @@ struct CoachAdjustmentPreviewView: View {
                         .strikethrough()
                         .foregroundStyle(.secondary)
                 }
-                ForEach(Array(newCardioDays.enumerated()), id: \.offset) { _, spec in
+                ForEach(Array(newCardioDays(for: model).enumerated()), id: \.offset) { _, spec in
                     Text(spec.name)
                 }
             } header: {

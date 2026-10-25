@@ -42,10 +42,9 @@ public struct CoachAdjustmentCardModel: Equatable {
     /// unveraenderte `profile.cardioGoal` zurueck ("kein Check moeglich,
     /// nimm was der Nutzer eingestellt hat").
     ///
-    /// Task 7 Handoff: `accept()`/`CoachAdjustmentPreviewView` lesen heute
-    /// noch das rohe `profile.cardioGoal` statt dieses Feldes - Task 7
-    /// verdrahtet das um (siehe `CoachAdjustmentPreviewView.swift:84` fuer
-    /// den aktuell NUR fuer die Kompilierbarkeit noetigen Zwischenstand).
+    /// Task 7: `accept()` und `CoachAdjustmentPreviewView` lesen dieses Feld
+    /// jetzt statt des rohen `profile.cardioGoal` - siehe `accept()` unten
+    /// fuer die konkrete Verdrahtung ("effectiveProposedGoal").
     public let proposedGoal: CardioGoal?
     public let analysis: RunCoachPlanAdjustment.Analysis
     public let fingerprint: String
@@ -159,14 +158,24 @@ public struct CoachAdjustmentCardModel: Equatable {
         // Zeitpunkt dieses Aufrufs lesen, nicht die eingefrorene Kopie.
         guard profile.cardioPlanAdjustmentFingerprint != fingerprint else { return 0 }
         let eligibleDays = RunCoachPlanAdjustment.eligibleCardioDays(in: plan)
+        // Task 7 (Decision 3 Teil 2): die anzuwendenden Tage muessen dem
+        // tatsaechlich VORGESCHLAGENEN Ziel entsprechen (`proposedGoal`),
+        // nicht dem moeglicherweise nicht erreichbaren `profile.cardioGoal`
+        // - sonst wendet `accept` genau das Ziel an, das der Machbarkeits-
+        // Check gerade als nicht erreichbar verworfen hat. Fallback auf
+        // `profile.cardioGoal`, wenn selbst kein kleineres Ziel mehr
+        // erreichbar ist (`proposedGoal == nil`, siehe dortige Doku) - dann
+        // gibt es keinen besseren Vorschlag, den man stattdessen anwenden
+        // koennte.
+        let effectiveProposedGoal = proposedGoal ?? profile.cardioGoal
         // Task 9 Nachbesserung: dieselbe Baseline-Weitergabe wie
         // `CardioFeasibilityCardModel.make` - `accept` rechnet bei jedem
         // Aufruf frisch aus dem aktuellen `profile`, die Baseline ist also
         // automatisch immer aktuell, ohne eigene Re-Derive-Logik.
         let newCardioDays = Self.cardioOnlyDaySpecs(
-            for: profile.cardioGoal,
+            for: effectiveProposedGoal,
             cardioRunProfile: CardioRunProfile(
-                goal: profile.cardioGoal,
+                goal: effectiveProposedGoal,
                 current5kReferenceSeconds: profile.current5kReferenceSeconds,
                 weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
             )
@@ -176,6 +185,16 @@ public struct CoachAdjustmentCardModel: Equatable {
         )
         guard count > 0 else { return 0 }
         profile.cardioPlanAdjustmentFingerprint = fingerprint
+        // Mirrors `CardioFeasibilityCardModel.accept`'s completion closure,
+        // which also only writes `profile.cardioGoal` after confirmed
+        // success - unlike that sibling path, nothing here mutates
+        // `profile.cardioGoal` BEFORE this point (no nested
+        // `CoachAdjustmentCardModel.make` re-derivation from a live-mutated
+        // goal is needed inside this function, since `self` is already a
+        // fully-built instance), so there is nothing to roll back on the
+        // `throws` path above: a failed `applyCoachCardioAdjustment` leaves
+        // `profile.cardioGoal` untouched by construction.
+        profile.cardioGoal = effectiveProposedGoal
 
         // Restpunkt 2 (Planbindung): dieser Pfad aendert DENSELBEN Plan
         // in-place (`activatedAt` bleibt unveraendert, siehe Typ-Doku oben) -

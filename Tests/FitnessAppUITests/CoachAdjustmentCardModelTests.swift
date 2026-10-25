@@ -2,7 +2,7 @@
 import XCTest
 import SwiftData
 @testable import FitnessAppUI
-import FitnessAppData
+@testable import FitnessAppData
 import FitnessAppCore
 
 /// Paket 1 (Laufcoach-Plananpassung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
@@ -18,6 +18,43 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
 
     override func setUpWithError() throws {
         container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    }
+
+    override func tearDownWithError() throws {
+        container = nil
+        // Gleiches Muster wie `CardioFeasibilityCardModelTests`: statischer
+        // Test-DI-Seam auf dem Typ, nicht Instanz-State - muss nach jedem
+        // Test zurueckgesetzt werden, sonst "leakt" ein hier gesetzter Mock
+        // in alle nachfolgenden Tests.
+        PlanGeneratorInstantiator.saveOverrideForTesting = nil
+    }
+
+    private struct TestSaveError: Error {}
+
+    private var sourcesRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // this file
+            .deletingLastPathComponent() // FitnessAppUITests
+            .deletingLastPathComponent() // Tests
+            .appendingPathComponent("Sources/FitnessAppUI")
+    }
+
+    private func contents(of relativePath: String) throws -> String {
+        try String(contentsOf: sourcesRoot.appendingPathComponent(relativePath), encoding: .utf8)
+    }
+
+    private static func matchingBraceBlock(in source: String, afterOpenBrace start: String.Index) -> String? {
+        var depth = 1
+        var index = start
+        while index < source.endIndex {
+            let char = source[index]
+            if char == "{" { depth += 1 } else if char == "}" {
+                depth -= 1
+                if depth == 0 { return String(source[start..<index]) }
+            }
+            index = source.index(after: index)
+        }
+        return nil
     }
 
     /// Profil mit erreichbarem Laufziel (10K, 20 Wochen verfuegbar, 20 km/
@@ -191,6 +228,108 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
             XCTAssertEqual(withExplicitNil, withOmittedParameter)
             XCTAssertTrue(withOmittedParameter.flatMap(\.exercises).allSatisfy { $0.targetPaceMinutesPerKm == nil })
         }
+    }
+
+    // MARK: - Task 7 (Decision 3 Teil 2): accept() wendet das vorgeschlagene, nicht das stale Ziel an
+
+    /// Mirror von `CardioFeasibilityCardModelTests.
+    /// testAcceptAppliesTheSuggestedGoalNotTheStaleInfeasibleGoalWhenAdjustingInPlace`
+    /// fuer den In-Place-Merge-Pfad: Marathon in 7 Wochen bei 15 km/Woche
+    /// Basis ist nicht erreichbar, 5K ist das einzige kleinere erreichbare
+    /// Ziel (`testProposedGoalEqualsSuggestedGoalWhenInfeasible` oben prueft
+    /// bereits `model.proposedGoal` selbst) - `accept()` muss diesen
+    /// Vorschlag tatsaechlich auf den Plan anwenden UND `profile.cardioGoal`
+    /// damit mitziehen, nicht am stale `.marathon` haengen bleiben.
+    func testAcceptAppliesTheSuggestedGoalNotTheStaleInfeasibleGoalWhenAdjustingInPlace() throws {
+        let (profile, plan) = makeProfileAndPlan()
+        profile.cardioGoal = .marathon
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertEqual(model.verdict?.feasible, false, "Testaufbau: Marathon in 7 Wochen bei 15 km Basis muss NICHT erreichbar sein")
+        guard let proposedGoal = model.proposedGoal else {
+            return XCTFail("Testaufbau: es sollte ein kleineres, erreichbares Ziel vorgeschlagen werden")
+        }
+        XCTAssertNotEqual(proposedGoal, profile.cardioGoal, "Testaufbau: der Vorschlag muss vom urspruenglichen Ziel abweichen")
+
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertGreaterThan(count, 0)
+
+        // (b) profile.cardioGoal muss auf das vorgeschlagene Ziel mitgezogen worden sein - NICHT
+        // das alte, nicht erreichbare Ziel.
+        XCTAssertEqual(profile.cardioGoal, proposedGoal)
+
+        // (a) der angepasste Cardio-Tag muss den Spezifikationen fuer `proposedGoal` entsprechen.
+        let expectedSpecs = CoachAdjustmentCardModel.cardioOnlyDaySpecs(
+            for: proposedGoal,
+            cardioRunProfile: CardioRunProfile(
+                goal: proposedGoal,
+                current5kReferenceSeconds: profile.current5kReferenceSeconds,
+                weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
+            )
+        )
+        XCTAssertFalse(expectedSpecs.isEmpty, "Testaufbau: es sollte Cardio-Tagesinhalte fuer das vorgeschlagene Ziel geben")
+        XCTAssertEqual(
+            plan.days[0].activeExercises.map(\.name), expectedSpecs[0].exercises.map(\.name),
+            "der angepasste Tag muss den Inhalt fuer das VORGESCHLAGENE Ziel tragen"
+        )
+    }
+
+    /// Mirror von `CardioFeasibilityCardModelTests.
+    /// testAcceptRestoresTheOriginalCardioGoalWhenTheInPlaceAdjustmentFails`
+    /// fuer den In-Place-Merge-Pfad: erzwingt ueber denselben
+    /// `PlanGeneratorInstantiator.saveOverrideForTesting`-DI-Seam einen Fehlschlag
+    /// im echten `save()` innerhalb `applyCoachCardioAdjustment` - `profile.cardioGoal`
+    /// darf danach nicht auf das Vorschlags-Ziel haengen bleiben, obwohl nichts
+    /// uebernommen wurde.
+    func testAcceptRestoresTheOriginalCardioGoalWhenTheInPlaceAdjustmentFails() throws {
+        let (profile, plan) = makeProfileAndPlan()
+        profile.cardioGoal = .marathon
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        guard let proposedGoal = model.proposedGoal else {
+            return XCTFail("Testaufbau: es sollte ein kleineres, erreichbares Ziel vorgeschlagen werden")
+        }
+        XCTAssertNotEqual(proposedGoal, profile.cardioGoal, "Testaufbau: der Vorschlag muss vom urspruenglichen Ziel abweichen")
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        XCTAssertThrowsError(try model.accept(plan: plan, profile: profile, in: context))
+
+        XCTAssertEqual(
+            profile.cardioGoal, .marathon,
+            "ein gescheiterter Versuch darf profile.cardioGoal nicht auf das Vorschlags-Ziel haengen lassen"
+        )
+        XCTAssertNil(profile.cardioPlanAdjustmentFingerprint, "nichts wurde uebernommen - kein Fingerprint darf gesetzt sein")
+    }
+
+    // MARK: - Task 7: CoachAdjustmentPreviewView nutzt model.proposedGoal fuer die Tagesgenerierung
+
+    /// Source-introspection (kein SwiftUI-Render-Harness in diesem Repo),
+    /// gleiches Muster wie `CardioFeasibilityDayRowPaceTests`: stellt sicher,
+    /// dass die Vorschau dasselbe Ziel anzeigt, das `accept()` tatsaechlich
+    /// anwendet (`model.proposedGoal`), statt des rohen, moeglicherweise
+    /// nicht erreichbaren `profile.cardioGoal`.
+    func testCoachAdjustmentPreviewViewUsesModelProposedGoalForDayGeneration() throws {
+        let source = try contents(of: "Cardio/CoachAdjustmentPreviewView.swift")
+        guard let funcRange = source.range(of: "private func newCardioDays(for model: CoachAdjustmentCardModel) -> [DaySpec] {") else {
+            XCTFail("newCardioDays(for:) function not found"); return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: funcRange.upperBound))
+        XCTAssertTrue(
+            block.contains("model.proposedGoal ?? profile.cardioGoal"),
+            "must use the model's proposed goal, falling back to the raw profile goal only when there is no suggestion"
+        )
+
+        XCTAssertTrue(
+            source.contains("newCardioDays(for: model)"),
+            "the call site inside beforeAfterSection must pass the model through, not read the stale standalone property"
+        )
     }
 }
 #endif
