@@ -606,7 +606,7 @@ public enum PlanGenerator {
     /// "Long Run"s DEL-098-Faktoren (0.70/0.35 systemisch/CNS) liegen
     /// bereits sinnvoll zwischen "Easy Run" (0.50/0.25) und "Intervalle"
     /// (0.75/0.55).
-    private enum RunZone {
+    private enum RunZone: Equatable {
         case easy, tempo, interval
 
         var exerciseName: String {
@@ -713,11 +713,25 @@ public enum PlanGenerator {
                     enduranceSportKind: .running
                 )
             case .easy, .tempo:
+                // Laufcoaching-Plan-Integration (Task 3): Pace nur gesetzt,
+                // wenn eine 5-km-Referenzzeit bekannt ist - sonst bleibt sie
+                // `nil` (heutiges Verhalten, unveraendert). `.interval`
+                // bleibt bewusst aussen vor (Global Constraint): bleibt
+                // distanzbasiert, kein erfundener Pace-Faktor dafuer.
+                let pace: Double?
+                if let referenceSeconds = selection.cardioRunProfile?.current5kReferenceSeconds {
+                    pace = zone == .easy
+                        ? PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+                        : PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+                } else {
+                    pace = nil
+                }
                 exercise = ExerciseSpec(
                     name: zone.exerciseName,
                     sets: 1, repsMin: 0, repsMax: 0,
                     isCardio: true,
                     targetDurationMinutes: selection.sessionDurationMinutes,
+                    targetPaceMinutesPerKm: pace,
                     enduranceSportKind: .running
                 )
             }

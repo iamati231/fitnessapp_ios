@@ -93,13 +93,24 @@ public struct PlanGeneratorTypeSelection: Codable, Sendable, Hashable {
     /// bleibt fuer alte Plaene ohne Migration lesbar.
     public let equipmentPool: Set<Equipment>?
 
+    /// Laufcoaching-Plan-Integration (Task 2/3): Baseline aus dem Profil fuer
+    /// baseline-bewusste Pace-Angaben auf generierten Easy-/Tempo-Lauf-Tagen
+    /// (siehe `PlanGenerator.cardioCandidates`). `nil` heisst "keine Baseline
+    /// bekannt" - heutiges Verhalten (kein `targetPaceMinutesPerKm` auf der
+    /// erzeugten `ExerciseSpec`), unveraendert. Wie `timeFormat`/`equipmentPool`
+    /// oben decodiert ein fehlender Key in bereits gespeicherten
+    /// `generatorInputRaw`-Snapshots automatisch zu `nil` - "Neu rechnen"
+    /// bleibt fuer alte Plaene ohne Migration lesbar.
+    public let cardioRunProfile: CardioRunProfile?
+
     public init(
         kind: TrainingTypeKind,
         daysPerWeek: Int,
         sessionDurationMinutes: Int,
         experience: DifficultyLevel,
         timeFormat: WorkoutTimeFormat? = nil,
-        equipmentPool: Set<Equipment>? = nil
+        equipmentPool: Set<Equipment>? = nil,
+        cardioRunProfile: CardioRunProfile? = nil
     ) {
         self.kind = kind
         self.daysPerWeek = daysPerWeek
@@ -107,6 +118,7 @@ public struct PlanGeneratorTypeSelection: Codable, Sendable, Hashable {
         self.experience = experience
         self.timeFormat = timeFormat
         self.equipmentPool = equipmentPool
+        self.cardioRunProfile = cardioRunProfile
     }
 }
 

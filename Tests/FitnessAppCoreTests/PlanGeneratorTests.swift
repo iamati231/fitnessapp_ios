@@ -255,6 +255,38 @@ final class PlanGeneratorTests: XCTestCase {
         XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .cycling } })
     }
 
+    // MARK: - Laufcoaching-Plan-Integration (Task 3): Baseline-bewusste Pace
+
+    func testCardioCandidatesSetsEasyAndTempoPaceWhenBaselineIsKnown() {
+        let selection = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 3, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        )
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [selection], equipmentPreferences: [], usesFixedWeekdays: false))
+        let easyDay = result.days[0].spec.exercises[0] // cycle starts at .easy
+        XCTAssertEqual(easyDay.targetPaceMinutesPerKm, PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: 1500))
+    }
+
+    func testCardioCandidatesLeavesPaceNilWithoutReferenceTime() {
+        let selection = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 1, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [selection], equipmentPreferences: [], usesFixedWeekdays: false))
+        XCTAssertNil(result.days[0].spec.exercises[0].targetPaceMinutesPerKm)
+    }
+
+    /// Regression fuer Review Focus 1: dieselbe Selection wie
+    /// `testRunningThreeDaysCoversAllThreeZones`, aber ohne `cardioRunProfile`
+    /// (default `nil`) - muss exakt dieselben Zonen/Namen liefern wie vor
+    /// Einfuehrung des neuen, additiven Felds.
+    func testCardioCandidatesWithoutProfileMatchesPreviousOutputExactly() {
+        let result = PlanGenerator.generate(from: input([selection(.running, days: 3)]))
+        let exerciseNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertEqual(exerciseNames, ["Easy Run", "Long Run", "Intervalle"])
+        XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .running } })
+    }
+
     // MARK: - DEL-098-Datentreue: keine erfundenen Uebungsnamen
 
     /// Regression: ein frueherer Entwurf dieses Generators benutzte erfundene
