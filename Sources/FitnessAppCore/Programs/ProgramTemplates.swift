@@ -608,27 +608,21 @@ public enum ProgramTemplates {
         // DEL-172: Dumbbell-Only-Variante. Cardio-Tage unverändert; Strength-
         // Compounds auf KH-Versionen umgemappt (Goblet/KH-Bench/KH-Row).
         //
-        // Equipment-Vielfalt Phase 1 Task 4 (Controller-Korrektur, Update):
+        // Equipment-Vielfalt Phase 1 Task 4 (Controller-Ruling, final):
         // `PlanSelectionResolver.resolve` liest jetzt `resolvedSlots(against:)`
         // ZUERST (siehe `ResolvedPlanSelection.swift`) — Vorschau/Instanziierung
-        // laufen also bereits ueber den neuen Pfad. Dieses `equipmentVariants`
-        // bleibt TROTZDEM bestehen (noch nicht geloescht), weil Task 4 beim
-        // Verdrahten einen echten Semantik-Konflikt gefunden hat: mindestens
-        // `PlanSelectionResolverTests.testFullyAvailableVariantIsUsedWithoutAnyAdaptationAttempt`
-        // und `ResolvedPlanSelectionInstantiationTests.
-        // testAcceptedAdaptedSelectionIsMaterializedExactlyAsPreviewed`
-        // (FitnessAppDataTests) pruefen fuer ein kettlebellOnly-Profil auf
-        // `hybrid_balanced` explizit `appliedAdaptation == nil`/`isAdapted ==
-        // false` — unter dem neuen Slot-Pfad liefert dieselbe Szene zwingend
-        // `appliedAdaptation != nil` (jeder benutzte `reviewedAlternatives`-
-        // Eintrag zaehlt per Brief-Vorgabe als Adaption). Ausserdem lesen
-        // `PlanMatchmaker.matchReasons`/`equipmentMatches` weiterhin DIREKT
+        // laufen bereits ueber den neuen Pfad. Dieses `equipmentVariants`
+        // bleibt DAUERHAFT bestehen (NICHT nur vorlaeufig) — der Controller
+        // hat entschieden, es NICHT zu loeschen: `PlanMatchmaker.matchReasons`/
+        // `equipmentMatches` (realer Quiz-Matcher-Pfad) lesen weiterhin DIREKT
         // `bestEquipmentCheckedVariant`/`equipmentVariants`, nicht
-        // `PlanSelectionResolver.resolve` — ein Loeschen haette den
-        // Quiz-Matcher (reale Nutzerreichweite) von diesen Daten abgeschnitten,
-        // ohne Ersatz. Siehe Task-4-Report fuer die volle Analyse; das
-        // Loeschen bleibt bewusst offen, bis der Controller eine dieser
-        // beiden Fragen entschieden hat.
+        // `PlanSelectionResolver.resolve` — ein Loeschen wuerde das reale
+        // Matching-Verhalten fuer kettlebell-/dumbbell-only-Nutzer auf diesen
+        // 3 Templates stillschweigend aendern. Ein slot-bewusstes Redesign von
+        // `PlanMatchmaker` ist ausdruecklich NICHT Teil dieses Plans (kein
+        // Interfaces-Spec in keinem der 11 Tasks) — `PlanMatchmaker.swift`
+        // bleibt unangetastet, dieser Fund ist eine ledger-Notiz fuer spaetere
+        // Arbeit, kein offener Punkt dieses Tasks. Siehe Task-4-Report.
         equipmentVariants: [
             EquipmentVariant(profile: .dumbbellOnly, days: [
                 DaySpec(name: "Strength Ganzkörper A", localizationKey: "plan.day.strengthFullBodyA", type: .fullBody, sequenceIndex: 1, exercises: [
@@ -778,9 +772,9 @@ public enum ProgramTemplates {
         // Familie umgemappt. RIR-Puffer + Volumen bleiben strukturell identisch
         // zur Barbell-Variante, damit die Concurrent-Logik nicht kippt.
         //
-        // Equipment-Vielfalt Phase 1 Task 4 (Controller-Korrektur, Update):
-        // siehe ausfuehrlichen Kommentar bei hybridBeginner oben — bleibt
-        // bestehen, offener Semantik-Konflikt noch nicht entschieden.
+        // Equipment-Vielfalt Phase 1 Task 4 (Controller-Ruling, final): siehe
+        // ausfuehrlichen Kommentar bei hybridBeginner oben — bleibt DAUERHAFT
+        // bestehen (Controller-Entscheidung, nicht nur vorlaeufig).
         equipmentVariants: [
             // ── Dumbbell-Only (Home-Gym ohne Rack) ─────────────────────────
             EquipmentVariant(profile: .dumbbellOnly, days: [
@@ -944,9 +938,9 @@ public enum ProgramTemplates {
         // Posterior-Chain-Ersatz; alles andere via existierende KH-Versionen
         // aus der Library.
         //
-        // Equipment-Vielfalt Phase 1 Task 4 (Controller-Korrektur, Update):
-        // siehe ausfuehrlichen Kommentar bei hybridBeginner oben — bleibt
-        // bestehen, offener Semantik-Konflikt noch nicht entschieden.
+        // Equipment-Vielfalt Phase 1 Task 4 (Controller-Ruling, final): siehe
+        // ausfuehrlichen Kommentar bei hybridBeginner oben — bleibt DAUERHAFT
+        // bestehen (Controller-Entscheidung, nicht nur vorlaeufig).
         equipmentVariants: [
             EquipmentVariant(profile: .dumbbellOnly, days: [
                 DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [

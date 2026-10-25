@@ -48,24 +48,32 @@ final class ResolvedPlanSelectionInstantiationTests: XCTestCase {
     /// Test 18: die akzeptierte Vorschau-Auswahl (inkl. tatsaechlich
     /// angewandter Substitutionen) landet EXAKT so im gespeicherten Plan —
     /// keine erneute, abweichende Herleitung durch den Instantiator.
+    ///
+    /// Equipment-Vielfalt Phase 1 Task 4 (Controller-Ruling): ersetzt das
+    /// fruehere `testAcceptedAdaptedSelectionIsMaterializedExactlyAsPreviewed`,
+    /// das fuer dieselbe kettlebellOnly-Szene auf `hybrid_balanced` explizit
+    /// `XCTAssertFalse(selection.isAdapted, ...)` erwartete — eine
+    /// `equipmentVariants`-Erwartung, die seit der Slot-Konvertierung (Task 3)
+    /// nicht mehr erreichbar ist (siehe `PlanSelectionResolverTests.
+    /// testUsedSlotAlternativeAlwaysSurfacesAsAnAppliedAdaptation`, identische
+    /// Begruendung). Die eigentliche, hier noch relevante Garantie — "die
+    /// VORSCHAU-Auswahl (inkl. Adaption) landet 1:1 im gespeicherten Plan" —
+    /// gilt unveraendert, nur jetzt mit `isAdapted == true` als Vorbedingung.
     func testAcceptedAdaptedSelectionIsMaterializedExactlyAsPreviewed() throws {
-        // Dumbbell-Variante: "Bankdrücken (KH)" braucht eine Bank, die hier
-        // fehlt -> wird ueber R2-aehnliche Logik NICHT ersetzt (keine Regel
-        // fuer Bankdruecken), bleibt also absichtlich eine offene Luecke.
-        // Fuer einen sauberen "alles aufgeloest"-Fall nehmen wir stattdessen
-        // ein Profil, das die Kettlebell-Variante vollstaendig unveraendert
-        // erfuellt (Phase 4, kein Substitutions-Pfad noetig) UND zusaetzlich
-        // pruefen wir separat die Instanziierung einer ECHTEN Substitution
-        // ueber ein synthetisches Template unten.
         let profile = fullyConfirmedProfile(available: [.kettlebell: nil])
         let substitutionContext = SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
         let selection = PlanSelectionResolver.resolve(template: hybridBalanced, profile: profile, context: substitutionContext)
-        XCTAssertFalse(selection.isAdapted, "Vorbedingung: Kettlebell-Variante passt bereits ohne Substitution (Phase 4)")
+        XCTAssertTrue(selection.isAdapted, "Vorbedingung (seit der Slot-Konvertierung): jede benutzte reviewedAlternatives-Uebung zaehlt als Adaption")
+        XCTAssertEqual(selection.equipmentStatus, .available, "Parity-Beweis: 0 gaps fuer kettlebellOnly auf hybrid_balanced")
 
         let plan = ProgramInstantiator.instantiate(hybridBalanced, in: context, resolvedSelection: selection)
         let materializedNames = Set(plan.days.flatMap { $0.exercises.map(\.name) })
         let expectedNames = Set(selection.days.flatMap { $0.exercises.map(\.name) })
         XCTAssertEqual(materializedNames, expectedNames)
+        // Die tatsaechlich adaptierten Uebungsnamen (nicht die urspruenglichen
+        // Barbell-Defaults) muessen im gespeicherten Plan landen.
+        XCTAssertTrue(materializedNames.contains("Kettlebell Floor Press"))
+        XCTAssertFalse(materializedNames.contains("Bankdrücken"))
     }
 
     /// Test 18 (Substitutions-Fall): ein synthetisches Template mit einer

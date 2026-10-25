@@ -26,9 +26,24 @@ final class PlanSelectionResolverTests: XCTestCase {
         return profile
     }
 
-    // MARK: - 15. Vollstaendig passende Variante wird einer adaptierten vorgezogen
+    // MARK: - 15. Slot-bearing templates: used alternatives ALWAYS surface as an adaptation
 
-    func testFullyAvailableVariantIsUsedWithoutAnyAdaptationAttempt() {
+    /// Equipment-Vielfalt Phase 1 Task 4 (Controller-Ruling): dieser Test
+    /// ersetzt das fruehere `testFullyAvailableVariantIsUsedWithoutAnyAdaptationAttempt`
+    /// — jener Test pruefte explizit `equipmentVariants`-Semantik ("eine
+    /// bereits vollstaendig passende, kuratierte Variante zeigt NIE eine
+    /// Adaption"), die seit Task 3/4 fuer `hybrid_balanced` (jetzt
+    /// slot-basiert, siehe `ProgramTemplate.slots`) nicht mehr erreichbar
+    /// ist: `PlanSelectionResolver.resolve` nimmt fuer `slots`-tragende
+    /// Templates IMMER zuerst den `resolvedSlots`-Zweig, und jede dort
+    /// benutzte `reviewedAlternatives`-Eintrag zaehlt per dieser Funktion
+    /// eigener, freigegebener Spezifikation als Adaption — nicht als stille,
+    /// kuratierte Basis-Variante. Nur noch 0/20 Templates koennen die alte
+    /// Szene ueberhaupt auslösen (equipmentVariants existierte nur fuer
+    /// genau diese 3, jetzt alle 3 slot-konvertiert), die alte Erwartung ist
+    /// also keine Luecke mehr, sondern ueberholtes Verhalten — ersetzt statt
+    /// entfernt, um die NEUE, korrekte Transparenz-Garantie zu beweisen.
+    func testUsedSlotAlternativeAlwaysSurfacesAsAnAppliedAdaptation() {
         let template = ProgramTemplates.all.first { $0.id == "hybrid_balanced" }!
         var profile = UserEquipmentProfile()
         profile.availability[.kettlebell] = .available
@@ -36,10 +51,24 @@ final class PlanSelectionResolverTests: XCTestCase {
 
         let selection = PlanSelectionResolver.resolve(template: template, profile: profile, context: hypertrophyContext)
 
-        XCTAssertEqual(selection.variantProfile, .kettlebellOnly)
+        // Parity-Beweis (HybridTemplateSlotParityTests.testHybridBalancedExhaustiveSlotParity):
+        // 0 gaps fuer ein kettlebellOnly-Profil auf hybrid_balanced.
         XCTAssertEqual(selection.equipmentStatus, .available)
-        XCTAssertNil(selection.appliedAdaptation, "Eine bereits vollstaendig passende Variante darf nie durch einen Adaptionsversuch ersetzt werden")
-        XCTAssertFalse(selection.isAdapted)
+        XCTAssertNil(selection.variantProfile, "Slot-Resolution ist an kein einzelnes benanntes EquipmentProfile gebunden")
+        XCTAssertTrue(selection.isAdapted)
+        guard let adaptation = selection.appliedAdaptation else {
+            return XCTFail("Jeder Strength-Slot musste hier auf eine reviewedAlternatives-Uebung ausweichen -> appliedAdaptation darf nicht nil sein")
+        }
+        XCTAssertFalse(adaptation.replacements.isEmpty)
+        XCTAssertEqual(adaptation.unresolved, [], "Der Slot-Zweig meldet Luecken ausschliesslich ueber equipmentStatus, nie zusaetzlich hier")
+        XCTAssertEqual(adaptation.validatorBlockers, [])
+        XCTAssertTrue(adaptation.replacements.allSatisfy { $0.reasonKey == "picker.plan.equipment.slotAlternative" })
+        XCTAssertTrue(adaptation.replacements.allSatisfy { $0.ruleID == "slot:\($0.originalName)->\($0.replacementName)" })
+        // Konkreter, aus dem Katalog hand-nachvollzogener Fall (Strength Push,
+        // erster Slot): "Bankdrücken" -> "Kettlebell Floor Press".
+        XCTAssertTrue(adaptation.replacements.contains {
+            $0.originalName == "Bankdrücken" && $0.replacementName == "Kettlebell Floor Press"
+        })
     }
 
     // MARK: - 16. Mehrere Quell-Varianten -> deterministisch die mit minimaler Aenderung
