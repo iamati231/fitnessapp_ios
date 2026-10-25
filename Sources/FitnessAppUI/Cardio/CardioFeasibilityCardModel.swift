@@ -141,11 +141,32 @@ public struct CardioFeasibilityCardModel {
     /// `PlanCreationOperation.Outcome` statt nur `TrainingPlan?` - der Aufrufer leitet Button-
     /// Beschriftung/Fehlermeldung direkt daraus ab (siehe dortige Typ-Doku), kein `throws` mehr
     /// noetig.
+    ///
+    /// Task 8 (Laufcoaching Dual-Path, ledger ruling): diese Funktion traf frueher HIER selbst eine
+    /// stille Wahl zwischen In-Place-Anpassung (via `CoachAdjustmentCardModel`, bei vorhandenem
+    /// `activePlan`) und `createPlan` - ein `activePlan`-Parameter steuerte das. Eine vollstaendige
+    /// Aufrufstellen-Spur (alle vier echten `accept`-Aufrufe: `ProfileEditorView.feasibilitySection`,
+    /// `PlansListView.cardioFeasibilitySection`, `CoachAdjustmentPreviewView.createNewPlanButton` -
+    /// `DashboardView` ruft `accept` gar nicht auf) ergab: diese Weiche war an KEINER davon je mit
+    /// einem tatsaechlich aktiven, `.ready`-Plan erreichbar. `ProfileEditorView`/`PlansListView`
+    /// zeigen ihre `CardioFeasibilityCardModel`-Sektion ausschliesslich im `else`-Zweig eines
+    /// `if let coachAdjustmentModel { .. } else if let feasibilityModel { .. }`
+    /// (Leitplanke 6, siehe `CoachAdjustmentCardModel`-Typ-Doku: "die neue Karte hat Vorrang, sobald
+    /// ein aktiver Plan existiert") - `CoachAdjustmentCardModel.make` liefert `nil` nur bei fehlendem
+    /// `activePlan` oder `!cardioCoachingEnabled`, und `CardioFeasibilityCardModel.make` verlangt
+    /// `cardioCoachingEnabled` ohnehin selbst, also MUSS an diesen beiden Stellen, wann immer die
+    /// Fallback-Sektion ueberhaupt rendert, derselbe (`@Query`-gestuetzte) `activePlan`, der dann in
+    /// `accept` durchgereicht wuerde, bereits `nil` sein. `CoachAdjustmentPreviewView` reicht
+    /// `activePlan` seit Task 7 bewusst GAR NICHT durch (siehe dortige Doku zu
+    /// `createNewPlanButton`), damit der explizite "als neuen Plan erstellen"-Tap nicht still in die
+    /// direkt darueber angebotene In-Place-Anpassung umgeleitet wird. Die Weiche war damit bereits
+    /// vor diesem Ticket tot. Entfernt, statt eine zweite explizite Auswahl-UI fuer einen Fall zu
+    /// bauen, den nichts je erreichen kann - `accept` deckt jetzt nur noch seinen einen verbleibenden
+    /// echten Fall ab: kein aktiver Plan, direkt `createPlan`, keine Wahl noetig.
     @discardableResult
     @MainActor
     public func accept(
-        profile: UserBodyProfile, in context: ModelContext, using operation: PlanCreationOperation,
-        activePlan: TrainingPlan? = nil
+        profile: UserBodyProfile, in context: ModelContext, using operation: PlanCreationOperation
     ) -> PlanCreationOperation.Outcome? {
         // Einmal committed, ist die urspruengliche Vorbedingungspruefung hinfaellig - es wird
         // nichts mehr NEU erzeugt (siehe `PlanCreationOperation`-Doku: `create()` ist nach dem
@@ -155,86 +176,6 @@ public struct CardioFeasibilityCardModel {
         // nicht blockieren.
         if let resumed = operation.resumeIfCommitted(in: context) {
             return resumed
-        }
-        // Task 7 (Duplikat-Vermeidung, Laufcoaching-Plan-Integration): existiert bereits ein
-        // AKTIVER, anpassbarer Plan (`activePlan` nicht `nil` UND
-        // `RunCoachPlanAdjustment.analyze(plan:).cardioAvailability == .ready`), wird GENAU
-        // DIESER Plan angepasst statt ein zweiter, separater `TrainingPlan` erzeugt - wiederholte
-        // Zielaenderungen erzeugten vorher bei jedem Tap einen weiteren `generationSource ==
-        // .cardioCoach`-Plan. Reuse des bereits in Paket 1 gebauten/getesteten
-        // `CoachAdjustmentCardModel`/`RunCoachPlanAdjustment`-Pfads statt einer zweiten
-        // Implementierung. Dieser Zweig braucht `operation` bewusst NICHT: das Risiko, gegen das
-        // `PlanCreationOperation` unten schuetzt (ein committeter, aber nicht mehr aufloesbarer
-        // NEUER Plan), existiert hier nicht - es wird kein neuer Plan erzeugt, nur der bereits
-        // bekannte `activePlan` veraendert. `CoachAdjustmentCardModel.accept` traegt dafuer
-        // seinen EIGENEN Doppeltap-Schutz (`profile.cardioPlanAdjustmentFingerprint`, siehe
-        // dortige Doku). Fehlt `activePlan`, existiert kein aktiver Plan (`.noActivePlan`) oder
-        // ist keiner seiner Cardio-Tage anfassbar (`.noEligibleCardioDay`), bleibt der bisherige
-        // "neuen Plan erstellen"-Pfad unten unveraendert der Fallback.
-        //
-        // Review-Korrektur (Critical), Wortlaut aktualisiert nach Fix I-1 (Final-Review Fix-Runde 2):
-        // seit Fix I-1 berechnet `CoachAdjustmentCardModel.make` seinen `fingerprint` aus
-        // `proposedGoal ?? profile.cardioGoal` (demselben effektiven Ziel, das `proposedGoal` selbst
-        // nutzt) - ein veralteter, am ALTEN Ziel haengender Fingerprint (der urspruengliche Grund
-        // fuer dieses Vorziehen) ist dadurch kein Risiko mehr, auch OHNE die Mutation hier.
-        // `profile.cardioGoal` muss trotzdem VOR `make`/`accept` auf `proposedGoal` vorgezogen
-        // werden - aus einem ANDEREN, weiterhin gueltigen Grund: `make(for: activePlan:)` berechnet
-        // sein EIGENES `verdict`/`proposedGoal` aus `profile.cardioGoal` NEU, mit den zum
-        // `accept`-Zeitpunkt AKTUELLEN (moeglicherweise seit der Vorschau geaenderten) `raceDate`/
-        // `weeklyVolume`. Ohne das Vorziehen wuerde diese Neuberechnung vom noch unveraenderten,
-        // urspruenglich infeasiblen `profile.cardioGoal` ausgehen und `suggestedGoal(below:...)`
-        // koennte - bei inzwischen geaenderten `raceDate`/`weeklyVolume` - ein ANDERES kleineres Ziel
-        // liefern als das hier bereits entschiedene `proposedGoal`. Das Vorziehen macht die
-        // Neuberechnung stattdessen zu einer direkten Machbarkeits-Pruefung GENAU DIESES
-        // `proposedGoal` (es wird dann schlicht `feasible`, `make`s eigenes `proposedGoal` bleibt
-        // unveraendert `profile.cardioGoal`) - `adjustmentModel.accept` wendet so sicher dasselbe,
-        // hier bereits bestaetigte Ziel an.
-        //
-        // Review-Korrektur (Important): die Plan-Mutation selbst wird bei einem Fehlschlag von
-        // `adjustmentModel.accept` bereits vollstaendig intern zurueckgerollt (siehe
-        // `PlanGeneratorInstantiator.revert`/`applyCoachCardioAdjustment`-Doku) - `profile.cardioGoal`
-        // ist davon aber NICHT betroffen, es wurde ja hier, ausserhalb dieses rollback-faehigen
-        // Bereichs, direkt zugewiesen. Ohne explizites Zuruecksetzen bliebe `profile.cardioGoal`
-        // nach einem gescheiterten Versuch auf `proposedGoal` haengen, OHNE dass irgendetwas
-        // tatsaechlich uebernommen wurde - ein inkonsistenter Teilzustand, den der sibling "neuen
-        // Plan erstellen"-Pfad unten strukturell gar nicht erst zulassen kann (er setzt
-        // `profile.cardioGoal` ausschliesslich in der `completion`-Closure, die nur bei
-        // bestaetigtem `.success` ueberhaupt laeuft). `previousCardioGoal` haelt den Stand VOR
-        // dieser Zuweisung fest, um ihn in jedem Fehlschlag-Pfad (Guard unten UND `catch`)
-        // wiederherzustellen.
-        if let activePlan,
-           case .ready = RunCoachPlanAdjustment.analyze(plan: activePlan).cardioAvailability,
-           let proposedGoal,
-           let raceDate = profile.cardioRaceDate,
-           let weeklyVolume = profile.weeklyBaseVolumeKm {
-            let previousCardioGoal = profile.cardioGoal
-            profile.cardioGoal = proposedGoal
-            guard let adjustmentModel = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) else {
-                // Defensiv: nach dem Mitziehen oben sollte `make` hier nicht mehr scheitern
-                // koennen (`proposedGoal` ist per Definition ein fuer dasselbe Renn-Datum/
-                // Wochenvolumen bereits als erreichbar geprueftes Ziel) - ein unerwartetes `nil`
-                // behandeln wir wie einen gescheiterten Abschluss, statt blind weiterzumachen.
-                profile.cardioGoal = previousCardioGoal
-                return .failedBeforeCommit
-            }
-            do {
-                _ = try adjustmentModel.accept(plan: activePlan, profile: profile, in: context)
-                // Nachbesserung (P2.3-Review, Punkt 3, siehe Typ-Doku oben): denselben Grundsatz
-                // wie die `completion`-Closure unten befolgen - NICHT `adjustmentModel.fingerprint`
-                // (das waere der VOR dem Mitziehen berechnete, alte Stand), sondern frisch aus
-                // `proposedGoal` berechnet, sonst erschiene die Karte beim naechsten Aufruf sofort
-                // wieder.
-                profile.cardioFeasibilityDismissedFingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
-                    goal: proposedGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
-                )
-                return .success(activePlan)
-            } catch {
-                // Siehe Doku-Block oben: die Plan-Mutation ist bereits vollstaendig zurueckgerollt -
-                // `profile.cardioGoal` muss das symmetrisch nachvollziehen, sonst bliebe das
-                // Vorschlags-Ziel haengen, obwohl nichts uebernommen wurde.
-                profile.cardioGoal = previousCardioGoal
-                return .failedBeforeCommit
-            }
         }
         guard hasPlan,
               let planInput, let planResult, let proposedGoal,

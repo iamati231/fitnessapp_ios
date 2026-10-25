@@ -439,9 +439,11 @@ public struct PlansListView: View {
                         // `CardioFeasibilityCardModel`-Doku) - `nil` bedeutet, dass bereits
                         // `accept`s eigene Vorbedingungen (z.B. `hasPlan`) nicht erfuellt sind,
                         // und wird wie `.nothingToCreate` behandelt.
-                        // Task 7 (Duplikat-Vermeidung): derselbe aktive Plan, den `plansContextRow`/
-                        // `plansSection` ohnehin schon ueber `plans` lesen - keine zweite Query.
-                        switch model.accept(profile: profile, in: modelContext, using: acceptOperation, activePlan: plans.first(where: \.isActive)) {
+                        // Task 8 (ledger ruling, siehe `CardioFeasibilityCardModel.accept`-Doku):
+                        // kein `activePlan`-Argument mehr - diese Sektion rendert ohnehin nur, wenn
+                        // `coachAdjustmentModel` (oben) `nil` ist, was bei `cardioCoachingEnabled ==
+                        // true` ausschliesslich bei `activePlan == nil` passiert.
+                        switch model.accept(profile: profile, in: modelContext, using: acceptOperation) {
                         case .success(let plan):
                             // Geraete-Fund (TestingBot, Task #197 UI-Pruefumfang): ohne dieses
                             // Zuruecksetzen blieb der Button nach JEDEM erfolgreichen Uebernehmen
