@@ -229,12 +229,22 @@ public struct DashboardView: View {
                         resumeSessionTile(open)
                     }
 
-                    // Handoff "Lauf-Coaching - Machbarkeits-Check" (2.30):
-                    // statisch ueber den konfigurierbaren Widgets, gleiche
-                    // Prioritaet wie unrepresentedOpenSession - kein
-                    // gespeicherter Zustand, jeder Aufruf rechnet live neu
-                    // (siehe CardioFeasibilityCardModel).
-                    if let model = cardioFeasibilityModel {
+                    // Task 8 (Leitplanke 6, CoachAdjustmentCardModel.swift):
+                    // existiert ein aktiver Plan UND eine noch nicht
+                    // uebernommene Anpassungsempfehlung, hat diese Karte
+                    // Vorrang - ein `if/else if`, NIE zwei unabhaengige
+                    // `if`s, damit beide Karten fuer denselben Zustand nie
+                    // gleichzeitig erscheinen. Handoff "Lauf-Coaching -
+                    // Machbarkeits-Check" (2.30) bleibt der Fallback fuer den
+                    // reinen "kein aktiver Plan"-Fall, statisch ueber den
+                    // konfigurierbaren Widgets, gleiche Prioritaet wie
+                    // unrepresentedOpenSession - kein gespeicherter Zustand,
+                    // jeder Aufruf rechnet live neu.
+                    if let profile = profiles.first, let activePlan = activePlans.first,
+                       let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan),
+                       !adjustment.isAlreadyApplied {
+                        laufcoachingAdjustmentCard(adjustment, plan: activePlan)
+                    } else if let model = cardioFeasibilityModel {
                         cardioFeasibilityDashboardCard(model)
                     }
 
@@ -2460,6 +2470,48 @@ public struct DashboardView: View {
     /// `CardioFeasibilityCardModel.make(for:)` auf.
     private var cardioFeasibilityModel: CardioFeasibilityCardModel? {
         profiles.first.flatMap(CardioFeasibilityCardModel.make(for:))
+    }
+
+    /// Task 8: "aktiver Plan existiert, Coach-Anpassung steht aus"-Karte -
+    /// Leitplanke 6 (`CoachAdjustmentCardModel.swift`) laesst diese Karte NUR
+    /// rendern, wenn `isAlreadyApplied == false` ist (siehe Aufrufstelle
+    /// oben), daher reicht hier derselbe Titel/Detail-Aufbau wie
+    /// `CoachAdjustmentPreviewView.statusSection` ("pending" + Machbarkeits-
+    /// Headline aus `adjustment.verdict`) - keine neuen Keys. CTA oeffnet
+    /// denselben, bestehenden `CoachAdjustmentPreviewView`-Sheet wie die
+    /// Laufversaeumnis-Karte (`showingMissedRunAdjustmentPreview`), daher
+    /// auch dessen bestehender Button-Text statt eines neuen. `plan` wird
+    /// hier nicht gebraucht (das Sheet loest Profil/Plan selbst frisch aus
+    /// der Query auf), bleibt aber Teil der Signatur fuer den Aufrufer.
+    private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, plan: TrainingPlan) -> some View {
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("profile.cardio.adjustment.pending", bundle: .module)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(adjustment.verdict.feasible
+                         ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                         : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button {
+                        showingMissedRunAdjustmentPreview = true
+                    } label: {
+                        Text("dashboard.missedRunDays.reviewButton", bundle: .module)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+                Spacer(minLength: 0)
+            }
+        }
     }
 
     /// Verkuerzte Vorschau (2.30): zwei Tage statt der vollen Woche, kein
