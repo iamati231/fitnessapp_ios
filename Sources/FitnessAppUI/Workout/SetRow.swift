@@ -48,14 +48,20 @@ struct SetRow: View {
     /// current5kReferenceSeconds` durchgereicht - siehe `cardioCoachingEnabled`
     /// oben fuer die "live, nicht eingefroren"-Begruendung.
     let current5kReferenceSeconds: Int?
-    /// Fix I-2 (Final-Review, Round 2): `true` nur, wenn `session.day?.plan?.
-    /// generationSource == .cardioCoach` - Template-Plaene (manuell/Wizard)
-    /// koennen ebenfalls Uebungen namens "Long Run" enthalten
-    /// (`ProgramTemplates.swift`), aber mit einer komplett anderen,
-    /// nicht-Tempo-Bedeutung (Distanz+Dauer eines einfachen langen Laufs).
-    /// `targetPaceHint` unten darf die generator-eigene Pace-Interpretation
-    /// daher NUR auf einem tatsaechlich coach-generierten Plan anzeigen.
-    let isCoachGeneratedPlan: Bool
+    /// Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2: `true`
+    /// fuer `session.day?.plan?.generationSource != .manual` (ODER
+    /// `.planBuilder` ODER `.cardioCoach`), `false` fuer `.manual`
+    /// (Template-instanziiert) ODER unbekannte Quelle (`nil`). Reine
+    /// `== .cardioCoach`-Gate (erste Fassung) war zu eng: die beiden echten
+    /// Coach-Pfade (Onboarding, `PlanBuilderView`-Assistent) stempeln
+    /// `generationSource == .planBuilder`, nicht `.cardioCoach` (das steht
+    /// nur auf den "separaten neuen Plan erzeugen"-Fallback-Pfaden in
+    /// `CardioFeasibilityCardModel`) - mit der zu engen Gate haette die
+    /// Ziel-Pace fuer fast alle echten Nutzer nie angezeigt. `.manual`
+    /// (Template-Plaene, `ProgramTemplates.swift`) bleibt ausgeschlossen,
+    /// weil dort Uebungen namens "Long Run" eine komplett andere,
+    /// nicht-Tempo-Bedeutung tragen.
+    let isGeneratorPlan: Bool
     /// DEL-157: Log des Satzes DIREKT DARUEBER in DIESER Session. Dient als
     /// Seed-Quelle fuer dynamisch hinzugefuegte Saetze ("+ Satz") — der neue
     /// Satz erbt Gewicht/Reps/RIR vom darueberliegenden. `nil` fuer den
@@ -1626,7 +1632,7 @@ struct SetRow: View {
     /// das BERECHNETE Pace-Ergebnis prueft, nicht nur die Eingabe.
     private var targetPaceHint: String? {
         guard content.isCardio, content.targetDurationMinutes != nil, cardioCoachingEnabled,
-              isCoachGeneratedPlan else { return nil }
+              isGeneratorPlan else { return nil }
         let zone = CardioExerciseZone.forExerciseName(content.nameSnapshot)
         guard zone == .easy || zone == .tempo else { return nil }
         let paceMinutesPerKm = current5kReferenceSeconds.flatMap { referenceSeconds in

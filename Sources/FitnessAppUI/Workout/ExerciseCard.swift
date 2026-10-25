@@ -27,10 +27,12 @@ struct ExerciseCard: View {
     /// kein eigener State/Cache hier.
     let cardioCoachingEnabled: Bool
     let current5kReferenceSeconds: Int?
-    /// Fix I-2 (Final-Review, Round 2): `true` nur, wenn der Tag dieser
-    /// Session zu einem `generationSource == .cardioCoach`-Plan gehoert -
-    /// siehe `SetRow.targetPaceHint` fuer die konkrete Gating-Verwendung.
-    let isCoachGeneratedPlan: Bool
+    /// Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2: `true`
+    /// fuer JEDEN generator-gebauten Plan (`.planBuilder` ODER
+    /// `.cardioCoach`), `false` fuer `.manual` (Template-instanziiert) ODER
+    /// wenn Tag/Plan/Quelle unbekannt ist (`nil`) - siehe
+    /// `SetRow.targetPaceHint` fuer die konkrete Gating-Verwendung.
+    let isGeneratorPlan: Bool
     /// DEL-097 + DEL-108: Session-weiter Time-Set-Lock (Exercise × setIndex).
     /// Reicht durch zur SetRow, die den Lock claimt bzw. den eigenen
     /// Start-Button blockiert, wenn ein anderer Satz (gleicher oder fremder
@@ -128,7 +130,7 @@ struct ExerciseCard: View {
                     previousLog: previousLog(forSetIndex: setIndex),
                     cardioCoachingEnabled: cardioCoachingEnabled,
                     current5kReferenceSeconds: current5kReferenceSeconds,
-                    isCoachGeneratedPlan: isCoachGeneratedPlan,
+                    isGeneratorPlan: isGeneratorPlan,
                     seedLog: seedLog(forSetIndex: setIndex),
                     onRequestDelete: content.sets > 1 ? { removeSet(at: setIndex) } : nil,
                     activeTimedSet: $activeTimedSet,

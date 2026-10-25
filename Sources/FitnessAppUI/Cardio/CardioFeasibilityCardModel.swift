@@ -172,15 +172,23 @@ public struct CardioFeasibilityCardModel {
         // ist keiner seiner Cardio-Tage anfassbar (`.noEligibleCardioDay`), bleibt der bisherige
         // "neuen Plan erstellen"-Pfad unten unveraendert der Fallback.
         //
-        // Review-Korrektur (Critical): `make(for: activePlan:)` friert seinen eigenen
-        // `fingerprint` aus GENAU DIESEM, zum
-        // `make`-Zeitpunkt aktuellen `profile.cardioGoal` ein. Ist der Verdikt `infeasible` und
-        // `proposedGoal` daher ein KLEINERES, von `profile.cardioGoal` ABWEICHENDES Ziel (der
-        // ganze Zweck dieser Karte), MUSS `profile.cardioGoal` exakt wie im bestehenden "neuen
-        // Plan erstellen"-Pfad unten (siehe Typ-Doku oben: "zieht bei einem kleineren Vorschlag
-        // `profile.cardioGoal` mit") VOR `make`/`accept` auf `proposedGoal` vorgezogen werden -
-        // sonst wendet `accept` noch das ALTE, nicht erreichbare Ziel auf den Plan an, und
-        // `adjustmentModel.fingerprint` bliebe ebenfalls am alten Ziel haengen.
+        // Review-Korrektur (Critical), Wortlaut aktualisiert nach Fix I-1 (Final-Review Fix-Runde 2):
+        // seit Fix I-1 berechnet `CoachAdjustmentCardModel.make` seinen `fingerprint` aus
+        // `proposedGoal ?? profile.cardioGoal` (demselben effektiven Ziel, das `proposedGoal` selbst
+        // nutzt) - ein veralteter, am ALTEN Ziel haengender Fingerprint (der urspruengliche Grund
+        // fuer dieses Vorziehen) ist dadurch kein Risiko mehr, auch OHNE die Mutation hier.
+        // `profile.cardioGoal` muss trotzdem VOR `make`/`accept` auf `proposedGoal` vorgezogen
+        // werden - aus einem ANDEREN, weiterhin gueltigen Grund: `make(for: activePlan:)` berechnet
+        // sein EIGENES `verdict`/`proposedGoal` aus `profile.cardioGoal` NEU, mit den zum
+        // `accept`-Zeitpunkt AKTUELLEN (moeglicherweise seit der Vorschau geaenderten) `raceDate`/
+        // `weeklyVolume`. Ohne das Vorziehen wuerde diese Neuberechnung vom noch unveraenderten,
+        // urspruenglich infeasiblen `profile.cardioGoal` ausgehen und `suggestedGoal(below:...)`
+        // koennte - bei inzwischen geaenderten `raceDate`/`weeklyVolume` - ein ANDERES kleineres Ziel
+        // liefern als das hier bereits entschiedene `proposedGoal`. Das Vorziehen macht die
+        // Neuberechnung stattdessen zu einer direkten Machbarkeits-Pruefung GENAU DIESES
+        // `proposedGoal` (es wird dann schlicht `feasible`, `make`s eigenes `proposedGoal` bleibt
+        // unveraendert `profile.cardioGoal`) - `adjustmentModel.accept` wendet so sicher dasselbe,
+        // hier bereits bestaetigte Ziel an.
         //
         // Review-Korrektur (Important): die Plan-Mutation selbst wird bei einem Fehlschlag von
         // `adjustmentModel.accept` bereits vollstaendig intern zurueckgerollt (siehe

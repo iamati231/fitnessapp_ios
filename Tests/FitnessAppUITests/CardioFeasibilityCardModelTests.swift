@@ -165,15 +165,21 @@ final class CardioFeasibilityCardModelTests: XCTestCase {
         XCTAssertEqual(plan.days.count, dayCountBefore, "der bestehende, nicht anpassbare Plan darf nicht veraendert werden")
     }
 
-    /// Review-Fund (Critical): die In-Place-Anpassung muss bei einem INFEASIBLE Verdikt das
-    /// VORGESCHLAGENE, kleinere `proposedGoal` anwenden - nicht das urspruengliche, nicht
-    /// erreichbare `profile.cardioGoal`. `CoachAdjustmentCardModel.accept` nutzt zwar bereits
-    /// `self.proposedGoal ?? profile.cardioGoal` (Task 7s Fix); `make(for: activePlan:)` berechnet
-    /// `verdict`/`proposedGoal` aber weiterhin aus dem zum `make`-Zeitpunkt aktuellen
-    /// `profile.cardioGoal` - faellt `accept(profile:in:using:activePlan:)` nicht zuerst
-    /// `profile.cardioGoal = proposedGoal` nach (BEVOR `make` aufgerufen wird), wendet das
-    /// anschliessende `make`/`accept` unbemerkt noch das alte Ziel an UND vergisst
-    /// `profile.cardioFeasibilityDismissedFingerprint` zu setzen (Karte erschiene sofort wieder).
+    /// Review-Fund (Critical), Wortlaut aktualisiert nach Fix I-1 (Final-Review Fix-Runde 2): die
+    /// In-Place-Anpassung muss bei einem INFEASIBLE Verdikt das VORGESCHLAGENE, kleinere
+    /// `proposedGoal` anwenden - nicht das urspruengliche, nicht erreichbare `profile.cardioGoal`.
+    /// `CoachAdjustmentCardModel.accept` nutzt dafuer bereits `self.proposedGoal ?? profile.cardioGoal`
+    /// (Task 7s Fix), und seit Fix I-1 folgt auch `make`s `fingerprint` demselben effektiven Ziel -
+    /// ein veralteter Fingerprint ist daher NICHT mehr der Grund, warum `accept(profile:in:using:
+    /// activePlan:)` `profile.cardioGoal` vor `make`/`accept` auf `proposedGoal` vorzieht (`profile.
+    /// cardioFeasibilityDismissedFingerprint` wuerde auch OHNE das Vorziehen korrekt gesetzt - es
+    /// wird direkt aus dem hier bereits bekannten `proposedGoal`/`raceDate`/`weeklyVolume` berechnet,
+    /// NICHT aus `make`s Rueckgabe). Der weiterhin gueltige Grund: `make(for: activePlan:)` berechnet
+    /// sein EIGENES `verdict`/`proposedGoal` aus dem dann aktuellen `profile.cardioGoal` NEU, mit den
+    /// zum `accept`-Zeitpunkt (moeglicherweise seit der Vorschau geaenderten) `raceDate`/
+    /// `weeklyVolume` - ohne das Vorziehen koennte diese Neuberechnung ein ANDERES kleineres Ziel
+    /// liefern als das hier bereits entschiedene `proposedGoal`. Das Vorziehen macht sie stattdessen
+    /// zu einer direkten Machbarkeits-Pruefung GENAU DIESES `proposedGoal`.
     ///
     /// Marathon (Zielvolumen 65 km/Woche) bei 15 km/Woche Basis und nur 7 Wochen bis zum
     /// Renn-Datum ist klar NICHT erreichbar (`weeksNeeded(for: .marathon, startWeeklyVolumeKm: 15)`
