@@ -34732,6 +34732,29 @@
         }
       }
     },
+    "active.set.targetPaceFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziel: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "target: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hedef: %@"
+          }
+        }
+      }
+    },
     "active.set.rir.scaleMax": {
       "extractionState": "manual",
       "localizations": {

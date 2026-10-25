@@ -690,6 +690,11 @@ public struct ActiveWorkoutView: View {
                 exercise: exercise,
                 content: entry,
                 session: session,
+                // Task 8 (Decision 1): live aus der `@Query`, NIE
+                // zwischengespeichert - eine Profil-Aenderung waehrend der
+                // offenen Session muss sich sofort in der Ziel-Pace zeigen.
+                cardioCoachingEnabled: profiles.first?.cardioCoachingEnabled ?? false,
+                current5kReferenceSeconds: profiles.first?.current5kReferenceSeconds,
                 activeTimedSet: $activeTimedSet,
                 onSetLogged: { setIndex in
                     startRestTimer(for: exercise, entry: entry, setIndex: setIndex)
