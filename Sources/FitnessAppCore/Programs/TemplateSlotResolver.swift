@@ -45,27 +45,33 @@ public enum TemplateSlotResolver {
                          repsMax: slot.repsMax, restSeconds: slot.restSeconds)
         }
 
-        // Missing wins over uncertain, as in PlanEquipmentChecker.
-        var firstMissing: [UnmetReason]?
-        var firstUncertain: [UnmetReason]?
+        // OR semantics (candidates are alternatives, one must work): `.missing`
+        // only if EVERY candidate is definitively unmet. Any unknown or
+        // unannotated candidate keeps the slot `.uncertain`, like `.any` in
+        // ExerciseRequirement.evaluate.
+        var firstUnmet: [UnmetReason]?
+        var firstUnknown: [UnmetReason]?
+        var allDefinitelyUnmet = true
         let candidates = [slot.defaultExerciseName] + slot.reviewedAlternatives
 
         for (index, name) in candidates.enumerated() {
             guard let requirement = ExerciseLibraryData.byName[name]?.equipmentRequirement else {
+                allDefinitelyUnmet = false // unannotated: soft signal, same as .unknown
                 continue
             }
             switch requirement.evaluate(against: profile) {
             case .satisfied:
                 return index == 0 ? .default(spec(name)) : .alternative(spec(name), usedName: name)
             case let .unmet(reasons):
-                if firstMissing == nil { firstMissing = reasons }
+                if firstUnmet == nil { firstUnmet = reasons }
             case let .unknown(reasons):
-                if firstUncertain == nil { firstUncertain = reasons }
+                allDefinitelyUnmet = false
+                if firstUnknown == nil { firstUnknown = reasons }
             }
         }
 
-        if let reasons = firstMissing { return .unresolved(.missing(reasons)) }
-        if let reasons = firstUncertain { return .unresolved(.uncertain(reasons)) }
+        if allDefinitelyUnmet, let reasons = firstUnmet { return .unresolved(.missing(reasons)) }
+        if let reasons = firstUnknown { return .unresolved(.uncertain(reasons)) }
         return .unresolved(.notAnnotated)
     }
 }

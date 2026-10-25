@@ -69,6 +69,18 @@ final class TemplateSlotResolverTests: XCTestCase {
         }
     }
 
+    func testResolveReturnsUncertainWhenDefaultMissingButAlternativeUnknown() {
+        // Default is definitively unmet (barbell unavailable); the alternative's kettlebell is
+        // still .unknown, so it is not ruled out -> .uncertain, never .missing (OR semantics).
+        var profile = UserEquipmentProfile()
+        profile.availability[.barbell] = .unavailable
+        let result = TemplateSlotResolver.resolve(
+            slot: slot("Bankdrücken", alternatives: ["Kettlebell Swing"]), against: profile)
+        guard case .unresolved(.uncertain(_)) = result else {
+            return XCTFail("Default unmet + Alternative unknown muss .uncertain liefern, ist: \(result)")
+        }
+    }
+
     func testResolveTreatsUnknownAsNotSatisfiedNeverAsAWin() {
         // gymDefault leaves kettlebell .unknown: both candidates are .unknown, not .satisfied.
         let result = TemplateSlotResolver.resolve(
