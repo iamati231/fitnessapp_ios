@@ -1004,7 +1004,6 @@ public struct OnboardingView: View {
                                 ForEach(CardioGoal.allCases, id: \.self) { goal in
                                     coachingCard(
                                         title: String(localized: goal.localizedName),
-                                        description: "",
                                         iconName: goal.symbol,
                                         isSelected: runCoachCardioGoal == goal
                                     ) {
@@ -1463,7 +1462,7 @@ public struct OnboardingView: View {
     @ViewBuilder
     private func coachingCard(
         title: String,
-        description: String,
+        description: String? = nil,
         iconName: String,
         isSelected: Bool,
         action: @escaping () -> Void
@@ -1479,10 +1478,19 @@ public struct OnboardingView: View {
                     Text(title)
                         .font(.headline)
                         .foregroundStyle(.primary)
-                    Text(description)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
+                    // Code-Review-Fix (Task 5): `description` ist optional,
+                    // damit Karten ohne Beschreibungstext (z.B. die neuen
+                    // CardioGoal-Karten, die bewusst keine neuen per-Case-
+                    // Lokalisierungs-Keys bekommen) keine leere `Text("")`-
+                    // Zeile reservieren - sichtbar neben den uebrigen
+                    // `coachingCard`-Aufrufstellen auf denselben Screens, die
+                    // alle eine echte Beschreibung mitgeben.
+                    if let description {
+                        Text(description)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
                 }
                 Spacer(minLength: 0)
                 if isSelected {
