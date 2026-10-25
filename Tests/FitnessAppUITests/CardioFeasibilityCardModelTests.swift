@@ -215,7 +215,14 @@ final class CardioFeasibilityCardModelTests: XCTestCase {
         // reuse derselben, deterministischen (kein Shuffle/Zufall im `shuffle: false`-Default-Pfad
         // von `PlanGenerator.generate`) Quelle, die `CoachAdjustmentCardModel.accept` selbst intern
         // aufruft, statt eines zweiten, unabhaengigen Soll-Wert-Rechners.
-        let expectedSpecs = CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: proposedGoal)
+        let expectedSpecs = CoachAdjustmentCardModel.cardioOnlyDaySpecs(
+            for: proposedGoal,
+            cardioRunProfile: CardioRunProfile(
+                goal: proposedGoal,
+                current5kReferenceSeconds: profile.current5kReferenceSeconds,
+                weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
+            )
+        )
         XCTAssertFalse(expectedSpecs.isEmpty, "Testaufbau: es sollte Cardio-Tagesinhalte fuer das vorgeschlagene Ziel geben")
         XCTAssertEqual(
             plan.days[0].activeExercises.map(\.name), expectedSpecs[0].exercises.map(\.name),
