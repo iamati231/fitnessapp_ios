@@ -144,6 +144,19 @@ struct CoachAdjustmentPreviewView: View {
     /// `CardioFeasibilityCardModel.accept`-Pfads statt einer zweiten
     /// Implementierung - exakt derselbe Mechanismus wie in
     /// `ProfileEditorView.feasibilitySection`.
+    ///
+    /// Task 7 (Review-Korrektur): `activePlan` wird HIER bewusst NICHT durchgereicht (anders als
+    /// bei den beiden anderen Aufrufstellen). Diese Vorschau bietet DREI eigenstaendige,
+    /// gleichrangige Aktionen (siehe Typ-Doku oben): "auf aktuellen Plan anwenden" (oben,
+    /// `CoachAdjustmentCardModel.accept`), "als neuen Plan erstellen" (hier) und "Plan behalten"
+    /// (Abbrechen). Der Nutzer hat mit dem Tap auf GENAU DIESEN Button bereits explizit einen
+    /// separaten neuen Plan gewaehlt, als bewusste Alternative zur In-Place-Anpassung, die direkt
+    /// darueber ebenfalls angeboten wird. Wuerde `activePlan` hier durchgereicht, wuerde
+    /// `CardioFeasibilityCardModel.accept`s neue Weiche (siehe dortige Doku) diesen Tap bei einem
+    /// anpassbaren Plan STILL in dieselbe In-Place-Anpassung umleiten - zwei bewusst
+    /// unterschiedliche Nutzer-Entscheidungen wuerden ununterscheidbar. Diese Aufrufstelle bleibt
+    /// daher bei `activePlan: nil` (Default), erzeugt also immer einen echten, separaten Plan -
+    /// exakt das bisherige, unveraenderte Verhalten.
     @ViewBuilder
     private func createNewPlanButton(_ model: CoachAdjustmentCardModel) -> some View {
         if let feasibilityModel = CardioFeasibilityCardModel.make(for: profile) {
@@ -151,7 +164,7 @@ struct CoachAdjustmentPreviewView: View {
                 Button {
                     guard !isCreatingNewPlan else { return }
                     isCreatingNewPlan = true
-                    _ = feasibilityModel.accept(profile: profile, in: modelContext, using: createNewPlanOperation, activePlan: activePlan)
+                    _ = feasibilityModel.accept(profile: profile, in: modelContext, using: createNewPlanOperation)
                     isCreatingNewPlan = false
                     dismiss()
                 } label: {
