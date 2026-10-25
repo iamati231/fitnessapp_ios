@@ -2215,7 +2215,15 @@ public struct PlanBuilderView: View {
         }
         if spec.exercises.count == 1, let exercise = spec.exercises.first, exercise.isCardio {
             if let duration = exercise.targetDurationMinutes {
-                return String(format: String(localized: "planBuilder.wizard.minutesValue", bundle: .module), duration)
+                let durationText = String(format: String(localized: "planBuilder.wizard.minutesValue", bundle: .module), duration)
+                // Task 9: gleiche Pace-Ergaenzung wie
+                // `CardioFeasibilityDayRow.subtitle` - diese Zeile ist die
+                // "fuellere" Geschwister-Darstellung derselben
+                // Easy/Tempo-Tage, siehe dortige Doku.
+                if let pace = exercise.targetPaceMinutesPerKm {
+                    return "\(durationText) · \(PaceCalculator.formatPace(pace))"
+                }
+                return "\(durationText) · \(String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module))"
             }
             if let distance = exercise.targetDistanceKm {
                 // README 2.21: "%.1f km" ohne Locale ("0.4 km" statt "0,4 km"

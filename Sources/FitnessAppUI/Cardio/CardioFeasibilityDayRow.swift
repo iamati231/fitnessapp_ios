@@ -45,7 +45,16 @@ struct CardioFeasibilityDayRow: View {
             return String(localized: "cardioFeasibility.day.strength", bundle: .module)
         }
         if let minutes = exercise.targetDurationMinutes {
-            return String(format: String(localized: "cardioFeasibility.day.run", bundle: .module), minutes)
+            let runText = String(format: String(localized: "cardioFeasibility.day.run", bundle: .module), minutes)
+            // Task 9: Pace kommt aus einer `CardioRunProfile`-Referenzzeit
+            // (Task 3) und existiert deshalb nicht immer - ein
+            // qualitativer Hinweis statt `PaceCalculator.formatPace(nil)`s
+            // "—:—— /km" (das ist ein Platzhalter fuer ein LEERES
+            // Eingabefeld, keine fertige Anzeige-Zeile).
+            if let pace = exercise.targetPaceMinutesPerKm {
+                return "\(runText) · \(PaceCalculator.formatPace(pace))"
+            }
+            return "\(runText) · \(String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module))"
         }
         if let distanceKm = exercise.targetDistanceKm {
             return String(

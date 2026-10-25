@@ -58153,6 +58153,29 @@
           }
         }
       }
+    },
+    "cardioFeasibility.day.paceUnknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pace by feel"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo nach Gefühl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hisse göre tempo"
+          }
+        }
+      }
     }
   }
 }
