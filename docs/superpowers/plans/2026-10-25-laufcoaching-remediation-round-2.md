@@ -38,32 +38,33 @@ An end-to-end pass (activate coach → pick a goal → generate a plan → open 
 
 ---
 
-## Task 1: Shared cardio-zone-by-name helper (de-duplicate before adding a third call site)
+## Task 1: `CardioExerciseZone` — new zone-by-name detection, for Task 8's use only
+
+**Corrected after investigation (see the SDD ledger for this plan — the controller escalated this to the user before proceeding):** the original version of this task assumed `CardioFeasibilityDayRow.subtitle` and `PlanBuilderView.scopeLine` already do name-based zone matching and that this task would extract it. That premise was FALSE — verified directly: both functions only ever forward `exercise.targetPaceMinutesPerKm`, a value `PlanGenerator` already computed once at generation time; neither needs to know WHICH zone (easy/tempo) produced it, so neither does any name comparison. **Do not touch either file in this task.** This task creates genuinely NEW logic, needed for the first time by Task 8, which has no such pre-computed pace value to read (a saved/adopted `Exercise` never persisted `targetPaceMinutesPerKm` — by design, see the Global Constraints).
+
+**Why name-matching is the right tool here (user decided this after an explicit escalation — do not re-litigate):** `PlanGenerator.cardioCandidates`'s `.easy` and `.tempo` branches build structurally IDENTICAL `ExerciseSpec`s (same `targetDurationMinutes` from `selection.sessionDurationMinutes`) — the exercise's `name` ("Easy Run" vs. "Long Run") is the ONLY signal that distinguishes them anywhere downstream. `Sources/FitnessAppCore/Analytics/CardioCoachingAdvisor.swift:10-15` documents this codebase's authors rejecting name-based matching for a DIFFERENT, unrelated inference ("is this day's training PURPOSE a long run" — unreliable because "Long Run" is just the tempo zone's catalog label, not evidence of actual duration/purpose). That concern does not transfer here: this task reads the exercise's stable, non-customizable anchor name (`Exercise.name`/`TrainingDayContentSnapshot.ExerciseEntry.nameSnapshot` — never `customName`/`customNameSnapshot`) to recover exactly which of `PlanGenerator`'s own two fixed zone labels produced it, for exactly the purpose `PlanGenerator` itself used that same name for (picking a pace factor) — a closed, fixed 2-string lookup, not an open-ended inference. The user confirmed this approach over adding a new structural zone field to `ExerciseSpec`/`Exercise`, which would be a data-model change for a distinction nothing else in the app currently needs.
 
 **Files:**
 - Create: `Sources/FitnessAppCore/Analytics/CardioExerciseZone.swift`
-- Modify: `Sources/FitnessAppUI/Cardio/CardioFeasibilityDayRow.swift` (replace its inline name check with the new helper)
-- Modify: `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` (replace its inline name check with the new helper, in `scopeLine(for:)`)
 - Test: `Tests/FitnessAppCoreTests/CardioExerciseZoneTests.swift`
 
 **Interfaces:**
-- Produces: `public enum CardioExerciseZone: Sendable, Equatable { case easy, tempo, interval, other }` and `public static func CardioExerciseZone.forExerciseName(_ name: String) -> CardioExerciseZone` (exact case names/signature are your call — the two existing call sites currently match on literal strings like `"Easy Run"`/`"Long Run"`; read `PlanGenerator.swift`'s `RunZone.exerciseName` cases first to get the exact, current literal strings right, don't guess them from memory).
+- Produces: `public enum CardioExerciseZone: Sendable, Equatable { case easy, tempo, other }` (NO `.interval` case — Task 8 never shows a pace for the interval/distance-based zone, per the existing, unchanged constraint that interval days carry no pace; don't model a case nothing will ever read) and `public static func CardioExerciseZone.forExerciseName(_ name: String) -> CardioExerciseZone`, matching on the exact strings from `PlanGenerator.swift`'s private `RunZone.exerciseName` (confirmed current values as of this plan's writing: `"Easy Run"` → `.easy`, `"Long Run"` → `.tempo`, anything else → `.other` — read the enum yourself before writing to confirm these haven't changed, don't hardcode purely from this description).
 - Consumes: nothing new.
 
-- [ ] **Step 1: Write failing tests** — one per zone, asserting `CardioExerciseZone.forExerciseName("Easy Run") == .easy`, `.forExerciseName("Long Run") == .tempo`, the interval exercise's exact name → `.interval`, and an unrelated name (e.g. "Bank Press" or "Radfahren (outdoor)") → `.other`.
+- [ ] **Step 1: Write failing tests** — `CardioExerciseZone.forExerciseName("Easy Run") == .easy`, `.forExerciseName("Long Run") == .tempo`, and at least two `.other` cases: an unrelated exercise name (e.g. "Bank Press") AND the interval exercise's own name (confirm its exact string in `RunZone.exerciseName` first) — the interval zone must map to `.other`, not get its own case.
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `swift build --target FitnessAppCoreTests` (this is pure Core, compiles and the probe/build approach works on this Windows machine per `local-swift-verification` memory)
+Run: `swift build --target FitnessAppCoreTests` (pure Core, compiles and the probe/build approach works on this Windows machine per `local-swift-verification` memory)
 Expected: FAIL — `CardioExerciseZone` not found.
 
-- [ ] **Step 3: Implement `CardioExerciseZone`** in the new file, matching on the exact strings from `PlanGenerator.RunZone.exerciseName` (read it first — do not hardcode a guess).
-- [ ] **Step 4: Replace the inline checks** in `CardioFeasibilityDayRow.swift`'s `subtitle` and `PlanBuilderView.swift`'s `scopeLine(for:)` with calls to the new helper — this is a refactor of ALREADY-SHIPPED, reviewed code; keep the exact same visible behavior, verify by re-reading both functions' full bodies before and after your change line-by-line.
-- [ ] **Step 5: Run tests to verify they pass**, and re-read `CardioFeasibilityDayRowPaceTests.swift`'s existing tests to confirm your refactor doesn't change what they assert (they test the OLD inline string, not the new helper — if they still pass unchanged, your refactor is behavior-preserving; if they need updating to reference the helper instead, do that too, but do not change their assertions' meaning).
-- [ ] **Step 6: Commit**
+- [ ] **Step 3: Implement `CardioExerciseZone`** in the new file.
+- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Analytics/CardioExerciseZone.swift Sources/FitnessAppUI/Cardio/CardioFeasibilityDayRow.swift Sources/FitnessAppUI/Workout/PlanBuilderView.swift Tests/FitnessAppCoreTests/CardioExerciseZoneTests.swift
-git commit -m "refactor: extract shared cardio-zone-by-name helper before adding a third call site"
+git add Sources/FitnessAppCore/Analytics/CardioExerciseZone.swift Tests/FitnessAppCoreTests/CardioExerciseZoneTests.swift
+git commit -m "feat: add CardioExerciseZone, zone-by-name detection for the adopted-day pace display"
 ```
 
 ---
