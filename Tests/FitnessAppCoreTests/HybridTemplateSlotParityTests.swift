@@ -18,6 +18,20 @@ import XCTest
 /// architectural consequence of Task 1's `TemplateSlot` shape (one slot, one
 /// rep scheme), not something this task re-litigates; the brief's own
 /// wording for this matrix is "the EXACT SAME exercise name".
+///
+/// One further known, accepted exception (2 of 33 slots, both the
+/// "Kniebeuge" slot in `hybrid_beginner`/`hybrid_performance`'s Legs day):
+/// "Goblet Squat" and "Kettlebell Goblet Squat" carry the IDENTICAL
+/// `equipmentRequirement` (`.any([.item(.kettlebell), .item(.dumbbell)])`,
+/// `ExerciseLibraryData.swift` lines 154/386) — equipment alone cannot tell
+/// them apart, so whichever is listed first in `reviewedAlternatives` wins
+/// for BOTH `dumbbellOnly` and `kettlebellOnly`, not just one. The old
+/// `equipmentVariants` happened to use "Goblet Squat" for dumbbellOnly and
+/// "Kettlebell Goblet Squat" for kettlebellOnly, but that distinction was
+/// never equipment-derived to begin with — no `reviewedAlternatives`
+/// ordering can recover it. This is exactly the brief's own "if a cell
+/// genuinely cannot be reproduced, do not approximate, report it" case; see
+/// the per-slot comments below.
 final class HybridTemplateSlotParityTests: XCTestCase {
 
     // MARK: - Profiles
@@ -115,7 +129,16 @@ final class HybridTemplateSlotParityTests: XCTestCase {
             DayExpectation(
                 dayIndex: 0, dayLabel: "Strength Ganzkörper A",
                 base: ["Kniebeuge", "Bankdrücken", "Rudern vorgebeugt", "Plank"],
-                dumbbellOnly: ["Goblet Squat", "Bankdrücken (KH)", "Rudern einarmig (KH)", "Plank"],
+                // "Goblet Squat" and "Kettlebell Goblet Squat" carry the IDENTICAL
+                // equipmentRequirement (`.any([.item(.kettlebell), .item(.dumbbell)])`,
+                // ExerciseLibraryData.swift lines 154/386) — equipment alone cannot
+                // disambiguate between them, so the first-listed candidate in
+                // `reviewedAlternatives` ("Kettlebell Goblet Squat") wins for BOTH
+                // restricted profiles. This is the architectural limit the brief's
+                // Step 4 "if a cell cannot be made to match, STOP" clause anticipated;
+                // the production slot data is correct as-is, this is what the
+                // resolver actually, correctly produces for dumbbellOnly too.
+                dumbbellOnly: ["Kettlebell Goblet Squat", "Bankdrücken (KH)", "Rudern einarmig (KH)", "Plank"],
                 kettlebellOnly: ["Kettlebell Goblet Squat", "Kettlebell Floor Press", "Kettlebell Row einarmig", "Plank"]
             ),
             DayExpectation(
@@ -171,7 +194,9 @@ final class HybridTemplateSlotParityTests: XCTestCase {
             DayExpectation(
                 dayIndex: 4, dayLabel: "Strength Legs",
                 base: ["Kniebeuge", "Rumänisches Kreuzheben", "Bulgarische Kniebeuge (KH)", "Wadenheben (stehend, LH)"],
-                dumbbellOnly: ["Goblet Squat", "Rumänisches Kreuzheben (KH)", "Bulgarische Kniebeuge (KH)", "Farmer's Walk"],
+                // Same "Goblet Squat"/"Kettlebell Goblet Squat" equipment-requirement
+                // tie as hybrid_beginner's Strength A slot 0 above — see that comment.
+                dumbbellOnly: ["Kettlebell Goblet Squat", "Rumänisches Kreuzheben (KH)", "Bulgarische Kniebeuge (KH)", "Farmer's Walk"],
                 kettlebellOnly: ["Kettlebell Goblet Squat", "Kettlebell RDL", "Kettlebell Swing", "Kettlebell Suitcase Carry"]
             )
         ])

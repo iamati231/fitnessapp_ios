@@ -666,17 +666,20 @@ public enum ProgramTemplates {
         // `equipmentVariants` oben. `reviewedAlternatives` sind eine
         // verlustfreie Transkription derselben dumbbellOnly-/kettlebellOnly-
         // Uebungsnamen — siehe `HybridTemplateSlotParityTests` fuer den
-        // vollstaendigen Parity-Beweis. "Kettlebell Goblet Squat" steht
-        // bewusst VOR "Goblet Squat": Letzteres ist selbst
-        // `.any([.kettlebell, .dumbbell])` erfuellbar, wuerde also bei
-        // kettlebellOnly bereits VOR "Kettlebell Goblet Squat" gewinnen,
-        // wenn es zuerst in der Liste stuende — Reihenfolge ist hier kein
-        // Rate-Wert, sondern noetig, damit die bestehende Drei-Werte-OR-
-        // Aufloesung (Task 1) die alte Kuratierung exakt reproduziert.
-        // Cardio-Tage bleiben ausserhalb von `slots` (leeres Array =
-        // unveraendert durchgereicht).
+        // vollstaendigen Parity-Beweis. Cardio-Tage bleiben ausserhalb von
+        // `slots` (leeres Array = unveraendert durchgereicht).
         slots: [
             [
+                // "Goblet Squat" und "Kettlebell Goblet Squat" tragen die
+                // IDENTISCHE `equipmentRequirement`
+                // (`.any([.item(.kettlebell), .item(.dumbbell)])`,
+                // ExerciseLibraryData.swift Zeile 154/386) — Equipment allein
+                // kann zwischen beiden nicht unterscheiden. Der zuerst
+                // gelistete Kandidat gewinnt deshalb fuer JEDES eingeschraenkte
+                // Profil (dumbbellOnly UND kettlebellOnly) gleichermassen —
+                // keine Reihenfolge trennt die beiden Profile hier (siehe
+                // `HybridTemplateSlotParityTests` fuer den entsprechend
+                // korrigierten Erwartungswert).
                 TemplateSlot(defaultExerciseName: "Kniebeuge", reviewedAlternatives: ["Kettlebell Goblet Squat", "Goblet Squat"],
                              sets: 3, repsMin: 6, repsMax: 8, restSeconds: 150),
                 TemplateSlot(defaultExerciseName: "Bankdrücken", reviewedAlternatives: ["Bankdrücken (KH)", "Kettlebell Floor Press"],
@@ -1003,9 +1006,8 @@ public enum ProgramTemplates {
             ])
         ],
         // Equipment-Vielfalt Phase 1 Task 3: siehe hybridBeginner-Kommentar
-        // oben fuer die Begruendung des Slot-Modells und der Alternativen-
-        // Reihenfolge ("Kettlebell Goblet Squat" vor "Goblet Squat"). Parity-
-        // Beweis: `HybridTemplateSlotParityTests`.
+        // oben fuer die Begruendung des Slot-Modells. Parity-Beweis:
+        // `HybridTemplateSlotParityTests`.
         slots: [
             [
                 TemplateSlot(defaultExerciseName: "Bankdrücken", reviewedAlternatives: ["Bankdrücken (KH)", "Kettlebell Floor Press"],
@@ -1032,6 +1034,10 @@ public enum ProgramTemplates {
             ],
             [], // Intervalle — Cardio, keine Equipment-Variation.
             [
+                // "Goblet Squat"/"Kettlebell Goblet Squat" equipment-requirement
+                // tie — see the identical comment at hybridBeginner's Strength A
+                // slot 0 above. First-listed candidate wins for both restricted
+                // profiles here too.
                 TemplateSlot(defaultExerciseName: "Kniebeuge", reviewedAlternatives: ["Kettlebell Goblet Squat", "Goblet Squat"],
                              sets: 4, repsMin: 5, repsMax: 8, restSeconds: 180),
                 TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
