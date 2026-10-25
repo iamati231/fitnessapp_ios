@@ -353,6 +353,29 @@ final class PlanGeneratorTests: XCTestCase {
         XCTAssertTrue(tenKNames.contains("Long Run"), "tenK's Mix enthaelt einen .quality-Slot, anders als generalFitness")
     }
 
+    /// Fix round 1 (Review-Fund + User-Entscheidung): `.quality` deckt laut
+    /// `RunPurpose`-Doku "sowohl Intervall- als auch Tempo-Laeufe ab" - ein
+    /// durchgaengiges `.tempo` liesse "Intervalle" komplett verschwinden,
+    /// sobald ein Profil vorliegt. Halbmarathon/Marathons Mix
+    /// `[.easy, .easy, .quality]` wiederholt sich bei 6 Tagen/Woche zweimal
+    /// und enthaelt damit zwei `.quality`-Vorkommen - diese muessen
+    /// zwischen `.tempo` ("Long Run") und `.interval` ("Intervalle")
+    /// wechseln, nicht immer denselben Wert liefern.
+    func testCardioCandidatesAlternatesQualitySlotsBetweenTempoAndInterval() {
+        let selection = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 6, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .halfMarathon, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [selection], equipmentPreferences: [], usesFixedWeekdays: false))
+        let names = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertTrue(names.contains("Long Run"), "erstes .quality-Vorkommen muss Tempo sein")
+        XCTAssertTrue(names.contains("Intervalle"), "zweites .quality-Vorkommen muss Intervall sein - Fix round 1")
+        // `.interval`s eigene Groessen-/Pace-Logik bleibt unberuehrt (Global
+        // Constraint) - auch wenn die Zone jetzt bei Profilen vorkommen kann.
+        let intervalDay = result.days.first { $0.spec.exercises.first?.name == "Intervalle" }!.spec.exercises[0]
+        XCTAssertEqual(intervalDay.targetDistanceKm, 0.4)
+    }
+
     /// Step 1(c): ein Profil MIT glaubwuerdigem Wochenvolumen muss messbar
     /// GROESSERE Dauer-Zielwerte liefern als eines ohne, fuer dasselbe Ziel -
     /// `CardioFeasibilityCalculator.targetWeeklyVolumeKm(.tenK) == 30`, 45

@@ -731,32 +731,45 @@ public enum PlanGenerator {
         // herauskommen - "ruhig" deckt die Luecke. Bleibt der feste
         // Default fuer den Fall OHNE `cardioRunProfile` (Review Focus 1) -
         // byte-fuer-byte unveraendert gegenueber vor Task 3.
-        let cycle: [RunZone]
+        let zones: [RunZone]
         if let goal = selection.cardioRunProfile?.goal {
             // Laufcoaching-Plan-Integration (Task 3): mit bekanntem Ziel
             // bestimmt `CardioFeasibilityCalculator.runTypeMix` (Task 2) das
             // Verhaeltnis easy/quality statt des zieleunabhaengigen festen
-            // Zyklus. `.quality` mappt bewusst konsequent auf `.tempo`,
-            // nie auf `.interval`: `.interval` ist distanzbasiert und bleibt
-            // laut Global Constraint dieses Tasks komplett unangetastet -
-            // wuerde ein Teil der `.quality`-Slots auf `.interval` fallen,
-            // profitierten diese Tage nie von der unten folgenden
-            // Volumen-Skalierung, und die Lauf-Typ-Mischung haenge dann
-            // zusaetzlich vom Zufall der Zyklus-Position ab statt nur vom
-            // Ziel. Ein durchgaengiges `.tempo` ist die einfachste Regel,
-            // die das vermeidet.
-            cycle = CardioFeasibilityCalculator.runTypeMix(for: goal).map { purpose in
-                switch purpose {
-                case .easy:    return .easy
-                case .quality: return .tempo
+            // Zyklus. Fix round 1 (User-Entscheidung nach Review-Fund):
+            // `.quality` deckt laut `RunPurpose`-Doku "sowohl Intervall- als
+            // auch Tempo-Laeufe ab" - ein durchgaengiges `.tempo` hätte
+            // `.interval`-Tage komplett verschwinden lassen, sobald ein
+            // Profil vorliegt (Trainingsinhalt-Regression, v.a. fuer
+            // 5K/10K). Aufeinanderfolgende `.quality`-Vorkommen wechseln
+            // deshalb zwischen `.tempo` und `.interval` (1./3./5. -> Tempo,
+            // 2./4./6. -> Intervall) - gezaehlt ueber die GESAMTE Woche, nicht
+            // nur einmal pro `runTypeMix`-Durchlauf, damit sich bei
+            // mehrfacher Wiederholung des Mix (z.B. Halbmarathon/Marathons
+            // `[.easy, .easy, .quality]` bei 6 Tagen/Woche) beide Reize
+            // tatsaechlich abwechseln statt immer auf denselben Wert zu
+            // fallen. `.interval`s eigene Groessen-/Pace-Logik (0.4 km, kein
+            // Volumen-Skalieren) bleibt davon unberuehrt - nur WELCHE Zone an
+            // welchem Tag steht, aendert sich hier, nicht wie `.interval`
+            // selbst aufgebaut ist.
+            let mix = CardioFeasibilityCalculator.runTypeMix(for: goal)
+            var qualityOccurrences = 0
+            zones = (0..<selection.daysPerWeek).map { dayIndex -> RunZone in
+                switch mix[dayIndex % mix.count] {
+                case .easy:
+                    return .easy
+                case .quality:
+                    qualityOccurrences += 1
+                    return qualityOccurrences.isMultiple(of: 2) ? .interval : .tempo
                 }
             }
         } else {
-            cycle = [.easy, .interval, .tempo]
+            let cycle: [RunZone] = [.easy, .interval, .tempo]
+            zones = (0..<selection.daysPerWeek).map { cycle[$0 % cycle.count] }
         }
 
         var result = (0..<selection.daysPerWeek).map { dayIndex in
-            let zone = cycle[dayIndex % cycle.count]
+            let zone = zones[dayIndex]
             let title = zone.germanLabel
             let exercise: ExerciseSpec
             switch zone {
