@@ -21438,6 +21438,29 @@
         }
       }
     },
+    "picker.plan.equipment.slotAlternative": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An dein Equipment angepasste Variante dieser Übung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A variant of this exercise adapted to your equipment."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu egzersizin ekipmanına göre uyarlanmış bir varyasyonu."
+          }
+        }
+      }
+    },
     "substitution.reason.squatToGobletSquat": {
       "extractionState": "manual",
       "localizations": {

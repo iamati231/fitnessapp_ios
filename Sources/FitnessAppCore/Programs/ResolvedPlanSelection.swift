@@ -70,6 +70,65 @@ public enum PlanSelectionResolver {
         context: SubstitutionContext,
         rules: [ReviewedSubstitutionRule] = ReviewedSubstitutionCatalog.all
     ) -> ResolvedPlanSelection {
+        // Equipment-Vielfalt Phase 1 Task 4: slot-bearing templates (Task 3's
+        // `slots`/`resolvedSlots(against:)`) resolve HERE FIRST, before the
+        // `equipmentVariants`/`ExerciseSubstitutionEngine` path below ever
+        // runs. `resolvedSlots` returns `nil` for every template without
+        // `slots` (all 17 untouched ones) — those fall through unchanged to
+        // the existing logic.
+        if let slotResult = template.resolvedSlots(against: profile) {
+            let equipmentStatus: PlanEquipmentStatus
+            if slotResult.gaps.isEmpty {
+                equipmentStatus = .available
+            } else if slotResult.gaps.contains(where: {
+                if case .missing = $0.reason { return true }
+                return false
+            }) {
+                // Ein definitives Nein gewinnt immer — identische Regel wie
+                // `PlanEquipmentChecker.check`.
+                equipmentStatus = .unavailable(gaps: slotResult.gaps)
+            } else {
+                equipmentStatus = .unknown(gaps: slotResult.gaps)
+            }
+
+            let appliedAdaptation: PlanAdaptationDraft?
+            if slotResult.usedAlternatives.isEmpty {
+                appliedAdaptation = nil
+            } else {
+                appliedAdaptation = PlanAdaptationDraft(
+                    sourceVariant: CheckedPlanVariant(profile: nil, days: template.days, equipmentStatus: equipmentStatus),
+                    adaptedDays: slotResult.days,
+                    replacements: slotResult.usedAlternatives.map { usage in
+                        ExerciseReplacement(
+                            slot: ExerciseSlot(dayIndex: usage.dayIndex, exerciseIndex: usage.exerciseIndex),
+                            originalName: usage.originalName,
+                            replacementName: usage.usedName,
+                            ruleID: "slot:\(usage.originalName)->\(usage.usedName)",
+                            reasonKey: "picker.plan.equipment.slotAlternative"
+                        )
+                    },
+                    // Unresolved slots are reported via `equipmentStatus`'s
+                    // gaps instead — never duplicated here (brief Interfaces).
+                    unresolved: [],
+                    finalEquipmentStatus: equipmentStatus,
+                    validatorBlockers: []
+                )
+            }
+
+            return ResolvedPlanSelection(
+                templateID: template.id,
+                // Slots resolution isn't tied to a single named `EquipmentProfile`.
+                variantProfile: nil, days: slotResult.days,
+                equipmentStatus: equipmentStatus, appliedAdaptation: appliedAdaptation,
+                // The slots path has exactly one outcome per profile, not
+                // multiple competing variant attempts — nothing else was
+                // "considered".
+                consideredButUnresolvedAdaptations: [],
+                ruleSetVersion: ReviewedSubstitutionCatalog.version,
+                equipmentSnapshot: profile
+            )
+        }
+
         // Punkt 2: eine bereits vollstaendig passende Variante gewinnt immer
         // unveraendert — identisch zur Phase-4-Auswahl, kein Adaptionsversuch
         // noetig oder zulaessig.
