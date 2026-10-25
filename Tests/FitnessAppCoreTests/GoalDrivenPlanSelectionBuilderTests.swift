@@ -228,6 +228,45 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
         XCTAssertEqual(selections.first?.daysPerWeek, 4)
     }
 
+    // Laufcoaching-Plan-Integration (Task 4): `cardioRunProfile` muss bis in
+    // die erzeugte(n) `PlanGeneratorTypeSelection`(s) durchgereicht werden.
+
+    func testEnduranceGoalForwardsCardioProfileToRunningSelection() {
+        let profile = CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .endurance, enduranceModality: .running, totalDaysPerWeek: 3,
+            sessionDurationMinutes: 30, experience: .intermediate, equipmentPreferences: [],
+            cardioRunProfile: profile
+        )
+        XCTAssertEqual(selections.first?.cardioRunProfile, profile)
+    }
+
+    func testStrengthGoalsNeverReceiveACardioProfileEvenIfOneIsPassed() {
+        let profile = CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        for goal: TrainingGoal in [.hypertrophy, .strength, .functional, .weightLoss] {
+            let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+                goal: goal, enduranceModality: nil, totalDaysPerWeek: 3,
+                sessionDurationMinutes: 30, experience: .intermediate, equipmentPreferences: [.barbell],
+                cardioRunProfile: profile
+            )
+            XCTAssertTrue(selections.allSatisfy { $0.cardioRunProfile == nil }, "goal \(goal) must never carry a cardio profile")
+        }
+    }
+
+    func testOmittingCardioRunProfileReproducesExistingEnduranceOutputExactly() {
+        // Regression for Review Focus 1: same call shape as
+        // testEnduranceGoalWithRunningModalityProducesSingleRunningSelection
+        // above, without the new argument - output must be unchanged.
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .endurance, enduranceModality: .running, totalDaysPerWeek: 4,
+            sessionDurationMinutes: 35, experience: .intermediate, equipmentPreferences: []
+        )
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.kind, .running)
+        XCTAssertEqual(selections.first?.daysPerWeek, 4)
+        XCTAssertNil(selections.first?.cardioRunProfile)
+    }
+
     func testEnduranceGoalWithCyclingModalityProducesSingleCyclingSelection() {
         let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
             goal: .endurance, enduranceModality: .cycling, totalDaysPerWeek: 3,

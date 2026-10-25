@@ -149,7 +149,8 @@ public enum GoalDrivenPlanSelectionBuilder {
         totalDaysPerWeek: Int,
         sessionDurationMinutes: Int,
         experience: DifficultyLevel,
-        equipmentPreferences: Set<Equipment>
+        equipmentPreferences: Set<Equipment>,
+        cardioRunProfile: CardioRunProfile? = nil
     ) -> [PlanGeneratorTypeSelection] {
         guard totalDaysPerWeek > 0 else { return [] }
 
@@ -173,7 +174,8 @@ public enum GoalDrivenPlanSelectionBuilder {
         case .endurance:
             return enduranceSelections(
                 modality: enduranceModality ?? .running, totalDays: totalDaysPerWeek,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                cardioRunProfile: cardioRunProfile
             )
 
         case .hybrid:
@@ -215,7 +217,8 @@ public enum GoalDrivenPlanSelectionBuilder {
                     if enduranceDays > 0 {
                         fallback.append(contentsOf: enduranceSelections(
                             modality: modality, totalDays: enduranceDays,
-                            sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                            sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                            cardioRunProfile: cardioRunProfile
                         ))
                     }
                     return fallback
@@ -234,23 +237,33 @@ public enum GoalDrivenPlanSelectionBuilder {
             if enduranceDays > 0 {
                 result.append(contentsOf: enduranceSelections(
                     modality: modality, totalDays: enduranceDays,
-                    sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                    sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                    cardioRunProfile: cardioRunProfile
                 ))
             }
             return result
         }
     }
 
+    /// `cardioRunProfile` wird auf JEDE hier erzeugte Selection gesetzt
+    /// (Laufen UND Radfahren bei `.both`) - `PlanGenerator.cardioCandidates`
+    /// liest das Feld ohnehin nur fuer `.running`-Selections aus (Pace nur
+    /// fuer `.easy`/`.tempo`-Laufzonen), Radfahren ignoriert es komplett
+    /// (siehe dortiger `guard selection.kind == .running`-Zweig). Ein
+    /// kind-abhaengiges Verzweigen hier waere also zusaetzlicher Code ohne
+    /// zusaetzlichen Effekt.
     private static func enduranceSelections(
         modality: EnduranceModality, totalDays: Int,
-        sessionDurationMinutes: Int, experience: DifficultyLevel
+        sessionDurationMinutes: Int, experience: DifficultyLevel,
+        cardioRunProfile: CardioRunProfile? = nil
     ) -> [PlanGeneratorTypeSelection] {
         let kinds = modality.trainingTypeKinds
         guard let firstKind = kinds.first else { return [] }
         guard kinds.count > 1, let secondKind = kinds.dropFirst().first else {
             return [PlanGeneratorTypeSelection(
                 kind: firstKind, daysPerWeek: totalDays,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                cardioRunProfile: cardioRunProfile
             )]
         }
         let firstDays = Int((Double(totalDays) / 2).rounded(.up))
@@ -259,13 +272,15 @@ public enum GoalDrivenPlanSelectionBuilder {
         if firstDays > 0 {
             result.append(PlanGeneratorTypeSelection(
                 kind: firstKind, daysPerWeek: firstDays,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                cardioRunProfile: cardioRunProfile
             ))
         }
         if secondDays > 0 {
             result.append(PlanGeneratorTypeSelection(
                 kind: secondKind, daysPerWeek: secondDays,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                cardioRunProfile: cardioRunProfile
             ))
         }
         return result
