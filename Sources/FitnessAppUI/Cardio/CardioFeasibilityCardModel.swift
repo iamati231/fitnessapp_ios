@@ -157,11 +157,40 @@ public struct CardioFeasibilityCardModel {
         // dortige Doku). Fehlt `activePlan`, existiert kein aktiver Plan (`.noActivePlan`) oder
         // ist keiner seiner Cardio-Tage anfassbar (`.noEligibleCardioDay`), bleibt der bisherige
         // "neuen Plan erstellen"-Pfad unten unveraendert der Fallback.
+        //
+        // Review-Korrektur (Critical): `CoachAdjustmentCardModel.accept` liest `profile.cardioGoal`
+        // LIVE (ueber `Self.cardioOnlyDaySpecs(for: profile.cardioGoal)`), und `make(for:
+        // activePlan:)` friert seinen eigenen `fingerprint` ebenfalls aus GENAU DIESEM, zum
+        // `make`-Zeitpunkt aktuellen `profile.cardioGoal` ein. Ist der Verdikt `infeasible` und
+        // `proposedGoal` daher ein KLEINERES, von `profile.cardioGoal` ABWEICHENDES Ziel (der
+        // ganze Zweck dieser Karte), MUSS `profile.cardioGoal` exakt wie im bestehenden "neuen
+        // Plan erstellen"-Pfad unten (siehe Typ-Doku oben: "zieht bei einem kleineren Vorschlag
+        // `profile.cardioGoal` mit") VOR `make`/`accept` auf `proposedGoal` vorgezogen werden -
+        // sonst wendet `accept` noch das ALTE, nicht erreichbare Ziel auf den Plan an, und
+        // `adjustmentModel.fingerprint` bliebe ebenfalls am alten Ziel haengen.
         if let activePlan,
            case .ready = RunCoachPlanAdjustment.analyze(plan: activePlan).cardioAvailability,
-           let adjustmentModel = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
+           let proposedGoal,
+           let raceDate = profile.cardioRaceDate,
+           let weeklyVolume = profile.weeklyBaseVolumeKm {
+            profile.cardioGoal = proposedGoal
+            guard let adjustmentModel = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) else {
+                // Defensiv: nach dem Mitziehen oben sollte `make` hier nicht mehr scheitern
+                // koennen (`proposedGoal` ist per Definition ein fuer dasselbe Renn-Datum/
+                // Wochenvolumen bereits als erreichbar geprueftes Ziel) - ein unerwartetes `nil`
+                // behandeln wir wie einen gescheiterten Abschluss, statt blind weiterzumachen.
+                return .failedBeforeCommit
+            }
             do {
                 _ = try adjustmentModel.accept(plan: activePlan, profile: profile, in: context)
+                // Nachbesserung (P2.3-Review, Punkt 3, siehe Typ-Doku oben): denselben Grundsatz
+                // wie die `completion`-Closure unten befolgen - NICHT `adjustmentModel.fingerprint`
+                // (das waere der VOR dem Mitziehen berechnete, alte Stand), sondern frisch aus
+                // `proposedGoal` berechnet, sonst erschiene die Karte beim naechsten Aufruf sofort
+                // wieder.
+                profile.cardioFeasibilityDismissedFingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
+                    goal: proposedGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
+                )
                 return .success(activePlan)
             } catch {
                 return .failedBeforeCommit

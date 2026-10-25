@@ -154,5 +154,70 @@ final class CardioFeasibilityCardModelTests: XCTestCase {
         XCTAssertEqual(plansAfter, plansBefore + 1, "ohne anfassbaren Cardio-Tag muss weiterhin ein neuer Plan entstehen")
         XCTAssertEqual(plan.days.count, dayCountBefore, "der bestehende, nicht anpassbare Plan darf nicht veraendert werden")
     }
+
+    /// Review-Fund (Critical): die In-Place-Anpassung muss bei einem INFEASIBLE Verdikt das
+    /// VORGESCHLAGENE, kleinere `proposedGoal` anwenden - nicht das urspruengliche, nicht
+    /// erreichbare `profile.cardioGoal`. `CoachAdjustmentCardModel.accept` liest
+    /// `profile.cardioGoal` LIVE (`Self.cardioOnlyDaySpecs(for: profile.cardioGoal)`); faellt
+    /// `accept(profile:in:using:activePlan:)` nicht zuerst `profile.cardioGoal = proposedGoal`
+    /// nach, wendet es unbemerkt noch das alte Ziel an UND vergisst
+    /// `profile.cardioFeasibilityDismissedFingerprint` zu setzen (Karte erschiene sofort wieder).
+    ///
+    /// Marathon (Zielvolumen 65 km/Woche) bei 15 km/Woche Basis und nur 7 Wochen bis zum
+    /// Renn-Datum ist klar NICHT erreichbar (`weeksNeeded(for: .marathon, startWeeklyVolumeKm: 15)`
+    /// == 18) - ebenso wenig Halbmarathon (14) oder 10K (10). Nur 5K (6) geht in 7 Wochen noch auf,
+    /// mit grossem Sicherheitsabstand in beide Richtungen gegen Kalender-Rundungsunschaerfen bei
+    /// `weeksAvailable` (+/-1-2 Wochen aendern an keiner dieser vier Vergleiche etwas) - `.fiveK`
+    /// ist daher der einzig moegliche `suggestedGoal`.
+    func testAcceptAppliesTheSuggestedGoalNotTheStaleInfeasibleGoalWhenAdjustingInPlace() throws {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: .marathon
+        )
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        context.insert(profile)
+        let plan = makeEligiblePlan()
+
+        guard let model = CardioFeasibilityCardModel.make(for: profile) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertFalse(model.verdict.feasible, "Testaufbau: Marathon in 7 Wochen bei 15 km Basis muss NICHT erreichbar sein")
+        guard let proposedGoal = model.proposedGoal else {
+            return XCTFail("Testaufbau: es sollte ein kleineres, erreichbares Ziel vorgeschlagen werden")
+        }
+        XCTAssertEqual(proposedGoal, .fiveK, "Testaufbau: bei diesen Werten ist 5K das einzig erreichbare kleinere Ziel")
+        XCTAssertNotEqual(proposedGoal, profile.cardioGoal, "Testaufbau: der Vorschlag muss vom urspruenglichen Ziel abweichen")
+
+        let operation = PlanCreationOperation()
+        let outcome = model.accept(profile: profile, in: context, using: operation, activePlan: plan)
+
+        guard case .success(let returnedPlan) = outcome else {
+            return XCTFail("expected .success, got \(String(describing: outcome))")
+        }
+        XCTAssertEqual(returnedPlan.persistentModelID, plan.persistentModelID)
+
+        // (b) profile.cardioGoal muss auf das vorgeschlagene Ziel mitgezogen worden sein - NICHT
+        // das alte, nicht erreichbare Ziel.
+        XCTAssertEqual(profile.cardioGoal, proposedGoal)
+
+        // (a) der angepasste Cardio-Tag muss den Spezifikationen fuer `proposedGoal` entsprechen -
+        // reuse derselben, deterministischen (kein Shuffle/Zufall im `shuffle: false`-Default-Pfad
+        // von `PlanGenerator.generate`) Quelle, die `CoachAdjustmentCardModel.accept` selbst intern
+        // aufruft, statt eines zweiten, unabhaengigen Soll-Wert-Rechners.
+        let expectedSpecs = CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: proposedGoal)
+        XCTAssertFalse(expectedSpecs.isEmpty, "Testaufbau: es sollte Cardio-Tagesinhalte fuer das vorgeschlagene Ziel geben")
+        XCTAssertEqual(
+            plan.days[0].activeExercises.map(\.name), expectedSpecs[0].exercises.map(\.name),
+            "der angepasste Tag muss den Inhalt fuer das VORGESCHLAGENE Ziel tragen"
+        )
+
+        // (c) der Fingerprint muss aus `proposedGoal` berechnet sein, nicht aus dem alten Ziel -
+        // sonst erschiene dieselbe Karte beim naechsten Aufruf sofort wieder.
+        let expectedFingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
+            goal: proposedGoal, raceDate: profile.cardioRaceDate!, weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm!
+        )
+        XCTAssertEqual(profile.cardioFeasibilityDismissedFingerprint, expectedFingerprint)
+    }
 }
 #endif
