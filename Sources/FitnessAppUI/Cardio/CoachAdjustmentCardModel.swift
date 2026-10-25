@@ -201,11 +201,17 @@ public struct CoachAdjustmentCardModel: Equatable {
             // die beim `make`-Zeitpunkt eingefrorene `analysis.insertableRestDays`
             // - derselbe Grundsatz wie `eligibleCardioDays` oben und
             // `isAlreadyApplied`/`eligibleDays` ueberall sonst in diesem Typ.
+            // Review-Korrektur: NICHT `CardioFeasibilityCalculator.runTypeMix(...).count`
+            // - das ist ein easy/quality-MUSTER, das ueber die tatsaechliche Lauf-Tage-Zahl
+            // ZYKLISCH angewendet wird (`PlanGenerator.swift`: `mix[dayIndex % mix.count]`),
+            // keine 1:1-Lauf-Tage-Zahl (stimmt z. B. fuer `.tenK`/`.marathon` nicht mit der
+            // echten Tage-Zahl ueberein). `newCardioDays.count` (oben, aus `cardioOnlyDaySpecs`,
+            // demselben `PlanGenerator.generate`-Ergebnis) ist die tatsaechliche Anzahl neu zu
+            // erzeugender Cardio-Tage fuer dieses Ziel.
             let eligibleRestDays = RunCoachPlanAdjustment.eligibleRestDaysForInsertion(in: plan)
             guard !eligibleRestDays.isEmpty else { return 0 }
-            let insertCount = CardioFeasibilityCalculator.runTypeMix(for: effectiveProposedGoal).count
             let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
-                eligible: eligibleRestDays, count: insertCount, otherDays: plan.days
+                eligible: eligibleRestDays, count: newCardioDays.count, otherDays: plan.days
             )
             // `insertCoachCardioDays` wirft (statt stillschweigend 0
             // zurueckzugeben), wenn `selectedRestDays` zu wenige Tage enthaelt

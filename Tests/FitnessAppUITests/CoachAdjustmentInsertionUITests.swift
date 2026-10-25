@@ -92,17 +92,29 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
         )
     }
 
-    /// Selection must use `CardioFeasibilityCalculator.runTypeMix`'s run-day
-    /// count for the proposed/effective goal, not an arbitrary constant.
-    func testAcceptSelectsRestDaysUsingRunTypeMixCountForTheEffectiveGoal() throws {
+    /// Selection must use `newCardioDays.count` - the actual number of
+    /// cardio-only day specs `cardioOnlyDaySpecs`/`PlanGenerator.generate`
+    /// produced for the effective goal - as the number of rest days to
+    /// select, NOT `CardioFeasibilityCalculator.runTypeMix(...).count`
+    /// (review fix: `runTypeMix` is an easy/quality PATTERN cycled across
+    /// the real run-day count, e.g. `PlanGenerator.swift`'s
+    /// `mix[dayIndex % mix.count]` - not itself a 1:1 run-day count, and
+    /// diverges from the real day count for `.generalFitness`/`.tenK`/
+    /// `.marathon`, which made `insertCoachCardioDays` always throw
+    /// `.insufficientRestDays` for those goals).
+    func testAcceptSelectsRestDaysUsingNewCardioDaysCountForTheEffectiveGoal() throws {
         let body = try acceptFunctionBody()
-        XCTAssertTrue(
-            body.contains("CardioFeasibilityCalculator.runTypeMix(for: effectiveProposedGoal).count"),
-            "the number of rest days to select must come from runTypeMix(for: effectiveProposedGoal)"
+        XCTAssertFalse(
+            body.contains("CardioFeasibilityCalculator.runTypeMix("),
+            "runTypeMix is a cycled easy/quality pattern, not a run-day count - it must not be used to size the rest-day selection"
         )
+        guard let selectRange = body.range(of: "RunCoachPlanAdjustment.selectRestDaysForInsertion(") else {
+            XCTFail("selectRestDaysForInsertion call not found"); return
+        }
+        let callSite = body[selectRange.lowerBound...].prefix(200)
         XCTAssertTrue(
-            body.contains("RunCoachPlanAdjustment.selectRestDaysForInsertion("),
-            "must use Task 6's selection function, not a second ad-hoc implementation"
+            callSite.contains("count: newCardioDays.count"),
+            "must select exactly as many rest days as newCardioDays.count (the actual generated cardio-day count for the effective goal)"
         )
     }
 
