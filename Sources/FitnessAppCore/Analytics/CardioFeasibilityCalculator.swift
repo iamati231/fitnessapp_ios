@@ -168,4 +168,40 @@ public enum CardioFeasibilityCalculator {
         }
         return PlanGeneratorInput(selections: selections, equipmentPreferences: [], usesFixedWeekdays: false)
     }
+
+    /// Lauf-Zweck innerhalb der Wochenstruktur - `.quality` deckt sowohl
+    /// Intervall- als auch Tempo-Laeufe ab; welche der beiden konkreten
+    /// `PlanGenerator.RunZone`-Werte ein `.quality`-Slot bekommt, bleibt Sache
+    /// von `PlanGenerator` (Task 3). Hier geht es nur um das Verhaeltnis
+    /// easy/quality, nicht um Pace (das macht `PaceZoneCalculator`) oder
+    /// Wochenvolumen (das macht `targetWeeklyVolumeKm`/Task 3).
+    public enum RunPurpose: String, Sendable, Equatable, CaseIterable {
+        case easy
+        case quality
+    }
+
+    /// Ziel-Entscheidung Teil 1 ("Auswahl/Struktur", Decision 2): welcher
+    /// Anteil der Lauf-Tage einer Woche hart (`.quality`) statt locker
+    /// (`.easy`) sein sollte. `PlanGenerator` (Task 3) zyklisiert spaeter
+    /// durch dieses Muster anstelle des heute starren, zieleunabhaengigen
+    /// `[.easy, .interval, .tempo]`.
+    ///
+    /// Grobe Faustregel, keine Wissenschaft (vgl. `PaceZoneCalculator`: grobe
+    /// Naeherungen, keine individuelle Trainingsempfehlung): je laenger die
+    /// Wettkampf-Distanz, desto mehr traegt aerobes Grundlagenvolumen den
+    /// Erfolg und desto weniger harte Reize vertraegt der Koerper daneben
+    /// regenerativ - 5 km/10 km koennen anteilig mehr Qualitaetsarbeit
+    /// stemmen als Halbmarathon/Marathon. "Allgemeine Fitness" hat keine
+    /// Wettkampf-Distanz, die Qualitaetsarbeit verlangt (siehe
+    /// `targetWeeklyVolumeKm == nil`) - konsequenterweise rein `.easy`.
+    public static func runTypeMix(for goal: CardioGoal) -> [RunPurpose] {
+        switch goal {
+        case .generalFitness:
+            return [.easy]
+        case .fiveK, .tenK:
+            return [.easy, .quality]
+        case .halfMarathon, .marathon:
+            return [.easy, .easy, .quality]
+        }
+    }
 }

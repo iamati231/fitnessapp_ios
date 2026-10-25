@@ -249,4 +249,49 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - runTypeMix (Task 2: Ziel bestimmt Lauf-Struktur, getrennt von Pace/Volumen)
+
+    func testGeneralFitnessRunTypeMixIsEasyOnly() {
+        XCTAssertEqual(CardioFeasibilityCalculator.runTypeMix(for: .generalFitness), [.easy])
+    }
+
+    func testFiveKAndTenKRunTypeMixIsHalfQuality() {
+        for goal in [CardioGoal.fiveK, .tenK] {
+            XCTAssertEqual(CardioFeasibilityCalculator.runTypeMix(for: goal), [.easy, .quality])
+        }
+    }
+
+    func testHalfMarathonAndMarathonRunTypeMixLeansEasy() {
+        for goal in [CardioGoal.halfMarathon, .marathon] {
+            XCTAssertEqual(CardioFeasibilityCalculator.runTypeMix(for: goal), [.easy, .easy, .quality])
+        }
+    }
+
+    /// Checkpoint #2: unterschiedliche Ziele muessen fachlich unterschiedliche
+    /// Ergebnisse liefern, nicht nur unterschiedliche Arrays zufaellig.
+    /// 5 km traegt anteilig mehr Qualitaetsarbeit als Marathon.
+    func testFiveKHasHigherQualityShareThanMarathon() {
+        func qualityShare(_ goal: CardioGoal) -> Double {
+            let mix = CardioFeasibilityCalculator.runTypeMix(for: goal)
+            return Double(mix.filter { $0 == .quality }.count) / Double(mix.count)
+        }
+        XCTAssertGreaterThan(qualityShare(.fiveK), qualityShare(.marathon))
+    }
+
+    func testRunTypeMixNeverEmpty() {
+        for goal in CardioGoal.allCases {
+            XCTAssertFalse(CardioFeasibilityCalculator.runTypeMix(for: goal).isEmpty)
+        }
+    }
+
+    /// Diese Funktion ist reine Ziel-Logik - keine Volumen-/Pace-Abhaengigkeit.
+    /// Dokumentiert als Test, nicht nur als Kommentar: derselbe Aufruf mit
+    /// demselben `goal` liefert immer dasselbe Ergebnis, unabhaengig von
+    /// irgendwelchen anderen Werten (es gibt schlicht keine weiteren Parameter).
+    func testRunTypeMixIsDeterministicPerGoal() {
+        for goal in CardioGoal.allCases {
+            XCTAssertEqual(CardioFeasibilityCalculator.runTypeMix(for: goal), CardioFeasibilityCalculator.runTypeMix(for: goal))
+        }
+    }
 }
