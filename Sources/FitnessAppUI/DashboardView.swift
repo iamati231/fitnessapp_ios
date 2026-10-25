@@ -259,7 +259,7 @@ public struct DashboardView: View {
                     // `isAlreadyApplied` gaten. `laufcoachingAdjustmentCard`
                     // deckt jetzt selbst beide Zustaende ab (siehe deren
                     // Doku).
-                    if let profile = profiles.first, let activePlan = activePlans.first,
+                    if let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans),
                        let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
                         laufcoachingAdjustmentCard(adjustment, plan: activePlan)
                     } else if let model = cardioFeasibilityModel {
@@ -1478,7 +1478,7 @@ public struct DashboardView: View {
     /// `MissedRunDaysCardModel.make`-Dokumentation).
     private var missedRunDaysModel: MissedRunDaysCardModel? {
         guard let profile = profiles.first else { return nil }
-        return MissedRunDaysCardModel.make(for: profile, activePlan: activePlans.first, in: modelContext)
+        return MissedRunDaysCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: activePlans), in: modelContext)
     }
 
     /// Zeigt die CTA-/Ablehnen-Zeile unter dem Hinweistext — nur wenn dieser
