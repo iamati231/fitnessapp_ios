@@ -126,6 +126,7 @@ public struct PlanEditorView: View {
                 // settingsSection (Wochen/Trainingsort/Active) wandert nach UNTEN
                 // unter daysSection, damit die Trainings-Liste oben bleibt.
                 metaSection
+                equipmentGapSection
                 daysSection
                 settingsSection
             }
@@ -797,6 +798,54 @@ public struct PlanEditorView: View {
             sectionHeader("planEditor.section.info")
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Equipment-Vielfalt Phase 1 Task 4: macht eine Equipment-Luecke auf
+    /// einem BEREITS GESPEICHERTEN Plan sichtbar, nicht nur in der Adopt-
+    /// Vorschau (Decision 1 — warnen, nicht blockieren). Computed property,
+    /// bei JEDEM `body`-Render frisch aus der bestehenden `userProfiles`-
+    /// Query gelesen (gleiches Prinzip wie `ProgramTemplatePickerView.
+    /// resolvedSelection`/`equipmentStatusBanner`) — NIEMALS in `@State`
+    /// zwischengespeichert, damit eine Profil-Aenderung an anderer Stelle
+    /// sofort hier ankommt.
+    private var equipmentGapReport: PlanEquipmentReport? {
+        guard let profile = userProfiles.first?.equipmentProfile else { return nil }
+        return SavedPlanEquipmentCheck.report(for: plan, against: profile)
+    }
+
+    @ViewBuilder
+    private var equipmentGapSection: some View {
+        if let report = equipmentGapReport, !report.isFullyAvailable {
+            Section {
+                DeltiqCard {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("planEditor.equipmentGap.title", bundle: .module)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Color.primary)
+                            Text(String(format: String(localized: "planEditor.equipmentGap.detail", bundle: .module), equipmentGapExerciseNames(report).joined(separator: ", ")))
+                                .font(.footnote)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+            }
+        }
+    }
+
+    /// Dieselbe Formatierung wie `ProgramTemplatePickerView.missingGapDetail`
+    /// im Prinzip (konkrete Uebungen nennen statt pauschal "Equipment fehlt")
+    /// — hier auf Uebungsnamen statt Geraete-Items, weil `PlanEquipmentReport`
+    /// pro Uebung, nicht pro Geraet aggregiert.
+    private func equipmentGapExerciseNames(_ report: PlanEquipmentReport) -> [String] {
+        (report.missing + report.uncertain).map(\.exerciseName)
     }
 
     private var settingsSection: some View {

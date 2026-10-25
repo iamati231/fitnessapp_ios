@@ -21944,6 +21944,52 @@
         }
       }
     },
+    "planEditor.equipmentGap.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment-Lücke"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment gap"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman eksikliği"
+          }
+        }
+      }
+    },
+    "planEditor.equipmentGap.detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein aktuelles Equipment deckt diese Übungen nicht sicher ab: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your current equipment doesn't reliably cover these exercises: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevcut ekipmanın bu hareketleri güvenilir şekilde karşılamıyor: %@"
+          }
+        }
+      }
+    },
     "planEditor.section.info": {
       "extractionState": "manual",
       "localizations": {
