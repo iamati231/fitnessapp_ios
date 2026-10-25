@@ -168,17 +168,32 @@ public struct CardioFeasibilityCardModel {
         // `profile.cardioGoal` mit") VOR `make`/`accept` auf `proposedGoal` vorgezogen werden -
         // sonst wendet `accept` noch das ALTE, nicht erreichbare Ziel auf den Plan an, und
         // `adjustmentModel.fingerprint` bliebe ebenfalls am alten Ziel haengen.
+        //
+        // Review-Korrektur (Important): die Plan-Mutation selbst wird bei einem Fehlschlag von
+        // `adjustmentModel.accept` bereits vollstaendig intern zurueckgerollt (siehe
+        // `PlanGeneratorInstantiator.revert`/`applyCoachCardioAdjustment`-Doku) - `profile.cardioGoal`
+        // ist davon aber NICHT betroffen, es wurde ja hier, ausserhalb dieses rollback-faehigen
+        // Bereichs, direkt zugewiesen. Ohne explizites Zuruecksetzen bliebe `profile.cardioGoal`
+        // nach einem gescheiterten Versuch auf `proposedGoal` haengen, OHNE dass irgendetwas
+        // tatsaechlich uebernommen wurde - ein inkonsistenter Teilzustand, den der sibling "neuen
+        // Plan erstellen"-Pfad unten strukturell gar nicht erst zulassen kann (er setzt
+        // `profile.cardioGoal` ausschliesslich in der `completion`-Closure, die nur bei
+        // bestaetigtem `.success` ueberhaupt laeuft). `previousCardioGoal` haelt den Stand VOR
+        // dieser Zuweisung fest, um ihn in jedem Fehlschlag-Pfad (Guard unten UND `catch`)
+        // wiederherzustellen.
         if let activePlan,
            case .ready = RunCoachPlanAdjustment.analyze(plan: activePlan).cardioAvailability,
            let proposedGoal,
            let raceDate = profile.cardioRaceDate,
            let weeklyVolume = profile.weeklyBaseVolumeKm {
+            let previousCardioGoal = profile.cardioGoal
             profile.cardioGoal = proposedGoal
             guard let adjustmentModel = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) else {
                 // Defensiv: nach dem Mitziehen oben sollte `make` hier nicht mehr scheitern
                 // koennen (`proposedGoal` ist per Definition ein fuer dasselbe Renn-Datum/
                 // Wochenvolumen bereits als erreichbar geprueftes Ziel) - ein unerwartetes `nil`
                 // behandeln wir wie einen gescheiterten Abschluss, statt blind weiterzumachen.
+                profile.cardioGoal = previousCardioGoal
                 return .failedBeforeCommit
             }
             do {
@@ -193,6 +208,10 @@ public struct CardioFeasibilityCardModel {
                 )
                 return .success(activePlan)
             } catch {
+                // Siehe Doku-Block oben: die Plan-Mutation ist bereits vollstaendig zurueckgerollt -
+                // `profile.cardioGoal` muss das symmetrisch nachvollziehen, sonst bliebe das
+                // Vorschlags-Ziel haengen, obwohl nichts uebernommen wurde.
+                profile.cardioGoal = previousCardioGoal
                 return .failedBeforeCommit
             }
         }

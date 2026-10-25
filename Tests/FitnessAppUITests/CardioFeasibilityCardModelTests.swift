@@ -2,7 +2,7 @@
 import XCTest
 import SwiftData
 @testable import FitnessAppUI
-import FitnessAppData
+@testable import FitnessAppData
 import FitnessAppCore
 
 /// Task 7 (Laufcoaching-Plan-Integration): `CardioFeasibilityCardModel.accept()` erzeugte vorher
@@ -23,6 +23,16 @@ final class CardioFeasibilityCardModelTests: XCTestCase {
     override func setUpWithError() throws {
         container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
+
+    override func tearDownWithError() throws {
+        container = nil
+        // Nachbesserung (gleiches Muster wie `PlanGeneratorInstantiatorTests`): statischer
+        // Test-DI-Seam auf dem Typ, nicht Instanz-State - muss nach jedem Test zurueckgesetzt
+        // werden, sonst "leakt" ein hier gesetzter Mock in alle nachfolgenden Tests.
+        PlanGeneratorInstantiator.saveOverrideForTesting = nil
+    }
+
+    private struct TestSaveError: Error {}
 
     /// 10K-Ziel, 20 Wochen verfuegbar / 20 km Wochenbasis - klar erreichbar
     /// (`verdict.feasible == true`), identisches Muster wie
@@ -218,6 +228,52 @@ final class CardioFeasibilityCardModelTests: XCTestCase {
             goal: proposedGoal, raceDate: profile.cardioRaceDate!, weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm!
         )
         XCTAssertEqual(profile.cardioFeasibilityDismissedFingerprint, expectedFingerprint)
+    }
+
+    /// Review-Fund (Important): schlaegt `adjustmentModel.accept(...)` fehl, rollt
+    /// `PlanGeneratorInstantiator.revert` die Plan-Mutation selbst bereits vollstaendig zurueck
+    /// (siehe `applyCoachCardioAdjustment`-Doku) - `profile.cardioGoal` wurde aber AUSSERHALB
+    /// dieses rollback-faehigen Bereichs direkt zugewiesen und muss daher explizit symmetrisch
+    /// zurueckgesetzt werden, sonst bliebe das Vorschlags-Ziel haengen, obwohl nichts uebernommen
+    /// wurde. Nutzt denselben `PlanGeneratorInstantiator.saveOverrideForTesting`-DI-Seam wie
+    /// `PlanGeneratorInstantiatorTests.testBuildRollsBackNewPlanAndRestoresPreviousActivePlanWhenSaveFails`,
+    /// um den echten, in `applyCoachCardioAdjustment` aufgerufenen `save(context)` deterministisch
+    /// scheitern zu lassen, statt den SwiftData-Store selbst zu beschaedigen.
+    func testAcceptRestoresTheOriginalCardioGoalWhenTheInPlaceAdjustmentFails() throws {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: .marathon
+        )
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        context.insert(profile)
+        let plan = makeEligiblePlan()
+
+        guard let model = CardioFeasibilityCardModel.make(for: profile) else {
+            return XCTFail("expected model")
+        }
+        guard let proposedGoal = model.proposedGoal else {
+            return XCTFail("Testaufbau: es sollte ein kleineres, erreichbares Ziel vorgeschlagen werden")
+        }
+        // Testaufbau identisch zu `testAcceptAppliesTheSuggestedGoalNotTheStaleInfeasibleGoalWhenAdjustingInPlace`
+        // - entscheidend ist hier nur, dass `proposedGoal` vom urspruenglichen Ziel ABWEICHT, sonst
+        // waere eine (ausbleibende) Wiederherstellung von einem Erfolg nicht unterscheidbar.
+        XCTAssertNotEqual(proposedGoal, profile.cardioGoal, "Testaufbau: der Vorschlag muss vom urspruenglichen Ziel abweichen")
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        let operation = PlanCreationOperation()
+        let outcome = model.accept(profile: profile, in: context, using: operation, activePlan: plan)
+
+        guard case .failedBeforeCommit = outcome else {
+            return XCTFail("expected .failedBeforeCommit, got \(String(describing: outcome))")
+        }
+        XCTAssertEqual(
+            profile.cardioGoal, .marathon,
+            "ein gescheiterter Versuch darf profile.cardioGoal nicht auf das Vorschlags-Ziel haengen lassen"
+        )
+        XCTAssertNil(profile.cardioPlanAdjustmentFingerprint, "nichts wurde uebernommen - kein Fingerprint darf gesetzt sein")
+        XCTAssertNil(profile.cardioFeasibilityDismissedFingerprint, "nichts wurde uebernommen - kein Fingerprint darf gesetzt sein")
     }
 }
 #endif
