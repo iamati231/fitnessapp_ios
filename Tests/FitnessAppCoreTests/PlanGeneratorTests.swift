@@ -269,6 +269,16 @@ final class PlanGeneratorTests: XCTestCase {
         // instead of assuming cycle order survives into the result.
         let easyDay = result.days.first { $0.spec.exercises.first?.name == "Easy Run" }!.spec.exercises[0]
         XCTAssertEqual(easyDay.targetPaceMinutesPerKm, PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: 1500))
+
+        // Final-review Fix 5: a reviewer noted that swapping the easy/tempo
+        // pace-factor calls in `PlanGenerator.cardioCandidates` would still
+        // pass CI, because only the easy-zone day's pace was asserted here.
+        // Same name-based lookup as above (never index-based, see the
+        // `spreadByHardness`-reordering comment) - `RunZone.tempo.exerciseName`
+        // is "Long Run" (distinct from "Easy Run"/"Intervalle" in this
+        // three-day running-only selection).
+        let tempoDay = result.days.first { $0.spec.exercises.first?.name == "Long Run" }!.spec.exercises[0]
+        XCTAssertEqual(tempoDay.targetPaceMinutesPerKm, PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: 1500))
     }
 
     func testCardioCandidatesLeavesPaceNilWithoutReferenceTime() {

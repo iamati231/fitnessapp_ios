@@ -16,9 +16,9 @@ import FitnessAppData
 /// `nil` liefert (kein aktiver Plan, Coach aus, oder kein Ziel/Renndatum/
 /// Wochenvolumen gepflegt) — die neue Karte hat Vorrang, sobald ein
 /// aktiver Plan existiert, die alte bleibt fuer den reinen
-/// "kein aktiver Plan"-Fall zustaendig. UI-Verdrahtung an den drei
-/// Aufrufstellen (ProfileEditorView/DashboardView/PlansListView) steht
-/// noch aus — dieser Vertrag gilt fuer JEDE davon.
+/// "kein aktiver Plan"-Fall zustaendig. UI-Verdrahtung an allen drei
+/// Aufrufstellen (ProfileEditorView/DashboardView/PlansListView) ist
+/// inzwischen vollstaendig - dieser Vertrag gilt fuer jede davon identisch.
 public struct CoachAdjustmentCardModel: Equatable {
     public let verdict: CardioFeasibilityCalculator.Result
     public let analysis: RunCoachPlanAdjustment.Analysis

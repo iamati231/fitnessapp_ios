@@ -747,6 +747,11 @@ public struct ProfileEditorView: View {
     /// Leitplanke 6: hat Vorrang vor `feasibilityModel`, sobald ein aktiver
     /// Plan existiert - siehe `feasibilityModel`s Guard unten und
     /// `CoachAdjustmentCardModel`s Typ-Doku fuer den vollen Vertrag.
+    /// Nachbesserung (finales Branch-Review, Fix 3): dieses `if/guard`-Paar
+    /// ist absichtlich dasselbe Muster wie `DashboardView`s fixer Kartenslot
+    /// und `PlansListView.coachAdjustmentModel`/`coachAdjustmentSection` -
+    /// die drei Stellen bilden gemeinsam die vollstaendige Leitplanke-6-
+    /// Verdrahtung, keine isolierte Einzelloesung hier.
     private var coachAdjustmentModel: CoachAdjustmentCardModel? {
         CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
     }

@@ -79,6 +79,12 @@ final class CardioFeasibilityDayRowPaceTests: XCTestCase {
         XCTAssertTrue(durationBranch.contains("PaceCalculator.formatPace(pace)"))
         XCTAssertTrue(durationBranch.contains("cardioFeasibility.day.paceUnknown"))
         XCTAssertFalse(durationBranch.contains("formatPace(nil)"))
+        // Final-review Fix 1: Pace/Fallback nur fuer Laufen UND nur bei
+        // aktivem Coach - sonst zeigte dieser Zweig beides auch bei
+        // abgeschaltetem Coach und bei Radfahren (beide tragen ebenfalls
+        // `targetDurationMinutes`).
+        XCTAssertTrue(durationBranch.contains("enduranceSportKind == .running"), "pace/fallback must be gated to running")
+        XCTAssertTrue(durationBranch.contains("cardioCoachingEnabled == true"), "pace/fallback must be gated to an active coach")
 
         guard let distanceGateRange = block.range(of: "if let distance = exercise.targetDistanceKm {") else {
             XCTFail("distance branch not found"); return

@@ -230,19 +230,37 @@ public struct DashboardView: View {
                     }
 
                     // Task 8 (Leitplanke 6, CoachAdjustmentCardModel.swift):
-                    // existiert ein aktiver Plan UND eine noch nicht
-                    // uebernommene Anpassungsempfehlung, hat diese Karte
-                    // Vorrang - ein `if/else if`, NIE zwei unabhaengige
-                    // `if`s, damit beide Karten fuer denselben Zustand nie
-                    // gleichzeitig erscheinen. Handoff "Lauf-Coaching -
-                    // Machbarkeits-Check" (2.30) bleibt der Fallback fuer den
-                    // reinen "kein aktiver Plan"-Fall, statisch ueber den
+                    // existiert ein aktiver Plan UND ueberhaupt eine
+                    // Anpassungsempfehlung (egal ob pending oder bereits
+                    // uebernommen), hat diese Karte Vorrang - ein `if/else
+                    // if`, NIE zwei unabhaengige `if`s, damit beide Karten
+                    // fuer denselben Zustand nie gleichzeitig erscheinen.
+                    // Handoff "Lauf-Coaching - Machbarkeits-Check" (2.30)
+                    // bleibt der Fallback nur fuer den Fall, dass
+                    // `CoachAdjustmentCardModel.make` `nil` liefert (kein
+                    // aktiver Plan, oder keine Empfehlung fuer dieses
+                    // Profil/diesen Plan moeglich) - statisch ueber den
                     // konfigurierbaren Widgets, gleiche Prioritaet wie
                     // unrepresentedOpenSession - kein gespeicherter Zustand,
                     // jeder Aufruf rechnet live neu.
+                    //
+                    // Nachbesserung (finales Branch-Review, Fix 2): vorher
+                    // gatete dieser Zweig zusaetzlich auf
+                    // `!adjustment.isAlreadyApplied` - das liess den Slot auf
+                    // die VERALTETE Feasibility-Karte fuer denselben Plan
+                    // zurueckfallen, sobald eine Anpassung erfolgreich
+                    // uebernommen wurde (Task 7s In-Place-Anpassungspfad setzt
+                    // nur `cardioPlanAdjustmentFingerprint`, nie
+                    // `cardioFeasibilityDismissedFingerprint`). Das verletzte
+                    // Leitplanke 6 ("Feasibility nur zeigen, wenn `make`
+                    // `nil` liefert") und widersprach
+                    // `ProfileEditorView.coachAdjustmentModel`/
+                    // `feasibilityModel`, die genauso NIE auf
+                    // `isAlreadyApplied` gaten. `laufcoachingAdjustmentCard`
+                    // deckt jetzt selbst beide Zustaende ab (siehe deren
+                    // Doku).
                     if let profile = profiles.first, let activePlan = activePlans.first,
-                       let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan),
-                       !adjustment.isAlreadyApplied {
+                       let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
                         laufcoachingAdjustmentCard(adjustment, plan: activePlan)
                     } else if let model = cardioFeasibilityModel {
                         cardioFeasibilityDashboardCard(model)
@@ -2472,13 +2490,16 @@ public struct DashboardView: View {
         profiles.first.flatMap(CardioFeasibilityCardModel.make(for:))
     }
 
-    /// Task 8: "aktiver Plan existiert, Coach-Anpassung steht aus"-Karte -
-    /// Leitplanke 6 (`CoachAdjustmentCardModel.swift`) laesst diese Karte NUR
-    /// rendern, wenn `isAlreadyApplied == false` ist (siehe Aufrufstelle
-    /// oben), daher reicht hier derselbe Titel/Detail-Aufbau wie
-    /// `CoachAdjustmentPreviewView.statusSection` ("pending" + Machbarkeits-
-    /// Headline aus `adjustment.verdict`) - keine neuen Keys. CTA oeffnet
-    /// denselben, bestehenden `CoachAdjustmentPreviewView`-Sheet wie die
+    /// Task 8: "aktiver Plan existiert, Coach-Anpassung verfuegbar"-Karte -
+    /// Leitplanke 6 (`CoachAdjustmentCardModel.swift`) laesst den Feasibility-
+    /// Fallback an der Aufrufstelle oben NUR rendern, wenn
+    /// `CoachAdjustmentCardModel.make` `nil` liefert, nicht mehr abhaengig
+    /// von `isAlreadyApplied` (Nachbesserung, finales Branch-Review Fix 2) -
+    /// diese Karte deckt deshalb jetzt BEIDE Zustaende ab, genau wie
+    /// `ProfileEditorView.coachAdjustmentSection`, dessen Titel-Umschaltung
+    /// (`profile.cardio.adjustment.pending`/`.applied`) hier identisch
+    /// uebernommen wird - keine neuen Keys. CTA oeffnet denselben,
+    /// bestehenden `CoachAdjustmentPreviewView`-Sheet wie die
     /// Laufversaeumnis-Karte (`showingMissedRunAdjustmentPreview`), daher
     /// auch dessen bestehender Button-Text statt eines neuen. `plan` wird
     /// hier nicht gebraucht (das Sheet loest Profil/Plan selbst frisch aus
@@ -2491,7 +2512,9 @@ public struct DashboardView: View {
                     .foregroundStyle(Color.deltiqOrange)
                     .font(.title3)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("profile.cardio.adjustment.pending", bundle: .module)
+                    Text(adjustment.isAlreadyApplied
+                         ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
+                         : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
                     Text(adjustment.verdict.feasible

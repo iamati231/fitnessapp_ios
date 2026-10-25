@@ -98,6 +98,15 @@ public struct PlansListView: View {
     /// hier soll er mit dem Machbarkeits-Vorschlag vorbefuellt oeffnen.
     @State private var showingPlanAdjustSheet = false
 
+    /// Nachbesserung (finales Branch-Review, Fix 3): eigener Zustand fuer den
+    /// neuen Coach-Anpassungs-Hinweis unten, bewusst NICHT
+    /// `showingPlanAdjustSheet` wiederverwenden - der oeffnet den vollen
+    /// `PlanBuilderView`-Wizard fuer den `CardioFeasibilityCardModel`-Pfad
+    /// (ganzer Plan neu zusammenstellen), waehrend dieser hier
+    /// `CoachAdjustmentPreviewView` oeffnet (In-Place-Tausch nur der
+    /// eligiblen bestehenden Cardio-Tage, Task 7) - zwei verschiedene Flows.
+    @State private var showingCoachAdjustmentPreview = false
+
     public init() {}
 
     public var body: some View {
@@ -151,7 +160,22 @@ public struct PlansListView: View {
                     activeSessionSection(active)
                 }
 
-                if let profile = profiles.first, let model = CardioFeasibilityCardModel.make(for: profile) {
+                // Nachbesserung (finales Branch-Review, Fix 3): Leitplanke 6
+                // (`CoachAdjustmentCardModel.swift`) galt bisher nur fuer
+                // `ProfileEditorView`/`DashboardView` - hier fehlte sie
+                // komplett, wodurch die volle "neuen Plan erstellen"-Vorschau
+                // (`cardioFeasibilitySection`) auch dann noch gezeigt wurde,
+                // wenn tatsaechlich ein aktiver, eligibler Plan existierte und
+                // Task 7s In-Place-Anpassungspfad greifen wuerde - die
+                // sichtbare Vorschau ("3 Laeufe + 2 Krafttage") passte dann
+                // nicht zu dem, was ein Tap auf "Uebernehmen" wirklich tat
+                // (nur die eligiblen bestehenden Cardio-Tage tauschen).
+                // Gleiche Prioritaet wie in `ProfileEditorView.cardioCard`/
+                // `DashboardView`s fixem Slot: `coachAdjustmentModel` zuerst,
+                // `CardioFeasibilityCardModel` nur als Fallback.
+                if let adjustmentModel = coachAdjustmentModel {
+                    coachAdjustmentSection(adjustmentModel)
+                } else if let profile = profiles.first, let model = CardioFeasibilityCardModel.make(for: profile) {
                     cardioFeasibilitySection(model, profile: profile)
                 }
 
@@ -186,6 +210,15 @@ public struct PlansListView: View {
         }
         .sheet(isPresented: $showingPlanBuilder) {
             PlanBuilderView()
+        }
+        // Nachbesserung (finales Branch-Review, Fix 3): dasselbe Sheet wie
+        // `ProfileEditorView.cardioCard`/`DashboardView`s Laufversaeumnis-
+        // Karte - kein neuer Anpassungs-Mechanismus, siehe
+        // `coachAdjustmentSection`.
+        .sheet(isPresented: $showingCoachAdjustmentPreview) {
+            if let profile = profiles.first, let activePlan = plans.first(where: \.isActive) {
+                CoachAdjustmentPreviewView(profile: profile, activePlan: activePlan)
+            }
         }
         // Nachbesserung (Task #197, zweite Runde): sichtbarer Fehler statt
         // stillem nil-Pfad, siehe `cardioAcceptErrorMessage`-Doku.
@@ -285,6 +318,65 @@ public struct PlansListView: View {
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 12, trailing: 16))
         }
+    }
+
+    // MARK: - Coach-Anpassung (Leitplanke 6)
+
+    /// Nachbesserung (finales Branch-Review, Fix 3): mirror von
+    /// `ProfileEditorView.coachAdjustmentModel` - hat Vorrang vor
+    /// `CardioFeasibilityCardModel`, sobald ein aktiver Plan existiert, siehe
+    /// Aufrufstelle in `body`. `plans.first(where: \.isActive)` statt einer
+    /// zweiten Query: `plans` ist hier bereits der clientseitig sortierte,
+    /// aktive-zuerst `@Query`-Wrapper dieser View.
+    private var coachAdjustmentModel: CoachAdjustmentCardModel? {
+        guard let profile = profiles.first, let activePlan = plans.first(where: \.isActive) else { return nil }
+        return CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
+    }
+
+    /// Gleiche Karten-Optik wie `cardioFeasibilitySection` unten (bewusst KEIN
+    /// `DeltiqCard` - gestrichelter Rand signalisiert "noch nicht
+    /// uebernommen"/"zur Pruefung"), aber mit dem Pending-/Applied-Copy-Paar
+    /// aus `ProfileEditorView.coachAdjustmentSection` statt der vollen
+    /// "neuen Plan erstellen"-Vorschau. CTA oeffnet
+    /// `CoachAdjustmentPreviewView` (Task 7s In-Place-Tausch), NICHT den
+    /// `PlanBuilderView`-Wizard - die sichtbare Vorschau muss zu dem passen,
+    /// was ein Tap tatsaechlich tut (siehe Fix-3-Begruendung oben).
+    private func coachAdjustmentSection(_ model: CoachAdjustmentCardModel) -> some View {
+        Button {
+            showingCoachAdjustmentPreview = true
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.isAlreadyApplied
+                         ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
+                         : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(model.verdict.feasible
+                         ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                         : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(16)
+        .background(Color.Deltiq.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous)
+                .strokeBorder(Color.deltiqOrange.opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+        )
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
     }
 
     // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"

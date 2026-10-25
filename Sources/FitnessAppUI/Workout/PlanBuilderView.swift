@@ -936,7 +936,13 @@ public struct PlanBuilderView: View {
             // gewaehlte Zeitformat-Struktur stillschweigend auf "Saetze &
             // Wdh." zuruecksetzen, weil der Memberwise-Reconstruct sonst
             // keinen Wert dafuer mitgibt.
-            timeFormat: current.timeFormat
+            timeFormat: current.timeFormat,
+            // Nachbesserung (finales Branch-Review, Fix 4): dieselbe Luecke
+            // wie bei `timeFormat` oben, nur fuer die Pace-Baseline (Task
+            // 3/4) - ohne dieses Feld wuerde jede Aenderung an
+            // Tagen/Dauer/Erfahrung die Pace stillschweigend auf "nach
+            // Gefuehl" zuruecksetzen.
+            cardioRunProfile: current.cardioRunProfile
         )
     }
 
@@ -953,7 +959,10 @@ public struct PlanBuilderView: View {
             daysPerWeek: current.daysPerWeek,
             sessionDurationMinutes: current.sessionDurationMinutes,
             experience: current.experience,
-            timeFormat: timeFormat
+            timeFormat: timeFormat,
+            // Nachbesserung (finales Branch-Review, Fix 4): siehe `updateConfig` -
+            // dieselbe Pace-Baseline-Luecke, hier beim Aendern des Zeitformats.
+            cardioRunProfile: current.cardioRunProfile
         )
     }
 
@@ -2220,10 +2229,20 @@ public struct PlanBuilderView: View {
                 // `CardioFeasibilityDayRow.subtitle` - diese Zeile ist die
                 // "fuellere" Geschwister-Darstellung derselben
                 // Easy/Tempo-Tage, siehe dortige Doku.
-                if let pace = exercise.targetPaceMinutesPerKm {
-                    return "\(durationText) · \(PaceCalculator.formatPace(pace))"
+                // Nachbesserung (finales Branch-Review, Fix 1): NUR fuer
+                // Laufen UND nur, wenn der Coach ueberhaupt aktiv ist - sonst
+                // zeigte dieser Zweig die Pace/den Fallback auch bei
+                // abgeschaltetem Coach und bei Radfahren (beide tragen
+                // ebenfalls `targetDurationMinutes`), was Review Focus 1
+                // ("Coach aus -> keine Verhaltensaenderung") fuer genau diese
+                // Vorschau verletzte.
+                if exercise.enduranceSportKind == .running, profiles.first?.cardioCoachingEnabled == true {
+                    if let pace = exercise.targetPaceMinutesPerKm {
+                        return "\(durationText) · \(PaceCalculator.formatPace(pace))"
+                    }
+                    return "\(durationText) · \(String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module))"
                 }
-                return "\(durationText) · \(String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module))"
+                return durationText
             }
             if let distance = exercise.targetDistanceKm {
                 // README 2.21: "%.1f km" ohne Locale ("0.4 km" statt "0,4 km"

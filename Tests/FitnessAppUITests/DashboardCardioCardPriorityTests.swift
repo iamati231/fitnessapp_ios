@@ -76,5 +76,39 @@ final class DashboardCardioCardPriorityTests: XCTestCase {
             "es darf kein zweiter, neuer @State fuer dasselbe Sheet entstehen"
         )
     }
+
+    /// Final-review Fix 2: der fixe Slot gatete vorher zusaetzlich auf
+    /// `!adjustment.isAlreadyApplied`, wodurch er nach einer erfolgreich
+    /// uebernommenen Anpassung auf die veraltete Feasibility-Karte fuer
+    /// denselben Plan zurueckfiel (Leitplanke-6-Verletzung). Die Gate-Bedingung
+    /// darf jetzt ausschliesslich davon abhaengen, ob `make` ueberhaupt ein
+    /// Ergebnis liefert.
+    func testFixedSlotDoesNotGateOnIsAlreadyApplied() throws {
+        let source = try contents(of: "DashboardView.swift")
+        guard let adjustmentRange = source.range(of: "let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)") else {
+            XCTFail("CoachAdjustmentCardModel-Aufruf nicht gefunden")
+            return
+        }
+        guard let openBraceRange = source.range(of: "{", range: adjustmentRange.upperBound..<source.endIndex) else {
+            XCTFail("Bedingung nicht abgeschlossen"); return
+        }
+        let condition = source[adjustmentRange.upperBound..<openBraceRange.lowerBound]
+        XCTAssertFalse(condition.contains("isAlreadyApplied"), "der fixe Slot darf nicht mehr auf isAlreadyApplied gaten")
+    }
+
+    /// `laufcoachingAdjustmentCard` muss jetzt selbst zwischen pending/
+    /// applied unterscheiden (gleiche Umschaltung wie
+    /// `ProfileEditorView.coachAdjustmentSection`), da der Aufrufer nicht
+    /// mehr nur den pending-Fall durchlaesst.
+    func testLaufcoachingAdjustmentCardHandlesBothPendingAndAppliedCopy() throws {
+        let source = try contents(of: "DashboardView.swift")
+        guard let methodRange = source.range(of: "private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, plan: TrainingPlan) -> some View") else {
+            XCTFail("laufcoachingAdjustmentCard nicht gefunden"); return
+        }
+        let methodBody = source[methodRange.upperBound...].prefix(2000)
+        XCTAssertTrue(methodBody.contains("adjustment.isAlreadyApplied"), "muss zwischen pending/applied unterscheiden")
+        XCTAssertTrue(methodBody.contains("profile.cardio.adjustment.applied"), "muss die bestehende applied-Copy wiederverwenden")
+        XCTAssertTrue(methodBody.contains("profile.cardio.adjustment.pending"), "muss die bestehende pending-Copy wiederverwenden")
+    }
 }
 #endif
