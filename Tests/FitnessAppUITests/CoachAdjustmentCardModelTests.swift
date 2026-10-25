@@ -121,6 +121,52 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
         XCTAssertEqual(count, 0)
     }
 
+    // MARK: - proposedGoal (Task 6, Decision 3 Teil 1: Machbarkeits-Check einfalten)
+
+    /// (a) Feasibler Verdikt (10K, 20 Wochen verfuegbar, 20 km/Woche Basis,
+    /// siehe `makeProfileAndPlan`) -> `proposedGoal` bleibt das vom Nutzer
+    /// gepflegte `profile.cardioGoal`, kein Downgrade noetig.
+    func testProposedGoalEqualsCurrentGoalWhenFeasible() {
+        let (profile, plan) = makeProfileAndPlan()
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertEqual(model.proposedGoal, profile.cardioGoal)
+    }
+
+    /// (b) Infeasibler Verdikt mit kleinerem erreichbarem Ziel (Marathon in 7
+    /// Wochen bei 15 km/Woche Basis -> 5K bleibt als einziges erreichbares
+    /// Ziel, identisch zum Testaufbau in `CardioFeasibilityCardModelTests`)
+    /// -> `proposedGoal` MUSS das vorgeschlagene kleinere Ziel sein, NICHT
+    /// das weiterhin unveraenderte `profile.cardioGoal`.
+    func testProposedGoalEqualsSuggestedGoalWhenInfeasible() {
+        let (profile, plan) = makeProfileAndPlan()
+        profile.cardioGoal = .marathon
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertEqual(model.verdict?.feasible, false, "Testaufbau: Marathon in 7 Wochen bei 15 km Basis muss NICHT erreichbar sein")
+        XCTAssertEqual(model.proposedGoal, .fiveK, "proposedGoal muss das vorgeschlagene kleinere Ziel sein, nicht das unveraenderte profile.cardioGoal")
+    }
+
+    /// (c) Kein Renn-Datum/Wochenvolumen gepflegt -> kein Machbarkeits-Check
+    /// moeglich, `CoachAdjustmentCardModel.make` darf deswegen NICHT `nil`
+    /// liefern (ein aktiver Plan mit anfassbarem Cardio-Tag reicht fuer die
+    /// reine "aktuelles Ziel uebernehmen"-Anpassung) - `proposedGoal` faellt
+    /// in diesem Fall auf das unveraenderte `profile.cardioGoal` zurueck.
+    func testProposedGoalFallsBackToCurrentGoalAndModelStaysNonNilWithoutRaceDateOrVolume() {
+        let (profile, plan) = makeProfileAndPlan()
+        profile.cardioRaceDate = nil
+        profile.weeklyBaseVolumeKm = nil
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("make() must still return non-nil without race date/weekly volume (no feasibility opinion possible, not a reason to suppress the plain adjustment)")
+        }
+        XCTAssertNil(model.verdict, "ohne Renn-Datum/Wochenvolumen kann kein Verdikt berechnet werden")
+        XCTAssertEqual(model.proposedGoal, profile.cardioGoal)
+    }
+
     // MARK: - cardioRunProfile (Task 9 Nachbesserung, Review-Fund)
 
     /// Ohne diesen Parameter blieb `targetPaceMinutesPerKm` auf jedem ueber

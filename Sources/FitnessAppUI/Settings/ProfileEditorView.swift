@@ -770,7 +770,9 @@ public struct ProfileEditorView: View {
                      : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                Text(model.verdict.feasible
+                // Task 6 compile-fix (NOT the real fix - Task 7's job): see
+                // `CoachAdjustmentPreviewView.swift`'s identical comment.
+                Text(model.verdict?.feasible ?? true
                      ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
                      : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
                     .font(.caption)

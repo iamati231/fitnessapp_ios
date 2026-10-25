@@ -13,14 +13,40 @@ import FitnessAppData
 /// nicht-`nil`, wenn ein AKTIVER Plan existiert - ein Aufrufer, der
 /// BEIDE Karten kennt, PRUEFT DIESES MODELL ZUERST und zeigt
 /// `CardioFeasibilityCardModel` nur, wenn `CoachAdjustmentCardModel.make`
-/// `nil` liefert (kein aktiver Plan, Coach aus, oder kein Ziel/Renndatum/
-/// Wochenvolumen gepflegt) — die neue Karte hat Vorrang, sobald ein
-/// aktiver Plan existiert, die alte bleibt fuer den reinen
-/// "kein aktiver Plan"-Fall zustaendig. UI-Verdrahtung an allen drei
+/// `nil` liefert (kein aktiver Plan oder Coach aus) — die neue Karte hat
+/// Vorrang, sobald ein aktiver Plan existiert, die alte bleibt fuer den
+/// reinen "kein aktiver Plan"-Fall zustaendig. UI-Verdrahtung an allen drei
 /// Aufrufstellen (ProfileEditorView/DashboardView/PlansListView) ist
 /// inzwischen vollstaendig - dieser Vertrag gilt fuer jede davon identisch.
+///
+/// Task 6 Praezisierung: "kein Ziel/Renndatum/Wochenvolumen gepflegt" macht
+/// dieses Modell NICHT mehr `nil` (anders als `CardioFeasibilityCardModel`,
+/// dessen Vertrag unveraendert bleibt) - ohne Renn-Datum/Wochenvolumen gibt
+/// es nur keinen Machbarkeits-Check (`verdict == nil`), die reine
+/// "aktuelles Ziel auf den Plan anwenden"-Funktion bleibt verfuegbar.
 public struct CoachAdjustmentCardModel: Equatable {
-    public let verdict: CardioFeasibilityCalculator.Result
+    /// Task 6 (Decision 3 Teil 1): `nil`, wenn kein Machbarkeits-Check
+    /// moeglich ist (kein Renn-Datum oder kein Wochenvolumen gepflegt) -
+    /// anders als vorher macht ein fehlender Check das gesamte Modell NICHT
+    /// mehr `nil` (siehe `make` unten): die reine "aktuelles Ziel auf den
+    /// Plan anwenden"-Funktion bleibt davon unberuehrt, nur gibt es dann
+    /// keine Machbarkeits-Meinung anzuzeigen.
+    public let verdict: CardioFeasibilityCalculator.Result?
+    /// Das Ziel, das tatsaechlich angewendet werden soll - identische
+    /// Berechnung wie `CardioFeasibilityCardModel.proposedGoal` (siehe
+    /// dortige Doku): bei `verdict.feasible` das unveraenderte
+    /// `profile.cardioGoal`, sonst `verdict.suggestedGoal` (`nil`, wenn
+    /// selbst das kleinste gepruefte Ziel nicht mehr aufgeht). Ohne Verdikt
+    /// (`verdict == nil`, kein Renn-Datum/Wochenvolumen) gibt es keine
+    /// Machbarkeits-Meinung - dann faellt `proposedGoal` auf das
+    /// unveraenderte `profile.cardioGoal` zurueck ("kein Check moeglich,
+    /// nimm was der Nutzer eingestellt hat").
+    ///
+    /// Task 7 Handoff: `accept()`/`CoachAdjustmentPreviewView` lesen heute
+    /// noch das rohe `profile.cardioGoal` statt dieses Feldes - Task 7
+    /// verdrahtet das um (siehe `CoachAdjustmentPreviewView.swift:84` fuer
+    /// den aktuell NUR fuer die Kompilierbarkeit noetigen Zwischenstand).
+    public let proposedGoal: CardioGoal?
     public let analysis: RunCoachPlanAdjustment.Analysis
     public let fingerprint: String
 
@@ -32,20 +58,40 @@ public struct CoachAdjustmentCardModel: Equatable {
     public let isAlreadyApplied: Bool
 
     public static func make(for profile: UserBodyProfile, activePlan: TrainingPlan?) -> CoachAdjustmentCardModel? {
-        guard let activePlan,
-              profile.cardioCoachingEnabled,
-              let raceDate = profile.cardioRaceDate,
-              let weeklyVolume = profile.weeklyBaseVolumeKm,
-              let verdict = CardioFeasibilityCalculator.evaluate(
-                  goal: profile.cardioGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
-              )
-        else { return nil }
+        guard let activePlan, profile.cardioCoachingEnabled else { return nil }
 
-        let fingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
-            goal: profile.cardioGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
+        // `evaluate` nimmt raceDate/weeklyBaseVolumeKm bereits optional
+        // entgegen und liefert selbst `nil`, wenn eines von beiden fehlt -
+        // derselbe Rechenweg wie `CardioFeasibilityCardModel.make`, hier
+        // aber bewusst NICHT hinter einem `guard let`, der das gesamte
+        // Modell unterdruecken wuerde (siehe Typ-Doku oben).
+        let verdict = CardioFeasibilityCalculator.evaluate(
+            goal: profile.cardioGoal, raceDate: profile.cardioRaceDate, weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
         )
+        let proposedGoal: CardioGoal?
+        if let verdict {
+            proposedGoal = verdict.feasible ? profile.cardioGoal : verdict.suggestedGoal
+        } else {
+            proposedGoal = profile.cardioGoal
+        }
+
+        // `suppressionFingerprint` nimmt raceDate/weeklyBaseVolumeKm (anders
+        // als `evaluate`) NICHT optional entgegen - fehlen sie, gibt es
+        // keine aus Renn-Datum/Wochenvolumen ableitbare Identitaet fuer
+        // diese Kombination; der Fingerprint haengt dann allein am (in
+        // diesem Fall einzig relevanten) Ziel.
+        let fingerprint: String
+        if let raceDate = profile.cardioRaceDate, let weeklyVolume = profile.weeklyBaseVolumeKm {
+            fingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
+                goal: profile.cardioGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
+            )
+        } else {
+            fingerprint = "goalOnly#\(profile.cardioGoal.rawValue)"
+        }
+
         return CoachAdjustmentCardModel(
             verdict: verdict,
+            proposedGoal: proposedGoal,
             analysis: RunCoachPlanAdjustment.analyze(plan: activePlan),
             fingerprint: fingerprint,
             isAlreadyApplied: profile.cardioPlanAdjustmentFingerprint == fingerprint
