@@ -71,5 +71,64 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
         XCTAssertEqual(profile.maxHeartRateBpm, 180)
         XCTAssertEqual(profile.current5kReferenceSeconds, 1500)
     }
+
+    // MARK: - Fund B (Geraete-Nachtest): 5K-Referenzzeit-Validierung
+    //
+    // `canSave`/`save()`/`zonesSummary` sind `private` Computed-Properties
+    // ohne testbare Laufzeit-Oberflaeche (nur `some View`), also liest dieser
+    // Abschnitt den Quelltext direkt — selbes Muster wie
+    // `AddMealViewSaveErrorStyleTests`/`MainTabStructureTests`.
+
+    private func readSource(_ relativePath: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // this file
+            .deletingLastPathComponent() // FitnessAppUITests
+            .deletingLastPathComponent() // Tests
+            .appendingPathComponent(relativePath)
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    private var cardioGoalEditorViewSource: String {
+        get throws { try readSource("Sources/FitnessAppUI/Settings/CardioGoalEditorView.swift") }
+    }
+
+    /// Regression: alle drei 5K-Zeit-Call-Sites (`canSave`, `save()`,
+    /// `zonesSummary`) muessen `parseFiveKReferenceSeconds` verwenden, NICHT
+    /// mehr `parseDurationToSeconds` — dessen "bare Zahl = Minuten"-Fallback
+    /// liess ein bares "2500" unvalidiert als 2500 Minuten durchgehen.
+    func testFiveKReferenceCallSitesUseTheDedicatedParser() throws {
+        let source = try cardioGoalEditorViewSource
+        XCTAssertFalse(
+            source.contains("parseDurationToSeconds(draftFiveKReferenceText)"),
+            "The 5K-time field must no longer call parseDurationToSeconds anywhere — its bare-number-as-minutes fallback is the exact bug this fix removes."
+        )
+        XCTAssertFalse(
+            source.contains("parseDurationToSeconds(text)"),
+            "canSave's local `text` (trimmed draftFiveKReferenceText) must also go through parseFiveKReferenceSeconds."
+        )
+        let occurrences = source.components(separatedBy: "parseFiveKReferenceSeconds").count - 1
+        XCTAssertGreaterThanOrEqual(
+            occurrences, 3,
+            "Expected parseFiveKReferenceSeconds to be called at all 3 sites (canSave, save(), zonesSummary)."
+        )
+    }
+
+    /// Fund B: ohne eine sichtbare Fehlermeldung sah der Nutzer nur ein
+    /// deaktiviertes Save-Haekchen, ohne zu verstehen warum.
+    func testInvalidFiveKReferenceTextRendersAnInlineErrorMessage() throws {
+        let source = try cardioGoalEditorViewSource
+        XCTAssertTrue(
+            source.contains("fiveKReferenceErrorMessage"),
+            "A dedicated error-message computed property gated on invalid, non-empty draftFiveKReferenceText must exist."
+        )
+        XCTAssertTrue(
+            source.contains("errorRow(fiveKReferenceErrorMessage)"),
+            "The error message must be rendered via the file's existing errorRow(_:) helper, right where the 5K pace hint used to unconditionally render."
+        )
+        XCTAssertTrue(
+            source.contains("profile.cardio.fiveKReference.invalid"),
+            "The error message must come from a localized string key, not a hardcoded literal."
+        )
+    }
 }
 #endif

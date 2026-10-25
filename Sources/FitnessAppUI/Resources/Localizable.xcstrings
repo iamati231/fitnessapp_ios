@@ -38849,6 +38849,29 @@
         }
       }
     },
+    "profile.cardio.fiveKReference.invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter your 5K time as MM:SS, e.g. 25:00."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gib deine 5-km-Zeit als MM:SS ein, z. B. 25:00."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 km sürenizi MM:SS biçiminde girin, örn. 25:00."
+          }
+        }
+      }
+    },
     "profile.cardio.paceZones": {
       "extractionState": "manual",
       "localizations": {
