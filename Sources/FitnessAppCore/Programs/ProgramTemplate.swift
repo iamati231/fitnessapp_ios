@@ -56,6 +56,15 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
     /// fällt auf `days` zurück, wenn keine kompatibel ist.
     public let equipmentVariants: [EquipmentVariant]?
 
+    /// Equipment-Vielfalt Phase 1 Task 3: slot-based equipment resolution,
+    /// additive and independent of `equipmentVariants`. Index-aligned with
+    /// `days` — `slots[i]` is the ordered list of `TemplateSlot`s for
+    /// `days[i]`, or an empty array for a day with no equipment-dependent
+    /// exercises (e.g. a cardio day). `nil` for every template that doesn't
+    /// use the slot model (all 17 others) — `resolvedSlots(against:)`
+    /// returns `nil` in that case too, never a faked result.
+    public let slots: [[TemplateSlot]]?
+
     public init(
         id: String,
         name: String,
@@ -72,7 +81,8 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         iconSystemName: String = "figure.strengthtraining.traditional",
         targetExperience: [ExperienceLevel] = [.intermediate],
         targetGoals: [TrainingGoal] = [.hypertrophy],
-        equipmentVariants: [EquipmentVariant]? = nil
+        equipmentVariants: [EquipmentVariant]? = nil,
+        slots: [[TemplateSlot]]? = nil
     ) {
         self.id = id
         self.name = name
@@ -90,6 +100,43 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         self.focusKey = focusKey
         self.descriptionKey = descriptionKey
         self.equipmentVariants = equipmentVariants
+        self.slots = slots
+    }
+
+    /// Manuelle `Equatable`/`Hashable`-Konformanz statt Compiler-Synthese:
+    /// `TemplateSlot` (Task 1, feste Signatur) ist bewusst nur `Equatable`,
+    /// nicht `Hashable` — die Synthese wuerde an `slots: [[TemplateSlot]]?`
+    /// scheitern. `slots` ist pro `id` fest einkompiliert (variiert nie
+    /// unabhaengig von den uebrigen Feldern), jedes andere Feld bleibt Teil
+    /// der Gleichheit/des Hashes wie zuvor.
+    public static func == (lhs: ProgramTemplate, rhs: ProgramTemplate) -> Bool {
+        lhs.id == rhs.id && lhs.name == rhs.name && lhs.tagline == rhs.tagline &&
+        lhs.descriptionText == rhs.descriptionText && lhs.focus == rhs.focus &&
+        lhs.daysPerWeek == rhs.daysPerWeek && lhs.days == rhs.days &&
+        lhs.targetEnvironment == rhs.targetEnvironment && lhs.iconSystemName == rhs.iconSystemName &&
+        lhs.targetExperience == rhs.targetExperience && lhs.targetGoals == rhs.targetGoals &&
+        lhs.localizationKey == rhs.localizationKey && lhs.taglineKey == rhs.taglineKey &&
+        lhs.focusKey == rhs.focusKey && lhs.descriptionKey == rhs.descriptionKey &&
+        lhs.equipmentVariants == rhs.equipmentVariants
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(tagline)
+        hasher.combine(descriptionText)
+        hasher.combine(focus)
+        hasher.combine(daysPerWeek)
+        hasher.combine(days)
+        hasher.combine(targetEnvironment)
+        hasher.combine(iconSystemName)
+        hasher.combine(targetExperience)
+        hasher.combine(targetGoals)
+        hasher.combine(localizationKey)
+        hasher.combine(taglineKey)
+        hasher.combine(focusKey)
+        hasher.combine(descriptionKey)
+        hasher.combine(equipmentVariants)
     }
 
     /// PLAN_EQUIPMENT_MATCHING_AUDIT.md Abschnitt 5.4: EINZIGE Quelle für
@@ -112,5 +159,129 @@ public struct ProgramTemplate: Sendable, Hashable, Identifiable {
         let baseRequires = EquipmentProfile.barbellGym.requiredEquipment
         if baseRequires.isSubset(of: userEquipment) { return days }
         return EquipmentVariant.bestMatch(in: variants, userOwns: userEquipment)?.days ?? days
+    }
+}
+
+/// Equipment-Vielfalt Phase 1 Task 3: EIN Slot, der statt seiner kuratierten
+/// `TemplateSlot.defaultExerciseName` eine `reviewedAlternatives`-Uebung
+/// verwendet hat — Position (`dayIndex`/`exerciseIndex`, 0-basiert wie
+/// `ExerciseSlot`) plus beide Namen, fuer Transparenz/Debugging.
+public struct SlotAlternativeUsage: Sendable, Equatable {
+    public let dayIndex: Int
+    public let exerciseIndex: Int
+    public let originalName: String
+    public let usedName: String
+
+    public init(dayIndex: Int, exerciseIndex: Int, originalName: String, usedName: String) {
+        self.dayIndex = dayIndex
+        self.exerciseIndex = exerciseIndex
+        self.originalName = originalName
+        self.usedName = usedName
+    }
+}
+
+/// Equipment-Vielfalt Phase 1 Task 3: Ergebnis von `resolvedSlots(against:)`.
+/// `days` ist IMMER vollstaendig befuellt — ein `.unresolved`-Slot behaelt
+/// dafuer schlicht seine unveraenderte `defaultExerciseName` (nie
+/// weggelassen, nie stillschweigend durch irgendetwas Erfundenes ersetzt);
+/// `gaps` macht diesen Fall fuer den Caller sichtbar (Task 4 wandelt das in
+/// die bestehende `PlanEquipmentStatus`-Vokabular um).
+public struct SlotResolutionResult: Sendable, Equatable {
+    public let days: [DaySpec]
+    public let gaps: [PlanEquipmentGap]
+    public let usedAlternatives: [SlotAlternativeUsage]
+
+    public init(days: [DaySpec], gaps: [PlanEquipmentGap], usedAlternatives: [SlotAlternativeUsage]) {
+        self.days = days
+        self.gaps = gaps
+        self.usedAlternatives = usedAlternatives
+    }
+}
+
+public extension ProgramTemplate {
+    /// Equipment-Vielfalt Phase 1 Task 3: loest JEDEN Slot in `slots` gegen
+    /// `profile` auf (`TemplateSlotResolver.resolve`, Task 1 — nie ein
+    /// offener Katalog-Suchlauf) und baut daraus eine vollstaendige, neue
+    /// `[DaySpec]`-Liste. `nil` fuer jedes Template ohne `slots` (alle 17
+    /// anderen) — rein, Task-4-intern; UI-Status-Mapping ist NICHT Teil
+    /// dieser Funktion (siehe Task 4).
+    func resolvedSlots(against profile: UserEquipmentProfile) -> SlotResolutionResult? {
+        guard let slots else { return nil }
+
+        var resolvedDays: [DaySpec] = []
+        var gaps: [PlanEquipmentGap] = []
+        var usedAlternatives: [SlotAlternativeUsage] = []
+
+        for (dayIndex, day) in days.enumerated() {
+            let daySlots = dayIndex < slots.count ? slots[dayIndex] : []
+            guard !daySlots.isEmpty else {
+                resolvedDays.append(day)
+                continue
+            }
+
+            var exercises: [ExerciseSpec] = []
+            exercises.reserveCapacity(daySlots.count)
+
+            for (exerciseIndex, slot) in daySlots.enumerated() {
+                switch TemplateSlotResolver.resolve(slot: slot, against: profile) {
+                case let .default(spec):
+                    exercises.append(spec)
+                case let .alternative(spec, usedName):
+                    exercises.append(spec)
+                    usedAlternatives.append(SlotAlternativeUsage(
+                        dayIndex: dayIndex, exerciseIndex: exerciseIndex,
+                        originalName: slot.defaultExerciseName, usedName: usedName
+                    ))
+                case .unresolved:
+                    // Caller MUST see this: never silently substitute. The
+                    // exercise keeps its unchanged default identity; the gap
+                    // reason comes from evaluating ONLY the default exercise's
+                    // own requirement (not the slot's OR-aggregate across
+                    // alternatives), per this function's documented contract.
+                    exercises.append(ExerciseSpec(
+                        name: slot.defaultExerciseName, sets: slot.sets,
+                        repsMin: slot.repsMin, repsMax: slot.repsMax, restSeconds: slot.restSeconds
+                    ))
+                    gaps.append(PlanEquipmentGap(
+                        exerciseName: slot.defaultExerciseName,
+                        reason: Self.defaultExerciseGapReason(slot: slot, against: profile)
+                    ))
+                }
+            }
+
+            resolvedDays.append(DaySpec(
+                name: day.name, localizationKey: day.localizationKey, type: day.type,
+                sequenceIndex: day.sequenceIndex, exercises: exercises,
+                timeFormat: day.timeFormat, timeCapMinutes: day.timeCapMinutes,
+                circuitRounds: day.circuitRounds, circuitRestSeconds: day.circuitRestSeconds,
+                circuitMode: day.circuitMode,
+                enduranceWarmupDurationSeconds: day.enduranceWarmupDurationSeconds,
+                enduranceCooldownDurationSeconds: day.enduranceCooldownDurationSeconds,
+                enduranceIntervalRounds: day.enduranceIntervalRounds,
+                enduranceWorkDurationSeconds: day.enduranceWorkDurationSeconds,
+                enduranceWorkDistanceKm: day.enduranceWorkDistanceKm,
+                enduranceRestDurationSeconds: day.enduranceRestDurationSeconds,
+                enduranceSportKind: day.enduranceSportKind
+            ))
+        }
+
+        return SlotResolutionResult(days: resolvedDays, gaps: gaps, usedAlternatives: usedAlternatives)
+    }
+
+    /// `PlanEquipmentGapReason` aus dem `RequirementStatus` NUR der
+    /// `defaultExerciseName` dieses Slots — unabhaengig vom OR-Aggregat, das
+    /// `TemplateSlotResolver.resolve` ueber Default+Alternativen bildet
+    /// (siehe `SlotResolutionResult.gaps`-Doku). `.satisfied` ist hier
+    /// unerreichbar: `resolve` haette sonst bereits `.default` geliefert statt
+    /// `.unresolved` — der Fallback existiert nur fuer Exhaustivitaet.
+    private static func defaultExerciseGapReason(slot: TemplateSlot, against profile: UserEquipmentProfile) -> PlanEquipmentGapReason {
+        guard let requirement = ExerciseLibraryData.byName[slot.defaultExerciseName]?.equipmentRequirement else {
+            return .notAnnotated
+        }
+        switch requirement.evaluate(against: profile) {
+        case .satisfied: return .missing([])
+        case let .unmet(reasons): return .missing(reasons)
+        case let .unknown(reasons): return .uncertain(reasons)
+        }
     }
 }
