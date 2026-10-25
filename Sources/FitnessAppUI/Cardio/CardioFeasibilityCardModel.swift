@@ -83,7 +83,21 @@ public struct CardioFeasibilityCardModel {
         guard profile.cardioFeasibilityDismissedFingerprint != fingerprint else { return nil }
 
         let proposedGoal: CardioGoal? = verdict.feasible ? profile.cardioGoal : verdict.suggestedGoal
-        let planInput = proposedGoal.map(CardioFeasibilityCalculator.planGeneratorInput(for:))
+        // Task 9 Nachbesserung (Review-Fund): ohne die hier gebaute
+        // `CardioRunProfile` blieb `targetPaceMinutesPerKm` auf JEDEM ueber
+        // diese Karte erzeugten Lauf-Tag immer `nil` - diese Funktion
+        // rechnet bei jedem Aufruf frisch (kein Caching), die Baseline ist
+        // also automatisch immer aktuell, ohne eigene Re-Derive-Logik.
+        let planInput = proposedGoal.map { goal in
+            CardioFeasibilityCalculator.planGeneratorInput(
+                for: goal,
+                cardioRunProfile: CardioRunProfile(
+                    goal: goal,
+                    current5kReferenceSeconds: profile.current5kReferenceSeconds,
+                    weeklyBaseVolumeKm: weeklyVolume
+                )
+            )
+        }
         let planResult = planInput.map { PlanGenerator.generate(from: $0) }
 
         return CardioFeasibilityCardModel(

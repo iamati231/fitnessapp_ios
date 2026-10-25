@@ -120,5 +120,31 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
         let count = try secondModel.accept(plan: plan, profile: profile, in: context)
         XCTAssertEqual(count, 0)
     }
+
+    // MARK: - cardioRunProfile (Task 9 Nachbesserung, Review-Fund)
+
+    /// Ohne diesen Parameter blieb `targetPaceMinutesPerKm` auf jedem ueber
+    /// diesen Merge-Pfad erzeugten Lauf-Tag immer `nil`, weil
+    /// `cardioOnlyDaySpecs` `CardioFeasibilityCalculator.planGeneratorInput`
+    /// ohne Baseline aufrief.
+    func testCardioOnlyDaySpecsThreadsCardioRunProfileIntoRunExercises() {
+        let profile = CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        let specs = CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: .tenK, cardioRunProfile: profile)
+        let easyOrTempoExercises = specs.flatMap(\.exercises).filter { $0.isCardio && $0.targetDurationMinutes != nil }
+        XCTAssertFalse(easyOrTempoExercises.isEmpty, "expected at least one duration-based (easy/tempo) run exercise")
+        XCTAssertTrue(easyOrTempoExercises.allSatisfy { $0.targetPaceMinutesPerKm != nil }, "every easy/tempo run exercise must carry the baseline pace")
+    }
+
+    /// Review Focus 1 (dieser Plan): omitting the new defaulted trailing
+    /// parameter must reproduce the previous (always-nil-pace) output
+    /// exactly - no accidental behavior change for existing callers.
+    func testOmittingCardioRunProfileReproducesThePreviousOutputExactly() {
+        for goal in CardioGoal.allCases {
+            let withExplicitNil = CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: goal, cardioRunProfile: nil)
+            let withOmittedParameter = CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: goal)
+            XCTAssertEqual(withExplicitNil, withOmittedParameter)
+            XCTAssertTrue(withOmittedParameter.flatMap(\.exercises).allSatisfy { $0.targetPaceMinutesPerKm == nil })
+        }
+    }
 }
 #endif

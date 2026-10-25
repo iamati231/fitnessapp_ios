@@ -130,7 +130,18 @@ public enum CardioFeasibilityCalculator {
     /// bleibt entsprechend leer (wird von `PlanGenerator.strengthCandidates`
     /// ohnehin nicht als Filter gelesen, nur `TrainingTypeKind.equipmentFilter`
     /// entscheidet die Auswahl).
-    public static func planGeneratorInput(for goal: CardioGoal) -> PlanGeneratorInput {
+    /// `cardioRunProfile` (Task 9 Nachbesserung, Review-Fund): ohne diesen
+    /// Parameter traegt die erzeugte `.running`-Selection nie eine Baseline,
+    /// und `PlanGenerator.cardioCandidates` setzt deshalb nie ein
+    /// `ExerciseSpec.targetPaceMinutesPerKm` fuer diesen Aufrufer (`nil`
+    /// heisst dort "keine Baseline bekannt", siehe `PlanGeneratorInput`-Doku)
+    /// - der gleiche Mechanismus, den `GoalDrivenPlanSelectionBuilder` fuer
+    /// den regulaeren Plan-Bauen-Assistenten schon nutzt. Default `nil`
+    /// erhaelt bestehende Aufrufer/Tests ohne Baseline unveraendert. Nur auf
+    /// der `.running`-Selection gesetzt, analog
+    /// `GoalDrivenPlanSelectionBuilder.enduranceSelections`s
+    /// `.bodyweight`/Kraft-Selection bleibt ohne Profil.
+    public static func planGeneratorInput(for goal: CardioGoal, cardioRunProfile: CardioRunProfile? = nil) -> PlanGeneratorInput {
         let runDays: Int
         let strengthDays: Int
         switch goal {
@@ -145,7 +156,10 @@ public enum CardioFeasibilityCalculator {
             strengthDays = 0
         }
         var selections: [PlanGeneratorTypeSelection] = [
-            PlanGeneratorTypeSelection(kind: .running, daysPerWeek: runDays, sessionDurationMinutes: 45, experience: .intermediate)
+            PlanGeneratorTypeSelection(
+                kind: .running, daysPerWeek: runDays, sessionDurationMinutes: 45, experience: .intermediate,
+                cardioRunProfile: cardioRunProfile
+            )
         ]
         if strengthDays > 0 {
             selections.append(

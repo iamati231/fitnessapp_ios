@@ -215,4 +215,38 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
             XCTAssertLessThanOrEqual(input.totalDaysPerWeek, 7)
         }
     }
+
+    // MARK: - cardioRunProfile (Task 9 Nachbesserung, Review-Fund)
+
+    /// Ohne diesen Parameter blieb `targetPaceMinutesPerKm` auf jedem ueber
+    /// `CardioFeasibilityCardModel`/`CoachAdjustmentCardModel` erzeugten
+    /// Lauf-Tag immer `nil` - `PlanGenerator.cardioCandidates` liest die
+    /// Baseline ausschliesslich aus `PlanGeneratorTypeSelection.
+    /// cardioRunProfile`.
+    func testCardioRunProfileIsSetOnlyOnTheRunningSelection() {
+        let profile = CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        let input = CardioFeasibilityCalculator.planGeneratorInput(for: .tenK, cardioRunProfile: profile)
+        let runningSelection = input.selections.first { $0.kind == .running }
+        XCTAssertEqual(runningSelection?.cardioRunProfile, profile)
+        // .tenK mischt Lauf MIT Kraft (siehe testTenKAndHalfMarathonMixIsThreeRunTwoStrength) -
+        // die Kraft-Selection bleibt ohne Profil, analog
+        // `GoalDrivenPlanSelectionBuilder.enduranceSelections`s Kraft-Zweig.
+        let strengthSelection = input.selections.first { $0.kind == .bodyweight }
+        XCTAssertNil(strengthSelection?.cardioRunProfile)
+    }
+
+    /// Review Focus 1 (dieser Plan): ein neuer, defaulteter Trailing-Parameter
+    /// darf bestehende Aufrufer ohne Baseline nicht veraendern - omitting it
+    /// muss byte-identisch dasselbe `PlanGeneratorInput` reproduzieren wie vor
+    /// dieser Aenderung.
+    func testOmittingCardioRunProfileReproducesThePreviousOutputExactly() {
+        for goal in CardioGoal.allCases {
+            let withExplicitNil = CardioFeasibilityCalculator.planGeneratorInput(for: goal, cardioRunProfile: nil)
+            let withOmittedParameter = CardioFeasibilityCalculator.planGeneratorInput(for: goal)
+            XCTAssertEqual(withExplicitNil, withOmittedParameter)
+            for selection in withOmittedParameter.selections {
+                XCTAssertNil(selection.cardioRunProfile)
+            }
+        }
+    }
 }

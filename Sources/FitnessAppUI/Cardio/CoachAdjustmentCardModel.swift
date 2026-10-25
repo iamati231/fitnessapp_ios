@@ -56,8 +56,14 @@ public struct CoachAdjustmentCardModel: Equatable {
     /// `CardioFeasibilityCalculator.planGeneratorInput(for:)`-Ergebnis
     /// (das mischt Lauf- UND Kraft-Tage) - kein zweiter Cardio-Rechner,
     /// reiner Filter auf das bereits vorhandene Generator-Ergebnis.
-    public static func cardioOnlyDaySpecs(for goal: CardioGoal) -> [DaySpec] {
-        let result = PlanGenerator.generate(from: CardioFeasibilityCalculator.planGeneratorInput(for: goal))
+    ///
+    /// `cardioRunProfile` (Task 9 Nachbesserung, Review-Fund): wie
+    /// `CardioFeasibilityCalculator.planGeneratorInput` selbst - ohne diesen
+    /// Parameter bliebe `targetPaceMinutesPerKm` auf jedem ueber diesen
+    /// Merge-Pfad erzeugten Lauf-Tag immer `nil`. Default `nil` erhaelt
+    /// bestehende Aufrufer/Tests ohne Baseline unveraendert.
+    public static func cardioOnlyDaySpecs(for goal: CardioGoal, cardioRunProfile: CardioRunProfile? = nil) -> [DaySpec] {
+        let result = PlanGenerator.generate(from: CardioFeasibilityCalculator.planGeneratorInput(for: goal, cardioRunProfile: cardioRunProfile))
         return result.days.map(\.spec).filter { spec in
             !spec.exercises.isEmpty && spec.exercises.allSatisfy(\.isCardio)
         }
@@ -107,7 +113,18 @@ public struct CoachAdjustmentCardModel: Equatable {
         // Zeitpunkt dieses Aufrufs lesen, nicht die eingefrorene Kopie.
         guard profile.cardioPlanAdjustmentFingerprint != fingerprint else { return 0 }
         let eligibleDays = RunCoachPlanAdjustment.eligibleCardioDays(in: plan)
-        let newCardioDays = Self.cardioOnlyDaySpecs(for: profile.cardioGoal)
+        // Task 9 Nachbesserung: dieselbe Baseline-Weitergabe wie
+        // `CardioFeasibilityCardModel.make` - `accept` rechnet bei jedem
+        // Aufruf frisch aus dem aktuellen `profile`, die Baseline ist also
+        // automatisch immer aktuell, ohne eigene Re-Derive-Logik.
+        let newCardioDays = Self.cardioOnlyDaySpecs(
+            for: profile.cardioGoal,
+            cardioRunProfile: CardioRunProfile(
+                goal: profile.cardioGoal,
+                current5kReferenceSeconds: profile.current5kReferenceSeconds,
+                weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
+            )
+        )
         let count = try PlanGeneratorInstantiator.applyCoachCardioAdjustment(
             eligibleDays: eligibleDays, newCardioDays: newCardioDays, in: context
         )
