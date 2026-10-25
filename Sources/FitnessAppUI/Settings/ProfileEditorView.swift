@@ -770,13 +770,16 @@ public struct ProfileEditorView: View {
                      : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                // Task 6 compile-fix (NOT the real fix - Task 7's job): see
-                // `CoachAdjustmentPreviewView.swift`'s identical comment.
-                Text(model.verdict?.feasible ?? true
-                     ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
-                     : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
-                    .font(.caption)
-                    .foregroundStyle(Color.Deltiq.textSecondary)
+                // Fix I-4 (Final-Review, Round 2): ohne Verdikt keine
+                // Machbarkeits-Aussage - siehe `CoachAdjustmentPreviewView.
+                // swift`s identischer Kommentar.
+                if let verdict = model.verdict {
+                    Text(verdict.feasible
+                         ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                         : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)

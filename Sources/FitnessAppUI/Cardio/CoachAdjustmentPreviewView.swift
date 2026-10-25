@@ -96,18 +96,20 @@ struct CoachAdjustmentPreviewView: View {
                  ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
                  : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
                 .font(.subheadline.weight(.semibold))
-            // Task 6 compile-fix (NOT the real fix - Task 7's job): `verdict`
-            // became optional so `make` can return non-nil without a
-            // race date/weekly volume (no feasibility opinion possible).
-            // `?? true` just keeps this view compiling by treating "no
-            // verdict" as the feasible/positive headline for now; Task 7
-            // should decide the real copy for that case (likely its own
-            // headline, not silently reusing "feasible").
-            Text(model.verdict?.feasible ?? true
-                 ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
-                 : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            // Fix I-4 (Final-Review, Round 2): `verdict` ist optional, weil
+            // `make` seit Task 6 auch ohne Renn-Datum/Wochenvolumen non-nil
+            // liefert (keine Machbarkeits-Meinung moeglich). Ohne Verdikt
+            // darf KEINE Machbarkeits-Aussage (weder feasible noch
+            // infeasible) angezeigt werden (Decision 2: keine unbelegte
+            // Praezisions-/Sicherheits-Behauptung) - die Zeile faellt dann
+            // einfach weg, statt eine unerprobte "machbar" zu behaupten.
+            if let verdict = model.verdict {
+                Text(verdict.feasible
+                     ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                     : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

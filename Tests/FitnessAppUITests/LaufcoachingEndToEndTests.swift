@@ -143,6 +143,21 @@ final class LaufcoachingEndToEndTests: XCTestCase {
                 "exakt dieselbe Rechnung wie SetRow.targetPaceHint muss aus den persistierten Plandaten eine Pace liefern koennen"
             )
         }
+
+        // MARK: 7. Fix I-1 (Final-Review, Round 2): the card must not reappear as pending after accept()
+        // A fresh make() call (the equivalent of the card re-rendering, e.g. the user navigating back
+        // to the dashboard) must recognize the adjustment as already applied - before the fix, `make()`
+        // recomputed the fingerprint from the by-then-updated profile.cardioGoal (now .fiveK), which no
+        // longer matched the fingerprint stored from the OLD (.marathon) goal.
+        guard let freshModel = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected a non-nil CoachAdjustmentCardModel after accept()")
+        }
+        XCTAssertTrue(
+            freshModel.isAlreadyApplied,
+            "eine frische make()-Auswertung nach erfolgreichem accept() muss die Anpassung als bereits uebernommen erkennen"
+        )
+        let secondAppliedCount = try freshModel.accept(plan: plan, profile: profile, in: context)
+        XCTAssertEqual(secondAppliedCount, 0, "ein zweiter accept()-Aufruf nach bereits erfolgter Uebernahme muss ein No-Op sein, keine doppelte Anwendung")
     }
 }
 #endif

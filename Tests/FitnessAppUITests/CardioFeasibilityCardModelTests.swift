@@ -167,10 +167,12 @@ final class CardioFeasibilityCardModelTests: XCTestCase {
 
     /// Review-Fund (Critical): die In-Place-Anpassung muss bei einem INFEASIBLE Verdikt das
     /// VORGESCHLAGENE, kleinere `proposedGoal` anwenden - nicht das urspruengliche, nicht
-    /// erreichbare `profile.cardioGoal`. `CoachAdjustmentCardModel.accept` liest
-    /// `profile.cardioGoal` LIVE (`Self.cardioOnlyDaySpecs(for: profile.cardioGoal)`); faellt
-    /// `accept(profile:in:using:activePlan:)` nicht zuerst `profile.cardioGoal = proposedGoal`
-    /// nach, wendet es unbemerkt noch das alte Ziel an UND vergisst
+    /// erreichbare `profile.cardioGoal`. `CoachAdjustmentCardModel.accept` nutzt zwar bereits
+    /// `self.proposedGoal ?? profile.cardioGoal` (Task 7s Fix); `make(for: activePlan:)` berechnet
+    /// `verdict`/`proposedGoal` aber weiterhin aus dem zum `make`-Zeitpunkt aktuellen
+    /// `profile.cardioGoal` - faellt `accept(profile:in:using:activePlan:)` nicht zuerst
+    /// `profile.cardioGoal = proposedGoal` nach (BEVOR `make` aufgerufen wird), wendet das
+    /// anschliessende `make`/`accept` unbemerkt noch das alte Ziel an UND vergisst
     /// `profile.cardioFeasibilityDismissedFingerprint` zu setzen (Karte erschiene sofort wieder).
     ///
     /// Marathon (Zielvolumen 65 km/Woche) bei 15 km/Woche Basis und nur 7 Wochen bis zum

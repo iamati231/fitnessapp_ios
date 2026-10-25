@@ -275,8 +275,14 @@ final class PlanGeneratorTests: XCTestCase {
         // pass CI, because only the easy-zone day's pace was asserted here.
         // Same name-based lookup as above (never index-based, see the
         // `spreadByHardness`-reordering comment) - `RunZone.tempo.exerciseName`
-        // is "Long Run" (distinct from "Easy Run"/"Intervalle" in this
-        // three-day running-only selection).
+        // is "Long Run" (distinct from "Easy Run"). Fix M-2 (Final-Review,
+        // Round 2): this 10K-profile 3-day selection is Task 3's
+        // GOAL-DRIVEN mix (`runTypeMix(for: .tenK) == [.easy, .quality]`),
+        // which here resolves to easy/tempo/easy - it does NOT produce an
+        // "Intervalle" day (that only happens on the profile-less, fixed
+        // easy/interval/tempo cycle, or on a LATER `.quality` occurrence
+        // across more days/weeks - see `cardioCandidates`'s doc comment).
+
         let tempoDay = result.days.first { $0.spec.exercises.first?.name == "Long Run" }!.spec.exercises[0]
         XCTAssertEqual(tempoDay.targetPaceMinutesPerKm, PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: 1500))
     }

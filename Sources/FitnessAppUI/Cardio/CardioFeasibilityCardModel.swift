@@ -172,9 +172,8 @@ public struct CardioFeasibilityCardModel {
         // ist keiner seiner Cardio-Tage anfassbar (`.noEligibleCardioDay`), bleibt der bisherige
         // "neuen Plan erstellen"-Pfad unten unveraendert der Fallback.
         //
-        // Review-Korrektur (Critical): `CoachAdjustmentCardModel.accept` liest `profile.cardioGoal`
-        // LIVE (ueber `Self.cardioOnlyDaySpecs(for: profile.cardioGoal)`), und `make(for:
-        // activePlan:)` friert seinen eigenen `fingerprint` ebenfalls aus GENAU DIESEM, zum
+        // Review-Korrektur (Critical): `make(for: activePlan:)` friert seinen eigenen
+        // `fingerprint` aus GENAU DIESEM, zum
         // `make`-Zeitpunkt aktuellen `profile.cardioGoal` ein. Ist der Verdikt `infeasible` und
         // `proposedGoal` daher ein KLEINERES, von `profile.cardioGoal` ABWEICHENDES Ziel (der
         // ganze Zweck dieser Karte), MUSS `profile.cardioGoal` exakt wie im bestehenden "neuen

@@ -191,6 +191,78 @@ final class SetRowTargetPaceTests: XCTestCase {
         XCTAssertTrue(callBlock.contains("profiles.first?.cardioCoachingEnabled"), "must read straight off the live @Query result, never a cached/@State copy")
     }
 
+    // MARK: - Fix I-2 (Final-Review, Round 2): gated on generationSource == .cardioCoach
+
+    /// Template-Plaene (`ProgramTemplates.swift`) koennen ebenfalls Uebungen
+    /// namens "Long Run" enthalten, mit einer komplett anderen, nicht-Tempo-
+    /// Bedeutung - `targetPaceHint` darf die Generator-Pace-Interpretation
+    /// daher NUR auf einem tatsaechlich `generationSource == .cardioCoach`-
+    /// Plan zeigen.
+    func testSetRowTargetPaceHintAlsoGatesOnCoachGeneratedPlan() throws {
+        let source = try contents(of: "Workout/SetRow.swift")
+        guard let hintRange = source.range(of: "var targetPaceHint: String? {") else {
+            XCTFail("targetPaceHint not found in SetRow.swift"); return
+        }
+        let hintBlock = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: hintRange.upperBound))
+        XCTAssertTrue(hintBlock.contains("isCoachGeneratedPlan"), "must also gate on the plan's generationSource, not just cardioCoachingEnabled - template plans can contain same-named, differently-meant exercises")
+        XCTAssertTrue(source.contains("let isCoachGeneratedPlan: Bool"), "must be threaded as a plain, non-cached parameter, same pattern as cardioCoachingEnabled/current5kReferenceSeconds")
+    }
+
+    func testExerciseCardThreadsIsCoachGeneratedPlanIntoEverySetRow() throws {
+        let source = try contents(of: "Workout/ExerciseCard.swift")
+        XCTAssertTrue(source.contains("let isCoachGeneratedPlan: Bool"), "ExerciseCard must accept the flag to pass it on")
+
+        guard let setRowCallRange = source.range(of: "SetRow(") else {
+            XCTFail("SetRow( construction not found in ExerciseCard.swift"); return
+        }
+        let callBlock = try XCTUnwrap(Self.matchingParenBlock(in: source, afterOpenParen: setRowCallRange.upperBound))
+        XCTAssertTrue(callBlock.contains("isCoachGeneratedPlan: isCoachGeneratedPlan"), "must forward the flag unchanged, not re-derive or cache it")
+    }
+
+    /// `ActiveWorkoutView` must derive the flag from `session.day?.plan?.
+    /// generationSource` - the existing threading path, no new `@Query`.
+    func testActiveWorkoutViewDerivesIsCoachGeneratedPlanFromSessionDayPlanGenerationSource() throws {
+        let source = try contents(of: "Workout/ActiveWorkoutView.swift")
+        guard let constructionRange = source.range(of: "ExerciseCard(") else {
+            XCTFail("ExerciseCard( construction not found in ActiveWorkoutView.swift"); return
+        }
+        let callBlock = try XCTUnwrap(Self.matchingParenBlock(in: source, afterOpenParen: constructionRange.upperBound))
+        XCTAssertTrue(
+            callBlock.contains("session.day?.plan?.generationSource == .cardioCoach"),
+            "must read generationSource off session.day?.plan, the existing threading path - no new @Query needed"
+        )
+    }
+
+    // MARK: - Fix I-3 (Final-Review, Round 2): target pace must not hide behind an existing previousLog
+
+    /// Before the fix, `cardioStatusZone` checked `previousLog` BEFORE
+    /// `targetPaceHint` in a strict if/else-if chain - once a user completed
+    /// the exercise even once, every later not-yet-logged session hit the
+    /// `previousLog` branch first and the target pace never showed again.
+    /// `targetPaceHint` must now also be referenced INSIDE the `previousLog`
+    /// branch (combined rendering), not only in the final, otherwise-
+    /// unreachable `else if let targetPaceHint` fallback.
+    func testCardioStatusZoneShowsTargetPaceAlongsidePreviousLogNotOnlyInItsAbsence() throws {
+        let source = try contents(of: "Workout/SetRow.swift")
+        guard let zoneRange = source.range(of: "var cardioStatusZone: some View {") else {
+            XCTFail("cardioStatusZone not found"); return
+        }
+        let zoneBlock = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: zoneRange.upperBound))
+
+        guard let previousLogBranchRange = zoneBlock.range(of: "let prev = previousLog,") else {
+            XCTFail("previousLog branch not found in cardioStatusZone"); return
+        }
+        guard let fallbackRange = zoneBlock.range(of: "} else if let targetPaceHint {") else {
+            XCTFail("targetPaceHint fallback branch not found in cardioStatusZone"); return
+        }
+        XCTAssertTrue(fallbackRange.lowerBound > previousLogBranchRange.lowerBound, "Testaufbau: fallback branch must come after the previousLog branch")
+        let previousLogBranchBody = zoneBlock[previousLogBranchRange.upperBound..<fallbackRange.lowerBound]
+        XCTAssertTrue(
+            previousLogBranchBody.contains("targetPaceHint"),
+            "targetPaceHint must be referenced inside the previousLog branch too, so it is visible alongside a previous run, not only when there is nothing else to show"
+        )
+    }
+
     /// `active.set.targetPaceFormat` is the only new localization key this
     /// task introduces (`cardioFeasibility.day.paceUnknown` is reused as-is)
     /// - DE/EN/TR must be complete.

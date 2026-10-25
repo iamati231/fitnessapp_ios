@@ -124,7 +124,11 @@ public enum CardioFeasibilityCalculator {
 
     /// Kraft-/Lauf-Mix je Ziel (Ticket-Tabelle). Lauf-Zonen kommen
     /// unveraendert aus der bestehenden Lauf-Typologie in `PlanGenerator`
-    /// (ueber `TrainingTypeKind.running`, zyklisch easy/interval/tempo).
+    /// (ueber `TrainingTypeKind.running`, OHNE `cardioRunProfile` zyklisch
+    /// easy/interval/tempo) - Task 3 macht diesen Mix stattdessen
+    /// ziel-gesteuert (`PlanGenerator.cardioCandidates`), SOBALD unten ein
+    /// `cardioRunProfile` uebergeben wird; "zyklisch" beschreibt also nur
+    /// noch den profil-losen Pfad.
     /// Kraft-Kind ist `.bodyweight`: braucht keine Geraete-Annahme - hier
     /// ist unbekannt, was der Nutzer besitzt, und `equipmentPreferences`
     /// bleibt entsprechend leer (wird von `PlanGenerator.strengthCandidates`

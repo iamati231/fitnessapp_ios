@@ -48,6 +48,14 @@ struct SetRow: View {
     /// current5kReferenceSeconds` durchgereicht - siehe `cardioCoachingEnabled`
     /// oben fuer die "live, nicht eingefroren"-Begruendung.
     let current5kReferenceSeconds: Int?
+    /// Fix I-2 (Final-Review, Round 2): `true` nur, wenn `session.day?.plan?.
+    /// generationSource == .cardioCoach` - Template-Plaene (manuell/Wizard)
+    /// koennen ebenfalls Uebungen namens "Long Run" enthalten
+    /// (`ProgramTemplates.swift`), aber mit einer komplett anderen,
+    /// nicht-Tempo-Bedeutung (Distanz+Dauer eines einfachen langen Laufs).
+    /// `targetPaceHint` unten darf die generator-eigene Pace-Interpretation
+    /// daher NUR auf einem tatsaechlich coach-generierten Plan anzeigen.
+    let isCoachGeneratedPlan: Bool
     /// DEL-157: Log des Satzes DIREKT DARUEBER in DIESER Session. Dient als
     /// Seed-Quelle fuer dynamisch hinzugefuegte Saetze ("+ Satz") — der neue
     /// Satz erbt Gewicht/Reps/RIR vom darueberliegenden. `nil` fuer den
@@ -1560,12 +1568,28 @@ struct SetRow: View {
         } else if let prev = previousLog,
                   prev.distanceKm != nil || prev.durationSeconds != nil {
             // Bug-Fix 2026-05-22: lokalisiert via active.set.previousFormat.
-            Text(String(format:
+            let previousText = String(format:
                 String(localized: "active.set.previousFormat", bundle: .module),
-                cardioPreviousHint(prev)))
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                cardioPreviousHint(prev))
+            // Fix I-3 (Final-Review, Round 2): die Ziel-Pace muss NEBEN dem
+            // "letztes Mal"-Hinweis sichtbar bleiben, nicht nur in dessen
+            // Abwesenheit - sonst verschwindet sie dauerhaft, sobald die
+            // Uebung einmal geloggt wurde (jede folgende, noch nicht
+            // geloggte Session traefe sonst immer zuerst diesen Zweig).
+            if let targetPaceHint {
+                let targetText = String(format:
+                    String(localized: "active.set.targetPaceFormat", bundle: .module),
+                    targetPaceHint)
+                Text("\(targetText) · \(previousText)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text(previousText)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         } else if let targetPaceHint {
             Text(String(format:
                 String(localized: "active.set.targetPaceFormat", bundle: .module),
@@ -1601,7 +1625,8 @@ struct SetRow: View {
     /// Gleiches Muster wie `CardioFeasibilityDayRow.subtitle`, die ebenfalls
     /// das BERECHNETE Pace-Ergebnis prueft, nicht nur die Eingabe.
     private var targetPaceHint: String? {
-        guard content.isCardio, content.targetDurationMinutes != nil, cardioCoachingEnabled else { return nil }
+        guard content.isCardio, content.targetDurationMinutes != nil, cardioCoachingEnabled,
+              isCoachGeneratedPlan else { return nil }
         let zone = CardioExerciseZone.forExerciseName(content.nameSnapshot)
         guard zone == .easy || zone == .tempo else { return nil }
         let paceMinutesPerKm = current5kReferenceSeconds.flatMap { referenceSeconds in

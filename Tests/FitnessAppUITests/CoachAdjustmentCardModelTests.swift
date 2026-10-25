@@ -308,6 +308,42 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
         XCTAssertNil(profile.cardioPlanAdjustmentFingerprint, "nichts wurde uebernommen - kein Fingerprint darf gesetzt sein")
     }
 
+    // MARK: - Fix I-1 (Final-Review, Round 2): fingerprint folgt proposedGoal, nicht dem stale Ziel
+
+    /// Reproduziert exakt den Reappearing-Card-Bug: eine FRISCHE `make()`-
+    /// Auswertung nach erfolgreichem `accept()` im infeasiblen Szenario
+    /// (identisches Marathon/7-Wochen/15km-Fixture wie oben) muss
+    /// `isAlreadyApplied == true` liefern. Vor dem Fix berechnete `make()`
+    /// den Fingerprint aus dem inzwischen aktualisierten `profile.cardioGoal`
+    /// (jetzt `.fiveK`), der nicht mehr zum gespeicherten, aus dem ALTEN
+    /// `.marathon`-Ziel berechneten Fingerprint passte - die Karte erschien
+    /// faelschlich wieder als ausstehend, und ein zweiter `accept()`-Aufruf
+    /// haette dieselbe Anpassung doppelt angewendet.
+    func testFreshlyMadeModelAfterAcceptReportsAlreadyAppliedWhenGoalWasDowngraded() throws {
+        let (profile, plan) = makeProfileAndPlan()
+        profile.cardioGoal = .marathon
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertEqual(model.verdict?.feasible, false, "Testaufbau: Marathon in 7 Wochen bei 15 km Basis muss NICHT erreichbar sein")
+
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertGreaterThan(count, 0)
+
+        guard let freshModel = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertTrue(
+            freshModel.isAlreadyApplied,
+            "eine frische make()-Auswertung nach erfolgreichem accept() muss die Anpassung als bereits uebernommen erkennen, obwohl sich profile.cardioGoal zwischenzeitlich auf das vorgeschlagene Ziel geaendert hat"
+        )
+
+        let secondCount = try freshModel.accept(plan: plan, profile: profile, in: context)
+        XCTAssertEqual(secondCount, 0, "ein zweiter accept()-Aufruf nach bereits erfolgter Uebernahme muss ein No-Op sein, keine doppelte Anwendung")
+    }
+
     // MARK: - Task 7: CoachAdjustmentPreviewView nutzt model.proposedGoal fuer die Tagesgenerierung
 
     /// Source-introspection (kein SwiftUI-Render-Harness in diesem Repo),

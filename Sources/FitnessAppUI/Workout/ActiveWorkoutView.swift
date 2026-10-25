@@ -695,6 +695,13 @@ public struct ActiveWorkoutView: View {
                 // offenen Session muss sich sofort in der Ziel-Pace zeigen.
                 cardioCoachingEnabled: profiles.first?.cardioCoachingEnabled ?? false,
                 current5kReferenceSeconds: profiles.first?.current5kReferenceSeconds,
+                // Fix I-2 (Final-Review, Round 2): Ziel-Pace darf NUR auf
+                // einem von Laufcoach selbst generierten Plan erscheinen -
+                // Templates (`ProgramTemplates.swift`) nutzen "Long Run" auch
+                // auf manuell/wizard-gebauten Plaenen mit einer komplett
+                // anderen, nicht-Tempo-Bedeutung. Liest `session.day?.plan?.
+                // generationSource` direkt (kein neues `@Query` noetig).
+                isCoachGeneratedPlan: session.day?.plan?.generationSource == .cardioCoach,
                 activeTimedSet: $activeTimedSet,
                 onSetLogged: { setIndex in
                     startRestTimer(for: exercise, entry: entry, setIndex: setIndex)

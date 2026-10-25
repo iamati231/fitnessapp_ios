@@ -79,13 +79,25 @@ public struct CoachAdjustmentCardModel: Equatable {
         // keine aus Renn-Datum/Wochenvolumen ableitbare Identitaet fuer
         // diese Kombination; der Fingerprint haengt dann allein am (in
         // diesem Fall einzig relevanten) Ziel.
+        //
+        // Fix I-1 (Final-Review, Round 2): der Fingerprint MUSS aus demselben
+        // effektiven Ziel wie `proposedGoal` berechnet werden (`proposedGoal
+        // ?? profile.cardioGoal`), NICHT aus dem rohen, moeglicherweise
+        // veralteten `profile.cardioGoal` - sonst weicht der hier gespeicherte
+        // Fingerprint (vor `accept()`, altes Ziel) von dem ab, den eine
+        // FRISCHE `make`-Auswertung NACH `accept()` liefert (`profile.cardioGoal`
+        // wurde dort bereits auf `proposedGoal` aktualisiert), und
+        // `isAlreadyApplied` ist faelschlich `false`. Gleiches Prinzip wie
+        // `CardioFeasibilityCardModel`s `fingerprint`/`proposedGoal` (siehe
+        // dortige Doku).
+        let effectiveGoal = proposedGoal ?? profile.cardioGoal
         let fingerprint: String
         if let raceDate = profile.cardioRaceDate, let weeklyVolume = profile.weeklyBaseVolumeKm {
             fingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
-                goal: profile.cardioGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
+                goal: effectiveGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
             )
         } else {
-            fingerprint = "goalOnly#\(profile.cardioGoal.rawValue)"
+            fingerprint = "goalOnly#\(effectiveGoal.rawValue)"
         }
 
         return CoachAdjustmentCardModel(
