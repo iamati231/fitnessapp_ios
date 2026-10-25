@@ -133,11 +133,32 @@ struct CoachAdjustmentPreviewView: View {
             }
             actionButtons(model)
         case .noEligibleCardioDay:
-            Section {
-                Text("profile.cardio.adjustment.noEligibleDay", bundle: .module)
-                    .foregroundStyle(.secondary)
+            // Task 7: Task 5/6s Einfuege-Pfad (Ruhetag -> Cardio-Tag) macht
+            // diesen Fall nicht mehr zwangslaeufig zu einem reinen "nichts zu
+            // tun" - ist mindestens ein Ruhetag einfuegbar, zeigt die Vorschau
+            // dieselben Aktionen wie der `.ready`-Zweig (`actionButtons`,
+            // dessen `model.accept` die Einfuegung selbst traegt), nur mit
+            // einer Vorher/Nachher-Darstellung ohne "altes" Original (siehe
+            // unten: `"— → <neuer Tag>"`, kein `.strikethrough()`, da kein
+            // vorhandener Tag ersetzt wird).
+            if !model.analysis.insertableRestDays.isEmpty {
+                Section {
+                    ForEach(Array(newCardioDays(for: model).enumerated()), id: \.offset) { _, spec in
+                        Text("— → \(spec.name)")
+                    }
+                } header: {
+                    Text("profile.cardio.adjustment.before", bundle: .module)
+                } footer: {
+                    Text("profile.cardio.adjustment.after", bundle: .module)
+                }
+                actionButtons(model)
+            } else {
+                Section {
+                    Text("profile.cardio.adjustment.noEligibleDay", bundle: .module)
+                        .foregroundStyle(.secondary)
+                }
+                createNewPlanButton(model)
             }
-            createNewPlanButton(model)
         case .noActivePlan:
             EmptyView()
         }
@@ -152,6 +173,14 @@ struct CoachAdjustmentPreviewView: View {
                 do {
                     try model.accept(plan: activePlan, profile: profile, in: modelContext)
                     dismiss()
+                } catch is PlanGeneratorInstantiator.CardioInsertionError {
+                    // Task 7 (Entscheidung, nicht verhandelbar): `insertCoachCardioDays`s
+                    // Re-Validierungsfehler (Plan hat sich seit der Vorschau
+                    // geaendert) darf NICHT im generischen Catch-All unten
+                    // verschwinden (dessen unleserliche "operation couldn't be
+                    // completed"-Standardmeldung) - eigene, lesbare Botschaft
+                    // statt eines stillen/unleserlichen Fehlschlags.
+                    errorMessage = String(localized: "profile.cardio.adjustment.planChanged", bundle: .module)
                 } catch {
                     errorMessage = error.localizedDescription
                 }

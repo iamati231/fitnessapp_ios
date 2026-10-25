@@ -39470,6 +39470,29 @@
         }
       }
     },
+    "profile.cardio.adjustment.planChanged": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your plan changed since this preview was opened. Please close and check it again."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Plan hat sich geändert, seit diese Vorschau geöffnet wurde. Bitte schließen und erneut prüfen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu önizleme açıldığından beri planın değişti. Lütfen kapatıp tekrar kontrol et."
+          }
+        }
+      }
+    },
     "profile.cardio.coachOff.title": {
       "extractionState": "manual",
       "localizations": {

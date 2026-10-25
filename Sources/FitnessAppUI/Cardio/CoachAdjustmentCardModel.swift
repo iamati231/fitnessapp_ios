@@ -192,9 +192,35 @@ public struct CoachAdjustmentCardModel: Equatable {
                 weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
             )
         )
-        let count = try PlanGeneratorInstantiator.applyCoachCardioAdjustment(
-            eligibleDays: eligibleDays, newCardioDays: newCardioDays, in: context
-        )
+
+        let count: Int
+        if eligibleDays.isEmpty {
+            // Task 7: kein ersetzbarer Cardio-Tag - Fallback auf Task 5/6s
+            // Einfuege-Pfad (Ruhetag -> Cardio-Tag). Re-Validierung IMMER frisch
+            // am JETZT aktuellen `plan` (`eligibleRestDaysForInsertion`), NIEMALS
+            // die beim `make`-Zeitpunkt eingefrorene `analysis.insertableRestDays`
+            // - derselbe Grundsatz wie `eligibleCardioDays` oben und
+            // `isAlreadyApplied`/`eligibleDays` ueberall sonst in diesem Typ.
+            let eligibleRestDays = RunCoachPlanAdjustment.eligibleRestDaysForInsertion(in: plan)
+            guard !eligibleRestDays.isEmpty else { return 0 }
+            let insertCount = CardioFeasibilityCalculator.runTypeMix(for: effectiveProposedGoal).count
+            let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
+                eligible: eligibleRestDays, count: insertCount, otherDays: plan.days
+            )
+            // `insertCoachCardioDays` wirft (statt stillschweigend 0
+            // zurueckzugeben), wenn `selectedRestDays` zu wenige Tage enthaelt
+            // oder ein ausgewaehlter Tag zwischen Vorschau und diesem Aufruf
+            // nicht mehr eignungsfaehig ist - bewusst NICHT hier abgefangen,
+            // der Aufrufer (`CoachAdjustmentPreviewView`) zeigt das als eigene,
+            // unterscheidbare Fehlermeldung an.
+            count = try PlanGeneratorInstantiator.insertCoachCardioDays(
+                plan: plan, restDays: selectedRestDays, newCardioDays: newCardioDays, in: context
+            )
+        } else {
+            count = try PlanGeneratorInstantiator.applyCoachCardioAdjustment(
+                eligibleDays: eligibleDays, newCardioDays: newCardioDays, in: context
+            )
+        }
         guard count > 0 else { return 0 }
         profile.cardioPlanAdjustmentFingerprint = fingerprint
         // Mirrors `CardioFeasibilityCardModel.accept`'s completion closure,

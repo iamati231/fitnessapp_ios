@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2296 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2536 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2296 / 2296** (100%) | 0 |
-| 🇬🇧 English (EN) | **2296 / 2296** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2296 / 2296** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2536 / 2536** (100%) | 0 |
+| 🇬🇧 English (EN) | **2536 / 2536** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2536 / 2536** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -20,7 +20,7 @@ Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 
 
-## `active.*`  (48 Keys)
+## `active.*`  (53 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -57,6 +57,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.interference.message` | Erwäge heute, dein Ziel-RIR bei Beinübungen um +1 zu erhöhen, um dein ZNS nicht zu überlasten. | Consider raising your target RIR on leg exercises by +1 today to avoid overloading your CNS. | MSS'ni aşırı yüklemekten kaçınmak için bugün bacak hareketlerinde hedef RIR'ı +1 artırmayı düşün. |
 | `active.interference.title` | Du hattest gestern eine harte Einheit | You had a hard session yesterday | Dün zorlu bir antrenmanın vardı |
 | `active.placeholder.subtext` | Set-Logging mit Vorgaben & Rest-Timer • Live Activities folgen im Xcode-Target. | Set logging with targets & rest timer • Live Activities arrive in the Xcode target. | Hedefli set kaydı ve dinlenme zamanlayıcısı • Live Activities Xcode hedefinde gelir. |
+| `active.restTimer.personalRecordTitle` | Persönlicher Rekord! | Personal Record! | Personal Record! |
+| `active.restTimer.setLabel` | Satz %@ / %@ | Set %@ / %@ | Set %@ / %@ |
+| `active.restTimer.setLabelShort` | Satz %@ | Set %@ | Set %@ |
+| `active.restTimer.viewInTrophyRoom` | Im Trophy Room ansehen | View in Trophy Room | View in Trophy Room |
 | `active.set.add` | Satz hinzufügen | Add set | Set ekle |
 | `active.set.previousCardio` | %1$@ in %2$@ | %1$@ in %2$@ | %2$@ içinde %1$@ |
 | `active.set.previousFormat` | letztes: %@ | last: %@ | son: %@ |
@@ -65,6 +69,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `active.set.rir.scaleMax` | 5 — locker | 5 — easy | 5 — kolay |
 | `active.set.rir.scaleMin` | 0 — nichts mehr | 0 — nothing left | 0 — hiç kalmadı |
 | `active.set.rir.subtitle` | Wiederholungen in Reserve | Reps in Reserve | Yedek tekrar |
+| `active.set.targetPaceFormat` | Ziel: %@ | target: %@ | hedef: %@ |
 | `active.stats.avgPace` | ⌀ Pace | ⌀ Pace | ⌀ Tempo |
 | `active.stats.distance` | Distanz | Distance | Mesafe |
 | `active.stats.duration` | Dauer | Duration | Süre |
@@ -254,7 +259,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `baseline.timer.resume` | Weiter | Resume | Devam et |
 | `baseline.timer.start` | Start | Start | Başla |
 
-## `calc.*`  (59 Keys)
+## `calc.*`  (60 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -305,6 +310,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `calc.tdee.bmrMifflin` | BMR (Mifflin-St-Jeor) | BMR (Mifflin-St-Jeor) | BMR (Mifflin-St-Jeor) |
 | `calc.tdee.bulk` | Bulk (+300) | Bulk (+300) | Bulk (+300) |
 | `calc.tdee.cut` | Cut (-500) | Cut (-500) | Cut (-500) |
+| `calc.tdee.goalType` | Zielausrichtung | Goal type | Hedef türü |
 | `calc.tdee.height` | Größe | Height | Boy |
 | `calc.tdee.maintenance` | Erhaltung | Maintenance | Koruma |
 | `calc.tdee.noProfile.message` | Lege erst dein Profil im Onboarding an. | Set up your profile in onboarding first. | Önce profilini başlangıçta oluştur. |
@@ -329,11 +335,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `cardioEquipment.rowingMachine` | Rudergerät | Rowing machine | Kürek makinesi |
 | `cardioEquipment.treadmill` | Laufband | Treadmill | Koşu Bandı |
 
-## `cardioFeasibility.*`  (11 Keys)
+## `cardioFeasibility.*`  (12 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `cardioFeasibility.day.interval` | %1$lld × %2$@ km | %1$lld × %2$@ km | %1$lld × %2$@ km |
+| `cardioFeasibility.day.paceUnknown` | Tempo nach Gefühl | pace by feel | hisse göre tempo |
 | `cardioFeasibility.day.run` | ~%lld Min. Lauf | ~%lld min run | ~%lld dk koşu |
 | `cardioFeasibility.day.runFallback` | Lauf | Run | Koşu |
 | `cardioFeasibility.day.strength` | Krafttraining | Strength training | Kuvvet antrenmanı |
@@ -363,7 +370,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `chart.timeRange.oneMonth` | 1M | 1M | 1A |
 | `chart.timeRange.threeMonths` | 3M | 3M | 3A |
 
-## `coaching.*`  (229 Keys)
+## `coaching.*`  (232 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -521,6 +528,9 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `coaching.soft.cardioMissedLongRun.analytical` | Dein Plan enthält einen langen Lauf, aber in den letzten 7 Tagen ist keiner dabei gewesen. Der lange Lauf ist der wichtigste Baustein für die Grundlagenausdauer – hol ihn möglichst bald nach. | Your plan includes a long run, but none has been logged in the last 7 days. The long run is the single most important building block for aerobic base — try to fit it in soon. | Planında uzun bir koşu var, ama son 7 gündür hiç kaydedilmedi. Uzun koşu, aerobik tabanı oluşturan en önemli yapı taşıdır — yakın zamanda tamamlamaya çalış. |
 | `coaching.soft.cardioMissedLongRun.motivating` | Dein langer Lauf diese Woche fehlt noch! Egal wie langsam – such dir ein Zeitfenster, in dem du ihn nachholen kannst. | Your long run is still missing this week! No matter how slow, find a window to get it in. | Bu haftanın uzun koşusu hâlâ eksik! Ne kadar yavaş olursa olsun, bunun için bir zaman bul. |
 | `coaching.soft.cardioMissedLongRun.strict` | Du hast deinen langen Lauf diese Woche ausgelassen. Genau der baut die Ausdauer auf, die du für dein Ziel brauchst. Trag ihn nach. | You skipped your long run this week. That's exactly what builds the endurance your goal needs. Make it up. | Bu hafta uzun koşunu atladın. Hedefin için gereken dayanıklılığı tam olarak o oluşturur. Telafi et. |
+| `coaching.soft.cardioMissedRunDays.analytical` | In den letzten 2 Wochen sind mehrere deiner geplanten Laufeinheiten ohne Eintrag geblieben. Dein Laufcoach kann den Plan dazu prüfen. | Several of your planned running sessions in the last 2 weeks have no logged entry. Your running coach can review the plan for this. | Son 2 haftadır planlanan koşu antrenmanlarından birkaçı kaydedilmemiş. Koşu koçun planı buna göre gözden geçirebilir. |
+| `coaching.soft.cardioMissedRunDays.motivating` | Ein paar geplante Läufe sind zuletzt liegen geblieben – kein Drama. Dein Laufcoach schaut gern mit dir, wie der Plan dazu passt. | A few planned runs slipped by recently – no big deal. Your running coach is happy to take a look at how the plan fits. | Son zamanlarda birkaç planlı koşu atlandı – sorun değil. Koşu koçun planın buna nasıl uyduğuna birlikte bakabilir. |
+| `coaching.soft.cardioMissedRunDays.strict` | Mehrere geplante Läufe der letzten 2 Wochen wurden nicht protokolliert. Lass deinen Laufcoach den Plan jetzt prüfen. | Several planned runs from the last 2 weeks were not logged. Have your running coach review the plan now. | Son 2 haftadaki planlı koşulardan birkaçı kaydedilmedi. Koşu koçunun planı şimdi gözden geçirmesini sağla. |
 | `coaching.soft.cardioVolumeSpike.analytical` | Deine Lauf-Kilometer sind diese Woche über 20% höher als letzte Woche. Ein schneller Anstieg im Laufvolumen ist einer der zuverlässigsten Prädiktoren für Überlastungsschäden wie das Schienbeinkantensyndrom. | Your running distance is up more than 20% versus last week. A rapid jump in weekly mileage is one of the most reliable predictors of overuse injuries like shin splints. | Bu haftaki koşu mesafen geçen haftaya göre %20'den fazla arttı. Haftalık mesafede ani bir sıçrama, kaval kemiği ağrısı gibi aşırı yüklenme sakatlanmalarının en güvenilir habercilerinden biridir. |
 | `coaching.soft.cardioVolumeSpike.motivating` | Du bist diese Woche richtig aktiv unterwegs! Achte trotzdem darauf, das Tempo nicht zu übertreiben – lieber konstant dranbleiben als sich zu verletzen. | You've been putting in serious miles this week! Just don't let the excitement outrun your body — steady beats fast when it comes to staying injury-free. | Bu hafta gerçekten çok koştun! Ama heyecana kapılıp vücudunu zorlama — sakatlanmadan devam etmek için sabit tempo hızlı tempodan daha önemlidir. |
 | `coaching.soft.cardioVolumeSpike.strict` | Du hast dein Laufvolumen zu schnell gesteigert. Das ist ein direkter Weg zu Überlastungsschäden. Bremse diese Woche bewusst ab. | You're increasing your running volume too fast. That's a direct path to overuse injuries. Pull back this week. | Koşu hacmini çok hızlı artırıyorsun. Bu, aşırı yüklenme sakatlanmalarına doğrudan giden bir yol. Bu hafta bilerek yavaşla. |
@@ -639,7 +649,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `customExercise.section.name` | Name | Name | Ad |
 | `customExercise.title` | Neue Übung | New exercise | Yeni hareket |
 
-## `dashboard.*`  (94 Keys)
+## `dashboard.*`  (96 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -689,6 +699,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `dashboard.history.emptyDescription` | Starte dein erstes Training, um Verlauf und Fortschritt zu sehen. | Start your first workout to see history and progress. | Geçmiş ve ilerlemeyi görmek için ilk antrenmanına başla. |
 | `dashboard.history.emptyTitle` | Noch kein Training gespeichert | No workout saved yet | Henüz kayıtlı antrenman yok |
 | `dashboard.history.title` | Trainingsverlauf | Workout History | Antrenman Geçmişi |
+| `dashboard.missedRunDays.dismissButton` | Nicht jetzt | Not now | Şimdi değil |
+| `dashboard.missedRunDays.reviewButton` | Plan prüfen | Review plan | Planı incele |
 | `dashboard.onboardingPlanCreationFailed.goToPlan` | Zum Plan-Tab | Go to Plan Tab | Plan Sekmesine Git |
 | `dashboard.onboardingPlanCreationFailed.message` | Dein Profil wurde gespeichert, aber beim vorgeschlagenen Trainingsplan gab es ein Problem. Bitte sieh im Plan-Tab nach, ob dein Plan vorhanden ist, und lege bei Bedarf einen neuen an. | Your profile was saved, but there was a problem with the suggested training plan. Please check the Plan tab to see if your plan is there, and create a new one if needed. | Profilin kaydedildi, ancak önerilen antrenman planında bir sorun oluştu. Lütfen Plan sekmesinden planının orada olup olmadığını kontrol et ve gerekirse yeni bir tane oluştur. |
 | `dashboard.onboardingPlanCreationFailed.title` | Hinweis zu deinem Trainingsplan | A Note About Your Training Plan | Antrenman Planınla İlgili Not |
@@ -1356,13 +1368,14 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `heroMetric.weight.label` | Gewicht | Weight | Ağırlık |
 | `heroMetric.workoutsThisWeek.label` | Trainings diese Woche | Workouts this week | Bu haftaki antrenmanlar |
 
-## `history.*`  (4 Keys)
+## `history.*`  (5 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
 | `history.early.badge` | VORZEITIG | EARLY | ERKEN |
 | `history.empty.description` | Beende dein erstes Training, um deine Historie zu sehen. | Finish your first workout to see your history. | Geçmişini görmek için ilk antrenmanını bitir. |
 | `history.empty.title` | Noch keine Trainings | No workouts yet | Henüz antrenman yok |
+| `history.eyebrow` | Verlauf | History | Geçmiş |
 | `history.session.fallback` | Training | Workout | Antrenman |
 
 ## `holdTimer.*`  (1 Keys)
@@ -1519,7 +1532,215 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `muscleVolume.bucket.overreaching` | Übervolumen | Overreach | Aşırı yük |
 | `muscleVolume.bucket.untrained` | Untrainiert | Untrained | Eğitilmemiş |
 
-## `onboarding.*`  (95 Keys)
+## `nutrition.*`  (203 Keys)
+
+| Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
+|---|---|---|---|
+| `nutrition.addMeal.aiDraft.action` | Text analysieren | Analyze text | Metni analiz et |
+| `nutrition.addMeal.aiDraft.ambiguous` | Mehrere Treffer – bitte auswählen: | Multiple matches – please choose: | Birden fazla eşleşme – lütfen seçin: |
+| `nutrition.addMeal.aiDraft.error` | Die Analyse ist fehlgeschlagen. Bitte versuche es erneut oder nutze die Suche unten. | The analysis failed. Please try again or use the search below. | Analiz başarısız oldu. Lütfen tekrar deneyin veya aşağıdaki aramayı kullanın. |
+| `nutrition.addMeal.aiDraft.header` | KI-Entwurf (Beta) | AI Draft (Beta) | Yapay Zeka Taslağı (Beta) |
+| `nutrition.addMeal.aiDraft.needsQuantity` | Menge unklar – bitte unten eintragen. | Quantity unclear – please enter it below. | Miktar belirsiz – lütfen aşağıya girin. |
+| `nutrition.addMeal.aiDraft.noMatch` | Kein Katalogtreffer gefunden. | No catalog match found. | Katalogda eşleşme bulunamadı. |
+| `nutrition.addMeal.aiDraft.placeholder` | z. B. 200 g Hähnchen und 150 g Reis zum Mittagessen | e.g. 200g chicken and 150g rice for lunch | örn. öğle yemeğinde 200 g tavuk ve 150 g pirinç |
+| `nutrition.addMeal.aiDraft.searchManually` | In Suche übernehmen | Use in search | Aramada kullan |
+| `nutrition.addMeal.aiDraft.unavailable` | KI-Entwurf ist auf diesem Gerät nicht verfügbar. Nutze stattdessen die Suche unten, um Lebensmittel manuell hinzuzufügen. | AI draft isn't available on this device. Use the search below instead to add food manually. | Bu cihazda yapay zeka taslağı kullanılamıyor. Bunun yerine yiyecekleri manuel olarak eklemek için aşağıdaki aramayı kullanın. |
+| `nutrition.addMeal.aiDraft.useSuggestion` | Übernehmen: %@ | Use: %@ | Kullan: %@ |
+| `nutrition.addMeal.customFood.action` | Eigenes Lebensmittel anlegen | Create custom food | Kendi besinini oluştur |
+| `nutrition.addMeal.mealTypeLabel` | Mahlzeit | Meal | Öğün |
+| `nutrition.addMeal.noResults` | Keine Treffer | No results | Sonuç yok |
+| `nutrition.addMeal.onlineSearch.action` | Online suchen | Search online | Çevrimiçi ara |
+| `nutrition.addMeal.onlineSearch.attribution` | Daten: © Open Food Facts | Data: © Open Food Facts | Veri: © Open Food Facts |
+| `nutrition.addMeal.onlineSearch.error` | Online-Suche momentan nicht verfügbar. Bitte später erneut versuchen. | Online search is currently unavailable. Please try again later. | Çevrimiçi arama şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin. |
+| `nutrition.addMeal.onlineSearch.noNetwork` | Keine Internetverbindung. Bitte Verbindung prüfen und erneut versuchen. | No internet connection. Please check your connection and try again. | İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edip tekrar deneyin. |
+| `nutrition.addMeal.onlineSearch.noResults` | Keine Online-Treffer gefunden. | No online results found. | Çevrimiçi sonuç bulunamadı. |
+| `nutrition.addMeal.positionsSection` | Positionen | Items | Kalemler |
+| `nutrition.addMeal.previewSection` | Vorschau | Preview | Önizleme |
+| `nutrition.addMeal.quantityLabel` | Menge | Amount | Miktar |
+| `nutrition.addMeal.save` | Speichern | Save | Kaydet |
+| `nutrition.addMeal.saveFailed.cleanupMessage` | Deine Änderungen wurden gespeichert, aber die alten Positionen konnten nicht entfernt werden. Prüfe die Mahlzeit bitte erneut. | Your changes were saved, but the old items could not be removed. Please check the meal again. | Değişikliklerin kaydedildi, ancak eski girdiler kaldırılamadı. Lütfen öğünü tekrar kontrol et. |
+| `nutrition.addMeal.saveFailed.message` | Beim Speichern ist ein Fehler aufgetreten. Es wurde nichts geändert — bitte versuche es erneut. | Something went wrong while saving. Nothing was changed — please try again. | Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene. |
+| `nutrition.addMeal.searchPlaceholder` | Lebensmittel suchen | Search food | Yiyecek ara |
+| `nutrition.addMeal.title` | Mahlzeit hinzufügen | Add Meal | Öğün Ekle |
+| `nutrition.customFood.carbsLabel` | Kohlenhydrate (g/100g) | Carbs (g/100g) | Karbonhidrat (g/100g) |
+| `nutrition.customFood.densityLabel` | Dichte (g/ml) | Density (g/ml) | Yoğunluk (g/ml) |
+| `nutrition.customFood.fatLabel` | Fett (g/100g) | Fat (g/100g) | Yağ (g/100g) |
+| `nutrition.customFood.kcalLabel` | Kalorien (kcal/100g) | Calories (kcal/100g) | Kalori (kcal/100g) |
+| `nutrition.customFood.nameLabel` | Name | Name | Ad |
+| `nutrition.customFood.optionalFooter` | Optional — ohne Angabe bietet die Mengenauswahl spaeter nur Gramm an. | Optional — leave blank and the quantity picker will only offer grams later. | Opsiyonel — boş bırakılırsa miktar seçiminde yalnızca gram sunulur. |
+| `nutrition.customFood.pieceWeightLabel` | Stückgewicht (g) | Piece weight (g) | Parça ağırlığı (g) |
+| `nutrition.customFood.proteinLabel` | Protein (g/100g) | Protein (g/100g) | Protein (g/100g) |
+| `nutrition.customFood.saveFailed` | Speichern fehlgeschlagen. Bitte versuche es erneut. | Saving failed. Please try again. | Kaydetme başarısız oldu. Lütfen tekrar deneyin. |
+| `nutrition.customFood.title` | Eigenes Lebensmittel | Custom food | Kendi besinin |
+| `nutrition.dashboard.addMeal.button` | Mahlzeit hinzufügen | Add Meal | Öğün Ekle |
+| `nutrition.dashboard.empty.message` | Erfasse deine erste Mahlzeit heute. | Log your first meal today. | Bugünkü ilk öğününü kaydet. |
+| `nutrition.day.addMeal.button` | Mahlzeit hinzufügen | Add Meal | Öğün Ekle |
+| `nutrition.day.empty.message` | Erfasse deine erste Mahlzeit für diesen Tag. | Log your first meal for this day. | Bu gün için ilk öğününü ekle. |
+| `nutrition.day.empty.title` | Noch keine Mahlzeiten | No meals yet | Henüz öğün yok |
+| `nutrition.day.goals.button` | Tagesziele bearbeiten | Edit Daily Goals | Günlük Hedefleri Düzenle |
+| `nutrition.day.insight.disclaimer` | Von der KI erstellt – keine medizinische Beratung. | AI-generated – not medical advice. | Yapay zeka tarafından oluşturuldu – tıbbi tavsiye değildir. |
+| `nutrition.day.insight.header` | KI-Analyse | AI insights | Yapay zeka analizi |
+| `nutrition.day.title` | Tagesübersicht | Daily Overview | Günlük Özet |
+| `nutrition.day.total.incomplete` | Unvollständig: Für mindestens einen Eintrag fehlen Nährwerte. Die Summen sind deshalb lückenhaft. | Incomplete: nutrient values are missing for at least one item, so these totals have gaps. | Eksik: En az bir giriş için besin değerleri yok. Bu nedenle toplamlar eksik. |
+| `nutrition.day.total.label` | Tagessumme | Daily Total | Günlük Toplam |
+| `nutrition.editMeal.delete` | Mahlzeit löschen | Delete Meal | Öğünü Sil |
+| `nutrition.editMeal.deleteConfirm` | Diese Mahlzeit wirklich löschen? Das kann nicht rückgängig gemacht werden. | Delete this meal? This cannot be undone. | Bu öğün silinsin mi? Bu işlem geri alınamaz. |
+| `nutrition.editMeal.save` | Änderungen speichern | Save Changes | Değişiklikleri Kaydet |
+| `nutrition.editMeal.title` | Mahlzeit bearbeiten | Edit Meal | Öğünü Düzenle |
+| `nutrition.food.almond_milk.name` | Mandelmilch | Almond Milk | Badem Sütü |
+| `nutrition.food.almonds.name` | Mandeln | Almonds | Badem |
+| `nutrition.food.apple.name` | Apfel | Apple | Elma |
+| `nutrition.food.apple_juice.name` | Apfelsaft | Apple Juice | Elma Suyu |
+| `nutrition.food.avocado.name` | Avocado | Avocado | Avokado |
+| `nutrition.food.bacon_raw.name` | Speck (roh) | Bacon (Raw) | Beykın (Çiğ) |
+| `nutrition.food.banana.name` | Banane | Banana | Muz |
+| `nutrition.food.beef_mince_cooked.name` | Rinderhackfleisch (gebraten) | Ground Beef (Cooked) | Dana Kıyma (Pişmiş) |
+| `nutrition.food.beef_mince_raw.name` | Rinderhackfleisch (roh) | Ground Beef (Raw) | Dana Kıyma (Çiğ) |
+| `nutrition.food.beef_steak_cooked.name` | Rindersteak (gebraten) | Beef Steak (Cooked) | Dana Biftek (Pişmiş) |
+| `nutrition.food.beef_steak_raw.name` | Rindersteak (roh) | Beef Steak (Raw) | Dana Biftek (Çiğ) |
+| `nutrition.food.beer.name` | Bier | Beer | Bira |
+| `nutrition.food.bell_pepper_raw.name` | Paprika (roh) | Bell Pepper (Raw) | Biber (Çiğ) |
+| `nutrition.food.black_beans_cooked.name` | Schwarze Bohnen (gekocht) | Black Beans (Cooked) | Siyah Fasulye (Pişmiş) |
+| `nutrition.food.blueberry.name` | Heidelbeere | Blueberry | Yaban Mersini |
+| `nutrition.food.bread_toast.name` | Toastbrot | Toast Bread | Tost Ekmeği |
+| `nutrition.food.bread_wheat.name` | Weizenbrot | Wheat Bread | Buğday Ekmeği |
+| `nutrition.food.bread_whole_grain.name` | Vollkornbrot | Whole Grain Bread | Tam Tahıllı Ekmek |
+| `nutrition.food.broccoli_cooked.name` | Brokkoli (gekocht) | Broccoli (Cooked) | Brokoli (Pişmiş) |
+| `nutrition.food.broccoli_raw.name` | Brokkoli (roh) | Broccoli (Raw) | Brokoli (Çiğ) |
+| `nutrition.food.bulgur_cooked.name` | Bulgur (gekocht) | Bulgur (Cooked) | Bulgur (Pişmiş) |
+| `nutrition.food.butter.name` | Butter | Butter | Tereyağı |
+| `nutrition.food.cabbage_raw.name` | Weißkohl (roh) | Cabbage (Raw) | Lahana (Çiğ) |
+| `nutrition.food.carrot_raw.name` | Karotte (roh) | Carrot (Raw) | Havuç (Çiğ) |
+| `nutrition.food.cashews.name` | Cashewkerne | Cashews | Kaju |
+| `nutrition.food.cauliflower_raw.name` | Blumenkohl (roh) | Cauliflower (Raw) | Karnabahar (Çiğ) |
+| `nutrition.food.cheese_cream.name` | Frischkäse | Cream Cheese | Krem Peynir |
+| `nutrition.food.cheese_gouda.name` | Gouda | Gouda Cheese | Gouda Peyniri |
+| `nutrition.food.cheese_mozzarella.name` | Mozzarella | Mozzarella | Mozzarella |
+| `nutrition.food.cheese_parmesan.name` | Parmesan | Parmesan | Parmesan |
+| `nutrition.food.chia_seeds.name` | Chiasamen | Chia Seeds | Chia Tohumu |
+| `nutrition.food.chicken_breast_cooked.name` | Hähnchenbrust (gegart) | Chicken Breast (Cooked) | Tavuk Göğsü (Pişmiş) |
+| `nutrition.food.chicken_breast_raw.name` | Hähnchenbrust (roh) | Chicken Breast (Raw) | Tavuk Göğsü (Çiğ) |
+| `nutrition.food.chicken_thigh_cooked.name` | Hähnchenschenkel (gegart) | Chicken Thigh (Cooked) | Tavuk But (Pişmiş) |
+| `nutrition.food.chicken_thigh_raw.name` | Hähnchenschenkel (roh) | Chicken Thigh (Raw) | Tavuk But (Çiğ) |
+| `nutrition.food.chickpeas_cooked.name` | Kichererbsen (gekocht) | Chickpeas (Cooked) | Nohut (Pişmiş) |
+| `nutrition.food.coconut_oil.name` | Kokosöl | Coconut Oil | Hindistan Cevizi Yağı |
+| `nutrition.food.cod_cooked.name` | Kabeljau (gegart) | Cod (Cooked) | Morina Balığı (Pişmiş) |
+| `nutrition.food.cod_raw.name` | Kabeljau (roh) | Cod (Raw) | Morina Balığı (Çiğ) |
+| `nutrition.food.coffee_black.name` | Schwarzer Kaffee | Black Coffee | Sade Kahve |
+| `nutrition.food.cola.name` | Cola | Cola | Kola |
+| `nutrition.food.corn_cooked.name` | Mais (gekocht) | Corn (Cooked) | Mısır (Pişmiş) |
+| `nutrition.food.cornflakes.name` | Cornflakes | Corn Flakes | Mısır Gevreği |
+| `nutrition.food.cottage_cheese.name` | Hüttenkäse | Cottage Cheese | Köy Peyniri (Cottage Cheese) |
+| `nutrition.food.couscous_cooked.name` | Couscous (gekocht) | Couscous (Cooked) | Kuskus (Pişmiş) |
+| `nutrition.food.cream_heavy.name` | Schlagsahne | Heavy Cream | Krema (Yüksek Yağlı) |
+| `nutrition.food.cucumber_raw.name` | Gurke (roh) | Cucumber (Raw) | Salatalık (Çiğ) |
+| `nutrition.food.dark_chocolate.name` | Zartbitterschokolade | Dark Chocolate | Bitter Çikolata |
+| `nutrition.food.dates_dried.name` | Getrocknete Datteln | Dried Dates | Kuru Hurma |
+| `nutrition.food.edamame_cooked.name` | Edamame (gekocht) | Edamame (Cooked) | Edamame (Pişmiş) |
+| `nutrition.food.egg_white_raw.name` | Eiweiß (roh) | Egg White (Raw) | Yumurta Akı (Çiğ) |
+| `nutrition.food.egg_whole_cooked.name` | Ei (gekocht) | Egg (Cooked) | Yumurta (Haşlanmış) |
+| `nutrition.food.egg_whole_raw.name` | Ei (roh) | Egg (Raw) | Yumurta (Çiğ) |
+| `nutrition.food.egg_yolk_raw.name` | Eigelb (roh) | Egg Yolk (Raw) | Yumurta Sarısı (Çiğ) |
+| `nutrition.food.flaxseed.name` | Leinsamen | Flaxseed | Keten Tohumu |
+| `nutrition.food.garlic_raw.name` | Knoblauch (roh) | Garlic (Raw) | Sarımsak (Çiğ) |
+| `nutrition.food.grape.name` | Weintraube | Grape | Üzüm |
+| `nutrition.food.green_beans_raw.name` | Grüne Bohnen (roh) | Green Beans (Raw) | Taze Fasulye (Çiğ) |
+| `nutrition.food.ham_cooked.name` | Gekochter Schinken | Cooked Ham | Haşlanmış Jambon |
+| `nutrition.food.herring_raw.name` | Hering (roh) | Herring (Raw) | Ringa Balığı (Çiğ) |
+| `nutrition.food.honey.name` | Honig | Honey | Bal |
+| `nutrition.food.jam.name` | Marmelade | Jam | Reçel |
+| `nutrition.food.kidney_beans_cooked.name` | Kidneybohnen (gekocht) | Kidney Beans (Cooked) | Barbunya Fasulyesi (Pişmiş) |
+| `nutrition.food.kiwi.name` | Kiwi | Kiwi | Kivi |
+| `nutrition.food.lamb_leg_raw.name` | Lammkeule (roh) | Lamb Leg (Raw) | Kuzu But (Çiğ) |
+| `nutrition.food.lentils_cooked.name` | Linsen (gekocht) | Lentils (Cooked) | Mercimek (Pişmiş) |
+| `nutrition.food.lentils_raw.name` | Linsen (roh) | Lentils (Raw) | Mercimek (Çiğ) |
+| `nutrition.food.lettuce.name` | Kopfsalat | Lettuce | Marul |
+| `nutrition.food.mackerel_raw.name` | Makrele (roh) | Mackerel (Raw) | Uskumru (Çiğ) |
+| `nutrition.food.mango.name` | Mango | Mango | Mango |
+| `nutrition.food.mayonnaise.name` | Mayonnaise | Mayonnaise | Mayonez |
+| `nutrition.food.milk_chocolate.name` | Vollmilchschokolade | Milk Chocolate | Sütlü Çikolata |
+| `nutrition.food.milk_lowfat.name` | Fettarme Milch | Low-Fat Milk | Yarım Yağlı Süt |
+| `nutrition.food.milk_whole.name` | Vollmilch | Whole Milk | Tam Yağlı Süt |
+| `nutrition.food.muesli.name` | Müsli | Muesli | Müsli |
+| `nutrition.food.mushroom_raw.name` | Champignon (roh) | Mushroom (Raw) | Mantar (Çiğ) |
+| `nutrition.food.oats.name` | Haferflocken | Oats | Yulaf |
+| `nutrition.food.olive_oil.name` | Olivenöl | Olive Oil | Zeytinyağı |
+| `nutrition.food.onion_raw.name` | Zwiebel (roh) | Onion (Raw) | Soğan (Çiğ) |
+| `nutrition.food.orange.name` | Orange | Orange | Portakal |
+| `nutrition.food.orange_juice.name` | Orangensaft | Orange Juice | Portakal Suyu |
+| `nutrition.food.pasta_cooked.name` | Nudeln (gekocht) | Pasta (Cooked) | Makarna (Pişmiş) |
+| `nutrition.food.pasta_raw.name` | Nudeln (roh) | Pasta (Raw) | Makarna (Çiğ) |
+| `nutrition.food.peanut_butter.name` | Erdnussbutter | Peanut Butter | Fıstık Ezmesi |
+| `nutrition.food.peanuts.name` | Erdnüsse | Peanuts | Yer Fıstığı |
+| `nutrition.food.pear.name` | Birne | Pear | Armut |
+| `nutrition.food.peas_cooked.name` | Erbsen (gekocht) | Peas (Cooked) | Bezelye (Pişmiş) |
+| `nutrition.food.pineapple.name` | Ananas | Pineapple | Ananas |
+| `nutrition.food.pork_chop_raw.name` | Schweinekotelett (roh) | Pork Chop (Raw) | Domuz Pirzola (Çiğ) |
+| `nutrition.food.pork_tenderloin_cooked.name` | Schweinefilet (gegart) | Pork Tenderloin (Cooked) | Domuz Bonfile (Pişmiş) |
+| `nutrition.food.pork_tenderloin_raw.name` | Schweinefilet (roh) | Pork Tenderloin (Raw) | Domuz Bonfile (Çiğ) |
+| `nutrition.food.potato_cooked.name` | Kartoffel (gekocht) | Potato (Cooked) | Patates (Pişmiş) |
+| `nutrition.food.potato_raw.name` | Kartoffel (roh) | Potato (Raw) | Patates (Çiğ) |
+| `nutrition.food.pumpkin_seeds.name` | Kürbiskerne | Pumpkin Seeds | Kabak Çekirdeği |
+| `nutrition.food.quark_fullfat.name` | Vollfett-Quark | Full-Fat Quark | Tam Yağlı Lor (Quark) |
+| `nutrition.food.quark_lowfat.name` | Magerquark | Low-Fat Quark | Yağsız Lor (Quark) |
+| `nutrition.food.quinoa_cooked.name` | Quinoa (gekocht) | Quinoa (Cooked) | Kinoa (Pişmiş) |
+| `nutrition.food.quinoa_raw.name` | Quinoa (roh) | Quinoa (Raw) | Kinoa (Çiğ) |
+| `nutrition.food.raisins.name` | Rosinen | Raisins | Kuru Üzüm |
+| `nutrition.food.rice_brown_cooked.name` | Vollkornreis (gekocht) | Brown Rice (Cooked) | Esmer Pirinç (Pişmiş) |
+| `nutrition.food.rice_brown_raw.name` | Vollkornreis (roh) | Brown Rice (Raw) | Esmer Pirinç (Çiğ) |
+| `nutrition.food.rice_white_cooked.name` | Weißer Reis (gekocht) | White Rice (Cooked) | Beyaz Pirinç (Pişmiş) |
+| `nutrition.food.rice_white_raw.name` | Weißer Reis (roh) | White Rice (Raw) | Beyaz Pirinç (Çiğ) |
+| `nutrition.food.salami.name` | Salami | Salami | Salam |
+| `nutrition.food.salmon_cooked.name` | Lachs (gegart) | Salmon (Cooked) | Somon (Pişmiş) |
+| `nutrition.food.salmon_raw.name` | Lachs (roh) | Salmon (Raw) | Somon (Çiğ) |
+| `nutrition.food.shrimp_cooked.name` | Garnelen (gegart) | Shrimp (Cooked) | Karides (Pişmiş) |
+| `nutrition.food.skyr.name` | Skyr | Skyr | Skyr |
+| `nutrition.food.spinach_cooked.name` | Spinat (gekocht) | Spinach (Cooked) | Ispanak (Pişmiş) |
+| `nutrition.food.spinach_raw.name` | Spinat (roh) | Spinach (Raw) | Ispanak (Çiğ) |
+| `nutrition.food.strawberry.name` | Erdbeere | Strawberry | Çilek |
+| `nutrition.food.sugar_white.name` | Weißer Zucker | White Sugar | Beyaz Şeker |
+| `nutrition.food.sunflower_oil.name` | Sonnenblumenöl | Sunflower Oil | Ayçiçek Yağı |
+| `nutrition.food.sunflower_seeds.name` | Sonnenblumenkerne | Sunflower Seeds | Ayçiçeği Çekirdeği |
+| `nutrition.food.sweet_potato_cooked.name` | Süßkartoffel (gekocht) | Sweet Potato (Cooked) | Tatlı Patates (Pişmiş) |
+| `nutrition.food.sweet_potato_raw.name` | Süßkartoffel (roh) | Sweet Potato (Raw) | Tatlı Patates (Çiğ) |
+| `nutrition.food.tofu.name` | Tofu | Tofu | Tofu |
+| `nutrition.food.tomato_raw.name` | Tomate (roh) | Tomato (Raw) | Domates (Çiğ) |
+| `nutrition.food.trout_raw.name` | Forelle (roh) | Trout (Raw) | Alabalık (Çiğ) |
+| `nutrition.food.tuna_canned_water.name` | Thunfisch (Dose, in Wasser) | Canned Tuna (in Water) | Konserve Ton Balığı (Suda) |
+| `nutrition.food.tuna_raw.name` | Thunfisch (roh) | Tuna (Raw) | Ton Balığı (Çiğ) |
+| `nutrition.food.turkey_breast_cooked.name` | Putenbrust (gegart) | Turkey Breast (Cooked) | Hindi Göğsü (Pişmiş) |
+| `nutrition.food.turkey_breast_raw.name` | Putenbrust (roh) | Turkey Breast (Raw) | Hindi Göğsü (Çiğ) |
+| `nutrition.food.walnuts.name` | Walnüsse | Walnuts | Ceviz |
+| `nutrition.food.water.name` | Wasser | Water | Su |
+| `nutrition.food.watermelon.name` | Wassermelone | Watermelon | Karpuz |
+| `nutrition.food.whole_wheat_pasta_cooked.name` | Vollkornnudeln (gekocht) | Whole Wheat Pasta (Cooked) | Tam Buğday Makarna (Pişmiş) |
+| `nutrition.food.yogurt_greek.name` | Griechischer Joghurt | Greek Yogurt | Yunan Yoğurdu |
+| `nutrition.food.yogurt_natural.name` | Naturjoghurt | Plain Yogurt | Sade Yoğurt |
+| `nutrition.food.zucchini_raw.name` | Zucchini (roh) | Zucchini (Raw) | Kabak (Çiğ) |
+| `nutrition.goals.adoptFromTDEE.button` | Aus TDEE übernehmen | Adopt from TDEE | TDEE'den al |
+| `nutrition.goals.calorie.label` | Kalorien (kcal) | Calories (kcal) | Kalori (kcal) |
+| `nutrition.goals.carbs.label` | Kohlenhydrate (g) | Carbs (g) | Karbonhidrat (g) |
+| `nutrition.goals.fat.label` | Fett (g) | Fat (g) | Yağ (g) |
+| `nutrition.goals.protein.label` | Protein (g) | Protein (g) | Protein (g) |
+| `nutrition.goals.title` | Tagesziele | Daily Goals | Günlük Hedefler |
+| `nutrition.mealType.breakfast.name` | Frühstück | Breakfast | Kahvaltı |
+| `nutrition.mealType.dinner.name` | Abendessen | Dinner | Akşam Yemeği |
+| `nutrition.mealType.lunch.name` | Mittagessen | Lunch | Öğle Yemeği |
+| `nutrition.mealType.snack.name` | Snack | Snack | Atıştırmalık |
+| `nutrition.onlineImport.carbsLabel` | Kohlenhydrate (g/100g) | Carbs (g/100g) | Karbonhidrat (g/100g) |
+| `nutrition.onlineImport.createManually` | Stattdessen eigenes Lebensmittel anlegen | Create the food manually instead | Bunun yerine besini kendin oluştur |
+| `nutrition.onlineImport.fatLabel` | Fett (g/100g) | Fat (g/100g) | Yağ (g/100g) |
+| `nutrition.onlineImport.incomplete.hint` | Mindestens ein Nährwert fehlt in der Quelle. Fehlende Werte werden als unbekannt übernommen – nicht als 0 – und die Tagesbilanz gilt dann als unvollständig. | At least one nutrient is missing at the source. Missing values are stored as unknown — not as 0 — and the day's totals are then marked as incomplete. | Kaynakta en az bir besin değeri eksik. Eksik değerler 0 olarak değil, bilinmiyor olarak kaydedilir ve günün toplamları eksik olarak işaretlenir. |
+| `nutrition.onlineImport.kcalLabel` | Kalorien (kcal/100g) | Calories (kcal/100g) | Kalori (kcal/100g) |
+| `nutrition.onlineImport.nameLabel` | Name | Name | Ad |
+| `nutrition.onlineImport.proteinLabel` | Protein (g/100g) | Protein (g/100g) | Protein (g/100g) |
+| `nutrition.onlineImport.title` | Lebensmittel übernehmen | Add food | Besini ekle |
+| `nutrition.onlineImport.unknown` | unbekannt | unknown | bilinmiyor |
+| `nutrition.unit.gram.label` | Gramm (g) | Grams (g) | Gram (g) |
+| `nutrition.unit.milliliter.label` | Milliliter (ml) | Milliliters (ml) | Mililitre (ml) |
+| `nutrition.unit.piece.label` | Stück | Piece | Adet |
+
+## `onboarding.*`  (97 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1609,6 +1830,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `onboarding.plan.reason.level` | Passt zu deinem Level | Matches your level | Seviyene uygun |
 | `onboarding.plan.recommended` | Empfohlen | Recommended | Önerilen |
 | `onboarding.plan.recommendedFootnote` | Basierend auf deinen Angaben zu Ziel, Trainingsgeschichte, Ort und Equipment. | Based on your answers about goal, training history, location, and equipment. | Hedef, antrenman geçmişi, yer ve ekipman bilgilerine dayanır. |
+| `onboarding.runCoachGoal.subtitle` | Worauf arbeitest du mit dem Laufcoach hin? Details wie Renndatum oder Wochenumfang klären wir später im Profil. | What are you training toward with the run coach? We'll settle details like a race date or weekly volume later in your profile. | Koşu koçuyla neye çalışıyorsun? Yarış tarihi veya haftalık hacim gibi ayrıntıları daha sonra profilinde netleştireceğiz. |
+| `onboarding.runCoachGoal.title` | Welches Laufziel? | Which running goal? | Hangi koşu hedefi? |
 | `onboarding.section.body` | Körpermaße | Body Measurements | Vücut Ölçüleri |
 | `onboarding.section.goals` | Ziel & Training | Goals & Training | Hedef & Antrenman |
 | `onboarding.section.name` | Dein Name | Your Name | Adın |
@@ -1650,7 +1873,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `periodicCheckIn.section.title` | WIE LIEF ES? | HOW DID IT GO? | NASIL GİTTİ? |
 | `periodicCheckIn.title` | Rückblick | Check-in | Değerlendirme |
 
-## `picker.*`  (23 Keys)
+## `picker.*`  (24 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1672,6 +1895,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `picker.plan.equipment.gymAssumption.title` | Für ein übliches Fitnessstudio geplant | Planned for a typical gym | Standart bir spor salonu için planlandı |
 | `picker.plan.equipment.missingItems` | Fehlt: %@ | Missing: %@ | Eksik: %@ |
 | `picker.plan.equipment.notAnnotatedHint` | Einzelne Übungen sind im Katalog noch nicht auf Geräte-Voraussetzungen geprüft. | A few exercises haven't been checked against equipment requirements yet. | Bazı egzersizler henüz ekipman gereksinimlerine göre kontrol edilmedi. |
+| `picker.plan.equipment.slotAlternative` | An dein Equipment angepasste Variante dieser Übung. | A variant of this exercise adapted to your equipment. | Bu egzersizin ekipmanına göre uyarlanmış bir varyasyonu. |
 | `picker.plan.equipment.unavailable.title` | Passt nicht zu deiner Ausrüstung | Doesn't match your equipment | Ekipmanınla uyuşmuyor |
 | `picker.plan.equipment.uncertainItems` | Noch ungeklärt: %@ | Still unclear: %@ | Henüz belirsiz: %@ |
 | `picker.plan.equipment.unknown.title` | Ausrüstung noch nicht vollständig bestätigt | Equipment not fully confirmed yet | Ekipman henüz tam olarak onaylanmadı |
@@ -1833,7 +2057,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `plan.template.upperLower.name` | Upper-Lower-Split | Upper-Lower Split | Upper-Lower Split |
 | `plan.template.upperLower.tagline` | 4 Tage · Kraft & Hypertrophie | 4 Days · Strength & Hypertrophy | 4 Gün · Güç & Hipertrofi |
 
-## `planBuilder.*`  (88 Keys)
+## `planBuilder.*`  (93 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1853,6 +2077,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.error.noProfile.title` | Kein Profil gefunden | No Profile Found | Profil Bulunamadı |
 | `planBuilder.error.saveFailed.message` | Beim Speichern ist ein Fehler aufgetreten. Es wurde nichts geändert — bitte versuche es erneut. | Something went wrong while saving. Nothing was changed — please try again. | Kaydederken bir sorun oluştu. Hiçbir şey değişmedi — lütfen tekrar dene. |
 | `planBuilder.error.saveFailed.title` | Plan konnte nicht gespeichert werden | Plan Couldn't Be Saved | Plan Kaydedilemedi |
+| `planBuilder.exerciseLibrary.action` | Übungsbibliothek | Exercise Library | Hareket Kütüphanesi |
 | `planBuilder.goal.endurance.blurb` | Deine Ausdauer durch Laufen oder Radfahren verbessern. | Improve your aerobic fitness through running or cycling. | Koşu veya bisikletle aerobik kondisyonunu geliştir. |
 | `planBuilder.goal.endurance.title` | Laufen & Ausdauer | Running & Endurance | Koşu ve Dayanıklılık |
 | `planBuilder.goal.enduranceModality` | Ausdauerform | Endurance type | Dayanıklılık türü |
@@ -1879,10 +2104,12 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.result.adopt` | Plan übernehmen | Adopt Plan | Planı Onayla |
 | `planBuilder.result.alternatives` | Alternativen anzeigen | Show alternatives | Alternatifleri göster |
 | `planBuilder.result.alternatives.title` | Alternative für diesen Tag wählen | Choose an alternative for this day | Bu gün için bir alternatif seç |
+| `planBuilder.result.chooseExerciseAlternative` | Alternative für %@ wählen | Choose an alternative for %@ | %@ için alternatif seç |
 | `planBuilder.result.dayActions` | Tagesoptionen | Day options | Gün seçenekleri |
 | `planBuilder.result.distributionConflict` | Nicht genug Tage für alle gewählten Sportarten: %d Tage nötig, %d verfügbar. Geh zurück, um die Tage zu ändern oder eine andere Ziel-/Sportartenauswahl zu treffen. | Not enough days for all chosen sports: %d days needed, %d available. Go back to change the days, or your goal and sport selection. | Seçilen tüm sporlar için yeterli gün yok: %d gün gerekli, %d gün mevcut. Geri dönüp günleri veya hedef/spor seçimini değiştirebilirsin. |
 | `planBuilder.result.empty.message` | Für diese Kombination aus Ausrüstung und Erfahrung gibt es keine passenden Übungen in der Bibliothek. Wähle andere Optionen. | No matching exercises exist in the library for this combination of equipment and experience. Choose different options. | Bu ekipman ve deneyim kombinasyonu için kütüphanede uygun egzersiz yok. Farklı seçenekler dene. |
 | `planBuilder.result.empty.title` | Keine Übungen gefunden | No Exercises Found | Egzersiz Bulunamadı |
+| `planBuilder.result.exerciseAlternatives.title` | Alternative für diese Übung wählen | Choose an alternative for this exercise | Bu egzersiz için bir alternatif seç |
 | `planBuilder.result.explanation.spread` | Die Reihenfolge verteilt harte und leichte Einheiten über die Woche, statt sie zu häufen. | The order spreads hard and light sessions across the week instead of clustering them. | Sıralama, zor ve hafif antrenmanları haftaya yayar, art arda toplamaz. |
 | `planBuilder.result.fixContent.lock` | Inhalt fixieren | Lock content | İçeriği sabitle |
 | `planBuilder.result.fixContent.unlock` | Inhalt-Fixierung lösen | Unlock content | İçerik sabitlemesini kaldır |
@@ -1898,6 +2125,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.result.moveTo` | Verschieben nach… | Move to… | Taşı… |
 | `planBuilder.result.moveTo.position` | Position %lld | Position %lld | Pozisyon %lld |
 | `planBuilder.result.noAlternatives.toast` | Für diesen Tag gibt es keine Alternative. | No alternative is available for this day. | Bu gün için alternatif yok. |
+| `planBuilder.result.noExerciseAlternatives.toast` | Für diese Übung gibt es keine passende Alternative. | No suitable alternative is available for this exercise. | Bu egzersiz için uygun bir alternatif yok. |
 | `planBuilder.result.redistribute.action` | Woche anders verteilen | Redistribute the week | Haftayı farklı dağıt |
 | `planBuilder.result.redistribute.unavailable.toast` | Keine andere Verteilung möglich. | No other distribution is possible. | Başka bir dağıtım mümkün değil. |
 | `planBuilder.result.reorderRejected.toast` | Verschieben nicht möglich: ein fixierter Tag würde seine Position verlieren. | Can't move this day: a pinned day would lose its position. | Taşınamadı: sabitlenmiş bir gün yerini kaybederdi. |
@@ -1913,6 +2141,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.type.cycling` | Radfahren | Cycling | Bisiklet |
 | `planBuilder.type.dumbbell` | Kurzhantel | Dumbbell | Dambıl |
 | `planBuilder.type.kettlebell` | Kettlebell | Kettlebell | Kettlebell |
+| `planBuilder.type.machine` | Maschine | Machine | Makine |
 | `planBuilder.type.running` | Laufen | Running | Koşu |
 | `planBuilder.types.more` | Weitere Trainingsarten | More Training Types | Diğer Antrenman Türleri |
 | `planBuilder.types.subtitle` | Wähle eine oder mehrere Trainingsarten. Für jede legst du Tage, Dauer und Erfahrung fest. | Choose one or more training types. For each, set days, duration, and experience. | Bir veya daha fazla antrenman türü seç. Her biri için gün, süre ve deneyim belirle. |
@@ -1926,7 +2155,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planBuilder.wizard.unitsCount.one` | %lld Einheit | %lld unit | %lld birim |
 | `planBuilder.wizard.unitsCount.other` | %lld Einheiten | %lld units | %lld birim |
 
-## `planEditor.*`  (34 Keys)
+## `planEditor.*`  (37 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -1940,6 +2169,8 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.envSwap.adapt` | Übungen anpassen | Adapt Exercises | Hareketleri Uyarla |
 | `planEditor.envSwap.justEnv` | Nur Trainingsort ändern | Change Location Only | Sadece Yeri Değiştir |
 | `planEditor.envSwap.message` | Sollen die Übungen an deinen neuen Trainingsort angepasst werden? Übungen ohne passende Alternative bleiben im Plan und brauchen manuelle Anpassung. | Adapt exercises to the new training location? Exercises without a matching alternative stay in the plan and need manual adjustment. | Hareketler yeni antrenman yerine uyarlansın mı? Uygun alternatifi olmayan hareketler planda kalır ve manuel ayarlama gerektirir. |
+| `planEditor.equipmentGap.detail` | Dein aktuelles Equipment deckt diese Übungen nicht sicher ab: %@ | Your current equipment doesn't reliably cover these exercises: %@ | Mevcut ekipmanın bu hareketleri güvenilir şekilde karşılamıyor: %@ |
+| `planEditor.equipmentGap.title` | Equipment-Lücke | Equipment gap | Ekipman eksikliği |
 | `planEditor.field.weeks` | Wochen | Weeks | Hafta |
 | `planEditor.globalSync.allPlans` | Für alle anpassen | Adjust All | Hepsi için Ayarla |
 | `planEditor.globalSync.message` | Du hast mehrere aktive Pläne. Soll dein globaler Trainingsort und deine anderen aktiven Pläne ebenfalls auf %@ geändert werden? | You have multiple active plans. Should your global training location and other active plans also switch to %@? | Birden çok aktif planın var. Genel antrenman yerin ve diğer aktif planların da %@ olarak değişsin mi? |
@@ -1958,6 +2189,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `planEditor.recalculate.toast.rewritten.other` | %lld Tage neu berechnet | %lld days recalculated | %lld gün yeniden hesaplandı |
 | `planEditor.recalculate.toast.skipped.one` | %lld Tag wegen bestehender Trainingshistorie übersprungen | %lld day skipped due to existing workout history | %lld gün mevcut antrenman geçmişi nedeniyle atlandı |
 | `planEditor.recalculate.toast.skipped.other` | %lld Tage wegen bestehender Trainingshistorie übersprungen | %lld days skipped due to existing workout history | %lld gün mevcut antrenman geçmişi nedeniyle atlandı |
+| `planEditor.save.failed` | Speichern fehlgeschlagen. Bitte erneut versuchen. | Save failed. Please try again. | Kaydetme başarısız oldu. Lütfen tekrar deneyin. |
 | `planEditor.section.info` | Plan-Info | Plan Info | Plan Bilgisi |
 | `planEditor.section.settings` | Einstellungen | Settings | Ayarlar |
 | `planEditor.section.trainingDays` | Trainings-Tage | Training Days | Antrenman Günleri |
@@ -2012,7 +2244,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (97 Keys)
+## `profile.*`  (99 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2037,6 +2269,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.cardio.adjustment.keep` | Beibehalten | Keep as is | Olduğu gibi bırak |
 | `profile.cardio.adjustment.noEligibleDay` | Deine Laufeinheiten wurden manuell geändert und bleiben unangetastet. Erstelle stattdessen einen neuen Plan, wenn der Coach sie anpassen soll. | Your running days were changed manually and are kept as they are. Create a new plan instead if you want the coach to adjust them. | Koşu günlerin manuel olarak değiştirildi ve olduğu gibi kalıyor. Koçun bunları uyarlamasını istiyorsan bunun yerine yeni bir plan oluştur. |
 | `profile.cardio.adjustment.pending` | Coach aktiviert, Plan noch nicht angepasst | Coach activated, plan not yet adjusted | Koç etkinleştirildi, plan henüz uyarlanmadı |
+| `profile.cardio.adjustment.planChanged` | Dein Plan hat sich geändert, seit diese Vorschau geöffnet wurde. Bitte schließen und erneut prüfen. | Your plan changed since this preview was opened. Please close and check it again. | Bu önizleme açıldığından beri planın değişti. Lütfen kapatıp tekrar kontrol et. |
 | `profile.cardio.adjustment.title` | Plan anpassen | Adjust plan | Planı uyarla |
 | `profile.cardio.coachOff.confirm` | Laufcoach ausschalten | Turn off running coach | Koşu koçunu kapat |
 | `profile.cardio.coachOff.message` | Deine Laufeinheiten und Trainingsdaten bleiben erhalten. Neue laufcoachbezogene Vorschläge und automatische Zielanpassungen werden deaktiviert. | Your running sessions and training data stay as they are. New coaching suggestions and automatic goal adjustments are turned off. | Koşu antrenmanların ve antrenman verilerin olduğu gibi kalır. Yeni koçluk önerileri ve otomatik hedef uyarlamaları kapatılır. |
@@ -2050,6 +2283,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.cardio.feasibility.keepGoal` | Ziel behalten | Keep goal | Hedefi koru |
 | `profile.cardio.feasibility.retryResolve` | Erneut versuchen | Try Again | Tekrar Dene |
 | `profile.cardio.fiveKReference` | Aktuelle 5-km-Zeit | Current 5K time | Güncel 5 km süresi |
+| `profile.cardio.fiveKReference.invalid` | Gib deine 5-km-Zeit als MM:SS ein, z. B. 25:00. | Enter your 5K time as MM:SS, e.g. 25:00. | 5 km sürenizi MM:SS biçiminde girin, örn. 25:00. |
 | `profile.cardio.footer` | Aktiviere Lauf-Coaching, um Cardio-spezifische Hinweise zu erhalten (z.B. bei zu schnell gesteigertem Laufvolumen). Deine 5-km-Zeit hilft, sinnvolle Trainings-Paces abzuleiten. | Enable running coaching to get cardio-specific insights (e.g. when your running volume ramps up too fast). Your 5K time helps derive sensible training paces. | Kardiyoya özel bilgiler almak için (örn. koşu hacmin çok hızlı artarsa) koşu koçluğunu etkinleştir. 5 km süren, anlamlı antrenman temposu türetmemize yardımcı olur. |
 | `profile.cardio.goal` | Lauf-Ziel | Running goal | Koşu hedefi |
 | `profile.cardio.maxHeartRate` | Maximalpuls (bpm) | Max heart rate (bpm) | Maksimum nabız (bpm) |
@@ -2175,7 +2409,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `set.lockedHint` | Beende oder stoppe die laufende Übung zuerst. | Finish or stop the active exercise first. | Önce aktif hareketi bitir ya da durdur. |
 | `set.numberLabel` | Satz %lld | Set %lld | Set %lld |
 
-## `settings.*`  (227 Keys)
+## `settings.*`  (236 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2195,6 +2429,10 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.credits.exerciseMedia.body` | Die animierten Übungs-GIFs stammen aus einem offenen Datensatz. Laut dessen eigener Hinweis-Datei gehören die Bildrechte Gym visual und werden mit deren Erlaubnis weitergegeben. | The animated exercise GIFs come from an open dataset. According to that dataset's own notice, the image rights belong to Gym visual and are redistributed with their permission. | Animasyonlu egzersiz GIF'leri açık bir veri setinden alınmıştır. Bu veri setinin kendi bildirim dosyasına göre görsel hakları Gym visual'a aittir ve onların izniyle yeniden paylaşılmaktadır. |
 | `settings.credits.exerciseMedia.sources` | Quelle: github.com/hasaneyldrm/exercises-dataset (Daten, MIT-Lizenz) und github.com/arvids-unavailable/openGym (Bilddateien). Volle Bedingungen: gymvisual.com/content/3-terms-and-conditions-of-use | Source: github.com/hasaneyldrm/exercises-dataset (data, MIT license) and github.com/arvids-unavailable/openGym (image files). Full terms: gymvisual.com/content/3-terms-and-conditions-of-use | Kaynak: github.com/hasaneyldrm/exercises-dataset (veri, MIT lisansı) ve github.com/arvids-unavailable/openGym (görsel dosyaları). Tam koşullar: gymvisual.com/content/3-terms-and-conditions-of-use |
 | `settings.credits.exerciseMedia.title` | Übungs-GIFs | Exercise GIFs | Egzersiz GIF'leri |
+| `settings.credits.onlineFoodLookup.attribution` | Daten von Open Food Facts, lizenziert unter der Open Database License (ODbL). | Data from Open Food Facts, licensed under the Open Database License (ODbL). | Open Food Facts verileri, Açık Veritabanı Lisansı (ODbL) altında lisanslanmıştır. |
+| `settings.credits.onlineFoodLookup.body` | Die Online-Suche für unbekannte Lebensmittel nutzt die offene Datenbank Open Food Facts. | The online search for unknown foods uses the open Open Food Facts database. | Bilinmeyen besinler için çevrimiçi arama, açık Open Food Facts veritabanını kullanır. |
+| `settings.credits.onlineFoodLookup.copyright` | © Open Food Facts Mitwirkende | (c) Open Food Facts contributors | © Open Food Facts katkıda bulunanlar |
+| `settings.credits.onlineFoodLookup.title` | Open Food Facts | Open Food Facts | Open Food Facts |
 | `settings.dangerZone.footer` | Löscht Profil, Messungen, Pläne, Trainings-Templates und Trainings-Sessions vollständig. Die Apple-Health-Daten bleiben erhalten — die löscht du in der Health-App selber. | Deletes profile, measurements, plans, training templates, and workout sessions completely. Apple Health data is preserved — delete that from the Health app. | Profil, ölçümler, planlar, antrenman şablonları ve antrenman oturumlarını tamamen siler. Apple Health verileri korunur — onları Health uygulamasından silersin. |
 | `settings.dataExport.action.share` | Archiv teilen | Share archive | Arşivi paylaş |
 | `settings.dataExport.action.start` | Export starten | Start export | Dışa aktarmayı başlat |
@@ -2264,11 +2502,16 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.deload.endNow` | Gesenkte Gewichte zurücksetzen (%lld Übungen) | Restore lowered weights (%lld exercises) | Düşürülmüş ağırlıkları geri yükle (%lld egzersiz) |
 | `settings.deload.endNow.done` | Ursprüngliche Gewichte wiederhergestellt. | Original weights restored. | Orijinal ağırlıklar geri yüklendi. |
 | `settings.deload.toggle` | Deload-Vorschläge | Deload suggestions | Deload önerileri |
+| `settings.foodLookup.credits.row` | Open Food Facts – Lizenzhinweis | Open Food Facts – License notice | Open Food Facts – Lisans bildirimi |
+| `settings.foodLookup.toggle` | Online-Suche für unbekannte Lebensmittel | Online search for unknown foods | Bilinmeyen besinler için çevrimiçi arama |
+| `settings.foodLookup.toggle.footer.off` | Würde unbekannte Lebensmittel online bei Open Food Facts suchen. Dabei würden Suchanfragen an einen externen Dienst gesendet. | Would search Open Food Facts online for unknown foods. Search queries would be sent to an external service. | Bilinmeyen besinleri Open Food Facts üzerinden çevrimiçi arar. Arama sorguları harici bir hizmete gönderilirdi. |
+| `settings.foodLookup.toggle.footer.on` | Aktiv: Wird in der Lebensmittelsuche als Option angeboten. Suchanfragen gehen dabei an Open Food Facts. | Active: offered as an option in food search. Search queries are sent to Open Food Facts. | Aktif: Besin aramasında bir seçenek olarak sunulur. Arama sorguları Open Food Facts'e gönderilir. |
 | `settings.fourWeekReview.row` | Vier-Wochen-Rückblick | Four-week review | Dört haftalık değerlendirme |
-| `settings.group.appExperience` | App & Trainingserlebnis | App & Workout Experience | Uygulama & Antrenman Deneyimi |
+| `settings.group.appExperience` | App-Einstellungen | App Settings | Uygulama Ayarları |
 | `settings.group.dataConnections` | Daten & Verbindungen | Data & Connections | Veri & Bağlantılar |
 | `settings.group.helpInfo` | Hilfe & Informationen | Help & Information | Yardım & Bilgi |
 | `settings.group.libraryEquipment` | Bibliothek & Ausrüstung | Library & Gear | Kütüphane & Ekipman |
+| `settings.group.tools` | Werkzeuge | Tools | Araçlar |
 | `settings.health.connect` | Verbinden | Connect | Bağla |
 | `settings.health.denied` | Berechtigung verweigert | Permission denied | İzin reddedildi |
 | `settings.health.footer` | Bei aktivierter Verbindung wird im Messwerte-Formular das letzte Waagen-Gewicht vorausgefüllt. Beim Speichern werden Gewicht, KFA und Magere Masse zurück nach Apple Health geschrieben. | When connected, the measurement form prefills your last scale weight. Saving writes weight, body fat %, and lean mass back to Apple Health. | Bağlıyken ölçüm formu son tartı kilonu önceden doldurur. Kaydetme; kilo, yağ oranı ve yağsız kütleyi Apple Health'e yazar. |
@@ -2380,7 +2623,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `settings.reset.errorTitle` | Fehler beim Zurücksetzen | Error resetting | Sıfırlama hatası |
 | `settings.section.about` | Über | About | Hakkında |
 | `settings.section.danger_zone` | Daten-Management | Data Management | Veri Yönetimi |
-| `settings.section.more` | Weitere Einstellungen | More Settings | Diğer Ayarlar |
+| `settings.section.onlineFoodLookup` | Online-Suche | Online Search | Çevrimiçi Arama |
 | `settings.section.preferences` | Präferenzen | Preferences | Tercihler |
 | `settings.section.privacy` | Datenschutz | Privacy | Gizlilik |
 | `settings.section.profile_goals` | Profil & Ziele | Profile & Goals | Profil & Hedefler |
@@ -2505,11 +2748,11 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
-| `tab.dashboard` | Dashboard | Dashboard | Panel |
-| `tab.measurement` | Messung | Measurement | Ölçüm |
+| `tab.dashboard` | Heute | Today | Bugün |
+| `tab.measurement` | Fortschritt | Progress | İlerleme |
 | `tab.more` | Mehr | More | Daha Fazla |
-| `tab.plan` | Plan | Plan | Plan |
-| `tab.tools` | Werkzeuge | Tools | Araçlar |
+| `tab.nutrition` | Ernährung | Nutrition | Beslenme |
+| `tab.plan` | Training | Training | Antrenman |
 
 ## `timedWorkout.*`  (52 Keys)
 
@@ -2568,7 +2811,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `timedWorkout.preroll.startNow` | Jetzt starten | Start now | Şimdi başla |
 | `timedWorkout.running.label` | LÄUFT | RUNNING | ÇALIŞIYOR |
 
-## `trophy.*`  (24 Keys)
+## `trophy.*`  (25 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2583,6 +2826,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `trophy.empty.description.firstWorkout` | Beende dein erstes Training, um deinen ersten PR aufzustellen. | Finish your first workout to set your first PR. | İlk PR'ını koymak için ilk antrenmanını bitir. |
 | `trophy.empty.description.hasWorkouts` | Du hast bereits Trainings, aber noch keine Rekorde gespeichert. Klick unten, um sie aus deiner History zu detektieren. | You have workouts but no records saved yet. Tap below to detect them from your history. | Antrenmanların var ama henüz kayıtlı rekor yok. Geçmişinden tespit etmek için aşağıya dokun. |
 | `trophy.empty.title` | Noch keine Rekorde | No records yet | Henüz rekor yok |
+| `trophy.eyebrow` | Bestleistungen | Records | Rekorlar |
 | `trophy.kind.short.bestSet` | Bestsatz | Best Set | En İyi Set |
 | `trophy.kind.short.estimated1RM` | 1RM | 1RM | 1RM |
 | `trophy.kind.short.fastestPace` | Pace | Pace | Tempo |
@@ -2633,7 +2877,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `water.title` | Wasser | Water | Su |
 | `water.todaySection.title` | Heute | Today | Bugün |
 
-## `widget.*`  (12 Keys)
+## `widget.*`  (13 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2642,6 +2886,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `widget.compoundLifts.name` | Compound-Lift-Trend | Compound Lift Trend | Temel Hareket Trendi |
 | `widget.muscleHeatmap.name` | Muskel-Heatmap | Muscle Heatmap | Kas Isı Haritası |
 | `widget.nextWorkout.name` | Nächstes Training | Next Workout | Sıradaki Antrenman |
+| `widget.nutrition.name` | Ernährung | Nutrition | Beslenme |
 | `widget.recentWorkouts.name` | Letzte Trainings | Recent Workouts | Son Antrenmanlar |
 | `widget.trainingCalendar.name` | Trainings-Kalender | Training calendar | Antrenman takvimi |
 | `widget.trophyRoom.name` | Trophy Room | Trophy Room | Kupa Odası |
