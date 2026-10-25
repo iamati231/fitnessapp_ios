@@ -263,7 +263,11 @@ final class PlanGeneratorTests: XCTestCase {
             cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
         )
         let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [selection], equipmentPreferences: [], usesFixedWeekdays: false))
-        let easyDay = result.days[0].spec.exercises[0] // cycle starts at .easy
+        // `generate(from:)` re-sorts candidates by hardness (`spreadByHardness`),
+        // so the easy day is NOT reliably at index 0 - find it by its exact
+        // library exercise name ("Easy Run", `RunZone.exerciseName` for `.easy`)
+        // instead of assuming cycle order survives into the result.
+        let easyDay = result.days.first { $0.spec.exercises.first?.name == "Easy Run" }!.spec.exercises[0]
         XCTAssertEqual(easyDay.targetPaceMinutesPerKm, PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: 1500))
     }
 
