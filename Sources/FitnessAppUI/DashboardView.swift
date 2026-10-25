@@ -378,7 +378,7 @@ public struct DashboardView: View {
         // dieselbe View wie der Paket-1-Pfad in `ProfileEditorView` — kein
         // neuer Anpassungs-Mechanismus.
         .sheet(isPresented: $showingMissedRunAdjustmentPreview) {
-            if let profile = profiles.first, let plan = activePlans.first {
+            if let profile = profiles.first, let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
                 CoachAdjustmentPreviewView(profile: profile, activePlan: plan)
             }
         }
@@ -1847,7 +1847,7 @@ public struct DashboardView: View {
     /// der Uebungs-Name der Tempo-Zone, ein Namensabgleich waere hier
     /// irrefuehrend).
     private var isLongRunOverdueForActivePlan: Bool {
-        guard let plan = activePlans.first else { return false }
+        guard let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) else { return false }
         let cardioDurations = plan.days
             .flatMap(\.activeExercises)
             .filter(\.isCardio)

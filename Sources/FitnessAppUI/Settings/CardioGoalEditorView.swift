@@ -249,7 +249,7 @@ struct CardioGoalEditorView: View {
             return
         }
 
-        if coachJustActivated, let plan = activePlans.first {
+        if coachJustActivated, let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
             planForAdjustmentPreview = plan
             showingAdjustmentPreview = true
         } else {
