@@ -299,6 +299,81 @@ final class PlanGeneratorTests: XCTestCase {
         let exerciseNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
         XCTAssertEqual(exerciseNames, ["Easy Run", "Long Run", "Intervalle"])
         XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .running } })
+
+        // Task 3 (Review Focus 1): no `cardioRunProfile` at all must leave
+        // every duration/distance target byte-for-byte identical to the
+        // pre-Task-3 behaviour - plain `sessionDurationMinutes`, no
+        // volume-aware scaling, `.interval` still fixed at 0.4 km.
+        let easyDay = result.days.first { $0.spec.exercises.first?.name == "Easy Run" }!.spec.exercises[0]
+        XCTAssertEqual(easyDay.targetDurationMinutes, 45)
+        let tempoDay = result.days.first { $0.spec.exercises.first?.name == "Long Run" }!.spec.exercises[0]
+        XCTAssertEqual(tempoDay.targetDurationMinutes, 45)
+        let intervalDay = result.days.first { $0.spec.exercises.first?.name == "Intervalle" }!.spec.exercises[0]
+        XCTAssertEqual(intervalDay.targetDistanceKm, 0.4)
+    }
+
+    // MARK: - Laufcoaching-Plan-Integration (Task 3): Ziel-/Volumen-bewusste Struktur
+
+    /// Step 1(a): ein Profil mit Ziel, aber OHNE Wochenvolumen, darf die
+    /// Dauer-Zielwerte nicht veraendern - "zu wenig Daten" bleibt konservativ
+    /// beim heutigen `sessionDurationMinutes`.
+    func testCardioCandidatesWithProfileButNoVolumeKeepsTodaysDuration() {
+        let withProfile = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 2, sessionDurationMinutes: 40, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [withProfile], equipmentPreferences: [], usesFixedWeekdays: false))
+        for day in result.days {
+            XCTAssertEqual(day.spec.exercises[0].targetDurationMinutes, 40)
+        }
+    }
+
+    /// Step 1(b): zwei verschiedene Ziele mit Profil (aber ohne Volumen)
+    /// muessen unterschiedliche Lauf-TYP-Mischungen (Task 2's `runTypeMix`)
+    /// liefern, bei GLEICHER Tagesanzahl - die Tages-Allokation selbst ist
+    /// unveraendert `GoalDrivenPlanSelectionBuilder`s Sache, nicht dieser Task.
+    func testCardioCandidatesRunTypeMixDiffersByGoalWithSameDayCount() {
+        let generalFitness = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 3, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .generalFitness, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let tenK = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 3, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let generalResult = PlanGenerator.generate(from: PlanGeneratorInput(selections: [generalFitness], equipmentPreferences: [], usesFixedWeekdays: false))
+        let tenKResult = PlanGenerator.generate(from: PlanGeneratorInput(selections: [tenK], equipmentPreferences: [], usesFixedWeekdays: false))
+
+        XCTAssertEqual(generalResult.days.count, tenKResult.days.count, "Tages-Allokation bleibt diesem Task fremd")
+
+        let generalNames = Set(generalResult.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertEqual(generalNames, ["Easy Run"], "generalFitness -> runTypeMix ist rein .easy (Task 2)")
+
+        let tenKNames = Set(tenKResult.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertTrue(tenKNames.contains("Long Run"), "tenK's Mix enthaelt einen .quality-Slot, anders als generalFitness")
+    }
+
+    /// Step 1(c): ein Profil MIT glaubwuerdigem Wochenvolumen muss messbar
+    /// GROESSERE Dauer-Zielwerte liefern als eines ohne, fuer dasselbe Ziel -
+    /// `CardioFeasibilityCalculator.targetWeeklyVolumeKm(.tenK) == 30`, 45
+    /// km/Woche liegt klar darueber.
+    func testCardioCandidatesScalesDurationUpWithCredibleHigherWeeklyVolume() {
+        let withoutVolume = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 1, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let withVolume = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 1, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: 45)
+        )
+        let baseline = PlanGenerator.generate(from: PlanGeneratorInput(selections: [withoutVolume], equipmentPreferences: [], usesFixedWeekdays: false))
+        let scaled = PlanGenerator.generate(from: PlanGeneratorInput(selections: [withVolume], equipmentPreferences: [], usesFixedWeekdays: false))
+
+        let baselineDuration = baseline.days[0].spec.exercises[0].targetDurationMinutes
+        let scaledDuration = scaled.days[0].spec.exercises[0].targetDurationMinutes
+        XCTAssertEqual(baselineDuration, 30)
+        XCTAssertNotNil(scaledDuration)
+        XCTAssertGreaterThan(scaledDuration!, baselineDuration!)
     }
 
     // MARK: - DEL-098-Datentreue: keine erfundenen Uebungsnamen

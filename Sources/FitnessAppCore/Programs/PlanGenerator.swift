@@ -653,6 +653,39 @@ public enum PlanGenerator {
         }
     }
 
+    /// Laufcoaching-Plan-Integration (Task 3): Dauer-Ziel fuer die
+    /// duration-basierten Zonen (`.easy`/`.tempo`) - skaliert konservativ
+    /// anhand eines bekannten, glaubwuerdigen Wochenvolumens, statt immer
+    /// nur `selection.sessionDurationMinutes` zu uebernehmen. `.interval`
+    /// bleibt bewusst aussen vor (Global Constraint): ruft diese Funktion
+    /// gar nicht erst auf, bleibt distanzbasiert.
+    ///
+    /// Ohne Profil oder ohne (bzw. nicht-positives) `weeklyBaseVolumeKm`
+    /// bleibt es exakt beim heutigen Verhalten - "zu wenig Daten" heisst
+    /// hier konservativ "nichts aendern", nicht "irgendwas annehmen" (siehe
+    /// `CardioBaselineCalculator`-Konvention: `nil` ist "unbekannt", nicht
+    /// "null"). Ist `targetWeeklyVolumeKm(for:)` fuer das Ziel `nil`
+    /// (aktuell nur `.generalFitness`), fehlt ein Referenzpunkt zum Skalieren
+    /// - ebenfalls unveraendert.
+    ///
+    /// shortcut: das Verhaeltnis `weeklyBaseVolumeKm / targetWeeklyVolumeKm`
+    /// wird auf ±20 % gekappt, damit ein extremer Profil-Wert nicht zu einer
+    /// absurd kurzen/langen Einheit fuehrt - eine grobe Faustregel wie
+    /// `PaceZoneCalculator`/`CardioFeasibilityCalculator`, keine
+    /// individuelle Trainingsempfehlung. Zeigt sich an echten Nutzerdaten,
+    /// dass ein breiterer (oder enger gefasster) Korridor noetig ist, hier
+    /// nachziehen.
+    private static func volumeAwareDurationMinutes(for selection: PlanGeneratorTypeSelection) -> Int {
+        guard let profile = selection.cardioRunProfile,
+              let weeklyVolume = profile.weeklyBaseVolumeKm, weeklyVolume > 0,
+              let targetVolume = CardioFeasibilityCalculator.targetWeeklyVolumeKm(for: profile.goal), targetVolume > 0
+        else {
+            return selection.sessionDurationMinutes
+        }
+        let ratio = min(1.2, max(0.8, weeklyVolume / targetVolume))
+        return Int((Double(selection.sessionDurationMinutes) * ratio).rounded())
+    }
+
     private static func cardioCandidates(for selection: PlanGeneratorTypeSelection) -> [Candidate] {
         // README 2.35: Zeitformat-Wahl im Wizard gilt nur fuer Laufen/
         // Radfahren (die vier Kraft-Arten haben keinen Format-Picker in
@@ -695,8 +728,32 @@ public enum PlanGenerator {
 
         // README 2.18/2.20: Reihenfolge so gewaehlt, dass bei genau zwei
         // Tagen niemals zwei harte Einheiten (Tempo/Intervall) zusammen
-        // herauskommen - "ruhig" deckt die Luecke.
-        let cycle: [RunZone] = [.easy, .interval, .tempo]
+        // herauskommen - "ruhig" deckt die Luecke. Bleibt der feste
+        // Default fuer den Fall OHNE `cardioRunProfile` (Review Focus 1) -
+        // byte-fuer-byte unveraendert gegenueber vor Task 3.
+        let cycle: [RunZone]
+        if let goal = selection.cardioRunProfile?.goal {
+            // Laufcoaching-Plan-Integration (Task 3): mit bekanntem Ziel
+            // bestimmt `CardioFeasibilityCalculator.runTypeMix` (Task 2) das
+            // Verhaeltnis easy/quality statt des zieleunabhaengigen festen
+            // Zyklus. `.quality` mappt bewusst konsequent auf `.tempo`,
+            // nie auf `.interval`: `.interval` ist distanzbasiert und bleibt
+            // laut Global Constraint dieses Tasks komplett unangetastet -
+            // wuerde ein Teil der `.quality`-Slots auf `.interval` fallen,
+            // profitierten diese Tage nie von der unten folgenden
+            // Volumen-Skalierung, und die Lauf-Typ-Mischung haenge dann
+            // zusaetzlich vom Zufall der Zyklus-Position ab statt nur vom
+            // Ziel. Ein durchgaengiges `.tempo` ist die einfachste Regel,
+            // die das vermeidet.
+            cycle = CardioFeasibilityCalculator.runTypeMix(for: goal).map { purpose in
+                switch purpose {
+                case .easy:    return .easy
+                case .quality: return .tempo
+                }
+            }
+        } else {
+            cycle = [.easy, .interval, .tempo]
+        }
 
         var result = (0..<selection.daysPerWeek).map { dayIndex in
             let zone = cycle[dayIndex % cycle.count]
@@ -730,7 +787,7 @@ public enum PlanGenerator {
                     name: zone.exerciseName,
                     sets: 1, repsMin: 0, repsMax: 0,
                     isCardio: true,
-                    targetDurationMinutes: selection.sessionDurationMinutes,
+                    targetDurationMinutes: volumeAwareDurationMinutes(for: selection),
                     targetPaceMinutesPerKm: pace,
                     enduranceSportKind: .running
                 )
