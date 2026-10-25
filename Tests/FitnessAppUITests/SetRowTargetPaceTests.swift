@@ -84,6 +84,51 @@ final class SetRowTargetPaceTests: XCTestCase {
         XCTAssertFalse(hintBlock.contains("targetDistanceKm"), "must not touch the distance/interval branch - it never carries a pace")
     }
 
+    /// Fix round 1 (Review): a non-nil but non-positive
+    /// `current5kReferenceSeconds` (e.g. `0`, or corrupted/imported data via
+    /// `DataImportService.row.int("current_5k_reference_seconds")`) must
+    /// ALSO fall back to `cardioFeasibility.day.paceUnknown`, not
+    /// `PaceCalculator.formatPace`'s raw "—:—— /km" placeholder -
+    /// `PaceZoneCalculator.easyPaceMinutesPerKm`/`.tempoPaceMinutesPerKm`
+    /// return `nil` for non-positive input (division safety,
+    /// `CardioProfile.swift`), so the paceUnknown decision must branch on
+    /// the COMPUTED pace result, never merely on whether a reference time
+    /// was provided at all - same principle `CardioFeasibilityDayRow`
+    /// already follows for its own pace display.
+    func testTargetPaceHintFallsBackToPaceUnknownForAnyNilComputedPaceNotJustAMissingReferenceTime() throws {
+        let source = try contents(of: "Workout/SetRow.swift")
+        guard let hintRange = source.range(of: "var targetPaceHint: String? {") else {
+            XCTFail("targetPaceHint not found in SetRow.swift"); return
+        }
+        let hintBlock = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: hintRange.upperBound))
+
+        // The old (buggy) shape short-circuited straight to paceUnknown the
+        // moment `current5kReferenceSeconds` was `nil`, leaving a
+        // non-positive-but-non-nil value to sail through to
+        // `PaceCalculator.formatPace` unguarded. That exact shape must be
+        // gone.
+        XCTAssertFalse(hintBlock.contains("current5kReferenceSeconds else"),
+                        "must not special-case only a MISSING reference time - a non-positive one must be caught too")
+
+        // The fallback must instead be gated on the computed pace value
+        // itself, so both a missing AND a non-positive reference time (and
+        // any other case PaceZoneCalculator maps to nil) produce the same
+        // qualitative fallback.
+        XCTAssertTrue(hintBlock.contains("current5kReferenceSeconds.flatMap"),
+                      "must feed the optional reference time through the pace calculators rather than unwrapping it early and assuming success")
+
+        // The paceUnknown fallback must be the else-branch of unwrapping
+        // the COMPUTED pace result (a `guard let <paceVariable> else { ...
+        // paceUnknown ... }`), not of unwrapping `current5kReferenceSeconds`
+        // directly.
+        guard let paceGuardRange = hintBlock.range(of: "guard let paceMinutesPerKm else {") else {
+            XCTFail("expected a `guard let paceMinutesPerKm else { ... }` gating the paceUnknown fallback on the COMPUTED pace, not the raw reference time"); return
+        }
+        let paceGuardBlock = try XCTUnwrap(Self.matchingBraceBlock(in: hintBlock, afterOpenBrace: paceGuardRange.upperBound))
+        XCTAssertTrue(paceGuardBlock.contains("cardioFeasibility.day.paceUnknown"),
+                      "the computed-pace guard's else-branch must be exactly where paceUnknown is returned")
+    }
+
     func testCardioStatusZoneUsesTargetPaceHintInTheEmptySlot() throws {
         let source = try contents(of: "Workout/SetRow.swift")
         guard let zoneRange = source.range(of: "var cardioStatusZone: some View {") else {

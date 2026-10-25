@@ -1587,16 +1587,31 @@ struct SetRow: View {
     /// ZWINGEND ueber `content.nameSnapshot` (stabiler Anker), NIE ueber
     /// `content.customNameSnapshot` (user-umbenennbar) - Task 1s
     /// Reviewer-Hinweis fuer genau diese Stelle.
+    ///
+    /// Fix round 1 (Review): der Fallback auf `cardioFeasibility.day.
+    /// paceUnknown` haengt am Ergebnis von `PaceZoneCalculator`, nicht nur
+    /// daran, ob `current5kReferenceSeconds` `nil` war - eine nicht-positive
+    /// Referenzzeit (`0`, oder kaputte/importierte Daten, siehe
+    /// `DataImportService.swift:746`) liess `PaceZoneCalculator.
+    /// easyPaceMinutesPerKm`/`.tempoPaceMinutesPerKm` ebenfalls `nil`
+    /// liefern (Divisions-Sicherheit, `CardioProfile.swift`), wodurch vorher
+    /// `PaceCalculator.formatPace(nil)` den rohen "—:—— /km"-Platzhalter
+    /// zurückgab statt des qualitativen Fallbacks - "keine falsch-praezise
+    /// Pace ohne Referenzzeit" gilt auch fuer eine UNBRAUCHBARE Referenzzeit.
+    /// Gleiches Muster wie `CardioFeasibilityDayRow.subtitle`, die ebenfalls
+    /// das BERECHNETE Pace-Ergebnis prueft, nicht nur die Eingabe.
     private var targetPaceHint: String? {
         guard content.isCardio, content.targetDurationMinutes != nil, cardioCoachingEnabled else { return nil }
         let zone = CardioExerciseZone.forExerciseName(content.nameSnapshot)
         guard zone == .easy || zone == .tempo else { return nil }
-        guard let referenceSeconds = current5kReferenceSeconds else {
+        let paceMinutesPerKm = current5kReferenceSeconds.flatMap { referenceSeconds in
+            zone == .easy
+                ? PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+                : PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+        }
+        guard let paceMinutesPerKm else {
             return String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module)
         }
-        let paceMinutesPerKm = zone == .easy
-            ? PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
-            : PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
         return PaceCalculator.formatPace(paceMinutesPerKm)
     }
 
