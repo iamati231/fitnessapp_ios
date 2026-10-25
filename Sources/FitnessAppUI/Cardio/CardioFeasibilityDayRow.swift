@@ -48,9 +48,9 @@ struct CardioFeasibilityDayRow: View {
             let runText = String(format: String(localized: "cardioFeasibility.day.run", bundle: .module), minutes)
             // Task 9: Pace kommt aus einer `CardioRunProfile`-Referenzzeit
             // (Task 3) und existiert deshalb nicht immer - ein
-            // qualitativer Hinweis statt `PaceCalculator.formatPace(nil)`s
-            // "—:—— /km" (das ist ein Platzhalter fuer ein LEERES
-            // Eingabefeld, keine fertige Anzeige-Zeile).
+            // qualitativer Hinweis statt `PaceCalculator`s leerem
+            // "—:—— /km"-Nil-Platzhalter (der ist fuer ein LEERES
+            // Eingabefeld gedacht, keine fertige Anzeige-Zeile).
             if let pace = exercise.targetPaceMinutesPerKm {
                 return "\(runText) · \(PaceCalculator.formatPace(pace))"
             }
