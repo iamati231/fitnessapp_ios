@@ -1409,13 +1409,26 @@ public struct PlanBuilderView: View {
             // in dieselben `PlanGeneratorTypeSelection`-Eingaben, die der
             // UNVERAENDERTE `PlanGenerator` schon immer erwartet hat - siehe
             // dortige Typ-Doku.
+            // Requirement A: der Lauf-Coach wirkt auf die generierten Tage nur,
+            // wenn der Nutzer ihn aktiv eingeschaltet hat - sonst exakt das
+            // bisherige Verhalten (siehe `CardioRunProfile`-Typ-Doku).
+            let cardioRunProfile: CardioRunProfile? = (profiles.first?.cardioCoachingEnabled == true)
+                ? profiles.first.map {
+                    CardioRunProfile(
+                        goal: $0.cardioGoal,
+                        current5kReferenceSeconds: $0.current5kReferenceSeconds,
+                        weeklyBaseVolumeKm: $0.weeklyBaseVolumeKm
+                    )
+                }
+                : nil
             selections = GoalDrivenPlanSelectionBuilder.makeSelections(
                 goal: selectedTrainingGoal ?? .hybrid,
                 enduranceModality: selectedEnduranceModality,
                 totalDaysPerWeek: totalDaysPerWeek,
                 sessionDurationMinutes: sessionDurationMinutes,
                 experience: experience,
-                equipmentPreferences: equipmentPreferences
+                equipmentPreferences: equipmentPreferences,
+                cardioRunProfile: cardioRunProfile
             )
         }
         return PlanGeneratorInput(
