@@ -842,7 +842,7 @@ public struct ProfileEditorView: View {
                     // `nil` bedeutet, dass bereits `accept`s eigene
                     // Vorbedingungen (z.B. `hasPlan`) nicht erfuellt sind.
                     withAnimation {
-                        switch model.accept(profile: profile, in: modelContext, using: acceptOperation) {
+                        switch model.accept(profile: profile, in: modelContext, using: acceptOperation, activePlan: activePlan) {
                         case .success:
                             // Geraete-Fund (TestingBot, Task #197 UI-Pruefumfang, identisches Muster
                             // wie PlansListView): ohne dieses Zuruecksetzen blieb der Button nach

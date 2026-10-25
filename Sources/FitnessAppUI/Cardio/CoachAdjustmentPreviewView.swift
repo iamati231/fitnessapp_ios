@@ -151,7 +151,7 @@ struct CoachAdjustmentPreviewView: View {
                 Button {
                     guard !isCreatingNewPlan else { return }
                     isCreatingNewPlan = true
-                    _ = feasibilityModel.accept(profile: profile, in: modelContext, using: createNewPlanOperation)
+                    _ = feasibilityModel.accept(profile: profile, in: modelContext, using: createNewPlanOperation, activePlan: activePlan)
                     isCreatingNewPlan = false
                     dismiss()
                 } label: {

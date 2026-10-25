@@ -130,7 +130,8 @@ public struct CardioFeasibilityCardModel {
     @discardableResult
     @MainActor
     public func accept(
-        profile: UserBodyProfile, in context: ModelContext, using operation: PlanCreationOperation
+        profile: UserBodyProfile, in context: ModelContext, using operation: PlanCreationOperation,
+        activePlan: TrainingPlan? = nil
     ) -> PlanCreationOperation.Outcome? {
         // Einmal committed, ist die urspruengliche Vorbedingungspruefung hinfaellig - es wird
         // nichts mehr NEU erzeugt (siehe `PlanCreationOperation`-Doku: `create()` ist nach dem
@@ -140,6 +141,31 @@ public struct CardioFeasibilityCardModel {
         // nicht blockieren.
         if let resumed = operation.resumeIfCommitted(in: context) {
             return resumed
+        }
+        // Task 7 (Duplikat-Vermeidung, Laufcoaching-Plan-Integration): existiert bereits ein
+        // AKTIVER, anpassbarer Plan (`activePlan` nicht `nil` UND
+        // `RunCoachPlanAdjustment.analyze(plan:).cardioAvailability == .ready`), wird GENAU
+        // DIESER Plan angepasst statt ein zweiter, separater `TrainingPlan` erzeugt - wiederholte
+        // Zielaenderungen erzeugten vorher bei jedem Tap einen weiteren `generationSource ==
+        // .cardioCoach`-Plan. Reuse des bereits in Paket 1 gebauten/getesteten
+        // `CoachAdjustmentCardModel`/`RunCoachPlanAdjustment`-Pfads statt einer zweiten
+        // Implementierung. Dieser Zweig braucht `operation` bewusst NICHT: das Risiko, gegen das
+        // `PlanCreationOperation` unten schuetzt (ein committeter, aber nicht mehr aufloesbarer
+        // NEUER Plan), existiert hier nicht - es wird kein neuer Plan erzeugt, nur der bereits
+        // bekannte `activePlan` veraendert. `CoachAdjustmentCardModel.accept` traegt dafuer
+        // seinen EIGENEN Doppeltap-Schutz (`profile.cardioPlanAdjustmentFingerprint`, siehe
+        // dortige Doku). Fehlt `activePlan`, existiert kein aktiver Plan (`.noActivePlan`) oder
+        // ist keiner seiner Cardio-Tage anfassbar (`.noEligibleCardioDay`), bleibt der bisherige
+        // "neuen Plan erstellen"-Pfad unten unveraendert der Fallback.
+        if let activePlan,
+           case .ready = RunCoachPlanAdjustment.analyze(plan: activePlan).cardioAvailability,
+           let adjustmentModel = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
+            do {
+                _ = try adjustmentModel.accept(plan: activePlan, profile: profile, in: context)
+                return .success(activePlan)
+            } catch {
+                return .failedBeforeCommit
+            }
         }
         guard hasPlan,
               let planInput, let planResult, let proposedGoal,
