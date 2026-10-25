@@ -213,6 +213,12 @@ public struct OnboardingView: View {
     @State private var enduranceModality: EnduranceModality?
     @State private var runCoachWanted = false
 
+    /// Task 5 (laufcoaching-plan-integration): seedet nur die Ziel-
+    /// KATEGORIE (`CardioGoal`), sobald der Laufcoach oben gewuenscht wird -
+    /// Renndatum/Wochenumfang/5k-Referenzzeit bleiben bewusst dem spaeteren
+    /// `CardioGoalEditorView` vorbehalten ("schrittweise erfragen").
+    @State private var runCoachCardioGoal: CardioGoal = .generalFitness
+
     // DEL-088: Tag-Auswahl-Sheet, das nach Plan-Adopt erscheint. Sobald
     // `dayPickerTemplate != nil`, oeffnet sich das DayPickerSheet mit dem
     // dort hinterlegten Template. `onConfirm` setzt `selectedWeekdays` und
@@ -976,6 +982,35 @@ public struct OnboardingView: View {
                                 isSelected: runCoachWanted
                             ) {
                                 runCoachWanted = true
+                            }
+                        }
+                    }
+
+                    // Task 5: nur sichtbar, wenn der Laufcoach oben gewuenscht
+                    // wurde - seedet lediglich die Ziel-KATEGORIE
+                    // (`CardioGoal`), keine Renndatum-/Wochenumfang-/5k-
+                    // Referenzzeit-Abfrage hier (die bleibt `CardioGoalEditorView`
+                    // vorbehalten, siehe `runCoachCardioGoal`-Doku).
+                    if runCoachWanted {
+                        VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("onboarding.runCoachGoal.title", bundle: .module)
+                                    .font(.title2.weight(.bold))
+                                Text("onboarding.runCoachGoal.subtitle", bundle: .module)
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                            }
+                            VStack(spacing: 10) {
+                                ForEach(CardioGoal.allCases, id: \.self) { goal in
+                                    coachingCard(
+                                        title: String(localized: goal.localizedName),
+                                        description: "",
+                                        iconName: goal.symbol,
+                                        isSelected: runCoachCardioGoal == goal
+                                    ) {
+                                        runCoachCardioGoal = goal
+                                    }
+                                }
                             }
                         }
                     }
@@ -2157,6 +2192,18 @@ public struct OnboardingView: View {
             let finalModality = customPlanEnduranceModality ?? enduranceModality
             let finalRunCoachWanted = customPlanEnduranceModality != nil ? customPlanRunCoachWanted : runCoachWanted
             profile.setEnduranceModality(finalModality, runCoachEnabled: finalRunCoachWanted)
+            // Task 5: seedet nur die Ziel-KATEGORIE aus dem PLAIN-Onboarding-
+            // Schritt (`runCoachCardioGoal`) - es gibt bewusst kein Builder-
+            // Pfad-Aequivalent dazu (der Builder stellt diese Frage nicht),
+            // daher immer `runCoachCardioGoal`, unabhaengig davon, ob
+            // `customPlanEnduranceModality` (Builder-Pfad) oder `enduranceModality`
+            // (Onboarding-Pfad) den `finalModality`/`finalRunCoachWanted`
+            // gewonnen hat. `profile.cardioCoachingEnabled` wird HIER, NACH
+            // `setEnduranceModality`, gelesen, weil erst dieser Aufruf den
+            // tatsaechlichen Wert setzt (inkl. `supportsRunCoach`-Guard) -
+            // nicht das rohe `finalRunCoachWanted` vor einem moeglichen
+            // Modalitaets-bedingten Veto.
+            if profile.cardioCoachingEnabled { profile.cardioGoal = runCoachCardioGoal }
         }
 
         // 2) Initial BodyMeasurement — keeps the "first weight" visible in the

@@ -58107,6 +58107,52 @@
           }
         }
       }
+    },
+    "onboarding.runCoachGoal.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welches Laufziel?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which running goal?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hangi koşu hedefi?"
+          }
+        }
+      }
+    },
+    "onboarding.runCoachGoal.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worauf arbeitest du mit dem Laufcoach hin? Details wie Renndatum oder Wochenumfang klären wir später im Profil."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What are you training toward with the run coach? We'll settle details like a race date or weekly volume later in your profile."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu koçuyla neye çalışıyorsun? Yarış tarihi veya haftalık hacim gibi ayrıntıları daha sonra profilinde netleştireceğiz."
+          }
+        }
+      }
     }
   }
 }
