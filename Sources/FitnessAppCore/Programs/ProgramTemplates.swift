@@ -605,20 +605,76 @@ public enum ProgramTemplates {
         iconSystemName: "figure.run",
         targetExperience: [.beginner, .intermediate],
         targetGoals: [.hybrid],
-        // Equipment-Vielfalt Phase 1 Task 3: ersetzt die vormals duplizierten
-        // `equipmentVariants` (DEL-171/DEL-172) durch `TemplateSlot`-basierte
-        // Resolution (Task 1 `TemplateSlotResolver`). `reviewedAlternatives`
-        // sind eine verlustfreie Transkription der alten dumbbellOnly-/
-        // kettlebellOnly-Uebungsnamen — siehe
-        // `HybridTemplateSlotParityTests` fuer den vollstaendigen Parity-
-        // Beweis. "Kettlebell Goblet Squat" steht bewusst VOR "Goblet Squat":
-        // Letzteres ist selbst `.any([.kettlebell, .dumbbell])` erfuellbar,
-        // wuerde also bei kettlebellOnly bereits VOR "Kettlebell Goblet
-        // Squat" gewinnen, wenn es zuerst in der Liste stuende — Reihenfolge
-        // ist hier kein Rate-Wert, sondern noetig, damit die bestehende
-        // Drei-Werte-OR-Aufloesung (Task 1) die alte Kuratierung exakt
-        // reproduziert. Cardio-Tage bleiben ausserhalb von `slots`
-        // (leeres Array = unveraendert durchgereicht).
+        // DEL-172: Dumbbell-Only-Variante. Cardio-Tage unverändert; Strength-
+        // Compounds auf KH-Versionen umgemappt (Goblet/KH-Bench/KH-Row).
+        //
+        // Equipment-Vielfalt Phase 1 Task 3 (Controller-Korrektur): dieses
+        // `equipmentVariants` bleibt VORLAEUFIG bestehen, obwohl `slots`
+        // unten dieselbe Information als `TemplateSlot`-Resolution liefert.
+        // `PlanMatchmaker`/`PlanSelectionResolver`/`PlanEquipmentChecker`-
+        // nahe Call-Sites lesen weiterhin direkt `equipmentVariants` und
+        // wurden noch NICHT auf `resolvedSlots(against:)` umgestellt (Task 4
+        // verdrahtet das). Ein fruehes Loeschen hier haette den Katalog in
+        // einen nicht-gruenen Zwischenzustand versetzt (4 betroffene Tests,
+        // siehe Task-3-Report). Task 4 entfernt dieses Array, sobald die
+        // Umstellung sicher ist.
+        equipmentVariants: [
+            EquipmentVariant(profile: .dumbbellOnly, days: [
+                DaySpec(name: "Strength Ganzkörper A", localizationKey: "plan.day.strengthFullBodyA", type: .fullBody, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Goblet Squat",                 sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Bankdrücken (KH)",              sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Rudern einarmig (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 2.5),
+                    ExerciseSpec(name: "Plank",                         sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
+                ]),
+                DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Chest Supported Row (KH)",      sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Bizeps-Curl (KH)",              sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50, enduranceSportKind: .running)
+                ])
+            ]),
+            // DEL-171: Kettlebell-Only-Variante. Cardio-Tage unverändert.
+            EquipmentVariant(profile: .kettlebellOnly, days: [
+                DaySpec(name: "Strength Ganzkörper A", localizationKey: "plan.day.strengthFullBodyA", type: .fullBody, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Kettlebell Goblet Squat",       sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Floor Press",        sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Row einarmig",       sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 2.5),
+                    ExerciseSpec(name: "Plank",                         sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.0)
+                ]),
+                DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
+                    ExerciseSpec(name: "Kettlebell RDL",                sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Push Press",         sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Swing",              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 90,  targetRir: 2.0),
+                    ExerciseSpec(name: "Kettlebell Halo",               sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.5)
+                ]),
+                DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50, enduranceSportKind: .running)
+                ])
+            ])
+        ],
+        // Equipment-Vielfalt Phase 1 Task 3: `TemplateSlot`-basierte
+        // Resolution (Task 1 `TemplateSlotResolver`), additiv neben
+        // `equipmentVariants` oben. `reviewedAlternatives` sind eine
+        // verlustfreie Transkription derselben dumbbellOnly-/kettlebellOnly-
+        // Uebungsnamen — siehe `HybridTemplateSlotParityTests` fuer den
+        // vollstaendigen Parity-Beweis. "Kettlebell Goblet Squat" steht
+        // bewusst VOR "Goblet Squat": Letzteres ist selbst
+        // `.any([.kettlebell, .dumbbell])` erfuellbar, wuerde also bei
+        // kettlebellOnly bereits VOR "Kettlebell Goblet Squat" gewinnen,
+        // wenn es zuerst in der Liste stuende — Reihenfolge ist hier kein
+        // Rate-Wert, sondern noetig, damit die bestehende Drei-Werte-OR-
+        // Aufloesung (Task 1) die alte Kuratierung exakt reproduziert.
+        // Cardio-Tage bleiben ausserhalb von `slots` (leeres Array =
+        // unveraendert durchgereicht).
         slots: [
             [
                 TemplateSlot(defaultExerciseName: "Kniebeuge", reviewedAlternatives: ["Kettlebell Goblet Squat", "Goblet Squat"],
@@ -703,6 +759,74 @@ public enum ProgramTemplates {
         // ist eine bewusst noch offene P3-Entscheidung (siehe
         // docs/PLANUNG_BEGLEITUNG_AUDIT.md, "Goal→Generierung-Zuordnungsregeln").
         targetGoals: [.hybrid, .endurance],
+        // DEL-170: Equipment-Varianten. Cardio-Tage bleiben unverändert (gleiche
+        // Distanzen/Dauer). Strength-Tage werden auf die jeweilige Implement-
+        // Familie umgemappt. RIR-Puffer + Volumen bleiben strukturell identisch
+        // zur Barbell-Variante, damit die Concurrent-Logik nicht kippt.
+        //
+        // Equipment-Vielfalt Phase 1 Task 3 (Controller-Korrektur): bleibt
+        // VORLAEUFIG bestehen neben `slots` unten — siehe Kommentar bei
+        // hybridBeginner oben fuer die Begruendung (Task 4 verdrahtet die
+        // Call-Sites um und entfernt dieses Array dann).
+        equipmentVariants: [
+            // ── Dumbbell-Only (Home-Gym ohne Rack) ─────────────────────────
+            EquipmentVariant(profile: .dumbbellOnly, days: [
+                DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Bankdrücken (KH)",                sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Schulterdrücken (KH)",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)",  sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",     sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Rudern einarmig (KH)",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Chest Supported Row (KH)",        sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Bizeps-Curl (KH)",                sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
+                    ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",     sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Ausfallschritte (KH)",            sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 2.0),
+                    ExerciseSpec(name: "Plank",                           sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 3.0)
+                ])
+            ]),
+            // ── Kettlebell-Only (DEL-171) ─────────────────────────────────
+            // Reine KB-Variante mit Floor Press / Row / RDL / Push Press —
+            // erfordert die DEL-171 Library-Erweiterung. Cardio-Tage bleiben
+            // unverändert; Strength-RIR-Puffer 2.5 wie bei der Barbell-Basis.
+            EquipmentVariant(profile: .kettlebellOnly, days: [
+                DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Kettlebell Floor Press",          sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Push Press",           sets: 3, repsMin: 6,  repsMax: 8,  restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Clean & Press",        sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Halo",                 sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 2.0)
+                ]),
+                DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
+                    ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Row einarmig",         sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Swing",                sets: 3, repsMin: 12, repsMax: 15, restSeconds: 90,  targetRir: 2.0),
+                    ExerciseSpec(name: "Kettlebell Suitcase Carry",       sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
+                ]),
+                DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 12.0, targetDurationMinutes: 70, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
+                    ExerciseSpec(name: "Kettlebell Goblet Squat",         sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Swing",                sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 2.0),
+                    ExerciseSpec(name: "Plank",                           sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 3.0)
+                ])
+            ])
+        ],
         // Equipment-Vielfalt Phase 1 Task 3: siehe hybridBeginner-Kommentar
         // oben fuer die Begruendung des Slot-Modells und der Alternativen-
         // Reihenfolge. Parity-Beweis: `HybridTemplateSlotParityTests`.
@@ -802,6 +926,82 @@ public enum ProgramTemplates {
         iconSystemName: "figure.run.circle.fill",
         targetExperience: [.advanced],
         targetGoals: [.hybrid],
+        // DEL-172: Dumbbell-Only-Variante. Strength-Tage auf KH umgemappt.
+        // Wadenheben (LH) → Farmer's Walk (timeBased Carry) als KH-realistischer
+        // Posterior-Chain-Ersatz; alles andere via existierende KH-Versionen
+        // aus der Library.
+        //
+        // Equipment-Vielfalt Phase 1 Task 3 (Controller-Korrektur): bleibt
+        // VORLAEUFIG bestehen neben `slots` unten — siehe Kommentar bei
+        // hybridBeginner oben fuer die Begruendung.
+        equipmentVariants: [
+            EquipmentVariant(profile: .dumbbellOnly, days: [
+                DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Bankdrücken (KH)",              sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 1.5),
+                    ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)", sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
+                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup, enduranceSportKind: .running),
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 180, targetRir: 2.5),
+                    ExerciseSpec(name: "Rudern einarmig (KH)",          sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Chest Supported Row (KH)",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Bizeps-Curl (KH)",              sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                ]),
+                DaySpec(name: "Intervalle", localizationKey: "plan.day.intervals", type: .cardio, sequenceIndex: 4, exercises: [
+                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 5, exercises: [
+                    ExerciseSpec(name: "Goblet Squat",                 sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Farmer's Walk",                 sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
+                ]),
+                DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 6, exercises: [
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85, enduranceSportKind: .running)
+                ])
+            ]),
+            // ── Kettlebell-Only (DEL-171) ─────────────────────────────────
+            // 6-Tage-KB-Variante. Push enthält Turkish Get-Up als technische
+            // Stabi-Komponente (passend für Performance-Zielgruppe). Cardio-
+            // Tage bleiben unverändert; Strength-RIR 2.5 wie bei der Basis.
+            EquipmentVariant(profile: .kettlebellOnly, days: [
+                DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
+                    ExerciseSpec(name: "Kettlebell Floor Press",          sets: 4, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Push Press",           sets: 3, repsMin: 6,  repsMax: 8,  restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Clean & Press",        sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Turkish Get-Up",                  sets: 3, repsMin: 3,  repsMax: 5,  restSeconds: 90,  targetRir: 2.0),
+                    ExerciseSpec(name: "Kettlebell Halo",                 sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.5)
+                ]),
+                DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
+                    ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup, enduranceSportKind: .running),
+                    ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 45, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
+                    ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Row einarmig",         sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Swing",                sets: 3, repsMin: 12, repsMax: 15, restSeconds: 90,  targetRir: 2.0),
+                    ExerciseSpec(name: "Kettlebell Suitcase Carry",       sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
+                ]),
+                DaySpec(name: "Intervalle", localizationKey: "plan.day.intervals", type: .cardio, sequenceIndex: 4, exercises: [
+                    ExerciseSpec(name: "Intervalle", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 30, enduranceSportKind: .running)
+                ]),
+                DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 5, exercises: [
+                    ExerciseSpec(name: "Kettlebell Goblet Squat",         sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Swing",                sets: 3, repsMin: 12, repsMax: 15, restSeconds: 90,  targetRir: 2.0),
+                    ExerciseSpec(name: "Kettlebell Suitcase Carry",       sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 2.0)
+                ]),
+                DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 6, exercises: [
+                    ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85, enduranceSportKind: .running)
+                ])
+            ])
+        ],
         // Equipment-Vielfalt Phase 1 Task 3: siehe hybridBeginner-Kommentar
         // oben fuer die Begruendung des Slot-Modells und der Alternativen-
         // Reihenfolge ("Kettlebell Goblet Squat" vor "Goblet Squat"). Parity-
