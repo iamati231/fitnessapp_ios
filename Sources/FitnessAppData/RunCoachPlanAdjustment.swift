@@ -146,6 +146,33 @@ public enum RunCoachPlanAdjustment {
         plan.days.filter(isEligibleRestDayForInsertion)
     }
 
+    /// Waehlt aus den eignungsfaehigen Rest-Tagen genau `count` aus (bevorzugt
+    /// Tage NICHT direkt neben einem bereits existierenden harten Krafttag,
+    /// best-effort - Platzkonflikt mit einem Nicht-Rest-Tag ist nie erlaubt,
+    /// aber auch nie moeglich: diese Funktion waehlt ausschliesslich aus
+    /// `eligible`, das bereits auf echte Rest-Tage gefiltert ist).
+    /// Deterministisch: gleiche Eingabe -> gleiche Auswahl (sortiert nach
+    /// `weekday` vor jeder Auswahl-Entscheidung).
+    ///
+    /// "Harter Krafttag" = jeder Tag in `otherDays`, der weder Ruhetag noch
+    /// Cardio-Tag ist (`type` nicht `.rest`/`.cardio`) - die bestehende
+    /// `DayType`-Taxonomie kennt keine feinere "hart"/"leicht"-Unterscheidung
+    /// fuer Kraft-Tage, eine solche zu erfinden waere eine unbelegte neue
+    /// Schwelle (gleiches Prinzip wie `LegWorkRecommendation`s Doku oben).
+    public static func selectRestDaysForInsertion(
+        eligible: [TrainingDay], count: Int, otherDays: [TrainingDay]
+    ) -> [TrainingDay] {
+        guard count > 0 else { return [] }
+        let sorted = eligible.sorted { $0.weekday < $1.weekday }
+        let hardStrengthWeekdays = Set(otherDays.filter { $0.type != .rest && $0.type != .cardio }.map(\.weekday))
+        func isAdjacentToHardStrengthDay(_ day: TrainingDay) -> Bool {
+            hardStrengthWeekdays.contains(day.weekday - 1) || hardStrengthWeekdays.contains(day.weekday + 1)
+        }
+        let preferred = sorted.filter { !isAdjacentToHardStrengthDay($0) }
+        let fallback = sorted.filter { isAdjacentToHardStrengthDay($0) }
+        return Array((preferred + fallback).prefix(count))
+    }
+
     public static func analyze(plan: TrainingPlan?) -> Analysis {
         guard let plan else {
             return Analysis(cardioAvailability: .noActivePlan, legWork: .conflict, insertableRestDays: [])
