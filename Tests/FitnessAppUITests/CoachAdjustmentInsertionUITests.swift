@@ -27,6 +27,21 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
         try String(contentsOf: sourcesRoot.appendingPathComponent(relativePath), encoding: .utf8)
     }
 
+    /// Strips `//`-style line comments before a "must NOT contain X" check,
+    /// so an explanatory comment that quotes the very pattern it forbids
+    /// (this codebase's established style for documenting a review
+    /// correction) doesn't produce a false positive.
+    private func withoutLineComments(_ text: some StringProtocol) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line -> Substring in
+                if let commentRange = line.range(of: "//") {
+                    return line[line.startIndex..<commentRange.lowerBound]
+                }
+                return line
+            }
+            .joined(separator: "\n")
+    }
+
     private static func matchingBraceBlock(in source: String, afterOpenBrace start: String.Index) -> String? {
         var depth = 1
         var index = start
@@ -87,7 +102,7 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
             "must recompute eligible rest days fresh from the current plan"
         )
         XCTAssertFalse(
-            body.contains("analysis.insertableRestDays"),
+            withoutLineComments(body).contains("analysis.insertableRestDays"),
             "must never reuse self's analysis.insertableRestDays snapshot from make-time - it can be stale by accept-time"
         )
     }
@@ -105,7 +120,7 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
     func testAcceptSelectsRestDaysUsingNewCardioDaysCountForTheEffectiveGoal() throws {
         let body = try acceptFunctionBody()
         XCTAssertFalse(
-            body.contains("CardioFeasibilityCalculator.runTypeMix("),
+            withoutLineComments(body).contains("CardioFeasibilityCalculator.runTypeMix("),
             "runTypeMix is a cycled easy/quality pattern, not a run-day count - it must not be used to size the rest-day selection"
         )
         guard let selectRange = body.range(of: "RunCoachPlanAdjustment.selectRestDaysForInsertion(") else {
@@ -185,7 +200,7 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
         }
         let block = source[caseRange.upperBound..<nextCaseRange.lowerBound]
         XCTAssertTrue(block.contains("— → \\(spec.name)"), "an inserted slot must render as \"— → <new day name>\"")
-        XCTAssertFalse(block.contains(".strikethrough()"), "an inserted day has no old exercise being replaced, so it must never be struck through")
+        XCTAssertFalse(withoutLineComments(block).contains(".strikethrough()"), "an inserted day has no old exercise being replaced, so it must never be struck through")
     }
 
     // MARK: - Distinct, user-readable failure when the plan changed since preview

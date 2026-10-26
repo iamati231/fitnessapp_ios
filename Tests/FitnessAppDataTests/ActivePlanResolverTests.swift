@@ -40,6 +40,13 @@ final class ActivePlanResolverTests: XCTestCase {
             generationSource: generationSource,
             activatedAt: activatedAt
         )
+        // `TrainingPlan.init`'s `activatedAt ?? (isActive ? Date() : nil)`
+        // cannot distinguish "explicit nil" from "parameter omitted" - for
+        // an active plan it silently stamps `Date()` either way (a separate,
+        // pre-existing data-model quirk out of this plan's scope). Force
+        // the exact intended value here so these fixtures actually produce
+        // the states their names claim, regardless of that quirk.
+        plan.activatedAt = activatedAt
         context.insert(plan)
         return plan
     }
