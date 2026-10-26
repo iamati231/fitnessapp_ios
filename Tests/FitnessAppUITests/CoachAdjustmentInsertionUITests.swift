@@ -31,7 +31,7 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
     /// so an explanatory comment that quotes the very pattern it forbids
     /// (this codebase's established style for documenting a review
     /// correction) doesn't produce a false positive.
-    private func withoutLineComments(_ text: some StringProtocol) -> String {
+    private func withoutLineComments(_ text: String) -> String {
         text.split(separator: "\n", omittingEmptySubsequences: false)
             .map { line -> Substring in
                 if let commentRange = line.range(of: "//") {
@@ -200,7 +200,7 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
         }
         let block = source[caseRange.upperBound..<nextCaseRange.lowerBound]
         XCTAssertTrue(block.contains("— → \\(spec.name)"), "an inserted slot must render as \"— → <new day name>\"")
-        XCTAssertFalse(withoutLineComments(block).contains(".strikethrough()"), "an inserted day has no old exercise being replaced, so it must never be struck through")
+        XCTAssertFalse(withoutLineComments(String(block)).contains(".strikethrough()"), "an inserted day has no old exercise being replaced, so it must never be struck through")
     }
 
     // MARK: - Distinct, user-readable failure when the plan changed since preview
