@@ -280,7 +280,8 @@ final class PlanBuilderCardioProfileWiringTests: XCTestCase {
         guard let range = source.range(of: "showingCardioCoachSetup = true") else {
             XCTFail("the sheet-trigger assignment was not found"); return
         }
-        let window = source[source.index(range.lowerBound, offsetBy: -400, limitedBy: source.startIndex) ?? source.startIndex..<range.upperBound]
+        let windowStart = source.index(range.lowerBound, offsetBy: -400, limitedBy: source.startIndex) ?? source.startIndex
+        let window = source[windowStart..<range.upperBound]
         XCTAssertTrue(
             window.contains("onGenerated == nil"),
             "showing the new setup sheet must be gated to the standalone mode (onGenerated == nil)"
