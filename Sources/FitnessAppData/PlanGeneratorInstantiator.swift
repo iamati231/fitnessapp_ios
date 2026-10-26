@@ -915,6 +915,45 @@ public enum PlanGeneratorInstantiator {
         )
     }
 
+    /// Finding 1 fix (Lauf-Coaching-Audit): kanonischer leerer Ruhetag, identisch zur
+    /// Form, die `ProgramInstantiator.instantiate` fuer automatisch aufgefuellte
+    /// Ruhetage erzeugt (`localizationKey: "day.restDay.title"`) - genutzt, um einen
+    /// ueberzaehligen, nicht mehr gebrauchten Cardio-Tag wieder in diesen Zustand
+    /// zurueckzusetzen statt ihn unveraendert/unerklaert stehen zu lassen.
+    private static let restReleaseDaySpec = DaySpec(
+        name: "Ruhetag", localizationKey: "day.restDay.title", type: .rest, sequenceIndex: 0, exercises: []
+    )
+
+    /// Finding 1 fix: gemeinsame Transaktions-Grundlage fuer jede Funktion, die eine
+    /// Liste von (Tag, neuer Inhalt, optionaler neuer Typ)-Zuweisungen atomar anwendet -
+    /// ALLE Mutationen laufen in-memory, dann EIN `save(context)`; schlaegt das fehl,
+    /// werden ALLE (nicht nur ein Teil) ueber `revert` zurueckgerollt und der Fehler
+    /// weitergeworfen. Vorher drei fast identische Kopien dieses Ablaufs
+    /// (`applyCoachCardioAdjustment`, `insertCoachCardioDays`, und jetzt die beiden neuen
+    /// Funktionen unten) - diese Extraktion macht sie zu einer einzigen Quelle.
+    private static func applySpecs(
+        _ assignments: [(day: TrainingDay, spec: DaySpec, targetType: DayType?)], in context: ModelContext
+    ) throws -> Int {
+        guard !assignments.isEmpty else { return 0 }
+        let (timeBasedNames, compoundNames) = ProgramInstantiator.libraryLookupNames()
+        let specByName = ProgramInstantiator.libraryLookupSpecs()
+        var snapshots: [DayMutationSnapshot] = []
+        for assignment in assignments {
+            snapshots.append(apply(
+                assignment.spec, to: assignment.day, timeBasedNames: timeBasedNames,
+                compoundNames: compoundNames, specByName: specByName, in: context,
+                targetType: assignment.targetType
+            ))
+        }
+        do {
+            try save(context)
+        } catch {
+            revert(snapshots, in: context)
+            throw error
+        }
+        return snapshots.count
+    }
+
     /// Paket 1 (Laufcoach-Plananpassung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
     /// wendet frisch generierte Cardio-Tagesinhalte auf bereits vorhandene,
     /// laut `RunCoachPlanAdjustment.isEligibleForAdjustment` anfassbare
@@ -927,31 +966,91 @@ public enum PlanGeneratorInstantiator {
     /// Reicht `newCardioDays` nicht fuer alle `eligibleDays` (oder
     /// umgekehrt), werden nur `min(count)` Tage in Reihenfolge ersetzt -
     /// ueberzaehlige anfassbare Tage bleiben unveraendert (nie geloescht),
-    /// ein ueberzaehliger neuer Cardio-Tag wird NICHT eingefuegt. Tage zu
-    /// einem lebenden Plan hinzuzufuegen ist ausserhalb des Scopes von
-    /// Paket 1 (siehe dortiger Nachtrag) - der Aufrufer bietet in diesem
-    /// Fall stattdessen "als neuen Plan erstellen" an.
+    /// ein ueberzaehliger neuer Cardio-Tag wird NICHT eingefuegt. Dieser
+    /// einfache Primitiv bleibt bewusst so (reiner 1:1-Ersatz) - der
+    /// Mismatch-Fall (Finding 1, Lauf-Coaching-Audit) wird von den beiden
+    /// Funktionen UNTEN (`applyCoachCardioAdjustmentReleasingSurplus`/
+    /// `applyCoachCardioAdjustmentInsertingRemainder`) behandelt, die diesen
+    /// Primitiv fuer den Gleichstand-Fall wiederverwenden.
     @discardableResult
     public static func applyCoachCardioAdjustment(
         eligibleDays: [TrainingDay], newCardioDays: [DaySpec], in context: ModelContext
     ) throws -> Int {
         guard !eligibleDays.isEmpty, !newCardioDays.isEmpty else { return 0 }
-        let (timeBasedNames, compoundNames) = ProgramInstantiator.libraryLookupNames()
-        let specByName = ProgramInstantiator.libraryLookupSpecs()
-        var snapshots: [DayMutationSnapshot] = []
+        let assignments: [(day: TrainingDay, spec: DaySpec, targetType: DayType?)] =
+            zip(eligibleDays, newCardioDays).map { (day: $0, spec: $1, targetType: nil) }
+        return try applySpecs(assignments, in: context)
+    }
+
+    /// Finding 1 fix (Lauf-Coaching-Audit): fuer den Fall `newCardioDays.count >
+    /// eligibleDays.count` - ersetzt ALLE `eligibleDays` 1:1 und fuegt den Rest
+    /// zusaetzlich in `restDays` ein, ATOMAR (eine Transaktion fuer beide Haelften:
+    /// ein Save-Fehler macht JEDE Aenderung rueckgaengig, auch die bereits
+    /// "erfolgreichen" Ersetzungen - kein halb angewendetes Ergebnis). Re-Validierung
+    /// von `restDays` identisch zu `insertCoachCardioDays` (Plan-Zugehoerigkeit +
+    /// JETZT-Eignung, vor jeder Mutation) - `restDays.count` MUSS >=
+    /// `newCardioDays.count - eligibleDays.count` sein, sonst `CardioInsertionError.
+    /// insufficientRestDays`, wie beim reinen Einfuege-Pfad. Rueckgabewert ist
+    /// `newCardioDays.count` (die tatsaechliche Anzahl resultierender Cardio-Tage),
+    /// nicht die Anzahl angefasster Tage - identisches Prinzip wie
+    /// `insertCoachCardioDays`.
+    @discardableResult
+    public static func applyCoachCardioAdjustmentInsertingRemainder(
+        eligibleDays: [TrainingDay], newCardioDays: [DaySpec],
+        restDays: [TrainingDay], plan: TrainingPlan, in context: ModelContext
+    ) throws -> Int {
+        guard eligibleDays.count < newCardioDays.count else {
+            return try applyCoachCardioAdjustment(eligibleDays: eligibleDays, newCardioDays: newCardioDays, in: context)
+        }
+        let remainder = Array(newCardioDays.suffix(from: eligibleDays.count))
+        guard restDays.count >= remainder.count else {
+            throw CardioInsertionError.insufficientRestDays
+        }
+        for day in restDays {
+            guard day.plan?.persistentModelID == plan.persistentModelID else {
+                throw CardioInsertionError.restDayBelongsToAnotherPlan
+            }
+            guard RunCoachPlanAdjustment.isEligibleRestDayForInsertion(day) else {
+                throw CardioInsertionError.restDayNoLongerEligible
+            }
+        }
+        var assignments: [(day: TrainingDay, spec: DaySpec, targetType: DayType?)] = []
         for (day, spec) in zip(eligibleDays, newCardioDays) {
-            snapshots.append(apply(
-                spec, to: day, timeBasedNames: timeBasedNames,
-                compoundNames: compoundNames, specByName: specByName, in: context
-            ))
+            assignments.append((day: day, spec: spec, targetType: nil))
         }
-        do {
-            try save(context)
-        } catch {
-            revert(snapshots, in: context)
-            throw error
+        for (day, spec) in zip(restDays, remainder) {
+            assignments.append((day: day, spec: spec, targetType: .cardio))
         }
-        return snapshots.count
+        _ = try applySpecs(assignments, in: context)
+        return newCardioDays.count
+    }
+
+    /// Finding 1 fix (Lauf-Coaching-Audit): fuer den Fall `newCardioDays.count <
+    /// eligibleDays.count` - ersetzt die ersten `newCardioDays.count` `eligibleDays`
+    /// 1:1, setzt die UEBERZAEHLIGEN (bereits als anfassbar bestaetigten) `eligibleDays`
+    /// auf einen leeren Ruhetag zurueck (`restReleaseDaySpec`), statt sie unveraendert/
+    /// unerklaert stehen zu lassen. Beide Haelften in EINER Transaktion (siehe
+    /// `applySpecs`) - kein halb angewendetes Ergebnis. Rueckgabewert ist
+    /// `newCardioDays.count` (die tatsaechliche Anzahl resultierender Cardio-Tage),
+    /// nicht die Anzahl angefasster Tage.
+    @discardableResult
+    public static func applyCoachCardioAdjustmentReleasingSurplus(
+        eligibleDays: [TrainingDay], newCardioDays: [DaySpec], in context: ModelContext
+    ) throws -> Int {
+        guard newCardioDays.count < eligibleDays.count else {
+            return try applyCoachCardioAdjustment(eligibleDays: eligibleDays, newCardioDays: newCardioDays, in: context)
+        }
+        let daysToReplace = Array(eligibleDays.prefix(newCardioDays.count))
+        let daysToRelease = Array(eligibleDays.suffix(from: newCardioDays.count))
+        var assignments: [(day: TrainingDay, spec: DaySpec, targetType: DayType?)] = []
+        for (day, spec) in zip(daysToReplace, newCardioDays) {
+            assignments.append((day: day, spec: spec, targetType: nil))
+        }
+        for day in daysToRelease {
+            assignments.append((day: day, spec: restReleaseDaySpec, targetType: .rest))
+        }
+        _ = try applySpecs(assignments, in: context)
+        return newCardioDays.count
     }
 
     /// Task 6 (Laufcoaching Dual-Path, Phase B): Fehlerfaelle fuer `insertCoachCardioDays` - beide
@@ -1004,23 +1103,9 @@ public enum PlanGeneratorInstantiator {
             }
         }
 
-        let (timeBasedNames, compoundNames) = ProgramInstantiator.libraryLookupNames()
-        let specByName = ProgramInstantiator.libraryLookupSpecs()
-        var snapshots: [DayMutationSnapshot] = []
-        for (day, spec) in zip(restDays, newCardioDays) {
-            snapshots.append(apply(
-                spec, to: day, timeBasedNames: timeBasedNames,
-                compoundNames: compoundNames, specByName: specByName, in: context,
-                targetType: .cardio
-            ))
-        }
-        do {
-            try save(context)
-        } catch {
-            revert(snapshots, in: context)
-            throw error
-        }
-        return snapshots.count
+        let assignments: [(day: TrainingDay, spec: DaySpec, targetType: DayType?)] =
+            zip(restDays, newCardioDays).map { (day: $0, spec: $1, targetType: DayType.cardio) }
+        return try applySpecs(assignments, in: context)
     }
 
     /// Nachbesserung (Review nach Task #197): macht `apply(...)` fuer genau die Tage rueckgaengig,

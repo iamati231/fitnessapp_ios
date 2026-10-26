@@ -222,6 +222,32 @@ public struct CoachAdjustmentCardModel: Equatable {
             count = try PlanGeneratorInstantiator.insertCoachCardioDays(
                 plan: plan, restDays: selectedRestDays, newCardioDays: newCardioDays, in: context
             )
+        } else if newCardioDays.count > eligibleDays.count {
+            // Finding 1 (Lauf-Coaching-Audit): neues Ziel braucht MEHR Lauftage als
+            // vorhandene anfassbare Cardio-Tage - ALLE eligibleDays ersetzen UND den
+            // Rest atomar in freie Ruhetage einfuegen (kein stiller Teilerfolg: reicht
+            // der Platz nicht, wirft dies VOR jeder Mutation - derselbe Vertrag wie der
+            // reine Einfuege-Pfad oben). Vorher: `applyCoachCardioAdjustment`s `zip`
+            // stoppte still bei `eligibleDays.count`, der Rest wurde nie erzeugt, aber
+            // trotzdem als vollstaendiger Erfolg gemeldet und der Fingerprint gesetzt.
+            let remainderCount = newCardioDays.count - eligibleDays.count
+            let eligibleRestDays = RunCoachPlanAdjustment.eligibleRestDaysForInsertion(in: plan)
+            let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
+                eligible: eligibleRestDays, count: remainderCount, otherDays: plan.days
+            )
+            count = try PlanGeneratorInstantiator.applyCoachCardioAdjustmentInsertingRemainder(
+                eligibleDays: eligibleDays, newCardioDays: newCardioDays,
+                restDays: selectedRestDays, plan: plan, in: context
+            )
+        } else if newCardioDays.count < eligibleDays.count {
+            // Finding 1: neues Ziel braucht WENIGER Lauftage - die ersten
+            // `newCardioDays.count` eligibleDays ersetzen, die ueberzaehligen auf
+            // Ruhetage zuruecksetzen statt sie unveraendert/unerklaert stehen zu lassen.
+            // Vorher: die ueberzaehligen Tage blieben als veraltete, zum neuen Ziel
+            // nicht mehr passende Cardio-Tage unangetastet stehen.
+            count = try PlanGeneratorInstantiator.applyCoachCardioAdjustmentReleasingSurplus(
+                eligibleDays: eligibleDays, newCardioDays: newCardioDays, in: context
+            )
         } else {
             count = try PlanGeneratorInstantiator.applyCoachCardioAdjustment(
                 eligibleDays: eligibleDays, newCardioDays: newCardioDays, in: context

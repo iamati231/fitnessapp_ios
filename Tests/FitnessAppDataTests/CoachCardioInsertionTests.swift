@@ -296,5 +296,153 @@ final class CoachCardioInsertionTests: XCTestCase {
         XCTAssertEqual(curatedCardioDay.type, .cardio, "nil oldType muss ein echtes No-op sein, kein Reset")
         XCTAssertEqual(wizardFullBodyDay.type, .fullBody, "nil oldType muss ein echtes No-op sein, kein Reset")
     }
+
+    // MARK: - applyCoachCardioAdjustmentReleasingSurplus (Finding 1, Lauf-Coaching-Audit)
+    //
+    // Vorher brach ein Zielwechsel, der WENIGER Lauftage braucht als bestehende anfassbare
+    // Cardio-Tage vorhanden sind, `applyCoachCardioAdjustment`s `zip` nie: die ueberzaehligen
+    // Tage blieben einfach unangetastet, veraltet und unerklaert stehen.
+
+    func test_applyCoachCardioAdjustmentReleasingSurplus_replacesMatchedDaysAndReleasesSurplusToRest() throws {
+        let plan = makePlan()
+        var eligibleDays: [TrainingDay] = []
+        for index in 0..<5 {
+            let day = insert(TrainingDay(name: "Lauf \(index)", weekday: index + 1, type: .cardio, plan: plan), into: plan)
+            day.generationFingerprint = day.currentContentFingerprint
+            eligibleDays.append(day)
+        }
+        let spec1 = cardioDaySpec(name: "Neuer Lauf 1", sequenceIndex: 1)
+        let spec2 = cardioDaySpec(name: "Neuer Lauf 2", sequenceIndex: 2)
+
+        let count = try PlanGeneratorInstantiator.applyCoachCardioAdjustmentReleasingSurplus(
+            eligibleDays: eligibleDays, newCardioDays: [spec1, spec2], in: context
+        )
+
+        XCTAssertEqual(count, 2, "Rueckgabewert zaehlt die tatsaechlich neuen Cardio-Tage, nicht alle angefassten Tage")
+        XCTAssertEqual(eligibleDays[0].activeExercises.map(\.name), spec1.exercises.map(\.name))
+        XCTAssertEqual(eligibleDays[1].activeExercises.map(\.name), spec2.exercises.map(\.name))
+        for day in eligibleDays[2...] {
+            XCTAssertEqual(day.type, .rest, "ueberzaehlige Tage muessen auf .rest zurueckgesetzt werden")
+            XCTAssertTrue(day.activeExercises.isEmpty)
+            XCTAssertEqual(day.localizationKey, "day.restDay.title")
+            XCTAssertNil(day.customName)
+            XCTAssertNotNil(day.generationFingerprint)
+            XCTAssertEqual(day.generationFingerprint, day.currentContentFingerprint, "muss intern konsistent bleiben (spaetere Eignungs-Pruefungen)")
+        }
+    }
+
+    func test_applyCoachCardioAdjustmentReleasingSurplus_revertOnFailure_restoresAllTouchedDays() throws {
+        let plan = makePlan()
+        var eligibleDays: [TrainingDay] = []
+        for index in 0..<5 {
+            let day = insert(TrainingDay(name: "Lauf \(index)", weekday: index + 1, type: .cardio, plan: plan), into: plan)
+            day.generationFingerprint = day.currentContentFingerprint
+            eligibleDays.append(day)
+        }
+        let spec1 = cardioDaySpec(name: "Neuer Lauf 1", sequenceIndex: 1)
+        let spec2 = cardioDaySpec(name: "Neuer Lauf 2", sequenceIndex: 2)
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        XCTAssertThrowsError(
+            try PlanGeneratorInstantiator.applyCoachCardioAdjustmentReleasingSurplus(
+                eligibleDays: eligibleDays, newCardioDays: [spec1, spec2], in: context
+            )
+        )
+
+        for (index, day) in eligibleDays.enumerated() {
+            XCTAssertEqual(day.type, .cardio, "jeder angefasste Tag (Ersetzen UND Zuruecksetzen) muss vollstaendig zurueckgerollt sein")
+            XCTAssertEqual(day.name, "Lauf \(index)")
+            XCTAssertTrue(day.activeExercises.isEmpty)
+        }
+    }
+
+    // MARK: - applyCoachCardioAdjustmentInsertingRemainder (Finding 1, Lauf-Coaching-Audit)
+    //
+    // Vorher brach ein Zielwechsel, der MEHR Lauftage braucht als bestehende anfassbare
+    // Cardio-Tage vorhanden sind, `applyCoachCardioAdjustment`s `zip` nie: nur `min(count)`
+    // Tage wurden ersetzt, als vollstaendiger Erfolg gemeldet, der Fingerprint gesetzt - der
+    // Rest wurde nie erzeugt.
+
+    func test_applyCoachCardioAdjustmentInsertingRemainder_replacesEligibleAndInsertsRemainder() throws {
+        let plan = makePlan()
+        let eligible1 = insert(TrainingDay(name: "Lauf 1", weekday: 1, type: .cardio, plan: plan), into: plan)
+        eligible1.generationFingerprint = eligible1.currentContentFingerprint
+        let eligible2 = insert(TrainingDay(name: "Lauf 2", weekday: 2, type: .cardio, plan: plan), into: plan)
+        eligible2.generationFingerprint = eligible2.currentContentFingerprint
+        let rest1 = insert(TrainingDay(name: "Ruhetag", weekday: 3, type: .rest, plan: plan, isAutoFilledPlaceholder: true), into: plan)
+        let rest2 = insert(TrainingDay(name: "Ruhetag", weekday: 4, type: .rest, plan: plan, isAutoFilledPlaceholder: true), into: plan)
+        let rest3 = insert(TrainingDay(name: "Ruhetag", weekday: 5, type: .rest, plan: plan, isAutoFilledPlaceholder: true), into: plan)
+
+        let specs = (1...5).map { cardioDaySpec(name: "Neuer Lauf \($0)", sequenceIndex: $0) }
+
+        let count = try PlanGeneratorInstantiator.applyCoachCardioAdjustmentInsertingRemainder(
+            eligibleDays: [eligible1, eligible2], newCardioDays: specs,
+            restDays: [rest1, rest2, rest3], plan: plan, in: context
+        )
+
+        XCTAssertEqual(count, 5)
+        XCTAssertEqual(eligible1.activeExercises.map(\.name), specs[0].exercises.map(\.name))
+        XCTAssertEqual(eligible2.activeExercises.map(\.name), specs[1].exercises.map(\.name))
+        for (restDay, spec) in zip([rest1, rest2, rest3], Array(specs[2...])) {
+            XCTAssertEqual(restDay.type, .cardio, "ein eingefuegter Tag muss explizit von .rest weg wechseln")
+            XCTAssertEqual(restDay.activeExercises.map(\.name), spec.exercises.map(\.name))
+        }
+    }
+
+    func test_applyCoachCardioAdjustmentInsertingRemainder_throwsAndWritesNothing_whenRestDaysCountIsInsufficient() {
+        let plan = makePlan()
+        let eligible1 = insert(TrainingDay(name: "Lauf 1", weekday: 1, type: .cardio, plan: plan), into: plan)
+        eligible1.generationFingerprint = eligible1.currentContentFingerprint
+        let eligible2 = insert(TrainingDay(name: "Lauf 2", weekday: 2, type: .cardio, plan: plan), into: plan)
+        eligible2.generationFingerprint = eligible2.currentContentFingerprint
+        let rest1 = insert(TrainingDay(name: "Ruhetag", weekday: 3, type: .rest, plan: plan, isAutoFilledPlaceholder: true), into: plan)
+
+        let specs = (1...5).map { cardioDaySpec(name: "Neuer Lauf \($0)", sequenceIndex: $0) }
+        let originalFingerprints = [eligible1.generationFingerprint, eligible2.generationFingerprint]
+
+        XCTAssertThrowsError(
+            try PlanGeneratorInstantiator.applyCoachCardioAdjustmentInsertingRemainder(
+                eligibleDays: [eligible1, eligible2], newCardioDays: specs,
+                restDays: [rest1], plan: plan, in: context
+            )
+        ) { error in
+            XCTAssertEqual(error as? PlanGeneratorInstantiator.CardioInsertionError, .insufficientRestDays)
+        }
+
+        XCTAssertEqual(eligible1.generationFingerprint, originalFingerprints[0], "VOR jeder Mutation geworfen - auch bereits eignungsfaehige Tage duerfen nicht angefasst werden")
+        XCTAssertEqual(eligible2.generationFingerprint, originalFingerprints[1])
+        XCTAssertTrue(eligible1.activeExercises.isEmpty)
+        XCTAssertEqual(rest1.type, .rest)
+        XCTAssertTrue(rest1.activeExercises.isEmpty)
+    }
+
+    func test_applyCoachCardioAdjustmentInsertingRemainder_revertOnFailure_restoresAllTouchedDays() throws {
+        let plan = makePlan()
+        let eligible1 = insert(TrainingDay(name: "Lauf 1", weekday: 1, type: .cardio, plan: plan), into: plan)
+        eligible1.generationFingerprint = eligible1.currentContentFingerprint
+        let rest1 = insert(TrainingDay(name: "Ruhetag", weekday: 2, type: .rest, plan: plan, isAutoFilledPlaceholder: true), into: plan)
+        let rest2 = insert(TrainingDay(name: "Ruhetag", weekday: 3, type: .rest, plan: plan, isAutoFilledPlaceholder: true), into: plan)
+
+        let specs = (1...3).map { cardioDaySpec(name: "Neuer Lauf \($0)", sequenceIndex: $0) }
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        XCTAssertThrowsError(
+            try PlanGeneratorInstantiator.applyCoachCardioAdjustmentInsertingRemainder(
+                eligibleDays: [eligible1], newCardioDays: specs,
+                restDays: [rest1, rest2], plan: plan, in: context
+            )
+        )
+
+        XCTAssertEqual(eligible1.type, .cardio)
+        XCTAssertTrue(eligible1.activeExercises.isEmpty)
+        for restDay in [rest1, rest2] {
+            XCTAssertEqual(restDay.type, .rest, "oldType muss zurueckgeschrieben werden")
+            XCTAssertNil(restDay.customName)
+            XCTAssertTrue(restDay.activeExercises.isEmpty)
+            XCTAssertNil(restDay.generationFingerprint)
+        }
+    }
 }
 #endif
