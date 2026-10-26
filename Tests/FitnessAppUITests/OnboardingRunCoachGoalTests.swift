@@ -84,6 +84,26 @@ final class OnboardingRunCoachGoalTests: XCTestCase {
         )
     }
 
+    /// Finding 1 (Laufcoaching-Audit-Fixes): `runCoachCardioGoal` existiert im Onboarding als
+    /// reiner `@State`, BEVOR ein `UserBodyProfile` angelegt wird - ohne diese Weitergabe an den
+    /// eingebetteten Builder haette dessen `currentInput` fuer die Laufziel-Komponente keine
+    /// Quelle (siehe `PlanBuilderCardioProfileWiringTests.effectiveCardioRunProfile`-Tests fuer
+    /// die eigentliche Herleitungslogik - dieser Test prueft nur die Weitergabe selbst).
+    func testEmbeddedPlanBuilderReceivesTheOnboardingCardioGoalSelection() throws {
+        let source = try contents(of: "OnboardingView.swift")
+        guard let callRange = source.range(of: "PlanBuilderView(initialInput: PlanGeneratorInput(") else {
+            XCTFail("embedded PlanBuilderView call not found"); return
+        }
+        // Bounded window after the call's start (the named-argument list fits well within this
+        // many characters, see lines ~412-420) - avoids depending on full call-boundary parsing.
+        let windowEnd = source.index(callRange.lowerBound, offsetBy: 600, limitedBy: source.endIndex) ?? source.endIndex
+        let window = source[callRange.lowerBound..<windowEnd]
+        XCTAssertTrue(
+            window.contains("preseededCardioGoal: runCoachCardioGoal"),
+            "the embedded builder must receive the onboarding's current cardio goal selection"
+        )
+    }
+
     /// `onboarding.runCoachGoal.title`/`.subtitle` sind die einzigen neuen
     /// Resources fuer diese Frage - DE/EN/TR muessen vollstaendig sein.
     func testRunCoachGoalQuestionLabelsAreFullyLocalized() throws {

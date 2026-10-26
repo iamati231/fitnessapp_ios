@@ -415,6 +415,7 @@ public struct OnboardingView: View {
                     usesFixedWeekdays: false
                 ), preseededEnduranceModality: enduranceModality,
                 preseededRunCoachWanted: runCoachWanted,
+                preseededCardioGoal: runCoachCardioGoal,
                 preseededGoal: trainingGoal,
                 preseededDaysPerWeek: weeklyGoal,
                 onGenerated: { input, result in

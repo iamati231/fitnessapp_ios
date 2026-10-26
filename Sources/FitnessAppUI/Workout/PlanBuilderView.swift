@@ -170,6 +170,7 @@ public struct PlanBuilderView: View {
         initialInput: PlanGeneratorInput? = nil,
         preseededEnduranceModality: EnduranceModality? = nil,
         preseededRunCoachWanted: Bool = false,
+        preseededCardioGoal: CardioGoal? = nil,
         preseededGoal: TrainingGoal? = nil,
         preseededDaysPerWeek: Int? = nil,
         onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil,
@@ -190,6 +191,11 @@ public struct PlanBuilderView: View {
         }
         _selectedEnduranceModality = State(initialValue: preseededEnduranceModality)
         _runCoachWanted = State(initialValue: preseededRunCoachWanted)
+        // Finding 1 (Laufcoaching-Audit-Fixes): das endgueltige `UserBodyProfile` existiert im
+        // Onboarding noch nicht - ohne diese Vorbefuellung haette `currentInput` fuer die
+        // Laufziel-Komponente von `cardioRunProfile` keine Quelle und koennte nur raten/`nil`
+        // liefern. `OnboardingView` uebergibt hier seine eigene `runCoachCardioGoal`-Auswahl.
+        _preseededCardioGoal = State(initialValue: preseededCardioGoal ?? .generalFitness)
         // Geraete-Abnahme (A01): `trainingGoal`/`weeklyGoal` wurden im
         // umschliessenden `OnboardingView` bereits beantwortet, BEVOR der
         // User ueberhaupt in diesen eingebetteten Builder wechselt - ohne
@@ -307,6 +313,10 @@ public struct PlanBuilderView: View {
     /// unterstuetzt (`EnduranceModality.supportsRunCoach`) - siehe
     /// `applyEnduranceModalityChoiceIfNeeded`.
     @State private var runCoachWanted = false
+    /// Finding 1 (Laufcoaching-Audit-Fixes): das vom Nutzer im Onboarding gewaehlte Laufziel,
+    /// bevor ein `UserBodyProfile` existiert - siehe `init(preseededCardioGoal:)`-Doku. Nur
+    /// relevant, solange `profiles.first` (noch) kein Profil liefert; siehe `currentInput`.
+    @State private var preseededCardioGoal: CardioGoal = .generalFitness
 
     private var selectedTrainingGoal: TrainingGoal? {
         guard let selectedGoalCard else { return nil }
@@ -1408,6 +1418,33 @@ public struct PlanBuilderView: View {
 
     // MARK: - Schritt 3: die gerechnete Woche
 
+    /// Finding 1 (Laufcoaching-Audit-Fixes): reine, SwiftData-freie Herleitung der
+    /// Lauf-Coach-Eingabe aus der AKTUELLEN Builder-Auswahl (`CardioRunProfile`s
+    /// eigene Typ-Doku: "bleibt ohne SwiftData testbar") - die EINZIGE Quelle fuer
+    /// `currentInput`, damit es nicht noch eine zweite, womoeglich abweichende Stelle
+    /// gibt (doppelte/widersprüchliche Quellen fuer dieselbe Auswahl). Das Gate ist
+    /// `runCoachWanted` (die aktuelle Builder-Auswahl), NICHT das moeglicherweise noch
+    /// nicht existierende oder bereits veraltete gespeicherte Profil - sonst weicht ein
+    /// frisch im Builder umgeschalteter Coach, oder das Onboarding (noch kein Profil),
+    /// von dem ab, was der Nutzer hier tatsaechlich sieht und bestaetigt. `savedCardioGoal`
+    /// faellt auf `preseededCardioGoal` zurueck, wenn noch kein Profil existiert (Onboarding).
+    /// Referenzzeit/Wochenvolumen werden NIE erfunden - ohne gespeichertes Profil bleiben
+    /// sie `nil`.
+    static func effectiveCardioRunProfile(
+        runCoachWanted: Bool,
+        savedCardioGoal: CardioGoal?,
+        savedCurrent5kReferenceSeconds: Int?,
+        savedWeeklyBaseVolumeKm: Double?,
+        preseededCardioGoal: CardioGoal
+    ) -> CardioRunProfile? {
+        guard runCoachWanted else { return nil }
+        return CardioRunProfile(
+            goal: savedCardioGoal ?? preseededCardioGoal,
+            current5kReferenceSeconds: savedCurrent5kReferenceSeconds,
+            weeklyBaseVolumeKm: savedWeeklyBaseVolumeKm
+        )
+    }
+
     private var currentInput: PlanGeneratorInput {
         let selections: [PlanGeneratorTypeSelection]
         if isPreSeededFlow {
@@ -1421,15 +1458,17 @@ public struct PlanBuilderView: View {
             // Requirement A: der Lauf-Coach wirkt auf die generierten Tage nur,
             // wenn der Nutzer ihn aktiv eingeschaltet hat - sonst exakt das
             // bisherige Verhalten (siehe `CardioRunProfile`-Typ-Doku).
-            let cardioRunProfile: CardioRunProfile? = (profiles.first?.cardioCoachingEnabled == true)
-                ? profiles.first.map {
-                    CardioRunProfile(
-                        goal: $0.cardioGoal,
-                        current5kReferenceSeconds: $0.current5kReferenceSeconds,
-                        weeklyBaseVolumeKm: $0.weeklyBaseVolumeKm
-                    )
-                }
-                : nil
+            //
+            // Finding 1 (Laufcoaching-Audit-Fixes): siehe `effectiveCardioRunProfile`-Doku -
+            // einzige Quelle fuer diese Herleitung, damit Vorschau/gespeicherter Plan nie
+            // auseinanderlaufen koennen.
+            let cardioRunProfile = Self.effectiveCardioRunProfile(
+                runCoachWanted: runCoachWanted,
+                savedCardioGoal: profiles.first?.cardioGoal,
+                savedCurrent5kReferenceSeconds: profiles.first?.current5kReferenceSeconds,
+                savedWeeklyBaseVolumeKm: profiles.first?.weeklyBaseVolumeKm,
+                preseededCardioGoal: preseededCardioGoal
+            )
             selections = GoalDrivenPlanSelectionBuilder.makeSelections(
                 goal: selectedTrainingGoal ?? .hybrid,
                 enduranceModality: selectedEnduranceModality,
