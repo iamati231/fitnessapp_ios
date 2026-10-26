@@ -50,10 +50,14 @@ final class LaufcoachingEndToEndTests: XCTestCase {
         profile.current5kReferenceSeconds = 1500 // 25:00 5K baseline - exercises pace too (Task 8)
 
         // MARK: 2. Generate plan selections (goal-driven structure, Tasks 2/3)
-        // Exactly one eligible cardio day in the ORIGINAL plan, so applyCoachCardioAdjustment's
-        // zip(eligibleDays, newCardioDays) deterministically applies newCardioDays[0] to it -
-        // same "one anfassbarer Cardio-Tag" shape `CoachAdjustmentCardModelTests.makeProfileAndPlan`
-        // and `CardioFeasibilityCardModelTests.makeEligiblePlan` both use.
+        // Exactly one eligible cardio day in the ORIGINAL plan - matches the "one anfassbarer
+        // Cardio-Tag" shape `CoachAdjustmentCardModelTests.makeProfileAndPlan` and
+        // `CardioFeasibilityCardModelTests.makeEligiblePlan` both use. `.fiveK` (the proposed goal
+        // below) needs 2 running days/week though - Finding 1 (Lauf-Coaching-Audit) means `accept()`
+        // now replaces this one eligible day AND inserts the remainder into one of the real,
+        // auto-filled rest days `PlanGeneratorInstantiator.build`'s full week produces (instead of
+        // the old, now-fixed bug that silently replaced only `newCardioDays[0]` and dropped the
+        // rest) - see MARK: 6 below for the resulting two-day assertion.
         let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
             goal: .endurance, enduranceModality: .running,
             totalDaysPerWeek: 1, sessionDurationMinutes: 45, experience: .intermediate,
@@ -111,16 +115,33 @@ final class LaufcoachingEndToEndTests: XCTestCase {
         // MARK: 6. Inspect the adopted day's content
         // SwiftData objects are live-updating within the same context - `plan`/`originalDay` already
         // reflect the post-accept state, no re-fetch needed.
+        //
+        // Finding 1 (Lauf-Coaching-Audit): `.fiveK` needs 2 running days/week (MARK: 2 above) but
+        // the plan only had 1 eligible cardio day - accept() correctly REPLACES that one day AND
+        // INSERTS the remainder into one of the real auto-filled rest days, so TWO workout days
+        // result now, not one. (The old, now-fixed bug silently dropped the second day instead.)
         let adoptedWorkoutDays = plan.days.filter { $0.type != .rest }
-        XCTAssertEqual(adoptedWorkoutDays.count, 1, "accept() darf keine Tage hinzufuegen/entfernen, nur Inhalt ersetzen")
-        let adoptedDay = try XCTUnwrap(adoptedWorkoutDays.first)
-        XCTAssertEqual(adoptedDay.persistentModelID, originalDay.persistentModelID, "derselbe Tag wird angepasst, nicht ersetzt")
+        XCTAssertEqual(adoptedWorkoutDays.count, 2, "accept() muss den eligible Tag ersetzen UND den Rest in einen freien Ruhetag einfuegen")
+        let adoptedOriginalDay = try XCTUnwrap(adoptedWorkoutDays.first { $0.persistentModelID == originalDay.persistentModelID })
+        let insertedDays = adoptedWorkoutDays.filter { $0.persistentModelID != originalDay.persistentModelID }
+        XCTAssertEqual(insertedDays.count, 1, "genau ein vormaliger Ruhetag muss in einen Cardio-Tag umgewandelt worden sein")
+        let insertedDay = try XCTUnwrap(insertedDays.first)
 
-        // (a) Task 7: the adopted day's exercise names/structure match the proposed goal's spec -
-        // zip(eligibleDays, newCardioDays) applies previewAfterDays[0] to the single eligible day.
+        // (a) Task 7: the ORIGINAL (replaced) day's exercise names/structure match the proposed
+        // goal's first generated day - the replace branch applies previewAfterDays[0] to the single
+        // eligible day.
         XCTAssertEqual(
-            adoptedDay.activeExercises.map(\.name), previewAfterDays[0].exercises.map(\.name),
-            "der angepasste Tag muss den Inhalt fuer das VORGESCHLAGENE Ziel (5K) tragen, nicht fuer das stale Marathon-Ziel"
+            adoptedOriginalDay.activeExercises.map(\.name), previewAfterDays[0].exercises.map(\.name),
+            "der ersetzte Tag muss den Inhalt fuer das VORGESCHLAGENE Ziel (5K) tragen, nicht fuer das stale Marathon-Ziel"
+        )
+
+        // (a2) Finding 1 (Lauf-Coaching-Audit): der eingefuegte (vormalige Ruhe-)Tag muss den
+        // ZWEITEN generierten Tag des vorgeschlagenen Ziels tragen - der Rest, den der alte Bug
+        // stillschweigend verworfen hat.
+        XCTAssertEqual(insertedDay.type, .cardio, "ein eingefuegter Tag muss explizit von .rest weg wechseln")
+        XCTAssertEqual(
+            insertedDay.activeExercises.map(\.name), previewAfterDays[1].exercises.map(\.name),
+            "der eingefuegte Tag muss den Inhalt fuer den ZWEITEN generierten Lauftag des vorgeschlagenen Ziels tragen"
         )
 
         // (b) Task 8: the DATA that `SetRow.targetPaceHint` reads (content.nameSnapshot's
