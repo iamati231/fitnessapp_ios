@@ -224,6 +224,20 @@ public struct PlanDraft: Sendable, Hashable {
         return true
     }
 
+    /// UI-Ticket ("Plan Bauen Schritt 3: Übungsalternativen"): ersetzt GENAU
+    /// eine Uebung innerhalb eines Tages - anders als `replaceContent` (der
+    /// gesamte Taginhalt) oder `redistributeUnfixedDays` (mehrere Tage).
+    /// Position der Uebung (Array-Index) und jedes andere Feld des Tages
+    /// bleiben unveraendert; dieselbe Fixierungs-Semantik wie
+    /// `replaceContent`: `isContentFixed == true` verweigert den Austausch.
+    @discardableResult
+    public mutating func replaceExercise(dayID: DraftDayID, exerciseID: DraftExerciseID, with newSpec: ExerciseSpec) -> Bool {
+        guard let dayIndex = index(of: dayID), !days[dayIndex].isContentFixed else { return false }
+        guard let exerciseIndex = days[dayIndex].exercises.firstIndex(where: { $0.id == exerciseID }) else { return false }
+        days[dayIndex].exercises[exerciseIndex].spec = newSpec
+        return true
+    }
+
     public mutating func setContentFixed(_ fixed: Bool, for id: DraftDayID) {
         guard let idx = index(of: id) else { return }
         days[idx].isContentFixed = fixed

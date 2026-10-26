@@ -30,6 +30,8 @@ public struct NutritionGoalsView: View {
 
     @State private var tdeeWeightKg: Double?
     @State private var tdeeActivity: ActivityLevel = .moderate
+    /// writing-block.md Punkt 5: welches Ziel "Aus TDEE übernehmen" schreibt.
+    @State private var tdeeGoalType: CalorieGoalType = .maintenance
 
     public init() {}
 
@@ -125,8 +127,7 @@ public struct NutritionGoalsView: View {
                 )
             }
             DeltiqControlRow(
-                label: String(localized: "calc.tdee.activity", bundle: .module),
-                showsDivider: canAdopt
+                label: String(localized: "calc.tdee.activity", bundle: .module)
             ) {
                 Picker(selection: $tdeeActivity) {
                     ForEach(ActivityLevel.allCases, id: \.self) { level in
@@ -135,6 +136,24 @@ public struct NutritionGoalsView: View {
                 } label: { EmptyView() }
                 .pickerStyle(.menu)
             }
+            // writing-block.md Punkt 5: direkte Auswahl, ob das uebernommene
+            // Ziel auf Erhaltung, Bulk oder Cut ausgerichtet sein soll, statt
+            // immer stillschweigend nur die reine Erhaltungs-TDEE zu
+            // schreiben.
+            VStack(alignment: .leading, spacing: 8) {
+                Text(String(localized: "calc.tdee.goalType", bundle: .module))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                DeltiqSegmentedPicker(
+                    options: CalorieGoalType.allCases.map {
+                        DeltiqSegmentedOption($0, label: String(localized: $0.localizedName))
+                    },
+                    selection: $tdeeGoalType
+                )
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, canAdopt ? 10 : 4)
+            .padding(.bottom, canAdopt ? 6 : 10)
             if canAdopt, let tdeeWeightKg {
                 Button {
                     adoptFromTDEE(profile: profile, weightKg: tdeeWeightKg)
@@ -167,9 +186,7 @@ public struct NutritionGoalsView: View {
             profile: profile.profile
         )
         let tdee = BodyCalculations.tdee(bmr: bmr, activityFactor: tdeeActivity.factor)
-        // Final-review ruling: project-wide truncate-not-round convention
-        // (DoubleFormatting.swift) applies here too, not just rounding.
-        profile.dailyCalorieGoalKcal = Int(tdee.truncated(to: 0))
+        profile.dailyCalorieGoalKcal = tdeeGoalType.dailyGoalKcal(tdee: tdee)
     }
 
     private func ageYears(for profile: UserBodyProfile) -> Int {

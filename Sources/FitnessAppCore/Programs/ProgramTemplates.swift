@@ -607,6 +607,22 @@ public enum ProgramTemplates {
         targetGoals: [.hybrid],
         // DEL-172: Dumbbell-Only-Variante. Cardio-Tage unverändert; Strength-
         // Compounds auf KH-Versionen umgemappt (Goblet/KH-Bench/KH-Row).
+        //
+        // Equipment-Vielfalt Phase 1 Task 4 (Controller-Ruling, final):
+        // `PlanSelectionResolver.resolve` liest jetzt `resolvedSlots(against:)`
+        // ZUERST (siehe `ResolvedPlanSelection.swift`) — Vorschau/Instanziierung
+        // laufen bereits ueber den neuen Pfad. Dieses `equipmentVariants`
+        // bleibt DAUERHAFT bestehen (NICHT nur vorlaeufig) — der Controller
+        // hat entschieden, es NICHT zu loeschen: `PlanMatchmaker.matchReasons`/
+        // `equipmentMatches` (realer Quiz-Matcher-Pfad) lesen weiterhin DIREKT
+        // `bestEquipmentCheckedVariant`/`equipmentVariants`, nicht
+        // `PlanSelectionResolver.resolve` — ein Loeschen wuerde das reale
+        // Matching-Verhalten fuer kettlebell-/dumbbell-only-Nutzer auf diesen
+        // 3 Templates stillschweigend aendern. Ein slot-bewusstes Redesign von
+        // `PlanMatchmaker` ist ausdruecklich NICHT Teil dieses Plans (kein
+        // Interfaces-Spec in keinem der 11 Tasks) — `PlanMatchmaker.swift`
+        // bleibt unangetastet, dieser Fund ist eine ledger-Notiz fuer spaetere
+        // Arbeit, kein offener Punkt dieses Tasks. Siehe Task-4-Report.
         equipmentVariants: [
             EquipmentVariant(profile: .dumbbellOnly, days: [
                 DaySpec(name: "Strength Ganzkörper A", localizationKey: "plan.day.strengthFullBodyA", type: .fullBody, sequenceIndex: 1, exercises: [
@@ -649,6 +665,47 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 8.0, targetDurationMinutes: 50, enduranceSportKind: .running)
                 ])
             ])
+        ],
+        // Equipment-Vielfalt Phase 1 Task 3: `TemplateSlot`-basierte
+        // Resolution (Task 1 `TemplateSlotResolver`), additiv neben
+        // `equipmentVariants` oben. `reviewedAlternatives` sind eine
+        // verlustfreie Transkription derselben dumbbellOnly-/kettlebellOnly-
+        // Uebungsnamen — siehe `HybridTemplateSlotParityTests` fuer den
+        // vollstaendigen Parity-Beweis. Cardio-Tage bleiben ausserhalb von
+        // `slots` (leeres Array = unveraendert durchgereicht).
+        slots: [
+            [
+                // "Goblet Squat" und "Kettlebell Goblet Squat" tragen die
+                // IDENTISCHE `equipmentRequirement`
+                // (`.any([.item(.kettlebell), .item(.dumbbell)])`,
+                // ExerciseLibraryData.swift Zeile 154/386) — Equipment allein
+                // kann zwischen beiden nicht unterscheiden. Der zuerst
+                // gelistete Kandidat gewinnt deshalb fuer JEDES eingeschraenkte
+                // Profil (dumbbellOnly UND kettlebellOnly) gleichermassen —
+                // keine Reihenfolge trennt die beiden Profile hier (siehe
+                // `HybridTemplateSlotParityTests` fuer den entsprechend
+                // korrigierten Erwartungswert).
+                TemplateSlot(defaultExerciseName: "Kniebeuge", reviewedAlternatives: ["Kettlebell Goblet Squat", "Goblet Squat"],
+                             sets: 3, repsMin: 6, repsMax: 8, restSeconds: 150),
+                TemplateSlot(defaultExerciseName: "Bankdrücken", reviewedAlternatives: ["Bankdrücken (KH)", "Kettlebell Floor Press"],
+                             sets: 3, repsMin: 6, repsMax: 10, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Rudern vorgebeugt", reviewedAlternatives: ["Rudern einarmig (KH)", "Kettlebell Row einarmig"],
+                             sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Plank", reviewedAlternatives: [],
+                             sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60)
+            ],
+            [], // Easy Run — Cardio, keine Equipment-Variation.
+            [
+                TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                             sets: 3, repsMin: 8, repsMax: 10, restSeconds: 150),
+                TemplateSlot(defaultExerciseName: "Schulterdrücken (KH)", reviewedAlternatives: ["Kettlebell Push Press"],
+                             sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Latzug (weit)", reviewedAlternatives: ["Chest Supported Row (KH)", "Kettlebell Swing"],
+                             sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Bizeps-Curl (KH)", reviewedAlternatives: ["Kettlebell Halo"],
+                             sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60)
+            ],
+            [] // Long Run — Cardio, keine Equipment-Variation.
         ]
     )
 
@@ -714,6 +771,10 @@ public enum ProgramTemplates {
         // Distanzen/Dauer). Strength-Tage werden auf die jeweilige Implement-
         // Familie umgemappt. RIR-Puffer + Volumen bleiben strukturell identisch
         // zur Barbell-Variante, damit die Concurrent-Logik nicht kippt.
+        //
+        // Equipment-Vielfalt Phase 1 Task 4 (Controller-Ruling, final): siehe
+        // ausfuehrlichen Kommentar bei hybridBeginner oben — bleibt DAUERHAFT
+        // bestehen (Controller-Entscheidung, nicht nur vorlaeufig).
         equipmentVariants: [
             // ── Dumbbell-Only (Home-Gym ohne Rack) ─────────────────────────
             EquipmentVariant(profile: .dumbbellOnly, days: [
@@ -772,6 +833,43 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Plank",                           sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 3.0)
                 ])
             ])
+        ],
+        // Equipment-Vielfalt Phase 1 Task 3: siehe hybridBeginner-Kommentar
+        // oben fuer die Begruendung des Slot-Modells und der Alternativen-
+        // Reihenfolge. Parity-Beweis: `HybridTemplateSlotParityTests`.
+        slots: [
+            [
+                TemplateSlot(defaultExerciseName: "Bankdrücken", reviewedAlternatives: ["Bankdrücken (KH)", "Kettlebell Floor Press"],
+                             sets: 4, repsMin: 6, repsMax: 8, restSeconds: 150),
+                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Push Press"],
+                             sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Schrägbankdrücken (aufwärts)", reviewedAlternatives: ["Schrägbankdrücken aufwärts (KH)", "Kettlebell Clean & Press"],
+                             sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Trizepsdrücken (Kabel)", reviewedAlternatives: ["Trizepsstrecker über Kopf (KH)", "Kettlebell Halo"],
+                             sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60)
+            ],
+            [], // Easy Run — Cardio, keine Equipment-Variation.
+            [
+                TemplateSlot(defaultExerciseName: "Kreuzheben (konventionell)", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                             sets: 3, repsMin: 5, repsMax: 6, restSeconds: 180),
+                TemplateSlot(defaultExerciseName: "Klimmzüge (weit)", reviewedAlternatives: ["Rudern einarmig (KH)", "Kettlebell Row einarmig"],
+                             sets: 3, repsMin: 6, repsMax: 10, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Rudern vorgebeugt", reviewedAlternatives: ["Chest Supported Row (KH)", "Kettlebell Swing"],
+                             sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Bizeps-Curl (KH)", reviewedAlternatives: ["Kettlebell Suitcase Carry"],
+                             sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60)
+            ],
+            [], // Long Run — Cardio, keine Equipment-Variation.
+            [
+                TemplateSlot(defaultExerciseName: "Bulgarische Kniebeuge (KH)", reviewedAlternatives: ["Kettlebell Goblet Squat"],
+                             sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                             sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Wadenheben (stehend, LH)", reviewedAlternatives: ["Ausfallschritte (KH)", "Kettlebell Swing"],
+                             sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
+                TemplateSlot(defaultExerciseName: "Plank", reviewedAlternatives: [],
+                             sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60)
+            ]
         ]
     )
 
@@ -839,6 +937,10 @@ public enum ProgramTemplates {
         // Wadenheben (LH) → Farmer's Walk (timeBased Carry) als KH-realistischer
         // Posterior-Chain-Ersatz; alles andere via existierende KH-Versionen
         // aus der Library.
+        //
+        // Equipment-Vielfalt Phase 1 Task 4 (Controller-Ruling, final): siehe
+        // ausfuehrlichen Kommentar bei hybridBeginner oben — bleibt DAUERHAFT
+        // bestehen (Controller-Entscheidung, nicht nur vorlaeufig).
         equipmentVariants: [
             EquipmentVariant(profile: .dumbbellOnly, days: [
                 DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
@@ -906,6 +1008,50 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 15.0, targetDurationMinutes: 85, enduranceSportKind: .running)
                 ])
             ])
+        ],
+        // Equipment-Vielfalt Phase 1 Task 3: siehe hybridBeginner-Kommentar
+        // oben fuer die Begruendung des Slot-Modells. Parity-Beweis:
+        // `HybridTemplateSlotParityTests`.
+        slots: [
+            [
+                TemplateSlot(defaultExerciseName: "Bankdrücken", reviewedAlternatives: ["Bankdrücken (KH)", "Kettlebell Floor Press"],
+                             sets: 4, repsMin: 5, repsMax: 8, restSeconds: 180),
+                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Push Press"],
+                             sets: 3, repsMin: 6, repsMax: 10, restSeconds: 150),
+                TemplateSlot(defaultExerciseName: "Schrägbankdrücken (aufwärts)", reviewedAlternatives: ["Schrägbankdrücken aufwärts (KH)", "Kettlebell Clean & Press"],
+                             sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Seitheben", reviewedAlternatives: ["Turkish Get-Up"],
+                             sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
+                TemplateSlot(defaultExerciseName: "Trizepsdrücken (Kabel)", reviewedAlternatives: ["Trizepsstrecker über Kopf (KH)", "Kettlebell Halo"],
+                             sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60)
+            ],
+            [], // Easy Run — Cardio, keine Equipment-Variation.
+            [
+                TemplateSlot(defaultExerciseName: "Kreuzheben (konventionell)", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                             sets: 3, repsMin: 4, repsMax: 6, restSeconds: 210),
+                TemplateSlot(defaultExerciseName: "Klimmzüge (weit)", reviewedAlternatives: ["Rudern einarmig (KH)", "Kettlebell Row einarmig"],
+                             sets: 4, repsMin: 6, repsMax: 10, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Rudern vorgebeugt", reviewedAlternatives: ["Chest Supported Row (KH)", "Kettlebell Swing"],
+                             sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Bizeps-Curl (KH)", reviewedAlternatives: ["Kettlebell Suitcase Carry"],
+                             sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60)
+            ],
+            [], // Intervalle — Cardio, keine Equipment-Variation.
+            [
+                // "Goblet Squat"/"Kettlebell Goblet Squat" equipment-requirement
+                // tie — see the identical comment at hybridBeginner's Strength A
+                // slot 0 above. First-listed candidate wins for both restricted
+                // profiles here too.
+                TemplateSlot(defaultExerciseName: "Kniebeuge", reviewedAlternatives: ["Kettlebell Goblet Squat", "Goblet Squat"],
+                             sets: 4, repsMin: 5, repsMax: 8, restSeconds: 180),
+                TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                             sets: 3, repsMin: 8, repsMax: 10, restSeconds: 150),
+                TemplateSlot(defaultExerciseName: "Bulgarische Kniebeuge (KH)", reviewedAlternatives: ["Kettlebell Swing"],
+                             sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
+                TemplateSlot(defaultExerciseName: "Wadenheben (stehend, LH)", reviewedAlternatives: ["Farmer's Walk", "Kettlebell Suitcase Carry"],
+                             sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60)
+            ],
+            [] // Long Run — Cardio, keine Equipment-Variation.
         ]
     )
 

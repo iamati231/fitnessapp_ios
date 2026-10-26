@@ -21,6 +21,16 @@ import FitnessAppCore
 /// (autosave or explicit) decides when changes hit disk.
 public enum PersonalRecordSync {
 
+    /// Sentinel fuer die `exerciseTemplateID`-Vorfilterung in
+    /// `fetchHistoricalLifts` (sowohl auf `ExerciseLog.exerciseTemplateIDSnapshot`
+    /// als auch auf `Exercise.exerciseTemplateID`): ein Platzhalter, den kein
+    /// echtes `exerciseTemplateID` je annimmt. Macht aus
+    /// `optionalField == capturedValue` ein reines `??`-dann-Gleichheits-
+    /// Predicate (`(field ?? sentinel) == id`) — bewusst KEIN direkter
+    /// Optional-zu-Nicht-Optional-Vergleich und KEIN Force-Unwrap innerhalb
+    /// eines `#Predicate` (beides in diesem Modul bislang ungetestet).
+    private static let nilTemplateIDSentinel = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+
     // MARK: - Incremental (forward-save from finishWorkout)
 
     /// Detects PRs for `session` against all OTHER completed sessions in the
@@ -41,7 +51,7 @@ public enum PersonalRecordSync {
         guard session.isCompleted else { return [] }
 
         let sessionLifts = liftAttempts(from: session.logs)
-        let history = fetchHistoricalLifts(excluding: session, in: context)
+        let history = fetchHistoricalLifts(for: sessionLifts, excluding: session, in: context)
 
         let prs = PRDetector.detectPRs(sessionLifts: sessionLifts, history: history)
         for record in prs {
@@ -231,35 +241,140 @@ public enum PersonalRecordSync {
     /// pro Session nur Lifts STRIKT DAVOR — bei rueckdatierten Sessions
     /// konnten die beiden Pfade dadurch unterschiedliche PRs erkennen. Der
     /// `startTime`-Vergleich macht `recordPRs` und `rebuild` deckungsgleich.
+    ///
+    /// Perf (Audit): fetchte vorher JEDEN `ExerciseLog` im Store — bei
+    /// mehrjaehriger Nutzung zehntausende Zeilen bei JEDEM `finishWorkout()`,
+    /// obwohl `PRDetector.detectPRs` History-Eintraege ohnehin sofort wieder
+    /// per `GroupKey` (Identitaet) wegfiltert: ein Log, dessen Identitaet in
+    /// keinem `sessionLifts`-Eintrag vorkommt, wird dort NIE gelesen (siehe
+    /// `history.filter { GroupKey($0) == key }` in PRDetector.swift). Diese
+    /// Vorfilterung liefert deshalb nachweislich dieselben PRs, nur ohne den
+    /// Rest der Historie erst zu laden.
+    ///
+    /// Bewusst KEIN `#Predicate` mit Set-`contains`/Force-Unwrap (in diesem
+    /// Modul bislang nirgends verwendet, SwiftData-Predicates auf optionalen
+    /// Feldern sind laut bestehenden Kommentaren hier unzuverlaessig) —
+    /// stattdessen pro relevanter Identitaet ein einzelner, einfacher
+    /// Gleichheits-Fetch (`== name` / `== id`), exakt das bereits an anderer
+    /// Stelle (`ExternalWorkoutImportService`, `ExerciseEditorView`)
+    /// verwendete Predicate-Muster.
+    ///
+    /// **Alt-Logs ohne Snapshot** (`exerciseNameSnapshot == nil`, vor DEL-051
+    /// angelegt oder ein Backfill-Fall ohne Treffer) brauchen eine zweite
+    /// Strategie, weil ihre Identitaet nicht in einem gespeicherten Feld
+    /// steht, sondern erst ueber die LEBENDE `exercise`-Relationship aufgeloest
+    /// wird (`resolvedExerciseName`/`resolvedExerciseTemplateID` fallen in
+    /// genau diesem Fall darauf zurueck). Zwei Unterfaelle:
+    ///   - `exercise == nil` UND `exerciseNameSnapshot == nil` (vollstaendig
+    ///     verwaist, kein Snapshot, keine lebende Referenz mehr): liefert
+    ///     `resolvedExerciseName == nil` und wird vom `compactMap`-Filter
+    ///     unten ohnehin verworfen — so ein Log kann NIE zu einem Treffer
+    ///     werden, ein Fetch dafuer waere reine Verschwendung. Bewusst NICHT
+    ///     gefetcht.
+    ///   - `exercise != nil` (noch lebend verlinkt): die Identitaet IST die
+    ///     der lebenden `Exercise` (`.name`/`.exerciseTemplateID`) — genau
+    ///     diese Objekte lassen sich ueber dieselben Gleichheits-Predicates
+    ///     wie oben finden, nur auf der (viel kleineren, nicht mit der
+    ///     Trainingshistorie wachsenden) `Exercise`-Tabelle statt auf
+    ///     `ExerciseLog`. `exerciseTemplateID` wird laut Exercise.swift
+    ///     "von mehreren Instanzen geteilt" (dieselbe Uebung kann als
+    ///     mehrere separate `Exercise`-Zeilen in verschiedenen Plaenen
+    ///     existieren) — deshalb reicht die `Exercise`-Zeile dieser Session
+    ///     allein nicht; Treffer per Name UND per ID werden gebraucht, genau
+    ///     wie bei den Snapshot-Predicates oben. Pro Treffer liefert
+    ///     `.logs` (lebende Relationship, bereits auf GENAU diese Uebung
+    ///     beschraenkt) dann in-memory nur dessen Alt-Logs
+    ///     (`exerciseNameSnapshot == nil`) — keine weitere SwiftData-
+    ///     Abfrage noetig.
+    /// Damit bleibt kein ungefilterter Fetch der gesamten `exerciseNameSnapshot
+    /// == nil`-Gruppe uebrig: jeder potenziell relevante Alt-Log ist entweder
+    /// ueber eine passende `Exercise`-Zeile erreichbar, oder er ist beweisbar
+    /// irrelevant (keine aufloesbare Identitaet).
+    ///
+    /// Ergebnis wird am Ende nach Datum sortiert, um die vorherige
+    /// Reihenfolge exakt zu erhalten.
     private static func fetchHistoricalLifts(
+        for sessionLifts: [LiftAttempt],
         excluding session: WorkoutSession,
         in context: ModelContext
     ) -> [LiftAttempt] {
+        guard !sessionLifts.isEmpty else { return [] }
         let sessionStart = session.startTime
-        let descriptor = FetchDescriptor<ExerciseLog>(
-            sortBy: [SortDescriptor(\.date, order: .forward)]
-        )
-        let logs = (try? context.fetch(descriptor)) ?? []
-        return logs.compactMap { log -> LiftAttempt? in
-            guard let name = log.resolvedExerciseName,
-                  let logSession = log.session,
-                  logSession.isCompleted,
-                  logSession.startTime < sessionStart
-            else { return nil }
-            return LiftAttempt(
-                exerciseName: name,
-                exerciseTemplateID: log.resolvedExerciseTemplateID,
-                weightKg: log.weight,
-                reps: log.reps,
-                date: log.date,
-                isCardio: log.resolvedIsCardio,
-                isTimeBased: log.resolvedIsTimeBased,
-                distanceKm: log.distanceKm,
-                durationSeconds: log.durationSeconds,
-                // DEL-156: Equipment fuer die PR-Gruppierung pro Modalitaet.
-                cardioEquipment: log.resolvedCardioEquipment
-            )
+
+        let relevantNames = Set(sessionLifts.map(\.exerciseName))
+        let relevantTemplateIDs = Set(sessionLifts.compactMap(\.exerciseTemplateID))
+
+        var seenIDs = Set<PersistentIdentifier>()
+        var logs: [ExerciseLog] = []
+        func appendUnique(_ fetched: [ExerciseLog]) {
+            for log in fetched where seenIDs.insert(log.persistentModelID).inserted {
+                logs.append(log)
+            }
         }
+
+        for name in relevantNames {
+            let descriptor = FetchDescriptor<ExerciseLog>(
+                predicate: #Predicate<ExerciseLog> { ($0.exerciseNameSnapshot ?? "") == name }
+            )
+            appendUnique((try? context.fetch(descriptor)) ?? [])
+        }
+        for id in relevantTemplateIDs {
+            let sentinel = Self.nilTemplateIDSentinel
+            let descriptor = FetchDescriptor<ExerciseLog>(
+                predicate: #Predicate<ExerciseLog> { ($0.exerciseTemplateIDSnapshot ?? sentinel) == id }
+            )
+            appendUnique((try? context.fetch(descriptor)) ?? [])
+        }
+
+        // Alt-Logs ohne Snapshot, aber noch lebend an eine relevante
+        // `Exercise` verlinkt (siehe Doku oben) — gefunden ueber dieselbe
+        // Identitaet, diesmal auf `Exercise` statt `ExerciseLog`.
+        var seenExerciseIDs = Set<PersistentIdentifier>()
+        var relevantExercises: [Exercise] = []
+        func appendUniqueExercise(_ fetched: [Exercise]) {
+            for exercise in fetched where seenExerciseIDs.insert(exercise.persistentModelID).inserted {
+                relevantExercises.append(exercise)
+            }
+        }
+        for name in relevantNames {
+            let descriptor = FetchDescriptor<Exercise>(
+                predicate: #Predicate<Exercise> { $0.name == name }
+            )
+            appendUniqueExercise((try? context.fetch(descriptor)) ?? [])
+        }
+        for id in relevantTemplateIDs {
+            let sentinel = Self.nilTemplateIDSentinel
+            let descriptor = FetchDescriptor<Exercise>(
+                predicate: #Predicate<Exercise> { ($0.exerciseTemplateID ?? sentinel) == id }
+            )
+            appendUniqueExercise((try? context.fetch(descriptor)) ?? [])
+        }
+        for exercise in relevantExercises {
+            appendUnique(exercise.logs.filter { $0.exerciseNameSnapshot == nil })
+        }
+
+        return logs
+            .sorted { $0.date < $1.date }
+            .compactMap { log -> LiftAttempt? in
+                guard let name = log.resolvedExerciseName,
+                      let logSession = log.session,
+                      logSession.isCompleted,
+                      logSession.startTime < sessionStart
+                else { return nil }
+                return LiftAttempt(
+                    exerciseName: name,
+                    exerciseTemplateID: log.resolvedExerciseTemplateID,
+                    weightKg: log.weight,
+                    reps: log.reps,
+                    date: log.date,
+                    isCardio: log.resolvedIsCardio,
+                    isTimeBased: log.resolvedIsTimeBased,
+                    distanceKm: log.distanceKm,
+                    durationSeconds: log.durationSeconds,
+                    // DEL-156: Equipment fuer die PR-Gruppierung pro Modalitaet.
+                    cardioEquipment: log.resolvedCardioEquipment
+                )
+            }
     }
 }
 #endif

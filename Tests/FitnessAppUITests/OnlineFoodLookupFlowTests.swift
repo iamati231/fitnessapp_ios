@@ -202,7 +202,7 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
 
         XCTAssertEqual(draft.items.count, 1)
         XCTAssertEqual(draft.items.first?.catalogID, entry.catalogID)
-        XCTAssertEqual(draft.items.first?.nutrients.kcal, 539 * 50 / 100)
+        XCTAssertEqual(draft.items.first?.nutrients.kcal.value, 539 * 50 / 100)
 
         let result = draft.save(into: context)
         switch result {
@@ -214,6 +214,18 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
 
     // MARK: - Task 5: second entry point from an AI candidate with no catalog match
 
+    /// Writing-block.md 7.2 refactor: the online-search block used to be
+    /// inlined directly in `hasNoCatalogMatch`'s branch; it now lives once in
+    /// `onlineSearchFallback(for:)`, called from BOTH `hasNoCatalogMatch` and
+    /// `isAmbiguous` (see `testAICandidateAmbiguousBranchAlsoOffersTheOnlineSearchFallback`
+    /// below) — tests that used to inspect the inline block now locate this
+    /// function's own block instead.
+    private func onlineSearchFallbackBlock(in source: String) throws -> String {
+        let signature = "private func onlineSearchFallback(for candidate: MealDraftCandidate) -> some View {"
+        let range = try XCTUnwrap(source.range(of: signature), "onlineSearchFallback(for:) nicht gefunden")
+        return try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: range.upperBound))
+    }
+
     /// Step 1 (Task 5 brief): a `hasNoCatalogMatch` AI candidate must show an
     /// "Online suchen" action prefilled with `candidate.foodText`, reusing
     /// Task 4's exact gate/components (no second, divergent implementation).
@@ -224,18 +236,20 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
             return
         }
         let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
+        XCTAssertTrue(block.contains("onlineSearchFallback(for: candidate)"))
 
+        let fallbackBlock = try onlineSearchFallbackBlock(in: source)
         // Gleicher Gate-Key wie Task 4 (kein eigener/divergenter Toggle).
-        XCTAssertTrue(block.contains("if onlineFoodLookupEnabled {"))
+        XCTAssertTrue(fallbackBlock.contains("if onlineFoodLookupEnabled {"))
         // Vorausgefuellt mit `foodText`, ueber dieselbe (nicht duplizierte)
         // `runOnlineSearch`-Funktion wie der manuelle Einstiegspunkt (jetzt
         // mit `origin:`, siehe Final-Review-Fix I1 — trackt, WELCHE Zeile die
         // Suche gestartet hat).
-        XCTAssertTrue(block.contains("runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)"))
+        XCTAssertTrue(fallbackBlock.contains("runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)"))
         // Wiederverwendet Task 4's Trefferlisten-/Fehler-Komponenten 1:1,
         // keine zweite, abweichende Implementierung.
-        XCTAssertTrue(block.contains("OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)"))
-        XCTAssertTrue(block.contains("onlineSearch.errorMessage"))
+        XCTAssertTrue(fallbackBlock.contains("OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)"))
+        XCTAssertTrue(fallbackBlock.contains("onlineSearch.errorMessage"))
         XCTAssertTrue(source.contains("\"nutrition.addMeal.onlineSearch.action\""))
     }
 
@@ -245,7 +259,10 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
     /// SAME `hasNoCatalogMatch` branch, EVERY button in that branch must
     /// carry its own `.buttonStyle(.borderless)` hit target — otherwise taps
     /// collapse onto the last button's action, exactly like the original C1
-    /// bug in the `isAmbiguous` branch below it.
+    /// bug in the `isAmbiguous` branch below it. Writing-block.md 7.2
+    /// refactor: the "online suchen" button itself moved into
+    /// `onlineSearchFallback(for:)` (checked separately below), so this
+    /// branch's own block now directly holds the other two.
     func testAICandidateNoMatchBranchButtonsAreAllBorderless() throws {
         let source = try contents(of: "Nutrition/AddMealView.swift")
         guard let noMatchRange = source.range(of: "if candidate.hasNoCatalogMatch {") else {
@@ -255,11 +272,31 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
         let buttonCount = block.components(separatedBy: "Button {").count - 1
         let borderlessCount = block.components(separatedBy: ".buttonStyle(.borderless)").count - 1
-        // Task 6 added a third ("eigenes Lebensmittel anlegen") button to this
-        // same shared Form-row VStack, alongside Task 4/5's "manuell suchen"
-        // and "online suchen".
-        XCTAssertEqual(buttonCount, 3, "erwartet: 'manuell suchen' + 'online suchen' + 'eigenes Lebensmittel anlegen' Button in diesem Zweig")
+        XCTAssertEqual(buttonCount, 2, "erwartet: 'manuell suchen' + 'eigenes Lebensmittel anlegen' Button direkt in diesem Zweig ('online suchen' lebt jetzt in onlineSearchFallback)")
         XCTAssertEqual(borderlessCount, buttonCount, "jeder Button in diesem gemeinsamen Form-Row-VStack braucht .buttonStyle(.borderless), sonst C1-Regression")
+
+        let fallbackBlock = try onlineSearchFallbackBlock(in: source)
+        let fallbackButtonCount = fallbackBlock.components(separatedBy: "Button {").count - 1
+        let fallbackBorderlessCount = fallbackBlock.components(separatedBy: ".buttonStyle(.borderless)").count - 1
+        XCTAssertEqual(fallbackButtonCount, 1, "erwartet genau den 'online suchen'-Button in onlineSearchFallback")
+        XCTAssertEqual(fallbackBorderlessCount, fallbackButtonCount, "auch der ausgelagerte Button braucht .buttonStyle(.borderless), sonst C1-Regression")
+    }
+
+    /// Writing-block.md 7.2: the escape hatch must ALSO be reachable when
+    /// local matches exist but none of them fit (not just when there is no
+    /// local match at all) — the ticket's own example (Haehnchenbrust/
+    /// -keule exist, Haehnchenfluegel doesn't).
+    func testAICandidateAmbiguousBranchAlsoOffersTheOnlineSearchFallback() throws {
+        let source = try contents(of: "Nutrition/AddMealView.swift")
+        guard let ambiguousRange = source.range(of: "} else if candidate.isAmbiguous {") else {
+            XCTFail("kein `isAmbiguous` Zweig in aiCandidateRow gefunden")
+            return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: ambiguousRange.upperBound))
+        XCTAssertTrue(
+            block.contains("onlineSearchFallback(for: candidate)"),
+            "lokale Treffer vorhanden, aber keiner passt, muss trotzdem die Online-Suche anbieten"
+        )
     }
 
     // MARK: - Task 6: third, network/AI-independent entry point reuses the same AddMealView state
@@ -308,27 +345,79 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         XCTAssertEqual(successController.candidates.count, 3)
     }
 
-    // MARK: - Final-review fix (C1): missing nutrients must never be fabricated as 0
+    // MARK: - OFF-01: unbekannte Naehrwerte sind zulaessig, aber nie 0
 
-    /// A candidate with kcal present but protein/carbs/fat missing must not
-    /// be constructible as `OnlineFoodImportValues` at all — the only path
-    /// `OnlineFoodCandidatePreviewSheet.confirm()` has to create one, and the
-    /// same condition gates its "Add" button's `.disabled`. No
-    /// `FoodCatalogEntry` can come from a `nil` result.
-    func testPartialCandidateCannotBeConfirmedAndCreatesNothing() throws {
-        let values = OnlineFoodImportValues(
+    /// OFF-01 (docs/AUDIT_2026-10-23_DELTIQ.md): Ein Treffer mit einem
+    /// fehlenden Makro ist uebernehmbar — der fehlende Wert bleibt `nil`
+    /// (unbekannt), wird NICHT als 0 gespeichert und die Vorschau markiert
+    /// ihn als unvollstaendig. Vorher war genau dieser Fall eine Sackgasse.
+    func testPartialCandidateIsImportableWithUnknownValuesStoredAsUnknown() throws {
+        let values = try XCTUnwrap(OnlineFoodImportValues(
             name: "Teilprodukt",
             kcalPer100g: 100,
+            proteinPer100g: nil,
+            carbsPer100g: 5,
+            fatPer100g: nil
+        ))
+        XCTAssertTrue(values.hasUnknownValues, "fehlende Makros muessen als unvollstaendig markiert sein")
+        XCTAssertFalse(values.isComplete)
+
+        let entry = FoodCatalogEntry(
+            displayName: values.name,
+            source: .onlineImported,
+            category: .other,
+            kcalPer100g: values.kcalPer100g,
+            proteinPer100g: values.proteinPer100g,
+            carbsPer100g: values.carbsPer100g,
+            fatPer100g: values.fatPer100g
+        )
+        context.insert(entry)
+        try context.save()
+
+        let stored = try XCTUnwrap(context.fetch(FetchDescriptor<FoodCatalogEntry>()).first)
+        let nutrients = stored.nutrientsPer100g
+        XCTAssertEqual(nutrients.kcal.value, 100)
+        XCTAssertEqual(nutrients.carbsG.value, 5)
+        XCTAssertTrue(nutrients.proteinG.isUnknown, "fehlendes Protein bleibt unbekannt, nicht 0")
+        XCTAssertTrue(nutrients.fatG.isUnknown, "fehlendes Fett bleibt unbekannt, nicht 0")
+        XCTAssertTrue(nutrients.partiallyKnown)
+
+        // Der Snapshot in der Mahlzeit traegt die Unbekannt-Markierung mit.
+        let itemNutrients = try XCTUnwrap(NutritionCalculations.nutrients(for: stored.asCatalogItem, quantity: 100, unit: .gram))
+        let meal = MealEntry(date: Date(), mealType: .lunch)
+        context.insert(meal)
+        let item = MealItem(catalogID: stored.catalogID, nameSnapshot: "Teilprodukt", quantity: 100, unit: .gram,
+                            nutrients: itemNutrients, meal: meal)
+        context.insert(item)
+        try context.save()
+
+        XCTAssertTrue(item.nutrientsSnapshot.fatG.isUnknown)
+        XCTAssertEqual(item.nutrientsSnapshot.kcal.value, 100)
+    }
+
+    /// OFF-01: Ein Eintrag ganz ohne Naehrwerte traegt keine Information und
+    /// bleibt nicht bestaetigbar (die Vorschau bietet stattdessen den Weg
+    /// zum manuellen Anlegen an).
+    func testCandidateWithoutAnyNutrientValueCannotBeConfirmed() throws {
+        // Nur der unbekannte Fall: ein Negativwert ist ein Eingabefehler und
+        // keine Luecke — in Swift unterscheidet der Compiler die beiden
+        // `init?`-Varianten anhand des Parameter-Typs, hier bewusst `nil`.
+        let values: OnlineFoodImportValues? = OnlineFoodImportValues(
+            name: "Ohne Werte",
+            kcalPer100g: nil,
             proteinPer100g: nil,
             carbsPer100g: nil,
             fatPer100g: nil
         )
-        XCTAssertNil(values, "fehlende Makros duerfen nicht als 0 bestaetigbar sein")
+        XCTAssertNil(values, "ohne jeden Naehrwert gibt es nichts zu uebernehmen")
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<FoodCatalogEntry>()), 0)
     }
 
     func testNegativeMacroCandidateCannotBeConfirmed() {
-        let values = OnlineFoodImportValues(
+        // Expliziter `Double?`-Kontext, damit die `Double?`-Variante von
+        // `OnlineFoodImportValues.init?` gewaehlt wird (die `Double`-Variante
+        // wuerde die Absicht — „negativ = ungueltig" — nur zufaellig treffen).
+        let values: OnlineFoodImportValues? = OnlineFoodImportValues(
             name: "Teilprodukt",
             kcalPer100g: 100,
             proteinPer100g: -1,
@@ -339,7 +428,7 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
     }
 
     func testBlankNameCandidateCannotBeConfirmed() {
-        let values = OnlineFoodImportValues(
+        let values: OnlineFoodImportValues? = OnlineFoodImportValues(
             name: "   ",
             kcalPer100g: 100,
             proteinPer100g: 1,
@@ -364,18 +453,18 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         )
     }
 
+    /// Writing-block.md 7.2 refactor: the nested `onlineFoodLookupEnabled`
+    /// gate used to live directly inside `hasNoCatalogMatch`'s own block; it
+    /// now lives once in `onlineSearchFallback(for:)` (shared by both
+    /// branches that call it), so this checks that function's block instead.
     func testAICandidateOnlineSearchResultsAreScopedToThatCandidatesOwnOrigin() throws {
         let source = try contents(of: "Nutrition/AddMealView.swift")
-        guard let noMatchRange = source.range(of: "if candidate.hasNoCatalogMatch {") else {
-            XCTFail("kein `if candidate.hasNoCatalogMatch` Zweig gefunden")
+        let fallbackBlock = try onlineSearchFallbackBlock(in: source)
+        guard let gateRange = fallbackBlock.range(of: "if onlineFoodLookupEnabled {") else {
+            XCTFail("kein onlineFoodLookupEnabled-Gate in onlineSearchFallback gefunden")
             return
         }
-        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
-        guard let gateRange = block.range(of: "if onlineFoodLookupEnabled {") else {
-            XCTFail("kein verschachteltes onlineFoodLookupEnabled-Gate in aiCandidateRow gefunden")
-            return
-        }
-        let gatedBlock = try XCTUnwrap(Self.matchingBraceBlock(in: block, afterOpenBrace: gateRange.upperBound))
+        let gatedBlock = try XCTUnwrap(Self.matchingBraceBlock(in: fallbackBlock, afterOpenBrace: gateRange.upperBound))
         XCTAssertTrue(
             gatedBlock.contains("if onlineSearchOrigin == .aiCandidate(candidate) {"),
             "Ergebnisse/Fehler duerfen nur unter GENAU diesem Kandidaten erscheinen, nicht unter jedem unmatched Kandidaten"

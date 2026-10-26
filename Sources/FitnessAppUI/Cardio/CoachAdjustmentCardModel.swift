@@ -13,14 +13,39 @@ import FitnessAppData
 /// nicht-`nil`, wenn ein AKTIVER Plan existiert - ein Aufrufer, der
 /// BEIDE Karten kennt, PRUEFT DIESES MODELL ZUERST und zeigt
 /// `CardioFeasibilityCardModel` nur, wenn `CoachAdjustmentCardModel.make`
-/// `nil` liefert (kein aktiver Plan, Coach aus, oder kein Ziel/Renndatum/
-/// Wochenvolumen gepflegt) — die neue Karte hat Vorrang, sobald ein
-/// aktiver Plan existiert, die alte bleibt fuer den reinen
-/// "kein aktiver Plan"-Fall zustaendig. UI-Verdrahtung an den drei
-/// Aufrufstellen (ProfileEditorView/DashboardView/PlansListView) steht
-/// noch aus — dieser Vertrag gilt fuer JEDE davon.
+/// `nil` liefert (kein aktiver Plan oder Coach aus) — die neue Karte hat
+/// Vorrang, sobald ein aktiver Plan existiert, die alte bleibt fuer den
+/// reinen "kein aktiver Plan"-Fall zustaendig. UI-Verdrahtung an allen drei
+/// Aufrufstellen (ProfileEditorView/DashboardView/PlansListView) ist
+/// inzwischen vollstaendig - dieser Vertrag gilt fuer jede davon identisch.
+///
+/// Task 6 Praezisierung: "kein Ziel/Renndatum/Wochenvolumen gepflegt" macht
+/// dieses Modell NICHT mehr `nil` (anders als `CardioFeasibilityCardModel`,
+/// dessen Vertrag unveraendert bleibt) - ohne Renn-Datum/Wochenvolumen gibt
+/// es nur keinen Machbarkeits-Check (`verdict == nil`), die reine
+/// "aktuelles Ziel auf den Plan anwenden"-Funktion bleibt verfuegbar.
 public struct CoachAdjustmentCardModel: Equatable {
-    public let verdict: CardioFeasibilityCalculator.Result
+    /// Task 6 (Decision 3 Teil 1): `nil`, wenn kein Machbarkeits-Check
+    /// moeglich ist (kein Renn-Datum oder kein Wochenvolumen gepflegt) -
+    /// anders als vorher macht ein fehlender Check das gesamte Modell NICHT
+    /// mehr `nil` (siehe `make` unten): die reine "aktuelles Ziel auf den
+    /// Plan anwenden"-Funktion bleibt davon unberuehrt, nur gibt es dann
+    /// keine Machbarkeits-Meinung anzuzeigen.
+    public let verdict: CardioFeasibilityCalculator.Result?
+    /// Das Ziel, das tatsaechlich angewendet werden soll - identische
+    /// Berechnung wie `CardioFeasibilityCardModel.proposedGoal` (siehe
+    /// dortige Doku): bei `verdict.feasible` das unveraenderte
+    /// `profile.cardioGoal`, sonst `verdict.suggestedGoal` (`nil`, wenn
+    /// selbst das kleinste gepruefte Ziel nicht mehr aufgeht). Ohne Verdikt
+    /// (`verdict == nil`, kein Renn-Datum/Wochenvolumen) gibt es keine
+    /// Machbarkeits-Meinung - dann faellt `proposedGoal` auf das
+    /// unveraenderte `profile.cardioGoal` zurueck ("kein Check moeglich,
+    /// nimm was der Nutzer eingestellt hat").
+    ///
+    /// Task 7: `accept()` und `CoachAdjustmentPreviewView` lesen dieses Feld
+    /// jetzt statt des rohen `profile.cardioGoal` - siehe `accept()` unten
+    /// fuer die konkrete Verdrahtung ("effectiveProposedGoal").
+    public let proposedGoal: CardioGoal?
     public let analysis: RunCoachPlanAdjustment.Analysis
     public let fingerprint: String
 
@@ -32,20 +57,52 @@ public struct CoachAdjustmentCardModel: Equatable {
     public let isAlreadyApplied: Bool
 
     public static func make(for profile: UserBodyProfile, activePlan: TrainingPlan?) -> CoachAdjustmentCardModel? {
-        guard let activePlan,
-              profile.cardioCoachingEnabled,
-              let raceDate = profile.cardioRaceDate,
-              let weeklyVolume = profile.weeklyBaseVolumeKm,
-              let verdict = CardioFeasibilityCalculator.evaluate(
-                  goal: profile.cardioGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
-              )
-        else { return nil }
+        guard let activePlan, profile.cardioCoachingEnabled else { return nil }
 
-        let fingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
-            goal: profile.cardioGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
+        // `evaluate` nimmt raceDate/weeklyBaseVolumeKm bereits optional
+        // entgegen und liefert selbst `nil`, wenn eines von beiden fehlt -
+        // derselbe Rechenweg wie `CardioFeasibilityCardModel.make`, hier
+        // aber bewusst NICHT hinter einem `guard let`, der das gesamte
+        // Modell unterdruecken wuerde (siehe Typ-Doku oben).
+        let verdict = CardioFeasibilityCalculator.evaluate(
+            goal: profile.cardioGoal, raceDate: profile.cardioRaceDate, weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
         )
+        let proposedGoal: CardioGoal?
+        if let verdict {
+            proposedGoal = verdict.feasible ? profile.cardioGoal : verdict.suggestedGoal
+        } else {
+            proposedGoal = profile.cardioGoal
+        }
+
+        // `suppressionFingerprint` nimmt raceDate/weeklyBaseVolumeKm (anders
+        // als `evaluate`) NICHT optional entgegen - fehlen sie, gibt es
+        // keine aus Renn-Datum/Wochenvolumen ableitbare Identitaet fuer
+        // diese Kombination; der Fingerprint haengt dann allein am (in
+        // diesem Fall einzig relevanten) Ziel.
+        //
+        // Fix I-1 (Final-Review, Round 2): der Fingerprint MUSS aus demselben
+        // effektiven Ziel wie `proposedGoal` berechnet werden (`proposedGoal
+        // ?? profile.cardioGoal`), NICHT aus dem rohen, moeglicherweise
+        // veralteten `profile.cardioGoal` - sonst weicht der hier gespeicherte
+        // Fingerprint (vor `accept()`, altes Ziel) von dem ab, den eine
+        // FRISCHE `make`-Auswertung NACH `accept()` liefert (`profile.cardioGoal`
+        // wurde dort bereits auf `proposedGoal` aktualisiert), und
+        // `isAlreadyApplied` ist faelschlich `false`. Gleiches Prinzip wie
+        // `CardioFeasibilityCardModel`s `fingerprint`/`proposedGoal` (siehe
+        // dortige Doku).
+        let effectiveGoal = proposedGoal ?? profile.cardioGoal
+        let fingerprint: String
+        if let raceDate = profile.cardioRaceDate, let weeklyVolume = profile.weeklyBaseVolumeKm {
+            fingerprint = CardioFeasibilityCalculator.suppressionFingerprint(
+                goal: effectiveGoal, raceDate: raceDate, weeklyBaseVolumeKm: weeklyVolume
+            )
+        } else {
+            fingerprint = "goalOnly#\(effectiveGoal.rawValue)"
+        }
+
         return CoachAdjustmentCardModel(
             verdict: verdict,
+            proposedGoal: proposedGoal,
             analysis: RunCoachPlanAdjustment.analyze(plan: activePlan),
             fingerprint: fingerprint,
             isAlreadyApplied: profile.cardioPlanAdjustmentFingerprint == fingerprint
@@ -56,8 +113,14 @@ public struct CoachAdjustmentCardModel: Equatable {
     /// `CardioFeasibilityCalculator.planGeneratorInput(for:)`-Ergebnis
     /// (das mischt Lauf- UND Kraft-Tage) - kein zweiter Cardio-Rechner,
     /// reiner Filter auf das bereits vorhandene Generator-Ergebnis.
-    public static func cardioOnlyDaySpecs(for goal: CardioGoal) -> [DaySpec] {
-        let result = PlanGenerator.generate(from: CardioFeasibilityCalculator.planGeneratorInput(for: goal))
+    ///
+    /// `cardioRunProfile` (Task 9 Nachbesserung, Review-Fund): wie
+    /// `CardioFeasibilityCalculator.planGeneratorInput` selbst - ohne diesen
+    /// Parameter bliebe `targetPaceMinutesPerKm` auf jedem ueber diesen
+    /// Merge-Pfad erzeugten Lauf-Tag immer `nil`. Default `nil` erhaelt
+    /// bestehende Aufrufer/Tests ohne Baseline unveraendert.
+    public static func cardioOnlyDaySpecs(for goal: CardioGoal, cardioRunProfile: CardioRunProfile? = nil) -> [DaySpec] {
+        let result = PlanGenerator.generate(from: CardioFeasibilityCalculator.planGeneratorInput(for: goal, cardioRunProfile: cardioRunProfile))
         return result.days.map(\.spec).filter { spec in
             !spec.exercises.isEmpty && spec.exercises.allSatisfy(\.isCardio)
         }
@@ -107,12 +170,75 @@ public struct CoachAdjustmentCardModel: Equatable {
         // Zeitpunkt dieses Aufrufs lesen, nicht die eingefrorene Kopie.
         guard profile.cardioPlanAdjustmentFingerprint != fingerprint else { return 0 }
         let eligibleDays = RunCoachPlanAdjustment.eligibleCardioDays(in: plan)
-        let newCardioDays = Self.cardioOnlyDaySpecs(for: profile.cardioGoal)
-        let count = try PlanGeneratorInstantiator.applyCoachCardioAdjustment(
-            eligibleDays: eligibleDays, newCardioDays: newCardioDays, in: context
+        // Task 7 (Decision 3 Teil 2): die anzuwendenden Tage muessen dem
+        // tatsaechlich VORGESCHLAGENEN Ziel entsprechen (`proposedGoal`),
+        // nicht dem moeglicherweise nicht erreichbaren `profile.cardioGoal`
+        // - sonst wendet `accept` genau das Ziel an, das der Machbarkeits-
+        // Check gerade als nicht erreichbar verworfen hat. Fallback auf
+        // `profile.cardioGoal`, wenn selbst kein kleineres Ziel mehr
+        // erreichbar ist (`proposedGoal == nil`, siehe dortige Doku) - dann
+        // gibt es keinen besseren Vorschlag, den man stattdessen anwenden
+        // koennte.
+        let effectiveProposedGoal = proposedGoal ?? profile.cardioGoal
+        // Task 9 Nachbesserung: dieselbe Baseline-Weitergabe wie
+        // `CardioFeasibilityCardModel.make` - `accept` rechnet bei jedem
+        // Aufruf frisch aus dem aktuellen `profile`, die Baseline ist also
+        // automatisch immer aktuell, ohne eigene Re-Derive-Logik.
+        let newCardioDays = Self.cardioOnlyDaySpecs(
+            for: effectiveProposedGoal,
+            cardioRunProfile: CardioRunProfile(
+                goal: effectiveProposedGoal,
+                current5kReferenceSeconds: profile.current5kReferenceSeconds,
+                weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
+            )
         )
+
+        let count: Int
+        if eligibleDays.isEmpty {
+            // Task 7: kein ersetzbarer Cardio-Tag - Fallback auf Task 5/6s
+            // Einfuege-Pfad (Ruhetag -> Cardio-Tag). Re-Validierung IMMER frisch
+            // am JETZT aktuellen `plan` (`eligibleRestDaysForInsertion`), NIEMALS
+            // die beim `make`-Zeitpunkt eingefrorene `analysis.insertableRestDays`
+            // - derselbe Grundsatz wie `eligibleCardioDays` oben und
+            // `isAlreadyApplied`/`eligibleDays` ueberall sonst in diesem Typ.
+            // Review-Korrektur: NICHT `CardioFeasibilityCalculator.runTypeMix(...).count`
+            // - das ist ein easy/quality-MUSTER, das ueber die tatsaechliche Lauf-Tage-Zahl
+            // ZYKLISCH angewendet wird (`PlanGenerator.swift`: `mix[dayIndex % mix.count]`),
+            // keine 1:1-Lauf-Tage-Zahl (stimmt z. B. fuer `.tenK`/`.marathon` nicht mit der
+            // echten Tage-Zahl ueberein). `newCardioDays.count` (oben, aus `cardioOnlyDaySpecs`,
+            // demselben `PlanGenerator.generate`-Ergebnis) ist die tatsaechliche Anzahl neu zu
+            // erzeugender Cardio-Tage fuer dieses Ziel.
+            let eligibleRestDays = RunCoachPlanAdjustment.eligibleRestDaysForInsertion(in: plan)
+            guard !eligibleRestDays.isEmpty else { return 0 }
+            let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
+                eligible: eligibleRestDays, count: newCardioDays.count, otherDays: plan.days
+            )
+            // `insertCoachCardioDays` wirft (statt stillschweigend 0
+            // zurueckzugeben), wenn `selectedRestDays` zu wenige Tage enthaelt
+            // oder ein ausgewaehlter Tag zwischen Vorschau und diesem Aufruf
+            // nicht mehr eignungsfaehig ist - bewusst NICHT hier abgefangen,
+            // der Aufrufer (`CoachAdjustmentPreviewView`) zeigt das als eigene,
+            // unterscheidbare Fehlermeldung an.
+            count = try PlanGeneratorInstantiator.insertCoachCardioDays(
+                plan: plan, restDays: selectedRestDays, newCardioDays: newCardioDays, in: context
+            )
+        } else {
+            count = try PlanGeneratorInstantiator.applyCoachCardioAdjustment(
+                eligibleDays: eligibleDays, newCardioDays: newCardioDays, in: context
+            )
+        }
         guard count > 0 else { return 0 }
         profile.cardioPlanAdjustmentFingerprint = fingerprint
+        // Mirrors `CardioFeasibilityCardModel.accept`'s completion closure,
+        // which also only writes `profile.cardioGoal` after confirmed
+        // success - unlike that sibling path, nothing here mutates
+        // `profile.cardioGoal` BEFORE this point (no nested
+        // `CoachAdjustmentCardModel.make` re-derivation from a live-mutated
+        // goal is needed inside this function, since `self` is already a
+        // fully-built instance), so there is nothing to roll back on the
+        // `throws` path above: a failed `applyCoachCardioAdjustment` leaves
+        // `profile.cardioGoal` untouched by construction.
+        profile.cardioGoal = effectiveProposedGoal
 
         // Restpunkt 2 (Planbindung): dieser Pfad aendert DENSELBEN Plan
         // in-place (`activatedAt` bleibt unveraendert, siehe Typ-Doku oben) -

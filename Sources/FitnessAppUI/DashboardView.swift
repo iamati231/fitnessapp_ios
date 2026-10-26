@@ -182,7 +182,25 @@ public struct DashboardView: View {
                 eyebrow: String(localized: "tab.dashboard", bundle: .module).uppercased(),
                 title: dashboardGreeting,
                 actions: [
-                    DeltiqHeaderAction(systemImage: "plus") {
+                    // Bugfix (writing-block.md Punkt 1, "Plus-Symbol oben
+                    // rechts"): ein Plus wird ueblicherweise als "etwas
+                    // hinzufuegen" fuer den HAUPTINHALT dieses Screens
+                    // verstanden - das Dashboard zeigt aber keinen einzelnen
+                    // Inhaltstyp, den man so "hinzufuegen" wuerde, die Aktion
+                    // fuehrte unerwartet zur Messungserfassung. Keine der
+                    // anderen, bereits im Dashboard verlinkten Aktionen
+                    // (Training starten, Mahlzeit erfassen) ist hier klar
+                    // besser - jede hat schon einen eigenen, etablierten
+                    // Einstiegspunkt (planDayCard/resumeSessionTile bzw.
+                    // nutritionCard). Entscheidung (Ticket: "falls keine klar
+                    // bessere Aktion existiert, lasse die Position lieber
+                    // ohne Ersatzaktion"): dieselbe, weiterhin nuetzliche
+                    // Aktion bleibt erhalten, nur das irrefuehrende Icon
+                    // wechselt auf "ruler" - identisch zum Tab-Icon der
+                    // Messung selbst (`RootView.swift`, `tab.measurement`),
+                    // macht das Ziel am Icon selbst erkennbar statt es als
+                    // generisches "+" zu verstecken.
+                    DeltiqHeaderAction(systemImage: "ruler") {
                         showingNewMeasurement = true
                     }
                 ]
@@ -211,12 +229,40 @@ public struct DashboardView: View {
                         resumeSessionTile(open)
                     }
 
-                    // Handoff "Lauf-Coaching - Machbarkeits-Check" (2.30):
-                    // statisch ueber den konfigurierbaren Widgets, gleiche
-                    // Prioritaet wie unrepresentedOpenSession - kein
-                    // gespeicherter Zustand, jeder Aufruf rechnet live neu
-                    // (siehe CardioFeasibilityCardModel).
-                    if let model = cardioFeasibilityModel {
+                    // Task 8 (Leitplanke 6, CoachAdjustmentCardModel.swift):
+                    // existiert ein aktiver Plan UND ueberhaupt eine
+                    // Anpassungsempfehlung (egal ob pending oder bereits
+                    // uebernommen), hat diese Karte Vorrang - ein `if/else
+                    // if`, NIE zwei unabhaengige `if`s, damit beide Karten
+                    // fuer denselben Zustand nie gleichzeitig erscheinen.
+                    // Handoff "Lauf-Coaching - Machbarkeits-Check" (2.30)
+                    // bleibt der Fallback nur fuer den Fall, dass
+                    // `CoachAdjustmentCardModel.make` `nil` liefert (kein
+                    // aktiver Plan, oder keine Empfehlung fuer dieses
+                    // Profil/diesen Plan moeglich) - statisch ueber den
+                    // konfigurierbaren Widgets, gleiche Prioritaet wie
+                    // unrepresentedOpenSession - kein gespeicherter Zustand,
+                    // jeder Aufruf rechnet live neu.
+                    //
+                    // Nachbesserung (finales Branch-Review, Fix 2): vorher
+                    // gatete dieser Zweig zusaetzlich auf
+                    // `!adjustment.isAlreadyApplied` - das liess den Slot auf
+                    // die VERALTETE Feasibility-Karte fuer denselben Plan
+                    // zurueckfallen, sobald eine Anpassung erfolgreich
+                    // uebernommen wurde (Task 7s In-Place-Anpassungspfad setzt
+                    // nur `cardioPlanAdjustmentFingerprint`, nie
+                    // `cardioFeasibilityDismissedFingerprint`). Das verletzte
+                    // Leitplanke 6 ("Feasibility nur zeigen, wenn `make`
+                    // `nil` liefert") und widersprach
+                    // `ProfileEditorView.coachAdjustmentModel`/
+                    // `feasibilityModel`, die genauso NIE auf
+                    // `isAlreadyApplied` gaten. `laufcoachingAdjustmentCard`
+                    // deckt jetzt selbst beide Zustaende ab (siehe deren
+                    // Doku).
+                    if let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans),
+                       let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
+                        laufcoachingAdjustmentCard(adjustment, plan: activePlan)
+                    } else if let model = cardioFeasibilityModel {
                         cardioFeasibilityDashboardCard(model)
                     }
 
@@ -332,7 +378,7 @@ public struct DashboardView: View {
         // dieselbe View wie der Paket-1-Pfad in `ProfileEditorView` — kein
         // neuer Anpassungs-Mechanismus.
         .sheet(isPresented: $showingMissedRunAdjustmentPreview) {
-            if let profile = profiles.first, let plan = activePlans.first {
+            if let profile = profiles.first, let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
                 CoachAdjustmentPreviewView(profile: profile, activePlan: plan)
             }
         }
@@ -608,7 +654,9 @@ public struct DashboardView: View {
                             Text("widget.nutrition.name", bundle: .module)
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(.primary)
-                            Text("\(todayNutritionTotal.kcal.truncated(to: 0).formattedTwoDecimals) kcal")
+                            // OFF-01: unbekannte Tagessumme (fehlende OFF-Werte
+                            // in mindestens einer Position) als "–", nie als 0.
+                            Text(NutritionDisplay.text(todayNutritionTotal.kcal, unit: "kcal", decimals: 0))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .fitnessNumberStyle()
@@ -1216,6 +1264,26 @@ public struct DashboardView: View {
             // KEINE Ruhetage — sie zeigen den disabled "Training starten"-
             // Button mit Hint, dass Uebungen fehlen (DEL-021/023).
             let isRestDay = day.type == .rest
+            // TestingBot-Geraetebefund (Crash-Folgerunde, Absturz beim
+            // Loeschen des LETZTEN/einzigen Plans): der reale Crash-Log
+            // (Appium `crashlog`) zeigte einen Fatal Error in
+            // `TrainingDay.activeExercises.getter`, ausgeloest aus einer
+            // VERSCHACHTELTEN ViewBuilder-Closure (`exercisesList`), NICHT
+            // aus dieser obersten `planDayCard`-Auswertung selbst. SwiftUI/
+            // Observation kann so eine verschachtelte Closure unabhaengig
+            // vom `isActive = false`-Fix in `PlansListView.deletePlans` neu
+            // aufrufen, sobald die Relationship des gerade geloeschten
+            // `day` (`.exercises`) ihre eigene Aenderungs-Benachrichtigung
+            // feuert — der Re-Run liest dann `day.activeExercises` auf einer
+            // bereits invalidierten Instanz. `isRestDay` oben liest `day.type`
+            // bereits HIER, auf derselben Ebene wie `activePlans.first` -
+            // genau deshalb war das nie betroffen. `displayName`/die
+            // Uebungsliste lesen wir jetzt nach demselben Muster EINMAL hier,
+            // statt live in den verschachtelten Closures weiter unten -
+            // identischer Snapshot-Ansatz wie `PlanRowContent`
+            // (PlansListView.swift).
+            let displayName = day.displayName
+            let activeExerciseItems = PlanDayExerciseItem.makeList(from: day.activeExercises)
             let isCurrentlyRunning = runningDay != nil
             // Signature-Geruest 1.4: die Plan-Karte traegt die Hauptaussage
             // des Screens - die eine erlaubte Orange-Kante links pro Screen.
@@ -1254,7 +1322,7 @@ public struct DashboardView: View {
                             .foregroundStyle(.secondary)
                         // DEL-129: day.displayName statt .name — propagiert
                         // den localizationKey-Lookup ins Banner-Title.
-                        Text(day.displayName)
+                        Text(displayName)
                             .font(.title3.weight(.bold))
                     }
                     Spacer()
@@ -1269,8 +1337,8 @@ public struct DashboardView: View {
                     Text("dashboard.plan.restDay", bundle: .module)
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                } else if !day.activeExercises.isEmpty {
-                    exercisesList(for: day)
+                } else if !activeExerciseItems.isEmpty {
+                    exercisesList(activeExerciseItems)
                 }
 
                 if isRestDay {
@@ -1410,7 +1478,7 @@ public struct DashboardView: View {
     /// `MissedRunDaysCardModel.make`-Dokumentation).
     private var missedRunDaysModel: MissedRunDaysCardModel? {
         guard let profile = profiles.first else { return nil }
-        return MissedRunDaysCardModel.make(for: profile, activePlan: activePlans.first, in: modelContext)
+        return MissedRunDaysCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: activePlans), in: modelContext)
     }
 
     /// Zeigt die CTA-/Ablehnen-Zeile unter dem Hinweistext — nur wenn dieser
@@ -1779,7 +1847,7 @@ public struct DashboardView: View {
     /// der Uebungs-Name der Tempo-Zone, ein Namensabgleich waere hier
     /// irrefuehrend).
     private var isLongRunOverdueForActivePlan: Bool {
-        guard let plan = activePlans.first else { return false }
+        guard let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) else { return false }
         let cardioDurations = plan.days
             .flatMap(\.activeExercises)
             .filter(\.isCardio)
@@ -2124,21 +2192,37 @@ public struct DashboardView: View {
         return sortedDays[idx]
     }
 
+    /// Crash-Fix-Snapshot (siehe `planDayCard`-Doku bei `activeExerciseItems`):
+    /// plain-value Stand-in fuer die paar Felder, die `exercisesList`
+    /// tatsaechlich braucht - niemals das live `Exercise`-Objekt selbst in
+    /// dieser verschachtelten `ForEach`-Closure halten. Internal (wie
+    /// `PlanRowContent` in `PlansListView.swift`) statt `private`, damit
+    /// `makeList(from:)` direkt regressionstestbar ist.
+    struct PlanDayExerciseItem: Identifiable, Equatable {
+        let id: PersistentIdentifier
+        let displayName: String
+
+        /// DEL-049: archivierte Snapshots (Urlaubs-Modus) gehoeren nicht in
+        /// die Dashboard-Vorschau — sonst zeigt der Card "Bankdruecken" auch
+        /// wenn der User nur noch Liegestuetze trainiert.
+        static func makeList(from exercises: [Exercise]) -> [PlanDayExerciseItem] {
+            exercises
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map { PlanDayExerciseItem(id: $0.persistentModelID, displayName: $0.displayName) }
+        }
+    }
+
     /// Nachtrag 6. August (README 2.1): ersetzt die alte Fliesszeile mit
     /// Auslassungspunkten (`names.joined(separator: ", ")` + " …") durch
     /// echte Zeilen. Erste drei Uebungen sind immer sichtbar; bei mehr als
     /// drei kommt darunter eine Umschaltzeile dazu, die den Rest ein- und
     /// wieder ausblendet.
     @ViewBuilder
-    private func exercisesList(for day: TrainingDay) -> some View {
-        // DEL-049: archivierte Snapshots (Urlaubs-Modus) gehoeren nicht in
-        // die Dashboard-Vorschau — sonst zeigt der Card "Bankdruecken" auch
-        // wenn der User nur noch Liegestuetze trainiert.
-        let sorted = day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
-        let remaining = sorted.count - 3
+    private func exercisesList(_ items: [PlanDayExerciseItem]) -> some View {
+        let remaining = items.count - 3
         VStack(alignment: .leading, spacing: 6) {
-            ForEach(sorted.prefix(isExercisesExpanded ? sorted.count : 3), id: \.persistentModelID) { exercise in
-                Text(exercise.displayName)   // DEL-111: lokalisierter Name fuer Library-Übungen
+            ForEach(items.prefix(isExercisesExpanded ? items.count : 3)) { item in
+                Text(item.displayName)   // DEL-111: lokalisierter Name fuer Library-Übungen
                     .font(.system(size: 14))
                     .foregroundStyle(Color.Deltiq.textSecondary)
             }
@@ -2404,6 +2488,61 @@ public struct DashboardView: View {
     /// `CardioFeasibilityCardModel.make(for:)` auf.
     private var cardioFeasibilityModel: CardioFeasibilityCardModel? {
         profiles.first.flatMap(CardioFeasibilityCardModel.make(for:))
+    }
+
+    /// Task 8: "aktiver Plan existiert, Coach-Anpassung verfuegbar"-Karte -
+    /// Leitplanke 6 (`CoachAdjustmentCardModel.swift`) laesst den Feasibility-
+    /// Fallback an der Aufrufstelle oben NUR rendern, wenn
+    /// `CoachAdjustmentCardModel.make` `nil` liefert, nicht mehr abhaengig
+    /// von `isAlreadyApplied` (Nachbesserung, finales Branch-Review Fix 2) -
+    /// diese Karte deckt deshalb jetzt BEIDE Zustaende ab, genau wie
+    /// `ProfileEditorView.coachAdjustmentSection`, dessen Titel-Umschaltung
+    /// (`profile.cardio.adjustment.pending`/`.applied`) hier identisch
+    /// uebernommen wird - keine neuen Keys. CTA oeffnet denselben,
+    /// bestehenden `CoachAdjustmentPreviewView`-Sheet wie die
+    /// Laufversaeumnis-Karte (`showingMissedRunAdjustmentPreview`), daher
+    /// auch dessen bestehender Button-Text statt eines neuen. `plan` wird
+    /// hier nicht gebraucht (das Sheet loest Profil/Plan selbst frisch aus
+    /// der Query auf), bleibt aber Teil der Signatur fuer den Aufrufer.
+    private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, plan: TrainingPlan) -> some View {
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(adjustment.isAlreadyApplied
+                         ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
+                         : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    // Fix I-4 (Final-Review, Round 2): ohne Verdikt (kein
+                    // Renn-Datum/Wochenvolumen gepflegt) wurde nie ein
+                    // Machbarkeits-Check gerechnet - dann darf auch KEINE
+                    // Machbarkeits-Aussage (weder feasible noch infeasible)
+                    // angezeigt werden (Decision 2: keine unbelegte
+                    // Praezisions-/Sicherheits-Behauptung).
+                    if let verdict = adjustment.verdict {
+                        Text(verdict.feasible
+                             ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                             : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Button {
+                        showingMissedRunAdjustmentPreview = true
+                    } label: {
+                        Text("dashboard.missedRunDays.reviewButton", bundle: .module)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+                Spacer(minLength: 0)
+            }
+        }
     }
 
     /// Verkuerzte Vorschau (2.30): zwei Tage statt der vollen Woche, kein

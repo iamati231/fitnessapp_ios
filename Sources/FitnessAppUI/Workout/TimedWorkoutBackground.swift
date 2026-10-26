@@ -49,7 +49,11 @@ final class TimedWorkoutBackground {
     private let audio = BackgroundAudioKeepAlive.shared
 
     private var lastToken = 0
-    private var activeToken: Int?
+    // Testbarkeitsluecke (Audit Fix 4): read-only statt `private`, damit
+    // `@testable import FitnessAppUI` das Stale-Token-Verhalten (begin/end)
+    // ohne echten Audio-/ActivityKit-Seiteneffekt verifizieren kann. Setzen
+    // bleibt ausschliesslich dieser Klasse vorbehalten.
+    private(set) var activeToken: Int?
     private var run: Run?
     private var lastSent: TimedLiveContent?
     /// Darf fuer den laufenden Lauf Hintergrund-Audio laufen (Schalter + Ton an)?
@@ -284,6 +288,23 @@ final class TimedWorkoutBackgroundRun {
     func begin(sessionKey: String, format: WorkoutTimeFormat, dayName: String, soundEnabled: Bool) {
         token = TimedWorkoutBackground.shared.begin(
             sessionKey: sessionKey, format: format, dayName: dayName, soundEnabled: soundEnabled
+        )
+    }
+
+    /// Bugfix (Audit, Lean-Fund): `startBackground()` sah in allen fuenf
+    /// Zeitformat-Playern (AMRAP, EMOM, Auf Zeit, Zirkel, Endurance-Intervalle)
+    /// identisch aus bis auf den `format:`-Fall — `sessionKey`/`dayName` kamen
+    /// jedes Mal aus genau denselben zwei `session`-Properties. Dieser
+    /// Convenience-Overload zieht NUR dieses identische Stueck zusammen; die
+    /// anschliessende `syncBackground()` bleibt bewusst pro Player bestehen
+    /// (unterschiedliche `TimedLiveContent`-Faelle, kein gemeinsamer Code).
+    @MainActor
+    func begin(for session: WorkoutSession, format: WorkoutTimeFormat, soundEnabled: Bool) {
+        begin(
+            sessionKey: session.backgroundSessionKey,
+            format: format,
+            dayName: session.displayDayName,
+            soundEnabled: soundEnabled
         )
     }
 

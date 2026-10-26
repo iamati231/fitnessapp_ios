@@ -83,7 +83,21 @@ public struct CardioFeasibilityCardModel {
         guard profile.cardioFeasibilityDismissedFingerprint != fingerprint else { return nil }
 
         let proposedGoal: CardioGoal? = verdict.feasible ? profile.cardioGoal : verdict.suggestedGoal
-        let planInput = proposedGoal.map(CardioFeasibilityCalculator.planGeneratorInput(for:))
+        // Task 9 Nachbesserung (Review-Fund): ohne die hier gebaute
+        // `CardioRunProfile` blieb `targetPaceMinutesPerKm` auf JEDEM ueber
+        // diese Karte erzeugten Lauf-Tag immer `nil` - diese Funktion
+        // rechnet bei jedem Aufruf frisch (kein Caching), die Baseline ist
+        // also automatisch immer aktuell, ohne eigene Re-Derive-Logik.
+        let planInput = proposedGoal.map { goal in
+            CardioFeasibilityCalculator.planGeneratorInput(
+                for: goal,
+                cardioRunProfile: CardioRunProfile(
+                    goal: goal,
+                    current5kReferenceSeconds: profile.current5kReferenceSeconds,
+                    weeklyBaseVolumeKm: weeklyVolume
+                )
+            )
+        }
         let planResult = planInput.map { PlanGenerator.generate(from: $0) }
 
         return CardioFeasibilityCardModel(
@@ -127,6 +141,28 @@ public struct CardioFeasibilityCardModel {
     /// `PlanCreationOperation.Outcome` statt nur `TrainingPlan?` - der Aufrufer leitet Button-
     /// Beschriftung/Fehlermeldung direkt daraus ab (siehe dortige Typ-Doku), kein `throws` mehr
     /// noetig.
+    ///
+    /// Task 8 (Laufcoaching Dual-Path, ledger ruling): diese Funktion traf frueher HIER selbst eine
+    /// stille Wahl zwischen In-Place-Anpassung (via `CoachAdjustmentCardModel`, bei vorhandenem
+    /// `activePlan`) und `createPlan` - ein `activePlan`-Parameter steuerte das. Eine vollstaendige
+    /// Aufrufstellen-Spur (alle vier echten `accept`-Aufrufe: `ProfileEditorView.feasibilitySection`,
+    /// `PlansListView.cardioFeasibilitySection`, `CoachAdjustmentPreviewView.createNewPlanButton` -
+    /// `DashboardView` ruft `accept` gar nicht auf) ergab: diese Weiche war an KEINER davon je mit
+    /// einem tatsaechlich aktiven, `.ready`-Plan erreichbar. `ProfileEditorView`/`PlansListView`
+    /// zeigen ihre `CardioFeasibilityCardModel`-Sektion ausschliesslich im `else`-Zweig eines
+    /// `if let coachAdjustmentModel { .. } else if let feasibilityModel { .. }`
+    /// (Leitplanke 6, siehe `CoachAdjustmentCardModel`-Typ-Doku: "die neue Karte hat Vorrang, sobald
+    /// ein aktiver Plan existiert") - `CoachAdjustmentCardModel.make` liefert `nil` nur bei fehlendem
+    /// `activePlan` oder `!cardioCoachingEnabled`, und `CardioFeasibilityCardModel.make` verlangt
+    /// `cardioCoachingEnabled` ohnehin selbst, also MUSS an diesen beiden Stellen, wann immer die
+    /// Fallback-Sektion ueberhaupt rendert, derselbe (`@Query`-gestuetzte) `activePlan`, der dann in
+    /// `accept` durchgereicht wuerde, bereits `nil` sein. `CoachAdjustmentPreviewView` reicht
+    /// `activePlan` seit Task 7 bewusst GAR NICHT durch (siehe dortige Doku zu
+    /// `createNewPlanButton`), damit der explizite "als neuen Plan erstellen"-Tap nicht still in die
+    /// direkt darueber angebotene In-Place-Anpassung umgeleitet wird. Die Weiche war damit bereits
+    /// vor diesem Ticket tot. Entfernt, statt eine zweite explizite Auswahl-UI fuer einen Fall zu
+    /// bauen, den nichts je erreichen kann - `accept` deckt jetzt nur noch seinen einen verbleibenden
+    /// echten Fall ab: kein aktiver Plan, direkt `createPlan`, keine Wahl noetig.
     @discardableResult
     @MainActor
     public func accept(

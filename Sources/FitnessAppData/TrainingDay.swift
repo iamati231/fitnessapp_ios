@@ -80,6 +80,19 @@ public final class TrainingDay {
     /// matcht deshalb ueber DIESEN Wert statt ueber die Listenposition.
     public var generatorSequenceIndex: Int?
 
+    /// Phase B (Laufcoaching Dual-Path, Task 5): permanenter Herkunfts-
+    /// Stempel, gesetzt NUR von `ProgramInstantiator`s Auto-Rest-Day-Fill
+    /// (Schritt 5 dort). Bleibt nach einer erfolgreichen Cardio-Einfuegung
+    /// bewusst `true` stehen — exakt dasselbe Prinzip wie
+    /// `generationFingerprint`: ein Erzeugungs-Beweis, kein "ist aktuell
+    /// noch leer"-Live-Bit. `false` (Default) deckt sowohl manuell
+    /// angelegte Ruhetage (`PlanEditorView.createNewDay`) als auch jeden
+    /// vor dieser Ergaenzung instanziierten Alt-Plan ab — Letzteres ist ein
+    /// akzeptierter Trade-off (lieber "kein Beweis" als geraten). Additive,
+    /// lightweight-migration-kompatibel, gleiches Muster wie
+    /// `localizationKey`/`generatorSequenceIndex`.
+    public var isAutoFilledPlaceholder: Bool = false
+
     @Relationship(deleteRule: .cascade, inverse: \Exercise.day)
     public var exercises: [Exercise] = []
 
@@ -186,7 +199,8 @@ public final class TrainingDay {
         enduranceRestDurationSeconds: Int? = nil,
         enduranceSportKind: TrainingTypeKind? = nil,
         generationFingerprint: String? = nil,
-        generatorSequenceIndex: Int? = nil
+        generatorSequenceIndex: Int? = nil,
+        isAutoFilledPlaceholder: Bool = false
     ) {
         self.name = name
         self.customName = customName
@@ -209,6 +223,7 @@ public final class TrainingDay {
         self.enduranceSportKind = enduranceSportKind
         self.generationFingerprint = generationFingerprint
         self.generatorSequenceIndex = generatorSequenceIndex
+        self.isAutoFilledPlaceholder = isAutoFilledPlaceholder
     }
 }
 

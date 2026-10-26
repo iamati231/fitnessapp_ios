@@ -1324,12 +1324,21 @@ public enum DataImportService {
             guard !catalogID.isEmpty,
                   !displayName.isEmpty,
                   let source = FoodCatalogEntrySource(rawValue: row["source"]), source != .seeded,
-                  let category = FoodCategory(rawValue: row["category"]),
-                  let kcal = row.double("kcal_per_100g"),
-                  let protein = row.double("protein_per_100g"),
-                  let carbs = row.double("carbs_per_100g"),
-                  let fat = row.double("fat_per_100g") else {
-                errors.append(.init(line: row.lineNumber, reason: "missing or invalid catalog_id/display_name/source/category/nutrients"))
+                  let category = FoodCategory(rawValue: row["category"]) else {
+                errors.append(.init(line: row.lineNumber, reason: "missing or invalid catalog_id/display_name/source/category"))
+                continue
+            }
+            // OFF-01: Fehlende Werte sind zulaessig (unbekannt), solange
+            // mindestens ein Makro bekannt ist — exakt das, was `FoodCatalogEntry`
+            // aus Open Food Facts speichern kann. Ein Eintrag ganz OHNE Werte
+            // liefert keine Information und wird weiterhin verworfen.
+            let mask = Self.knownNutrientMask(row["known_nutrients"])
+            let kcal = NutrientsImport.value(row, key: "kcal_per_100g", bit: 1, mask: mask).value
+            let protein = NutrientsImport.value(row, key: "protein_per_100g", bit: 2, mask: mask).value
+            let carbs = NutrientsImport.value(row, key: "carbs_per_100g", bit: 4, mask: mask).value
+            let fat = NutrientsImport.value(row, key: "fat_per_100g", bit: 8, mask: mask).value
+            guard mask != 0 else {
+                errors.append(.init(line: row.lineNumber, reason: "no known nutrient values"))
                 continue
             }
             if existingIDs.contains(catalogID) {
@@ -1347,6 +1356,9 @@ public enum DataImportService {
                 pieceWeightGrams: row.double("piece_weight_grams"),
                 densityGramsPerMl: row.double("density_grams_per_ml")
             )
+            // Additive Spalte: ein Backup von vor OFF-01 hat sie nicht, dann
+            // gilt "alle bekannt" (der Default des Konstruktors).
+            entry.knownNutrientMaskRaw = mask
             // Stabile ID aus dem Backup wiederherstellen (der Init oben
             // generiert per Default eine frische) — sonst loest
             // `meal_items.catalog_id` nach einem Restore ins Leere.
@@ -1420,6 +1432,11 @@ public enum DataImportService {
             // DataExportService.buildDays - aeltere ZIPs ohne sie -> nil,
             // der Bestandsfall "nicht festgelegt".
             let enduranceSportKind = row.optionalString("endurance_sport_kind").flatMap(TrainingTypeKind.init(rawValue:))
+            // Phase B (Laufcoaching Dual-Path, Task 5): additive Spalte,
+            // siehe DataExportService.buildDays - aeltere ZIPs ohne sie ->
+            // `false`, derselbe "kein Beweis" Bestandsfall wie bei jedem
+            // vor dieser Ergaenzung instanziierten Alt-Plan.
+            let isAutoFilledPlaceholder = row.bool("is_auto_filled_placeholder") ?? false
 
             let day = TrainingDay(
                 name: name,
@@ -1442,7 +1459,8 @@ public enum DataImportService {
                 enduranceRestDurationSeconds: enduranceRestDurationSeconds,
                 enduranceSportKind: enduranceSportKind,
                 generationFingerprint: generationFingerprint,
-                generatorSequenceIndex: generatorSequenceIndex
+                generatorSequenceIndex: generatorSequenceIndex,
+                isAutoFilledPlaceholder: isAutoFilledPlaceholder
             )
             context.insert(day)
             if !exportID.isEmpty { idMap[exportID] = day }
@@ -1895,11 +1913,15 @@ public enum DataImportService {
                 continue
             }
             let unit = FoodUnit(rawValue: unitRaw) ?? .gram
+            // OFF-01: `known_nutrients` (additiv, Default "alle bekannt") +
+            // die Wertespalten — fehlt die Spalte, bleibt es bei "bekannt",
+            // was fuer jedes Backup von vor OFF-01 korrekt ist.
+            let mask = Self.knownNutrientMask(row["known_nutrients"])
             let nutrients = NutrientValues(
-                kcal: row.double("kcal_snapshot") ?? 0,
-                proteinG: row.double("protein_g_snapshot") ?? 0,
-                carbsG: row.double("carbs_g_snapshot") ?? 0,
-                fatG: row.double("fat_g_snapshot") ?? 0
+                kcal: NutrientsImport.value(row, key: "kcal_snapshot", bit: 1, mask: mask),
+                proteinG: NutrientsImport.value(row, key: "protein_g_snapshot", bit: 2, mask: mask),
+                carbsG: NutrientsImport.value(row, key: "carbs_g_snapshot", bit: 4, mask: mask),
+                fatG: NutrientsImport.value(row, key: "fat_g_snapshot", bit: 8, mask: mask)
             )
             let item = MealItem(
                 catalogID: catalogID, nameSnapshot: name, quantity: quantity,
@@ -1910,6 +1932,18 @@ public enum DataImportService {
             imported += 1
         }
         return (imported, skipped, errors)
+    }
+
+    // MARK: - OFF-01: unbekannte Naehrwerte im Backup
+
+    /// Liest die additive Spalte `known_nutrients` (Bitzmaske: Bit 0 = kcal,
+    /// 1 = Protein, 2 = Kohlenhydrate, 3 = Fett). Fehlt sie (Backup von vor
+    /// OFF-01) oder ist sie unlesbar, gilt "alle bekannt" — fuer Alt-Backups
+    /// exakt richtig, weil dort jeder gespeicherte Wert echter Inhalt ist.
+    static func knownNutrientMask(_ raw: String) -> Int {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let value = Int(trimmed) else { return KnownValue.allKnownMask }
+        return value & KnownValue.allKnownMask
     }
 
     // MARK: - Pass 3: PRs

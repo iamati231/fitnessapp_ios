@@ -791,6 +791,12 @@ public enum PlanGeneratorInstantiator {
         let oldEnduranceWorkDistanceKm: Double?
         let oldEnduranceRestDurationSeconds: Int?
         let oldGenerationFingerprint: String?
+        /// Task 6 (Laufcoaching Dual-Path, Phase B): nur gesetzt, wenn `apply`
+        /// mit einem non-nil `targetType` aufgerufen wurde (bisher nie - nur
+        /// `insertCoachCardioDays` tut das). `nil` fuer jeden bestehenden
+        /// Ersetzungspfad-Aufruf (`recalculate`/`applyCoachCardioAdjustment`) -
+        /// `revert` macht dort entsprechend nichts mit `day.type` (echtes No-op).
+        let oldType: DayType?
     }
 
     /// Ersetzt Name + Zeitformat + Uebungen eines Tages durch einen frisch
@@ -814,7 +820,15 @@ public enum PlanGeneratorInstantiator {
         timeBasedNames: Set<String>,
         compoundNames: Set<String>,
         specByName: [String: ExerciseTemplateSpec],
-        in context: ModelContext
+        in context: ModelContext,
+        // Task 6 (Laufcoaching Dual-Path, Phase B): `apply` selbst setzt `type` sonst NIE (verifiziert
+        // durch vollstaendiges Lesen dieser Funktion) - der bestehende Ersetzungspfad
+        // (`recalculate`/`applyCoachCardioAdjustment`) laesst diesen Parameter weg (`nil`, Default)
+        // und bleibt dadurch byte-identisch zum Verhalten vor dieser Ergaenzung. Nur
+        // `insertCoachCardioDays` setzt ihn (`.cardio`) - ein eingefuegter Tag braucht den
+        // expliziten Typ-Wechsel weg von `.rest`, den der Ersetzungspfad nie brauchte, weil dort der
+        // Typ schon vorher stimmte.
+        targetType: DayType? = nil
     ) -> DayMutationSnapshot {
         let oldExercises = day.activeExercises
         for exercise in oldExercises {
@@ -835,6 +849,11 @@ public enum PlanGeneratorInstantiator {
         let oldEnduranceWorkDistanceKm = day.enduranceWorkDistanceKm
         let oldEnduranceRestDurationSeconds = day.enduranceRestDurationSeconds
         let oldGenerationFingerprint = day.generationFingerprint
+        let oldType: DayType? = targetType != nil ? day.type : nil
+
+        if let targetType {
+            day.type = targetType
+        }
 
         day.name = spec.name
         // `customName` wird nicht snapshotted/zurueckgesetzt: es ist Teil von
@@ -891,7 +910,8 @@ public enum PlanGeneratorInstantiator {
             oldEnduranceWorkDurationSeconds: oldEnduranceWorkDurationSeconds,
             oldEnduranceWorkDistanceKm: oldEnduranceWorkDistanceKm,
             oldEnduranceRestDurationSeconds: oldEnduranceRestDurationSeconds,
-            oldGenerationFingerprint: oldGenerationFingerprint
+            oldGenerationFingerprint: oldGenerationFingerprint,
+            oldType: oldType
         )
     }
 
@@ -923,6 +943,75 @@ public enum PlanGeneratorInstantiator {
             snapshots.append(apply(
                 spec, to: day, timeBasedNames: timeBasedNames,
                 compoundNames: compoundNames, specByName: specByName, in: context
+            ))
+        }
+        do {
+            try save(context)
+        } catch {
+            revert(snapshots, in: context)
+            throw error
+        }
+        return snapshots.count
+    }
+
+    /// Task 6 (Laufcoaching Dual-Path, Phase B): Fehlerfaelle fuer `insertCoachCardioDays` - beide
+    /// werfen VOR jeder Mutation (kein Teil-Ergebnis, kein gesetzter Fingerprint irgendwo).
+    public enum CardioInsertionError: Error, Equatable {
+        /// `restDays.count < newCardioDays.count` - nicht genug Ruhetage fuer alle neuen Cardio-Tage.
+        case insufficientRestDays
+        /// Mindestens ein uebergebener Tag gehoert (laut `day.plan?.persistentModelID`) nicht mehr
+        /// zu `plan` - z.B. eine veraltete Referenz aus einer frueheren Vorschau eines ANDEREN Plans.
+        case restDayBelongsToAnotherPlan
+        /// Mindestens ein uebergebener Tag ist laut `RunCoachPlanAdjustment.
+        /// isEligibleRestDayForInsertion` JETZT nicht mehr eignungsfaehig (nicht nur zum
+        /// Vorschau-Zeitpunkt, als der Aufrufer `restDays` berechnet hat).
+        case restDayNoLongerEligible
+    }
+
+    /// Wandelt ausgewaehlte Rest-Tage in neue Cardio-Tage um - reuses `apply(_:to:...)`
+    /// mit `targetType: .cardio` (der dedizierte Typ fuer Lauf-/Rad-Tage,
+    /// `DomainEnums.swift:106-109` - `apply` selbst setzt `type` sonst nie,
+    /// verifiziert durch vollstaendiges Lesen der Funktion; ein eingefuegter
+    /// Tag braucht den expliziten Typ-Wechsel weg von `.rest`, den der
+    /// bestehende Ersetzungspfad nie brauchte, weil dort der Typ schon vorher
+    /// stimmte).
+    ///
+    /// Re-Validierungs-Vertrag (Review-Punkt 5): die Sicherheit haengt NICHT
+    /// von korrekter Verwendung durch den Aufrufer ab. Vor der ERSTEN Mutation
+    /// prueft diese Funktion JEDEN Tag in `restDays` selbst erneut:
+    /// (1) `day.plan?.persistentModelID == plan.persistentModelID` - gehoert
+    /// der Tag ueberhaupt noch zu DIESEM Plan (Review-Punkt, zweiter Teil:
+    /// "Zugehoerigkeit zum richtigen Plan"); (2)
+    /// `RunCoachPlanAdjustment.isEligibleRestDayForInsertion(day)` - ist er
+    /// JETZT noch eignungsfaehig (nicht nur zum Vorschau-Zeitpunkt). Verletzt
+    /// auch nur EIN Tag eine der beiden Bedingungen, wirft die Funktion VOR
+    /// jeder Schreiboperation (kein Teil-Ergebnis, kein gesetzter Fingerprint)
+    /// - ebenso wenn `restDays.count < newCardioDays.count`.
+    @discardableResult
+    public static func insertCoachCardioDays(
+        plan: TrainingPlan, restDays: [TrainingDay], newCardioDays: [DaySpec], in context: ModelContext
+    ) throws -> Int {
+        guard !newCardioDays.isEmpty else { return 0 }
+        guard restDays.count >= newCardioDays.count else {
+            throw CardioInsertionError.insufficientRestDays
+        }
+        for day in restDays {
+            guard day.plan?.persistentModelID == plan.persistentModelID else {
+                throw CardioInsertionError.restDayBelongsToAnotherPlan
+            }
+            guard RunCoachPlanAdjustment.isEligibleRestDayForInsertion(day) else {
+                throw CardioInsertionError.restDayNoLongerEligible
+            }
+        }
+
+        let (timeBasedNames, compoundNames) = ProgramInstantiator.libraryLookupNames()
+        let specByName = ProgramInstantiator.libraryLookupSpecs()
+        var snapshots: [DayMutationSnapshot] = []
+        for (day, spec) in zip(restDays, newCardioDays) {
+            snapshots.append(apply(
+                spec, to: day, timeBasedNames: timeBasedNames,
+                compoundNames: compoundNames, specByName: specByName, in: context,
+                targetType: .cardio
             ))
         }
         do {
@@ -974,6 +1063,12 @@ public enum PlanGeneratorInstantiator {
             day.enduranceWorkDistanceKm = snapshot.oldEnduranceWorkDistanceKm
             day.enduranceRestDurationSeconds = snapshot.oldEnduranceRestDurationSeconds
             day.generationFingerprint = snapshot.oldGenerationFingerprint
+            // Task 6: nur gesetzt, wenn `apply` mit einem `targetType` lief (nur
+            // `insertCoachCardioDays`) - fuer jeden bestehenden Ersetzungspfad-Snapshot ist
+            // `oldType` `nil`, also ein echtes No-op hier.
+            if let oldType = snapshot.oldType {
+                day.type = oldType
+            }
         }
     }
 

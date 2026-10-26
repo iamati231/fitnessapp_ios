@@ -212,6 +212,65 @@ final class PlanDraftTests: XCTestCase {
         XCTAssertEqual(draft.days[0].exercises.map(\.spec.name), originalExerciseNames)
     }
 
+    // MARK: - replaceExercise (UI-Ticket "Plan Bauen Schritt 3: Übungsalternativen")
+
+    func testReplaceExerciseSwapsOnlyTheTargetedExercise() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1, exercises: [
+            exercise("Bankdruecken"), exercise("Kniebeugen"), exercise("Klimmzuege")
+        ])])
+        let idOfA = draft.days[0].id
+        let idOfKniebeugen = draft.days[0].exercises[1].id
+
+        let replaced = draft.replaceExercise(dayID: idOfA, exerciseID: idOfKniebeugen, with: exercise("Beinpresse"))
+
+        XCTAssertTrue(replaced)
+        XCTAssertEqual(draft.days[0].exercises.map(\.spec.name), ["Bankdruecken", "Beinpresse", "Klimmzuege"], "nur die anvisierte Uebung darf sich aendern, Reihenfolge und uebrige Uebungen bleiben unveraendert")
+    }
+
+    func testReplaceExercisePreservesTheExercisesStableID() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1, exercises: [exercise("Bankdruecken")])])
+        let idOfA = draft.days[0].id
+        let idOfExercise = draft.days[0].exercises[0].id
+
+        XCTAssertTrue(draft.replaceExercise(dayID: idOfA, exerciseID: idOfExercise, with: exercise("Schraegbankdruecken")))
+
+        XCTAssertEqual(draft.days[0].exercises[0].id, idOfExercise)
+    }
+
+    func testReplaceExerciseFailsForContentFixedDay() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1, exercises: [exercise("Bankdruecken")])])
+        let idOfA = draft.days[0].id
+        let idOfExercise = draft.days[0].exercises[0].id
+        draft.setContentFixed(true, for: idOfA)
+
+        let replaced = draft.replaceExercise(dayID: idOfA, exerciseID: idOfExercise, with: exercise("Schraegbankdruecken"))
+
+        XCTAssertFalse(replaced)
+        XCTAssertEqual(draft.days[0].exercises.map(\.spec.name), ["Bankdruecken"])
+    }
+
+    func testReplaceExerciseFailsForUnknownDayOrExerciseID() {
+        var draft = PlanDraft(generated: [day("A", sequenceIndex: 1, exercises: [exercise("Bankdruecken")])])
+        let idOfA = draft.days[0].id
+        let unknownExerciseID = DraftExerciseID()
+
+        XCTAssertFalse(draft.replaceExercise(dayID: DraftDayID(), exerciseID: unknownExerciseID, with: exercise("X")))
+        XCTAssertFalse(draft.replaceExercise(dayID: idOfA, exerciseID: unknownExerciseID, with: exercise("X")))
+    }
+
+    func testReplaceExerciseLeavesOtherDaysAndTheirExercisesUntouched() {
+        var draft = PlanDraft(generated: [
+            day("A", sequenceIndex: 1, exercises: [exercise("Bankdruecken")]),
+            day("B", sequenceIndex: 2, exercises: [exercise("Kreuzheben")])
+        ])
+        let idOfA = draft.days[0].id
+        let idOfExercise = draft.days[0].exercises[0].id
+
+        XCTAssertTrue(draft.replaceExercise(dayID: idOfA, exerciseID: idOfExercise, with: exercise("Beinpresse")))
+
+        XCTAssertEqual(draft.days[1].exercises.map(\.spec.name), ["Kreuzheben"])
+    }
+
     // MARK: - Fixierungen sind unabhaengig voneinander
 
     func testContentFixationDoesNotPreventReordering() {

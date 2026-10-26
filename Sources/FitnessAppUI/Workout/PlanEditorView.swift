@@ -38,6 +38,9 @@ public struct PlanEditorView: View {
 
     // DEL-022 — Environment-Swap-State
     @State private var pendingEnvironmentSwap: PendingEnvironmentSwap?
+    /// UI-Ticket ("Mehr-Informationsarchitektur"): siehe `planMenuAction`/
+    /// `body`'s `.sheet` unten.
+    @State private var showingExerciseLibrary = false
     // DEL-049 — Restore-Prompt-State (Urlaubs-Modus zu Ende). Separat vom
     // adapt-State, weil das UI-Wording, die Buttons UND die ausgefuehrte
     // Aktion komplett andere sind.
@@ -123,6 +126,7 @@ public struct PlanEditorView: View {
                 // settingsSection (Wochen/Trainingsort/Active) wandert nach UNTEN
                 // unter daysSection, damit die Trainings-Liste oben bleibt.
                 metaSection
+                equipmentGapSection
                 daysSection
                 settingsSection
             }
@@ -310,6 +314,15 @@ public struct PlanEditorView: View {
                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
                     .padding(.bottom, 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        // UI-Ticket ("Mehr-Informationsarchitektur"): kontextueller Zugang
+        // zur bestehenden Uebungsbibliothek beim Bearbeiten eines Plans -
+        // oeffnet dieselbe `ExerciseLibraryView` wie unter "Mehr" und wie
+        // `PlanBuilderView`s Alternativen-Dialog, kein zweiter Screen.
+        .sheet(isPresented: $showingExerciseLibrary) {
+            NavigationStack {
+                ExerciseLibraryView()
             }
         }
     }
@@ -627,10 +640,12 @@ public struct PlanEditorView: View {
         return menuAction != nil ? [menuAction!, saveAction] : [saveAction]
     }
 
-    /// Ellipsis-Menu mit bis zu zwei Eintraegen: "Neu rechnen" (nur fuer
-    /// Plaene mit `generatorInput`) und Reorder-Start/-Ende (nur iOS, nur
-    /// wenn nicht readOnly und Tage vorhanden). `nil` wenn keiner von
-    /// beiden zutrifft — dann zeigt der Header nur den Save-Checkmark.
+    /// Ellipsis-Menu: "Neu rechnen" (nur fuer Plaene mit `generatorInput`),
+    /// Reorder-Start/-Ende (nur iOS, nur wenn nicht readOnly und Tage
+    /// vorhanden), plus (UI-Ticket "Mehr-Informationsarchitektur") immer
+    /// "Uebungsbibliothek" — anders als die ersten beiden kein bedingter
+    /// Eintrag, deshalb zeigt der Header ab jetzt IMMER dieses Menu (nicht
+    /// mehr `nil`, wenn weder Neu-rechnen noch Reorder zutrifft).
     private var planMenuAction: DeltiqHeaderAction? {
         let showsRecalculate = plan.generatorInput != nil
         #if os(iOS)
@@ -640,7 +655,6 @@ public struct PlanEditorView: View {
         let isEditing = false
         let showsReorder = false
         #endif
-        guard showsRecalculate || showsReorder else { return nil }
         return DeltiqHeaderAction(systemImage: "ellipsis", menu: {
             if showsRecalculate {
                 Button {
@@ -671,6 +685,15 @@ public struct PlanEditorView: View {
                 }
             }
             #endif
+            Button {
+                showingExerciseLibrary = true
+            } label: {
+                Label {
+                    Text("planBuilder.exerciseLibrary.action", bundle: .module)
+                } icon: {
+                    Image(systemName: "books.vertical")
+                }
+            }
         })
     }
 
@@ -775,6 +798,70 @@ public struct PlanEditorView: View {
             sectionHeader("planEditor.section.info")
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Equipment-Vielfalt Phase 1 Task 4: macht eine Equipment-Luecke auf
+    /// einem BEREITS GESPEICHERTEN Plan sichtbar, nicht nur in der Adopt-
+    /// Vorschau (Decision 1 — warnen, nicht blockieren). Computed property,
+    /// bei JEDEM `body`-Render frisch aus der bestehenden `userProfiles`-
+    /// Query gelesen (gleiches Prinzip wie `ProgramTemplatePickerView.
+    /// resolvedSelection`/`equipmentStatusBanner`) — NIEMALS in `@State`
+    /// zwischengespeichert, damit eine Profil-Aenderung an anderer Stelle
+    /// sofort hier ankommt.
+    /// Final-Review Fix 3: muss denselben EFFEKTIVEN Kontext wie
+    /// `ProgramTemplatePickerView.equipmentPlanningContext` nutzen, nicht das
+    /// rohe, individuelle Profil — sonst liest ein Default-User ohne eigene
+    /// Einrichtung (`equipmentProfile` komplett `.unknown`) hier faelschlich
+    /// jede annotierte Uebung als "unsicher" und zeigt die harte Luecken-
+    /// Warnung dauerhaft an, obwohl der Picker fuer denselben Fall nur die
+    /// neutrale "Annahme"-Anzeige zeigt (siehe `EquipmentPlanningResolver`).
+    private var equipmentPlanningContext: EquipmentPlanningContext? {
+        guard let profile = userProfiles.first else { return nil }
+        return EquipmentPlanningResolver.resolve(
+            environment: profile.environment,
+            individualProfile: profile.equipmentProfile,
+            confirmedComplete: profile.equipmentProfileConfirmedComplete
+        )
+    }
+
+    private var equipmentGapReport: PlanEquipmentReport? {
+        guard let context = equipmentPlanningContext, !context.isAssumption else { return nil }
+        return SavedPlanEquipmentCheck.report(for: plan, against: context.effectiveProfile)
+    }
+
+    @ViewBuilder
+    private var equipmentGapSection: some View {
+        if let report = equipmentGapReport, !report.isFullyAvailable {
+            Section {
+                DeltiqCard {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("planEditor.equipmentGap.title", bundle: .module)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Color.primary)
+                            Text(String(format: String(localized: "planEditor.equipmentGap.detail", bundle: .module), equipmentGapExerciseNames(report).joined(separator: ", ")))
+                                .font(.footnote)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+            }
+        }
+    }
+
+    /// Dieselbe Formatierung wie `ProgramTemplatePickerView.missingGapDetail`
+    /// im Prinzip (konkrete Uebungen nennen statt pauschal "Equipment fehlt")
+    /// — hier auf Uebungsnamen statt Geraete-Items, weil `PlanEquipmentReport`
+    /// pro Uebung, nicht pro Geraet aggregiert.
+    private func equipmentGapExerciseNames(_ report: PlanEquipmentReport) -> [String] {
+        (report.missing + report.uncertain).map(\.exerciseName)
     }
 
     private var settingsSection: some View {

@@ -215,10 +215,14 @@ public enum PlanGenerator {
     /// Rekonstruiert, aus welcher `PlanGeneratorTypeSelection` ein bereits
     /// generierter Tag stammt - ueber Equipment-Pool-Zugehoerigkeit statt
     /// einer gespeicherten Referenz (es gibt bislang keine; `DaySpec`
-    /// traegt keine Herkunfts-ID, siehe Datei-Kommentar). Zuverlaessig, weil
-    /// jede Kraft-Art einen EIGENEN, disjunkten Equipment-Filter hat
-    /// (`TrainingTypeKind.equipmentFilter`) - ein Tag mit ausschliesslich
-    /// Kurzhantel-Uebungen kann nur aus der `.dumbbell`-Auswahl stammen.
+    /// traegt keine Herkunfts-ID, siehe Datei-Kommentar). Nutzt denselben
+    /// `strengthEquipmentPool` wie `strengthCandidates` - bei mehreren
+    /// gewaehlten Gerätearten (`equipmentPool`) ist dieser Pool nicht mehr
+    /// zwangslaeufig disjunkt zu anderen Selections, aber fuer die
+    /// `.strength`-Ziele (Hypertrophie/Kraft/Funktional/Gewichtsverlust)
+    /// gibt es ohnehin nur noch GENAU EINE Kraft-Selection pro Woche (siehe
+    /// `GoalDrivenPlanSelectionBuilder.makeSelections`), die Rekonstruktion
+    /// bleibt also eindeutig.
     private static func matchingSelection(
         for day: DaySpec,
         in selections: [PlanGeneratorTypeSelection]
@@ -226,10 +230,11 @@ public enum PlanGenerator {
         let dayExerciseNames = Set(day.exercises.map(\.name))
         guard !dayExerciseNames.isEmpty else { return nil }
         for selection in selections {
-            guard let equipment = selection.kind.equipmentFilter else { continue }
+            let equipmentSet = strengthEquipmentPool(for: selection)
+            guard !equipmentSet.isEmpty else { continue }
             let poolNames = Set(
                 ExerciseLibraryData.all
-                    .filter { $0.equipment == equipment && !$0.isCardio }
+                    .filter { equipmentSet.contains($0.equipment) && !$0.isCardio }
                     .map(\.name)
             )
             if dayExerciseNames.isSubset(of: poolNames) {
@@ -241,11 +246,23 @@ public enum PlanGenerator {
 
     // MARK: - Strength candidates
 
+    /// Device-Bugreport ("Plan wird nach Geraeteart statt Trainingstagen
+    /// aufgeteilt"): `selection.equipmentPool` (mehrere gewaehlte
+    /// Gerätearten) hat Vorrang vor `kind.equipmentFilter` (genau eine) -
+    /// siehe `PlanGeneratorTypeSelection`-Doc. Leer nur fuer die beiden
+    /// Cardio-Kinds, die diesen Pfad nie erreichen.
+    private static func strengthEquipmentPool(for selection: PlanGeneratorTypeSelection) -> Set<Equipment> {
+        if let pool = selection.equipmentPool, !pool.isEmpty { return pool }
+        if let single = selection.kind.equipmentFilter { return [single] }
+        return []
+    }
+
     private static func strengthCandidates(for selection: PlanGeneratorTypeSelection, shuffle: Bool) -> [Candidate] {
-        guard let equipment = selection.kind.equipmentFilter else { return [] }
+        let equipmentSet = strengthEquipmentPool(for: selection)
+        guard !equipmentSet.isEmpty else { return [] }
         let allowedDifficulties = difficultiesAtOrBelow(selection.experience)
         let pool = ExerciseLibraryData.all.filter {
-            $0.equipment == equipment && !$0.isCardio && allowedDifficulties.contains($0.difficultyLevel)
+            equipmentSet.contains($0.equipment) && !$0.isCardio && allowedDifficulties.contains($0.difficultyLevel)
         }
         guard !pool.isEmpty else { return [] }
 
@@ -255,6 +272,10 @@ public enum PlanGenerator {
         let (sets, repsMin, repsMax, restSeconds) = strengthVolume(for: selection.experience)
         let kindLabel = germanTypeLabel(selection.kind)
         let kindKey = selection.kind.titleKey
+        // Mehrere Gerätearten kombiniert: der Tages-Titel soll den
+        // Trainingssplit beschreiben ("Push & Pull"), nicht pauschal eine
+        // einzelne Geräteart nennen, die den Tag gar nicht exklusiv traegt.
+        let isMixedEquipment = equipmentSet.count > 1
 
         var result: [Candidate] = []
         for dayIndex in 0..<selection.daysPerWeek {
@@ -265,6 +286,7 @@ public enum PlanGenerator {
             if selection.kind == .kettlebell, selection.daysPerWeek >= 3, dayIndex == selection.daysPerWeek - 1 {
                 result.append(kettlebellEmomCandidate(
                     pool: pool, muscleOrder: muscleOrder, kindLabel: kindLabel, kindKey: kindKey,
+                    isMixedEquipment: isMixedEquipment,
                     sessionDurationMinutes: selection.sessionDurationMinutes,
                     shuffle: shuffle
                 ))
@@ -276,12 +298,35 @@ public enum PlanGenerator {
             var hardness = 0.0
             var muscleCursor = dayIndex
             var guardCount = 0
-            while exercises.count < exerciseCount, guardCount < muscleOrder.count * 3 {
+            // Bugfix (Epic #3.3): tracks how many exercises have already been
+            // taken from EACH muscle this day. Previously every revisit to a
+            // muscle re-read `group[dayIndex % group.count]` — the exact same
+            // index every time, since `dayIndex` never changes within this
+            // loop — so a muscle contributed AT MOST one exercise per day no
+            // matter how many eligible candidates it actually had, capping
+            // `exercises.count` at the number of distinct muscle groups with
+            // any exercise at all. That ceiling can be far below
+            // `exerciseCount`: e.g. Kettlebell/Anfaenger has 9 exercises
+            // across only 4 muscle groups (4 Schulter-Uebungen alone) — a
+            // 100-Minuten-Plan (exerciseCount=7) still only ever got 4,
+            // regardless of the chosen duration. Tracking a per-muscle offset
+            // lets a second (and third, ...) pass pick the NEXT distinct
+            // exercise from a muscle that still has one, once every muscle
+            // has had its first pick — duration keeps mattering wherever the
+            // library actually has the variety to support it, with no
+            // artificial padding where it doesn't (a muscle with only one
+            // eligible exercise is simply skipped on later passes).
+            var picksByMuscle: [MuscleGroup: Int] = [:]
+            let maxPicksForAnyMuscle = byMuscle.values.map(\.count).max() ?? 1
+            while exercises.count < exerciseCount, guardCount < muscleOrder.count * maxPicksForAnyMuscle {
                 defer { guardCount += 1 }
                 let muscle = muscleOrder[muscleCursor % muscleOrder.count]
                 muscleCursor += 1
                 guard let group = byMuscle[muscle], !group.isEmpty else { continue }
-                let spec = group[dayIndex % group.count]
+                let picks = picksByMuscle[muscle, default: 0]
+                guard picks < group.count else { continue }
+                let spec = group[(dayIndex + picks) % group.count]
+                picksByMuscle[muscle] = picks + 1
                 if exercises.contains(where: { $0.name == spec.name }) { continue }
                 exercises.append(ExerciseSpec(
                     name: spec.name,
@@ -294,9 +339,11 @@ public enum PlanGenerator {
                 hardness += strengthHardness(spec, sets: sets, experience: selection.experience)
             }
 
+            let focusLabel = muscleFocusLabel(pickedMuscles, dayIndex: dayIndex)
+            let focusKey = muscleFocusKey(pickedMuscles, dayIndex: dayIndex)
             result.append(Candidate(
-                name: "\(kindLabel) · \(muscleFocusLabel(pickedMuscles, dayIndex: dayIndex))",
-                localizationKey: "\(kindKey)·\(muscleFocusKey(pickedMuscles, dayIndex: dayIndex))",
+                name: isMixedEquipment ? focusLabel : "\(kindLabel) · \(focusLabel)",
+                localizationKey: isMixedEquipment ? focusKey : "\(kindKey)·\(focusKey)",
                 exercises: exercises,
                 timeFormat: nil,
                 timeCapMinutes: nil,
@@ -360,6 +407,7 @@ public enum PlanGenerator {
         muscleOrder: [MuscleGroup],
         kindLabel: String,
         kindKey: String,
+        isMixedEquipment: Bool,
         sessionDurationMinutes: Int,
         shuffle: Bool
     ) -> Candidate {
@@ -378,8 +426,8 @@ public enum PlanGenerator {
             hardness += strengthHardness(spec, sets: 3, experience: .intermediate)
         }
         return Candidate(
-            name: "\(kindLabel) · \(fullBodyGermanLabel)",
-            localizationKey: "\(kindKey)·day_type.full_body",
+            name: isMixedEquipment ? fullBodyGermanLabel : "\(kindLabel) · \(fullBodyGermanLabel)",
+            localizationKey: isMixedEquipment ? "day_type.full_body" : "\(kindKey)·day_type.full_body",
             exercises: exercises,
             timeFormat: .emom,
             timeCapMinutes: min(30, max(10, sessionDurationMinutes)),
@@ -450,6 +498,7 @@ public enum PlanGenerator {
         case .barbell:    return "Langhantel"
         case .dumbbell:   return "Kurzhantel"
         case .kettlebell: return "Kettlebell"
+        case .machine:    return "Maschine"
         case .bodyweight: return "Körpergewicht"
         case .running:    return "Laufen"
         case .cycling:    return "Radfahren"
@@ -557,7 +606,7 @@ public enum PlanGenerator {
     /// "Long Run"s DEL-098-Faktoren (0.70/0.35 systemisch/CNS) liegen
     /// bereits sinnvoll zwischen "Easy Run" (0.50/0.25) und "Intervalle"
     /// (0.75/0.55).
-    private enum RunZone {
+    private enum RunZone: Equatable {
         case easy, tempo, interval
 
         var exerciseName: String {
@@ -604,6 +653,39 @@ public enum PlanGenerator {
         }
     }
 
+    /// Laufcoaching-Plan-Integration (Task 3): Dauer-Ziel fuer die
+    /// duration-basierten Zonen (`.easy`/`.tempo`) - skaliert konservativ
+    /// anhand eines bekannten, glaubwuerdigen Wochenvolumens, statt immer
+    /// nur `selection.sessionDurationMinutes` zu uebernehmen. `.interval`
+    /// bleibt bewusst aussen vor (Global Constraint): ruft diese Funktion
+    /// gar nicht erst auf, bleibt distanzbasiert.
+    ///
+    /// Ohne Profil oder ohne (bzw. nicht-positives) `weeklyBaseVolumeKm`
+    /// bleibt es exakt beim heutigen Verhalten - "zu wenig Daten" heisst
+    /// hier konservativ "nichts aendern", nicht "irgendwas annehmen" (siehe
+    /// `CardioBaselineCalculator`-Konvention: `nil` ist "unbekannt", nicht
+    /// "null"). Ist `targetWeeklyVolumeKm(for:)` fuer das Ziel `nil`
+    /// (aktuell nur `.generalFitness`), fehlt ein Referenzpunkt zum Skalieren
+    /// - ebenfalls unveraendert.
+    ///
+    /// shortcut: das Verhaeltnis `weeklyBaseVolumeKm / targetWeeklyVolumeKm`
+    /// wird auf ±20 % gekappt, damit ein extremer Profil-Wert nicht zu einer
+    /// absurd kurzen/langen Einheit fuehrt - eine grobe Faustregel wie
+    /// `PaceZoneCalculator`/`CardioFeasibilityCalculator`, keine
+    /// individuelle Trainingsempfehlung. Zeigt sich an echten Nutzerdaten,
+    /// dass ein breiterer (oder enger gefasster) Korridor noetig ist, hier
+    /// nachziehen.
+    private static func volumeAwareDurationMinutes(for selection: PlanGeneratorTypeSelection) -> Int {
+        guard let profile = selection.cardioRunProfile,
+              let weeklyVolume = profile.weeklyBaseVolumeKm, weeklyVolume > 0,
+              let targetVolume = CardioFeasibilityCalculator.targetWeeklyVolumeKm(for: profile.goal), targetVolume > 0
+        else {
+            return selection.sessionDurationMinutes
+        }
+        let ratio = min(1.2, max(0.8, weeklyVolume / targetVolume))
+        return Int((Double(selection.sessionDurationMinutes) * ratio).rounded())
+    }
+
     private static func cardioCandidates(for selection: PlanGeneratorTypeSelection) -> [Candidate] {
         // README 2.35: Zeitformat-Wahl im Wizard gilt nur fuer Laufen/
         // Radfahren (die vier Kraft-Arten haben keinen Format-Picker in
@@ -646,11 +728,48 @@ public enum PlanGenerator {
 
         // README 2.18/2.20: Reihenfolge so gewaehlt, dass bei genau zwei
         // Tagen niemals zwei harte Einheiten (Tempo/Intervall) zusammen
-        // herauskommen - "ruhig" deckt die Luecke.
-        let cycle: [RunZone] = [.easy, .interval, .tempo]
+        // herauskommen - "ruhig" deckt die Luecke. Bleibt der feste
+        // Default fuer den Fall OHNE `cardioRunProfile` (Review Focus 1) -
+        // byte-fuer-byte unveraendert gegenueber vor Task 3.
+        let zones: [RunZone]
+        if let goal = selection.cardioRunProfile?.goal {
+            // Laufcoaching-Plan-Integration (Task 3): mit bekanntem Ziel
+            // bestimmt `CardioFeasibilityCalculator.runTypeMix` (Task 2) das
+            // Verhaeltnis easy/quality statt des zieleunabhaengigen festen
+            // Zyklus. Fix round 1 (User-Entscheidung nach Review-Fund):
+            // `.quality` deckt laut `RunPurpose`-Doku "sowohl Intervall- als
+            // auch Tempo-Laeufe ab" - ein durchgaengiges `.tempo` hätte
+            // `.interval`-Tage komplett verschwinden lassen, sobald ein
+            // Profil vorliegt (Trainingsinhalt-Regression, v.a. fuer
+            // 5K/10K). Aufeinanderfolgende `.quality`-Vorkommen wechseln
+            // deshalb zwischen `.tempo` und `.interval` (1./3./5. -> Tempo,
+            // 2./4./6. -> Intervall) - gezaehlt ueber die GESAMTE Woche, nicht
+            // nur einmal pro `runTypeMix`-Durchlauf, damit sich bei
+            // mehrfacher Wiederholung des Mix (z.B. Halbmarathon/Marathons
+            // `[.easy, .easy, .quality]` bei 6 Tagen/Woche) beide Reize
+            // tatsaechlich abwechseln statt immer auf denselben Wert zu
+            // fallen. `.interval`s eigene Groessen-/Pace-Logik (0.4 km, kein
+            // Volumen-Skalieren) bleibt davon unberuehrt - nur WELCHE Zone an
+            // welchem Tag steht, aendert sich hier, nicht wie `.interval`
+            // selbst aufgebaut ist.
+            let mix = CardioFeasibilityCalculator.runTypeMix(for: goal)
+            var qualityOccurrences = 0
+            zones = (0..<selection.daysPerWeek).map { dayIndex -> RunZone in
+                switch mix[dayIndex % mix.count] {
+                case .easy:
+                    return .easy
+                case .quality:
+                    qualityOccurrences += 1
+                    return qualityOccurrences.isMultiple(of: 2) ? .interval : .tempo
+                }
+            }
+        } else {
+            let cycle: [RunZone] = [.easy, .interval, .tempo]
+            zones = (0..<selection.daysPerWeek).map { cycle[$0 % cycle.count] }
+        }
 
         var result = (0..<selection.daysPerWeek).map { dayIndex in
-            let zone = cycle[dayIndex % cycle.count]
+            let zone = zones[dayIndex]
             let title = zone.germanLabel
             let exercise: ExerciseSpec
             switch zone {
@@ -664,11 +783,25 @@ public enum PlanGenerator {
                     enduranceSportKind: .running
                 )
             case .easy, .tempo:
+                // Laufcoaching-Plan-Integration (Task 3): Pace nur gesetzt,
+                // wenn eine 5-km-Referenzzeit bekannt ist - sonst bleibt sie
+                // `nil` (heutiges Verhalten, unveraendert). `.interval`
+                // bleibt bewusst aussen vor (Global Constraint): bleibt
+                // distanzbasiert, kein erfundener Pace-Faktor dafuer.
+                let pace: Double?
+                if let referenceSeconds = selection.cardioRunProfile?.current5kReferenceSeconds {
+                    pace = zone == .easy
+                        ? PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+                        : PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+                } else {
+                    pace = nil
+                }
                 exercise = ExerciseSpec(
                     name: zone.exerciseName,
                     sets: 1, repsMin: 0, repsMax: 0,
                     isCardio: true,
-                    targetDurationMinutes: selection.sessionDurationMinutes,
+                    targetDurationMinutes: volumeAwareDurationMinutes(for: selection),
+                    targetPaceMinutesPerKm: pace,
                     enduranceSportKind: .running
                 )
             }

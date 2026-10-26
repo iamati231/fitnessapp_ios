@@ -20,6 +20,19 @@ struct ExerciseCard: View {
     /// `SessionContentResolver` für die Auflösung.
     let content: TrainingDayContentSnapshot.ExerciseEntry
     let session: WorkoutSession
+    /// Task 8 (laufcoaching-remediation-round-2, Decision 1): durchgereicht
+    /// von `ActiveWorkoutView`s live `@Query private var profiles` bis zu
+    /// jeder `SetRow` - siehe dortige Doku-Kommentare fuer die "live, nicht
+    /// eingefroren"-Begruendung. Beide Felder sind reine Pass-through-Werte,
+    /// kein eigener State/Cache hier.
+    let cardioCoachingEnabled: Bool
+    let current5kReferenceSeconds: Int?
+    /// Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2: `true`
+    /// fuer JEDEN generator-gebauten Plan (`.planBuilder` ODER
+    /// `.cardioCoach`), `false` fuer `.manual` (Template-instanziiert) ODER
+    /// wenn Tag/Plan/Quelle unbekannt ist (`nil`) - siehe
+    /// `SetRow.targetPaceHint` fuer die konkrete Gating-Verwendung.
+    let isGeneratorPlan: Bool
     /// DEL-097 + DEL-108: Session-weiter Time-Set-Lock (Exercise × setIndex).
     /// Reicht durch zur SetRow, die den Lock claimt bzw. den eigenen
     /// Start-Button blockiert, wenn ein anderer Satz (gleicher oder fremder
@@ -115,6 +128,9 @@ struct ExerciseCard: View {
                     session: session,
                     existingLog: existingLog(forSetIndex: setIndex),
                     previousLog: previousLog(forSetIndex: setIndex),
+                    cardioCoachingEnabled: cardioCoachingEnabled,
+                    current5kReferenceSeconds: current5kReferenceSeconds,
+                    isGeneratorPlan: isGeneratorPlan,
                     seedLog: seedLog(forSetIndex: setIndex),
                     onRequestDelete: content.sets > 1 ? { removeSet(at: setIndex) } : nil,
                     activeTimedSet: $activeTimedSet,

@@ -213,6 +213,12 @@ public struct OnboardingView: View {
     @State private var enduranceModality: EnduranceModality?
     @State private var runCoachWanted = false
 
+    /// Task 5 (laufcoaching-plan-integration): seedet nur die Ziel-
+    /// KATEGORIE (`CardioGoal`), sobald der Laufcoach oben gewuenscht wird -
+    /// Renndatum/Wochenumfang/5k-Referenzzeit bleiben bewusst dem spaeteren
+    /// `CardioGoalEditorView` vorbehalten ("schrittweise erfragen").
+    @State private var runCoachCardioGoal: CardioGoal = .generalFitness
+
     // DEL-088: Tag-Auswahl-Sheet, das nach Plan-Adopt erscheint. Sobald
     // `dayPickerTemplate != nil`, oeffnet sich das DayPickerSheet mit dem
     // dort hinterlegten Template. `onConfirm` setzt `selectedWeekdays` und
@@ -979,6 +985,34 @@ public struct OnboardingView: View {
                             }
                         }
                     }
+
+                    // Task 5: nur sichtbar, wenn der Laufcoach oben gewuenscht
+                    // wurde - seedet lediglich die Ziel-KATEGORIE
+                    // (`CardioGoal`), keine Renndatum-/Wochenumfang-/5k-
+                    // Referenzzeit-Abfrage hier (die bleibt `CardioGoalEditorView`
+                    // vorbehalten, siehe `runCoachCardioGoal`-Doku).
+                    if runCoachWanted {
+                        VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("onboarding.runCoachGoal.title", bundle: .module)
+                                    .font(.title2.weight(.bold))
+                                Text("onboarding.runCoachGoal.subtitle", bundle: .module)
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                            }
+                            VStack(spacing: 10) {
+                                ForEach(CardioGoal.allCases, id: \.self) { goal in
+                                    coachingCard(
+                                        title: String(localized: goal.localizedName),
+                                        iconName: goal.symbol,
+                                        isSelected: runCoachCardioGoal == goal
+                                    ) {
+                                        runCoachCardioGoal = goal
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -1428,7 +1462,7 @@ public struct OnboardingView: View {
     @ViewBuilder
     private func coachingCard(
         title: String,
-        description: String,
+        description: String? = nil,
         iconName: String,
         isSelected: Bool,
         action: @escaping () -> Void
@@ -1444,10 +1478,19 @@ public struct OnboardingView: View {
                     Text(title)
                         .font(.headline)
                         .foregroundStyle(.primary)
-                    Text(description)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
+                    // Code-Review-Fix (Task 5): `description` ist optional,
+                    // damit Karten ohne Beschreibungstext (z.B. die neuen
+                    // CardioGoal-Karten, die bewusst keine neuen per-Case-
+                    // Lokalisierungs-Keys bekommen) keine leere `Text("")`-
+                    // Zeile reservieren - sichtbar neben den uebrigen
+                    // `coachingCard`-Aufrufstellen auf denselben Screens, die
+                    // alle eine echte Beschreibung mitgeben.
+                    if let description {
+                        Text(description)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
                 }
                 Spacer(minLength: 0)
                 if isSelected {
@@ -2157,6 +2200,18 @@ public struct OnboardingView: View {
             let finalModality = customPlanEnduranceModality ?? enduranceModality
             let finalRunCoachWanted = customPlanEnduranceModality != nil ? customPlanRunCoachWanted : runCoachWanted
             profile.setEnduranceModality(finalModality, runCoachEnabled: finalRunCoachWanted)
+            // Task 5: seedet nur die Ziel-KATEGORIE aus dem PLAIN-Onboarding-
+            // Schritt (`runCoachCardioGoal`) - es gibt bewusst kein Builder-
+            // Pfad-Aequivalent dazu (der Builder stellt diese Frage nicht),
+            // daher immer `runCoachCardioGoal`, unabhaengig davon, ob
+            // `customPlanEnduranceModality` (Builder-Pfad) oder `enduranceModality`
+            // (Onboarding-Pfad) den `finalModality`/`finalRunCoachWanted`
+            // gewonnen hat. `profile.cardioCoachingEnabled` wird HIER, NACH
+            // `setEnduranceModality`, gelesen, weil erst dieser Aufruf den
+            // tatsaechlichen Wert setzt (inkl. `supportsRunCoach`-Guard) -
+            // nicht das rohe `finalRunCoachWanted` vor einem moeglichen
+            // Modalitaets-bedingten Veto.
+            if profile.cardioCoachingEnabled { profile.cardioGoal = runCoachCardioGoal }
         }
 
         // 2) Initial BodyMeasurement — keeps the "first weight" visible in the

@@ -84,7 +84,7 @@ struct CardioGoalEditorView: View {
                             // (MM:SS) muss vor dem Speichern valide sein, sonst
                             // wuerde eine ungueltige Eingabe von `save()` still
                             // auf `nil` fallen (siehe `PaceCalculator.
-                            // parseDurationToSeconds`) statt den Nutzer auf den
+                            // parseFiveKReferenceSeconds`) statt den Nutzer auf den
                             // Tippfehler hinzuweisen.
                             isDisabled: !canSave || isSaving,
                             accessibilityLabel: String(localized: "common.save", bundle: .module)
@@ -196,14 +196,26 @@ struct CardioGoalEditorView: View {
     /// Task 5 (d): gate fuer das Save-Haekchen — das einzige Freitext-
     /// Zahlenfeld dieses Editors (`draftFiveKReferenceText`, MM:SS) muss
     /// entweder leer (keine Referenzzeit) oder ueber `PaceCalculator.
-    /// parseDurationToSeconds` parsbar sein. Die uebrigen Zahlenfelder
+    /// parseFiveKReferenceSeconds` parsbar sein. Fund B (Geraete-Nachtest):
+    /// bewusst NICHT `parseDurationToSeconds` — dessen "bare Zahl = Minuten"-
+    /// Fallback liess eine Eingabe wie "2500" (ohne Doppelpunkt) als 2500
+    /// Minuten durchgehen statt abgelehnt zu werden. Die uebrigen Zahlenfelder
     /// (`draftWeeklyBaseVolumeKm`/`draftMaxHeartRateBpm`) sind bereits ueber
     /// typisierte `TextField(value:)`-Bindings gegen ungueltige Eingaben
     /// geschuetzt und brauchen keine zusaetzliche Pruefung hier.
     private var canSave: Bool {
         guard draftCardioCoachingEnabled else { return true }
         let text = draftFiveKReferenceText.trimmingCharacters(in: .whitespaces)
-        return text.isEmpty || PaceCalculator.parseDurationToSeconds(text) != nil
+        return text.isEmpty || PaceCalculator.parseFiveKReferenceSeconds(text) != nil
+    }
+
+    /// Fund B: sichtbares Gegenstueck zu `canSave`s Gate — ohne diese Zeile
+    /// sah der Nutzer nur ein deaktiviertes Haekchen, ohne zu wissen warum.
+    private var fiveKReferenceErrorMessage: String? {
+        guard !draftFiveKReferenceText.isEmpty,
+              PaceCalculator.parseFiveKReferenceSeconds(draftFiveKReferenceText) == nil
+        else { return nil }
+        return String(localized: "profile.cardio.fiveKReference.invalid", bundle: .module)
     }
 
     private func save() {
@@ -221,7 +233,7 @@ struct CardioGoalEditorView: View {
         profile.cardioRaceDate = draftCardioRaceDate
         profile.weeklyBaseVolumeKm = draftWeeklyBaseVolumeKm
         profile.maxHeartRateBpm = draftMaxHeartRateBpm
-        profile.current5kReferenceSeconds = PaceCalculator.parseDurationToSeconds(draftFiveKReferenceText)
+        profile.current5kReferenceSeconds = PaceCalculator.parseFiveKReferenceSeconds(draftFiveKReferenceText)
         // Geraete-Nachtest (Runde 5, docs/DELTIQ_DEVICE_ACCEPTANCE.md): ohne
         // diesen expliziten Save ging ein gerade bestaetigtes Cardio-Update
         // bei einem Kaltstart kurz danach wieder verloren (SwiftDatas
@@ -237,7 +249,7 @@ struct CardioGoalEditorView: View {
             return
         }
 
-        if coachJustActivated, let plan = activePlans.first {
+        if coachJustActivated, let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
             planForAdjustmentPreview = plan
             showingAdjustmentPreview = true
         } else {
@@ -367,7 +379,9 @@ struct CardioGoalEditorView: View {
                         .fitnessNumberStyle()
                         .frame(maxWidth: 90)
                 }
-                if let zonesSummary {
+                if let fiveKReferenceErrorMessage {
+                    errorRow(fiveKReferenceErrorMessage)
+                } else if let zonesSummary {
                     hintRow(zonesSummary)
                 }
                 DeltiqControlRow(
@@ -414,7 +428,7 @@ struct CardioGoalEditorView: View {
     }
 
     private var zonesSummary: String? {
-        guard let seconds = PaceCalculator.parseDurationToSeconds(draftFiveKReferenceText),
+        guard let seconds = PaceCalculator.parseFiveKReferenceSeconds(draftFiveKReferenceText),
               let easy = PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: seconds),
               let tempo = PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: seconds)
         else { return nil }

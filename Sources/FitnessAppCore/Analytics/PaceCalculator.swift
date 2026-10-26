@@ -79,6 +79,23 @@ public enum PaceCalculator {
         return Int((minutes * 60.0).rounded())
     }
 
+    /// Parst eine 5K-Referenzzeit-Eingabe speziell. Anders als
+    /// `parseDurationToSeconds` faellt diese Variante NICHT auf "bare Zahl =
+    /// Minuten" zurueck — eine Rennzeit muss als MM:SS oder H:MM:SS angegeben
+    /// werden. Das entfernt genau die Mehrdeutigkeit, die ein bares "2500"
+    /// als "2500 Minuten" (41+ Stunden) statt als ungueltig durchgehen liess.
+    /// Begrenzt das Ergebnis zusaetzlich auf eine plausible 5K-Zeit
+    /// (10:00-90:00 = 600-5400 s), damit auch ein Colon-formatierter, aber
+    /// unplausibler Wert keine irrefuehrende abgeleitete Pace erzeugen kann.
+    /// Returns nil bei leerer/unparsbarer/ausserhalb-des-Bereichs-Eingabe.
+    public static func parseFiveKReferenceSeconds(_ raw: String) -> Int? {
+        let trimmed = raw.trimmingCharacters(in: .whitespaces)
+        guard trimmed.contains(":") else { return nil }
+        guard let seconds = parseDurationToSeconds(trimmed) else { return nil }
+        let plausibleRange = 600...5400
+        return plausibleRange.contains(seconds) ? seconds : nil
+    }
+
     /// Parst eine Distanz-Eingabe in km. Komma → Punkt-Normalisierung.
     /// Returns nil bei <= 0 oder unparsable.
     public static func parseDistanceToKm(_ raw: String) -> Double? {

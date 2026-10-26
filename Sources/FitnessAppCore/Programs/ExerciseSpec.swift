@@ -26,6 +26,15 @@ public struct ExerciseSpec: Sendable, Hashable {
     /// als Placeholder im Dauer-Feld.
     public let targetDurationMinutes: Int?
 
+    /// Laufcoaching-Plan-Integration (Task 3): einmalig zum Erzeugungszeitpunkt
+    /// aus `PlanGeneratorTypeSelection.cardioRunProfile` berechnete Ziel-Pace
+    /// fuer `.easy`/`.tempo`-Lauf-Zonen (siehe `PlanGenerator.cardioCandidates`).
+    /// Nil wenn keine Baseline bekannt war, oder fuer jeden anderen Lift
+    /// (`.interval` bleibt distanzbasiert, Kraft/Rad unveraendert). Keine
+    /// gespeicherte "Wahrheit" - Anzeige-Code leitet die Pace bei Bedarf live
+    /// neu her, wenn eine frischere Baseline existiert (siehe Task 9).
+    public let targetPaceMinutesPerKm: Double?
+
     /// DEL-087: Rolle des Lifts im Workout. Default `.workingSet`. Warmup
     /// und Cooldown werden vom Progressions-Algorithmus geskippt.
     public let role: ExerciseRole
@@ -46,6 +55,7 @@ public struct ExerciseSpec: Sendable, Hashable {
         isCardio: Bool = false,
         targetDistanceKm: Double? = nil,
         targetDurationMinutes: Int? = nil,
+        targetPaceMinutesPerKm: Double? = nil,
         role: ExerciseRole = .workingSet,
         enduranceSportKind: TrainingTypeKind? = nil
     ) {
@@ -58,7 +68,20 @@ public struct ExerciseSpec: Sendable, Hashable {
         self.isCardio = isCardio
         self.targetDistanceKm = targetDistanceKm
         self.targetDurationMinutes = targetDurationMinutes
+        self.targetPaceMinutesPerKm = targetPaceMinutesPerKm
         self.role = role
         self.enduranceSportKind = enduranceSportKind
+    }
+
+    /// Equipment-Vielfalt Phase 1 Task i1 fix: returns a copy with only
+    /// `targetRir` replaced — used by `ProgramTemplate.resolvedSlots` to
+    /// restore the template's authored value where slot resolution would
+    /// otherwise silently fall back to the `targetRir` default above.
+    func withTargetRir(_ targetRir: Float) -> ExerciseSpec {
+        ExerciseSpec(name: name, sets: sets, repsMin: repsMin, repsMax: repsMax,
+                     restSeconds: restSeconds, targetRir: targetRir, isCardio: isCardio,
+                     targetDistanceKm: targetDistanceKm, targetDurationMinutes: targetDurationMinutes,
+                     targetPaceMinutesPerKm: targetPaceMinutesPerKm, role: role,
+                     enduranceSportKind: enduranceSportKind)
     }
 }

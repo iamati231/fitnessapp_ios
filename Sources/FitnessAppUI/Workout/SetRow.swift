@@ -35,6 +35,33 @@ struct SetRow: View {
     let session: WorkoutSession
     let existingLog: ExerciseLog?
     let previousLog: ExerciseLog?
+    /// Task 8 (laufcoaching-remediation-round-2, Decision 1): Laufcoach
+    /// an/aus, live aus `ActiveWorkoutView`s `@Query private var profiles`
+    /// durchgereicht (ueber `ExerciseCard`) - NIE auf `content` (dem
+    /// eingefrorenen Session-Inhalt) oder in eigenem State zwischengespeichert,
+    /// damit eine Profil-Aenderung waehrend der offenen Session sofort
+    /// greift. Gleiche Gating-Rolle wie `PlanBuilderView.scopeLine`s
+    /// `cardioCoachingEnabled`-Check (Review Focus 1: Coach aus -> keine
+    /// Verhaltensaenderung).
+    let cardioCoachingEnabled: Bool
+    /// Task 8: 5-km-Referenzzeit, ebenfalls live aus `profiles.first?.
+    /// current5kReferenceSeconds` durchgereicht - siehe `cardioCoachingEnabled`
+    /// oben fuer die "live, nicht eingefroren"-Begruendung.
+    let current5kReferenceSeconds: Int?
+    /// Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2: `true`
+    /// fuer `session.day?.plan?.generationSource != .manual` (ODER
+    /// `.planBuilder` ODER `.cardioCoach`), `false` fuer `.manual`
+    /// (Template-instanziiert) ODER unbekannte Quelle (`nil`). Reine
+    /// `== .cardioCoach`-Gate (erste Fassung) war zu eng: die beiden echten
+    /// Coach-Pfade (Onboarding, `PlanBuilderView`-Assistent) stempeln
+    /// `generationSource == .planBuilder`, nicht `.cardioCoach` (das steht
+    /// nur auf den "separaten neuen Plan erzeugen"-Fallback-Pfaden in
+    /// `CardioFeasibilityCardModel`) - mit der zu engen Gate haette die
+    /// Ziel-Pace fuer fast alle echten Nutzer nie angezeigt. `.manual`
+    /// (Template-Plaene, `ProgramTemplates.swift`) bleibt ausgeschlossen,
+    /// weil dort Uebungen namens "Long Run" eine komplett andere,
+    /// nicht-Tempo-Bedeutung tragen.
+    let isGeneratorPlan: Bool
     /// DEL-157: Log des Satzes DIREKT DARUEBER in DIESER Session. Dient als
     /// Seed-Quelle fuer dynamisch hinzugefuegte Saetze ("+ Satz") — der neue
     /// Satz erbt Gewicht/Reps/RIR vom darueberliegenden. `nil` fuer den
@@ -1534,7 +1561,9 @@ struct SetRow: View {
     }
 
     /// Statuszeile unter den Inputs — abgeschlossener Set zeigt geloggtes
-    /// Resultat, editable State zeigt previous-Run-Hint (falls vorhanden).
+    /// Resultat, editable State zeigt previous-Run-Hint (falls vorhanden),
+    /// Task 8: sonst (noch nichts eingeloggt, kein vorheriger Lauf) die
+    /// Ziel-Pace des Tages, falls bestimmbar.
     @ViewBuilder
     private var cardioStatusZone: some View {
         if isCompleted, let log = existingLog {
@@ -1545,15 +1574,76 @@ struct SetRow: View {
         } else if let prev = previousLog,
                   prev.distanceKm != nil || prev.durationSeconds != nil {
             // Bug-Fix 2026-05-22: lokalisiert via active.set.previousFormat.
-            Text(String(format:
+            let previousText = String(format:
                 String(localized: "active.set.previousFormat", bundle: .module),
-                cardioPreviousHint(prev)))
+                cardioPreviousHint(prev))
+            // Fix I-3 (Final-Review, Round 2): die Ziel-Pace muss NEBEN dem
+            // "letztes Mal"-Hinweis sichtbar bleiben, nicht nur in dessen
+            // Abwesenheit - sonst verschwindet sie dauerhaft, sobald die
+            // Uebung einmal geloggt wurde (jede folgende, noch nicht
+            // geloggte Session traefe sonst immer zuerst diesen Zweig).
+            if let targetPaceHint {
+                let targetText = String(format:
+                    String(localized: "active.set.targetPaceFormat", bundle: .module),
+                    targetPaceHint)
+                Text("\(targetText) · \(previousText)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text(previousText)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else if let targetPaceHint {
+            Text(String(format:
+                String(localized: "active.set.targetPaceFormat", bundle: .module),
+                targetPaceHint))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             Color.clear
         }
+    }
+
+    /// Task 8 (Decision 1 - "Pace muss zum tatsaechlich uebernommenen
+    /// Trainingsinhalt passen"): dieselbe Gating-/Berechnungs-Logik wie
+    /// `PlanBuilderView.scopeLine`/`CardioFeasibilityDayRow.subtitle`
+    /// (Runde 1) - nur bei aktivem Coach, einer der beiden pace-tragenden
+    /// Lauf-Zonen (Easy/Tempo) UND einem Dauer-Ziel (der distanzbasierte
+    /// Intervall-Zweig traegt laut Task 3 nie eine Pace). Klassifiziert
+    /// ZWINGEND ueber `content.nameSnapshot` (stabiler Anker), NIE ueber
+    /// `content.customNameSnapshot` (user-umbenennbar) - Task 1s
+    /// Reviewer-Hinweis fuer genau diese Stelle.
+    ///
+    /// Fix round 1 (Review): der Fallback auf `cardioFeasibility.day.
+    /// paceUnknown` haengt am Ergebnis von `PaceZoneCalculator`, nicht nur
+    /// daran, ob `current5kReferenceSeconds` `nil` war - eine nicht-positive
+    /// Referenzzeit (`0`, oder kaputte/importierte Daten, siehe
+    /// `DataImportService.swift:746`) liess `PaceZoneCalculator.
+    /// easyPaceMinutesPerKm`/`.tempoPaceMinutesPerKm` ebenfalls `nil`
+    /// liefern (Divisions-Sicherheit, `CardioProfile.swift`), wodurch vorher
+    /// `PaceCalculator.formatPace(nil)` den rohen "—:—— /km"-Platzhalter
+    /// zurückgab statt des qualitativen Fallbacks - "keine falsch-praezise
+    /// Pace ohne Referenzzeit" gilt auch fuer eine UNBRAUCHBARE Referenzzeit.
+    /// Gleiches Muster wie `CardioFeasibilityDayRow.subtitle`, die ebenfalls
+    /// das BERECHNETE Pace-Ergebnis prueft, nicht nur die Eingabe.
+    private var targetPaceHint: String? {
+        guard content.isCardio, content.targetDurationMinutes != nil, cardioCoachingEnabled,
+              isGeneratorPlan else { return nil }
+        let zone = CardioExerciseZone.forExerciseName(content.nameSnapshot)
+        guard zone == .easy || zone == .tempo else { return nil }
+        let paceMinutesPerKm = current5kReferenceSeconds.flatMap { referenceSeconds in
+            zone == .easy
+                ? PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+                : PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+        }
+        guard let paceMinutesPerKm else {
+            return String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module)
+        }
+        return PaceCalculator.formatPace(paceMinutesPerKm)
     }
 
     private func cardioCompletedSummary(_ log: ExerciseLog) -> String {
