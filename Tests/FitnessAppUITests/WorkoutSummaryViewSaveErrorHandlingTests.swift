@@ -53,20 +53,33 @@ final class WorkoutSummaryViewSaveErrorHandlingTests: XCTestCase {
     /// Verlaesst der User den History-Edit-Mode per Checkmark und einer der beiden
     /// Saves schlaegt fehl, darf `isEditingHistory.toggle()` NICHT erreicht werden -
     /// der User soll NICHT faelschlich sehen, dass "Fertig" erfolgreich war.
+    ///
+    /// Sucht auf dem KOMMENTAR-bereinigten Quelltext - sonst matcht die erklaerende
+    /// Doku ueber `isEditingHistory.toggle()` selbst (gleiche Falle wie
+    /// `BodyDataEditorRollbackTests.testSaveNeverUsesABlanketContextRollback`).
     func testEditModeExitStaysInEditModeOnSaveFailure() throws {
-        let source = try source
-        guard let actionStart = source.range(of: "systemImage: isEditingHistory ? \"checkmark\" : \"pencil\"") else {
+        let cleaned = Self.stripLineComments(try source)
+        guard let actionStart = cleaned.range(of: "systemImage: isEditingHistory ? \"checkmark\" : \"pencil\"") else {
             return XCTFail("edit-mode-exit header action not found at expected signature")
         }
-        guard let toggleCall = source.range(of: "isEditingHistory.toggle()", range: actionStart.upperBound..<source.endIndex) else {
+        guard let toggleCall = cleaned.range(of: "isEditingHistory.toggle()", range: actionStart.upperBound..<cleaned.endIndex) else {
             return XCTFail("isEditingHistory.toggle() not found after the header action")
         }
-        let actionBody = source[actionStart.upperBound..<toggleCall.lowerBound]
+        let actionBody = cleaned[actionStart.upperBound..<toggleCall.lowerBound]
 
         let catchCount = actionBody.components(separatedBy: "} catch {").count - 1
         XCTAssertEqual(catchCount, 2, "expected exactly 2 catch blocks (one per save) before isEditingHistory.toggle()")
 
         let returnCount = actionBody.components(separatedBy: "return").count - 1
         XCTAssertEqual(returnCount, 2, "each catch block must return before isEditingHistory.toggle(), so a failed save never looks like a successful 'Fertig'")
+    }
+
+    private static func stripLineComments(_ text: String) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line -> Substring in
+                guard let commentRange = line.range(of: "//") else { return line }
+                return line[line.startIndex..<commentRange.lowerBound]
+            }
+            .joined(separator: "\n")
     }
 }
