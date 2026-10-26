@@ -1,14 +1,14 @@
 # Deltiq — Translation Source-of-Truth
 
-**Gesamt: 2536 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
+**Gesamt: 2537 Keys im String Catalog + 0 noch hartkodierte Strings im Code.**
 
 ## Coverage-Status (Catalog)
 
 | Sprache | Übersetzt | Fehlt |
 |---|---|---|
-| 🇩🇪 Deutsch (DE) | **2536 / 2536** (100%) | 0 |
-| 🇬🇧 English (EN) | **2536 / 2536** (100%) | 0 |
-| 🇹🇷 Türkçe (TR) | **2536 / 2536** (100%) | 0 |
+| 🇩🇪 Deutsch (DE) | **2537 / 2537** (100%) | 0 |
+| 🇬🇧 English (EN) | **2537 / 2537** (100%) | 0 |
+| 🇹🇷 Türkçe (TR) | **2537 / 2537** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
 - Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
@@ -2244,7 +2244,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `pr.previousShort` | vorher | prev | önceki |
 | `pr.volumeSuffix` | kg-Vol | kg-vol | kg-hac |
 
-## `profile.*`  (99 Keys)
+## `profile.*`  (100 Keys)
 
 | Key | Deutsch (DE) | English (EN) | Türkçe (TR) |
 |---|---|---|---|
@@ -2268,6 +2268,7 @@ Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind sepa
 | `profile.cardio.adjustment.createNewPlan` | Als neuen Plan erstellen | Create new plan | Yeni plan olarak oluştur |
 | `profile.cardio.adjustment.keep` | Beibehalten | Keep as is | Olduğu gibi bırak |
 | `profile.cardio.adjustment.noEligibleDay` | Deine Laufeinheiten wurden manuell geändert und bleiben unangetastet. Erstelle stattdessen einen neuen Plan, wenn der Coach sie anpassen soll. | Your running days were changed manually and are kept as they are. Create a new plan instead if you want the coach to adjust them. | Koşu günlerin manuel olarak değiştirildi ve olduğu gibi kalıyor. Koçun bunları uyarlamasını istiyorsan bunun yerine yeni bir plan oluştur. |
+| `profile.cardio.adjustment.notEnoughRoom` | Dein aktueller Plan hat nicht genug freie Tage, um alle neuen Lauftage aufzunehmen. Erstelle stattdessen einen neuen Plan, wenn der Coach dieses Ziel anwenden soll. | Your current plan doesn't have enough free days to add all the new running days. Create a new plan instead if you want the coach to apply this goal. | Mevcut planında yeni koşu günlerinin tümü için yeterli boş gün yok. Koçun bu hedefi uygulamasını istiyorsan bunun yerine yeni bir plan oluştur. |
 | `profile.cardio.adjustment.pending` | Coach aktiviert, Plan noch nicht angepasst | Coach activated, plan not yet adjusted | Koç etkinleştirildi, plan henüz uyarlanmadı |
 | `profile.cardio.adjustment.planChanged` | Dein Plan hat sich geändert, seit diese Vorschau geöffnet wurde. Bitte schließen und erneut prüfen. | Your plan changed since this preview was opened. Please close and check it again. | Bu önizleme açıldığından beri planın değişti. Lütfen kapatıp tekrar kontrol et. |
 | `profile.cardio.adjustment.title` | Plan anpassen | Adjust plan | Planı uyarla |

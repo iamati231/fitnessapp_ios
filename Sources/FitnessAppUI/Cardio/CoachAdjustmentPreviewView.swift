@@ -117,21 +117,50 @@ struct CoachAdjustmentPreviewView: View {
     private func beforeAfterSection(_ model: CoachAdjustmentCardModel) -> some View {
         switch model.analysis.cardioAvailability {
         case .ready(let ids):
-            Section {
-                ForEach(Array(activePlan.days.filter { ids.contains($0.persistentModelID) }), id: \.persistentModelID) { day in
-                    Text(day.name)
-                        .strikethrough()
+            // Fix 2 (Deltiq_Laufcoaching_Audit_Fixes_Claude.md): `ids.count`
+            // existing eligible days alone may not be enough for the goal -
+            // the write path (`CoachAdjustmentCardModel.accept`, Finding 1)
+            // replaces all of them and atomically inserts the remainder into
+            // free rest days, throwing `insufficientRestDays` BEFORE any
+            // mutation if there isn't enough room. This mirrors that same
+            // check here, proactively, using the identical eligibility rule
+            // (`RunCoachPlanAdjustment.isEligibleRestDayForInsertion`,
+            // already aggregated as `model.analysis.insertableRestDays`) -
+            // same pattern as the `.noEligibleCardioDay` case below, just
+            // with `ids.count` existing days already covering part of the
+            // goal instead of starting from zero.
+            let desiredDays = newCardioDays(for: model)
+            let extraNeeded = max(0, desiredDays.count - ids.count)
+            if extraNeeded == 0 || model.analysis.insertableRestDays.count >= extraNeeded {
+                Section {
+                    ForEach(Array(activePlan.days.filter { ids.contains($0.persistentModelID) }), id: \.persistentModelID) { day in
+                        Text(day.name)
+                            .strikethrough()
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(Array(desiredDays.enumerated()), id: \.offset) { _, spec in
+                        Text(spec.name)
+                    }
+                } header: {
+                    Text("profile.cardio.adjustment.before", bundle: .module)
+                } footer: {
+                    Text("profile.cardio.adjustment.after", bundle: .module)
+                }
+                actionButtons(model)
+            } else {
+                // Not the same state as `.planChanged` (that's a real
+                // race between preview-open and tap) and not the same as
+                // `.noEligibleDay` (that string says "changed manually,"
+                // which is false here - there IS at least one eligible
+                // day, there just isn't enough SPARE room to grow to the
+                // goal's day count). Dedicated message, no silent partial
+                // application, no seemingly-executable action offered.
+                Section {
+                    Text("profile.cardio.adjustment.notEnoughRoom", bundle: .module)
                         .foregroundStyle(.secondary)
                 }
-                ForEach(Array(newCardioDays(for: model).enumerated()), id: \.offset) { _, spec in
-                    Text(spec.name)
-                }
-            } header: {
-                Text("profile.cardio.adjustment.before", bundle: .module)
-            } footer: {
-                Text("profile.cardio.adjustment.after", bundle: .module)
+                createNewPlanButton(model)
             }
-            actionButtons(model)
         case .noEligibleCardioDay:
             // Task 7: Task 5/6s Einfuege-Pfad (Ruhetag -> Cardio-Tag) macht
             // diesen Fall nicht mehr zwangslaeufig zu einem reinen "nichts zu

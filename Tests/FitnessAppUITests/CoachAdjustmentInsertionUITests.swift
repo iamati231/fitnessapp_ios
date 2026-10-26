@@ -264,5 +264,113 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
             "must not fall back to the unreadable generic error description for this specific, anticipated failure"
         )
     }
+
+    // MARK: - Fix 2 (Deltiq_Laufcoaching_Audit_Fixes_Claude.md): .ready branch must gate on room too
+
+    private func readyCaseBlock(in source: String) throws -> Substring {
+        guard let readyRange = source.range(of: "case .ready(let ids):") else {
+            XCTFail("case .ready not found"); return Substring("")
+        }
+        guard let nextCaseRange = source.range(of: "case .noEligibleCardioDay:", range: readyRange.upperBound..<source.endIndex) else {
+            XCTFail("case .noEligibleCardioDay not found (end of .ready block)"); return Substring("")
+        }
+        return source[readyRange.upperBound..<nextCaseRange.lowerBound]
+    }
+
+    /// Case 1 (doc Fix 2, Test 1): existing eligible day(s) + more goal days
+    /// needed + enough free rest days -> the full action must stay offered,
+    /// unchanged from before this fix.
+    func testReadyBranchStillOffersActionWhenExtraRoomIsNotNeededOrSufficient() throws {
+        let source = try contents(of: "Cardio/CoachAdjustmentPreviewView.swift")
+        let block = try readyCaseBlock(in: source)
+        XCTAssertTrue(
+            block.contains("actionButtons(model)"),
+            "the ready branch must still be able to reach actionButtons(_:) when there is enough room (extraNeeded == 0 or insertableRestDays covers it)"
+        )
+    }
+
+    /// Case 2 (doc Fix 2, Test 2 + the doc's own worked example: 1 eligible
+    /// day, 5 new goal days, only 2 free rest days -> 4 needed, 2 available):
+    /// the branch must compute how many EXTRA days the goal needs beyond the
+    /// already-eligible ones, and gate on `insertableRestDays` covering that
+    /// extra - not on the raw `ids.count` or `desiredDays.count` alone, and
+    /// not duplicating `RunCoachPlanAdjustment.isEligibleRestDayForInsertion`
+    /// (reuses the already-aggregated `model.analysis.insertableRestDays`).
+    func testReadyBranchGatesOnExtraRoomBeyondAlreadyEligibleDays() throws {
+        let source = try contents(of: "Cardio/CoachAdjustmentPreviewView.swift")
+        let block = try readyCaseBlock(in: source)
+        let flat = withoutLineComments(String(block))
+        XCTAssertTrue(
+            flat.contains("desiredDays.count - ids.count") || flat.contains("newCardioDays(for: model).count - ids.count"),
+            "must size the extra requirement as (needed days - already-eligible days), not the raw needed count"
+        )
+        XCTAssertTrue(
+            flat.contains("model.analysis.insertableRestDays.count >= extraNeeded"),
+            "must gate on the same eligibility-aggregated count the .noEligibleCardioDay branch already uses, reused not reimplemented"
+        )
+    }
+
+    /// Case 2/4 (doc Fix 2): when there isn't enough room, the branch must
+    /// NOT show `actionButtons(model)` (no seemingly-executable "Apply" that
+    /// would just throw) - it must fall back to `createNewPlanButton(model)`
+    /// only, the same fallback the sibling `.noEligibleCardioDay` branch
+    /// already uses for its own "not enough room" case.
+    func testReadyBranchHidesApplyActionAndOffersCreateNewPlanWhenRoomIsInsufficient() throws {
+        let source = try contents(of: "Cardio/CoachAdjustmentPreviewView.swift")
+        let block = try readyCaseBlock(in: source)
+        guard let elseRange = block.range(of: "} else {") else {
+            XCTFail("expected an else branch for the insufficient-room case"); return
+        }
+        let elseBlock = block[elseRange.upperBound...]
+        XCTAssertFalse(
+            elseBlock.contains("actionButtons(model)"),
+            "the insufficient-room branch must not offer the Apply action"
+        )
+        XCTAssertTrue(
+            elseBlock.contains("createNewPlanButton(model)"),
+            "must offer the existing create-new-plan alternative instead of a dead-end Apply button"
+        )
+    }
+
+    /// Doc requirement: "den Zustand nicht fälschlich als 'Plan seit
+    /// Vorschau verändert' darstellen" - the insufficient-room message must
+    /// be its own, accurate string, never `.planChanged` (reserved for the
+    /// real preview-to-tap race) and never `.noEligibleDay` (which falsely
+    /// claims the days were changed manually - here at least one IS
+    /// eligible, there just isn't enough spare room to grow to it).
+    func testReadyBranchUsesItsOwnAccurateMessageNotPlanChangedOrNoEligibleDay() throws {
+        let source = try contents(of: "Cardio/CoachAdjustmentPreviewView.swift")
+        let block = try readyCaseBlock(in: source)
+        XCTAssertTrue(
+            block.contains("profile.cardio.adjustment.notEnoughRoom"),
+            "must use a dedicated, accurate localization key for the insufficient-room state"
+        )
+        XCTAssertFalse(
+            block.contains("profile.cardio.adjustment.planChanged"),
+            "must not claim the plan changed since preview - it never had enough room to begin with"
+        )
+        XCTAssertFalse(
+            block.contains("profile.cardio.adjustment.noEligibleDay"),
+            "must not reuse the manually-edited-days message - this state has at least one eligible day"
+        )
+    }
+
+    /// The new localization key must actually exist with real DE/EN/TR text
+    /// (not just referenced from Swift) - same discipline as every other
+    /// `profile.cardio.adjustment.*` key in this catalog.
+    func testNotEnoughRoomLocalizationKeyExistsInAllThreeLanguages() throws {
+        let xcstringsURL = sourcesRoot.appendingPathComponent("Resources/Localizable.xcstrings")
+        let data = try Data(contentsOf: xcstringsURL)
+        let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let strings = try XCTUnwrap(json["strings"] as? [String: Any])
+        let entry = try XCTUnwrap(strings["profile.cardio.adjustment.notEnoughRoom"] as? [String: Any], "key must exist in the catalog")
+        let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
+        for lang in ["en", "de", "tr"] {
+            let loc = try XCTUnwrap(localizations[lang] as? [String: Any], "missing \(lang) localization")
+            let stringUnit = try XCTUnwrap(loc["stringUnit"] as? [String: Any])
+            let value = try XCTUnwrap(stringUnit["value"] as? String)
+            XCTAssertFalse(value.isEmpty, "\(lang) value must not be empty")
+        }
+    }
 }
 #endif

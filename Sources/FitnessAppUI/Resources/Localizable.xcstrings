@@ -39378,6 +39378,29 @@
         }
       }
     },
+    "profile.cardio.adjustment.notEnoughRoom": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your current plan doesn't have enough free days to add all the new running days. Create a new plan instead if you want the coach to apply this goal."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein aktueller Plan hat nicht genug freie Tage, um alle neuen Lauftage aufzunehmen. Erstelle stattdessen einen neuen Plan, wenn der Coach dieses Ziel anwenden soll."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevcut planında yeni koşu günlerinin tümü için yeterli boş gün yok. Koçun bu hedefi uygulamasını istiyorsan bunun yerine yeni bir plan oluştur."
+          }
+        }
+      }
+    },
     "profile.cardio.adjustment.applyToCurrentPlan": {
       "extractionState": "manual",
       "localizations": {
