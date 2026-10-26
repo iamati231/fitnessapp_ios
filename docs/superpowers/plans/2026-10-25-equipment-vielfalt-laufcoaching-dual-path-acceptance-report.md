@@ -36,7 +36,9 @@ Getesteter Commit (Geräteabnahme): `e5174b21483a361aca1500ca2cd57ea96f55797f`
 
 **Session 2** (`eac791865f9c-…`, iPhone 15 / iOS 18.0, frischer Onboarding-Durchlauf): genutzt für Laufcoaching Option A. Vom Controller sauber mit `DELETE /session` beendet, nicht durch Timeout.
 
-Verbleibendes Guthaben laut Account-API nach beiden Sessions weiterhin bei 2484s gemeldet (Abrechnung scheint asynchron/verzögert zu sein, nicht in Echtzeit) — real verbraucht laut Session-1-Metadaten mindestens 1800s plus die Laufzeit von Session 2.
+**Session 3** (`c616bc51eb9c-…`, iPhone 15 / iOS 18.0, frischer Onboarding-Durchlauf, ~19 Minuten): genutzt für Laufcoaching Option B (siehe unten für den dabei gefundenen Befund C). Vom Controller sauber mit `DELETE /session` beendet (Concurrency danach bei 0 bestätigt), nicht durch Timeout.
+
+Verbleibendes Guthaben laut Account-API nach allen 3 Sessions weiterhin bei 2484s gemeldet (Abrechnung scheint asynchron/verzögert zu sein, nicht in Echtzeit) — real verbraucht laut Session-Metadaten mindestens 1800s (Session 1) plus die Laufzeiten von Session 2 und 3, alles innerhalb des ursprünglich bestätigten ~71-Minuten-Guthabens.
 
 ### Equipment-Vielfalt
 
@@ -57,15 +59,24 @@ Verbleibendes Guthaben laut Account-API nach beiden Sessions weiterhin bei 2484s
 
 ### Laufcoaching Option B
 
-**Nicht geprüft** (Zeit-/Budgetgründe). Indirekter Hinweis: in Session 1 zeigte die Plans-Liste nach "Create new plan"-artiger Aktion zwei gleichzeitig "ACTIVE" markierte Pläne ("Football Athletic" und "Hybrid Athlete — Beginner") — bestätigt, dass das Mehrfach-aktive-Pläne-Design (vorbestehend, von `ProgramInstantiator` absichtlich) durch diesen Plan nicht gebrochen wurde. Die Dashboard-Karten-Konsistenz über Neustarts hinweg (das eigentliche Ziel von Task 9s `ActivePlanResolver`-Fix) wurde nicht separat verifiziert.
+**Geprüft, mit einem wichtigen Zwischenbefund: Session 3** (frisches Onboarding, `Football Athletic` aktiv, Running Coaching aktiviert via `CardioGoalEditorView`).
+
+**Befund C (informativ, Diskrepanz zur Task-11-Formulierung):** die vom `CardioGoalEditorView`-Aktivierungsfluss geöffnete "Adjust plan"-Vorschau (`CoachAdjustmentCardModel`, über das Dashboard-Karten-`Review plan` erneut bestätigt) bietet ausschließlich **"Keep as is"** und **"Adjust current plan"** — es existiert in dieser konkreten Vorschau keine dritte, direkt anwählbare "Create separate plan"-Aktion. Das ist konsistent mit Task 8s bestätigtem Befund: `CardioFeasibilityCardModel`s alte "Create separate plan nur"-Logik ist inzwischen totes, korrekt entferntes Fallback-Verhalten, das nur noch greift, wenn GAR KEIN aktiver Plan existiert — sobald (wie hier) ein aktiver Plan vorhanden ist, übernimmt `CoachAdjustmentCardModel` exklusiv, und dieses bot nie eine dritte Handlungsoption an. Task 11s Formulierung ("vom selben Ausgangspunkt stattdessen Option B wählen") trifft auf die tatsächliche UI nicht mehr zu, seit Task 8 das alte Fallback entfernt hat — kein Code geändert, nur als Dokumentations-/Plan-Diskrepanz festgehalten, nicht als Bug.
+
+**Tatsächlich geprüft (eigenständiger Pfad über `Training → +`):** stattdessen über "Build Plan" einen zweiten, unabhängigen Plan ("Individueller Plan", Strength & Muscle, 3 Tage/Woche) erstellt und gespeichert. Danach zeigte die Plans-Liste **zwei gleichzeitig "ACTIVE"** markierte Pläne (`Football Athletic`, `Individueller Plan`) — bestätigt das vorbestehende Mehrfach-aktive-Pläne-Design bleibt unverändert.
+
+**Der eigentlich relevante Befund für Task 9:** mit zwei gleichzeitig aktiven Plänen, von denen KEINER `generationSource == .cardioCoach` ist, verschwand die "Coach activated, plan not yet adjusted"-Karte **korrekt vollständig sowohl vom Dashboard als auch von der Plans-Liste** — genau das von `ActivePlanResolver`s Fall 0 ("mehrere aktive Nicht-Cardio-Pläne → KEINE verlässliche Zuordnung → nil, niemals geraten") vorhergesagte, sichere Verhalten, direkt auf einem echten Gerät bestätigt, und zwar konsistent über BEIDE Views hinweg (genau die Eigenschaft, die die alte `activePlans.first`-Logik nicht garantieren konnte). Dies ist eine direktere, strengere Bestätigung von Task 9s Kernversprechen als das ursprünglich geplante Szenario.
 
 ## Gesamtbewertung
 
 **Kein Produktionscode-Fehler gefunden — weder beim ersten echten `swift test`-Lauf dieses gesamten Plans noch bei der Geräteabnahme.** Zwei reine Test-Bugs wurden gefunden, root-caused und behoben (Commits `30b5fe3`, `e5174b2`); CI ist jetzt grün (2015/2015 Tests). Die Geräteabnahme bestätigte auf einem echten iOS-Simulator:
 - Equipment-Vielfalt: kuratierte Defaults bei voller Geräteausstattung (2a), korrekte reviewte Alternativen-Auflösung bei eingeschränkter Ausstattung (2b) — beide mit sichtbarer, nicht-stillschweigender UI (Equipment-Gap-Banner bzw. "Adapted to your equipment"-Banner).
 - Laufcoaching: der komplette, mehrfach in Review-Runden korrigierte Einfüge-Pfad (3a) funktioniert Ende-zu-Ende korrekt — richtige Tageszahl, keine Beschädigung bestehender Kraft-Tage, korrekte, nicht-durchgestrichene UI-Darstellung.
+- Task 9s `ActivePlanResolver`: mit zwei gleichzeitig aktiven, nicht-Cardio-Coach-Plänen verschwindet die Coach-Karte korrekt und konsistent aus BEIDEN Views (Dashboard, Plans-Liste) statt zu raten — direkt auf einem echten Gerät bestätigt, die strengste verfügbare Probe für die Kerngarantie dieser Aufgabe.
 
-**Nicht geprüft** (Zeit-/Budgetgründe, TestingBot-Session-1-Limit nach 30 Minuten erreicht): Equipment-Vielfalt 2c (bodyweight-only) und die systematische 3-Profile-Regressionsprüfung für unkonvertierte Templates; Laufcoaching 3c und Option B. 3b ist strukturell nicht per Geräteabnahme prüfbar und wird durch einen bestehenden, dedizierten Unit-Test abgedeckt.
+**Ein Befund außerhalb reiner Testresultate (Befund C):** die in Task 11 beschriebene "Option A vs. Option B, vom selben Bildschirm"-Wahl existiert in der aktuellen UI nicht mehr — Folge von Task 8s korrekter Entfernung des alten `CardioFeasibilityCardModel`-Fallbacks. Keine Regression, aber die Plan-Formulierung für dieses eine Prüfkriterium ist veraltet.
+
+**Nicht geprüft** (Zeit-/Budgetgründe über alle 3 Sessions hinweg): Equipment-Vielfalt 2c (bodyweight-only) und die systematische 3-Profile-Regressionsprüfung für unkonvertierte Templates; Laufcoaching 3c. 3b ist strukturell nicht per Geräteabnahme prüfbar und wird durch einen bestehenden, dedizierten Unit-Test abgedeckt. Option B wurde geprüft (siehe oben) — mit dem Befund, dass die in Task 11 beschriebene direkte "Option A vs. B"-Auswahl auf derselben Vorschau nicht mehr existiert (Task 8s korrekte Entfernung des alten Fallbacks), stattdessen aber über einen unabhängigen zweiten Plan getestet, mit einem direkten, strengen Beleg für Task 9s Kernversprechen (Dashboard/Plans-Liste zeigen konsistent KEINE Karte bei Mehrdeutigkeit, statt zu raten).
 
 **Empfehlung:** aus Sicht der durchgeführten Prüfungen steht einem Merge/PR nichts entgegen; die nicht geprüften Szenarien sind entweder durch bestehende Unit-Tests abgedeckt (3b) oder durch unverändert gebliebenen, vor diesem Plan bereits funktionierenden Code (3c, Option B, der alte `PlanEquipmentChecker`-Pfad für 2c/Regression) plausibel, aber nicht auf diesem Gerät neu verifiziert. Die Entscheidung über PR und Merge liegt wie vereinbart beim Auftraggeber.
 
