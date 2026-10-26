@@ -228,6 +228,24 @@ struct CardioGoalEditorView: View {
         // sie nicht erneut.
         let coachJustActivated = !profile.cardioCoachingEnabled && draftCardioCoachingEnabled
 
+        // Finding 3 (Laufcoaching-Audit): Schnappschuss ALLER sieben Felder,
+        // die gleich mutiert werden - inklusive der beiden, die
+        // `setEnduranceModality` selbst anfasst (siehe dortige Doku:
+        // `enduranceModality` UND `cardioCoachingEnabled` zusammen), nicht
+        // nur die fuenf direkt sichtbaren Zeilen darunter. Ohne das blieb
+        // `profile` nach einem fehlgeschlagenen `context.save()` mit den nie
+        // bestaetigten Entwurfswerten stehen - `isDirty` oben haette den
+        // Editor faelschlich als "sauber" gelesen (Vergleich gegen das
+        // bereits mutierte `profile`), und ein spaeterer, unabhaengiger Save
+        // haette diese Werte versehentlich mitpersistiert.
+        let originalEnduranceModality = profile.enduranceModality
+        let originalCardioCoachingEnabled = profile.cardioCoachingEnabled
+        let originalCardioGoal = profile.cardioGoal
+        let originalCardioRaceDate = profile.cardioRaceDate
+        let originalWeeklyBaseVolumeKm = profile.weeklyBaseVolumeKm
+        let originalMaxHeartRateBpm = profile.maxHeartRateBpm
+        let originalCurrent5kReferenceSeconds = profile.current5kReferenceSeconds
+
         profile.setEnduranceModality(draftEnduranceModality, runCoachEnabled: draftCardioCoachingEnabled)
         profile.cardioGoal = draftCardioGoal
         profile.cardioRaceDate = draftCardioRaceDate
@@ -244,6 +262,18 @@ struct CardioGoalEditorView: View {
         do {
             try modelContext.save()
         } catch {
+            // Finding 3: KEIN `modelContext.rollback()` - das wuerde auch
+            // andere, unabhaengige, noch ausstehende Aenderungen im
+            // (typischerweise app-weit geteilten) Context verwerfen. Gezielte
+            // Feld-fuer-Feld-Wiederherstellung aus dem Schnappschuss oben
+            // bleibt stattdessen auf genau diese sieben Felder beschraenkt.
+            profile.enduranceModality = originalEnduranceModality
+            profile.cardioCoachingEnabled = originalCardioCoachingEnabled
+            profile.cardioGoal = originalCardioGoal
+            profile.cardioRaceDate = originalCardioRaceDate
+            profile.weeklyBaseVolumeKm = originalWeeklyBaseVolumeKm
+            profile.maxHeartRateBpm = originalMaxHeartRateBpm
+            profile.current5kReferenceSeconds = originalCurrent5kReferenceSeconds
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
             isSaving = false
             return

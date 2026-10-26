@@ -113,6 +113,81 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
         )
     }
 
+    // MARK: - Finding 3 (Laufcoaching-Audit): Rollback bei fehlgeschlagenem Save
+    //
+    // `save()` mutierte `profile` direkt, BEVOR `context.save()` lief - bei
+    // einem Fehler blieben die nie bestaetigten Entwurfswerte unveraendert
+    // auf `profile` stehen (siehe Typ-Doku-Kommentar in `save()` selbst).
+    // Wie `canSave`/`zonesSummary` oben hat `save()` keine testbare
+    // Laufzeit-Oberflaeche (`private`, liest `@Environment(\.modelContext)`,
+    // ohne lebenden `.modelContainer` nicht direkt aufrufbar - siehe
+    // `testSavedCardioGoalSurvivesARealStoreRestart`s Typ-Doku) UND dieses
+    // Projekt hat keinen Unique-Constraint/verlaesslichen Weg, einen echten
+    // `ModelContext.save()` ausserhalb eines DI-Seams zum Scheitern zu
+    // bringen (anders als `PlanGeneratorInstantiator.saveOverrideForTesting`,
+    // dessen Seam NUR funktioniert, weil die dortigen Funktionen oeffentliche
+    // Statics sind, direkt von Tests aufrufbar - diese private View-Methode
+    // ist es nicht, ein Seam darauf waere toter Code). Dieser Abschnitt
+    // prueft daher strukturell per Quelltext, dass jedes der sieben
+    // mutierten Felder VOR der Mutation geschnappschusst und im
+    // `catch`-Block VOR der Fehlermeldung wiederhergestellt wird.
+
+    /// (snapshotSuffix, propertyName) fuer alle sieben Felder, die `save()`
+    /// mutiert - `enduranceModality`/`cardioCoachingEnabled` zusammen ueber
+    /// `setEnduranceModality` (siehe dessen Doku in `UserBodyProfile.swift`),
+    /// die uebrigen fuenf direkt.
+    private static let rollbackFields: [(snapshotSuffix: String, propertyName: String)] = [
+        ("EnduranceModality", "enduranceModality"),
+        ("CardioCoachingEnabled", "cardioCoachingEnabled"),
+        ("CardioGoal", "cardioGoal"),
+        ("CardioRaceDate", "cardioRaceDate"),
+        ("WeeklyBaseVolumeKm", "weeklyBaseVolumeKm"),
+        ("MaxHeartRateBpm", "maxHeartRateBpm"),
+        ("Current5kReferenceSeconds", "current5kReferenceSeconds"),
+    ]
+
+    func testFailedSaveSnapshotsAndRestoresAllSevenMutatedProfileFields() throws {
+        let source = try cardioGoalEditorViewSource
+        guard let saveStart = source.range(of: "private func save() {") else {
+            return XCTFail("save() not found at the expected signature")
+        }
+        guard let mutationStart = source.range(of: "profile.setEnduranceModality(draftEnduranceModality") else {
+            return XCTFail("the mutation block was not found where expected")
+        }
+        guard let catchStart = source.range(of: "} catch {", range: saveStart.lowerBound..<source.endIndex) else {
+            return XCTFail("save()'s catch block was not found")
+        }
+        guard let errorMessageAssignment = source.range(of: "saveErrorMessage = String(localized: \"day.editor.save.failed\"", range: catchStart.upperBound..<source.endIndex) else {
+            return XCTFail("save()'s error-message assignment was not found")
+        }
+
+        let beforeMutation = String(source[saveStart.lowerBound..<mutationStart.lowerBound])
+        let catchBody = String(source[catchStart.upperBound..<errorMessageAssignment.lowerBound])
+
+        for field in Self.rollbackFields {
+            XCTAssertTrue(
+                beforeMutation.contains("let original\(field.snapshotSuffix) = profile.\(field.propertyName)"),
+                "save() must snapshot profile.\(field.propertyName) BEFORE the mutating block, so a failed save can restore it"
+            )
+            XCTAssertTrue(
+                catchBody.contains("profile.\(field.propertyName) = original\(field.snapshotSuffix)"),
+                "a failed save's catch block must restore profile.\(field.propertyName) from its snapshot before the error message is set"
+            )
+        }
+    }
+
+    /// Finding 3: der Auftrag warnt explizit vor einem blinden
+    /// `modelContext.rollback()` - das wuerde auch andere, unabhaengige,
+    /// noch ausstehende Aenderungen im (typischerweise app-weit geteilten)
+    /// Context verwerfen. Nur gezielte Feld-Wiederherstellung ist erlaubt.
+    func testSaveNeverUsesABlanketContextRollback() throws {
+        let source = try cardioGoalEditorViewSource
+        XCTAssertFalse(
+            source.contains("modelContext.rollback()"),
+            "save() must restore the seven fields individually, never via a blanket modelContext.rollback() that could discard unrelated pending changes"
+        )
+    }
+
     /// Fund B: ohne eine sichtbare Fehlermeldung sah der Nutzer nur ein
     /// deaktiviertes Save-Haekchen, ohne zu verstehen warum.
     func testInvalidFiveKReferenceTextRendersAnInlineErrorMessage() throws {
