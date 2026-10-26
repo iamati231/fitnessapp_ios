@@ -218,6 +218,18 @@ struct TrainingLocationEquipmentEditorView: View {
         // bereits der neue Wert und ein Vergleich waere immer `false`.
         let equipmentChanged = draftEquipmentProfile != profile.equipmentProfile
 
+        // Audit-Fund (Laufcoaching-Folgeauftrag, gleicher Fehler wie Finding 3 in
+        // `CardioGoalEditorView.save()`, Commit 8bdb416): Schnappschuss ALLER vier Felder, die
+        // gleich mutiert werden - inklusive der drei, die `confirmEquipmentProfileComplete()`
+        // selbst anfasst (siehe dortige Doku: `equipmentProfile`/`equipmentProfileConfirmedComplete`/
+        // `equipmentPreferences` zusammen), nicht nur die zwei direkt sichtbaren Zeilen darunter.
+        // Ohne das blieb `profile` nach einem fehlgeschlagenen `context.save()` mit den nie
+        // bestaetigten Entwurfswerten stehen.
+        let originalEnvironment = profile.environment
+        let originalEquipmentProfile = profile.equipmentProfile
+        let originalEquipmentProfileConfirmedComplete = profile.equipmentProfileConfirmedComplete
+        let originalEquipmentPreferences = profile.equipmentPreferences
+
         profile.environment = draftEnvironment
         profile.equipmentProfile = draftEquipmentProfile
         if equipmentTouched {
@@ -234,6 +246,12 @@ struct TrainingLocationEquipmentEditorView: View {
         do {
             try modelContext.save()
         } catch {
+            // KEIN `modelContext.rollback()` - das wuerde auch andere, unabhaengige, noch
+            // ausstehende Aenderungen im (typischerweise app-weit geteilten) Context verwerfen.
+            profile.environment = originalEnvironment
+            profile.equipmentProfile = originalEquipmentProfile
+            profile.equipmentProfileConfirmedComplete = originalEquipmentProfileConfirmedComplete
+            profile.equipmentPreferences = originalEquipmentPreferences
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
             isSaving = false
             return

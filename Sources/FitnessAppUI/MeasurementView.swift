@@ -1014,6 +1014,37 @@ public struct MeasurementView: View {
         saveErrorMessage = nil
 
         if let existing = editingMeasurement {
+            // Rollback-Fix (Audit, gleicher Musterfehler wie `CardioGoalEditorView.save()`,
+            // Commit 8bdb416): Schnappschuss ALLER Felder, die dieser Zweig potenziell anfasst,
+            // VOR jeder Mutation - ein fehlgeschlagener `context.save()` unten liess bisher jedes
+            // bereits geschriebene Feld auf `existing` stehen (bis zu 20 unbestaetigte Werte,
+            // teils berechnet wie BMI/Koerperfett/FFMI), obwohl der Nutzer "Speichern
+            // fehlgeschlagen" sah. Welche Teilmenge dieser Aufruf tatsaechlich schreibt, haengt
+            // von `hasFullCircumferences`/den Prefill-Vergleichen weiter unten ab - der komplette
+            // Schnappschuss macht ein Zurueckschreiben auf ein bereits korrektes Feld zu einem
+            // harmlosen No-op, statt die Teilmenge nachzuverfolgen.
+            let originalWeightKg = existing.weightKg
+            let originalNeckCm = existing.neckCm
+            let originalWaistCm = existing.waistCm
+            let originalHipCm = existing.hipCm
+            let originalShoulderCm = existing.shoulderCm
+            let originalChestCm = existing.chestCm
+            let originalCalfCm = existing.calfCm
+            let originalUpperArmCm = existing.upperArmCm
+            let originalUpperArmLeftCm = existing.upperArmLeftCm
+            let originalUpperArmRightCm = existing.upperArmRightCm
+            let originalThighCm = existing.thighCm
+            let originalThighLeftCm = existing.thighLeftCm
+            let originalThighRightCm = existing.thighRightCm
+            let originalBmi = existing.bmi
+            let originalNavyBodyFatPct = existing.navyBodyFatPct
+            let originalDeurenbergBodyFatPct = existing.deurenbergBodyFatPct
+            let originalSelectedBodyFatPct = existing.selectedBodyFatPct
+            let originalFatFreeMassKg = existing.fatFreeMassKg
+            let originalFfmi = existing.ffmi
+            let originalNormalizedFfmi = existing.normalizedFfmi
+            let originalBmr = existing.bmr
+
             // Settings-Epic Phase 3: am tatsaechlichen Feldstand entscheiden,
             // nicht am Ausgangszustand — eine urspruenglich umfangslose Zeile
             // darf beim Bearbeiten nachtraeglich zu einer vollen werden, wenn
@@ -1113,6 +1144,31 @@ public struct MeasurementView: View {
             do {
                 try modelContext.save()
             } catch {
+                // Rollback-Fix: alle 20 oben schnappschussten Felder zurueckschreiben, bevor der
+                // Nutzer "Speichern fehlgeschlagen" sieht - sonst bliebe der unbestaetigte Entwurf
+                // im Live-Objektgraphen stehen und ein spaeterer, unabhaengiger Save irgendwo
+                // sonst in der App wuerde ihn versehentlich mitpersistieren.
+                existing.weightKg = originalWeightKg
+                existing.neckCm = originalNeckCm
+                existing.waistCm = originalWaistCm
+                existing.hipCm = originalHipCm
+                existing.shoulderCm = originalShoulderCm
+                existing.chestCm = originalChestCm
+                existing.calfCm = originalCalfCm
+                existing.upperArmCm = originalUpperArmCm
+                existing.upperArmLeftCm = originalUpperArmLeftCm
+                existing.upperArmRightCm = originalUpperArmRightCm
+                existing.thighCm = originalThighCm
+                existing.thighLeftCm = originalThighLeftCm
+                existing.thighRightCm = originalThighRightCm
+                existing.bmi = originalBmi
+                existing.navyBodyFatPct = originalNavyBodyFatPct
+                existing.deurenbergBodyFatPct = originalDeurenbergBodyFatPct
+                existing.selectedBodyFatPct = originalSelectedBodyFatPct
+                existing.fatFreeMassKg = originalFatFreeMassKg
+                existing.ffmi = originalFfmi
+                existing.normalizedFfmi = originalNormalizedFfmi
+                existing.bmr = originalBmr
                 saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                 isSaving = false
                 return
