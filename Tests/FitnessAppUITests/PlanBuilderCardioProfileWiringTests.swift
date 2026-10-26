@@ -157,7 +157,150 @@ final class PlanBuilderCardioProfileWiringTests: XCTestCase {
         XCTAssertNil(result?.weeklyBaseVolumeKm)
     }
 
+    // MARK: - Gemeinsamer Laufcoaching-Setup-Schritt (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt)
+
+    /// Scenario 7 (Auftrag, Abschnitt 8): `effectiveCardioRunProfile`s erweiterte Fallback-Logik -
+    /// fehlt ein gespeichertes Profil (Onboarding), liefern jetzt auch Referenzzeit/Wochenvolumen
+    /// den `preseeded*`-Wert aus dem Setup-Entwurf, statt wie vorher (Fix 1) immer `nil` zu bleiben.
+    func testEffectiveCardioRunProfile_noSavedProfile_fallsBackToPreseededReferenceDataFromDraft() {
+        let result = PlanBuilderView.effectiveCardioRunProfile(
+            runCoachWanted: true,
+            savedCardioGoal: nil, savedCurrent5kReferenceSeconds: nil, savedWeeklyBaseVolumeKm: nil,
+            preseededCardioGoal: .tenK,
+            preseededCurrent5kReferenceSeconds: 1500,
+            preseededWeeklyBaseVolumeKm: 25
+        )
+        XCTAssertEqual(result, CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 25))
+    }
+
+    /// Ein vorhandenes gespeichertes Profil gewinnt weiterhin gegen den vorbefuellten Entwurf, auch
+    /// fuer die neuen Referenzzeit-/Wochenvolumen-Parameter (identisches Prinzip wie das bereits
+    /// bestehende Ziel-Fallback oben).
+    func testEffectiveCardioRunProfile_savedProfileWinsOverPreseededReferenceData() {
+        let result = PlanBuilderView.effectiveCardioRunProfile(
+            runCoachWanted: true,
+            savedCardioGoal: .marathon, savedCurrent5kReferenceSeconds: 999, savedWeeklyBaseVolumeKm: 50,
+            preseededCardioGoal: .tenK,
+            preseededCurrent5kReferenceSeconds: 1500,
+            preseededWeeklyBaseVolumeKm: 25
+        )
+        XCTAssertEqual(result, CardioRunProfile(goal: .marathon, current5kReferenceSeconds: 999, weeklyBaseVolumeKm: 50))
+    }
+
+    /// Ohne Setup-Entwurf (Default-Parameter nicht angegeben) bleibt das bisherige Verhalten
+    /// unveraendert - keine Regression fuer bereits bestehende Aufrufstellen.
+    func testEffectiveCardioRunProfile_omittingPreseededReferenceData_staysNilLikeBefore() {
+        let result = PlanBuilderView.effectiveCardioRunProfile(
+            runCoachWanted: true, savedCardioGoal: nil, savedCurrent5kReferenceSeconds: nil,
+            savedWeeklyBaseVolumeKm: nil, preseededCardioGoal: .fiveK
+        )
+        XCTAssertNil(result?.current5kReferenceSeconds)
+        XCTAssertNil(result?.weeklyBaseVolumeKm)
+    }
+
+    /// Scenario 4/5 (Auftrag, Abschnitt 8): die testbare Bedingung fuer das neue Setup-Sheet im
+    /// eigenstaendigen Modus - noch nicht eingerichtet + Coach gewuenscht -> Sheet noetig; bereits
+    /// eingerichtet -> nicht noetig (bestehende Daten werden wiederverwendet, kein erneutes
+    /// Abfragen).
+    func testNeedsCardioCoachSetup_notYetSetUpAndWanted_returnsTrue() {
+        XCTAssertTrue(PlanBuilderView.needsCardioCoachSetup(runCoachWanted: true, hasExistingCoachSetup: false))
+    }
+
+    func testNeedsCardioCoachSetup_alreadySetUp_returnsFalseEvenWhenWanted() {
+        XCTAssertFalse(PlanBuilderView.needsCardioCoachSetup(runCoachWanted: true, hasExistingCoachSetup: true))
+    }
+
+    func testNeedsCardioCoachSetup_coachNotWanted_returnsFalseRegardlessOfSetupState() {
+        XCTAssertFalse(PlanBuilderView.needsCardioCoachSetup(runCoachWanted: false, hasExistingCoachSetup: false))
+        XCTAssertFalse(PlanBuilderView.needsCardioCoachSetup(runCoachWanted: false, hasExistingCoachSetup: true))
+    }
+
     #endif
+
+    /// `currentInput` muss die erweiterten `preseeded*`-Parameter (Referenzzeit/Wochenvolumen aus
+    /// dem Setup-Entwurf) tatsaechlich an `effectiveCardioRunProfile` durchreichen - sonst bliebe
+    /// Scenario 7 oben nur an der isolierten Funktion bewiesen, nicht an ihrer echten Aufrufstelle.
+    func testCurrentInputPassesPreseededReferenceDataFromCardioCoachSetupDraft() throws {
+        let source = try contents(of: "Workout/PlanBuilderView.swift")
+        guard let range = source.range(of: "private var currentInput: PlanGeneratorInput {") else {
+            XCTFail("currentInput not found"); return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: range.upperBound))
+        XCTAssertTrue(block.contains("preseededCardioGoal: cardioCoachSetupDraft.goal"))
+        XCTAssertTrue(block.contains("preseededCurrent5kReferenceSeconds: cardioCoachSetupDraft.current5kReferenceSeconds"))
+        XCTAssertTrue(block.contains("preseededWeeklyBaseVolumeKm: cardioCoachSetupDraft.weeklyBaseVolumeKm"))
+    }
+
+    /// Scenario 10 (Auftrag, Abschnitt 8: "gespeicherter Plan entspricht exakt der Vorschau") im
+    /// eigenstaendigen Modus: `applyEnduranceModalityChoiceIfNeeded` muss denselben
+    /// `cardioCoachSetupDraft` persistieren, den `currentInput`/die Vorschau bereits verwendet
+    /// haben - UND nur, wenn der Coach tatsaechlich eingeschaltet wurde (kein Ueberschreiben mit
+    /// leeren Werten, wenn `setEnduranceModality` den Coach z.B. per Modalitaets-Veto aus laesst).
+    func testApplyEnduranceModalityChoiceIfNeededPersistsTheSameDraftGuardedByCardioCoachingEnabled() throws {
+        let source = try contents(of: "Workout/PlanBuilderView.swift")
+        guard let range = source.range(of: "private func applyEnduranceModalityChoiceIfNeeded(to profile: UserBodyProfile) {") else {
+            XCTFail("applyEnduranceModalityChoiceIfNeeded not found"); return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: range.upperBound))
+        XCTAssertTrue(block.contains("if profile.cardioCoachingEnabled {"), "must guard the persistence on the ACTUAL resulting cardioCoachingEnabled, read AFTER setEnduranceModality")
+        for property in ["cardioGoal", "cardioRaceDate", "weeklyBaseVolumeKm", "maxHeartRateBpm", "current5kReferenceSeconds"] {
+            XCTAssertTrue(
+                block.contains("profile.\(property) = cardioCoachSetupDraft.\(property == "cardioGoal" ? "goal" : property == "cardioRaceDate" ? "raceDate" : property)"),
+                "must persist \(property) from the same draft the preview used"
+            )
+        }
+    }
+
+    /// Regression (selbst gefunden beim Implementieren, nicht im Auftrag explizit benannt, aber von
+    /// Abschnitt 3/8 "bestehende Daten gehen nicht verloren" verlangt): wenn das Setup-Sheet NICHT
+    /// gezeigt wird (bereits eingerichtetes Profil), darf `applyEnduranceModalityChoiceIfNeeded`
+    /// trotzdem nicht blind den `.empty`-Init-Default persistieren - der "mit Coach"-Tap muss den
+    /// Entwurf zuerst aus dem vorhandenen Profil seeden, bevor ueber das Sheet entschieden wird.
+    func testWithCoachTapSeedsDraftFromExistingProfileBeforeDecidingOnTheSheet() throws {
+        let source = try contents(of: "Workout/PlanBuilderView.swift")
+        guard let range = source.range(of: "isSelected: runCoachWanted") else {
+            XCTFail("the withCoach runCoachOptionRow was not found"); return
+        }
+        guard let actionStart = source.range(of: "{", range: range.upperBound..<source.endIndex) else {
+            XCTFail("the withCoach action closure was not found"); return
+        }
+        let actionBody = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: actionStart.upperBound))
+        XCTAssertTrue(
+            actionBody.contains("if let profile = profiles.first") && actionBody.contains("cardioCoachSetupDraft = CardioCoachSetupDraft("),
+            "the withCoach action must re-seed cardioCoachSetupDraft from the existing profile before deciding whether to show the setup sheet"
+        )
+    }
+
+    /// Scenario 4 (Auftrag, Abschnitt 8) im eigenstaendigen Modus: das neue Setup-Sheet darf NICHT
+    /// im eingebetteten Onboarding-Modus erscheinen (dort wurde der Entwurf bereits inline erfasst,
+    /// bevor dieser Builder ueberhaupt geoeffnet wird - ein zweites Sheet waere eine doppelte
+    /// Abfrage).
+    func testCardioCoachSetupSheetIsGatedToStandaloneModeOnly() throws {
+        let source = try contents(of: "Workout/PlanBuilderView.swift")
+        guard let range = source.range(of: "showingCardioCoachSetup = true") else {
+            XCTFail("the sheet-trigger assignment was not found"); return
+        }
+        let window = source[source.index(range.lowerBound, offsetBy: -400, limitedBy: source.startIndex) ?? source.startIndex..<range.upperBound]
+        XCTAssertTrue(
+            window.contains("onGenerated == nil"),
+            "showing the new setup sheet must be gated to the standalone mode (onGenerated == nil)"
+        )
+    }
+
+    /// Scenario 8 (Auftrag, Abschnitt 8): Abbruch des Setups darf die gerade getroffene
+    /// "mit Coach"-Auswahl nicht als erfolgreich stehen lassen.
+    func testCardioCoachSetupSheetCancelRevertsRunCoachWanted() throws {
+        let source = try contents(of: "Workout/PlanBuilderView.swift")
+        guard let range = source.range(of: "private var cardioCoachSetupSheet: some View {") else {
+            XCTFail("cardioCoachSetupSheet not found"); return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: range.upperBound))
+        guard let cancelRange = block.range(of: ".cancellationAction") else {
+            XCTFail("the cancel toolbar item was not found"); return
+        }
+        let cancelWindow = block[cancelRange.upperBound...].prefix(300)
+        XCTAssertTrue(cancelWindow.contains("runCoachWanted = false"), "cancelling the setup sheet must revert runCoachWanted")
+    }
 
     /// Final-review Fix 4: `updateConfig`/`updateTimeFormat` rebuild a
     /// `PlanGeneratorTypeSelection` field-by-field from `current` and already

@@ -92,24 +92,48 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
         get throws { try readSource("Sources/FitnessAppUI/Settings/CardioGoalEditorView.swift") }
     }
 
-    /// Regression: alle drei 5K-Zeit-Call-Sites (`canSave`, `save()`,
-    /// `zonesSummary`) muessen `parseFiveKReferenceSeconds` verwenden, NICHT
-    /// mehr `parseDurationToSeconds` — dessen "bare Zahl = Minuten"-Fallback
-    /// liess ein bares "2500" unvalidiert als 2500 Minuten durchgehen.
+    /// Gemeinsamer Laufcoaching-Setup-Schritt: `zonesSummary`/
+    /// `fiveKReferenceErrorMessage` leben seit der Extraktion in
+    /// `CardioCoachSetupFields` (geteilt mit Onboarding/PlanBuilder), nicht
+    /// mehr in `CardioGoalEditorView` selbst - siehe dortige Typ-Doku.
+    private var cardioCoachSetupFieldsSource: String {
+        get throws { try readSource("Sources/FitnessAppUI/Cardio/CardioCoachSetupFields.swift") }
+    }
+
+    /// `CardioCoachSetupDraft.current5kReferenceSeconds` ist die dritte
+    /// `parseFiveKReferenceSeconds`-Call-Site (geteilt von `canSave`,
+    /// `save()` ueber `cardioSetupDraft.current5kReferenceSeconds`, und
+    /// `fiveKReferenceErrorMessage`/`zonesSummary` in `CardioCoachSetupFields`).
+    private var cardioCoachSetupDraftSource: String {
+        get throws { try readSource("Sources/FitnessAppCore/Analytics/CardioCoachSetupDraft.swift") }
+    }
+
+    /// Regression: alle 5K-Zeit-Call-Sites (ueber `CardioGoalEditorView`,
+    /// `CardioCoachSetupDraft` und `CardioCoachSetupFields` verteilt seit der
+    /// Setup-Entwurf-Extraktion) muessen `parseFiveKReferenceSeconds`
+    /// verwenden, NICHT mehr `parseDurationToSeconds` — dessen "bare Zahl =
+    /// Minuten"-Fallback liess ein bares "2500" unvalidiert als 2500 Minuten
+    /// durchgehen.
     func testFiveKReferenceCallSitesUseTheDedicatedParser() throws {
-        let source = try cardioGoalEditorViewSource
-        XCTAssertFalse(
-            source.contains("parseDurationToSeconds(draftFiveKReferenceText)"),
-            "The 5K-time field must no longer call parseDurationToSeconds anywhere — its bare-number-as-minutes fallback is the exact bug this fix removes."
-        )
-        XCTAssertFalse(
-            source.contains("parseDurationToSeconds(text)"),
-            "canSave's local `text` (trimmed draftFiveKReferenceText) must also go through parseFiveKReferenceSeconds."
-        )
-        let occurrences = source.components(separatedBy: "parseFiveKReferenceSeconds").count - 1
+        let editorSource = try cardioGoalEditorViewSource
+        let fieldsSource = try cardioCoachSetupFieldsSource
+        let draftSource = try cardioCoachSetupDraftSource
+        for (name, source) in [("CardioGoalEditorView", editorSource), ("CardioCoachSetupFields", fieldsSource), ("CardioCoachSetupDraft", draftSource)] {
+            XCTAssertFalse(
+                source.contains("parseDurationToSeconds(draftFiveKReferenceText)") || source.contains("parseDurationToSeconds(fiveKReferenceText)"),
+                "\(name) must not call parseDurationToSeconds for the 5K-time field — its bare-number-as-minutes fallback is the exact bug this fix removes."
+            )
+            XCTAssertFalse(
+                source.contains("parseDurationToSeconds(text)"),
+                "\(name)'s canSave-style local `text` must also go through parseFiveKReferenceSeconds."
+            )
+        }
+        let totalOccurrences = [editorSource, fieldsSource, draftSource]
+            .map { $0.components(separatedBy: "parseFiveKReferenceSeconds").count - 1 }
+            .reduce(0, +)
         XCTAssertGreaterThanOrEqual(
-            occurrences, 3,
-            "Expected parseFiveKReferenceSeconds to be called at all 3 sites (canSave, save(), zonesSummary)."
+            totalOccurrences, 3,
+            "Expected parseFiveKReferenceSeconds to be called at all 3 logical sites (canSave, CardioCoachSetupDraft.current5kReferenceSeconds, CardioCoachSetupFields' error/zones logic), now spread across 3 files."
         )
     }
 
@@ -208,19 +232,28 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
     }
 
     /// Fund B: ohne eine sichtbare Fehlermeldung sah der Nutzer nur ein
-    /// deaktiviertes Save-Haekchen, ohne zu verstehen warum.
+    /// deaktiviertes Save-Haekchen, ohne zu verstehen warum. Lebt seit der
+    /// Setup-Entwurf-Extraktion in `CardioCoachSetupFields` (geteilt mit
+    /// Onboarding/PlanBuilder) statt direkt in `CardioGoalEditorView` -
+    /// `CardioGoalEditorView` zeigt die Meldung weiterhin, nur ueber die
+    /// geteilte View statt eigenem Code.
     func testInvalidFiveKReferenceTextRendersAnInlineErrorMessage() throws {
-        let source = try cardioGoalEditorViewSource
+        let editorSource = try cardioGoalEditorViewSource
         XCTAssertTrue(
-            source.contains("fiveKReferenceErrorMessage"),
-            "A dedicated error-message computed property gated on invalid, non-empty draftFiveKReferenceText must exist."
+            editorSource.contains("CardioCoachSetupFields(draft:"),
+            "CardioGoalEditorView must render the 5K-time field (and its error message) via the shared CardioCoachSetupFields view."
+        )
+        let fieldsSource = try cardioCoachSetupFieldsSource
+        XCTAssertTrue(
+            fieldsSource.contains("fiveKReferenceErrorMessage"),
+            "A dedicated error-message computed property gated on invalid, non-empty draft.fiveKReferenceText must exist."
         )
         XCTAssertTrue(
-            source.contains("errorRow(fiveKReferenceErrorMessage)"),
-            "The error message must be rendered via the file's existing errorRow(_:) helper, right where the 5K pace hint used to unconditionally render."
+            fieldsSource.contains("errorRow(fiveKReferenceErrorMessage)"),
+            "The error message must be rendered via an errorRow(_:) helper, right where the 5K pace hint used to unconditionally render."
         )
         XCTAssertTrue(
-            source.contains("profile.cardio.fiveKReference.invalid"),
+            fieldsSource.contains("profile.cardio.fiveKReference.invalid"),
             "The error message must come from a localized string key, not a hardcoded literal."
         )
     }

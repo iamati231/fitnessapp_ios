@@ -213,11 +213,12 @@ public struct OnboardingView: View {
     @State private var enduranceModality: EnduranceModality?
     @State private var runCoachWanted = false
 
-    /// Task 5 (laufcoaching-plan-integration): seedet nur die Ziel-
-    /// KATEGORIE (`CardioGoal`), sobald der Laufcoach oben gewuenscht wird -
-    /// Renndatum/Wochenumfang/5k-Referenzzeit bleiben bewusst dem spaeteren
-    /// `CardioGoalEditorView` vorbehalten ("schrittweise erfragen").
-    @State private var runCoachCardioGoal: CardioGoal = .generalFitness
+    /// Gemeinsamer Laufcoaching-Setup-Schritt (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt):
+    /// der volle Setup-Entwurf, sobald der Laufcoach oben gewuenscht wird - ersetzt das
+    /// vormalige `runCoachCardioGoal: CardioGoal`, das nur die Ziel-KATEGORIE seedete (Task 5,
+    /// "schrittweise erfragen" - diese Entscheidung ist mit dem neuen Auftrag aufgehoben, siehe
+    /// die Kommentare bei der zugehoerigen UI weiter unten).
+    @State private var cardioCoachSetupDraft: CardioCoachSetupDraft = .empty
 
     // DEL-088: Tag-Auswahl-Sheet, das nach Plan-Adopt erscheint. Sobald
     // `dayPickerTemplate != nil`, oeffnet sich das DayPickerSheet mit dem
@@ -415,7 +416,7 @@ public struct OnboardingView: View {
                     usesFixedWeekdays: false
                 ), preseededEnduranceModality: enduranceModality,
                 preseededRunCoachWanted: runCoachWanted,
-                preseededCardioGoal: runCoachCardioGoal,
+                preseededCardioCoachSetupDraft: cardioCoachSetupDraft,
                 preseededGoal: trainingGoal,
                 preseededDaysPerWeek: weeklyGoal,
                 onGenerated: { input, result in
@@ -987,11 +988,16 @@ public struct OnboardingView: View {
                         }
                     }
 
-                    // Task 5: nur sichtbar, wenn der Laufcoach oben gewuenscht
-                    // wurde - seedet lediglich die Ziel-KATEGORIE
-                    // (`CardioGoal`), keine Renndatum-/Wochenumfang-/5k-
-                    // Referenzzeit-Abfrage hier (die bleibt `CardioGoalEditorView`
-                    // vorbehalten, siehe `runCoachCardioGoal`-Doku).
+                    // Gemeinsamer Laufcoaching-Setup-Schritt
+                    // (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): nur sichtbar, wenn der
+                    // Laufcoach oben gewuenscht wurde - erfasst jetzt den VOLLEN Setup-Entwurf
+                    // (Ziel + optional Renndatum/Wochenumfang/5k-Referenzzeit/max. Herzfrequenz),
+                    // dieselben Felder wie `CardioGoalEditorView` (Settings), ueber dieselbe
+                    // geteilte `CardioCoachSetupFields`-View. Vorher (Task 5) seedete dieser
+                    // Schritt absichtlich NUR die Ziel-Kategorie und verschob den Rest auf einen
+                    // spaeteren `CardioGoalEditorView`-Besuch - diese Entscheidung ist mit dem
+                    // neuen Auftrag bewusst aufgehoben: der Nutzer soll das Laufcoaching VOR der
+                    // ersten Plangenerierung einrichten koennen, nicht erst danach nachtraeglich.
                     if runCoachWanted {
                         VStack(alignment: .leading, spacing: 12) {
                             VStack(alignment: .leading, spacing: 6) {
@@ -1001,16 +1007,8 @@ public struct OnboardingView: View {
                                     .font(.callout)
                                     .foregroundStyle(.secondary)
                             }
-                            VStack(spacing: 10) {
-                                ForEach(CardioGoal.allCases, id: \.self) { goal in
-                                    coachingCard(
-                                        title: String(localized: goal.localizedName),
-                                        iconName: goal.symbol,
-                                        isSelected: runCoachCardioGoal == goal
-                                    ) {
-                                        runCoachCardioGoal = goal
-                                    }
-                                }
+                            DeltiqSection {
+                                CardioCoachSetupFields(draft: $cardioCoachSetupDraft)
                             }
                         }
                     }
@@ -2201,18 +2199,24 @@ public struct OnboardingView: View {
             let finalModality = customPlanEnduranceModality ?? enduranceModality
             let finalRunCoachWanted = customPlanEnduranceModality != nil ? customPlanRunCoachWanted : runCoachWanted
             profile.setEnduranceModality(finalModality, runCoachEnabled: finalRunCoachWanted)
-            // Task 5: seedet nur die Ziel-KATEGORIE aus dem PLAIN-Onboarding-
-            // Schritt (`runCoachCardioGoal`) - es gibt bewusst kein Builder-
-            // Pfad-Aequivalent dazu (der Builder stellt diese Frage nicht),
-            // daher immer `runCoachCardioGoal`, unabhaengig davon, ob
-            // `customPlanEnduranceModality` (Builder-Pfad) oder `enduranceModality`
-            // (Onboarding-Pfad) den `finalModality`/`finalRunCoachWanted`
-            // gewonnen hat. `profile.cardioCoachingEnabled` wird HIER, NACH
-            // `setEnduranceModality`, gelesen, weil erst dieser Aufruf den
-            // tatsaechlichen Wert setzt (inkl. `supportsRunCoach`-Guard) -
-            // nicht das rohe `finalRunCoachWanted` vor einem moeglichen
-            // Modalitaets-bedingten Veto.
-            if profile.cardioCoachingEnabled { profile.cardioGoal = runCoachCardioGoal }
+            // Gemeinsamer Setup-Schritt (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): persistiert
+            // den VOLLEN Setup-Entwurf (`cardioCoachSetupDraft`) aus dem PLAIN-Onboarding-Schritt -
+            // es gibt bewusst kein Builder-Pfad-Aequivalent dazu (der eingebettete Builder zeigt sein
+            // eigenes Setup-Sheet NICHT, siehe `PlanBuilderView.enduranceModalitySubflow`-Doku: der
+            // Entwurf wurde bereits hier, VOR dem Oeffnen des Builders, erfasst), daher immer
+            // `cardioCoachSetupDraft`, unabhaengig davon, ob `customPlanEnduranceModality`
+            // (Builder-Pfad) oder `enduranceModality` (Onboarding-Pfad) den
+            // `finalModality`/`finalRunCoachWanted` gewonnen hat. `profile.cardioCoachingEnabled`
+            // wird HIER, NACH `setEnduranceModality`, gelesen, weil erst dieser Aufruf den
+            // tatsaechlichen Wert setzt (inkl. `supportsRunCoach`-Guard) - nicht das rohe
+            // `finalRunCoachWanted` vor einem moeglichen Modalitaets-bedingten Veto.
+            if profile.cardioCoachingEnabled {
+                profile.cardioGoal = cardioCoachSetupDraft.goal
+                profile.cardioRaceDate = cardioCoachSetupDraft.raceDate
+                profile.weeklyBaseVolumeKm = cardioCoachSetupDraft.weeklyBaseVolumeKm
+                profile.maxHeartRateBpm = cardioCoachSetupDraft.maxHeartRateBpm
+                profile.current5kReferenceSeconds = cardioCoachSetupDraft.current5kReferenceSeconds
+            }
         }
 
         // 2) Initial BodyMeasurement — keeps the "first weight" visible in the
