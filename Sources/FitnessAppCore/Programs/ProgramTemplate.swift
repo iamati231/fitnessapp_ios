@@ -223,11 +223,23 @@ public extension ProgramTemplate {
             exercises.reserveCapacity(daySlots.count)
 
             for (exerciseIndex, slot) in daySlots.enumerated() {
+                // Fix (final-review Important finding): `TemplateSlot` has no
+                // `targetRir` field, so `TemplateSlotResolver.resolve`'s `spec()`
+                // helper always falls back to `ExerciseSpec`'s default (2.0) —
+                // for the default exercise too, not just substituted
+                // alternatives. The original, pre-slot-conversion `day.exercises`
+                // (same index, by construction: `slots[dayIndex]` is index-aligned
+                // with `days[dayIndex].exercises`) still carries the template's
+                // real authored `targetRir`; an alternative inherits the SAME
+                // per-slot tuning as its default (design intent), not a generic
+                // fallback value.
+                let originalRir = day.exercises[exerciseIndex].targetRir
+
                 switch TemplateSlotResolver.resolve(slot: slot, against: profile) {
                 case let .default(spec):
-                    exercises.append(spec)
+                    exercises.append(spec.withTargetRir(originalRir))
                 case let .alternative(spec, usedName):
-                    exercises.append(spec)
+                    exercises.append(spec.withTargetRir(originalRir))
                     usedAlternatives.append(SlotAlternativeUsage(
                         dayIndex: dayIndex, exerciseIndex: exerciseIndex,
                         originalName: slot.defaultExerciseName, usedName: usedName
@@ -242,7 +254,8 @@ public extension ProgramTemplate {
                     // `.uncertain`).
                     exercises.append(ExerciseSpec(
                         name: slot.defaultExerciseName, sets: slot.sets,
-                        repsMin: slot.repsMin, repsMax: slot.repsMax, restSeconds: slot.restSeconds
+                        repsMin: slot.repsMin, repsMax: slot.repsMax, restSeconds: slot.restSeconds,
+                        targetRir: originalRir
                     ))
                     gaps.append(PlanEquipmentGap(
                         exerciseName: slot.defaultExerciseName,

@@ -72,4 +72,16 @@ public struct ExerciseSpec: Sendable, Hashable {
         self.role = role
         self.enduranceSportKind = enduranceSportKind
     }
+
+    /// Equipment-Vielfalt Phase 1 Task i1 fix: returns a copy with only
+    /// `targetRir` replaced — used by `ProgramTemplate.resolvedSlots` to
+    /// restore the template's authored value where slot resolution would
+    /// otherwise silently fall back to the `targetRir` default above.
+    func withTargetRir(_ targetRir: Float) -> ExerciseSpec {
+        ExerciseSpec(name: name, sets: sets, repsMin: repsMin, repsMax: repsMax,
+                     restSeconds: restSeconds, targetRir: targetRir, isCardio: isCardio,
+                     targetDistanceKm: targetDistanceKm, targetDurationMinutes: targetDurationMinutes,
+                     targetPaceMinutesPerKm: targetPaceMinutesPerKm, role: role,
+                     enduranceSportKind: enduranceSportKind)
+    }
 }

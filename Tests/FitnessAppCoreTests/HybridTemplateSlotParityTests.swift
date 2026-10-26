@@ -260,4 +260,53 @@ final class HybridTemplateSlotParityTests: XCTestCase {
         }
         XCTAssertTrue(reasons.contains { $0.item == .dumbbell }, "Der uncertain-Grund muss von der Kurzhantel-Alternative stammen, nicht vom Langhantel-Default")
     }
+
+    // MARK: - Task i1 fix: `targetRir` must survive slot resolution
+
+    /// Full-gym profile -> every slot resolves to its `.default` exercise (no
+    /// alternatives needed, confirmed by `assertParity`'s `base` expectations
+    /// above). Before the fix, `TemplateSlotResolver.resolve`'s `spec()`
+    /// helper built every winning `ExerciseSpec` WITHOUT `targetRir`, silently
+    /// falling back to `ExerciseSpec`'s own default (2.0) — even here, where
+    /// the original barbell exercise is used verbatim. Whole-day `==`
+    /// (`DaySpec`/`ExerciseSpec` are both synthesized `Hashable` ->
+    /// `Equatable`) is the strongest possible proof: if ANY field (not just
+    /// `targetRir`) diverged from the hand-authored `days`, this fails.
+    func testFullGymProfilePreservesAuthoredTargetRirForAllThreeHybridTemplates() {
+        for id in ["hybrid_beginner", "hybrid_balanced", "hybrid_performance"] {
+            let t = template(id)
+            guard let result = t.resolvedSlots(against: baseProfile) else {
+                XCTFail("\(id): resolvedSlots(against:) lieferte nil")
+                continue
+            }
+            for (dayIndex, day) in t.days.enumerated() where day.type != .cardio {
+                XCTAssertEqual(result.days[dayIndex], day,
+                                "\(id)/\(day.name): Vollausstattung muss day-fuer-day identisch zu `days` sein (inkl. targetRir), ist: \(result.days[dayIndex].exercises.map { ($0.name, $0.targetRir) }) vs. \(day.exercises.map { ($0.name, $0.targetRir) })")
+            }
+        }
+    }
+
+    /// `hybrid_balanced`'s "Strength Push" day (dayIndex 0) under
+    /// `dumbbellOnlyProfile`: per `testHybridBalancedExhaustiveSlotParity`
+    /// above, every slot resolves to a REVIEWED ALTERNATIVE (barbell
+    /// unavailable) — "Bankdrücken (KH)", "Schulterdrücken (KH)",
+    /// "Schrägbankdrücken aufwärts (KH)", "Trizepsstrecker über Kopf (KH)".
+    /// Hand-traced against the template's own authored `targetRir` values
+    /// (`ProgramTemplates.swift` "Strength Push" day, line ~729-732: 2.5,
+    /// 2.5, 2.5, 1.0) and the OLD hand-authored `dumbbellOnly` equipment
+    /// variant for the same day (line ~782-785, which used the IDENTICAL
+    /// values) — proving an alternative inherits the default's per-slot
+    /// tuning, not `ExerciseSpec`'s generic 2.0 fallback.
+    func testAlternativeResolutionInheritsOriginalTargetRirNotDefault() {
+        let t = template("hybrid_balanced")
+        guard let result = t.resolvedSlots(against: dumbbellOnlyProfile) else {
+            return XCTFail("hybrid_balanced: resolvedSlots(against:) lieferte nil")
+        }
+        let pushDay = result.days[0]
+        XCTAssertEqual(pushDay.exercises.map(\.name),
+                        ["Bankdrücken (KH)", "Schulterdrücken (KH)", "Schrägbankdrücken aufwärts (KH)", "Trizepsstrecker über Kopf (KH)"],
+                        "Vorbedingung: alle 4 Slots muessen auf eine Alternative aufgeloest werden")
+        XCTAssertEqual(pushDay.exercises.map(\.targetRir), [2.5, 2.5, 2.5, 1.0],
+                        "Eine aufgeloeste Alternative muss den targetRir des DEFAULT-Slots erben, nicht ExerciseSpec's generischen 2.0-Fallback")
+    }
 }
