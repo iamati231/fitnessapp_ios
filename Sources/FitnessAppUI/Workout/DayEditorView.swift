@@ -1476,7 +1476,18 @@ public struct DayEditorView: View {
         // P8 Stufe-2: kein erneuter capture-Aufruf — siehe
         // ActiveWorkoutView.finishWorkout für die Begründung.
         open.isCompleted = true
-        try? modelContext.save()
+        // Audit-Fix (Save-Fehlerbehandlung): bei einem fehlgeschlagenen Save
+        // NICHT weiter in `actuallyStartNewSession()` - das wuerde den User
+        // unbemerkt in eine neue Session schicken, waehrend die alte in einem
+        // unklaren Zwischenzustand haengt. Nichts wird zurueckgerollt: `open`
+        // bleibt mit isCompleted=true im ModelContext pending, ein erneuter
+        // Tap auf "Training starten" versucht es automatisch wieder.
+        do {
+            try modelContext.save()
+        } catch {
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
+            return
+        }
         actuallyStartNewSession()
     }
 
@@ -1488,7 +1499,15 @@ public struct DayEditorView: View {
             return
         }
         modelContext.delete(open)
-        try? modelContext.save()
+        // Audit-Fix (Save-Fehlerbehandlung): gleiches Muster wie
+        // `completeOpenSessionAndStartNew` oben - kein stilles Weitermachen,
+        // kein Rollback des bereits vorgemerkten Deletes.
+        do {
+            try modelContext.save()
+        } catch {
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
+            return
+        }
         actuallyStartNewSession()
     }
 
