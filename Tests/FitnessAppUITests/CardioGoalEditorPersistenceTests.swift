@@ -182,8 +182,27 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
     /// Context verwerfen. Nur gezielte Feld-Wiederherstellung ist erlaubt.
     func testSaveNeverUsesABlanketContextRollback() throws {
         let source = try cardioGoalEditorViewSource
+        guard let saveStart = source.range(of: "private func save() {") else {
+            return XCTFail("save() not found at the expected signature")
+        }
+        guard let catchStart = source.range(of: "} catch {", range: saveStart.lowerBound..<source.endIndex) else {
+            return XCTFail("save()'s catch block was not found")
+        }
+        guard let catchEnd = source.range(of: "\n    }", range: catchStart.upperBound..<source.endIndex) else {
+            return XCTFail("save()'s catch block end was not found")
+        }
+        // The catch block's own explanatory comment deliberately mentions `modelContext.rollback()`
+        // in backtick-quoted prose to say why it's NOT used - strip `//` comment lines before
+        // checking, so that explanation doesn't trip the very assertion it's explaining.
+        let catchCode = source[catchStart.upperBound..<catchEnd.lowerBound]
+            .split(separator: "\n")
+            .map { line -> Substring in
+                guard let commentRange = line.range(of: "//") else { return line }
+                return line[line.startIndex..<commentRange.lowerBound]
+            }
+            .joined(separator: "\n")
         XCTAssertFalse(
-            source.contains("modelContext.rollback()"),
+            catchCode.contains("modelContext.rollback()"),
             "save() must restore the seven fields individually, never via a blanket modelContext.rollback() that could discard unrelated pending changes"
         )
     }
