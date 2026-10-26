@@ -232,19 +232,21 @@ public extension ProgramTemplate {
                         dayIndex: dayIndex, exerciseIndex: exerciseIndex,
                         originalName: slot.defaultExerciseName, usedName: usedName
                     ))
-                case .unresolved:
+                case let .unresolved(reason):
                     // Caller MUST see this: never silently substitute. The
                     // exercise keeps its unchanged default identity; the gap
-                    // reason comes from evaluating ONLY the default exercise's
-                    // own requirement (not the slot's OR-aggregate across
-                    // alternatives), per this function's documented contract.
+                    // reason is the resolver's own OR-aggregate across
+                    // default + alternatives (never recomputed from the
+                    // default exercise alone — that would reintroduce false
+                    // `.missing` certainty when an alternative is merely
+                    // `.uncertain`).
                     exercises.append(ExerciseSpec(
                         name: slot.defaultExerciseName, sets: slot.sets,
                         repsMin: slot.repsMin, repsMax: slot.repsMax, restSeconds: slot.restSeconds
                     ))
                     gaps.append(PlanEquipmentGap(
                         exerciseName: slot.defaultExerciseName,
-                        reason: Self.defaultExerciseGapReason(slot: slot, against: profile)
+                        reason: reason
                     ))
                 }
             }
@@ -266,22 +268,5 @@ public extension ProgramTemplate {
         }
 
         return SlotResolutionResult(days: resolvedDays, gaps: gaps, usedAlternatives: usedAlternatives)
-    }
-
-    /// `PlanEquipmentGapReason` aus dem `RequirementStatus` NUR der
-    /// `defaultExerciseName` dieses Slots — unabhaengig vom OR-Aggregat, das
-    /// `TemplateSlotResolver.resolve` ueber Default+Alternativen bildet
-    /// (siehe `SlotResolutionResult.gaps`-Doku). `.satisfied` ist hier
-    /// unerreichbar: `resolve` haette sonst bereits `.default` geliefert statt
-    /// `.unresolved` — der Fallback existiert nur fuer Exhaustivitaet.
-    private static func defaultExerciseGapReason(slot: TemplateSlot, against profile: UserEquipmentProfile) -> PlanEquipmentGapReason {
-        guard let requirement = ExerciseLibraryData.byName[slot.defaultExerciseName]?.equipmentRequirement else {
-            return .notAnnotated
-        }
-        switch requirement.evaluate(against: profile) {
-        case .satisfied: return .missing([])
-        case let .unmet(reasons): return .missing(reasons)
-        case let .unknown(reasons): return .uncertain(reasons)
-        }
     }
 }

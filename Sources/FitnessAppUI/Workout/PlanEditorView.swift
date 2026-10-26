@@ -808,9 +808,25 @@ public struct PlanEditorView: View {
     /// resolvedSelection`/`equipmentStatusBanner`) — NIEMALS in `@State`
     /// zwischengespeichert, damit eine Profil-Aenderung an anderer Stelle
     /// sofort hier ankommt.
+    /// Final-Review Fix 3: muss denselben EFFEKTIVEN Kontext wie
+    /// `ProgramTemplatePickerView.equipmentPlanningContext` nutzen, nicht das
+    /// rohe, individuelle Profil — sonst liest ein Default-User ohne eigene
+    /// Einrichtung (`equipmentProfile` komplett `.unknown`) hier faelschlich
+    /// jede annotierte Uebung als "unsicher" und zeigt die harte Luecken-
+    /// Warnung dauerhaft an, obwohl der Picker fuer denselben Fall nur die
+    /// neutrale "Annahme"-Anzeige zeigt (siehe `EquipmentPlanningResolver`).
+    private var equipmentPlanningContext: EquipmentPlanningContext? {
+        guard let profile = userProfiles.first else { return nil }
+        return EquipmentPlanningResolver.resolve(
+            environment: profile.environment,
+            individualProfile: profile.equipmentProfile,
+            confirmedComplete: profile.equipmentProfileConfirmedComplete
+        )
+    }
+
     private var equipmentGapReport: PlanEquipmentReport? {
-        guard let profile = userProfiles.first?.equipmentProfile else { return nil }
-        return SavedPlanEquipmentCheck.report(for: plan, against: profile)
+        guard let context = equipmentPlanningContext, !context.isAssumption else { return nil }
+        return SavedPlanEquipmentCheck.report(for: plan, against: context.effectiveProfile)
     }
 
     @ViewBuilder

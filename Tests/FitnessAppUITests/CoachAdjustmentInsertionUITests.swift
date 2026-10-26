@@ -163,12 +163,40 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
         }
         let block = source[caseRange.upperBound..<nextCaseRange.lowerBound]
         XCTAssertTrue(
-            block.contains("model.analysis.insertableRestDays.isEmpty"),
-            "the branch must check analysis.insertableRestDays to decide whether to offer insertion"
+            block.contains("actionButtons(model)"),
+            "when enough rest days are insertable, the same actionButtons(_:) (which renders the Apply-to-current-plan button) must be shown"
+        )
+    }
+
+    /// Final-review Fix 2: "at least one insertable rest day" is not enough -
+    /// `accept()`'s insertion path (`RunCoachPlanAdjustment.
+    /// selectRestDaysForInsertion`/`PlanGeneratorInstantiator.
+    /// insertCoachCardioDays`) throws `CardioInsertionError.
+    /// insufficientRestDays` whenever `insertableRestDays.count <
+    /// newCardioDays(for:).count` (e.g. a marathon goal needing 5 run days
+    /// with only 2-3 eligible rest days) - offering "Apply to current plan"
+    /// in that case is a guaranteed dead end, with no way to reach "Create
+    /// new plan" (which only renders when `insertableRestDays` is literally
+    /// empty). The branch must gate on having ENOUGH eligible rest days for
+    /// the goal, comparing counts against `newCardioDays(for: model).count`
+    /// (not recomputed - reused from the existing call in this same branch),
+    /// not merely on `insertableRestDays` being non-empty.
+    func testNoEligibleCardioDayBranchGatesOnEnoughRestDaysNotJustNonEmpty() throws {
+        let source = try contents(of: "Cardio/CoachAdjustmentPreviewView.swift")
+        guard let caseRange = source.range(of: "case .noEligibleCardioDay:") else {
+            XCTFail(".noEligibleCardioDay case not found"); return
+        }
+        guard let nextCaseRange = source.range(of: "case .noActivePlan:", range: caseRange.upperBound..<source.endIndex) else {
+            XCTFail(".noActivePlan case not found (end of .noEligibleCardioDay block)"); return
+        }
+        let block = source[caseRange.upperBound..<nextCaseRange.lowerBound]
+        XCTAssertFalse(
+            withoutLineComments(String(block)).contains("model.analysis.insertableRestDays.isEmpty"),
+            "must no longer gate on mere non-emptiness - that offers insertion even when there are too few eligible rest days for the goal"
         )
         XCTAssertTrue(
-            block.contains("actionButtons(model)"),
-            "when rest days are insertable, the same actionButtons(_:) (which renders the Apply-to-current-plan button) must be shown"
+            block.contains("model.analysis.insertableRestDays.count >= newCardioDays(for: model).count"),
+            "must gate on having at least as many eligible rest days as the goal needs (newCardioDays(for: model).count), reusing the existing call rather than recomputing it"
         )
     }
 

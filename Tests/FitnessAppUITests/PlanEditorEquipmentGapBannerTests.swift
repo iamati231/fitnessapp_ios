@@ -34,7 +34,7 @@ final class PlanEditorEquipmentGapBannerTests: XCTestCase {
 
     func testEquipmentGapReportCallsSavedPlanEquipmentCheckReportDirectly() throws {
         let src = try source
-        XCTAssertTrue(src.contains("SavedPlanEquipmentCheck.report(for: plan, against: profile)"),
+        XCTAssertTrue(src.contains("SavedPlanEquipmentCheck.report(for: plan, against: context.effectiveProfile)"),
                        "Die Luecken-Pruefung muss SavedPlanEquipmentCheck.report( direkt aufrufen, nicht ueber eine eigene Neuimplementierung")
     }
 
@@ -44,8 +44,45 @@ final class PlanEditorEquipmentGapBannerTests: XCTestCase {
         // [UserBodyProfile]` — Task 4 darf keine zweite hinzufuegen.
         let queryOccurrences = src.components(separatedBy: "@Query private var userProfiles").count - 1
         XCTAssertEqual(queryOccurrences, 1, "Es darf weiterhin nur EINE userProfiles-Query geben")
-        XCTAssertTrue(src.contains("userProfiles.first?.equipmentProfile"),
-                       "equipmentGapReport muss das Profil aus der BESTEHENDEN userProfiles-Query lesen (gleicher Zugriffsstil wie an den anderen userProfiles.first-Stellen dieser View)")
+        XCTAssertTrue(src.contains("guard let profile = userProfiles.first else { return nil }"),
+                       "equipmentPlanningContext muss das Profil aus der BESTEHENDEN userProfiles-Query lesen, keine zweite Query einfuehren")
+    }
+
+    /// Final-Review Fix 3: die Luecken-Pruefung muss denselben effektiven
+    /// Kontext verwenden wie `ProgramTemplatePickerView.equipmentPlanningContext`
+    /// (`EquipmentPlanningResolver.resolve`) statt des rohen, individuellen
+    /// Profils — sonst liest ein Default-User ohne eigene Einrichtung
+    /// (komplett `.unknown`-Profil) hier faelschlich jede annotierte Uebung
+    /// als Luecke, obwohl der Picker fuer denselben Fall nur die neutrale
+    /// "Annahme"-Anzeige zeigt, nie eine harte Warnung.
+    func testEquipmentGapReportRoutesThroughEquipmentPlanningResolverLikeThePicker() throws {
+        let src = try source
+        XCTAssertTrue(src.contains("EquipmentPlanningResolver.resolve("),
+                       "equipmentPlanningContext muss ueber EquipmentPlanningResolver.resolve( aufloesen, exakt wie ProgramTemplatePickerView.equipmentPlanningContext — kein eigener, neu erfundener Aufloesungsweg")
+        XCTAssertTrue(src.contains("environment: profile.environment"),
+                       "muss environment an den Resolver reichen")
+        XCTAssertTrue(src.contains("individualProfile: profile.equipmentProfile"),
+                       "muss das individuelle Profil an den Resolver reichen")
+        XCTAssertTrue(src.contains("confirmedComplete: profile.equipmentProfileConfirmedComplete"),
+                       "muss confirmedComplete an den Resolver reichen")
+    }
+
+    /// Eine reine Gym-Planungsannahme (unconfiguriertes Equipment,
+    /// `EquipmentPlanningContext.isAssumption == true`) darf NIE die harte
+    /// Luecken-Warnung zeigen — exakt die Regel, die
+    /// `TemplatePreviewView.isEquipmentAssumption` im Picker bereits
+    /// durchsetzt ("nie 'Equipment fehlt' fuer eine Annahme behaupten").
+    func testEquipmentGapReportSkipsTheBannerForAnAssumption() throws {
+        let src = try source
+        guard let propertyRange = src.range(of: "private var equipmentGapReport: PlanEquipmentReport? {") else {
+            return XCTFail("equipmentGapReport property not found")
+        }
+        guard let closeRange = src.range(of: "\n    }", range: propertyRange.upperBound..<src.endIndex) else {
+            return XCTFail("could not isolate equipmentGapReport's body")
+        }
+        let body = src[propertyRange.upperBound..<closeRange.lowerBound]
+        XCTAssertTrue(body.contains("context.isAssumption"),
+                       "equipmentGapReport muss context.isAssumption pruefen und fuer eine Annahme nil liefern (kein Banner)")
     }
 
     func testEquipmentGapSectionIsWiredIntoTheList() throws {

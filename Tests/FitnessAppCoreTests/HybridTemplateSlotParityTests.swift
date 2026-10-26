@@ -223,4 +223,41 @@ final class HybridTemplateSlotParityTests: XCTestCase {
         let fullBody = ProgramTemplates.all.first(where: { $0.id != "hybrid_beginner" && $0.id != "hybrid_balanced" && $0.id != "hybrid_performance" })!
         XCTAssertNil(fullBody.resolvedSlots(against: baseProfile), "\(fullBody.id): Templates ohne `slots` muessen `nil` liefern, nie faken")
     }
+
+    // MARK: - Final-review Fix 4: gap reason is the resolver's OR-aggregate,
+    // never recomputed from the default exercise alone.
+
+    /// `hybrid_balanced`'s "Schulterdrücken (stehend)" slot: the default
+    /// (barbell, confirmed `.unavailable`) is definitively unmet, but its
+    /// first alternative "Schulterdrücken (KH)" (`.item(.dumbbell,
+    /// minimumCount: 2)`) is merely UNKNOWN here (dumbbell `.available`, but
+    /// no count ever recorded -> `RequirementStatus.unknown` per
+    /// `ExerciseRequirement.evaluate`, `EquipmentRequirement.swift` line
+    /// ~221-228). `TemplateSlotResolver.resolve`'s own OR-aggregation
+    /// therefore reports `.uncertain`, not `.missing` — `resolvedSlots`
+    /// must surface that same reason unchanged, not recompute `.missing`
+    /// from the default barbell gap alone (the pre-fix bug).
+    func testUnresolvedSlotGapReasonIsResolverAggregateNotRecomputedFromDefaultAlone() throws {
+        let profile = UserEquipmentProfile(
+            availability: [
+                .barbell: .unavailable, .kettlebell: .unavailable,
+                .dumbbell: .available,
+                .flatBench: .unavailable, .adjustableBench: .unavailable, .rack: .unavailable,
+                .pullUpBar: .unavailable, .cableStation: .unavailable, .machineStation: .unavailable
+            ]
+            // Deliberately no `.dumbbell` entry in `counts`: "available, but
+            // count never recorded" is exactly the `.unknown` case this test
+            // needs for the alternative.
+        )
+        guard let result = template("hybrid_balanced").resolvedSlots(against: profile) else {
+            return XCTFail("hybrid_balanced: resolvedSlots(against:) lieferte nil")
+        }
+        guard let gap = result.gaps.first(where: { $0.exerciseName == "Schulterdrücken (stehend)" }) else {
+            return XCTFail("Erwartet einen Gap fuer den 'Schulterdrücken (stehend)'-Slot, gaps: \(result.gaps)")
+        }
+        guard case let .uncertain(reasons) = gap.reason else {
+            return XCTFail("Default ist definitiv unerfuellt (Langhantel fehlt), aber die erste Alternative ('Schulterdrücken (KH)') ist nur UNKNOWN (Kurzhantel-Stueckzahl nie erfasst) — das OR-Aggregat muss `.uncertain` sein, ist aber: \(gap.reason)")
+        }
+        XCTAssertTrue(reasons.contains { $0.item == .dumbbell }, "Der uncertain-Grund muss von der Kurzhantel-Alternative stammen, nicht vom Langhantel-Default")
+    }
 }

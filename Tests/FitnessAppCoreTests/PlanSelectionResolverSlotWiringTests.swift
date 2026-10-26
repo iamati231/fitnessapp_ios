@@ -110,6 +110,46 @@ final class PlanSelectionResolverSlotWiringTests: XCTestCase {
         XCTAssertEqual(selection.days.first?.exercises.first?.name, "Kniebeuge")
     }
 
+    // MARK: - Final-review Fix 1: a MIXED resolution (some slots adapted,
+    // others genuinely unresolved) must never hide its real gap behind the
+    // "Adapted" banner — `appliedAdaptation` stays `nil` whenever `gaps` is
+    // non-empty, regardless of `usedAlternatives`.
+
+    /// 2 dumbbells, no bench, on `hybrid_balanced`'s "Strength Push" day:
+    /// "Schulterdrücken (stehend)"/"Trizepsdrücken (Kabel)" resolve via a
+    /// dumbbell alternative that needs no bench (`usedAlternatives`
+    /// non-empty) — but "Bankdrücken"/"Schrägbankdrücken (aufwärts)" stay
+    /// `.unresolved`: their dumbbell alternatives ("Bankdrücken (KH)",
+    /// "Schrägbankdrücken aufwärts (KH)", `ExerciseLibraryData.swift` lines
+    /// ~111/116) both additionally require a bench, which this profile does
+    /// not have (confirmed `.unavailable`, not merely unconfigured).
+    func testMixedHybridBalancedResolutionNeverHidesRealGapBehindAdaptedBanner() {
+        let twoDumbbellsNoBenchProfile = UserEquipmentProfile(
+            availability: [
+                .dumbbell: .available,
+                .barbell: .unavailable, .rack: .unavailable,
+                .flatBench: .unavailable, .adjustableBench: .unavailable,
+                .kettlebell: .unavailable, .pullUpBar: .unavailable,
+                .cableStation: .unavailable, .machineStation: .unavailable
+            ],
+            counts: [.dumbbell: 2]
+        )
+        let selection = PlanSelectionResolver.resolve(template: template("hybrid_balanced"), profile: twoDumbbellsNoBenchProfile, context: hypertrophyContext)
+
+        // Sanity: confirm the mixed setup this test relies on actually
+        // happened (some alternatives used, some slots still gapped) —
+        // otherwise the assertions below would pass for the wrong reason.
+        guard let slotResult = template("hybrid_balanced").resolvedSlots(against: twoDumbbellsNoBenchProfile) else {
+            return XCTFail("hybrid_balanced: resolvedSlots(against:) lieferte nil")
+        }
+        XCTAssertFalse(slotResult.usedAlternatives.isEmpty, "Vorbedingung: mindestens ein Slot muss ueber eine Alternative aufgeloest sein")
+        XCTAssertFalse(slotResult.gaps.isEmpty, "Vorbedingung: mindestens ein Slot muss trotzdem ein echter Gap bleiben (Bankdruecken-Familie braucht zusaetzlich eine Bank)")
+
+        XCTAssertTrue(selection.equipmentStatus.isUnavailable, "Die Bankdruecken-Familie ist definitiv unerfuellt (kein Barbell, keine Bank, kein Kettlebell) -> equipmentStatus muss .unavailable sein, ist: \(selection.equipmentStatus)")
+        XCTAssertNil(selection.appliedAdaptation, "Ein gemischtes Ergebnis (teils adaptiert, teils echter Gap) darf NIE als reines 'Adapted' erscheinen — sonst verschwindet der Bankdruecken-Gap hinter dem blauen Banner")
+        XCTAssertFalse(selection.isAdapted)
+    }
+
     // MARK: - 17 untouched templates: unveraendertes Verhalten
 
     /// `resolvedSlots(against:)` liefert `nil` fuer jedes Template ohne

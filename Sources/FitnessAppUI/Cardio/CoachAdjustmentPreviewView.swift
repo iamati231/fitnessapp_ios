@@ -141,7 +141,15 @@ struct CoachAdjustmentPreviewView: View {
             // einer Vorher/Nachher-Darstellung ohne "altes" Original (siehe
             // unten: `"— → <neuer Tag>"`, kein `.strikethrough()`, da kein
             // vorhandener Tag ersetzt wird).
-            if !model.analysis.insertableRestDays.isEmpty {
+            // Final-Review Fix 2: "mindestens ein einfuegbarer Ruhetag" reicht
+            // nicht - `accept()`s Einfuege-Pfad verlangt GENUG davon fuer das
+            // Ziel (`PlanGeneratorInstantiator.CardioInsertionError.
+            // insufficientRestDays`, Task 6s eigene, korrekte Guard). Zu wenige
+            // eignbare Tage wuerden sonst "Auf aktuellen Plan anwenden"
+            // anbieten, das JEDEN Versuch mit der irrefuehrenden "Plan hat
+            // sich geaendert"-Meldung abbricht, ohne je "Neuen Plan erstellen"
+            // erreichbar zu machen.
+            if model.analysis.insertableRestDays.count >= newCardioDays(for: model).count {
                 Section {
                     ForEach(Array(newCardioDays(for: model).enumerated()), id: \.offset) { _, spec in
                         Text("— → \(spec.name)")

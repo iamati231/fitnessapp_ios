@@ -92,7 +92,11 @@ public enum PlanSelectionResolver {
             }
 
             let appliedAdaptation: PlanAdaptationDraft?
-            if slotResult.usedAlternatives.isEmpty {
+            if slotResult.usedAlternatives.isEmpty || !slotResult.gaps.isEmpty {
+                // A mixed outcome (some slots adapted, others still gapped)
+                // must NOT surface as "Adapted" — the real gap has to render
+                // via `equipmentStatus` instead (doc comment above: non-nil
+                // ONLY for a fully resolved adaptation).
                 appliedAdaptation = nil
             } else {
                 appliedAdaptation = PlanAdaptationDraft(
