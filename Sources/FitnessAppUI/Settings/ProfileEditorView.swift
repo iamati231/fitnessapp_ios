@@ -737,11 +737,16 @@ public struct ProfileEditorView: View {
         }
     }
 
-    /// Paket 1 (Laufcoach-Plananpassung): der erste aktive Plan, falls
-    /// einer existiert - reuse der bereits geladenen `allPlans` (DEL-047),
-    /// keine zweite Query noetig.
+    /// Paket 1 (Laufcoach-Plananpassung): der Laufcoaching-relevante aktive
+    /// Plan, falls einer existiert - reuse der bereits geladenen `allPlans`
+    /// (DEL-047), keine zweite Query noetig. Task 9 (Review-Nachbesserung,
+    /// dritte Runde): vorher `allPlans.first { $0.isActive }` - ein dritter
+    /// Twin derselben nicht-deterministischen `@Query`-Reihenfolge-Auswahl
+    /// wie `DashboardView`s und `PlansListView`s inzwischen gefixte
+    /// Pendants (siehe `coachAdjustmentModel`-Doku unten: alle drei bilden
+    /// gemeinsam die Leitplanke-6-Verdrahtung).
     private var activePlan: TrainingPlan? {
-        allPlans.first { $0.isActive }
+        ActivePlanResolver.cardioRelevantPlan(among: allPlans)
     }
 
     /// Leitplanke 6: hat Vorrang vor `feasibilityModel`, sobald ein aktiver
