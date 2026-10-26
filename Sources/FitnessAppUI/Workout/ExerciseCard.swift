@@ -89,6 +89,11 @@ struct ExerciseCard: View {
     /// braucht (ein `enum` mit `static let` hat keinen).
     @ScaledMetric(relativeTo: .title2) private var checkmarkColumnPlaceholderWidth: CGFloat = 28
 
+    /// Audit-Fix (Save-Fehler in Satz-Logging): sichtbarer Hinweis statt
+    /// stillem `try?`-Swallow in `logSet`/`unlogSet`. Kein globaler Toast -
+    /// eine Karte pro Uebung, der Hinweis gehoert zu GENAU dieser Karte.
+    @State private var saveErrorMessage: String?
+
     var body: some View {
         // UX-203: berechne EINMAL pro Render den aktiven Satz — der erste
         // mit `existingLog == nil`. Wenn alle completed sind, bleibt es nil
@@ -150,6 +155,12 @@ struct ExerciseCard: View {
                     // uebernimmt weiterhin die primaere visuelle Trennung.
                     Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
                 }
+            }
+
+            if let saveErrorMessage {
+                Text(saveErrorMessage)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.error)
             }
 
             if completedSetCount >= content.sets {
@@ -621,6 +632,7 @@ struct ExerciseCard: View {
     /// auch das bereits bestehende Kaltstart-sichere `unlogSet` direkt
     /// darunter als Gegenbeispiel (siehe dessen Doku-Kommentar).
     private func logSet(setIndex: Int, values: LoggedSetValues) {
+        saveErrorMessage = nil
         let log = ExerciseLog(
             date: Date(),
             setIndex: setIndex,
@@ -635,7 +647,19 @@ struct ExerciseCard: View {
             durationSeconds: values.durationSeconds
         )
         modelContext.insert(log)
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            // Gezielter Undo NUR dieses einen frisch eingefuegten Logs (kein
+            // `modelContext.rollback()`): `insert()` wirkt sofort auf den
+            // Live-Graphen, auf dem `existingLog(forSetIndex:)` liest - ohne
+            // dieses `delete` wuerde der Haken trotz fehlgeschlagenem Save
+            // bis zum naechsten Kaltstart faelschlich "geloggt" zeigen
+            // (siehe Doku-Kommentar oben zum urspruenglichen Kaltstart-Bug).
+            modelContext.delete(log)
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return
+        }
         onSetLogged(setIndex)
     }
 
@@ -653,9 +677,19 @@ struct ExerciseCard: View {
     /// stets `TrainingDayContentSnapshotWriter.recordSetCountChange` folgt,
     /// der selbst speichert — `unlogSet` hat keinen solchen Folgeaufruf.
     private func unlogSet(setIndex: Int) {
+        saveErrorMessage = nil
         guard let log = existingLog(forSetIndex: setIndex) else { return }
         modelContext.delete(log)
-        try? modelContext.save()
+        // Anders als in `logSet`: `delete()` wirkt ebenfalls sofort auf den
+        // Live-Graphen, die Zeile faellt also schon jetzt korrekt in den
+        // editierbaren Zustand zurueck, unabhaengig vom Save-Ergebnis - der
+        // Toast informiert nur ueber die Persistenz, kein zusaetzlicher
+        // Undo noetig oder (ohne eine "Re-Insert"-API) sinnvoll moeglich.
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
     }
 
     // MARK: - DEL-157 Dynamisches Set-Management

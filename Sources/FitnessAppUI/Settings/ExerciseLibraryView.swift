@@ -67,6 +67,9 @@ public struct ExerciseLibraryView: View {
     @State private var filterToPlanEnv: Bool = true
     /// DEL-210: Draft-Erstell-Sheet im Picker-Modus.
     @State private var showingDraftSheet: Bool = false
+    /// Audit-Fix (Save-Fehler): siehe `showTimedWorkoutSaveErrorToast`
+    /// (TimedWorkoutPlayerView.swift) - geteilter Helper, gleiches Toast-Muster.
+    @State private var saveErrorMessage: String?
 
     private var isPickerMode: Bool { onExerciseSelected != nil }
 
@@ -204,6 +207,11 @@ public struct ExerciseLibraryView: View {
             }
         } message: {
             Text("editor.exercise.deleteConfirmMessage", bundle: .module)
+        }
+        // Audit-Fix (Save-Fehler): sichtbarer Hinweis statt stillem
+        // `try?`-Swallow in `deleteTemplate(_:)`.
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
         }
     }
 
@@ -433,7 +441,15 @@ public struct ExerciseLibraryView: View {
     private func deleteTemplate(_ template: ExerciseTemplate) {
         guard template.isCustom else { return }
         modelContext.delete(template)
-        try? modelContext.save()
+        // Audit-Fix: `delete()` wirkt sofort auf den Live-Graphen (die Zeile
+        // verschwindet also schon jetzt korrekt aus der `@Query`-Liste,
+        // unabhaengig vom Save-Ergebnis) - der Toast informiert nur ueber
+        // die Persistenz, kein zusaetzlicher Undo noetig oder moeglich.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 
 }

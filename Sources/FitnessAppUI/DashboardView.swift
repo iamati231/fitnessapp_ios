@@ -73,6 +73,9 @@ public struct DashboardView: View {
     /// waehlt — sie liefert die Aktion fuer einen frischen Insert.
     @State private var showingActiveSessionConflict = false
     @State private var pendingNewStart: (() -> Void)?
+    /// Audit-Fix (Save-Fehler in Workout-Editoren): siehe `showTimedWorkoutSaveErrorToast`
+    /// (TimedWorkoutPlayerView.swift) - geteilter Helper, gleiches Toast-Muster.
+    @State private var saveErrorMessage: String?
 
     /// README 2.35 (43b): Ad-Hoc-Zeitformat-Start. Kein eigener Picker/
     /// Bestaetigungs-Sheet mehr (Nutzer-Feedback: nur eine Uebung waehlbar,
@@ -419,6 +422,11 @@ public struct DashboardView: View {
             } else {
                 Text("dashboard.openSession.message.fallback", bundle: .module)
             }
+        }
+        // Audit-Fix (Save-Fehler in Workout-Editoren): sichtbarer Hinweis
+        // statt stillem `try?`-Swallow in `discardOtherOpenSessionsAndStartNew()`.
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
         }
     }
 
@@ -1494,7 +1502,14 @@ public struct DashboardView: View {
     private func dismissMissedRunDaysHint() {
         guard let profile = profiles.first, let model = missedRunDaysModel else { return }
         model.dismiss(profile: profile)
-        try? modelContext.save()
+        // Audit-Fix (Save-Fehler, niedrigste Prioritaet laut Audit): schlimmstenfalls
+        // taucht der Hinweis nach einem Kaltstart wieder auf - trotzdem kein
+        // stilles `try?` mehr, derselbe Toast wie die anderen Dashboard-Fixes oben.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 
     /// Startet die Deload-Woche: Gewichte via DeloadManager halbieren,
@@ -2383,7 +2398,19 @@ public struct DashboardView: View {
         for open in openSessions {
             modelContext.delete(open)
         }
-        try? modelContext.save()
+        // Audit-Fix (Save-Fehler in Workout-Editoren): bei einem Fehlschlag
+        // NICHT `pendingNewStart?()` ausfuehren - der User soll nicht
+        // unbemerkt in eine neue Session geschickt werden, waehrend die
+        // "verworfenen" alten Sessions noch unklar im ModelContext stehen
+        // (gleiches Prinzip wie `DayEditorView.discardOpenSessionAndStartNew`).
+        // Kein Rollback der bereits vorgemerkten Deletes - ein erneuter Tap
+        // auf "Training starten" versucht denselben Save einfach wieder.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+            return
+        }
         pendingNewStart?()
         pendingNewStart = nil
     }

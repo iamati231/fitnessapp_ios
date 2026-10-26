@@ -36,6 +36,9 @@ struct EnduranceIntervalPlayerView: View {
     @State private var pausedRemainingSeconds: Int?
     @State private var isFinished = false
     @State private var showingDiscardConfirm = false
+    /// Audit-Fix (Save-Fehler in Live-Workouts): siehe `showTimedWorkoutSaveErrorToast`
+    /// (TimedWorkoutPlayerView.swift) - geteilter Helper, gleiches Toast-Muster.
+    @State private var saveErrorMessage: String?
 
     /// README 2.15/23b-23c: Vorlauf-Countdown, identisches Muster wie bei
     /// den anderen Playern.
@@ -191,10 +194,18 @@ struct EnduranceIntervalPlayerView: View {
             titleVisibility: .visible
         ) {
             Button(role: .destructive) {
-                discardTimedSession(session, modelContext: modelContext, dismiss: dismiss)
+                if !discardTimedSession(session, modelContext: modelContext, dismiss: dismiss) {
+                    showTimedWorkoutSaveErrorToast($saveErrorMessage)
+                }
             } label: {
                 Text("timedWorkout.discard.confirmButton", bundle: .module)
             }
+        }
+        // Audit-Fix (Save-Fehler in Live-Workouts): sichtbarer Hinweis statt
+        // stillem `try?`-Swallow in den Checkpoint-Saves unten sowie einem
+        // fehlgeschlagenen saveNow()/Verwerfen oben.
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
         }
     }
 
@@ -423,7 +434,14 @@ struct EnduranceIntervalPlayerView: View {
         session.startTime = Date()
         roundsCompleted = 0
         session.enduranceRoundsCompleted = 0
-        try? modelContext.save()
+        // Audit-Fix (Save-Fehler in Live-Workouts): Fehler sichtbar machen
+        // statt verschlucken, Vorlauf-Uebergang selbst NICHT zurueckgesetzt
+        // (siehe AMRAPs `finishPreroll()` in TimedWorkoutPlayerView.swift).
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         beginPhase(.warmup)
         startBackground()
@@ -452,7 +470,13 @@ struct EnduranceIntervalPlayerView: View {
             phaseEndDate = workDurationSeconds.map { Date().addingTimeInterval(TimeInterval($0)) }
         }
         session.endurancePhaseEndDate = phaseEndDate
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen, Phasen-Uebergang selbst NICHT
+        // zurueckgesetzt.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         DeltiqHaptics.notify(.warning)
         if timerSoundEnabled {
             TimerSoundPlayer.shared.playLong()
@@ -479,7 +503,13 @@ struct EnduranceIntervalPlayerView: View {
                 roundsCompleted += 1
                 session.enduranceRoundsCompleted = roundsCompleted
             }
-            try? modelContext.save()
+            // Audit-Fix: Fehler sichtbar machen, die gezaehlte Runde aber
+            // NICHT zurueckdrehen (real geschafft).
+            do {
+                try modelContext.save()
+            } catch {
+                showTimedWorkoutSaveErrorToast($saveErrorMessage)
+            }
             beginPhase(.rest)
         case .rest:
             if currentRoundNumber >= totalRounds {
@@ -503,7 +533,12 @@ struct EnduranceIntervalPlayerView: View {
         session.endurancePausedRemainingSeconds = remaining
         self.phaseEndDate = nil
         session.endurancePhaseEndDate = nil
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen, Pause selbst NICHT zurueckgesetzt.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         DeltiqHaptics.notify(.success)
         syncBackground()
     }
@@ -515,7 +550,13 @@ struct EnduranceIntervalPlayerView: View {
         session.endurancePhaseEndDate = end
         self.pausedRemainingSeconds = nil
         session.endurancePausedRemainingSeconds = nil
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen, Fortsetzen selbst NICHT
+        // zurueckgesetzt.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         DeltiqHaptics.notify(.success)
         syncBackground()
     }
@@ -564,11 +605,13 @@ struct EnduranceIntervalPlayerView: View {
         session.enduranceRoundsCompleted = roundsCompleted
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .enduranceIntervals
-        finishTimedSession(
+        if !finishTimedSession(
             session, modelContext: modelContext, healthKit: healthKit,
             prNotifications: prNotifications, navigation: navigation,
             prCelebrationsEnabled: prCelebrationsEnabled
-        )
+        ) {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 }
 #endif

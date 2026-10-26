@@ -37,6 +37,9 @@ struct CircuitPlayerView: View {
     @State private var roundsCompleted = 0
     @State private var isFinished = false
     @State private var showingDiscardConfirm = false
+    /// Audit-Fix (Save-Fehler in Live-Workouts): siehe `showTimedWorkoutSaveErrorToast`
+    /// (TimedWorkoutPlayerView.swift) - geteilter Helper, gleiches Toast-Muster.
+    @State private var saveErrorMessage: String?
 
     /// `.fixedReps`: welche Uebungen der LAUFENDEN Runde schon abgehakt
     /// sind. Anders als `ForTimePlayerView.checkedRounds` (kumulativ ueber
@@ -285,10 +288,18 @@ struct CircuitPlayerView: View {
             titleVisibility: .visible
         ) {
             Button(role: .destructive) {
-                discardTimedSession(session, modelContext: modelContext, dismiss: dismiss)
+                if !discardTimedSession(session, modelContext: modelContext, dismiss: dismiss) {
+                    showTimedWorkoutSaveErrorToast($saveErrorMessage)
+                }
             } label: {
                 Text("timedWorkout.discard.confirmButton", bundle: .module)
             }
+        }
+        // Audit-Fix (Save-Fehler in Live-Workouts): sichtbarer Hinweis statt
+        // stillem `try?`-Swallow in den Checkpoint-Saves unten sowie einem
+        // fehlgeschlagenen saveNow()/Verwerfen oben.
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
         }
     }
 
@@ -424,11 +435,13 @@ struct CircuitPlayerView: View {
         session.circuitRoundsCompleted = roundsCompleted
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .circuit
-        finishTimedSession(
+        if !finishTimedSession(
             session, modelContext: modelContext, healthKit: healthKit,
             prNotifications: prNotifications, navigation: navigation,
             prCelebrationsEnabled: prCelebrationsEnabled
-        )
+        ) {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 
     /// README 2.15/23b-23c: Uebergang von Vorlauf in den echten Lauf.
@@ -443,7 +456,13 @@ struct CircuitPlayerView: View {
         // ersten Runde wieder auf `nil` zurueck - der Vorlauf wuerde
         // faelschlich neu starten (identisches Muster wie AMRAPs
         // `finishPreroll()` in TimedWorkoutPlayerView.swift).
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen statt verschlucken, Vorlauf-
+        // Uebergang selbst NICHT zurueckgesetzt (siehe AMRAPs Pendant).
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         startBackground()
     }
@@ -489,7 +508,14 @@ struct CircuitPlayerView: View {
         // Kaltstart (siehe TimedWorkoutPlayerView.completeRound()-Doku,
         // identisches Muster).
         session.circuitCurrentRoundCheckedRaw = Self.encodeCheckedInRound(checkedInRound, exercises: resolvedExercises)
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen, das Haekchen selbst aber NICHT
+        // zurueckdrehen (real abgehakt, siehe AMRAPs `completeRound()`-
+        // Begruendung).
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         DeltiqHaptics.notify(.success)
         guard !alreadyChecked else { return }   // Nur beim NEUEN Abhaken pruefen, nicht beim Zurueck-Abhaken.
         if exercises.allSatisfy({ (checkedInRound[$0.persistentModelID] ?? 0) > 0 }) {
@@ -512,7 +538,13 @@ struct CircuitPlayerView: View {
         // `toggleExerciseChecked` oben - der Finish-Zweig unten speichert
         // bereits ueber `saveNow()`, der Zwischenstand hier (noch nicht
         // letzte Runde) bisher nicht.
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen, die gezaehlte Runde aber NICHT
+        // zurueckdrehen (real geschafft).
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         DeltiqHaptics.notify(.success)
         if roundsCompleted >= totalRounds {
             isFinished = true
@@ -536,7 +568,13 @@ struct CircuitPlayerView: View {
         // `completeCurrentRound()` oben - ohne Save uebersteht weder das
         // Zuruecksetzen von `circuitCurrentRoundCheckedRaw` noch der neue
         // Pausen-Anker einen echten Kaltstart.
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen, Pausen-Uebergang selbst NICHT
+        // zurueckgesetzt.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         hasFiredRest60 = false
         hasFiredRest30 = false
         DeltiqHaptics.notify(.warning)
@@ -557,7 +595,13 @@ struct CircuitPlayerView: View {
         // die (eigentlich schon beendete) Pause an, weil `circuitRestEndDate`
         // auf der Store-Datei nie auf `nil` gesetzt wurde. Gleiches
         // Fix-Muster wie die uebrigen zehn Fundstellen aus f2a31a5.
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen, Pausen-Ende selbst NICHT
+        // zurueckgesetzt.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         DeltiqHaptics.notify(.success)
         if timerSoundEnabled {
             TimerSoundPlayer.shared.playLong()
