@@ -216,7 +216,7 @@ public struct PlansListView: View {
         // Karte - kein neuer Anpassungs-Mechanismus, siehe
         // `coachAdjustmentSection`.
         .sheet(isPresented: $showingCoachAdjustmentPreview) {
-            if let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans) {
+            if let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\.isActive)) {
                 CoachAdjustmentPreviewView(profile: profile, activePlan: activePlan)
             }
         }
@@ -330,9 +330,15 @@ public struct PlansListView: View {
     /// das den alphabetisch ersten (Artefakt der clientseitigen Sortierung
     /// dieser View), eine andere, ebenso willkuerliche Regel als Dashboards
     /// damaliges `@Query`-Reihenfolge-`.first`. `ActivePlanResolver` ist
-    /// jetzt die EINE Regel fuer beide Views.
+    /// jetzt die EINE Regel fuer beide Views. Review-Nachbesserung (fuenfte
+    /// Runde): `plans` ist nur aktive-ZUERST SORTIERT, nicht auf aktive
+    /// gefiltert - `ActivePlanResolver` dokumentiert "unter den aktiven
+    /// Plaenen" als Praecondition an seinen Input, erzwingt sie aber nicht
+    /// selbst. Ohne `.filter(\.isActive)` haette z.B. ein einzelner
+    /// deaktivierter Cardio-Coach-Plan in der Bibliothek den case-1-Zweig
+    /// getroffen und diesen laengst inaktiven Plan zurueckgeliefert.
     private var coachAdjustmentModel: CoachAdjustmentCardModel? {
-        guard let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans) else { return nil }
+        guard let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\.isActive)) else { return nil }
         return CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
     }
 

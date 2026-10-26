@@ -54,10 +54,11 @@ final class PlansListCoachAdjustmentPriorityTests: XCTestCase {
         }
         let tail = source[range.upperBound...].prefix(400)
         XCTAssertTrue(tail.contains("profiles.first"), "must require a profile")
-        // Task 9 (Review-Nachbesserung, dritte Runde): vorher
-        // `plans.first(where: \.isActive)`, jetzt `ActivePlanResolver`
+        // Task 9 (Review-Nachbesserung): vorher `plans.first(where: \.isActive)`,
+        // jetzt `ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\.isActive))`
+        // - `plans` allein ist nur aktive-zuerst sortiert, nicht gefiltert
         // (siehe PlansListActivePlanResolverTests fuer den vollen Scope).
-        XCTAssertTrue(tail.contains("ActivePlanResolver.cardioRelevantPlan(among: plans)"), "must require an active plan via ActivePlanResolver")
+        XCTAssertTrue(tail.contains("ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\\.isActive))"), "must require an active plan via ActivePlanResolver, fed only active plans")
         XCTAssertTrue(tail.contains("CoachAdjustmentCardModel.make(for:"), "must delegate to CoachAdjustmentCardModel.make")
     }
 }

@@ -744,9 +744,16 @@ public struct ProfileEditorView: View {
     /// Twin derselben nicht-deterministischen `@Query`-Reihenfolge-Auswahl
     /// wie `DashboardView`s und `PlansListView`s inzwischen gefixte
     /// Pendants (siehe `coachAdjustmentModel`-Doku unten: alle drei bilden
-    /// gemeinsam die Leitplanke-6-Verdrahtung).
+    /// gemeinsam die Leitplanke-6-Verdrahtung). Review-Nachbesserung
+    /// (fuenfte Runde): `allPlans` laedt laut DEL-047-Doku oben AUCH
+    /// inaktive Plaene (bewusst, fuer den Trainingsort-Sync) -
+    /// `ActivePlanResolver` dokumentiert "unter den aktiven Plaenen" nur als
+    /// Praecondition, erzwingt sie nicht selbst. `.filter(\.isActive)`
+    /// unmittelbar davor ist deshalb zwingend, sonst koennte z.B. ein
+    /// einzelner laengst deaktivierter Cardio-Coach-Plan den case-1-Zweig
+    /// treffen und faelschlich zurueckgeliefert werden.
     private var activePlan: TrainingPlan? {
-        ActivePlanResolver.cardioRelevantPlan(among: allPlans)
+        ActivePlanResolver.cardioRelevantPlan(among: allPlans.filter(\.isActive))
     }
 
     /// Leitplanke 6: hat Vorrang vor `feasibilityModel`, sobald ein aktiver

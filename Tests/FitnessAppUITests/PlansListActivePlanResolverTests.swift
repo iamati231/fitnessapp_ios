@@ -26,7 +26,14 @@ final class PlansListActivePlanResolverTests: XCTestCase {
 
     /// Dasselbe Sheet wie `DashboardView`s Laufversaeumnis-Karte (siehe
     /// Kommentar direkt darueber in `PlansListView.swift`) - muss denselben
-    /// Resolver verwenden.
+    /// Resolver verwenden. Review-Nachbesserung (fuenfte Runde): `plans` ist
+    /// nur aktive-ZUERST SORTIERT (siehe `plans`-Doku, Zeile 19-27), NICHT
+    /// auf aktive gefiltert - `ActivePlanResolver` erzwingt "unter den
+    /// aktiven Plaenen" nicht selbst, nur der Aufrufer kann das. Ohne
+    /// `.filter(\.isActive)` wuerde z.B. ein deaktivierter Cardio-Coach-Plan
+    /// in der Bibliothek faelschlich den case-1-Zweig treffen. Diese
+    /// Assertion prueft deshalb explizit die GEFILTERTE Eingabe, nicht nur
+    /// dass die Resolver-Funktion ueberhaupt aufgerufen wird.
     func testCoachAdjustmentPreviewSheetUsesActivePlanResolver() throws {
         let source = try contents(of: "Workout/PlansListView.swift")
         guard let sheetRange = source.range(of: ".sheet(isPresented: $showingCoachAdjustmentPreview)") else {
@@ -35,8 +42,8 @@ final class PlansListActivePlanResolverTests: XCTestCase {
         }
         let body = source[sheetRange.upperBound...].prefix(400)
         XCTAssertTrue(
-            body.contains("let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans)"),
-            "das Sheet muss ActivePlanResolver.cardioRelevantPlan(among:) verwenden statt plans.first(where: \\.isActive)"
+            body.contains("let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\\.isActive))"),
+            "das Sheet muss ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\\.isActive)) verwenden - plans allein ist nur sortiert, nicht gefiltert"
         )
         XCTAssertFalse(
             body.contains("plans.first(where:"),
@@ -46,7 +53,8 @@ final class PlansListActivePlanResolverTests: XCTestCase {
 
     /// `coachAdjustmentModel` ist der literale Twin der Dashboard-Karten-
     /// Quelle (identischer `CoachAdjustmentCardModel.make`-Aufruf, dieselbe
-    /// Vorrang-Rolle vor `CardioFeasibilityCardModel`).
+    /// Vorrang-Rolle vor `CardioFeasibilityCardModel`). Gleicher
+    /// ungefilterte-Eingabe-Blindspot wie oben - siehe Doku dort.
     func testCoachAdjustmentModelUsesActivePlanResolver() throws {
         let source = try contents(of: "Workout/PlansListView.swift")
         guard let propertyRange = source.range(of: "private var coachAdjustmentModel: CoachAdjustmentCardModel? {") else {
@@ -55,8 +63,8 @@ final class PlansListActivePlanResolverTests: XCTestCase {
         }
         let body = source[propertyRange.upperBound...].prefix(300)
         XCTAssertTrue(
-            body.contains("let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans)"),
-            "coachAdjustmentModel muss ActivePlanResolver.cardioRelevantPlan(among:) verwenden statt plans.first(where: \\.isActive)"
+            body.contains("let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\\.isActive))"),
+            "coachAdjustmentModel muss ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\\.isActive)) verwenden - plans allein ist nur sortiert, nicht gefiltert"
         )
         XCTAssertFalse(
             body.contains("plans.first(where:"),
