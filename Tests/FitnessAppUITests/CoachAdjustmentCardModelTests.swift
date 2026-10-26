@@ -367,5 +367,109 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
             "the call site inside beforeAfterSection must pass the model through, not read the stale standalone property"
         )
     }
+
+    // MARK: - Task 10 (Protection regression suite): insertion-path specific coverage
+    //
+    // `testAcceptTwiceOnSameModelInstanceIsIdempotent` and
+    // `testAcceptRestoresTheOriginalCardioGoalWhenTheInPlaceAdjustmentFails`
+    // above both use `makeProfileAndPlan()`, whose plan already has one
+    // eligible cardio day - they only ever exercise the REPLACE branch
+    // (`applyCoachCardioAdjustment`) inside `accept()`. Neither proves the
+    // same two guarantees hold on the INSERTION branch
+    // (`insertCoachCardioDays`, Task 6/7). These two tests close that gap,
+    // reusing the identical `saveOverrideForTesting` DI seam
+    // `CoachCardioInsertionTests.swift` already established for the
+    // insertion mechanics themselves.
+
+    /// Zero-cardio-day plan with exactly as many `isAutoFilledPlaceholder`
+    /// rest days as `.fiveK` needs run-days for (`CardioFeasibilityCalculator.
+    /// planGeneratorInput`: `.fiveK` -> `runDays: 2`, `strengthDays: 2` -
+    /// `cardioOnlyDaySpecs` filters the strength days out, so exactly 2
+    /// cardio-only specs come back) - `accept()` must therefore take the
+    /// `eligibleDays.isEmpty` -> `insertCoachCardioDays` branch, not the
+    /// replace branch. No race date/weekly volume set (same reasoning as
+    /// `testProposedGoalFallsBackToCurrentGoalAndModelStaysNonNilWithoutRaceDateOrVolume`
+    /// above): keeps `verdict == nil`/`proposedGoal == profile.cardioGoal`,
+    /// so the only moving part under test is the insertion branch itself.
+    private func makeProfileAndZeroCardioPlanWithTwoInsertableRestDays() -> (UserBodyProfile, TrainingPlan, [TrainingDay]) {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: .fiveK
+        )
+        context.insert(profile)
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+
+        let restDay1 = TrainingDay(name: "Ruhetag", weekday: 2, type: .rest, plan: plan, isAutoFilledPlaceholder: true)
+        let restDay2 = TrainingDay(name: "Ruhetag", weekday: 4, type: .rest, plan: plan, isAutoFilledPlaceholder: true)
+        context.insert(restDay1)
+        context.insert(restDay2)
+        plan.days.append(restDay1)
+        plan.days.append(restDay2)
+
+        try? context.save()
+        return (profile, plan, [restDay1, restDay2])
+    }
+
+    /// Review-Punkt 7 / historisches Round-2-Bugmuster, jetzt fuer den
+    /// Einfuege-Pfad: ein Doppeltap ruft `accept()` zweimal auf DERSELBEN
+    /// Modell-Instanz auf. Der Schutz in `accept()` (`guard profile.
+    /// cardioPlanAdjustmentFingerprint != fingerprint else { return 0 }`,
+    /// siehe dortige Doku "Bugfix (Leitplanke 3, ...)") liest `profile` LIVE
+    /// und sitzt VOR der Verzweigung in Ersetzungs-/Einfuege-Pfad - dieser
+    /// Test beweist, dass das tatsaechlich auch fuer den Einfuege-Pfad gilt,
+    /// nicht nur behauptet wird.
+    func testAcceptTwiceOnSameModelInstanceIsIdempotentForTheInsertionPath() throws {
+        let (profile, plan, restDays) = makeProfileAndZeroCardioPlanWithTwoInsertableRestDays()
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+
+        let firstCount = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertEqual(firstCount, 2, "both insertable rest days must have been converted")
+        XCTAssertTrue(restDays.allSatisfy { $0.type == .cardio }, "both selected rest days must now be cardio days")
+        let dayIDsAfterFirst = Set(plan.days.map(\.persistentModelID))
+        let exerciseCountsAfterFirst = restDays.map(\.activeExercises.count)
+        XCTAssertEqual(profile.cardioPlanAdjustmentFingerprint, model.fingerprint)
+
+        let secondCount = try model.accept(plan: plan, profile: profile, in: context)
+
+        XCTAssertEqual(secondCount, 0, "zweiter Aufruf (Doppeltap) muss auch auf dem Einfuege-Pfad ein No-Op sein")
+        XCTAssertEqual(plan.days.count, 2, "kein zusaetzlicher Tag darf eingefuegt worden sein")
+        XCTAssertEqual(Set(plan.days.map(\.persistentModelID)), dayIDsAfterFirst)
+        XCTAssertEqual(restDays.map(\.activeExercises.count), exerciseCountsAfterFirst, "keine zusaetzlichen Uebungen")
+    }
+
+    /// Integrations-Version von `CoachCardioInsertionTests.
+    /// test_insertCoachCardioDays_revertOnFailure_restoresDayTypeToRest`,
+    /// hier durch `CoachAdjustmentCardModel.accept` statt direkt durch
+    /// `PlanGeneratorInstantiator.insertCoachCardioDays` getrieben - beweist,
+    /// dass der komplette Aufrufpfad (inklusive `accept()`s eigener
+    /// Nachbereitung) bei einem gescheiterten Save weder einen Tag halb
+    /// umgewandelt laesst noch `cardioPlanAdjustmentFingerprint`/
+    /// `cardioGoal` faelschlich setzt.
+    func testInsertionAcceptSaveFailureLeavesNoPartialDaysAndNoFingerprint() throws {
+        let (profile, plan, restDays) = makeProfileAndZeroCardioPlanWithTwoInsertableRestDays()
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        let originalGoal = profile.cardioGoal
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        XCTAssertThrowsError(try model.accept(plan: plan, profile: profile, in: context))
+
+        for day in restDays {
+            XCTAssertEqual(day.type, .rest, "oldType muss zurueckgeschrieben werden")
+            XCTAssertEqual(day.name, "Ruhetag")
+            XCTAssertNil(day.customName)
+            XCTAssertTrue(day.activeExercises.isEmpty, "eingefuegte Uebungen muessen wieder geloescht sein")
+            XCTAssertNil(day.generationFingerprint)
+            XCTAssertTrue(day.isAutoFilledPlaceholder, "der Herkunfts-Stempel bleibt unveraendert stehen")
+        }
+        XCTAssertNil(profile.cardioPlanAdjustmentFingerprint, "nichts wurde uebernommen - kein Fingerprint darf gesetzt sein")
+        XCTAssertEqual(profile.cardioGoal, originalGoal, "ein gescheiterter Versuch darf profile.cardioGoal nicht anfassen")
+    }
 }
 #endif
