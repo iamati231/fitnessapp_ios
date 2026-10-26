@@ -125,6 +125,32 @@ final class ActivePlanResolverTests: XCTestCase {
         XCTAssertNil(ActivePlanResolver.cardioRelevantPlan(among: [planB, planA]))
     }
 
+    /// Gemischter Fall, bisher ungetestet: ein Cardio-Coach-Kandidat hat
+    /// `activatedAt == nil` ("unbekannt", siehe `TrainingPlan.activatedAt`-
+    /// Doku - NIEMALS "nie aktiviert"), der andere ein echtes Datum. `nil`
+    /// ist kein Wettbewerber um "spaetestes Datum" (es fliesst erst gar
+    /// nicht in `compactMap(\.activatedAt).max()` ein) - der datierte
+    /// Kandidat gewinnt daher unbestritten, statt dass der fehlende Wert
+    /// einen Gleichstand/ein `nil`-Ergebnis erzwingt.
+    func test_cardioRelevantPlan_withTwoCardioCoachPlans_oneNilOneDatedActivatedAt_returnsTheDatedOne() throws {
+        let undated = makePlan(name: "Undated", generationSource: .cardioCoach, activatedAt: nil)
+        let dated = makePlan(
+            name: "Dated",
+            generationSource: .cardioCoach,
+            activatedAt: Date(timeIntervalSince1970: 3_000)
+        )
+        try context.save()
+
+        XCTAssertEqual(
+            ActivePlanResolver.cardioRelevantPlan(among: [undated, dated])?.persistentModelID,
+            dated.persistentModelID
+        )
+        XCTAssertEqual(
+            ActivePlanResolver.cardioRelevantPlan(among: [dated, undated])?.persistentModelID,
+            dated.persistentModelID
+        )
+    }
+
     // MARK: - Additional edge case: three cardio-coach candidates, tie for latest
 
     func test_cardioRelevantPlan_withThreeCardioCoachPlans_tiedLatest_returnsNil() throws {

@@ -216,7 +216,7 @@ public struct PlansListView: View {
         // Karte - kein neuer Anpassungs-Mechanismus, siehe
         // `coachAdjustmentSection`.
         .sheet(isPresented: $showingCoachAdjustmentPreview) {
-            if let profile = profiles.first, let activePlan = plans.first(where: \.isActive) {
+            if let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans) {
                 CoachAdjustmentPreviewView(profile: profile, activePlan: activePlan)
             }
         }
@@ -325,11 +325,14 @@ public struct PlansListView: View {
     /// Nachbesserung (finales Branch-Review, Fix 3): mirror von
     /// `ProfileEditorView.coachAdjustmentModel` - hat Vorrang vor
     /// `CardioFeasibilityCardModel`, sobald ein aktiver Plan existiert, siehe
-    /// Aufrufstelle in `body`. `plans.first(where: \.isActive)` statt einer
-    /// zweiten Query: `plans` ist hier bereits der clientseitig sortierte,
-    /// aktive-zuerst `@Query`-Wrapper dieser View.
+    /// Aufrufstelle in `body`. Task 9 (Review-Nachbesserung): vorher
+    /// `plans.first(where: \.isActive)` - bei mehreren aktiven Plaenen waehlte
+    /// das den alphabetisch ersten (Artefakt der clientseitigen Sortierung
+    /// dieser View), eine andere, ebenso willkuerliche Regel als Dashboards
+    /// damaliges `@Query`-Reihenfolge-`.first`. `ActivePlanResolver` ist
+    /// jetzt die EINE Regel fuer beide Views.
     private var coachAdjustmentModel: CoachAdjustmentCardModel? {
-        guard let profile = profiles.first, let activePlan = plans.first(where: \.isActive) else { return nil }
+        guard let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans) else { return nil }
         return CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
     }
 
