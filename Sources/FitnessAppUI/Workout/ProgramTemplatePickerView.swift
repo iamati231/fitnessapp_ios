@@ -20,6 +20,10 @@ public struct ProgramTemplatePickerView: View {
     /// Trainingsort vorzufiltern (DEL-012).
     @Query private var profiles: [UserBodyProfile]
 
+    /// Audit-Fix (Save-Fehler): siehe `showTimedWorkoutSaveErrorToast`
+    /// (TimedWorkoutPlayerView.swift) - geteilter Helper, gleiches Toast-Muster.
+    @State private var saveErrorMessage: String?
+
     public init() {}
 
     public var body: some View {
@@ -83,6 +87,9 @@ public struct ProgramTemplatePickerView: View {
             .toolbar(.hidden, for: .navigationBar)
             #endif
             .navigationBarBackButtonHidden(true)
+        }
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
         }
     }
 
@@ -178,6 +185,16 @@ public struct ProgramTemplatePickerView: View {
             in: modelContext,
             resolvedSelection: freshSelection
         )
+        // Audit-Fix (Save-Fehler): instantiate() inserted Plan+Tage+Uebungen,
+        // hing bisher aber komplett am impliziten SwiftData-Autosave - ein
+        // Kaltstart direkt nach der Auswahl konnte den ganzen Plan verlieren.
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(plan) // cascade: Tage + Uebungen gehen mit
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+            return
+        }
         dismiss()
         // Defer the navigation to the next runloop — gives the sheet's dismiss
         // animation time to start before the workout-stack mutation lands.

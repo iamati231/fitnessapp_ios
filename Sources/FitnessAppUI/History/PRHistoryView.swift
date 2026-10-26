@@ -603,14 +603,8 @@ private struct PRHistoryRow: View {
             }
             return "\(Int(entry.value)) Runden + \(entry.reps) Wdh (vorher \(Int(entry.previousValue)) Runden)"
         case .fastestTime:
-            return "\(formatDuration(entry.value)) (vorher \(formatDuration(entry.previousValue)))"
+            return "\(PaceCalculator.formatDuration(Int(entry.value.rounded()))) (vorher \(PaceCalculator.formatDuration(Int(entry.previousValue.rounded()))))"
         }
-    }
-
-    /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet
-    /// `PaceCalculator.formatDuration` statt eines eigenen mm:ss-Formatters.
-    private func formatDuration(_ totalSeconds: Double) -> String {
-        PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
     }
 }
 

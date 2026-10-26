@@ -182,15 +182,11 @@ public struct NutritionGoalsView: View {
         let bmr = BodyCalculations.bmrMifflinStJeor(
             weightKg: weightKg,
             heightCm: profile.heightCm,
-            ageYears: ageYears(for: profile),
+            ageYears: profile.ageYears,
             profile: profile.profile
         )
         let tdee = BodyCalculations.tdee(bmr: bmr, activityFactor: tdeeActivity.factor)
         profile.dailyCalorieGoalKcal = tdeeGoalType.dailyGoalKcal(tdee: tdee)
-    }
-
-    private func ageYears(for profile: UserBodyProfile) -> Int {
-        Calendar.current.dateComponents([.year], from: profile.birthDate, to: Date()).year ?? 0
     }
 
     // MARK: Field helpers (DEL-106-Muster, identisch zu TDEEView/CardioGoalEditorView)

@@ -2214,15 +2214,8 @@ private struct PRBadge: View {
             }
             return "\(Int(record.newValue)) Runden + \(record.reps) \(repUnit) (\(prev) \(prevRounds) Runden)"
         case .fastestTime:
-            return "\(formatDuration(record.newValue)) (\(prev) \(formatDuration(record.previousValue)))"
+            return "\(PaceCalculator.formatDuration(Int(record.newValue.rounded()))) (\(prev) \(PaceCalculator.formatDuration(Int(record.previousValue.rounded()))))"
         }
-    }
-
-    /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet
-    /// `PaceCalculator.formatDuration` statt eines eigenen mm:ss-Formatters
-    /// (dieselbe Funktion ruft die Datei bereits an anderer Stelle, Z. 1923).
-    private func formatDuration(_ totalSeconds: Double) -> String {
-        PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
     }
 }
 

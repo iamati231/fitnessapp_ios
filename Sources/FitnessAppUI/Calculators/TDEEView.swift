@@ -80,7 +80,7 @@ public struct TDEEView: View {
             )
             DeltiqRow(
                 label: String(localized: "calc.tdee.age", bundle: .module),
-                value: String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile))
+                value: String(format: String(localized: "settings.profile.years", bundle: .module), profile.ageYears)
             )
             DeltiqRow(
                 label: String(localized: "calc.tdee.height", bundle: .module),
@@ -121,7 +121,7 @@ public struct TDEEView: View {
                 let bmrMifflin = BodyCalculations.bmrMifflinStJeor(
                     weightKg: weightKg,
                     heightCm: profile.heightCm,
-                    ageYears: ageYears(for: profile),
+                    ageYears: profile.ageYears,
                     profile: profile.profile
                 )
                 let tdee = BodyCalculations.tdee(bmr: bmrMifflin, activityFactor: activity.factor)
@@ -217,10 +217,6 @@ public struct TDEEView: View {
     }
 
     // MARK: Helpers
-
-    private func ageYears(for profile: UserBodyProfile) -> Int {
-        Calendar.current.dateComponents([.year], from: profile.birthDate, to: Date()).year ?? 0
-    }
 
     /// Katch-McArdle uses fat-free mass — we use the FFM from the latest measurement
     /// IF its weight matches the user's current entry within ~1 kg. Otherwise we'd be

@@ -394,7 +394,7 @@ public struct MeasurementView: View {
                 valueText(profile.heightCm.formattedTwoDecimals + " cm")
             }
             DeltiqControlRow(label: loc("measurement.profile.age.label")) {
-                valueText("\(ageYears(for: profile)) \(loc("measurement.profile.age.unit"))")
+                valueText("\(profile.ageYears) \(loc("measurement.profile.age.unit"))")
             }
             DeltiqControlRow(
                 label: loc("measurement.profile.sex.label"),
@@ -970,16 +970,12 @@ public struct MeasurementView: View {
 
     // MARK: - Domain glue + validation
 
-    private func ageYears(for profile: UserBodyProfile) -> Int {
-        Calendar.current.dateComponents([.year], from: profile.birthDate, to: Date()).year ?? 0
-    }
-
     private func derivedMetrics(for profile: UserBodyProfile) -> DerivedBodyMetrics? {
         guard let weightKg, weightKg > 0, profile.heightCm > 0 else { return nil }
         return BodyCalculations.computeDerivedFields(
             weightKg: weightKg,
             heightCm: profile.heightCm,
-            ageYears: ageYears(for: profile),
+            ageYears: profile.ageYears,
             profile: profile.profile,
             neckCm: neckCm,
             waistCm: waistCm,
@@ -1178,7 +1174,7 @@ public struct MeasurementView: View {
             dismiss()
         } else {
             let measurement = BodyMeasurement.makeDerived(
-                ageYears: ageYears(for: profile),
+                ageYears: profile.ageYears,
                 weightKg: weightKg,
                 heightCm: profile.heightCm,
                 profile: profile.profile,

@@ -1059,6 +1059,17 @@ public struct PlanEditorView: View {
             plan: plan
         )
         modelContext.insert(day)
+        // Audit-Fix (Save-Fehler): derselbe Musterfehler wie bei
+        // `deleteDays(at:)` oben (siehe dortige Doku) - ohne sofortigen Save
+        // haengt der neue Tag am impliziten Autosave. Bei einem Ruhetag gibt
+        // es danach keine Folge-Aktion, die das erzwingen wuerde.
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(day)
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
+            return
+        }
         // Bei Ruhetagen lassen wir den User auf der Liste — er kann den Tag
         // bei Bedarf umbenennen, aber muss nicht zwingend in den Editor.
         // Bei Trainingstagen springen wir direkt rein um Uebungen hinzuzufuegen.

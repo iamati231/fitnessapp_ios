@@ -2282,12 +2282,26 @@ public struct OnboardingView: View {
                     context: SubstitutionContext(goal: trainingGoal, experienceTrack: resolvedExperienceTrack)
                 )
             }
-            ProgramInstantiator.instantiate(
+            // Audit-Fix (Save-Fehler): instantiate() hing bisher komplett am
+            // impliziten Autosave - anders als der customPlanInput-Zweig
+            // unten (der ueber `createPlan` schon explizit speichert und
+            // wirft). Gleiche Fehlerbehandlung wie dort: kein Alert HIER
+            // (Profil-Insert kann RootView bereits zur MainTabView
+            // umgeschaltet haben), aber auch kein stilles Verschwinden -
+            // `OnboardingPlanCreationNotice.markFailed()` informiert im
+            // sichtbaren Folgekontext (DashboardView).
+            let plan = ProgramInstantiator.instantiate(
                 template,
                 in: modelContext,
                 selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
                 resolvedSelection: freshSelection
             )
+            do {
+                try modelContext.save()
+            } catch {
+                modelContext.delete(plan) // cascade: Tage + Uebungen gehen mit
+                OnboardingPlanCreationNotice.markFailed()
+            }
         } else if let customPlanInput, let customPlanResult {
             // DEL-243: der im Builder-
             // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu

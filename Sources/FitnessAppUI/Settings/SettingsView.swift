@@ -154,7 +154,7 @@ public struct SettingsView: View {
 
     private func profileHeadline(_ profile: UserBodyProfile) -> String {
         let sex = String(localized: profile.profile == .male ? "sex.male" : "sex.female", bundle: .module)
-        let years = String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile))
+        let years = String(format: String(localized: "settings.profile.years", bundle: .module), profile.ageYears)
         return "\(sex) • \(years)"
     }
 
@@ -460,10 +460,6 @@ public struct SettingsView: View {
     }
 
     // MARK: Formatters
-
-    private func ageYears(for profile: UserBodyProfile) -> Int {
-        Calendar.current.dateComponents([.year], from: profile.birthDate, to: Date()).year ?? 0
-    }
 
     /// Always reads cm from DB; converts to inches when the user prefers imperial.
     private func formattedHeight(_ cm: Double) -> String {
