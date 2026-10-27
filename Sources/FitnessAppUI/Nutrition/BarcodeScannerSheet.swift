@@ -215,25 +215,25 @@ private struct ScanFrameCorners: View {
             let width = proxy.size.width
             let height = proxy.size.height
             let length: CGFloat = 28
+            let r: CGFloat = Deltiq.Radius.card
             Path { path in
-                path.move(to: CGPoint(x: 0, y: length))
-                path.addLine(to: CGPoint(x: 0, y: 0))
-                path.addLine(to: CGPoint(x: length, y: 0))
+                path.move(to: CGPoint(x: r, y: length + r))
+                path.addLine(to: CGPoint(x: r, y: r))
+                path.addLine(to: CGPoint(x: length + r, y: r))
 
-                path.move(to: CGPoint(x: width - length, y: 0))
-                path.addLine(to: CGPoint(x: width, y: 0))
-                path.addLine(to: CGPoint(x: width, y: length))
+                path.move(to: CGPoint(x: width - length - r, y: r))
+                path.addLine(to: CGPoint(x: width - r, y: r))
+                path.addLine(to: CGPoint(x: width - r, y: length + r))
 
-                path.move(to: CGPoint(x: 0, y: height - length))
-                path.addLine(to: CGPoint(x: 0, y: height))
-                path.addLine(to: CGPoint(x: length, y: height))
+                path.move(to: CGPoint(x: r, y: height - length - r))
+                path.addLine(to: CGPoint(x: r, y: height - r))
+                path.addLine(to: CGPoint(x: length + r, y: height - r))
 
-                path.move(to: CGPoint(x: width - length, y: height))
-                path.addLine(to: CGPoint(x: width, y: height))
-                path.addLine(to: CGPoint(x: width, y: height - length))
+                path.move(to: CGPoint(x: width - length - r, y: height - r))
+                path.addLine(to: CGPoint(x: width - r, y: height - r))
+                path.addLine(to: CGPoint(x: width - r, y: height - length - r))
             }
             .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-            .padding(18)
         }
     }
 }
@@ -248,7 +248,7 @@ private struct DataScannerRepresentable: UIViewControllerRepresentable {
             qualityLevel: .accurate,
             isHighFrameRateTrackingEnabled: false,
             isPinchToZoomEnabled: false,
-            isGuidanceEnabled: true,
+            isGuidanceEnabled: false,
             isHighlightingEnabled: true
         )
         controller.delegate = context.coordinator
