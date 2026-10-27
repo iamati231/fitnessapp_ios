@@ -530,7 +530,7 @@ struct ExerciseCard: View {
               !exercise.isCardio,
               !exercise.isTimeBased,
               exercise.role == .workingSet,
-              isBarbellExercise,
+              exercise.isBarbellExercise,
               let workingKg = referenceWeightKg else { return nil }
 
         if weightUnitRaw == "lbs" {
@@ -546,16 +546,7 @@ struct ExerciseCard: View {
         return WarmupRampCalculator.ramp(workingWeightKg: workingKg)
     }
 
-    /// Barbell-Detection: DEL-159-Override gewinnt, sonst Library-Lookup
-    /// über den System-Namen. Custom-Übungen ohne Equipment → kein Ramp.
-    private var isBarbellExercise: Bool {
-        if let equipment = exercise.equipment {
-            return equipment == .barbell
-        }
-        return ExerciseLibraryData.all.first { $0.name == exercise.name }?.equipment == .barbell
-    }
-
-    /// Zielgewicht für die Rampe: Plan-Vorschlag (Smart-Progression pflegt
+/// Zielgewicht für die Rampe: Plan-Vorschlag (Smart-Progression pflegt
     /// `suggestedWeight`), sonst das Gewicht von Satz 1 der letzten Session.
     private var referenceWeightKg: Double? {
         if let suggested = exercise.suggestedWeight, suggested > 0 {

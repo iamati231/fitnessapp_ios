@@ -95,6 +95,13 @@ public struct ActiveWorkoutView: View {
     @State private var showingFinishConfirm = false
     @State private var showingDiscardConfirm = false
 
+    /// Audit-Fix (Save-Fehler): siehe `showTimedWorkoutSaveErrorToast`
+    /// (TimedWorkoutPlayerView.swift) — gemeinsamer Toast fuer alle
+    /// expliziten Saves in dieser Datei, die vorher am impliziten Autosave
+    /// haengen geblieben sind (finishWorkout/addAdHocExercise/
+    /// addAdHocCustomExercise/deleteAdHocExercise).
+    @State private var saveErrorMessage: String?
+
     /// DEL-096: In-Workout Exercise-Picker fuer Ad-Hoc-Sessions. Strenger
     /// gated als der DayEditor-Picker — kein Equipment-Konflikt-Dialog,
     /// kein Custom-Eintippen (Ad-Hoc soll schnell sein, der User waehlt
@@ -188,6 +195,9 @@ public struct ActiveWorkoutView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
+        }
         // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
@@ -1096,6 +1106,22 @@ public struct ActiveWorkoutView: View {
         // (read-only) berechnet, daher hier Discard.
         _ = ProgressionApplicator.apply(to: session, in: modelContext)
 
+        // Audit-Fix (Save-Fehler): bis hierhin haengt der komplette Finish
+        // (finalizeTiming/recomputeTotals/isCompleted/PR-Sync/Progression)
+        // am impliziten SwiftData-Autosave - ein Kaltstart direkt nach
+        // "Speichern" konnte die ganze fertig trainierte Session verlieren,
+        // obwohl die UI (Haptik oben) schon Erfolg signalisiert hatte.
+        // WorkoutSummaryView geht laut eigener Doku davon aus, dass die
+        // Session an dieser Stelle bereits gespeichert ist - bei einem
+        // Fehler NICHT dorthin navigieren, sondern Toast + Abbruch, der
+        // User kann "Workout beenden" erneut antippen.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+            return
+        }
+
         // Nach Apple Health schreiben — gemaess den Schaltern (Einstellungen →
         // Apple Health → Trainings in Health: Krafttraining / Cardio) und der
         // log-basierten Klassifikation (`HealthWorkoutPlanner`): Cardio ohne
@@ -1148,6 +1174,13 @@ public struct ActiveWorkoutView: View {
         if let adHocDay {
             modelContext.delete(adHocDay)
         }
+        // Audit-Fix (Save-Fehler): delete() wirkt sofort auf den Live-Graphen
+        // (die Session ist fuer die App ab hier weg, unabhaengig vom Save),
+        // ohne expliziten Save haengt das Persistieren dieser Loeschung aber
+        // am impliziten Autosave. `dismiss()` direkt danach laesst keinen
+        // sinnvollen Toast-Ort mehr zu — best-effort speichern reicht hier,
+        // wie beim analogen `HealthWorkoutWriter.pushLive`-Save.
+        try? modelContext.save()
         dismiss()
     }
 
@@ -1195,6 +1228,15 @@ public struct ActiveWorkoutView: View {
         // Übung an den bestehenden Snapshot an, liest NICHT den ganzen
         // Live-Tag erneut.
         TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(exercise, to: session, in: modelContext)
+        // Audit-Fix (Save-Fehler): fehlender context.save() nach dem Insert -
+        // derselbe Musterfehler wie `ExerciseCard.logSet`. Ohne sofortigen
+        // Save haengt die neue Ad-Hoc-Uebung am impliziten Autosave.
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(exercise)
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 
     /// Custom-Uebung im Ad-Hoc-Flow — analog zu `DayEditorView.addCustomExercise`.
@@ -1226,6 +1268,15 @@ public struct ActiveWorkoutView: View {
         modelContext.insert(exercise)
         // P8 Stufe-2: siehe addAdHocExercise.
         TrainingDayContentSnapshotWriter.recordAdHocExerciseAdded(exercise, to: session, in: modelContext)
+        // Audit-Fix (Save-Fehler): siehe addAdHocExercise - gleicher Fix,
+        // hier mit zwei frisch eingefuegten Objekten (Template + Exercise).
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(exercise)
+            modelContext.delete(template)
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 
     /// DEL-154: Entry-Point fuer das Entfernen einer Ad-Hoc-Uebung. Hat die
@@ -1263,6 +1314,17 @@ public struct ActiveWorkoutView: View {
         // 2) Uebung selbst entfernen.
         modelContext.delete(exercise)
 
+        // Audit-Fix (Save-Fehler): recordAdHocExerciseRemoved() oben speichert
+        // schon, aber VOR diesen beiden deletes (siehe dessen Doku) - die
+        // eigentliche Loeschung haengt bisher am impliziten Autosave. Delete
+        // wirkt sofort auf den Live-Graphen (wie `unlogSet`), kein Undo
+        // sinnvoll moeglich, daher nur Toast bei Fehler.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
+
         // 3) Paginator-Index clampen + Exercise-Count auffrischen. Nach dem
         // Delete kann currentPageIndex auf eine nicht mehr existente Seite
         // zeigen → auf die letzte gueltige Seite (oder die Finish-Page) ziehen.
@@ -1299,6 +1361,9 @@ public struct ActiveWorkoutView: View {
         let day = session.day
         modelContext.delete(session)
         if let day { modelContext.delete(day) }
+        // Audit-Fix (Save-Fehler): siehe discardWorkout() - .onDisappear hat
+        // keinen sinnvollen Toast-Ort mehr, best-effort speichern reicht.
+        try? modelContext.save()
     }
 }
 

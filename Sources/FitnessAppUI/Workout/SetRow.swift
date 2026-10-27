@@ -540,7 +540,7 @@ struct SetRow: View {
     /// breit ist.
     @ViewBuilder
     private var plateColumn: some View {
-        if isBarbellExercise {
+        if exercise.isBarbellExercise {
             let plateShown = (weight ?? 0) > 0
             plateCalculatorButton(weight: weight ?? 0)
                 .opacity(plateShown ? 1 : 0)
@@ -551,17 +551,7 @@ struct SetRow: View {
         }
     }
 
-    /// Signature-Geruest 2.17: Barbell-Detection nach demselben Fallback-
-    /// Muster wie `ExerciseCard.isBarbellExercise` — DEL-159-Override
-    /// gewinnt, sonst Library-Lookup ueber den System-Namen.
-    private var isBarbellExercise: Bool {
-        if let equipment = exercise.equipment {
-            return equipment == .barbell
-        }
-        return ExerciseLibraryData.all.first { $0.name == exercise.name }?.equipment == .barbell
-    }
-
-    /// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Korrektur
+/// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Korrektur
     /// post-Review: eigene Spalte (`plateColumn`) statt Overlay auf
     /// `weightInput` — das Overlay ueberdeckte dort die Gewichtszahl.
     /// Sichtbar (Opacity/HitTesting, Spaltenbreite bleibt reserviert) wenn

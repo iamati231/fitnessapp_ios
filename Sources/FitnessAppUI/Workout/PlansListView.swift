@@ -717,6 +717,15 @@ public struct PlansListView: View {
             localizationKey: TrainingPlan.blankPlanLocalizationKey
         )
         modelContext.insert(plan)
+        // Audit-Fix (Save-Fehler): fehlender context.save() nach dem Insert -
+        // derselbe Musterfehler wie `ProgramTemplatePickerView.instantiate`.
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(plan)
+            deletePlanErrorMessage = error.localizedDescription
+            return
+        }
         navigation.workoutPath.append(plan)
     }
 
@@ -918,6 +927,17 @@ public struct PlansListView: View {
                 )
                 modelContext.insert(exCopy)
             }
+        }
+        // Audit-Fix (Save-Fehler): derselbe Musterfehler wie
+        // `ProgramTemplatePickerView.instantiate` - ohne expliziten Save
+        // haengt die ganze Tiefkopie (Plan + Tage + Uebungen) am impliziten
+        // Autosave. `modelContext.delete(copy)` cascaded auf Tage + Uebungen
+        // (siehe `TrainingPlan.days`/`TrainingDay.exercises` deleteRule).
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(copy)
+            deletePlanErrorMessage = error.localizedDescription
         }
     }
 }
