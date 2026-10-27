@@ -590,7 +590,7 @@ public struct TemplatePreviewView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "bed.double.fill")
                         .foregroundStyle(Color.deltiqOrange)
-                    Text("Ruhetag")
+                    Text("picker.plan.restDay", bundle: .module)
                         .foregroundStyle(Color.Deltiq.textSecondary)
                 }
                 .padding(.horizontal, 14)
