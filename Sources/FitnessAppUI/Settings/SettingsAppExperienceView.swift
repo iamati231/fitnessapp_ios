@@ -511,15 +511,5 @@ public struct SettingsAppExperienceView: View {
             await ReminderScheduler.cancelMeasurementReminder()
         }
     }
-
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
 }
 #endif

@@ -271,16 +271,6 @@ public struct SettingsView: View {
     /// `DeltiqFormSection`s Footer-Slot vorsah — nur jetzt IN der Karte
     /// als letzte Zeile statt darunter. 12pt, sekundaerer Text, keine
     /// Trennlinie darueber.
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     private var dangerZoneSection: some View {
         DeltiqSection(String(localized: "settings.section.danger_zone", bundle: .module).uppercased()) {
             Button(role: .destructive) {

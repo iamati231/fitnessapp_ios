@@ -533,16 +533,6 @@ public struct MeasurementView: View {
 
     /// Abschnitt 1.6: Hinweistext (12pt, sekundaer) als letzte Zeile in der
     /// Karte statt als Footer darunter.
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     // MARK: - Sektion 3: Weitere Umfaenge (geschlechtsspezifische Reihenfolge)
 
     @ViewBuilder

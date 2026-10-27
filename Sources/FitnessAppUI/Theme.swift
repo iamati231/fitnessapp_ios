@@ -1142,4 +1142,39 @@ public extension View {
         #endif
     }
 }
+
+/// Audit-Fix (Lean): war byte-identisch in 17 Dateien dupliziert (Calculators/
+/// Settings/Cardio-Screens). `ProfileEditorView`s Kopie hatte zusaetzlich
+/// einen `color:`-Parameter, den aber kein einziger Aufrufer je nutzte -
+/// hier bewusst weggelassen (YAGNI).
+func hintRow(_ text: String) -> some View {
+    Text(text)
+        .font(.system(size: 12))
+        .foregroundStyle(Color.Deltiq.textSecondary)
+        .lineSpacing(4)
+        .padding(.horizontal, 14)
+        .padding(.top, 4)
+        .padding(.bottom, 8)
+}
+
+/// Audit-Fix (Lean): war byte-identisch in `DayEditorView`,
+/// `ExerciseLibraryView` und `WorkoutSummaryView` dupliziert.
+func sectionHeader(_ text: String) -> some View {
+    Text(text.uppercased())
+        .font(.system(size: 10, weight: .heavy))
+        .tracking(1.5)
+        .foregroundStyle(Color.deltiqOrange)
+        .textCase(nil)
+}
+
+/// Audit-Fix (Lean): war byte-identisch in `DashboardSettingsView` und
+/// `PlanEditorView` dupliziert — Gegenstueck zu `sectionHeader(_:)` fuer
+/// einen Localization-Key statt eines fertigen Textes.
+func sectionHeaderForKey(_ key: String) -> some View {
+    Text(String(localized: String.LocalizationValue(stringLiteral: key), bundle: .module).uppercased())
+        .font(.system(size: 10, weight: .heavy))
+        .tracking(1.5)
+        .foregroundStyle(Color.deltiqOrange)
+        .textCase(nil)
+}
 #endif

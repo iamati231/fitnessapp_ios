@@ -257,14 +257,6 @@ public struct ExerciseLibraryView: View {
     /// String statt eines Lokalisierungs-Keys entgegen, da Muskelgruppen-
     /// Header ueber `MuscleGroup.localizedName` (LocalizedStringResource)
     /// statt eines eigenen xcstrings-Keys aufgeloest werden.
-    private func sectionHeader(_ text: String) -> some View {
-        Text(text.uppercased())
-            .font(.system(size: 10, weight: .heavy))
-            .tracking(1.5)
-            .foregroundStyle(Color.deltiqOrange)
-            .textCase(nil)
-    }
-
     @ViewBuilder
     /// EXLIB-02/03: Expliziter No-Results-State, wenn Suche/Filter alles
     /// ausschliessen. Kein CTA — der Ausweg ist, Suchtext/Filter anzupassen,

@@ -768,14 +768,6 @@ public struct PlanEditorView: View {
     /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention
     /// (Caps-Grau). `.textCase(nil)` verhindert, dass List den bereits
     /// grossgeschriebenen String noch einmal automatisch transformiert.
-    private func sectionHeader(_ key: String) -> some View {
-        Text(String(localized: String.LocalizationValue(stringLiteral: key), bundle: .module).uppercased())
-            .font(.system(size: 10, weight: .heavy))
-            .tracking(1.5)
-            .foregroundStyle(Color.deltiqOrange)
-            .textCase(nil)
-    }
-
     /// DEL-035: nur noch der Plan-Name in der Meta-Section. `programType` ist
     /// ein interner Identifier (z.B. "full_body", "ppl") fuer Recommendation-
     /// Logik und gehoert nicht ins User-UI. `descriptionText` lebt nur im
@@ -795,7 +787,7 @@ public struct PlanEditorView: View {
             .font(.system(size: 15))
             .listRowBackground(Color.Deltiq.surface)
         } header: {
-            sectionHeader("planEditor.section.info")
+            sectionHeaderForKey("planEditor.section.info")
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
@@ -919,7 +911,7 @@ public struct PlanEditorView: View {
             }
             .listRowBackground(Color.Deltiq.surface)
         } header: {
-            sectionHeader("planEditor.section.settings")
+            sectionHeaderForKey("planEditor.section.settings")
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
@@ -963,7 +955,7 @@ public struct PlanEditorView: View {
             }
         } header: {
             HStack {
-                sectionHeader("planEditor.section.trainingDays")
+                sectionHeaderForKey("planEditor.section.trainingDays")
                 Spacer()
                 if !isReadOnly {
                     // Menu statt Single-Button-Action: User entscheidet pro Klick,

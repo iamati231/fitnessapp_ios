@@ -347,14 +347,6 @@ public struct WorkoutSummaryView: View {
     /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention.
     /// `.textCase(nil)` verhindert, dass List den bereits grossgeschriebenen
     /// String noch einmal automatisch transformiert.
-    private func sectionHeader(_ text: String) -> some View {
-        Text(text.uppercased())
-            .font(.system(size: 10, weight: .heavy))
-            .tracking(1.5)
-            .foregroundStyle(Color.deltiqOrange)
-            .textCase(nil)
-    }
-
     /// Im Edit-Mode bekommt der User Datum + Dauer als editierbare Felder.
     /// Wird oben in der List eingeblendet, ueber statsSection.
     private var editMetaSection: some View {

@@ -302,16 +302,6 @@ struct BodyDataEditorView: View {
         dismiss()
     }
 
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     /// Task 5: identisches Inline-Fehler-Muster wie `GearListView.gearCard`s
     /// `deleteErrorMessage` — kein neuer Toast/Alert-Mechanismus noetig.
     private func errorRow(_ text: String) -> some View {

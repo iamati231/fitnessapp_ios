@@ -1052,16 +1052,6 @@ public struct ProfileEditorView: View {
     // MARK: - Row helpers
 
     /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
-    private func hintRow(_ text: String, color: Color = Color.Deltiq.textSecondary) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(color)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     private static var minBirthDate: Date {
         Calendar.current.date(byAdding: .year, value: -125, to: Date()) ?? Date.distantPast
     }
