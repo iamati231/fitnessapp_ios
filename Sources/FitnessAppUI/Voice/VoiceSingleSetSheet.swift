@@ -378,13 +378,21 @@ struct VoiceSingleSetSheet: View {
 
 #if DEBUG
 @available(iOS 17.0, macOS 14.0, *)
+private struct VoiceSingleSetSheetPreviewWrapper: View {
+    @Query(sort: \WorkoutSession.startTime, order: .reverse)
+    private var sessions: [WorkoutSession]
+    var body: some View {
+        if let s = sessions.first {
+            VoiceSingleSetSheet(session: s, prefilledExercise: nil, onSaved: { _ in })
+        } else {
+            Text("No session in preview container")
+        }
+    }
+}
+@available(iOS 17.0, macOS 14.0, *)
 #Preview {
-    VoiceSingleSetSheet(
-        session: PreviewSeed.session,
-        prefilledExercise: nil,
-        onSaved: { _ in }
-    )
-    .modelContainer(PreviewSeed.workoutContainer)
+    VoiceSingleSetSheetPreviewWrapper()
+        .modelContainer(PreviewSeed.activeSessionContainer)
 }
 #endif
 

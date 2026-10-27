@@ -154,7 +154,7 @@ public final class VoiceWorkoutParser: @unchecked Sendable {
         // Handle comma-separated number lists before tokenizing
         // Replace ", " between numbers with " , " so commas become tokens
         let prepared = text.replacingOccurrences(of: ",", with: " , ")
-        var toks = tokenize(prepared)
+        let toks = tokenize(prepared)
         let normalized = toks.map { $0.lowercased() }
         var consumed = IndexSet()
 
@@ -162,8 +162,6 @@ public final class VoiceWorkoutParser: @unchecked Sendable {
         var weightKg: Double? = nil
         var reps: [Int] = []
         var durationSec: Int? = nil
-        var hasJeweils = false
-
         // Check for "previous weight" reference
         let refPrev = normalized.contains(where: { ["gleiche", "gleichen", "dieselbe", "demselben", "selbe", "selben"].contains($0) })
         if refPrev { weightKg = previousWeight }
@@ -204,7 +202,6 @@ public final class VoiceWorkoutParser: @unchecked Sendable {
             let t = normalized[i]
 
             if Self.jeweilsWords.contains(t) {
-                hasJeweils = true
                 consumed.insert(i)
                 i += 1; continue
             }
@@ -225,15 +222,12 @@ public final class VoiceWorkoutParser: @unchecked Sendable {
                 }
 
                 // Check two tokens ahead for decimal weight like "60 , 5 kilo"
-                var peekUnit = nextRaw
                 var peekOffset = 1
                 if nextRaw == "," || nextRaw == "." {
                     let afterComma = (i + 2 < toks.count && !consumed.contains(i + 2)) ? normalized[i + 2] : ""
-                    let afterAfterComma = (i + 3 < toks.count && !consumed.contains(i + 3)) ? normalized[i + 3] : ""
                     if let frac = Int(afterComma) {
                         numDouble = Double(num) + Double(frac) / pow(10.0, Double(String(frac).count))
-                        peekUnit = afterAfterComma
-                        peekOffset = 3
+                        peekOffset = 3  // unit token is at i+3; read via normalized[unitIdx] below
                     }
                 }
 
