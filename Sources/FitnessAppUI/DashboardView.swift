@@ -2806,6 +2806,17 @@ public struct DashboardView: View {
             circuitMode: format == .circuit ? .fixedReps : nil
         )
         modelContext.insert(adHocDay)
+        // Audit-Fix (Save-Fehler): kein expliziter Save nach dem Insert -
+        // derselbe Musterfehler wie `ProgramTemplatePickerView.instantiate`.
+        // Bei Fehler NICHT navigieren, sonst landet der User auf einem
+        // DayEditorView fuer einen Tag, der gar nicht persistiert ist.
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(adHocDay)
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+            return
+        }
 
         navigation.workoutPath = NavigationPath()
         navigation.workoutPath.append(adHocDay)
@@ -2831,6 +2842,15 @@ public struct DashboardView: View {
             day: day
         )
         modelContext.insert(session)
+        // Audit-Fix (Save-Fehler): zweiter, separater Entry-Point fuer
+        // denselben Bug, der bei `DayEditorView.markRestDaySkipped()` schon
+        // gefixt wurde (siehe dortige Doku) - hier uebersehen.
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(session)
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 
     // MARK: - Compound Lift Chart
