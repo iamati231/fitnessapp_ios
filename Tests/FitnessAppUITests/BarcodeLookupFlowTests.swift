@@ -140,6 +140,15 @@ final class BarcodeLookupFlowTests: XCTestCase {
         XCTAssertTrue(confirmBlock.contains("case .aiCandidate(let candidate) = origin"))
     }
 
+    /// A barcode hit reaches `OnlineFoodCandidatePreviewSheet` directly,
+    /// skipping `OnlineFoodResultsList` (where the text-search/AI-candidate
+    /// flows already show OFF attribution) — so the sheet itself must carry
+    /// it too, or a barcode-sourced preview would show OFF data with none.
+    func testPreviewSheetShowsAttributionSoABarcodeOnlyFlowIsNeverMissingIt() throws {
+        let source = try String(contentsOf: sourcesRoot.appendingPathComponent("Nutrition/OnlineFoodCandidatePreviewSheet.swift"), encoding: .utf8)
+        XCTAssertTrue(source.contains("\"nutrition.addMeal.onlineSearch.attribution\""))
+    }
+
     // MARK: - Fixtures / helpers (mirrors OnlineFoodLookupFlowTests' source-reading helpers)
 
     private var sourcesRoot: URL {
