@@ -584,7 +584,7 @@ public struct ExerciseEditorView: View {
                 }
                 .tint(Color.deltiqOrange)
                 .listRowBackground(Color.Deltiq.surface)
-                Picker("Inkrement", selection: stepBinding) {
+                Picker(String(localized: "editor.exercise.incrementPicker", bundle: .module), selection: stepBinding) {
                     ForEach(ProgressionStep.allCases, id: \.self) { step in
                         Text(step.label).tag(step)
                     }
@@ -592,7 +592,7 @@ public struct ExerciseEditorView: View {
                 .listRowBackground(Color.Deltiq.surface)
             }
         } header: {
-            Text("Smart-Progression")
+            Text("editor.exercise.section.smartProgression", bundle: .module)
         } footer: {
             if exercise.smartProgressionEnabled {
                 Text(progressionFooterText)

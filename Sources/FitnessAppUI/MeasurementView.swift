@@ -677,7 +677,10 @@ public struct MeasurementView: View {
                 case .sharingAuthorized:
                     DeltiqControlRow(icon: "heart.fill", label: loc("measurement.healthkit.connected")) {
                         if let lastSync = healthKit.lastSyncDate {
-                            Text("Sync \(lastSync.formatted(.relative(presentation: .named)))")
+                            Text(String(
+                                format: String(localized: "measurement.healthkit.lastSync", bundle: .module),
+                                lastSync.formatted(.relative(presentation: .named))
+                            ))
                                 .font(.system(size: 12))
                                 .foregroundStyle(Color.Deltiq.textSecondary)
                         }
@@ -1289,7 +1292,10 @@ private struct HistoryRow: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.primary)
                 if let kfa = bestBodyFatPct {
-                    Text("KFA \(kfa.truncated(to: 1).formattedTwoDecimals) %")
+                    Text(String(
+                        format: String(localized: "measurement.history.bodyFatAbbrev", bundle: .module),
+                        kfa.truncated(to: 1).formattedTwoDecimals
+                    ))
                         .font(.system(size: 12))
                         .foregroundStyle(Color.Deltiq.textSecondary)
                 }
@@ -1301,7 +1307,10 @@ private struct HistoryRow: View {
                     .foregroundStyle(Color.primary)
                     .fitnessNumberStyle()
                 if let bicepsAvg = bicepsDisplay {
-                    Text("Bizeps \(bicepsAvg.truncated(to: 1).formattedTwoDecimals) cm")
+                    Text(String(
+                        format: String(localized: "measurement.history.biceps", bundle: .module),
+                        bicepsAvg.truncated(to: 1).formattedTwoDecimals
+                    ))
                         .font(.system(size: 12))
                         .foregroundStyle(Color.Deltiq.textSecondary)
                         .fitnessNumberStyle()

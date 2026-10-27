@@ -448,7 +448,7 @@ private struct ExerciseTrophySection: View {
     @ViewBuilder
     private var entriesList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Alle Rekorde")
+            Text("prHistory.allRecords", bundle: .module)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .padding(.bottom, 4)

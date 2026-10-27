@@ -913,7 +913,7 @@ struct SetRow: View {
                         HStack {
                             Spacer()
                             Image(systemName: "play.fill")
-                            Text("Start")
+                            Text("baseline.timer.start", bundle: .module)
                                 .font(.headline)
                             Spacer()
                         }
@@ -1520,7 +1520,7 @@ struct SetRow: View {
     /// (z.B. "12:45 /km" Walk-Pace).
     private var cardioPaceLabel: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            Text("PACE").deltiqLabel()
+            Text("cardio.paceLabel", bundle: .module).deltiqLabel()
             Text(currentPace)
                 .font(.system(size: 14, weight: .bold, design: .rounded).monospacedDigit())
                 .foregroundStyle(Color.deltiqOrange)
@@ -1766,7 +1766,10 @@ private struct PlatePopoverContent: View {
                 Self.rememberBarType(newValue, for: exerciseName)
             }
 
-            Text("Stange: \(effectiveBarWeight.formattedWholeOrTwoDecimals) \(unit.rawValue)")
+            Text(String(
+                format: String(localized: "barbell.loading.barWeight", bundle: .module),
+                effectiveBarWeight.formattedWholeOrTwoDecimals, unit.rawValue
+            ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -1796,7 +1799,11 @@ private struct PlatePopoverContent: View {
             }
 
             if abs(actualWeight - targetWeight) > 0.01 {
-                Text("Erreichbar: \(actualWeight.formattedWholeOrTwoDecimals) \(unit.rawValue) (Δ \((actualWeight - targetWeight).formattedWholeOrTwoDecimals) \(unit.rawValue))")
+                Text(String(
+                    format: String(localized: "barbell.loading.reachable", bundle: .module),
+                    actualWeight.formattedWholeOrTwoDecimals, unit.rawValue,
+                    (actualWeight - targetWeight).formattedWholeOrTwoDecimals, unit.rawValue
+                ))
                     .font(.caption2)
                     .foregroundStyle(.orange)
             }
