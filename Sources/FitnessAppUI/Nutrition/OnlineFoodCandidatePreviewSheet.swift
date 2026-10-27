@@ -107,10 +107,24 @@ struct OnlineFoodCandidatePreviewSheet: View {
                     macroRow("nutrition.onlineImport.carbsLabel", value: $carbsPer100g, accessibilityKey: "nutrition.onlineImport.carbsLabel")
                     macroRow("nutrition.onlineImport.fatLabel", value: $fatPer100g, accessibilityKey: "nutrition.onlineImport.fatLabel")
                 } footer: {
-                    if pendingValues?.hasUnknownValues == true {
-                        // OFF-01: Genaud die Stelle, an der frueher ein
-                        // grauer „Hinzufuegen"-Button ohne Begruendung stand.
-                        Text("nutrition.onlineImport.incomplete.hint", bundle: .module)
+                    VStack(alignment: .leading, spacing: 4) {
+                        if pendingValues?.hasUnknownValues == true {
+                            // OFF-01: Genaud die Stelle, an der frueher ein
+                            // grauer „Hinzufuegen"-Button ohne Begruendung stand.
+                            Text("nutrition.onlineImport.incomplete.hint", bundle: .module)
+                        }
+                        // Task: Barcode-Scan ergänzen — a barcode hit reaches
+                        // THIS sheet directly, skipping `OnlineFoodResultsList`
+                        // (which only the text-search/AI-candidate entry
+                        // points pass through, and which is where its own
+                        // attribution row normally lives). Without this, a
+                        // barcode-sourced preview showed Open Food Facts data
+                        // with NO attribution anywhere — OFF-01 requires it on
+                        // every screen that shows their data, so it lives here
+                        // too now (harmless, if slightly redundant, for the
+                        // other two entry points that already saw it once).
+                        Text("nutrition.addMeal.onlineSearch.attribution", bundle: .module)
+                            .font(.system(size: 11))
                     }
                 }
                 Section {
