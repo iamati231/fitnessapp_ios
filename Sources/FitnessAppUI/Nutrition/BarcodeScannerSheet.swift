@@ -71,7 +71,7 @@ struct BarcodeScannerSheet: View {
         }
     }
 
-    private func statusView(message: String, showsOpenSettings: Bool = false) -> some View {
+    private func statusView(message: LocalizedStringKey, showsOpenSettings: Bool = false) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "camera.metering.unknown")
                 .font(.system(size: 36))
