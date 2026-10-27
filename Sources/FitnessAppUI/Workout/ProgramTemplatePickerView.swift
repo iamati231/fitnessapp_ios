@@ -52,6 +52,7 @@ public struct ProgramTemplatePickerView: View {
                                 NavigationLink {
                                     TemplatePreviewView(
                                         template: template,
+                                        adoptButtonTitle: String(localized: "picker.plan.adoptButton", bundle: .module),
                                         userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
                                         goal: profiles.first?.trainingGoal ?? .hybrid,
                                         experienceTrack: profiles.first?.experienceTrack,
@@ -301,8 +302,13 @@ public struct TemplatePreviewView: View {
     public init(
         template: ProgramTemplate,
         // Audit-Fix (i18n): war ein hartkodierter deutscher Literal,
-        // unlokalisiert.
-        adoptButtonTitle: String = String(localized: "picker.plan.adoptButton", bundle: .module),
+        // unlokalisiert. Kein Default mehr (CI-Fix): ein `public init`s
+        // Default-Argument-Ausdruck wird am Call-Site neu ausgewertet und
+        // darf daher keine `internal`-Symbole referenzieren - `Bundle.module`
+        // ist `internal`. Der einzige Aufrufer, der sich bisher auf den
+        // Default verlassen hat (ProgramTemplatePickerView.swift), uebergibt
+        // den lokalisierten Titel jetzt explizit.
+        adoptButtonTitle: String,
         userEquipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
         goal: TrainingGoal = .hybrid,
         experienceTrack: ExperienceTrack? = nil,

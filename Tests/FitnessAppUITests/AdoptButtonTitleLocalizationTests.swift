@@ -24,11 +24,18 @@ final class AdoptButtonTitleLocalizationTests: XCTestCase {
         XCTAssertTrue(text.contains("adoptButtonTitle: String(localized: \"onboarding.plan.adoptButton\", bundle: .module)"))
     }
 
-    func testTemplatePickerDefaultsToALocalizedAdoptButtonTitle() throws {
+    /// `TemplatePreviewView.init` has no default for `adoptButtonTitle`
+    /// (a `public init`'s default-argument expression is re-evaluated at
+    /// the call site and may not reference `Bundle.module`, which is
+    /// `internal`) — the picker's own NavigationLink must pass the
+    /// localized title explicitly instead.
+    func testTemplatePickerPassesALocalizedAdoptButtonTitleExplicitly() throws {
         let text = try read("FitnessAppUI/Workout/ProgramTemplatePickerView.swift")
         XCTAssertFalse(text.contains("adoptButtonTitle: String = \"Diesen Plan übernehmen\""),
                        "must not default to a hardcoded German literal")
-        XCTAssertTrue(text.contains("adoptButtonTitle: String = String(localized: \"picker.plan.adoptButton\", bundle: .module)"))
+        XCTAssertFalse(text.contains("adoptButtonTitle: String = String(localized:"),
+                       "a public init must not default an argument to an expression using the internal Bundle.module")
+        XCTAssertTrue(text.contains("adoptButtonTitle: String(localized: \"picker.plan.adoptButton\", bundle: .module)"))
     }
 
     func testBothAdoptButtonKeysExistWithAllThreeLanguages() throws {
