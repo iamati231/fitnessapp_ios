@@ -126,12 +126,12 @@ struct VoiceWorkoutParserTests {
     }
 
     @Test func timeBasedMissingDuration() {
-        let draft = VoiceDraftSet(exerciseName: "Plank", isTimeBased: true, durationSeconds: nil)
+        let draft = VoiceDraftSet(exerciseName: "Plank", durationSeconds: nil, isTimeBased: true)
         #expect(draft.hasMissingFields == true)
     }
 
     @Test func timeBasedWithDuration() {
-        let draft = VoiceDraftSet(exerciseName: "Plank", isTimeBased: true, durationSeconds: 45)
+        let draft = VoiceDraftSet(exerciseName: "Plank", durationSeconds: 45, isTimeBased: true)
         #expect(draft.hasMissingFields == false)
     }
 }
