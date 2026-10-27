@@ -247,8 +247,13 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         // Suche gestartet hat).
         XCTAssertTrue(fallbackBlock.contains("runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)"))
         // Wiederverwendet Task 4's Trefferlisten-/Fehler-Komponenten 1:1,
-        // keine zweite, abweichende Implementierung.
-        XCTAssertTrue(fallbackBlock.contains("OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)"))
+        // keine zweite, abweichende Implementierung. Pagination (Task:
+        // Ernaehrungssuche erweitern) reformatierte diesen Aufruf auf
+        // mehrere Zeilen, deshalb Teil-Strings statt eines exakten
+        // Ein-Zeilen-Treffers.
+        XCTAssertTrue(fallbackBlock.contains("OnlineFoodResultsList("))
+        XCTAssertTrue(fallbackBlock.contains("candidates: onlineSearch.candidates,"))
+        XCTAssertTrue(fallbackBlock.contains("onSelect: onlineSearch.select,"))
         XCTAssertTrue(fallbackBlock.contains("onlineSearch.errorMessage"))
         XCTAssertTrue(source.contains("\"nutrition.addMeal.onlineSearch.action\""))
     }
