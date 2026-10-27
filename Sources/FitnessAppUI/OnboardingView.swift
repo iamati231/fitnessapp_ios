@@ -312,7 +312,9 @@ public struct OnboardingView: View {
                 NavigationStack {
                     TemplatePreviewView(
                         template: template,
-                        adoptButtonTitle: "Diesen Plan wählen",
+                        // Audit-Fix (i18n): war ein hartkodierter deutscher
+                        // Literal, unlokalisiert.
+                        adoptButtonTitle: String(localized: "onboarding.plan.adoptButton", bundle: .module),
                         userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
                         goal: trainingGoal,
                         experienceTrack: resolvedExperienceTrack,
@@ -2237,6 +2239,25 @@ public struct OnboardingView: View {
         )
         modelContext.insert(measurement)
 
+        // Audit-Fix (Save-Fehler): bisher wurde NUR innerhalb der beiden
+        // Plan-Zweige unten gespeichert - ohne explizite Auswahl, ohne
+        // Custom-Plan UND einer (seltenen, aber moeglichen) leeren
+        // Empfehlungsliste lief `finishOnboarding()` durch, ohne Profil +
+        // Messung je zu speichern, trotz des Kommentars direkt darunter,
+        // der genau das garantiert glaubte. Ein Kaltstart direkt danach
+        // haette den User komplett zurueck auf Schritt 1 geworfen, ohne
+        // jede Erinnerung an seine Antworten - der am haeufigsten
+        // durchlaufene Screen der App. `profileDidSave` gated die
+        // optionalen Plan-Zweige: ein Plan auf einem nicht persistierten
+        // Profil zu erzeugen waere ohnehin sinnlos.
+        let profileDidSave: Bool
+        do {
+            try modelContext.save()
+            profileDidSave = true
+        } catch {
+            profileDidSave = false
+        }
+
         // 3) Plan-Template (optional). ProgramInstantiator deaktiviert
         //    automatisch andere Pläne — bei einem frischen Profil eh leer.
         // DEL-088: `selectedWeekdays` kommt aus dem DayPickerSheet. Wenn der
@@ -2255,7 +2276,7 @@ public struct OnboardingView: View {
         // ohnehin schon als große Karte gezeigte Top-Empfehlung
         // (`rankedTemplates.first`) übernommen — kein neuer Empfehlungsweg,
         // dieselbe Berechnung, die der Screen längst anzeigt.
-        if let template = Self.templateToAdopt(
+        if profileDidSave, let template = Self.templateToAdopt(
             explicit: selectedTemplate, hasCustomPlan: customPlanInput != nil, recommended: rankedTemplates.first
         ) {
             // Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md
@@ -2302,7 +2323,7 @@ public struct OnboardingView: View {
                 modelContext.delete(plan) // cascade: Tage + Uebungen gehen mit
                 OnboardingPlanCreationNotice.markFailed()
             }
-        } else if let customPlanInput, let customPlanResult {
+        } else if profileDidSave, let customPlanInput, let customPlanResult {
             // DEL-243: der im Builder-
             // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu
             // gerechnet) — sonst wiche der instanziierte Plan von der im

@@ -300,7 +300,9 @@ public struct TemplatePreviewView: View {
 
     public init(
         template: ProgramTemplate,
-        adoptButtonTitle: String = "Diesen Plan übernehmen",
+        // Audit-Fix (i18n): war ein hartkodierter deutscher Literal,
+        // unlokalisiert.
+        adoptButtonTitle: String = String(localized: "picker.plan.adoptButton", bundle: .module),
         userEquipmentProfile: UserEquipmentProfile = UserEquipmentProfile(),
         goal: TrainingGoal = .hybrid,
         experienceTrack: ExperienceTrack? = nil,
