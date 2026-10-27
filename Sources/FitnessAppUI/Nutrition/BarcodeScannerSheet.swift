@@ -27,27 +27,51 @@ struct BarcodeScannerSheet: View {
     @State private var permission: CameraPermissionState = .notDetermined
     @State private var permissionChecked: Bool = false
 
+    /// UX-Katalog-Erweiterung (Spec 2.7): "Barcode manuell eingeben" nutzt
+    /// DENSELBEN `onDetect`-Callback wie die Kamera — dieselbe Verarbeitung,
+    /// derselbe Double-Lookup-Guard (`BarcodeLookupController.hasStartedLookup`
+    /// in `AddMealView`), keine zweite Lookup-Implementierung.
+    @State private var showingManualEntry: Bool = false
+    @State private var manualBarcodeText: String = ""
+    @State private var manualBarcodeError: String?
+
     private var isDeviceSupported: Bool {
         DataScannerViewController.isSupported && DataScannerViewController.isAvailable
     }
 
     var body: some View {
         NavigationStack {
-            content
-                .navigationTitle(Text("nutrition.barcode.scanAction", bundle: .module))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button {
-                            onCancel()
-                        } label: {
-                            Text("common.cancel", bundle: .module)
-                        }
-                    }
-                }
-                .task {
-                    await checkPermission()
-                }
+            VStack(spacing: 0) {
+                // Spec 2.7 Punkt 1: eigener, Deltiq-gestalteter Kopfbereich
+                // statt der nativen Navigationsleiste — gleiches Geruest wie
+                // `AddMealView`s eigener Header.
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
+                    title: String(localized: "nutrition.barcode.scanAction", bundle: .module),
+                    onBack: onCancel
+                )
+                Text("nutrition.barcode.instructions", bundle: .module)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .padding(.bottom, 12)
+
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                manualEntrySection
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+            }
+            .background(Color.Deltiq.background.ignoresSafeArea())
+            #if os(iOS)
+            .toolbar(.hidden, for: .navigationBar)
+            #endif
+            .navigationBarBackButtonHidden(true)
+            .task {
+                await checkPermission()
+            }
         }
     }
 
@@ -55,23 +79,40 @@ struct BarcodeScannerSheet: View {
     private var content: some View {
         switch barcodeScanAvailability(isDeviceSupported: isDeviceSupported, permission: permissionChecked ? permission : .notDetermined) {
         case .unsupportedDevice:
-            statusView(message: "nutrition.barcode.unsupportedDevice")
+            statusCard(message: "nutrition.barcode.unsupportedDevice")
         case .permissionDenied:
-            statusView(message: "nutrition.barcode.permissionDenied", showsOpenSettings: true)
+            statusCard(message: "nutrition.barcode.permissionDenied", showsOpenSettings: true)
         case .permissionNotDetermined:
             ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .ready:
-            ZStack(alignment: .top) {
-                DataScannerRepresentable(onDetect: onDetect)
-                Text("nutrition.barcode.instructions", bundle: .module)
-                    .padding(10)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .padding(.top, 12)
+            VStack(spacing: 10) {
+                // Spec 2.7 Punkt 2/3: grosse, aber klar begrenzte,
+                // abgerundete Live-Kamerakarte statt einer unstrukturierten
+                // Vollflaeche — Scan-Rahmen ist rein dekorativ
+                // (`allowsHitTesting(false)`), kein technisches
+                // `regionOfInterest` implementiert, behauptet also keine
+                // Einschraenkung der tatsaechlichen Scanflaeche.
+                ZStack {
+                    RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous)
+                        .fill(Color.black)
+                    DataScannerRepresentable(onDetect: onDetect)
+                        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous))
+                    ScanFrameCorners()
+                        .allowsHitTesting(false)
+                }
+                .aspectRatio(3.0 / 4.0, contentMode: .fit)
+                .padding(.horizontal, 16)
+
+                Text("nutrition.barcode.autoDetectHint", bundle: .module)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
-    private func statusView(message: LocalizedStringKey, showsOpenSettings: Bool = false) -> some View {
+    private func statusCard(message: LocalizedStringKey, showsOpenSettings: Bool = false) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "camera.metering.unknown")
                 .font(.system(size: 36))
@@ -88,6 +129,66 @@ struct BarcodeScannerSheet: View {
             }
         }
         .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Spec 2.7 Punkt 5: sekundaere, immer erreichbare Alternative zur
+    /// Kamera — auch im Berechtigungs-/Nichtverfuegbar-Zustand sichtbar
+    /// (`content` oben zeigt dort nur die Kamerakarte nicht; dieser Bereich
+    /// bleibt unabhaengig davon bestehen).
+    @ViewBuilder
+    private var manualEntrySection: some View {
+        if showingManualEntry {
+            VStack(alignment: .leading, spacing: 8) {
+                TextField(String(localized: "nutrition.barcode.manualPlaceholder", bundle: .module), text: $manualBarcodeText)
+                    #if os(iOS)
+                    .keyboardType(.numberPad)
+                    #endif
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(Color.Deltiq.fill)
+                    .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+
+                if let manualBarcodeError {
+                    Text(manualBarcodeError)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.error)
+                }
+
+                Button {
+                    submitManualBarcode()
+                } label: {
+                    Text("nutrition.barcode.manualSubmit", bundle: .module)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        } else {
+            Button {
+                showingManualEntry = true
+            } label: {
+                Text("nutrition.barcode.manualEntry", bundle: .module)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.deltiqOrange)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// Gleicher Guard wie `OpenFoodFactsBarcodeLookupClient` (nur Ziffern,
+    /// nicht leer) — EAN-13/EAN-8/UPC sind per Konstruktion rein numerisch,
+    /// genau die Symbologien, auf die der Scanner beschraenkt ist. Barcode
+    /// bleibt durchgehend ein `String` (fuehrende Nullen bleiben erhalten);
+    /// bei Erfolg derselbe `onDetect`-Callback wie ein Kamera-Treffer.
+    private func submitManualBarcode() {
+        let trimmed = manualBarcodeText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.allSatisfy(\.isNumber) else {
+            manualBarcodeError = String(localized: "nutrition.barcode.manualInvalid", bundle: .module)
+            return
+        }
+        manualBarcodeError = nil
+        onDetect(trimmed)
     }
 
     private func checkPermission() async {
@@ -101,6 +202,39 @@ struct BarcodeScannerSheet: View {
             permission = .deniedOrRestricted
         }
         permissionChecked = true
+    }
+}
+
+/// Rein dekorative Eckmarkierungen ueber der Live-Kamerakarte — visuelle
+/// Orientierung, keine technische Scanflaechen-Begrenzung (siehe Aufrufer-
+/// Kommentar). `allowsHitTesting(false)` wird vom Aufrufer gesetzt.
+@available(iOS 17.0, *)
+private struct ScanFrameCorners: View {
+    var body: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+            let length: CGFloat = 28
+            Path { path in
+                path.move(to: CGPoint(x: 0, y: length))
+                path.addLine(to: CGPoint(x: 0, y: 0))
+                path.addLine(to: CGPoint(x: length, y: 0))
+
+                path.move(to: CGPoint(x: width - length, y: 0))
+                path.addLine(to: CGPoint(x: width, y: 0))
+                path.addLine(to: CGPoint(x: width, y: length))
+
+                path.move(to: CGPoint(x: 0, y: height - length))
+                path.addLine(to: CGPoint(x: 0, y: height))
+                path.addLine(to: CGPoint(x: length, y: height))
+
+                path.move(to: CGPoint(x: width - length, y: height))
+                path.addLine(to: CGPoint(x: width, y: height))
+                path.addLine(to: CGPoint(x: width, y: height - length))
+            }
+            .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            .padding(18)
+        }
     }
 }
 

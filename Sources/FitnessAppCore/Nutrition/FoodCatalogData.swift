@@ -32,6 +32,17 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "salami", nameKey: "nutrition.food.salami.name", category: .meat, kcalPer100g: 378, proteinPer100g: 21.0, carbsPer100g: 1.0, fatPer100g: 32.0),
         FoodCatalogItem(id: "bacon_raw", nameKey: "nutrition.food.bacon_raw.name", category: .meat, kcalPer100g: 417, proteinPer100g: 13.0, carbsPer100g: 0, fatPer100g: 40.0),
         FoodCatalogItem(id: "lamb_leg_raw", nameKey: "nutrition.food.lamb_leg_raw.name", category: .meat, kcalPer100g: 158, proteinPer100g: 20.0, carbsPer100g: 0, fatPer100g: 8.5),
+        // UX-Katalog-Erweiterung (Ernaehrungssuche + lokaler Katalog): weitere
+        // gaengige Fleisch/Gefluegel-Varianten und -Teile.
+        FoodCatalogItem(id: "chicken_wing_raw", nameKey: "nutrition.food.chicken_wing_raw.name", category: .meat, kcalPer100g: 203, proteinPer100g: 18.3, carbsPer100g: 0, fatPer100g: 14.0),
+        FoodCatalogItem(id: "chicken_drumstick_raw", nameKey: "nutrition.food.chicken_drumstick_raw.name", category: .meat, kcalPer100g: 172, proteinPer100g: 18.1, carbsPer100g: 0, fatPer100g: 10.6),
+        FoodCatalogItem(id: "turkey_mince_raw", nameKey: "nutrition.food.turkey_mince_raw.name", category: .meat, kcalPer100g: 150, proteinPer100g: 19.6, carbsPer100g: 0, fatPer100g: 7.8),
+        FoodCatalogItem(id: "beef_sirloin_raw", nameKey: "nutrition.food.beef_sirloin_raw.name", category: .meat, kcalPer100g: 142, proteinPer100g: 21.6, carbsPer100g: 0, fatPer100g: 5.5),
+        FoodCatalogItem(id: "pork_mince_raw", nameKey: "nutrition.food.pork_mince_raw.name", category: .meat, kcalPer100g: 234, proteinPer100g: 17.2, carbsPer100g: 0, fatPer100g: 18.0),
+        FoodCatalogItem(id: "lamb_mince_raw", nameKey: "nutrition.food.lamb_mince_raw.name", category: .meat, kcalPer100g: 254, proteinPer100g: 16.6, carbsPer100g: 0, fatPer100g: 20.9),
+        FoodCatalogItem(id: "chicken_liver_cooked", nameKey: "nutrition.food.chicken_liver_cooked.name", category: .meat, kcalPer100g: 167, proteinPer100g: 24.5, carbsPer100g: 0.9, fatPer100g: 6.5),
+        FoodCatalogItem(id: "sausage_bratwurst", nameKey: "nutrition.food.sausage_bratwurst.name", category: .meat, kcalPer100g: 283, proteinPer100g: 13.0, carbsPer100g: 2.0, fatPer100g: 25.0),
+        FoodCatalogItem(id: "frankfurter_sausage", nameKey: "nutrition.food.frankfurter_sausage.name", category: .meat, kcalPer100g: 290, proteinPer100g: 11.3, carbsPer100g: 2.6, fatPer100g: 26.0),
 
         // ── FISH ───────────────────────────────────────────────────────────
         FoodCatalogItem(id: "salmon_raw", nameKey: "nutrition.food.salmon_raw.name", category: .fish, kcalPer100g: 142, proteinPer100g: 20.0, carbsPer100g: 0, fatPer100g: 6.3),
@@ -44,6 +55,12 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "mackerel_raw", nameKey: "nutrition.food.mackerel_raw.name", category: .fish, kcalPer100g: 205, proteinPer100g: 19.0, carbsPer100g: 0, fatPer100g: 14.0),
         FoodCatalogItem(id: "herring_raw", nameKey: "nutrition.food.herring_raw.name", category: .fish, kcalPer100g: 158, proteinPer100g: 18.0, carbsPer100g: 0, fatPer100g: 9.0),
         FoodCatalogItem(id: "trout_raw", nameKey: "nutrition.food.trout_raw.name", category: .fish, kcalPer100g: 119, proteinPer100g: 20.0, carbsPer100g: 0, fatPer100g: 3.5),
+        FoodCatalogItem(id: "shrimp_raw", nameKey: "nutrition.food.shrimp_raw.name", category: .fish, kcalPer100g: 85, proteinPer100g: 20.3, carbsPer100g: 0.2, fatPer100g: 0.5),
+        FoodCatalogItem(id: "salmon_smoked", nameKey: "nutrition.food.salmon_smoked.name", category: .fish, kcalPer100g: 117, proteinPer100g: 18.3, carbsPer100g: 0, fatPer100g: 4.3),
+        FoodCatalogItem(id: "tuna_canned_oil", nameKey: "nutrition.food.tuna_canned_oil.name", category: .fish, kcalPer100g: 198, proteinPer100g: 25.5, carbsPer100g: 0, fatPer100g: 10.2),
+        FoodCatalogItem(id: "sardines_canned_oil", nameKey: "nutrition.food.sardines_canned_oil.name", category: .fish, kcalPer100g: 208, proteinPer100g: 24.6, carbsPer100g: 0, fatPer100g: 11.5),
+        FoodCatalogItem(id: "mussels_cooked", nameKey: "nutrition.food.mussels_cooked.name", category: .fish, kcalPer100g: 172, proteinPer100g: 24.0, carbsPer100g: 7.4, fatPer100g: 4.5),
+        FoodCatalogItem(id: "crab_cooked", nameKey: "nutrition.food.crab_cooked.name", category: .fish, kcalPer100g: 97, proteinPer100g: 19.4, carbsPer100g: 0, fatPer100g: 1.5),
 
         // ── DAIRY ──────────────────────────────────────────────────────────
         // Milch/Sahne tragen eine echte Dichte (leicht ueber 1.0 wegen Fett-
@@ -62,12 +79,22 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "butter", nameKey: "nutrition.food.butter.name", category: .dairy, kcalPer100g: 717, proteinPer100g: 0.9, carbsPer100g: 0.6, fatPer100g: 81.0),
         FoodCatalogItem(id: "cream_heavy", nameKey: "nutrition.food.cream_heavy.name", category: .dairy, kcalPer100g: 292, proteinPer100g: 2.4, carbsPer100g: 3.4, fatPer100g: 30.0, densityGramsPerMl: 0.99),
         FoodCatalogItem(id: "skyr", nameKey: "nutrition.food.skyr.name", category: .dairy, kcalPer100g: 63, proteinPer100g: 11.0, carbsPer100g: 4.0, fatPer100g: 0.2),
+        FoodCatalogItem(id: "milk_skim", nameKey: "nutrition.food.milk_skim.name", category: .dairy, kcalPer100g: 35, proteinPer100g: 3.4, carbsPer100g: 5.0, fatPer100g: 0.1, densityGramsPerMl: 1.03),
+        FoodCatalogItem(id: "buttermilk", nameKey: "nutrition.food.buttermilk.name", category: .dairy, kcalPer100g: 40, proteinPer100g: 3.3, carbsPer100g: 4.8, fatPer100g: 0.9, densityGramsPerMl: 1.03),
+        FoodCatalogItem(id: "cream_light", nameKey: "nutrition.food.cream_light.name", category: .dairy, kcalPer100g: 127, proteinPer100g: 2.7, carbsPer100g: 4.0, fatPer100g: 10.0, densityGramsPerMl: 1.01),
+        FoodCatalogItem(id: "cheese_feta", nameKey: "nutrition.food.cheese_feta.name", category: .dairy, kcalPer100g: 264, proteinPer100g: 14.2, carbsPer100g: 4.1, fatPer100g: 21.3),
+        FoodCatalogItem(id: "cheese_cheddar", nameKey: "nutrition.food.cheese_cheddar.name", category: .dairy, kcalPer100g: 403, proteinPer100g: 25.0, carbsPer100g: 1.3, fatPer100g: 33.3),
+        FoodCatalogItem(id: "cheese_ricotta", nameKey: "nutrition.food.cheese_ricotta.name", category: .dairy, kcalPer100g: 174, proteinPer100g: 11.3, carbsPer100g: 3.0, fatPer100g: 13.0),
+        FoodCatalogItem(id: "cheese_halloumi", nameKey: "nutrition.food.cheese_halloumi.name", category: .dairy, kcalPer100g: 321, proteinPer100g: 21.3, carbsPer100g: 2.2, fatPer100g: 25.0),
+        FoodCatalogItem(id: "kefir", nameKey: "nutrition.food.kefir.name", category: .dairy, kcalPer100g: 41, proteinPer100g: 3.3, carbsPer100g: 4.0, fatPer100g: 1.0, densityGramsPerMl: 1.03),
 
         // ── EGG ────────────────────────────────────────────────────────────
         FoodCatalogItem(id: "egg_whole_raw", nameKey: "nutrition.food.egg_whole_raw.name", category: .egg, kcalPer100g: 143, proteinPer100g: 12.6, carbsPer100g: 0.7, fatPer100g: 9.9, pieceWeightGrams: 58),
         FoodCatalogItem(id: "egg_whole_cooked", nameKey: "nutrition.food.egg_whole_cooked.name", category: .egg, kcalPer100g: 155, proteinPer100g: 12.6, carbsPer100g: 1.1, fatPer100g: 10.6, pieceWeightGrams: 58),
         FoodCatalogItem(id: "egg_white_raw", nameKey: "nutrition.food.egg_white_raw.name", category: .egg, kcalPer100g: 52, proteinPer100g: 10.9, carbsPer100g: 0.7, fatPer100g: 0.2),
         FoodCatalogItem(id: "egg_yolk_raw", nameKey: "nutrition.food.egg_yolk_raw.name", category: .egg, kcalPer100g: 322, proteinPer100g: 15.9, carbsPer100g: 3.6, fatPer100g: 26.5),
+        FoodCatalogItem(id: "egg_fried", nameKey: "nutrition.food.egg_fried.name", category: .egg, kcalPer100g: 196, proteinPer100g: 13.6, carbsPer100g: 0.8, fatPer100g: 15.3, pieceWeightGrams: 46),
+        FoodCatalogItem(id: "egg_scrambled", nameKey: "nutrition.food.egg_scrambled.name", category: .egg, kcalPer100g: 149, proteinPer100g: 10.0, carbsPer100g: 1.6, fatPer100g: 11.0),
 
         // ── GRAIN ──────────────────────────────────────────────────────────
         FoodCatalogItem(id: "oats", nameKey: "nutrition.food.oats.name", category: .grain, kcalPer100g: 379, proteinPer100g: 13.5, carbsPer100g: 60.0, fatPer100g: 7.0),
@@ -87,6 +114,18 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "bulgur_cooked", nameKey: "nutrition.food.bulgur_cooked.name", category: .grain, kcalPer100g: 83, proteinPer100g: 3.1, carbsPer100g: 18.6, fatPer100g: 0.2),
         FoodCatalogItem(id: "cornflakes", nameKey: "nutrition.food.cornflakes.name", category: .grain, kcalPer100g: 357, proteinPer100g: 7.5, carbsPer100g: 84.0, fatPer100g: 0.9),
         FoodCatalogItem(id: "muesli", nameKey: "nutrition.food.muesli.name", category: .grain, kcalPer100g: 362, proteinPer100g: 9.0, carbsPer100g: 65.0, fatPer100g: 6.0),
+        FoodCatalogItem(id: "rye_bread", nameKey: "nutrition.food.rye_bread.name", category: .grain, kcalPer100g: 259, proteinPer100g: 8.5, carbsPer100g: 48.0, fatPer100g: 3.3, servingNameKey: "nutrition.serving.slice", pieceWeightGrams: 30),
+        FoodCatalogItem(id: "tortilla_wheat", nameKey: "nutrition.food.tortilla_wheat.name", category: .grain, kcalPer100g: 310, proteinPer100g: 9.0, carbsPer100g: 50.0, fatPer100g: 7.0, pieceWeightGrams: 45),
+        FoodCatalogItem(id: "pita_bread", nameKey: "nutrition.food.pita_bread.name", category: .grain, kcalPer100g: 275, proteinPer100g: 9.1, carbsPer100g: 55.7, fatPer100g: 1.2, pieceWeightGrams: 60),
+        FoodCatalogItem(id: "rice_cakes", nameKey: "nutrition.food.rice_cakes.name", category: .grain, kcalPer100g: 387, proteinPer100g: 8.2, carbsPer100g: 81.5, fatPer100g: 2.8, pieceWeightGrams: 9),
+        FoodCatalogItem(id: "rice_basmati_raw", nameKey: "nutrition.food.rice_basmati_raw.name", category: .grain, kcalPer100g: 356, proteinPer100g: 7.1, carbsPer100g: 78.0, fatPer100g: 0.9),
+        FoodCatalogItem(id: "rice_basmati_cooked", nameKey: "nutrition.food.rice_basmati_cooked.name", category: .grain, kcalPer100g: 121, proteinPer100g: 2.7, carbsPer100g: 25.0, fatPer100g: 0.4),
+        FoodCatalogItem(id: "polenta_cooked", nameKey: "nutrition.food.polenta_cooked.name", category: .grain, kcalPer100g: 85, proteinPer100g: 2.0, carbsPer100g: 18.0, fatPer100g: 0.5),
+        FoodCatalogItem(id: "granola", nameKey: "nutrition.food.granola.name", category: .grain, kcalPer100g: 471, proteinPer100g: 10.0, carbsPer100g: 64.0, fatPer100g: 20.0),
+        FoodCatalogItem(id: "breadcrumbs", nameKey: "nutrition.food.breadcrumbs.name", category: .grain, kcalPer100g: 395, proteinPer100g: 13.3, carbsPer100g: 72.7, fatPer100g: 5.3),
+        FoodCatalogItem(id: "naan_bread", nameKey: "nutrition.food.naan_bread.name", category: .grain, kcalPer100g: 310, proteinPer100g: 9.0, carbsPer100g: 50.0, fatPer100g: 8.0, pieceWeightGrams: 90),
+        FoodCatalogItem(id: "crackers_salted", nameKey: "nutrition.food.crackers_salted.name", category: .grain, kcalPer100g: 421, proteinPer100g: 9.0, carbsPer100g: 70.0, fatPer100g: 12.0),
+        FoodCatalogItem(id: "rice_noodles_cooked", nameKey: "nutrition.food.rice_noodles_cooked.name", category: .grain, kcalPer100g: 109, proteinPer100g: 0.9, carbsPer100g: 25.0, fatPer100g: 0.2),
 
         // ── VEGETABLE ──────────────────────────────────────────────────────
         FoodCatalogItem(id: "broccoli_raw", nameKey: "nutrition.food.broccoli_raw.name", category: .vegetable, kcalPer100g: 34, proteinPer100g: 2.8, carbsPer100g: 7.0, fatPer100g: 0.4),
@@ -111,6 +150,20 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "cabbage_raw", nameKey: "nutrition.food.cabbage_raw.name", category: .vegetable, kcalPer100g: 25, proteinPer100g: 1.3, carbsPer100g: 5.8, fatPer100g: 0.1),
         FoodCatalogItem(id: "corn_cooked", nameKey: "nutrition.food.corn_cooked.name", category: .vegetable, kcalPer100g: 96, proteinPer100g: 3.4, carbsPer100g: 21.0, fatPer100g: 1.5),
         FoodCatalogItem(id: "peas_cooked", nameKey: "nutrition.food.peas_cooked.name", category: .vegetable, kcalPer100g: 81, proteinPer100g: 5.4, carbsPer100g: 14.0, fatPer100g: 0.4),
+        FoodCatalogItem(id: "beetroot_raw", nameKey: "nutrition.food.beetroot_raw.name", category: .vegetable, kcalPer100g: 43, proteinPer100g: 1.6, carbsPer100g: 9.6, fatPer100g: 0.2),
+        FoodCatalogItem(id: "radish_raw", nameKey: "nutrition.food.radish_raw.name", category: .vegetable, kcalPer100g: 16, proteinPer100g: 0.7, carbsPer100g: 3.4, fatPer100g: 0.1),
+        FoodCatalogItem(id: "leek_raw", nameKey: "nutrition.food.leek_raw.name", category: .vegetable, kcalPer100g: 61, proteinPer100g: 1.5, carbsPer100g: 14.2, fatPer100g: 0.3),
+        FoodCatalogItem(id: "celery_raw", nameKey: "nutrition.food.celery_raw.name", category: .vegetable, kcalPer100g: 16, proteinPer100g: 0.7, carbsPer100g: 3.0, fatPer100g: 0.2),
+        FoodCatalogItem(id: "pumpkin_raw", nameKey: "nutrition.food.pumpkin_raw.name", category: .vegetable, kcalPer100g: 26, proteinPer100g: 1.0, carbsPer100g: 6.5, fatPer100g: 0.1),
+        FoodCatalogItem(id: "eggplant_raw", nameKey: "nutrition.food.eggplant_raw.name", category: .vegetable, kcalPer100g: 25, proteinPer100g: 1.0, carbsPer100g: 5.9, fatPer100g: 0.2),
+        FoodCatalogItem(id: "brussels_sprouts_cooked", nameKey: "nutrition.food.brussels_sprouts_cooked.name", category: .vegetable, kcalPer100g: 36, proteinPer100g: 2.6, carbsPer100g: 7.1, fatPer100g: 0.3),
+        FoodCatalogItem(id: "kale_raw", nameKey: "nutrition.food.kale_raw.name", category: .vegetable, kcalPer100g: 49, proteinPer100g: 4.3, carbsPer100g: 8.8, fatPer100g: 0.9),
+        FoodCatalogItem(id: "fennel_raw", nameKey: "nutrition.food.fennel_raw.name", category: .vegetable, kcalPer100g: 31, proteinPer100g: 1.2, carbsPer100g: 7.3, fatPer100g: 0.2),
+        FoodCatalogItem(id: "chili_pepper_raw", nameKey: "nutrition.food.chili_pepper_raw.name", category: .vegetable, kcalPer100g: 40, proteinPer100g: 1.9, carbsPer100g: 8.8, fatPer100g: 0.4),
+        FoodCatalogItem(id: "sauerkraut", nameKey: "nutrition.food.sauerkraut.name", category: .vegetable, kcalPer100g: 19, proteinPer100g: 0.9, carbsPer100g: 4.3, fatPer100g: 0.1),
+        FoodCatalogItem(id: "olives_green", nameKey: "nutrition.food.olives_green.name", category: .vegetable, kcalPer100g: 145, proteinPer100g: 1.0, carbsPer100g: 3.8, fatPer100g: 15.3),
+        FoodCatalogItem(id: "asparagus_raw", nameKey: "nutrition.food.asparagus_raw.name", category: .vegetable, kcalPer100g: 20, proteinPer100g: 2.2, carbsPer100g: 3.9, fatPer100g: 0.1),
+        FoodCatalogItem(id: "mashed_potatoes", nameKey: "nutrition.food.mashed_potatoes.name", category: .vegetable, kcalPer100g: 113, proteinPer100g: 2.0, carbsPer100g: 16.6, fatPer100g: 4.2),
 
         // ── FRUIT ──────────────────────────────────────────────────────────
         FoodCatalogItem(id: "banana", nameKey: "nutrition.food.banana.name", category: .fruit, kcalPer100g: 89, proteinPer100g: 1.1, carbsPer100g: 23.0, fatPer100g: 0.3, pieceWeightGrams: 120),
@@ -127,6 +180,18 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "kiwi", nameKey: "nutrition.food.kiwi.name", category: .fruit, kcalPer100g: 61, proteinPer100g: 1.1, carbsPer100g: 14.7, fatPer100g: 0.5, pieceWeightGrams: 75),
         FoodCatalogItem(id: "raisins", nameKey: "nutrition.food.raisins.name", category: .fruit, kcalPer100g: 299, proteinPer100g: 3.1, carbsPer100g: 79.0, fatPer100g: 0.5),
         FoodCatalogItem(id: "dates_dried", nameKey: "nutrition.food.dates_dried.name", category: .fruit, kcalPer100g: 277, proteinPer100g: 1.8, carbsPer100g: 75.0, fatPer100g: 0.2),
+        FoodCatalogItem(id: "cherries", nameKey: "nutrition.food.cherries.name", category: .fruit, kcalPer100g: 63, proteinPer100g: 1.1, carbsPer100g: 16.0, fatPer100g: 0.2),
+        FoodCatalogItem(id: "plum", nameKey: "nutrition.food.plum.name", category: .fruit, kcalPer100g: 46, proteinPer100g: 0.7, carbsPer100g: 11.4, fatPer100g: 0.3, pieceWeightGrams: 65),
+        FoodCatalogItem(id: "peach", nameKey: "nutrition.food.peach.name", category: .fruit, kcalPer100g: 39, proteinPer100g: 0.9, carbsPer100g: 9.5, fatPer100g: 0.3, pieceWeightGrams: 150),
+        FoodCatalogItem(id: "apricot", nameKey: "nutrition.food.apricot.name", category: .fruit, kcalPer100g: 48, proteinPer100g: 1.4, carbsPer100g: 11.1, fatPer100g: 0.4, pieceWeightGrams: 35),
+        FoodCatalogItem(id: "fig_fresh", nameKey: "nutrition.food.fig_fresh.name", category: .fruit, kcalPer100g: 74, proteinPer100g: 0.8, carbsPer100g: 19.2, fatPer100g: 0.3),
+        FoodCatalogItem(id: "pomegranate", nameKey: "nutrition.food.pomegranate.name", category: .fruit, kcalPer100g: 83, proteinPer100g: 1.7, carbsPer100g: 18.7, fatPer100g: 1.2),
+        FoodCatalogItem(id: "grapefruit", nameKey: "nutrition.food.grapefruit.name", category: .fruit, kcalPer100g: 42, proteinPer100g: 0.8, carbsPer100g: 10.7, fatPer100g: 0.1, pieceWeightGrams: 230),
+        FoodCatalogItem(id: "lemon", nameKey: "nutrition.food.lemon.name", category: .fruit, kcalPer100g: 29, proteinPer100g: 1.1, carbsPer100g: 9.3, fatPer100g: 0.3, pieceWeightGrams: 60),
+        FoodCatalogItem(id: "papaya", nameKey: "nutrition.food.papaya.name", category: .fruit, kcalPer100g: 43, proteinPer100g: 0.5, carbsPer100g: 10.8, fatPer100g: 0.3),
+        FoodCatalogItem(id: "raspberry", nameKey: "nutrition.food.raspberry.name", category: .fruit, kcalPer100g: 52, proteinPer100g: 1.2, carbsPer100g: 11.9, fatPer100g: 0.7),
+        FoodCatalogItem(id: "blackberry", nameKey: "nutrition.food.blackberry.name", category: .fruit, kcalPer100g: 43, proteinPer100g: 1.4, carbsPer100g: 9.6, fatPer100g: 0.5),
+        FoodCatalogItem(id: "nectarine", nameKey: "nutrition.food.nectarine.name", category: .fruit, kcalPer100g: 44, proteinPer100g: 1.1, carbsPer100g: 10.6, fatPer100g: 0.3, pieceWeightGrams: 140),
 
         // ── LEGUME ─────────────────────────────────────────────────────────
         FoodCatalogItem(id: "lentils_raw", nameKey: "nutrition.food.lentils_raw.name", category: .legume, kcalPer100g: 353, proteinPer100g: 25.0, carbsPer100g: 60.0, fatPer100g: 1.1),
@@ -136,6 +201,12 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "kidney_beans_cooked", nameKey: "nutrition.food.kidney_beans_cooked.name", category: .legume, kcalPer100g: 127, proteinPer100g: 8.7, carbsPer100g: 22.8, fatPer100g: 0.5),
         FoodCatalogItem(id: "tofu", nameKey: "nutrition.food.tofu.name", category: .legume, kcalPer100g: 76, proteinPer100g: 8.0, carbsPer100g: 1.9, fatPer100g: 4.8),
         FoodCatalogItem(id: "edamame_cooked", nameKey: "nutrition.food.edamame_cooked.name", category: .legume, kcalPer100g: 122, proteinPer100g: 11.0, carbsPer100g: 10.0, fatPer100g: 5.2),
+        FoodCatalogItem(id: "white_beans_cooked", nameKey: "nutrition.food.white_beans_cooked.name", category: .legume, kcalPer100g: 139, proteinPer100g: 9.7, carbsPer100g: 25.0, fatPer100g: 0.3),
+        FoodCatalogItem(id: "soybeans_cooked", nameKey: "nutrition.food.soybeans_cooked.name", category: .legume, kcalPer100g: 173, proteinPer100g: 16.6, carbsPer100g: 9.9, fatPer100g: 9.0),
+        FoodCatalogItem(id: "tempeh", nameKey: "nutrition.food.tempeh.name", category: .legume, kcalPer100g: 192, proteinPer100g: 20.3, carbsPer100g: 7.6, fatPer100g: 10.8),
+        FoodCatalogItem(id: "hummus", nameKey: "nutrition.food.hummus.name", category: .legume, kcalPer100g: 166, proteinPer100g: 7.9, carbsPer100g: 14.3, fatPer100g: 9.6),
+        FoodCatalogItem(id: "split_peas_cooked", nameKey: "nutrition.food.split_peas_cooked.name", category: .legume, kcalPer100g: 118, proteinPer100g: 8.3, carbsPer100g: 21.1, fatPer100g: 0.4),
+        FoodCatalogItem(id: "pinto_beans_cooked", nameKey: "nutrition.food.pinto_beans_cooked.name", category: .legume, kcalPer100g: 143, proteinPer100g: 9.0, carbsPer100g: 26.2, fatPer100g: 0.7),
 
         // ── NUT / SEED ─────────────────────────────────────────────────────
         FoodCatalogItem(id: "almonds", nameKey: "nutrition.food.almonds.name", category: .nutSeed, kcalPer100g: 579, proteinPer100g: 21.0, carbsPer100g: 22.0, fatPer100g: 50.0),
@@ -147,6 +218,13 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "flaxseed", nameKey: "nutrition.food.flaxseed.name", category: .nutSeed, kcalPer100g: 534, proteinPer100g: 18.0, carbsPer100g: 29.0, fatPer100g: 42.0),
         FoodCatalogItem(id: "sunflower_seeds", nameKey: "nutrition.food.sunflower_seeds.name", category: .nutSeed, kcalPer100g: 584, proteinPer100g: 21.0, carbsPer100g: 20.0, fatPer100g: 51.0),
         FoodCatalogItem(id: "pumpkin_seeds", nameKey: "nutrition.food.pumpkin_seeds.name", category: .nutSeed, kcalPer100g: 559, proteinPer100g: 30.0, carbsPer100g: 11.0, fatPer100g: 49.0),
+        FoodCatalogItem(id: "pistachios", nameKey: "nutrition.food.pistachios.name", category: .nutSeed, kcalPer100g: 560, proteinPer100g: 20.2, carbsPer100g: 27.2, fatPer100g: 45.3),
+        FoodCatalogItem(id: "hazelnuts", nameKey: "nutrition.food.hazelnuts.name", category: .nutSeed, kcalPer100g: 628, proteinPer100g: 15.0, carbsPer100g: 16.7, fatPer100g: 60.8),
+        FoodCatalogItem(id: "pecans", nameKey: "nutrition.food.pecans.name", category: .nutSeed, kcalPer100g: 691, proteinPer100g: 9.2, carbsPer100g: 13.9, fatPer100g: 72.0),
+        FoodCatalogItem(id: "almond_butter", nameKey: "nutrition.food.almond_butter.name", category: .nutSeed, kcalPer100g: 614, proteinPer100g: 21.0, carbsPer100g: 19.0, fatPer100g: 56.0),
+        FoodCatalogItem(id: "tahini", nameKey: "nutrition.food.tahini.name", category: .nutSeed, kcalPer100g: 595, proteinPer100g: 17.0, carbsPer100g: 21.2, fatPer100g: 53.8),
+        FoodCatalogItem(id: "sesame_seeds", nameKey: "nutrition.food.sesame_seeds.name", category: .nutSeed, kcalPer100g: 573, proteinPer100g: 17.7, carbsPer100g: 23.4, fatPer100g: 49.7),
+        FoodCatalogItem(id: "hemp_seeds", nameKey: "nutrition.food.hemp_seeds.name", category: .nutSeed, kcalPer100g: 553, proteinPer100g: 31.6, carbsPer100g: 8.7, fatPer100g: 48.8),
 
         // ── FAT ────────────────────────────────────────────────────────────
         // Oele: Dichte < 1.0 (leichter als Wasser) — bewusst gesetzt, nie 1.0.
@@ -154,6 +232,11 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "sunflower_oil", nameKey: "nutrition.food.sunflower_oil.name", category: .fat, kcalPer100g: 884, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 100.0, densityGramsPerMl: 0.92),
         FoodCatalogItem(id: "coconut_oil", nameKey: "nutrition.food.coconut_oil.name", category: .fat, kcalPer100g: 862, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 99.1, densityGramsPerMl: 0.92),
         FoodCatalogItem(id: "mayonnaise", nameKey: "nutrition.food.mayonnaise.name", category: .fat, kcalPer100g: 680, proteinPer100g: 1.1, carbsPer100g: 2.6, fatPer100g: 75.0),
+        FoodCatalogItem(id: "rapeseed_oil", nameKey: "nutrition.food.rapeseed_oil.name", category: .fat, kcalPer100g: 884, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 100.0, densityGramsPerMl: 0.92),
+        FoodCatalogItem(id: "avocado_oil", nameKey: "nutrition.food.avocado_oil.name", category: .fat, kcalPer100g: 884, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 100.0, densityGramsPerMl: 0.92),
+        FoodCatalogItem(id: "ghee", nameKey: "nutrition.food.ghee.name", category: .fat, kcalPer100g: 876, proteinPer100g: 0.3, carbsPer100g: 0, fatPer100g: 99.8),
+        FoodCatalogItem(id: "margarine", nameKey: "nutrition.food.margarine.name", category: .fat, kcalPer100g: 717, proteinPer100g: 0.2, carbsPer100g: 0.9, fatPer100g: 80.5),
+        FoodCatalogItem(id: "pesto", nameKey: "nutrition.food.pesto.name", category: .fat, kcalPer100g: 303, proteinPer100g: 3.9, carbsPer100g: 4.5, fatPer100g: 30.0),
 
         // ── BEVERAGE ───────────────────────────────────────────────────────
         // Jede Fluessigkeit traegt ihre echte Dichte — Wasser ist der einzige
@@ -165,6 +248,14 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "beer", nameKey: "nutrition.food.beer.name", category: .beverage, kcalPer100g: 43, proteinPer100g: 0.5, carbsPer100g: 3.6, fatPer100g: 0, densityGramsPerMl: 1.01),
         FoodCatalogItem(id: "coffee_black", nameKey: "nutrition.food.coffee_black.name", category: .beverage, kcalPer100g: 1, proteinPer100g: 0.1, carbsPer100g: 0, fatPer100g: 0, densityGramsPerMl: 1.0),
         FoodCatalogItem(id: "almond_milk", nameKey: "nutrition.food.almond_milk.name", category: .beverage, kcalPer100g: 17, proteinPer100g: 0.6, carbsPer100g: 0.6, fatPer100g: 1.2, densityGramsPerMl: 1.01),
+        FoodCatalogItem(id: "tea_black", nameKey: "nutrition.food.tea_black.name", category: .beverage, kcalPer100g: 1, proteinPer100g: 0.1, carbsPer100g: 0.3, fatPer100g: 0, densityGramsPerMl: 1.0),
+        FoodCatalogItem(id: "soy_milk", nameKey: "nutrition.food.soy_milk.name", category: .beverage, kcalPer100g: 33, proteinPer100g: 3.3, carbsPer100g: 0.9, fatPer100g: 1.8, densityGramsPerMl: 1.03),
+        FoodCatalogItem(id: "oat_milk", nameKey: "nutrition.food.oat_milk.name", category: .beverage, kcalPer100g: 47, proteinPer100g: 1.0, carbsPer100g: 6.7, fatPer100g: 1.5, densityGramsPerMl: 1.01),
+        FoodCatalogItem(id: "coconut_water", nameKey: "nutrition.food.coconut_water.name", category: .beverage, kcalPer100g: 19, proteinPer100g: 0.7, carbsPer100g: 3.7, fatPer100g: 0.2, densityGramsPerMl: 1.0),
+        FoodCatalogItem(id: "tomato_juice", nameKey: "nutrition.food.tomato_juice.name", category: .beverage, kcalPer100g: 17, proteinPer100g: 0.8, carbsPer100g: 3.5, fatPer100g: 0.1, densityGramsPerMl: 1.03),
+        FoodCatalogItem(id: "red_wine", nameKey: "nutrition.food.red_wine.name", category: .beverage, kcalPer100g: 85, proteinPer100g: 0.1, carbsPer100g: 2.6, fatPer100g: 0, densityGramsPerMl: 0.99),
+        FoodCatalogItem(id: "white_wine", nameKey: "nutrition.food.white_wine.name", category: .beverage, kcalPer100g: 82, proteinPer100g: 0.1, carbsPer100g: 2.6, fatPer100g: 0, densityGramsPerMl: 0.99),
+        FoodCatalogItem(id: "hot_chocolate", nameKey: "nutrition.food.hot_chocolate.name", category: .beverage, kcalPer100g: 75, proteinPer100g: 3.3, carbsPer100g: 10.5, fatPer100g: 2.7, densityGramsPerMl: 1.03),
 
         // ── SWEET ──────────────────────────────────────────────────────────
         FoodCatalogItem(id: "sugar_white", nameKey: "nutrition.food.sugar_white.name", category: .sweet, kcalPer100g: 400, proteinPer100g: 0, carbsPer100g: 100.0, fatPer100g: 0),
@@ -172,5 +263,25 @@ public enum FoodCatalogData {
         FoodCatalogItem(id: "dark_chocolate", nameKey: "nutrition.food.dark_chocolate.name", category: .sweet, kcalPer100g: 546, proteinPer100g: 7.8, carbsPer100g: 46.0, fatPer100g: 31.0),
         FoodCatalogItem(id: "milk_chocolate", nameKey: "nutrition.food.milk_chocolate.name", category: .sweet, kcalPer100g: 535, proteinPer100g: 7.6, carbsPer100g: 59.0, fatPer100g: 29.7),
         FoodCatalogItem(id: "jam", nameKey: "nutrition.food.jam.name", category: .sweet, kcalPer100g: 250, proteinPer100g: 0.3, carbsPer100g: 62.0, fatPer100g: 0.1),
+        FoodCatalogItem(id: "maple_syrup", nameKey: "nutrition.food.maple_syrup.name", category: .sweet, kcalPer100g: 260, proteinPer100g: 0, carbsPer100g: 67.0, fatPer100g: 0.1, densityGramsPerMl: 1.32),
+        FoodCatalogItem(id: "ice_cream_vanilla", nameKey: "nutrition.food.ice_cream_vanilla.name", category: .sweet, kcalPer100g: 207, proteinPer100g: 3.5, carbsPer100g: 23.6, fatPer100g: 11.0),
+        FoodCatalogItem(id: "waffle", nameKey: "nutrition.food.waffle.name", category: .sweet, kcalPer100g: 291, proteinPer100g: 6.5, carbsPer100g: 39.5, fatPer100g: 12.3),
+        FoodCatalogItem(id: "pancake", nameKey: "nutrition.food.pancake.name", category: .sweet, kcalPer100g: 227, proteinPer100g: 6.0, carbsPer100g: 28.0, fatPer100g: 10.0),
+        FoodCatalogItem(id: "croissant", nameKey: "nutrition.food.croissant.name", category: .sweet, kcalPer100g: 406, proteinPer100g: 8.2, carbsPer100g: 45.8, fatPer100g: 21.0),
+        FoodCatalogItem(id: "donut_glazed", nameKey: "nutrition.food.donut_glazed.name", category: .sweet, kcalPer100g: 452, proteinPer100g: 4.9, carbsPer100g: 51.3, fatPer100g: 25.0),
+        FoodCatalogItem(id: "cake_sponge", nameKey: "nutrition.food.cake_sponge.name", category: .sweet, kcalPer100g: 297, proteinPer100g: 5.1, carbsPer100g: 53.3, fatPer100g: 7.6),
+
+        // ── OTHER (Soßen, Gewürze, generische Gerichte) ───────────────────────
+        // UX-Katalog-Erweiterung: haeufige Zutaten/Durchschnittsgerichte, die in
+        // keine der obigen Gruppen passen. Marken-Fertigprodukte gehoeren NICHT
+        // hierher (siehe Spec 3.1) — das sind bewusst nur generische Durchschnitte.
+        FoodCatalogItem(id: "tomato_sauce", nameKey: "nutrition.food.tomato_sauce.name", category: .other, kcalPer100g: 29, proteinPer100g: 1.3, carbsPer100g: 5.2, fatPer100g: 0.2),
+        FoodCatalogItem(id: "ketchup", nameKey: "nutrition.food.ketchup.name", category: .other, kcalPer100g: 101, proteinPer100g: 1.3, carbsPer100g: 25.8, fatPer100g: 0.3),
+        FoodCatalogItem(id: "mustard", nameKey: "nutrition.food.mustard.name", category: .other, kcalPer100g: 66, proteinPer100g: 4.4, carbsPer100g: 8.0, fatPer100g: 3.3),
+        FoodCatalogItem(id: "soy_sauce", nameKey: "nutrition.food.soy_sauce.name", category: .other, kcalPer100g: 53, proteinPer100g: 8.0, carbsPer100g: 4.9, fatPer100g: 0.1, densityGramsPerMl: 1.1),
+        FoodCatalogItem(id: "pizza_margherita", nameKey: "nutrition.food.pizza_margherita.name", category: .other, kcalPer100g: 266, proteinPer100g: 11.0, carbsPer100g: 33.0, fatPer100g: 10.0),
+        FoodCatalogItem(id: "lasagna", nameKey: "nutrition.food.lasagna.name", category: .other, kcalPer100g: 132, proteinPer100g: 8.0, carbsPer100g: 11.0, fatPer100g: 6.0),
+        FoodCatalogItem(id: "french_fries", nameKey: "nutrition.food.french_fries.name", category: .other, kcalPer100g: 312, proteinPer100g: 3.4, carbsPer100g: 41.0, fatPer100g: 15.0),
+        FoodCatalogItem(id: "vegetable_soup", nameKey: "nutrition.food.vegetable_soup.name", category: .other, kcalPer100g: 29, proteinPer100g: 1.2, carbsPer100g: 4.9, fatPer100g: 0.7),
     ]
 }

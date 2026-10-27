@@ -138,6 +138,19 @@ public struct AddMealView: View {
         lookup: OpenFoodFactsBarcodeLookupClient(userAgent: "Deltiq/1.0 (a.isik@atamya.com)")
     )
     @State private var showingBarcodeScanner: Bool = false
+    /// UX-Katalog-Erweiterung (Scanner-Einstieg bei deaktiviertem Opt-in,
+    /// Spec 2.3): oeffnet die bestehende Einstellungen-Seite statt eines
+    /// erfundenen Navigationspfads — gleiche Seite, die auch ueber
+    /// Einstellungen > Daten & Verbindungen erreichbar ist.
+    @State private var showingDataConnectionsSettings: Bool = false
+
+    /// UX-Katalog-Erweiterung (Spec 2.5): kompakter Kategorie-Filter ueber den
+    /// lokalen Katalog, zusaetzlich zum Suchtext — `nil` = kein Filter aktiv.
+    @State private var selectedCategory: FoodCategory?
+    /// UX-Katalog-Erweiterung (Spec 2.5): begrenzte Anfangsanzeige fuer
+    /// Suche/Kategorie-Treffer statt aller Treffer auf einmal — waechst ueber
+    /// "Weitere lokale Treffer" statt komplizierter echter Paginierung.
+    @State private var localResultsDisplayLimit: Int = AddMealView.localResultsPageSize
 
     public init(date: Date = Date(), mealType: MealType = .snack) {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
@@ -299,6 +312,18 @@ public struct AddMealView: View {
                     onCancel: { showingBarcodeScanner = false }
                 )
             }
+            // UX-Katalog-Erweiterung (Spec 2.3): derselbe Settings-Screen,
+            // ueber den das Opt-in auch regulaer erreichbar ist — kein
+            // zweiter/erfundener Navigationspfad.
+            .sheet(isPresented: $showingDataConnectionsSettings) {
+                SettingsDataConnectionsView()
+            }
+            .onChange(of: searchText) { _, _ in
+                localResultsDisplayLimit = Self.localResultsPageSize
+            }
+            .onChange(of: selectedCategory) { _, _ in
+                localResultsDisplayLimit = Self.localResultsPageSize
+            }
         }
     }
 
@@ -329,18 +354,40 @@ public struct AddMealView: View {
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
+    /// UX-Katalog-Erweiterung: neue Reihenfolge (Spec 2.1) — Suchfeld,
+    /// Barcode-Einstieg (jederzeit sichtbar, direkt unter dem Suchfeld),
+    /// Kategorie-Chips, dann Beliebt-Auswahl/lokale Treffer/Online-Fallback.
+    /// `customFoodButton` wandert ans Ende (Spec 2.6: soll Suche+Scanner nicht
+    /// visuell ueberladen).
+    ///
+    /// Wichtig fuer die Bestandstests (`OnlineFoodLookupFlowTests`): die hier
+    /// INLINE stehende `onlineFoodLookupEnabled`-Pruefung (manuelle
+    /// Suchergebnisse) muss im Datei-Text weiterhin VOR jeder anderen
+    /// gleichlautenden Pruefung stehen — `barcodeEntryRow`s eigene Pruefung
+    /// ist deshalb absichtlich eine SEPARATE, WEITER UNTEN in dieser Datei
+    /// definierte Property, obwohl sie visuell weiter oben erscheint.
     private var searchSection: some View {
         Section {
             searchField
                 .listRowBackground(Color.Deltiq.surface)
 
-            // Task 6: jederzeit sichtbar — NICHT nur im 0-Treffer-Zweig
-            // darunter (Brief-Vorgabe) — unabhaengig von Netz/KI, deshalb
-            // ausserhalb des `onlineFoodLookupEnabled`-Gates.
-            customFoodButton
+            barcodeEntryRow
+
+            categoryChipsRow
                 .listRowBackground(Color.Deltiq.surface)
 
-            if filteredEntries.isEmpty {
+            if isBrowsingWithoutQuery {
+                // Spec 2.4: kein leeres Suchfeld rendert mehr den gesamten
+                // `catalogEntries`-Katalog — stattdessen eine kleine,
+                // deterministische Auswahl stabiler Katalog-IDs.
+                Text("nutrition.addMeal.popularSection", bundle: .module)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+                ForEach(popularEntries) { entry in
+                    catalogRow(entry)
+                }
+            } else if filteredEntries.isEmpty {
                 Text("nutrition.addMeal.noResults", bundle: .module)
                     .foregroundStyle(Color.Deltiq.textSecondary)
                     .listRowBackground(Color.Deltiq.surface)
@@ -377,47 +424,47 @@ public struct AddMealView: View {
                     }
                 }
             } else {
-                // DEL-Picker-Muster (siehe ExerciseLibraryView.filtered):
-                // Live-Filter ueber die aufgeloeste Katalog-Bezeichnung.
-                ForEach(filteredEntries) { entry in
+                // Spec 2.5: bei groesserer Treffermenge nicht alle auf einmal
+                // rendern — begrenzte Anzeige mit "Weitere lokale Treffer".
+                ForEach(filteredEntries.prefix(localResultsDisplayLimit)) { entry in
+                    catalogRow(entry)
+                }
+                if filteredEntries.count > localResultsDisplayLimit {
                     Button {
-                        selectEntry(entry)
+                        localResultsDisplayLimit += Self.localResultsPageSize
                     } label: {
-                        HStack {
-                            Text(resolvedName(for: entry))
-                                .foregroundStyle(Color.primary)
-                            Spacer()
-                            if selectedEntry?.catalogID == entry.catalogID {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(Color.deltiqOrange)
-                            }
-                        }
+                        Text("nutrition.addMeal.loadMoreLocal", bundle: .module)
                     }
                     .listRowBackground(Color.Deltiq.surface)
                 }
             }
 
-            // Task: Barcode-Scan — wie der Online-Suchtext ein direkter
-            // Open-Food-Facts-Netzzugriff, deshalb hinter demselben Opt-in-
-            // Gate, aber (anders als `onlineSearchButton`) jederzeit sichtbar
-            // statt nur im 0-Treffer-Zweig: ein Scan ist unabhaengig vom
-            // getippten Suchtext. Eigenes `if onlineFoodLookupEnabled`-Gate
-            // AUSSERHALB von `filteredEntries.isEmpty` (nicht dasselbe wie
-            // oben), damit ein Treffer in der lokalen Suche den Scan-Button
-            // nicht verdraengt.
-            if onlineFoodLookupEnabled {
-                barcodeScanButton
-                    .listRowBackground(Color.Deltiq.surface)
+            // Task 6: jederzeit sichtbar, unabhaengig von Netz/KI — ans Ende
+            // verschoben (Spec 2.6), damit Suchfeld+Scanner-Karte oben nicht
+            // visuell ueberladen werden.
+            customFoodButton
+                .listRowBackground(Color.Deltiq.surface)
+        }
+        .listRowSeparatorTint(Color.Deltiq.divider)
+    }
 
-                if onlineSearchOrigin == .barcode, let message = barcodeLookup.errorMessage {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                        .listRowBackground(Color.Deltiq.surface)
+    /// Eine Trefferzeile (Beliebt-Liste UND gefilterte lokale Treffer teilen
+    /// sich dieselbe Zeilen-Darstellung).
+    private func catalogRow(_ entry: FoodCatalogEntry) -> some View {
+        Button {
+            selectEntry(entry)
+        } label: {
+            HStack {
+                Text(resolvedName(for: entry))
+                    .foregroundStyle(Color.primary)
+                Spacer()
+                if selectedEntry?.catalogID == entry.catalogID {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.deltiqOrange)
                 }
             }
         }
-        .listRowSeparatorTint(Color.Deltiq.divider)
+        .listRowBackground(Color.Deltiq.surface)
     }
 
     /// Task 3 (docs/superpowers/sdd/2026-10-22-ui-consistency): same
@@ -475,25 +522,131 @@ public struct AddMealView: View {
         .disabled(onlineSearch.isSearching)
     }
 
-    /// Task: Barcode-Scan — oeffnet `BarcodeScannerSheet`; `reset()` vorher
-    /// stellt sicher, dass ein erneuter Scan nach einem Fehler/Erfolg wieder
-    /// genau einen Barcode verarbeitet (siehe `BarcodeLookupController
-    /// .hasStartedLookup`).
-    private var barcodeScanButton: some View {
-        Button {
-            barcodeLookup.reset()
-            onlineSearchOrigin = .barcode
-            showingBarcodeScanner = true
-        } label: {
-            HStack {
-                if barcodeLookup.isLookingUp {
-                    ProgressView()
-                        .controlSize(.small)
+    /// UX-Katalog-Erweiterung (Spec 2.1/2.2): prominente Aktionskarte direkt
+    /// unter dem Suchfeld — vorher ein einfacher Text-Button ganz unten
+    /// hinter der lokalen Trefferliste (`barcodeScanButton`, siehe Git-
+    /// History). Oeffnet weiterhin denselben `BarcodeScannerSheet`; `reset()`
+    /// vorher stellt sicher, dass ein erneuter Scan nach einem Fehler/Erfolg
+    /// wieder genau einen Barcode verarbeitet (`BarcodeLookupController
+    /// .hasStartedLookup`). Jederzeit sichtbar, auch bei lokalen Treffern
+    /// (Spec 2.2 letzter Punkt) — liegt deshalb AUSSERHALB von
+    /// `filteredEntries.isEmpty` in `searchSection`.
+    ///
+    /// Spec 2.3: bei deaktiviertem Online-Opt-in weder Kamera noch
+    /// Netzwerkzugriff — stattdessen ein Hinweis mit Link auf die
+    /// bestehende Einstellungen-Seite, an DERSELBEN Stelle (nicht
+    /// unsichtbar).
+    @ViewBuilder
+    private var barcodeEntryRow: some View {
+        if onlineFoodLookupEnabled {
+            Button {
+                barcodeLookup.reset()
+                onlineSearchOrigin = .barcode
+                showingBarcodeScanner = true
+            } label: {
+                barcodeCardLabel(subtitle: String(localized: "nutrition.barcode.scanSubtitle", bundle: .module), isLookingUp: barcodeLookup.isLookingUp)
+            }
+            .buttonStyle(.plain)
+            .disabled(barcodeLookup.isLookingUp)
+            .accessibilityLabel(Text("nutrition.barcode.scanAction", bundle: .module))
+            .accessibilityHint(Text("nutrition.barcode.scanSubtitle", bundle: .module))
+            .listRowBackground(Color.deltiqOrange.opacity(0.10))
+
+            if onlineSearchOrigin == .barcode, let message = barcodeLookup.errorMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                barcodeCardLabel(subtitle: String(localized: "nutrition.barcode.requiresOptIn", bundle: .module), isLookingUp: false)
+                    .opacity(0.6)
+                Button {
+                    showingDataConnectionsSettings = true
+                } label: {
+                    Text("nutrition.barcode.openSettings", bundle: .module)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.deltiqOrange)
                 }
+                .buttonStyle(.plain)
+            }
+            .listRowBackground(Color.Deltiq.fill)
+        }
+    }
+
+    /// Gemeinsames Label fuer beide `barcodeEntryRow`-Zustaende — grosse
+    /// Touch-Flaeche, Icon+Titel+Untertitel (Spec 2.2: "keine winzige
+    /// Icon-only-Flaeche"), Dynamic-Type-faehig ueber Standard-`Text`-Fonts.
+    private func barcodeCardLabel(subtitle: String, isLookingUp: Bool) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: "barcode.viewfinder")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(Color.Deltiq.primaryGradient)
+                .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
                 Text("nutrition.barcode.scanAction", bundle: .module)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Color.primary)
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+
+            Spacer(minLength: 8)
+
+            if isLookingUp {
+                ProgressView()
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.textTertiary)
             }
         }
-        .disabled(barcodeLookup.isLookingUp)
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+    }
+
+    /// UX-Katalog-Erweiterung (Spec 2.5): kompakte, horizontal scrollbare
+    /// Kategorie-Chips — nutzt `FoodCategory`/dessen vorhandene
+    /// Localization-Keys, keine zweite Kategorie-Definition. Ein "Alle"-Chip
+    /// macht das Zuruecksetzen eines aktiven Filters eindeutig erkennbar,
+    /// statt sich auf verstecktes erneutes Antippen zu verlassen.
+    private var categoryChipsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                categoryChip(nil, label: String(localized: "nutrition.addMeal.category.all", bundle: .module))
+                ForEach(FoodCategory.allCases, id: \.self) { category in
+                    categoryChip(category, label: categoryLabel(category))
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func categoryChip(_ category: FoodCategory?, label: String) -> some View {
+        let isSelected = selectedCategory == category
+        return Button {
+            selectedCategory = category
+        } label: {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .lineLimit(1)
+                .foregroundStyle(isSelected ? Color.white : Color.primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(isSelected ? Color.deltiqOrange : Color.Deltiq.fill)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func categoryLabel(_ category: FoodCategory) -> String {
+        String(localized: String.LocalizationValue(category.localizationKey), bundle: .module)
     }
 
     /// Task 6: oeffnet `CustomFoodEntrySheet`, vorausgefuellt mit dem
@@ -975,10 +1128,39 @@ public struct AddMealView: View {
         editingMeal != nil && draft.hasPendingCleanup
     }
 
+    /// Spec 2.4: stabile, bereits vorhandene Katalog-IDs fuer die
+    /// "Beliebt"-Schnellauswahl — keine erfundene Nutzungs-Historie/
+    /// Persistenzschicht, eine feste, deterministische Auswahl stattdessen.
+    private static let popularCatalogIDs: [String] = [
+        "chicken_breast_cooked", "egg_whole_cooked", "banana", "oats",
+        "rice_white_cooked", "yogurt_greek", "apple", "bread_wheat"
+    ]
+
+    /// Spec 2.5: Startgroesse/Schrittweite fuer "Weitere lokale Treffer".
+    private static let localResultsPageSize = 30
+
+    private var popularEntries: [FoodCatalogEntry] {
+        Self.popularCatalogIDs.compactMap { id in catalogEntries.first { $0.catalogID == id } }
+    }
+
+    /// Spec 2.4: `true`, solange weder ein Suchtext noch ein Kategorie-Filter
+    /// aktiv ist — in diesem Zustand zeigt `searchSection` `popularEntries`
+    /// statt des gesamten Katalogs oder `filteredEntries`.
+    private var isBrowsingWithoutQuery: Bool {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory == nil
+    }
+
+    /// Spec 2.5: eine ausgewaehlte Kategorie filtert den Katalog auch ohne
+    /// Suchtext; ein Suchtext filtert zusaetzlich ueber den aufgeloesten
+    /// Namen. Wird nur konsultiert, wenn `isBrowsingWithoutQuery == false`.
     private var filteredEntries: [FoodCatalogEntry] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return catalogEntries }
-        return catalogEntries.filter { resolvedName(for: $0).localizedCaseInsensitiveContains(trimmed) }
+        var items = catalogEntries
+        if let selectedCategory {
+            items = items.filter { $0.category == selectedCategory }
+        }
+        guard !trimmed.isEmpty else { return items }
+        return items.filter { resolvedName(for: $0).localizedCaseInsensitiveContains(trimmed) }
     }
 
     /// Task E (M2 in task-D-review.md): explicit `locale` instead of
@@ -1114,7 +1296,7 @@ public struct AddMealView: View {
     }
 
     /// Barcode-scan result handler: closes the scanner, then runs the SAME
-    /// Open-Food-Facts product lookup `barcodeScanButton` started, routed
+    /// Open-Food-Facts product lookup `barcodeEntryRow` started, routed
     /// through `BarcodeLookupController`'s own double-processing guard.
     private func handleBarcodeDetected(_ barcode: String) {
         showingBarcodeScanner = false
