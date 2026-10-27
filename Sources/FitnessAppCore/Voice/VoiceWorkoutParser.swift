@@ -146,7 +146,7 @@ public final class VoiceWorkoutParser: @unchecked Sendable {
 
     private func tokenize(_ text: String) -> [String] {
         text.components(separatedBy: CharacterSet.whitespacesAndNewlines.union(.init(charactersIn: "()")))
-            .map { $0.trimmingCharacters(in: CharacterSet.punctuationCharacters.subtracting(.init(charactersIn: "."))) }
+            .map { $0.trimmingCharacters(in: CharacterSet.punctuationCharacters.subtracting(.init(charactersIn: ".,"))) }
             .filter { !$0.isEmpty }
     }
 
