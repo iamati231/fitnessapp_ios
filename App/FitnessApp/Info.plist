@@ -91,6 +91,12 @@
     <key>NSHealthUpdateUsageDescription</key>
     <string>Deltiq writes your measurements (weight, body fat, lean mass) and your completed workouts to Apple Health: strength training by default, cardio only if you turn it on, and both can be switched off in Settings. Optionally with walking and running distance and for past workouts. That way your data lives in one place.</string>
 
+    <!-- Microphone + speech recognition (voice workout logging). -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Deltiq uses the microphone to let you dictate sets and workouts by voice so you can log without touching the screen.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Deltiq uses speech recognition to transcribe what you say into exercise names, weights and reps.</string>
+
     <!-- Barcode scan (Ernährungssuche erweitern + Barcode-Scan ergänzen):
          used only while the in-app scanner sheet is open, to read a product
          barcode and look it up on Open Food Facts. No photos/video are

@@ -50,6 +50,52 @@
         }
       }
     },
+    "NSMicrophoneUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq nutzt das Mikrofon, damit du Sätze und Trainings per Sprache diktieren und ohne Bildschirmberührung protokollieren kannst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq uses the microphone to let you dictate sets and workouts by voice so you can log without touching the screen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq, ekrana dokunmadan antrenman serilerini ve egzersizleri sesli olarak dikte edebilmeni için mikrofonu kullanır."
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq nutzt die Spracherkennung, um das Gesprochene in Übungsnamen, Gewichte und Wiederholungen umzuwandeln."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq uses speech recognition to transcribe what you say into exercise names, weights and reps."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq, söylediklerini egzersiz adlarına, ağırlıklara ve tekrar sayılarına dönüştürmek için konuşma tanımayı kullanır."
+          }
+        }
+      }
+    },
     "NSCameraUsageDescription": {
       "extractionState": "manual",
       "localizations": {

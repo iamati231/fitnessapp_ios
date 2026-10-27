@@ -34,6 +34,7 @@ public struct PlansListView: View {
 
     @State private var showingTemplatePicker = false
     @State private var showingPlanBuilder = false
+    @State private var showingVoiceDictation = false
 
     /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
     /// Bestaetigung"): `CardioFeasibilityCardModel.accept(profile:in:)` ist
@@ -121,6 +122,12 @@ public struct PlansListView: View {
                 eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
                 title: String(localized: "plans.list.title", bundle: .module),
                 actions: [
+                    DeltiqHeaderAction(
+                        systemImage: "mic.fill",
+                        accessibilityLabel: String(localized: "voice.workout.title", bundle: .module)
+                    ) {
+                        showingVoiceDictation = true
+                    },
                     DeltiqHeaderAction(systemImage: "plus", menu: {
                         Button {
                             showingTemplatePicker = true
@@ -210,6 +217,9 @@ public struct PlansListView: View {
         }
         .sheet(isPresented: $showingPlanBuilder) {
             PlanBuilderView()
+        }
+        .sheet(isPresented: $showingVoiceDictation) {
+            VoiceWorkoutDictationView()
         }
         // Nachbesserung (finales Branch-Review, Fix 3): dasselbe Sheet wie
         // `ProfileEditorView.cardioCard`/`DashboardView`s Laufversaeumnis-
