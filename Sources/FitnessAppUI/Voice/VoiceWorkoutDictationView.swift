@@ -377,7 +377,9 @@ private struct DraftSetRow: View {
                 }
             }
             TextField("–", text: text)
+                #if os(iOS)
                 .keyboardType(.decimalPad)
+                #endif
                 .frame(maxWidth: 80)
         }
     }
