@@ -90,9 +90,9 @@ struct BarcodeScannerSheet: View {
                 // Spec 2.7 Punkt 2/3: grosse, aber klar begrenzte,
                 // abgerundete Live-Kamerakarte statt einer unstrukturierten
                 // Vollflaeche — Scan-Rahmen ist rein dekorativ
-                // (`allowsHitTesting(false)`), kein technisches
-                // `regionOfInterest` implementiert, behauptet also keine
-                // Einschraenkung der tatsaechlichen Scanflaeche.
+                // (`allowsHitTesting(false)`), die tatsaechliche
+                // Erkennungsflaeche des Scanners ist technisch NICHT auf den
+                // sichtbaren Rahmen eingeschraenkt.
                 ZStack {
                     RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous)
                         .fill(Color.black)
