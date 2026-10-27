@@ -48,16 +48,17 @@ import FoundationNetworking
 /// layers (Task 2+) can depend on this instead of `OpenFoodFactsSearchClient`
 /// directly (fakeable in their own tests).
 public protocol OnlineFoodSearching: Sendable {
+    /// - Parameter page: 1-based. `OnlineFoodSearchPage.hasMore`/`.page` tell
+    ///   the caller whether/what to request next — never derive that from
+    ///   candidate counts.
     /// - Throws: `OnlineFoodSearchError`, never a raw `URLError`/`DecodingError`.
-    func search(query: String, locale: Locale) async throws -> [OnlineFoodCandidate]
+    func search(query: String, locale: Locale, page: Int) async throws -> OnlineFoodSearchPage
 }
 
 /// Talks to the Open Food Facts "Search-a-licious" API
 /// (`https://search.openfoodfacts.org/search`, `GET`, free text via `q`).
 public struct OpenFoodFactsSearchClient: OnlineFoodSearching {
     private static let searchURL = URL(string: "https://search.openfoodfacts.org/search")!
-    // shortcut: fixed page size, no pagination support; revisit if a caller
-    // ever needs more than the first page of results.
     private static let pageSize = 20
     // Connectivity-flavored URLError codes map to .noNetwork; anything else
     // network-ish (bad status, timeout aside) maps to .invalidResponse rather
@@ -83,14 +84,15 @@ public struct OpenFoodFactsSearchClient: OnlineFoodSearching {
         self.urlSession = urlSession
     }
 
-    public func search(query: String, locale: Locale) async throws -> [OnlineFoodCandidate] {
+    public func search(query: String, locale: Locale, page: Int) async throws -> OnlineFoodSearchPage {
         guard var components = URLComponents(url: Self.searchURL, resolvingAgainstBaseURL: false) else {
             throw OnlineFoodSearchError.invalidResponse
         }
         components.queryItems = [
             URLQueryItem(name: "q", value: query),
             URLQueryItem(name: "langs", value: locale.language.languageCode?.identifier ?? "en"),
-            URLQueryItem(name: "page_size", value: String(Self.pageSize))
+            URLQueryItem(name: "page_size", value: String(Self.pageSize)),
+            URLQueryItem(name: "page", value: String(page))
         ]
         guard let url = components.url else {
             throw OnlineFoodSearchError.invalidResponse
@@ -126,21 +128,48 @@ public struct OpenFoodFactsSearchClient: OnlineFoodSearching {
             throw OnlineFoodSearchError.invalidResponse
         }
 
+        // An empty/unusable page is only a hard error (`noResults`) on the
+        // FIRST page — the search produced nothing at all. On page > 1 it
+        // just means pagination has reached its end: return an empty,
+        // `hasMore: false` page instead, so "load more" simply stops
+        // offering further pages rather than surfacing an error.
         guard !decoded.hits.isEmpty else {
-            throw OnlineFoodSearchError.noResults
+            if page == 1 { throw OnlineFoodSearchError.noResults }
+            return OnlineFoodSearchPage(candidates: [], page: page, hasMore: false)
         }
 
         let candidates = decoded.hits.compactMap { $0.toCandidate() }
         guard !candidates.isEmpty else {
-            throw OnlineFoodSearchError.noResults
+            if page == 1 { throw OnlineFoodSearchError.noResults }
+            return OnlineFoodSearchPage(candidates: [], page: page, hasMore: false)
         }
-        return candidates
+
+        // `page_count` is the API's own authoritative signal when present
+        // and sane. Missing/zero/non-positive `page_count` (confirmed
+        // possible — the field is undocumented in the OpenAPI spec, see the
+        // research note above) falls back to a defensive heuristic: a full
+        // page suggests more might exist, a short page means this was the
+        // last one. Either way this terminates — it can never loop forever,
+        // since a non-full page always yields `hasMore == false`.
+        let hasMore: Bool
+        if let pageCount = decoded.pageCount, pageCount > 0 {
+            hasMore = page < pageCount
+        } else {
+            hasMore = decoded.hits.count >= Self.pageSize
+        }
+        return OnlineFoodSearchPage(candidates: candidates, page: page, hasMore: hasMore)
     }
 }
 
 /// `SuccessSearchResponse` as far as this module needs it.
 private struct SearchResponse: Decodable {
     let hits: [Hit]
+    let pageCount: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case hits
+        case pageCount = "page_count"
+    }
 }
 
 private struct Hit: Decodable {

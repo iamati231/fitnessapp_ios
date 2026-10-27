@@ -58613,6 +58613,144 @@
           }
         }
       }
+    },
+    "nutrition.addMeal.onlineSearch.loadMore": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weitere Ergebnisse laden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load more results"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha fazla sonuç yükle"
+          }
+        }
+      }
+    },
+    "nutrition.barcode.scanAction": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barcode scannen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan Barcode"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barkod Tara"
+          }
+        }
+      }
+    },
+    "nutrition.barcode.instructions": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halte den Barcode des Produkts in den Rahmen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold the product's barcode inside the frame."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürünün barkodunu çerçevenin içinde tut."
+          }
+        }
+      }
+    },
+    "nutrition.barcode.unsupportedDevice": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barcode-Scan wird auf diesem Gerät nicht unterstützt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barcode scanning isn't supported on this device."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barkod tarama bu cihazda desteklenmiyor."
+          }
+        }
+      }
+    },
+    "nutrition.barcode.permissionDenied": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Kamerazugriff. Aktiviere ihn in den iOS-Einstellungen, um Barcodes zu scannen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No camera access. Enable it in iOS Settings to scan barcodes."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamera erişimi yok. Barkod taramak için iOS Ayarlar'dan izin ver."
+          }
+        }
+      }
+    },
+    "nutrition.barcode.notFound": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Produkt nicht gefunden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Product not found."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün bulunamadı."
+          }
+        }
+      }
     }
   }
 }

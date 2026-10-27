@@ -121,8 +121,23 @@ public struct AddMealView: View {
     private enum OnlineSearchOrigin: Equatable {
         case manual
         case aiCandidate(MealDraftCandidate)
+        /// Barcode-scan result (Task: Ernährungssuche erweitern + Barcode).
+        /// Falls into the SAME `else` branch as `.manual` in
+        /// `confirmOnlineImport` (plain `selectEntry`, no AI candidate to
+        /// remove) — listed as its own case only so results/errors can be
+        /// scoped to it like every other origin.
+        case barcode
     }
     @State private var onlineSearchOrigin: OnlineSearchOrigin?
+
+    // Task: Ernährungssuche erweitern + Barcode-Scan ergänzen — Barcode
+    // lookup reuses `onlineSearch`'s OWN preview/confirm sheet (via
+    // `onlineSearch.select`), it just gets there through the camera instead
+    // of a text query. Only the network call + scanner state are separate.
+    @StateObject private var barcodeLookup = BarcodeLookupController(
+        lookup: OpenFoodFactsBarcodeLookupClient(userAgent: "Deltiq/1.0 (a.isik@atamya.com)")
+    )
+    @State private var showingBarcodeScanner: Bool = false
 
     public init(date: Date = Date(), mealType: MealType = .snack) {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
@@ -249,6 +264,7 @@ public struct AddMealView: View {
                         let origin = onlineSearchOrigin
                         onlineSearch.dismissPreview()
                         onlineSearch.reset()
+                        barcodeLookup.reset()
                         onlineSearchOrigin = nil
                         if case .aiCandidate(let pending) = origin {
                             removeAICandidate(pending)
@@ -272,6 +288,15 @@ public struct AddMealView: View {
                     onCancel: {
                         showingCustomFoodEntry = false
                     }
+                )
+            }
+            // Task: Barcode-Scan — `BarcodeScannerSheet` closes itself (via
+            // `onCancel`/`onDetect`) before the preview sheet above ever
+            // opens, so the two sheets never fight for presentation.
+            .sheet(isPresented: $showingBarcodeScanner) {
+                BarcodeScannerSheet(
+                    onDetect: handleBarcodeDetected,
+                    onCancel: { showingBarcodeScanner = false }
                 )
             }
         }
@@ -342,7 +367,13 @@ public struct AddMealView: View {
                                 .listRowBackground(Color.Deltiq.surface)
                         }
 
-                        OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+                        OnlineFoodResultsList(
+                            candidates: onlineSearch.candidates,
+                            onSelect: onlineSearch.select,
+                            hasMore: onlineSearch.hasMoreResults,
+                            isLoadingMore: onlineSearch.isLoadingMore,
+                            onLoadMore: { runLoadMore(origin: .manual) }
+                        )
                     }
                 }
             } else {
@@ -363,6 +394,26 @@ public struct AddMealView: View {
                         }
                     }
                     .listRowBackground(Color.Deltiq.surface)
+                }
+            }
+
+            // Task: Barcode-Scan — wie der Online-Suchtext ein direkter
+            // Open-Food-Facts-Netzzugriff, deshalb hinter demselben Opt-in-
+            // Gate, aber (anders als `onlineSearchButton`) jederzeit sichtbar
+            // statt nur im 0-Treffer-Zweig: ein Scan ist unabhaengig vom
+            // getippten Suchtext. Eigenes `if onlineFoodLookupEnabled`-Gate
+            // AUSSERHALB von `filteredEntries.isEmpty` (nicht dasselbe wie
+            // oben), damit ein Treffer in der lokalen Suche den Scan-Button
+            // nicht verdraengt.
+            if onlineFoodLookupEnabled {
+                barcodeScanButton
+                    .listRowBackground(Color.Deltiq.surface)
+
+                if onlineSearchOrigin == .barcode, let message = barcodeLookup.errorMessage {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .listRowBackground(Color.Deltiq.surface)
                 }
             }
         }
@@ -422,6 +473,27 @@ public struct AddMealView: View {
             }
         }
         .disabled(onlineSearch.isSearching)
+    }
+
+    /// Task: Barcode-Scan — oeffnet `BarcodeScannerSheet`; `reset()` vorher
+    /// stellt sicher, dass ein erneuter Scan nach einem Fehler/Erfolg wieder
+    /// genau einen Barcode verarbeitet (siehe `BarcodeLookupController
+    /// .hasStartedLookup`).
+    private var barcodeScanButton: some View {
+        Button {
+            barcodeLookup.reset()
+            onlineSearchOrigin = .barcode
+            showingBarcodeScanner = true
+        } label: {
+            HStack {
+                if barcodeLookup.isLookingUp {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Text("nutrition.barcode.scanAction", bundle: .module)
+            }
+        }
+        .disabled(barcodeLookup.isLookingUp)
     }
 
     /// Task 6: oeffnet `CustomFoodEntrySheet`, vorausgefuellt mit dem
@@ -628,7 +700,13 @@ public struct AddMealView: View {
                         .foregroundStyle(Color.Deltiq.textSecondary)
                 }
 
-                OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+                OnlineFoodResultsList(
+                    candidates: onlineSearch.candidates,
+                    onSelect: onlineSearch.select,
+                    hasMore: onlineSearch.hasMoreResults,
+                    isLoadingMore: onlineSearch.isLoadingMore,
+                    onLoadMore: { runLoadMore(origin: .aiCandidate(candidate)) }
+                )
             }
         }
     }
@@ -1025,6 +1103,43 @@ public struct AddMealView: View {
         }
     }
 
+    /// Pagination: "load more" for whichever row (`origin`) currently owns
+    /// `onlineSearch`'s shared state — same reuse principle as
+    /// `runOnlineSearch`, no duplicated flow logic per entry point.
+    private func runLoadMore(origin: OnlineSearchOrigin) {
+        guard onlineSearchOrigin == origin else { return }
+        Task { @MainActor in
+            await onlineSearch.loadMore(errorText: onlineSearchErrorText)
+        }
+    }
+
+    /// Barcode-scan result handler: closes the scanner, then runs the SAME
+    /// Open-Food-Facts product lookup `barcodeScanButton` started, routed
+    /// through `BarcodeLookupController`'s own double-processing guard.
+    private func handleBarcodeDetected(_ barcode: String) {
+        showingBarcodeScanner = false
+        Task { @MainActor in
+            await barcodeLookup.process(barcode: barcode, errorText: barcodeErrorText)
+            // Final-review-fix I1's principle applied here too: `select`
+            // routes into the SAME preview/confirm sheet as a text-search
+            // tap, so a barcode hit never bypasses the explicit confirm step.
+            if let candidate = barcodeLookup.foundCandidate {
+                onlineSearch.select(candidate)
+            }
+        }
+    }
+
+    private func barcodeErrorText(_ error: OnlineFoodSearchError) -> String {
+        switch error {
+        case .noNetwork:
+            return String(localized: "nutrition.addMeal.onlineSearch.noNetwork", bundle: .module)
+        case .noResults:
+            return String(localized: "nutrition.barcode.notFound", bundle: .module)
+        case .rateLimited, .invalidResponse:
+            return String(localized: "nutrition.addMeal.onlineSearch.error", bundle: .module)
+        }
+    }
+
     /// Confirm in `OnlineFoodCandidatePreviewSheet`: creates exactly ONE
     /// `FoodCatalogEntry` (`source == .onlineImported`) and routes it into
     /// the SAME `selectEntry`/`applyAICandidate` -> `quantityBottomBar` ->
@@ -1056,6 +1171,7 @@ public struct AddMealView: View {
         let origin = onlineSearchOrigin
         onlineSearch.dismissPreview()
         onlineSearch.reset()
+        barcodeLookup.reset()
         onlineSearchOrigin = nil
 
         if case .aiCandidate(let candidate) = origin {

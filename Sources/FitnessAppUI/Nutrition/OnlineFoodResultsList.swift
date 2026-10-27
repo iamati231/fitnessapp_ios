@@ -25,6 +25,12 @@ import FitnessAppFoodLookup
 struct OnlineFoodResultsList: View {
     let candidates: [OnlineFoodCandidate]
     let onSelect: (OnlineFoodCandidate) -> Void
+    /// Pagination (Task: Ernährungssuche erweitern): whether the API has
+    /// more pages for the CURRENT search — the only signal that decides
+    /// whether the "load more" row renders at all.
+    var hasMore: Bool = false
+    var isLoadingMore: Bool = false
+    var onLoadMore: () -> Void = {}
 
     var body: some View {
         ForEach(candidates) { candidate in
@@ -45,6 +51,26 @@ struct OnlineFoodResultsList: View {
                 }
             }
             .buttonStyle(.borderless)
+            .listRowBackground(Color.Deltiq.surface)
+        }
+        if hasMore {
+            Button {
+                onLoadMore()
+            } label: {
+                HStack {
+                    if isLoadingMore {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Text("nutrition.addMeal.onlineSearch.loadMore", bundle: .module)
+                }
+            }
+            .buttonStyle(.borderless)
+            // Double-tap protection lives in `OnlineFoodSearchController
+            // .loadMore` itself (guard against a concurrent request); this
+            // disables the row purely so a tap mid-request doesn't feel
+            // like a no-op.
+            .disabled(isLoadingMore)
             .listRowBackground(Color.Deltiq.surface)
         }
         if !candidates.isEmpty {

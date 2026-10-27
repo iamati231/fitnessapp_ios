@@ -91,6 +91,13 @@
     <key>NSHealthUpdateUsageDescription</key>
     <string>Deltiq writes your measurements (weight, body fat, lean mass) and your completed workouts to Apple Health: strength training by default, cardio only if you turn it on, and both can be switched off in Settings. Optionally with walking and running distance and for past workouts. That way your data lives in one place.</string>
 
+    <!-- Barcode scan (Ernährungssuche erweitern + Barcode-Scan ergänzen):
+         used only while the in-app scanner sheet is open, to read a product
+         barcode and look it up on Open Food Facts. No photos/video are
+         captured or stored. -->
+    <key>NSCameraUsageDescription</key>
+    <string>Deltiq uses the camera to scan a product's barcode so it can look up its nutrition facts on Open Food Facts.</string>
+
     <!-- Custom URL scheme for Live Activity / Widget deep-links. -->
     <key>CFBundleURLTypes</key>
     <array>
