@@ -231,13 +231,29 @@ struct ExerciseLibraryEditorSheet: View {
         isSaving = true
 
         var insertedTemplate: ExerciseTemplate?
+        // Rollback-Fix (ponytail-audit, gleiches Muster wie CardioGoalEditorView.save(),
+        // Commit 8bdb416): Schnappschuss VOR der Mutation - ohne das blieben die vier
+        // Felder nach einem fehlgeschlagenen Save auf `existing` stehen, obwohl der
+        // Nutzer "Speichern fehlgeschlagen" sah.
+        let originalName: String?
+        let originalMuscle: MuscleGroup?
+        let originalEquipment: Equipment?
+        let originalIsCompound: Bool?
         if let existing {
+            originalName = existing.name
+            originalMuscle = existing.primaryMuscle
+            originalEquipment = existing.equipment
+            originalIsCompound = existing.isSystemCompound
             // Edit: Felder zurueckschreiben (nur Custom erreicht diesen Pfad).
             existing.name = trimmedName
             existing.primaryMuscle = muscle
             existing.equipment = equipment
             existing.isSystemCompound = isCompound
         } else {
+            originalName = nil
+            originalMuscle = nil
+            originalEquipment = nil
+            originalIsCompound = nil
             // Create: neues Custom-Template anlegen.
             let template = ExerciseTemplate(
                 name: trimmedName,
@@ -258,6 +274,12 @@ struct ExerciseLibraryEditorSheet: View {
         } catch {
             if let insertedTemplate {
                 modelContext.delete(insertedTemplate)
+            }
+            if let existing, let originalName, let originalMuscle, let originalEquipment, let originalIsCompound {
+                existing.name = originalName
+                existing.primaryMuscle = originalMuscle
+                existing.equipment = originalEquipment
+                existing.isSystemCompound = originalIsCompound
             }
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
             isSaving = false

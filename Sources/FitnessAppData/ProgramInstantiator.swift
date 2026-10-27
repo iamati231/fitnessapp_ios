@@ -193,7 +193,8 @@ public enum ProgramInstantiator {
                 weekday: weekday,
                 type: .rest,
                 plan: plan,
-                localizationKey: "day.restDay.title"
+                localizationKey: "day.restDay.title",
+                isAutoFilledPlaceholder: true
             )
             context.insert(restDay)
         }

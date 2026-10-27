@@ -10,6 +10,24 @@ public enum Equipment: String, Codable, Sendable, CaseIterable {
     case kettlebell
     /// Resistance bands — typical for home/bodyweight training (F154).
     case band
+
+    /// Ticket "Gym: Alle Gewichte und Geraete standardmaessig beruecksichtigen":
+    /// `PlanBuilderView`s Equipment-Wizard startet sonst mit einer leeren
+    /// Auswahl (siehe dortige `equipmentPreferences`-Doku), egal welchen
+    /// Trainingsort das Profil fuehrt. Ein gewaehlter Gym-Trainingsort soll
+    /// standardmaessig ALLE Items vorauswaehlen, der Nutzer kann danach frei
+    /// einzelne abwaehlen. `hasExplicitInput`: true, wenn der Aufrufer die
+    /// Auswahl bereits ausdruecklich vorgibt (Cardio-Handoff/"Plan anpassen"/
+    /// Onboarding) - dort darf dieser Default niemals eingreifen. `nil`
+    /// bedeutet "kein Default anwenden", nicht "leere Auswahl anwenden" -
+    /// der Aufrufer muss den bestehenden Wert dann unveraendert lassen.
+    public static func defaultWizardSelection(
+        forEnvironment environment: EnvironmentType,
+        hasExplicitInput: Bool
+    ) -> Set<Equipment>? {
+        guard !hasExplicitInput, environment == .gym else { return nil }
+        return Set(Equipment.allCases)
+    }
 }
 
 /// DEL-155: Equipment-Auswahl speziell fuer Cardio-Uebungen. Beschreibt das

@@ -124,13 +124,28 @@ public enum CardioFeasibilityCalculator {
 
     /// Kraft-/Lauf-Mix je Ziel (Ticket-Tabelle). Lauf-Zonen kommen
     /// unveraendert aus der bestehenden Lauf-Typologie in `PlanGenerator`
-    /// (ueber `TrainingTypeKind.running`, zyklisch easy/interval/tempo).
+    /// (ueber `TrainingTypeKind.running`, OHNE `cardioRunProfile` zyklisch
+    /// easy/interval/tempo) - Task 3 macht diesen Mix stattdessen
+    /// ziel-gesteuert (`PlanGenerator.cardioCandidates`), SOBALD unten ein
+    /// `cardioRunProfile` uebergeben wird; "zyklisch" beschreibt also nur
+    /// noch den profil-losen Pfad.
     /// Kraft-Kind ist `.bodyweight`: braucht keine Geraete-Annahme - hier
     /// ist unbekannt, was der Nutzer besitzt, und `equipmentPreferences`
     /// bleibt entsprechend leer (wird von `PlanGenerator.strengthCandidates`
     /// ohnehin nicht als Filter gelesen, nur `TrainingTypeKind.equipmentFilter`
     /// entscheidet die Auswahl).
-    public static func planGeneratorInput(for goal: CardioGoal) -> PlanGeneratorInput {
+    /// `cardioRunProfile` (Task 9 Nachbesserung, Review-Fund): ohne diesen
+    /// Parameter traegt die erzeugte `.running`-Selection nie eine Baseline,
+    /// und `PlanGenerator.cardioCandidates` setzt deshalb nie ein
+    /// `ExerciseSpec.targetPaceMinutesPerKm` fuer diesen Aufrufer (`nil`
+    /// heisst dort "keine Baseline bekannt", siehe `PlanGeneratorInput`-Doku)
+    /// - der gleiche Mechanismus, den `GoalDrivenPlanSelectionBuilder` fuer
+    /// den regulaeren Plan-Bauen-Assistenten schon nutzt. Default `nil`
+    /// erhaelt bestehende Aufrufer/Tests ohne Baseline unveraendert. Nur auf
+    /// der `.running`-Selection gesetzt, analog
+    /// `GoalDrivenPlanSelectionBuilder.enduranceSelections`s
+    /// `.bodyweight`/Kraft-Selection bleibt ohne Profil.
+    public static func planGeneratorInput(for goal: CardioGoal, cardioRunProfile: CardioRunProfile? = nil) -> PlanGeneratorInput {
         let runDays: Int
         let strengthDays: Int
         switch goal {
@@ -145,7 +160,10 @@ public enum CardioFeasibilityCalculator {
             strengthDays = 0
         }
         var selections: [PlanGeneratorTypeSelection] = [
-            PlanGeneratorTypeSelection(kind: .running, daysPerWeek: runDays, sessionDurationMinutes: 45, experience: .intermediate)
+            PlanGeneratorTypeSelection(
+                kind: .running, daysPerWeek: runDays, sessionDurationMinutes: 45, experience: .intermediate,
+                cardioRunProfile: cardioRunProfile
+            )
         ]
         if strengthDays > 0 {
             selections.append(
@@ -153,5 +171,41 @@ public enum CardioFeasibilityCalculator {
             )
         }
         return PlanGeneratorInput(selections: selections, equipmentPreferences: [], usesFixedWeekdays: false)
+    }
+
+    /// Lauf-Zweck innerhalb der Wochenstruktur - `.quality` deckt sowohl
+    /// Intervall- als auch Tempo-Laeufe ab; welche der beiden konkreten
+    /// `PlanGenerator.RunZone`-Werte ein `.quality`-Slot bekommt, bleibt Sache
+    /// von `PlanGenerator` (Task 3). Hier geht es nur um das Verhaeltnis
+    /// easy/quality, nicht um Pace (das macht `PaceZoneCalculator`) oder
+    /// Wochenvolumen (das macht `targetWeeklyVolumeKm`/Task 3).
+    public enum RunPurpose: String, Sendable, Equatable, CaseIterable {
+        case easy
+        case quality
+    }
+
+    /// Ziel-Entscheidung Teil 1 ("Auswahl/Struktur", Decision 2): welcher
+    /// Anteil der Lauf-Tage einer Woche hart (`.quality`) statt locker
+    /// (`.easy`) sein sollte. `PlanGenerator` (Task 3) zyklisiert spaeter
+    /// durch dieses Muster anstelle des heute starren, zieleunabhaengigen
+    /// `[.easy, .interval, .tempo]`.
+    ///
+    /// Grobe Faustregel, keine Wissenschaft (vgl. `PaceZoneCalculator`: grobe
+    /// Naeherungen, keine individuelle Trainingsempfehlung): je laenger die
+    /// Wettkampf-Distanz, desto mehr traegt aerobes Grundlagenvolumen den
+    /// Erfolg und desto weniger harte Reize vertraegt der Koerper daneben
+    /// regenerativ - 5 km/10 km koennen anteilig mehr Qualitaetsarbeit
+    /// stemmen als Halbmarathon/Marathon. "Allgemeine Fitness" hat keine
+    /// Wettkampf-Distanz, die Qualitaetsarbeit verlangt (siehe
+    /// `targetWeeklyVolumeKm == nil`) - konsequenterweise rein `.easy`.
+    public static func runTypeMix(for goal: CardioGoal) -> [RunPurpose] {
+        switch goal {
+        case .generalFitness:
+            return [.easy]
+        case .fiveK, .tenK:
+            return [.easy, .quality]
+        case .halfMarathon, .marathon:
+            return [.easy, .easy, .quality]
+        }
     }
 }

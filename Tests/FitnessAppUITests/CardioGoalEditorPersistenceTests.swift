@@ -71,5 +71,191 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
         XCTAssertEqual(profile.maxHeartRateBpm, 180)
         XCTAssertEqual(profile.current5kReferenceSeconds, 1500)
     }
+
+    // MARK: - Fund B (Geraete-Nachtest): 5K-Referenzzeit-Validierung
+    //
+    // `canSave`/`save()`/`zonesSummary` sind `private` Computed-Properties
+    // ohne testbare Laufzeit-Oberflaeche (nur `some View`), also liest dieser
+    // Abschnitt den Quelltext direkt — selbes Muster wie
+    // `AddMealViewSaveErrorStyleTests`/`MainTabStructureTests`.
+
+    private func readSource(_ relativePath: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // this file
+            .deletingLastPathComponent() // FitnessAppUITests
+            .deletingLastPathComponent() // Tests
+            .appendingPathComponent(relativePath)
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    private var cardioGoalEditorViewSource: String {
+        get throws { try readSource("Sources/FitnessAppUI/Settings/CardioGoalEditorView.swift") }
+    }
+
+    /// Gemeinsamer Laufcoaching-Setup-Schritt: `zonesSummary`/
+    /// `fiveKReferenceErrorMessage` leben seit der Extraktion in
+    /// `CardioCoachSetupFields` (geteilt mit Onboarding/PlanBuilder), nicht
+    /// mehr in `CardioGoalEditorView` selbst - siehe dortige Typ-Doku.
+    private var cardioCoachSetupFieldsSource: String {
+        get throws { try readSource("Sources/FitnessAppUI/Cardio/CardioCoachSetupFields.swift") }
+    }
+
+    /// `CardioCoachSetupDraft.current5kReferenceSeconds` ist die dritte
+    /// `parseFiveKReferenceSeconds`-Call-Site (geteilt von `canSave`,
+    /// `save()` ueber `cardioSetupDraft.current5kReferenceSeconds`, und
+    /// `fiveKReferenceErrorMessage`/`zonesSummary` in `CardioCoachSetupFields`).
+    private var cardioCoachSetupDraftSource: String {
+        get throws { try readSource("Sources/FitnessAppCore/Analytics/CardioCoachSetupDraft.swift") }
+    }
+
+    /// Regression: alle 5K-Zeit-Call-Sites (ueber `CardioGoalEditorView`,
+    /// `CardioCoachSetupDraft` und `CardioCoachSetupFields` verteilt seit der
+    /// Setup-Entwurf-Extraktion) muessen `parseFiveKReferenceSeconds`
+    /// verwenden, NICHT mehr `parseDurationToSeconds` — dessen "bare Zahl =
+    /// Minuten"-Fallback liess ein bares "2500" unvalidiert als 2500 Minuten
+    /// durchgehen.
+    func testFiveKReferenceCallSitesUseTheDedicatedParser() throws {
+        let editorSource = try cardioGoalEditorViewSource
+        let fieldsSource = try cardioCoachSetupFieldsSource
+        let draftSource = try cardioCoachSetupDraftSource
+        for (name, source) in [("CardioGoalEditorView", editorSource), ("CardioCoachSetupFields", fieldsSource), ("CardioCoachSetupDraft", draftSource)] {
+            XCTAssertFalse(
+                source.contains("parseDurationToSeconds(draftFiveKReferenceText)") || source.contains("parseDurationToSeconds(fiveKReferenceText)"),
+                "\(name) must not call parseDurationToSeconds for the 5K-time field — its bare-number-as-minutes fallback is the exact bug this fix removes."
+            )
+            XCTAssertFalse(
+                source.contains("parseDurationToSeconds(text)"),
+                "\(name)'s canSave-style local `text` must also go through parseFiveKReferenceSeconds."
+            )
+        }
+        let totalOccurrences = [editorSource, fieldsSource, draftSource]
+            .map { $0.components(separatedBy: "parseFiveKReferenceSeconds").count - 1 }
+            .reduce(0, +)
+        XCTAssertGreaterThanOrEqual(
+            totalOccurrences, 3,
+            "Expected parseFiveKReferenceSeconds to be called at all 3 logical sites (canSave, CardioCoachSetupDraft.current5kReferenceSeconds, CardioCoachSetupFields' error/zones logic), now spread across 3 files."
+        )
+    }
+
+    // MARK: - Finding 3 (Laufcoaching-Audit): Rollback bei fehlgeschlagenem Save
+    //
+    // `save()` mutierte `profile` direkt, BEVOR `context.save()` lief - bei
+    // einem Fehler blieben die nie bestaetigten Entwurfswerte unveraendert
+    // auf `profile` stehen (siehe Typ-Doku-Kommentar in `save()` selbst).
+    // Wie `canSave`/`zonesSummary` oben hat `save()` keine testbare
+    // Laufzeit-Oberflaeche (`private`, liest `@Environment(\.modelContext)`,
+    // ohne lebenden `.modelContainer` nicht direkt aufrufbar - siehe
+    // `testSavedCardioGoalSurvivesARealStoreRestart`s Typ-Doku) UND dieses
+    // Projekt hat keinen Unique-Constraint/verlaesslichen Weg, einen echten
+    // `ModelContext.save()` ausserhalb eines DI-Seams zum Scheitern zu
+    // bringen (anders als `PlanGeneratorInstantiator.saveOverrideForTesting`,
+    // dessen Seam NUR funktioniert, weil die dortigen Funktionen oeffentliche
+    // Statics sind, direkt von Tests aufrufbar - diese private View-Methode
+    // ist es nicht, ein Seam darauf waere toter Code). Dieser Abschnitt
+    // prueft daher strukturell per Quelltext, dass jedes der sieben
+    // mutierten Felder VOR der Mutation geschnappschusst und im
+    // `catch`-Block VOR der Fehlermeldung wiederhergestellt wird.
+
+    /// (snapshotSuffix, propertyName) fuer alle sieben Felder, die `save()`
+    /// mutiert - `enduranceModality`/`cardioCoachingEnabled` zusammen ueber
+    /// `setEnduranceModality` (siehe dessen Doku in `UserBodyProfile.swift`),
+    /// die uebrigen fuenf direkt.
+    private static let rollbackFields: [(snapshotSuffix: String, propertyName: String)] = [
+        ("EnduranceModality", "enduranceModality"),
+        ("CardioCoachingEnabled", "cardioCoachingEnabled"),
+        ("CardioGoal", "cardioGoal"),
+        ("CardioRaceDate", "cardioRaceDate"),
+        ("WeeklyBaseVolumeKm", "weeklyBaseVolumeKm"),
+        ("MaxHeartRateBpm", "maxHeartRateBpm"),
+        ("Current5kReferenceSeconds", "current5kReferenceSeconds"),
+    ]
+
+    func testFailedSaveSnapshotsAndRestoresAllSevenMutatedProfileFields() throws {
+        let source = try cardioGoalEditorViewSource
+        guard let saveStart = source.range(of: "private func save() {") else {
+            return XCTFail("save() not found at the expected signature")
+        }
+        guard let mutationStart = source.range(of: "profile.setEnduranceModality(draftEnduranceModality") else {
+            return XCTFail("the mutation block was not found where expected")
+        }
+        guard let catchStart = source.range(of: "} catch {", range: saveStart.lowerBound..<source.endIndex) else {
+            return XCTFail("save()'s catch block was not found")
+        }
+        guard let errorMessageAssignment = source.range(of: "saveErrorMessage = String(localized: \"day.editor.save.failed\"", range: catchStart.upperBound..<source.endIndex) else {
+            return XCTFail("save()'s error-message assignment was not found")
+        }
+
+        let beforeMutation = String(source[saveStart.lowerBound..<mutationStart.lowerBound])
+        let catchBody = String(source[catchStart.upperBound..<errorMessageAssignment.lowerBound])
+
+        for field in Self.rollbackFields {
+            XCTAssertTrue(
+                beforeMutation.contains("let original\(field.snapshotSuffix) = profile.\(field.propertyName)"),
+                "save() must snapshot profile.\(field.propertyName) BEFORE the mutating block, so a failed save can restore it"
+            )
+            XCTAssertTrue(
+                catchBody.contains("profile.\(field.propertyName) = original\(field.snapshotSuffix)"),
+                "a failed save's catch block must restore profile.\(field.propertyName) from its snapshot before the error message is set"
+            )
+        }
+    }
+
+    /// Finding 3: der Auftrag warnt explizit vor einem blinden
+    /// `modelContext.rollback()` - das wuerde auch andere, unabhaengige,
+    /// noch ausstehende Aenderungen im (typischerweise app-weit geteilten)
+    /// Context verwerfen. Nur gezielte Feld-Wiederherstellung ist erlaubt.
+    func testSaveNeverUsesABlanketContextRollback() throws {
+        let source = try cardioGoalEditorViewSource
+        guard let saveStart = source.range(of: "private func save() {") else {
+            return XCTFail("save() not found at the expected signature")
+        }
+        guard let catchStart = source.range(of: "} catch {", range: saveStart.lowerBound..<source.endIndex) else {
+            return XCTFail("save()'s catch block was not found")
+        }
+        guard let catchEnd = source.range(of: "\n    }", range: catchStart.upperBound..<source.endIndex) else {
+            return XCTFail("save()'s catch block end was not found")
+        }
+        // The catch block's own explanatory comment deliberately mentions `modelContext.rollback()`
+        // in backtick-quoted prose to say why it's NOT used - strip `//` comment lines before
+        // checking, so that explanation doesn't trip the very assertion it's explaining.
+        let catchCode = source[catchStart.upperBound..<catchEnd.lowerBound]
+            .split(separator: "\n")
+            .map { line -> Substring in
+                guard let commentRange = line.range(of: "//") else { return line }
+                return line[line.startIndex..<commentRange.lowerBound]
+            }
+            .joined(separator: "\n")
+        XCTAssertFalse(
+            catchCode.contains("modelContext.rollback()"),
+            "save() must restore the seven fields individually, never via a blanket modelContext.rollback() that could discard unrelated pending changes"
+        )
+    }
+
+    /// Fund B: ohne eine sichtbare Fehlermeldung sah der Nutzer nur ein
+    /// deaktiviertes Save-Haekchen, ohne zu verstehen warum. Lebt seit der
+    /// Setup-Entwurf-Extraktion in `CardioCoachSetupFields` (geteilt mit
+    /// Onboarding/PlanBuilder) statt direkt in `CardioGoalEditorView` -
+    /// `CardioGoalEditorView` zeigt die Meldung weiterhin, nur ueber die
+    /// geteilte View statt eigenem Code.
+    func testInvalidFiveKReferenceTextRendersAnInlineErrorMessage() throws {
+        let editorSource = try cardioGoalEditorViewSource
+        XCTAssertTrue(
+            editorSource.contains("CardioCoachSetupFields(draft:"),
+            "CardioGoalEditorView must render the 5K-time field (and its error message) via the shared CardioCoachSetupFields view."
+        )
+        let fieldsSource = try cardioCoachSetupFieldsSource
+        XCTAssertTrue(
+            fieldsSource.contains("fiveKReferenceErrorMessage"),
+            "A dedicated error-message computed property gated on invalid, non-empty draft.fiveKReferenceText must exist."
+        )
+        XCTAssertTrue(
+            fieldsSource.contains("errorRow(fiveKReferenceErrorMessage)"),
+            "The error message must be rendered via an errorRow(_:) helper, right where the 5K pace hint used to unconditionally render."
+        )
+        XCTAssertTrue(
+            fieldsSource.contains("profile.cardio.fiveKReference.invalid"),
+            "The error message must come from a localized string key, not a hardcoded literal."
+        )
+    }
 }
 #endif

@@ -2,52 +2,76 @@
 import SwiftUI
 import FitnessAppFoodLookup
 
-/// Confirmed values out of `OnlineFoodCandidatePreviewSheet` — the caller
-/// (e.g. `AddMealView.confirmOnlineImport`) maps this straight onto Task 2's
-/// `FoodCatalogEntry(displayName:source:category:...)` convenience init.
-/// Deliberately NOT `OnlineFoodCandidate` itself: the user may have edited
-/// the prefilled values before confirming.
+/// Bestaetigte Werte aus `OnlineFoodCandidatePreviewSheet` — der Aufrufer
+/// (z. B. `AddMealView.confirmOnlineImport`) mapped sie direkt auf
+/// `FoodCatalogEntry(displayName:source:category:...)`.
+/// Bewusst NICHT `OnlineFoodCandidate` selbst: Der Nutzer kann die
+/// vorbelegten Werte vor dem Bestaetigen aendern.
+///
+/// **OFF-01 (docs/AUDIT_2026-10-23_DELTIQ.md):** Ein fehlender Naehrwert ist
+/// **unbekannt und nicht null**. Open Food Facts ist eine Community-Datenbank,
+/// einzelne Makros fehlen dort regelmaessig. Frueher verlangte dieser Typ
+/// alle vier Werte — ein Treffer mit einem fehlenden Makro liess sich damit
+/// gar nicht uebernehmen (Sackgasse, ohne Begruendung). Jetzt:
+/// - Name nicht leer, jeder gesetzte Wert `>= 0`.
+/// - Mindestens EIN Naehrwert muss bekannt sein — ein Eintrag ganz ohne
+///   Werte traegt keine Information und wird nicht uebernommen.
+/// - Fehlende Werte bleiben `nil` und werden als unbekannt gespeichert
+///   (`FoodCatalogEntry`/`MealItem` unterscheiden das ueber eine additive
+///   Bitzmaske, siehe dort) — **nie** als erfundene 0.
 struct OnlineFoodImportValues: Equatable {
     let name: String
-    let kcalPer100g: Double
-    let proteinPer100g: Double
-    let carbsPer100g: Double
-    let fatPer100g: Double
+    let kcalPer100g: Double?
+    let proteinPer100g: Double?
+    let carbsPer100g: Double?
+    let fatPer100g: Double?
 
-    /// Final-review fix (C1): the only way to get an `OnlineFoodImportValues`
-    /// is through here — fails unless the name is non-blank AND all four
-    /// macros are present (non-nil) and `>= 0`. Mirrors
-    /// `CustomFoodDraft.isValid` exactly, so a candidate missing a nutrient
-    /// (common — Open Food Facts is crowd-sourced) can never be silently
-    /// coerced to 0 via `?? 0` on confirm.
+    /// Alle vier Werte bekannt (Normalfall bei manuell angelegten und
+    /// vollstaendigen Online-Eintraegen).
+    var isComplete: Bool {
+        [kcalPer100g, proteinPer100g, carbsPer100g, fatPer100g].allSatisfy { $0 != nil }
+    }
+
+    /// `true`, sobald mindestens ein Wert fehlt — die Oberflaeche sagt das
+    /// ausdruecklich an (Text + Hinweis, dass die Tagesbilanz dadurch
+    /// unvollstaendig ist).
+    var hasUnknownValues: Bool { !isComplete }
+
+    /// Die einzige Stelle, die `OnlineFoodImportValues` erzeugt: `nil`, wenn
+    /// der Name leer ist, ein gesetzter Wert negativ ist, oder **kein**
+    /// Naehrwert bekannt ist. Ein negativer Wert ist ein Eingabefehler, kein
+    /// „unbekannt" — sonst wuerde ein Tippfehler stillschweigend zu einer
+    /// Luecke.
     init?(name: String, kcalPer100g: Double?, proteinPer100g: Double?, carbsPer100g: Double?, fatPer100g: Double?) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty,
-              let kcal = kcalPer100g, kcal >= 0,
-              let protein = proteinPer100g, protein >= 0,
-              let carbs = carbsPer100g, carbs >= 0,
-              let fat = fatPer100g, fat >= 0
-        else { return nil }
+        guard !trimmedName.isEmpty else { return nil }
+        let values = [kcalPer100g, proteinPer100g, carbsPer100g, fatPer100g]
+        guard values.allSatisfy({ ($0 ?? 0) >= 0 }) else { return nil }
+        guard values.contains(where: { $0 != nil }) else { return nil }
         self.name = trimmedName
-        self.kcalPer100g = kcal
-        self.proteinPer100g = protein
-        self.carbsPer100g = carbs
-        self.fatPer100g = fat
+        self.kcalPer100g = kcalPer100g
+        self.proteinPer100g = proteinPer100g
+        self.carbsPer100g = carbsPer100g
+        self.fatPer100g = fatPer100g
     }
 }
 
 /// Task 4/5 reusable component: preview + confirm/cancel for one tapped
-/// `OnlineFoodCandidate`, before any `FoodCatalogEntry` is created. Per the
-/// Task 4 brief — name + macros/100g, editable, prefilled from the
-/// candidate, missing fields stay EMPTY (never shown as "0", so nothing
-/// looks like real data that wasn't actually returned by Open Food Facts).
-/// Confirming here does NOT touch `ModelContext`/`MealDraft` itself — that's
-/// the caller's job via `onConfirm`, which then reuses the existing
-/// `addItem` path exactly like a manual/AI catalog selection.
+/// `OnlineFoodCandidate`, before any `FoodCatalogEntry` is created.
+/// Name + Makros/100 g, editierbar, vorbelegt aus dem Treffer; fehlende
+/// Felder bleiben LEER (nie „0", damit nichts wie echte Daten aussieht, die
+/// Open Food Facts nicht geliefert hat) und sind als unbekannt markiert.
+/// Bestaetigen hier beruehrt `ModelContext`/`MealDraft` NICHT — das ist
+/// Aufgabe des Aufrufers ueber `onConfirm`, der danach denselben
+/// `addItem`-Pfad wie bei einer manuellen Katalogauswahl nutzt.
 @available(iOS 17.0, macOS 14.0, *)
 struct OnlineFoodCandidatePreviewSheet: View {
     let onConfirm: (OnlineFoodImportValues) -> Void
     let onCancel: () -> Void
+    /// OFF-01: Weg aus der Sackgasse — oeffnet das manuelle Anlegen eines
+    /// eigenen Lebensmittels, vorausgefuellt mit dem Treffer-Namen. Wird vom
+    /// Aufrufer (`AddMealView`) an `showingCustomFoodEntry` gehaengt.
+    let onCreateManually: (String) -> Void
 
     @State private var name: String
     @State private var kcalPer100g: Double?
@@ -55,9 +79,15 @@ struct OnlineFoodCandidatePreviewSheet: View {
     @State private var carbsPer100g: Double?
     @State private var fatPer100g: Double?
 
-    init(candidate: OnlineFoodCandidate, onConfirm: @escaping (OnlineFoodImportValues) -> Void, onCancel: @escaping () -> Void) {
+    init(
+        candidate: OnlineFoodCandidate,
+        onConfirm: @escaping (OnlineFoodImportValues) -> Void,
+        onCancel: @escaping () -> Void,
+        onCreateManually: @escaping (String) -> Void
+    ) {
         self.onConfirm = onConfirm
         self.onCancel = onCancel
+        self.onCreateManually = onCreateManually
         _name = State(initialValue: candidate.name)
         _kcalPer100g = State(initialValue: candidate.kcalPer100g)
         _proteinPer100g = State(initialValue: candidate.proteinPer100g)
@@ -72,10 +102,43 @@ struct OnlineFoodCandidatePreviewSheet: View {
                     TextField(String(localized: "nutrition.onlineImport.nameLabel", bundle: .module), text: $name)
                 }
                 Section {
-                    macroRow("nutrition.onlineImport.kcalLabel", value: $kcalPer100g)
-                    macroRow("nutrition.onlineImport.proteinLabel", value: $proteinPer100g)
-                    macroRow("nutrition.onlineImport.carbsLabel", value: $carbsPer100g)
-                    macroRow("nutrition.onlineImport.fatLabel", value: $fatPer100g)
+                    macroRow("nutrition.onlineImport.kcalLabel", value: $kcalPer100g, accessibilityKey: "nutrition.onlineImport.kcalLabel")
+                    macroRow("nutrition.onlineImport.proteinLabel", value: $proteinPer100g, accessibilityKey: "nutrition.onlineImport.proteinLabel")
+                    macroRow("nutrition.onlineImport.carbsLabel", value: $carbsPer100g, accessibilityKey: "nutrition.onlineImport.carbsLabel")
+                    macroRow("nutrition.onlineImport.fatLabel", value: $fatPer100g, accessibilityKey: "nutrition.onlineImport.fatLabel")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if pendingValues?.hasUnknownValues == true {
+                            // OFF-01: Genaud die Stelle, an der frueher ein
+                            // grauer „Hinzufuegen"-Button ohne Begruendung stand.
+                            Text("nutrition.onlineImport.incomplete.hint", bundle: .module)
+                        }
+                        // Task: Barcode-Scan ergänzen — a barcode hit reaches
+                        // THIS sheet directly, skipping `OnlineFoodResultsList`
+                        // (which only the text-search/AI-candidate entry
+                        // points pass through, and which is where its own
+                        // attribution row normally lives). Without this, a
+                        // barcode-sourced preview showed Open Food Facts data
+                        // with NO attribution anywhere — OFF-01 requires it on
+                        // every screen that shows their data, so it lives here
+                        // too now (harmless, if slightly redundant, for the
+                        // other two entry points that already saw it once).
+                        Text("nutrition.addMeal.onlineSearch.attribution", bundle: .module)
+                            .font(.system(size: 11))
+                    }
+                }
+                Section {
+                    Button {
+                        onCreateManually(name)
+                    } label: {
+                        HStack {
+                            Text("nutrition.onlineImport.createManually", bundle: .module)
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
                 }
             }
             .navigationTitle(Text("nutrition.onlineImport.title", bundle: .module))
@@ -96,34 +159,43 @@ struct OnlineFoodCandidatePreviewSheet: View {
                     } label: {
                         Text("common.add", bundle: .module)
                     }
-                    // C1 fix: disabled whenever any macro is still missing/
-                    // negative, not just on an empty name — same gate
-                    // `CustomFoodEntrySheet` applies via `draft.isValid`.
+                    // OFF-01: nicht mehr „alle vier Pflicht", sondern „Name
+                    // gesetzt, kein negativer Wert, mindestens ein Wert
+                    // bekannt" — der Grund fuer eine Sperre steht als Footer
+                    // direkt darueber.
                     .disabled(pendingValues == nil)
                 }
             }
         }
     }
 
-    private func macroRow(_ labelKey: String, value: Binding<Double?>) -> some View {
+    /// „70" bzw. „unbekannt" — nie „0", wenn nichts geliefert wurde.
+    private func accessibilityValueText(for value: Double?) -> Text {
+        if let value { return Text("\(value)") }
+        return Text("nutrition.onlineImport.unknown", bundle: .module)
+    }
+
+    private func macroRow(_ labelKey: String, value: Binding<Double?>, accessibilityKey: String) -> some View {
         HStack {
             Text(LocalizedStringKey(labelKey), bundle: .module)
             Spacer()
-            // Left blank when `nil` (missing Open Food Facts field) instead
-            // of prefilling "0" — Global Constraint: never fabricate a
-            // nutrient value. A field still blank at confirm time keeps
-            // "Add" disabled (see `pendingValues`), it is never silently
-            // stored as 0.
+            // Leer bei `nil` (fehlender Open-Food-Facts-Wert) statt „0" —
+            // globale Vorgabe: niemals einen Naehrwert erfinden. Ein leer
+            // gebliebenes Feld wird unbekannt gespeichert, nicht als 0.
             TextField("", value: value, format: .number)
                 .decimalKeyboard()
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 100)
+                // OFF-01: VoiceOver soll den Unterschied zwischen „leer, weil
+                // unbekannt" und „0 eingegeben" hoeren.
+                .accessibilityLabel(Text(LocalizedStringKey(accessibilityKey), bundle: .module))
+                .accessibilityValue(accessibilityValueText(for: value.wrappedValue))
         }
     }
 
-    /// `nil` while the name is blank or a macro is missing/negative — the
-    /// single source of truth for both the "Add" button's `.disabled` and
-    /// `confirm()` itself, so the two can never disagree.
+    /// `nil`, solange der Name leer ist, ein Wert negativ ist oder gar kein
+    /// Wert bekannt ist — die einzige Quelle fuer den Button-Zustand UND fuer
+    /// `confirm()`, damit beide nie auseinanderlaufen koennen.
     private var pendingValues: OnlineFoodImportValues? {
         OnlineFoodImportValues(
             name: name,

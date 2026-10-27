@@ -34,6 +34,158 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
         XCTAssertEqual(GoalDrivenPlanSelectionBuilder.preferredStrengthKind(from: []), .bodyweight)
     }
 
+    /// writing-block.md 3.2: Maschine reiht sich NACH Kettlebell und VOR
+    /// Koerpergewicht ein.
+    func testPreferredStrengthKindFallsBackToMachineWithoutFreeWeights() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKind(from: [.machine, .bodyweight]),
+            .machine
+        )
+    }
+
+    // MARK: - preferredStrengthKinds (Bugfix Epic #3.1, plural)
+
+    /// Regression (Epic-Fund #3.1): "Kurzhantel + Kettlebell" muss BEIDE
+    /// liefern, nicht nur Kurzhantel (wie `preferredStrengthKind` es durch
+    /// Prioritaet still verwirft).
+    func testPreferredStrengthKindsReturnsBothDumbbellAndKettlebell() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.dumbbell, .kettlebell]),
+            [.dumbbell, .kettlebell]
+        )
+    }
+
+    /// Regression (Epic-Fund #3.1): "Langhantel + Kurzhantel" — der Report
+    /// nennt genau dieses Beispiel ("der Plan verwendet nur die Langhantel").
+    func testPreferredStrengthKindsReturnsBothBarbellAndDumbbell() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.barbell, .dumbbell]),
+            [.barbell, .dumbbell]
+        )
+    }
+
+    func testPreferredStrengthKindsOrderIsStablePriorityRegardlessOfSetOrder() {
+        // Set hat keine garantierte Iterationsreihenfolge — das Ergebnis muss
+        // trotzdem immer in derselben (Prioritaets-)Reihenfolge kommen.
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.kettlebell, .barbell, .dumbbell]),
+            [.barbell, .dumbbell, .kettlebell]
+        )
+    }
+
+    func testPreferredStrengthKindsFallsBackToBodyweightForUnmappedEquipmentOnly() {
+        // Kabelzug/Band haben weiterhin keine TrainingTypeKind-Entsprechung
+        // — bekannter, dokumentierter Scope-Rand (writing-block.md 3.2,
+        // siehe TrainingTypeKind's eigener Doc-Kommentar fuer die konkreten
+        // Katalog-Abdeckungszahlen), kein Regress durch diesen Fix.
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.cable, .band]),
+            [.bodyweight]
+        )
+        XCTAssertEqual(GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: []), [.bodyweight])
+    }
+
+    /// writing-block.md 3.2: `.machine` bekommt jetzt einen eigenen
+    /// `TrainingTypeKind` — anders als `.cable`/`.band` oben darf eine
+    /// reine Maschinen-Auswahl nicht mehr auf Koerpergewicht zurueckfallen.
+    func testPreferredStrengthKindsMapsMachineInsteadOfFallingBackToBodyweight() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.machine]),
+            [.machine]
+        )
+    }
+
+    /// Maschine + nicht-abgebildete Ausstattung: nur die abgebildeten
+    /// Anteile (hier Maschine) landen im Ergebnis, Kabelzug/Band werden wie
+    /// zuvor stillschweigend ignoriert, aber OHNE auf Koerpergewicht
+    /// zurueckzufallen (es gibt ja einen echten Treffer).
+    func testPreferredStrengthKindsMachinePlusUnmappedEquipmentStillMapsMachine() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.cable, .machine, .band]),
+            [.machine]
+        )
+    }
+
+    /// Prioritaetsreihenfolge Langhantel > Kurzhantel > Kettlebell > Maschine
+    /// > Koerpergewicht gilt auch, wenn Maschine Teil der Auswahl ist.
+    func testPreferredStrengthKindsOrdersMachineAfterKettlebellAndBeforeBodyweight() {
+        XCTAssertEqual(
+            GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: [.machine, .kettlebell, .bodyweight]),
+            [.kettlebell, .machine, .bodyweight]
+        )
+    }
+
+    // MARK: - makeSelections: mehrere Ausstattungsarten (Device-Bugreport
+    // "Plan wird nach Geraeteart statt Trainingstagen aufgeteilt")
+
+    /// Mehrere Gerätearten muessen in EINER Selection landen, die ALLE
+    /// gewaehlten Tage traegt — nicht mehr in separaten, pro-Geraeteart
+    /// exklusiven Selections (das war der gemeldete Bug: 3 Gerätearten
+    /// ergaben 3 reine Ein-Geraeteart-Tage statt eines gemischten Pools).
+    func testStrengthGoalWithTwoEquipmentTypesMergesIntoOneSelection() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .strength, enduranceModality: nil, totalDaysPerWeek: 4,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.dumbbell, .kettlebell]
+        )
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.kind, .dumbbell)
+        XCTAssertEqual(selections.first?.daysPerWeek, 4)
+        XCTAssertEqual(selections.first?.equipmentPool, [.dumbbell, .kettlebell])
+    }
+
+    func testStrengthGoalWithThreeEquipmentTypesMergesIntoOneSelectionCoveringAll() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .weightLoss, enduranceModality: nil, totalDaysPerWeek: 6,
+            sessionDurationMinutes: 45, experience: .advanced,
+            equipmentPreferences: [.barbell, .dumbbell, .kettlebell]
+        )
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.kind, .barbell)
+        XCTAssertEqual(selections.first?.daysPerWeek, 6)
+        XCTAssertEqual(selections.first?.equipmentPool, [.barbell, .dumbbell, .kettlebell])
+    }
+
+    /// writing-block.md 3.2: Maschine + Kurzhantel landen genauso in einem
+    /// gemeinsamen Pool wie jede andere Zwei-Ausstattungs-Kombination.
+    func testStrengthGoalWithDumbbellAndMachineMergesIntoOneSelection() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .strength, enduranceModality: nil, totalDaysPerWeek: 4,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.dumbbell, .machine]
+        )
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.equipmentPool, [.dumbbell, .machine])
+    }
+
+    /// Mehr Ausstattungsarten als Tage ist kein Sonderfall mehr — alle
+    /// gewaehlten Gerätearten bleiben im gemeinsamen Pool, unabhaengig von
+    /// der Tageszahl (es gibt ja keine pro-Geraeteart-Tageszuteilung mehr,
+    /// die eine Ausstattung auf 0 Tage bringen koennte).
+    func testStrengthGoalKeepsAllEquipmentInPoolEvenWithFewerDaysThanEquipmentTypes() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .strength, enduranceModality: nil, totalDaysPerWeek: 2,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.barbell, .dumbbell, .kettlebell]
+        )
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.daysPerWeek, 2)
+        XCTAssertEqual(selections.first?.equipmentPool, [.barbell, .dumbbell, .kettlebell])
+    }
+
+    /// Genau eine Geraeteart darf weiterhin KEINEN `equipmentPool` setzen —
+    /// unveraendertes Verhalten, `PlanGenerator` faellt dann auf
+    /// `kind.equipmentFilter` zurueck (siehe dortige Doku).
+    func testStrengthGoalWithSingleEquipmentTypeLeavesEquipmentPoolNil() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .strength, enduranceModality: nil, totalDaysPerWeek: 3,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.kettlebell]
+        )
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertNil(selections.first?.equipmentPool)
+    }
+
     // MARK: - makeSelections: reine Kraftziele
 
     func testHypertrophyGoalProducesSingleStrengthSelectionWithAllDays() {
@@ -74,6 +226,45 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
         XCTAssertEqual(selections.count, 1)
         XCTAssertEqual(selections.first?.kind, .running)
         XCTAssertEqual(selections.first?.daysPerWeek, 4)
+    }
+
+    // Laufcoaching-Plan-Integration (Task 4): `cardioRunProfile` muss bis in
+    // die erzeugte(n) `PlanGeneratorTypeSelection`(s) durchgereicht werden.
+
+    func testEnduranceGoalForwardsCardioProfileToRunningSelection() {
+        let profile = CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .endurance, enduranceModality: .running, totalDaysPerWeek: 3,
+            sessionDurationMinutes: 30, experience: .intermediate, equipmentPreferences: [],
+            cardioRunProfile: profile
+        )
+        XCTAssertEqual(selections.first?.cardioRunProfile, profile)
+    }
+
+    func testStrengthGoalsNeverReceiveACardioProfileEvenIfOneIsPassed() {
+        let profile = CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        for goal: TrainingGoal in [.hypertrophy, .strength, .functional, .weightLoss] {
+            let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+                goal: goal, enduranceModality: nil, totalDaysPerWeek: 3,
+                sessionDurationMinutes: 30, experience: .intermediate, equipmentPreferences: [.barbell],
+                cardioRunProfile: profile
+            )
+            XCTAssertTrue(selections.allSatisfy { $0.cardioRunProfile == nil }, "goal \(goal) must never carry a cardio profile")
+        }
+    }
+
+    func testOmittingCardioRunProfileReproducesExistingEnduranceOutputExactly() {
+        // Regression for Review Focus 1: same call shape as
+        // testEnduranceGoalWithRunningModalityProducesSingleRunningSelection
+        // above, without the new argument - output must be unchanged.
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .endurance, enduranceModality: .running, totalDaysPerWeek: 4,
+            sessionDurationMinutes: 35, experience: .intermediate, equipmentPreferences: []
+        )
+        XCTAssertEqual(selections.count, 1)
+        XCTAssertEqual(selections.first?.kind, .running)
+        XCTAssertEqual(selections.first?.daysPerWeek, 4)
+        XCTAssertNil(selections.first?.cardioRunProfile)
     }
 
     func testEnduranceGoalWithCyclingModalityProducesSingleCyclingSelection() {
@@ -211,6 +402,28 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
                     )
                     let sum = selections.reduce(0) { $0 + $1.daysPerWeek }
                     XCTAssertEqual(sum, days, "goal=\(goal) modality=\(String(describing: modality)) days=\(days)")
+                }
+            }
+        }
+    }
+
+    /// Same invariant as above, specifically with MULTIPLE equipment types
+    /// selected (Epic #3.1) — days must still sum exactly, for any equipment
+    /// combination and any day count, never silently dropping a day.
+    func testAllSelectionsAlwaysSumToTotalDaysPerWeekWithMultipleEquipmentTypes() {
+        let equipmentCombos: [Set<Equipment>] = [
+            [.barbell, .dumbbell], [.dumbbell, .kettlebell], [.barbell, .dumbbell, .kettlebell]
+        ]
+        for goal: TrainingGoal in [.hypertrophy, .strength, .functional, .weightLoss] {
+            for equipment in equipmentCombos {
+                for days in 1...7 {
+                    let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+                        goal: goal, enduranceModality: nil, totalDaysPerWeek: days,
+                        sessionDurationMinutes: 45, experience: .intermediate, equipmentPreferences: equipment
+                    )
+                    let sum = selections.reduce(0) { $0 + $1.daysPerWeek }
+                    XCTAssertEqual(sum, days, "goal=\(goal) equipment=\(equipment) days=\(days)")
+                    XCTAssertTrue(selections.allSatisfy { $0.daysPerWeek > 0 }, "no zero-day selection should ever be produced")
                 }
             }
         }

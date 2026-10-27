@@ -153,6 +153,16 @@ public final class Exercise {
         set { equipmentRaw = newValue?.rawValue }
     }
 
+    /// Audit-Fix (Lean): war identisch in `SetRow.swift` und
+    /// `ExerciseCard.swift` dupliziert. DEL-159-Override gewinnt, sonst
+    /// Library-Lookup ueber den System-Namen.
+    public var isBarbellExercise: Bool {
+        if let equipment {
+            return equipment == .barbell
+        }
+        return ExerciseLibraryData.all.first { $0.name == name }?.equipment == .barbell
+    }
+
     /// DEL-200: Snapshot des Arbeitsgewichts VOR einer Deload-Woche.
     /// Non-nil = Deload aktiv für diese Übung; `DeloadManager.endDeload`
     /// schreibt den Wert zurück nach `suggestedWeight` und nullt das Feld.

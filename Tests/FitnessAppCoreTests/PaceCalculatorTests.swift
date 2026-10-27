@@ -92,6 +92,40 @@ final class PaceCalculatorTests: XCTestCase {
         XCTAssertNil(PaceCalculator.parseDurationToSeconds("1:2:99:0"))  // zu viele Teile
     }
 
+    // MARK: - Fuenf-Kilometer-Referenzzeit-Parser (narrower than parseDurationToSeconds)
+
+    /// "25:00" (MM:SS, in-range) → 1500 Sekunden.
+    func testParseFiveKReferenceValidColonForm() {
+        XCTAssertEqual(PaceCalculator.parseFiveKReferenceSeconds("25:00"), 1500)
+    }
+
+    /// Regression: eine bare Zahl ohne Doppelpunkt darf NICHT mehr als
+    /// Dezimal-Minuten interpretiert werden ("2500" waere sonst 2500 Minuten
+    /// = 41,6 Stunden statt abgelehnt zu werden).
+    func testParseFiveKReferenceRejectsBareNumber() {
+        XCTAssertNil(PaceCalculator.parseFiveKReferenceSeconds("2500"))
+    }
+
+    /// "1:05:00" (H:MM:SS) = 3900 s, liegt im plausiblen 5K-Bereich.
+    func testParseFiveKReferenceValidHoursMinutesSecondsForm() {
+        XCTAssertEqual(PaceCalculator.parseFiveKReferenceSeconds("1:05:00"), 3900)
+    }
+
+    /// Leerer String → nil.
+    func testParseFiveKReferenceEmptyReturnsNil() {
+        XCTAssertNil(PaceCalculator.parseFiveKReferenceSeconds(""))
+    }
+
+    /// Colon-formatiert, aber ueber der plausiblen Obergrenze (5400 s) → nil.
+    func testParseFiveKReferenceRejectsTooSlowColonForm() {
+        XCTAssertNil(PaceCalculator.parseFiveKReferenceSeconds("95:00"))
+    }
+
+    /// Colon-formatiert, aber unter der plausiblen Untergrenze (600 s) → nil.
+    func testParseFiveKReferenceRejectsTooFastColonForm() {
+        XCTAssertNil(PaceCalculator.parseFiveKReferenceSeconds("5:00"))
+    }
+
     // MARK: - Distance-Parser
 
     func testParseDistanceDecimal() {

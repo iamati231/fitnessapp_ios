@@ -118,6 +118,13 @@ public struct RootView: View {
             // could ever be added. Idempotent — fetchCount short-circuits
             // when rows already exist, same as LibrarySeeder above.
             FoodCatalogSeeder.seedIfNeeded(in: modelContext)
+            // UX-Katalog-Erweiterung: Backfill fuer System-Katalogeintraege,
+            // die NACH dem ersten Seed hinzugekommen sind (130 -> 234
+            // Eintraege) — ohne das waeren sie fuer jeden Bestandsnutzer
+            // dauerhaft unsichtbar, weil `seedIfNeeded` einen nicht-leeren
+            // Katalog nie erneut befuellt. Idempotent — Diff gegen bereits
+            // vorhandene `.seeded`-catalogIDs.
+            FoodCatalogSeeder.backfillNewCatalogEntriesIfNeeded(in: modelContext)
             // README 2.35: Backfill fuer Library-Eintraege, die NACH dem
             // ersten Seed hinzugekommen sind (z.B. "Lauf-Intervall"/
             // "Rad-Intervall") - ohne das waeren sie fuer jeden

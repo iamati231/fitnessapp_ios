@@ -369,14 +369,6 @@ public struct DayEditorView: View {
     /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention.
     /// `.textCase(nil)` verhindert, dass List den bereits grossgeschriebenen
     /// String noch einmal automatisch transformiert.
-    private func sectionHeader(_ text: String) -> some View {
-        Text(text.uppercased())
-            .font(.system(size: 10, weight: .heavy))
-            .tracking(1.5)
-            .foregroundStyle(Color.deltiqOrange)
-            .textCase(nil)
-    }
-
     /// Hero-Card-Layout fuer Ruhetage: grosses Sofa-Icon, klare Botschaft,
     /// prominenter "Abschliessen"-Button. Versteckt alle Editor-Metadaten,
     /// die fuer einen "Tag-ohne-Training" sinnlos sind.
@@ -1199,6 +1191,18 @@ public struct DayEditorView: View {
             day: day
         )
         modelContext.insert(exercise)
+        // Audit-Fix (Save-Fehler): dieser Screen ist laut Typ-Doku ein
+        // "Autosave-Screen ohne eigenen Save-Schritt" - man verlaesst ihn
+        // normal ueber den Zurueck-Chevron, nicht nur ueber "Fertig". Ohne
+        // expliziten Save hing die neue Uebung am impliziten Autosave -
+        // derselbe Musterfehler wie bei `deleteExercises` oben (siehe
+        // dortige Doku), hier aber uebersehen.
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(exercise)
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
+        }
     }
 
     private func addCustomExercise(_ draft: CustomExerciseDraft) {
@@ -1228,6 +1232,15 @@ public struct DayEditorView: View {
             day: day
         )
         modelContext.insert(exercise)
+        // Audit-Fix (Save-Fehler): siehe addExercise - gleicher Fix, hier
+        // mit zwei frisch eingefuegten Objekten (Template + Exercise).
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(exercise)
+            modelContext.delete(template)
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
+        }
     }
 
     /// UI-Refactor (Korrektur V1): Name/Struktur analog zu
@@ -1442,6 +1455,10 @@ public struct DayEditorView: View {
     private func sweepAbandonedAdHocDayIfNeeded() {
         guard day.plan == nil, !didStartSessionForAdHocDay else { return }
         modelContext.delete(day)
+        // Audit-Fix (Save-Fehler): siehe `ActiveWorkoutView.discardWorkout()` -
+        // .onDisappear hat keinen sinnvollen Toast-Ort mehr, best-effort
+        // speichern reicht fuer diesen Low-Stakes-Sweep.
+        try? modelContext.save()
     }
 
     /// DEL-042 "Fortsetzen": navigiere in die existing offene Session ohne
@@ -1476,7 +1493,18 @@ public struct DayEditorView: View {
         // P8 Stufe-2: kein erneuter capture-Aufruf — siehe
         // ActiveWorkoutView.finishWorkout für die Begründung.
         open.isCompleted = true
-        try? modelContext.save()
+        // Audit-Fix (Save-Fehlerbehandlung): bei einem fehlgeschlagenen Save
+        // NICHT weiter in `actuallyStartNewSession()` - das wuerde den User
+        // unbemerkt in eine neue Session schicken, waehrend die alte in einem
+        // unklaren Zwischenzustand haengt. Nichts wird zurueckgerollt: `open`
+        // bleibt mit isCompleted=true im ModelContext pending, ein erneuter
+        // Tap auf "Training starten" versucht es automatisch wieder.
+        do {
+            try modelContext.save()
+        } catch {
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
+            return
+        }
         actuallyStartNewSession()
     }
 
@@ -1488,7 +1516,15 @@ public struct DayEditorView: View {
             return
         }
         modelContext.delete(open)
-        try? modelContext.save()
+        // Audit-Fix (Save-Fehlerbehandlung): gleiches Muster wie
+        // `completeOpenSessionAndStartNew` oben - kein stilles Weitermachen,
+        // kein Rollback des bereits vorgemerkten Deletes.
+        do {
+            try modelContext.save()
+        } catch {
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
+            return
+        }
         actuallyStartNewSession()
     }
 
@@ -1513,6 +1549,20 @@ public struct DayEditorView: View {
             day: day
         )
         modelContext.insert(session)
+        // Audit-Fix (Save-Fehler): anders als `actuallyStartNewSession()`
+        // oben ruft dieser Pfad nie `TrainingDayContentSnapshotWriter.capture`
+        // auf (wo der andere Insert seinen Save "gratis" bekommt) - ohne
+        // expliziten Save hing die "uebersprungen"-Session komplett am
+        // impliziten Autosave. Bei Fehler NICHT zurueck navigieren, sonst
+        // sieht der User einen bereits bestaetigten Skip, der sich nach
+        // einem Kaltstart wieder loest.
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(session)
+            showTransientToast(String(localized: "day.editor.save.failed", bundle: .module))
+            return
+        }
         // Aus dem DayEditor zurueck ins parent (PlanEditor) — der naechste echte
         // Trainings-Tag steht dann direkt im Dashboard-Plan-Day-Card.
         if !navigation.workoutPath.isEmpty {

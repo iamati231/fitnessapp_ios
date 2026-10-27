@@ -213,6 +213,13 @@ public struct OnboardingView: View {
     @State private var enduranceModality: EnduranceModality?
     @State private var runCoachWanted = false
 
+    /// Gemeinsamer Laufcoaching-Setup-Schritt (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt):
+    /// der volle Setup-Entwurf, sobald der Laufcoach oben gewuenscht wird - ersetzt das
+    /// vormalige `runCoachCardioGoal: CardioGoal`, das nur die Ziel-KATEGORIE seedete (Task 5,
+    /// "schrittweise erfragen" - diese Entscheidung ist mit dem neuen Auftrag aufgehoben, siehe
+    /// die Kommentare bei der zugehoerigen UI weiter unten).
+    @State private var cardioCoachSetupDraft: CardioCoachSetupDraft = .empty
+
     // DEL-088: Tag-Auswahl-Sheet, das nach Plan-Adopt erscheint. Sobald
     // `dayPickerTemplate != nil`, oeffnet sich das DayPickerSheet mit dem
     // dort hinterlegten Template. `onConfirm` setzt `selectedWeekdays` und
@@ -305,7 +312,9 @@ public struct OnboardingView: View {
                 NavigationStack {
                     TemplatePreviewView(
                         template: template,
-                        adoptButtonTitle: "Diesen Plan wählen",
+                        // Audit-Fix (i18n): war ein hartkodierter deutscher
+                        // Literal, unlokalisiert.
+                        adoptButtonTitle: String(localized: "onboarding.plan.adoptButton", bundle: .module),
                         userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
                         goal: trainingGoal,
                         experienceTrack: resolvedExperienceTrack,
@@ -409,6 +418,7 @@ public struct OnboardingView: View {
                     usesFixedWeekdays: false
                 ), preseededEnduranceModality: enduranceModality,
                 preseededRunCoachWanted: runCoachWanted,
+                preseededCardioCoachSetupDraft: cardioCoachSetupDraft,
                 preseededGoal: trainingGoal,
                 preseededDaysPerWeek: weeklyGoal,
                 onGenerated: { input, result in
@@ -979,6 +989,31 @@ public struct OnboardingView: View {
                             }
                         }
                     }
+
+                    // Gemeinsamer Laufcoaching-Setup-Schritt
+                    // (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): nur sichtbar, wenn der
+                    // Laufcoach oben gewuenscht wurde - erfasst jetzt den VOLLEN Setup-Entwurf
+                    // (Ziel + optional Renndatum/Wochenumfang/5k-Referenzzeit/max. Herzfrequenz),
+                    // dieselben Felder wie `CardioGoalEditorView` (Settings), ueber dieselbe
+                    // geteilte `CardioCoachSetupFields`-View. Vorher (Task 5) seedete dieser
+                    // Schritt absichtlich NUR die Ziel-Kategorie und verschob den Rest auf einen
+                    // spaeteren `CardioGoalEditorView`-Besuch - diese Entscheidung ist mit dem
+                    // neuen Auftrag bewusst aufgehoben: der Nutzer soll das Laufcoaching VOR der
+                    // ersten Plangenerierung einrichten koennen, nicht erst danach nachtraeglich.
+                    if runCoachWanted {
+                        VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("onboarding.runCoachGoal.title", bundle: .module)
+                                    .font(.title2.weight(.bold))
+                                Text("onboarding.runCoachGoal.subtitle", bundle: .module)
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                            }
+                            DeltiqSection {
+                                CardioCoachSetupFields(draft: $cardioCoachSetupDraft)
+                            }
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -1428,7 +1463,7 @@ public struct OnboardingView: View {
     @ViewBuilder
     private func coachingCard(
         title: String,
-        description: String,
+        description: String? = nil,
         iconName: String,
         isSelected: Bool,
         action: @escaping () -> Void
@@ -1444,10 +1479,19 @@ public struct OnboardingView: View {
                     Text(title)
                         .font(.headline)
                         .foregroundStyle(.primary)
-                    Text(description)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
+                    // Code-Review-Fix (Task 5): `description` ist optional,
+                    // damit Karten ohne Beschreibungstext (z.B. die neuen
+                    // CardioGoal-Karten, die bewusst keine neuen per-Case-
+                    // Lokalisierungs-Keys bekommen) keine leere `Text("")`-
+                    // Zeile reservieren - sichtbar neben den uebrigen
+                    // `coachingCard`-Aufrufstellen auf denselben Screens, die
+                    // alle eine echte Beschreibung mitgeben.
+                    if let description {
+                        Text(description)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
                 }
                 Spacer(minLength: 0)
                 if isSelected {
@@ -2157,6 +2201,24 @@ public struct OnboardingView: View {
             let finalModality = customPlanEnduranceModality ?? enduranceModality
             let finalRunCoachWanted = customPlanEnduranceModality != nil ? customPlanRunCoachWanted : runCoachWanted
             profile.setEnduranceModality(finalModality, runCoachEnabled: finalRunCoachWanted)
+            // Gemeinsamer Setup-Schritt (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): persistiert
+            // den VOLLEN Setup-Entwurf (`cardioCoachSetupDraft`) aus dem PLAIN-Onboarding-Schritt -
+            // es gibt bewusst kein Builder-Pfad-Aequivalent dazu (der eingebettete Builder zeigt sein
+            // eigenes Setup-Sheet NICHT, siehe `PlanBuilderView.enduranceModalitySubflow`-Doku: der
+            // Entwurf wurde bereits hier, VOR dem Oeffnen des Builders, erfasst), daher immer
+            // `cardioCoachSetupDraft`, unabhaengig davon, ob `customPlanEnduranceModality`
+            // (Builder-Pfad) oder `enduranceModality` (Onboarding-Pfad) den
+            // `finalModality`/`finalRunCoachWanted` gewonnen hat. `profile.cardioCoachingEnabled`
+            // wird HIER, NACH `setEnduranceModality`, gelesen, weil erst dieser Aufruf den
+            // tatsaechlichen Wert setzt (inkl. `supportsRunCoach`-Guard) - nicht das rohe
+            // `finalRunCoachWanted` vor einem moeglichen Modalitaets-bedingten Veto.
+            if profile.cardioCoachingEnabled {
+                profile.cardioGoal = cardioCoachSetupDraft.goal
+                profile.cardioRaceDate = cardioCoachSetupDraft.raceDate
+                profile.weeklyBaseVolumeKm = cardioCoachSetupDraft.weeklyBaseVolumeKm
+                profile.maxHeartRateBpm = cardioCoachSetupDraft.maxHeartRateBpm
+                profile.current5kReferenceSeconds = cardioCoachSetupDraft.current5kReferenceSeconds
+            }
         }
 
         // 2) Initial BodyMeasurement — keeps the "first weight" visible in the
@@ -2177,6 +2239,25 @@ public struct OnboardingView: View {
         )
         modelContext.insert(measurement)
 
+        // Audit-Fix (Save-Fehler): bisher wurde NUR innerhalb der beiden
+        // Plan-Zweige unten gespeichert - ohne explizite Auswahl, ohne
+        // Custom-Plan UND einer (seltenen, aber moeglichen) leeren
+        // Empfehlungsliste lief `finishOnboarding()` durch, ohne Profil +
+        // Messung je zu speichern, trotz des Kommentars direkt darunter,
+        // der genau das garantiert glaubte. Ein Kaltstart direkt danach
+        // haette den User komplett zurueck auf Schritt 1 geworfen, ohne
+        // jede Erinnerung an seine Antworten - der am haeufigsten
+        // durchlaufene Screen der App. `profileDidSave` gated die
+        // optionalen Plan-Zweige: ein Plan auf einem nicht persistierten
+        // Profil zu erzeugen waere ohnehin sinnlos.
+        let profileDidSave: Bool
+        do {
+            try modelContext.save()
+            profileDidSave = true
+        } catch {
+            profileDidSave = false
+        }
+
         // 3) Plan-Template (optional). ProgramInstantiator deaktiviert
         //    automatisch andere Pläne — bei einem frischen Profil eh leer.
         // DEL-088: `selectedWeekdays` kommt aus dem DayPickerSheet. Wenn der
@@ -2195,7 +2276,7 @@ public struct OnboardingView: View {
         // ohnehin schon als große Karte gezeigte Top-Empfehlung
         // (`rankedTemplates.first`) übernommen — kein neuer Empfehlungsweg,
         // dieselbe Berechnung, die der Screen längst anzeigt.
-        if let template = Self.templateToAdopt(
+        if profileDidSave, let template = Self.templateToAdopt(
             explicit: selectedTemplate, hasCustomPlan: customPlanInput != nil, recommended: rankedTemplates.first
         ) {
             // Smart-Onboarding-Epic Phase 5.4 (PLAN_SUBSTITUTION_ENGINE.md
@@ -2222,13 +2303,27 @@ public struct OnboardingView: View {
                     context: SubstitutionContext(goal: trainingGoal, experienceTrack: resolvedExperienceTrack)
                 )
             }
-            ProgramInstantiator.instantiate(
+            // Audit-Fix (Save-Fehler): instantiate() hing bisher komplett am
+            // impliziten Autosave - anders als der customPlanInput-Zweig
+            // unten (der ueber `createPlan` schon explizit speichert und
+            // wirft). Gleiche Fehlerbehandlung wie dort: kein Alert HIER
+            // (Profil-Insert kann RootView bereits zur MainTabView
+            // umgeschaltet haben), aber auch kein stilles Verschwinden -
+            // `OnboardingPlanCreationNotice.markFailed()` informiert im
+            // sichtbaren Folgekontext (DashboardView).
+            let plan = ProgramInstantiator.instantiate(
                 template,
                 in: modelContext,
                 selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
                 resolvedSelection: freshSelection
             )
-        } else if let customPlanInput, let customPlanResult {
+            do {
+                try modelContext.save()
+            } catch {
+                modelContext.delete(plan) // cascade: Tage + Uebungen gehen mit
+                OnboardingPlanCreationNotice.markFailed()
+            }
+        } else if profileDidSave, let customPlanInput, let customPlanResult {
             // DEL-243: der im Builder-
             // Sheet vorberechnete Result wird 1:1 uebernommen (nicht neu
             // gerechnet) — sonst wiche der instanziierte Plan von der im

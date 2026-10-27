@@ -80,7 +80,7 @@ public struct TDEEView: View {
             )
             DeltiqRow(
                 label: String(localized: "calc.tdee.age", bundle: .module),
-                value: String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile))
+                value: String(format: String(localized: "settings.profile.years", bundle: .module), profile.ageYears)
             )
             DeltiqRow(
                 label: String(localized: "calc.tdee.height", bundle: .module),
@@ -121,7 +121,7 @@ public struct TDEEView: View {
                 let bmrMifflin = BodyCalculations.bmrMifflinStJeor(
                     weightKg: weightKg,
                     heightCm: profile.heightCm,
-                    ageYears: ageYears(for: profile),
+                    ageYears: profile.ageYears,
                     profile: profile.profile
                 )
                 let tdee = BodyCalculations.tdee(bmr: bmrMifflin, activityFactor: activity.factor)
@@ -153,9 +153,9 @@ public struct TDEEView: View {
                     .frame(height: 1)
                     .padding(.vertical, 4)
 
-                resultRow(String(localized: "calc.tdee.cut", bundle: .module), value: tdee - 500, secondary: true)
-                resultRow(String(localized: "calc.tdee.maintenance", bundle: .module), value: tdee, secondary: true)
-                resultRow(String(localized: "calc.tdee.bulk", bundle: .module), value: tdee + 300, secondary: true, showsDivider: false)
+                resultRow(String(localized: "calc.tdee.cut", bundle: .module), value: Double(CalorieGoalType.cut.dailyGoalKcal(tdee: tdee)), secondary: true)
+                resultRow(String(localized: "calc.tdee.maintenance", bundle: .module), value: Double(CalorieGoalType.maintenance.dailyGoalKcal(tdee: tdee)), secondary: true)
+                resultRow(String(localized: "calc.tdee.bulk", bundle: .module), value: Double(CalorieGoalType.bulk.dailyGoalKcal(tdee: tdee)), secondary: true, showsDivider: false)
             } else {
                 Text("calc.tdee.weightRequired", bundle: .module)
                     .foregroundStyle(Color.Deltiq.textSecondary)
@@ -206,21 +206,7 @@ public struct TDEEView: View {
     }
 
     /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     // MARK: Helpers
-
-    private func ageYears(for profile: UserBodyProfile) -> Int {
-        Calendar.current.dateComponents([.year], from: profile.birthDate, to: Date()).year ?? 0
-    }
 
     /// Katch-McArdle uses fat-free mass — we use the FFM from the latest measurement
     /// IF its weight matches the user's current entry within ~1 kg. Otherwise we'd be
@@ -293,6 +279,49 @@ public enum ActivityLevel: String, CaseIterable, Sendable {
         case .moderate:   LocalizedStringResource("activity.moderate.description",   bundle: .module)
         case .active:     LocalizedStringResource("activity.active.description",     bundle: .module)
         case .veryActive: LocalizedStringResource("activity.veryActive.description", bundle: .module)
+        }
+    }
+}
+
+// MARK: - Calorie goal type (Bulk / Cut / Maintenance)
+
+/// writing-block.md Punkt 5 ("Tagesziel-Rechner um Bulk/Cut ergaenzen"): the
+/// cut (-500 kcal)/maintenance/bulk (+300 kcal) adjustment was previously
+/// three magic numbers inline in `resultsCard` below, with no way to pick
+/// one of them as the actual daily goal in `NutritionGoalsView` — that
+/// screen could only ever adopt the plain maintenance TDEE. Centralizing it
+/// here (same file/module as the already-established `ActivityLevel`
+/// precedent, which has the identical case+factor+localizedName shape)
+/// means both screens share one definition instead of duplicating the
+/// adjustment values.
+@available(iOS 17.0, macOS 14.0, *)
+public enum CalorieGoalType: String, CaseIterable, Sendable {
+    case cut
+    case maintenance
+    case bulk
+
+    /// kcal/day added to TDEE. Negative for `.cut` — a moderate, widely-used
+    /// deficit/surplus (not a clinical recommendation), matching the values
+    /// this calculator already showed before this ticket.
+    public var adjustmentKcal: Int {
+        switch self {
+        case .cut:         return -500
+        case .maintenance: return 0
+        case .bulk:        return 300
+        }
+    }
+
+    /// Final-review ruling: project-wide truncate-not-round convention
+    /// (DoubleFormatting.swift) applies here too, not just rounding.
+    public func dailyGoalKcal(tdee: Double) -> Int {
+        Int(tdee.truncated(to: 0)) + adjustmentKcal
+    }
+
+    public var localizedName: LocalizedStringResource {
+        switch self {
+        case .cut:         LocalizedStringResource("calc.tdee.cut",         bundle: .module)
+        case .maintenance: LocalizedStringResource("calc.tdee.maintenance", bundle: .module)
+        case .bulk:        LocalizedStringResource("calc.tdee.bulk",        bundle: .module)
         }
     }
 }

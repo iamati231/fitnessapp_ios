@@ -58,5 +58,95 @@ final class MeasurementPersistenceTests: XCTestCase {
         XCTAssertEqual(measurements.first?.weightKg, 82.5, "die Bearbeitung muss einen echten Store-Neustart ueberstehen, nicht nur In-Memory-Retention")
         XCTAssertEqual(measurements.first?.date, originalDate, "Bearbeiten darf keinen neuen Eintrag anlegen, sondern muss den bestehenden ueberschreiben")
     }
+
+    // MARK: - Audit-Fix: Rollback bei fehlgeschlagenem Save im Edit-Zweig
+    //
+    // `save(profile:)`s `editingMeasurement`-Zweig mutierte bis zu 20 Felder
+    // auf `existing` VOR `context.save()` - bei einem Fehler blieben die nie
+    // bestaetigten Werte unveraendert stehen (identischer Musterfehler wie
+    // `CardioGoalEditorView.save()`, dort bereits gefixt, Commit 8bdb416).
+    // `save(profile:)` ist `private` ohne testbare Laufzeit-Oberflaeche
+    // (liest `@Environment(\.modelContext)`), daher Quelltext-Pruefung -
+    // selbes Muster wie `CardioGoalEditorPersistenceTests`.
+
+    private func readSource(_ relativePath: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // this file
+            .deletingLastPathComponent() // FitnessAppUITests
+            .deletingLastPathComponent() // Tests
+            .appendingPathComponent(relativePath)
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    private var measurementViewSource: String {
+        get throws { try readSource("Sources/FitnessAppUI/MeasurementView.swift") }
+    }
+
+    private static let rollbackFields: [String] = [
+        "weightKg", "neckCm", "waistCm", "hipCm", "shoulderCm", "chestCm", "calfCm",
+        "upperArmCm", "upperArmLeftCm", "upperArmRightCm",
+        "thighCm", "thighLeftCm", "thighRightCm",
+        "bmi", "navyBodyFatPct", "deurenbergBodyFatPct", "selectedBodyFatPct",
+        "fatFreeMassKg", "ffmi", "normalizedFfmi", "bmr",
+    ]
+
+    func testFailedSaveSnapshotsAndRestoresAllTwentyMutatedMeasurementFields() throws {
+        let source = try measurementViewSource
+        guard let editBranchStart = source.range(of: "if let existing = editingMeasurement {") else {
+            return XCTFail("the editingMeasurement branch was not found at the expected signature")
+        }
+        guard let mutationStart = source.range(of: "let hasFullCircumferences", range: editBranchStart.upperBound..<source.endIndex) else {
+            return XCTFail("the mutation block was not found where expected")
+        }
+        guard let catchStart = source.range(of: "} catch {", range: editBranchStart.upperBound..<source.endIndex) else {
+            return XCTFail("the edit branch's catch block was not found")
+        }
+        guard let errorMessageAssignment = source.range(of: "saveErrorMessage = String(localized: \"day.editor.save.failed\"", range: catchStart.upperBound..<source.endIndex) else {
+            return XCTFail("the edit branch's error-message assignment was not found")
+        }
+
+        let beforeMutation = String(source[editBranchStart.upperBound..<mutationStart.lowerBound])
+        let catchBody = String(source[catchStart.upperBound..<errorMessageAssignment.lowerBound])
+
+        for field in Self.rollbackFields {
+            let suffix = field.prefix(1).uppercased() + field.dropFirst()
+            XCTAssertTrue(
+                beforeMutation.contains("let original\(suffix) = existing.\(field)"),
+                "save(profile:) must snapshot existing.\(field) BEFORE the mutating block, so a failed save can restore it"
+            )
+            XCTAssertTrue(
+                catchBody.contains("existing.\(field) = original\(suffix)"),
+                "a failed save's catch block must restore existing.\(field) from its snapshot before the error message is set"
+            )
+        }
+    }
+
+    func testEditBranchNeverUsesABlanketContextRollback() throws {
+        let source = try measurementViewSource
+        guard let editBranchStart = source.range(of: "if let existing = editingMeasurement {") else {
+            return XCTFail("the editingMeasurement branch was not found at the expected signature")
+        }
+        guard let catchStart = source.range(of: "} catch {", range: editBranchStart.upperBound..<source.endIndex) else {
+            return XCTFail("the edit branch's catch block was not found")
+        }
+        guard let catchEnd = source.range(of: "\n            }", range: catchStart.upperBound..<source.endIndex) else {
+            return XCTFail("the edit branch's catch block end was not found")
+        }
+        // The catch block's own explanatory comment deliberately mentions `modelContext.rollback()`
+        // in prose to say why it's NOT used - strip `//` comment lines before checking, so that
+        // explanation doesn't trip the very assertion it's explaining (same fix already applied to
+        // CardioGoalEditorPersistenceTests after it hit this exact false positive in CI).
+        let catchCode = source[catchStart.upperBound..<catchEnd.lowerBound]
+            .split(separator: "\n")
+            .map { line -> Substring in
+                guard let commentRange = line.range(of: "//") else { return line }
+                return line[line.startIndex..<commentRange.lowerBound]
+            }
+            .joined(separator: "\n")
+        XCTAssertFalse(
+            catchCode.contains("modelContext.rollback()"),
+            "the edit branch must restore the twenty fields individually, never via a blanket modelContext.rollback() that could discard unrelated pending changes"
+        )
+    }
 }
 #endif

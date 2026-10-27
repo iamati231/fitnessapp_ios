@@ -326,6 +326,12 @@ public final class UserBodyProfile {
 
     public var baselineDesiredFirstWeekIntensityRaw: String?
 
+    /// Audit-Fix (Lean): war identisch 4x in FitnessAppUI dupliziert
+    /// (TDEEView, MeasurementView, NutritionGoalsView, SettingsView).
+    public var ageYears: Int {
+        Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0
+    }
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var cardioGoal: CardioGoal {

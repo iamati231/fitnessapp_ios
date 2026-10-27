@@ -67,17 +67,62 @@ public enum GoalDrivenPlanSelectionBuilder {
         return DistributionConflict(requiredDays: required, availableDays: totalDaysPerWeek)
     }
 
-    /// Welches der vier Kraft-`TrainingTypeKind`s fuer ein kraftorientiertes
-    /// Ziel verwendet wird — abgeleitet aus dem bereits erfassten
-    /// Equipment-Profil (`UserEquipmentProfile.legacyEquipmentPreferences`),
-    /// NICHT erneut vom User abgefragt. Prioritaet Langhantel > Kurzhantel >
-    /// Kettlebell > Koerpergewicht (strukturierteste/anspruchsvollste zuerst,
+    /// Welches Kraft-`TrainingTypeKind` fuer ein kraftorientiertes Ziel
+    /// verwendet wird — abgeleitet aus dem bereits erfassten Equipment-Profil
+    /// (`UserEquipmentProfile.legacyEquipmentPreferences`), NICHT erneut vom
+    /// User abgefragt. Prioritaet Langhantel > Kurzhantel > Kettlebell >
+    /// Maschine > Koerpergewicht (strukturierteste/anspruchsvollste zuerst,
     /// Koerpergewicht als universeller, immer gueltiger Fallback).
+    ///
+    /// writing-block.md Punkt 3.2: Maschine reiht sich hier NACH Kettlebell
+    /// und VOR Koerpergewicht ein - freie Gewichte bleiben die bevorzugte
+    /// Wahl, wenn mehrere Optionen vorhanden sind, aber eine Maschine ist
+    /// weiterhin "mehr Ausstattung" als der universelle Koerpergewicht-
+    /// Fallback.
     public static func preferredStrengthKind(from equipmentPreferences: Set<Equipment>) -> TrainingTypeKind {
         if equipmentPreferences.contains(.barbell) { return .barbell }
         if equipmentPreferences.contains(.dumbbell) { return .dumbbell }
         if equipmentPreferences.contains(.kettlebell) { return .kettlebell }
+        if equipmentPreferences.contains(.machine) { return .machine }
         return .bodyweight
+    }
+
+    /// Bugfix (Epic #3.1): `preferredStrengthKind` above picks exactly ONE
+    /// kind by priority and discards the rest — selecting "Kurzhantel +
+    /// Kettlebell" silently produced a Kurzhantel-only plan, and the
+    /// selection ORDER (which equipment the user happened to tap first) had
+    /// no bearing on this, it was always the fixed priority list. This
+    /// plural variant returns EVERY `TrainingTypeKind` the user actually
+    /// selected (in priority order). `makeSelections` merges all of them
+    /// into ONE `PlanGeneratorTypeSelection.equipmentPool` covering the
+    /// whole week, rather than giving each kind its own exclusive days
+    /// (Device-Bugreport "Plan wird nach Geraeteart statt Trainingstagen
+    /// aufgeteilt": an earlier version of this fix DID give each kind its
+    /// own share of days, which solved "equipment silently dropped" but
+    /// introduced "every day uses exactly one equipment type" instead).
+    /// Falls back to `[.bodyweight]` under the same conditions
+    /// `preferredStrengthKind` falls back to it (no matching equipment
+    /// selected).
+    ///
+    /// writing-block.md Punkt 3.2: `.machine` is included as of this fix
+    /// (28 Katalog-Uebungen, 9 von 10 Muskelgruppen abgedeckt). `cable`/
+    /// `band` are deliberately still not: the Plan Generator's
+    /// `TrainingTypeKind` has no corresponding case for them (see its own
+    /// doc comment for the concrete catalog-coverage numbers — `cable` has
+    /// zero leg exercises, `band` covers only 4 of 10 muscle groups). Adding
+    /// a case for either without first expanding the exercise library would
+    /// just trade today's "silently falls back to bodyweight" problem for a
+    /// differently-silent "plan with no leg day"/"plan missing half the
+    /// body" problem — a separate, larger piece of work, not a regression
+    /// introduced here. Selecting only `cable`/`band` still falls through to
+    /// `[.bodyweight]`, unchanged.
+    public static func preferredStrengthKinds(from equipmentPreferences: Set<Equipment>) -> [TrainingTypeKind] {
+        let priorityOrder: [(Equipment, TrainingTypeKind)] = [
+            (.barbell, .barbell), (.dumbbell, .dumbbell), (.kettlebell, .kettlebell),
+            (.machine, .machine), (.bodyweight, .bodyweight)
+        ]
+        let matched = priorityOrder.filter { equipmentPreferences.contains($0.0) }.map(\.1)
+        return matched.isEmpty ? [.bodyweight] : matched
     }
 
     /// Baut die vollstaendige Auswahl fuer `PlanGeneratorInput.selections`.
@@ -104,22 +149,33 @@ public enum GoalDrivenPlanSelectionBuilder {
         totalDaysPerWeek: Int,
         sessionDurationMinutes: Int,
         experience: DifficultyLevel,
-        equipmentPreferences: Set<Equipment>
+        equipmentPreferences: Set<Equipment>,
+        cardioRunProfile: CardioRunProfile? = nil
     ) -> [PlanGeneratorTypeSelection] {
         guard totalDaysPerWeek > 0 else { return [] }
 
         switch goal {
         case .hypertrophy, .strength, .functional, .weightLoss:
-            let kind = preferredStrengthKind(from: equipmentPreferences)
+            // Device-Bugreport "Plan wird nach Geraeteart statt
+            // Trainingstagen aufgeteilt": ALLE gewaehlten Gerätearten bilden
+            // GEMEINSAM den Uebungspool einer einzigen Selection ueber die
+            // ganze Woche - sie sind kein Grund mehr, die Woche in separate,
+            // pro-Geraeteart exklusive Tage aufzuteilen (siehe
+            // `preferredStrengthKinds`-Doc oben).
+            let kinds = preferredStrengthKinds(from: equipmentPreferences)
+            let pool: Set<Equipment>? = kinds.count > 1 ? Set(kinds.compactMap(\.equipmentFilter)) : nil
             return [PlanGeneratorTypeSelection(
-                kind: kind, daysPerWeek: totalDaysPerWeek,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                kind: preferredStrengthKind(from: equipmentPreferences),
+                daysPerWeek: totalDaysPerWeek,
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                equipmentPool: pool
             )]
 
         case .endurance:
             return enduranceSelections(
                 modality: enduranceModality ?? .running, totalDays: totalDaysPerWeek,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                cardioRunProfile: cardioRunProfile
             )
 
         case .hybrid:
@@ -161,7 +217,8 @@ public enum GoalDrivenPlanSelectionBuilder {
                     if enduranceDays > 0 {
                         fallback.append(contentsOf: enduranceSelections(
                             modality: modality, totalDays: enduranceDays,
-                            sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                            sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                            cardioRunProfile: cardioRunProfile
                         ))
                     }
                     return fallback
@@ -180,23 +237,33 @@ public enum GoalDrivenPlanSelectionBuilder {
             if enduranceDays > 0 {
                 result.append(contentsOf: enduranceSelections(
                     modality: modality, totalDays: enduranceDays,
-                    sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                    sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                    cardioRunProfile: cardioRunProfile
                 ))
             }
             return result
         }
     }
 
+    /// `cardioRunProfile` wird auf JEDE hier erzeugte Selection gesetzt
+    /// (Laufen UND Radfahren bei `.both`) - `PlanGenerator.cardioCandidates`
+    /// liest das Feld ohnehin nur fuer `.running`-Selections aus (Pace nur
+    /// fuer `.easy`/`.tempo`-Laufzonen), Radfahren ignoriert es komplett
+    /// (siehe dortiger `guard selection.kind == .running`-Zweig). Ein
+    /// kind-abhaengiges Verzweigen hier waere also zusaetzlicher Code ohne
+    /// zusaetzlichen Effekt.
     private static func enduranceSelections(
         modality: EnduranceModality, totalDays: Int,
-        sessionDurationMinutes: Int, experience: DifficultyLevel
+        sessionDurationMinutes: Int, experience: DifficultyLevel,
+        cardioRunProfile: CardioRunProfile? = nil
     ) -> [PlanGeneratorTypeSelection] {
         let kinds = modality.trainingTypeKinds
         guard let firstKind = kinds.first else { return [] }
         guard kinds.count > 1, let secondKind = kinds.dropFirst().first else {
             return [PlanGeneratorTypeSelection(
                 kind: firstKind, daysPerWeek: totalDays,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                cardioRunProfile: cardioRunProfile
             )]
         }
         let firstDays = Int((Double(totalDays) / 2).rounded(.up))
@@ -205,13 +272,15 @@ public enum GoalDrivenPlanSelectionBuilder {
         if firstDays > 0 {
             result.append(PlanGeneratorTypeSelection(
                 kind: firstKind, daysPerWeek: firstDays,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                cardioRunProfile: cardioRunProfile
             ))
         }
         if secondDays > 0 {
             result.append(PlanGeneratorTypeSelection(
                 kind: secondKind, daysPerWeek: secondDays,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                cardioRunProfile: cardioRunProfile
             ))
         }
         return result

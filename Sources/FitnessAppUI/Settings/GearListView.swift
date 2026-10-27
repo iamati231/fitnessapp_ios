@@ -203,16 +203,6 @@ public struct GearListView: View {
     }
 
     /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     private func confirmDelete(_ gear: Gear) {
         pendingDelete = nil
         deleteErrorMessage = nil
@@ -398,6 +388,13 @@ private struct GearEditorView: View {
         isSaving = true
 
         var insertedGear: Gear?
+        // ponytail-audit (zweiter Durchlauf, gleicher Fehler wie
+        // `CardioGoalEditorView.save()`, Commit 8bdb416): Schnappschuss der
+        // fuenf Felder, die der `.edit`-Zweig gleich live mutiert - ohne das
+        // bliebe ein fehlgeschlagener Save mit nie bestaetigten Werten auf dem
+        // lebenden `Gear`-Objekt stehen (der `.new`-Zweig war bereits
+        // abgesichert, der `.edit`-Zweig nicht).
+        var editSnapshot: (gear: Gear, name: String, type: GearType, maxDistanceKm: Double, currentDistanceKm: Double, isActive: Bool)?
         switch mode {
         case .new:
             let gear = Gear(
@@ -410,6 +407,7 @@ private struct GearEditorView: View {
             modelContext.insert(gear)
             insertedGear = gear
         case .edit(let gear):
+            editSnapshot = (gear, gear.name, gear.type, gear.maxDistanceKm, gear.currentDistanceKm, gear.isActive)
             gear.name = trimmed
             gear.type = type
             gear.maxDistanceKm = maxDistance
@@ -425,6 +423,16 @@ private struct GearEditorView: View {
         } catch {
             if let insertedGear {
                 modelContext.delete(insertedGear)
+            }
+            // Gezielte Feld-fuer-Feld-Wiederherstellung, kein
+            // `modelContext.rollback()` (wuerde auch andere, unabhaengige,
+            // noch ausstehende Aenderungen im geteilten Context verwerfen).
+            if let editSnapshot {
+                editSnapshot.gear.name = editSnapshot.name
+                editSnapshot.gear.type = editSnapshot.type
+                editSnapshot.gear.maxDistanceKm = editSnapshot.maxDistanceKm
+                editSnapshot.gear.currentDistanceKm = editSnapshot.currentDistanceKm
+                editSnapshot.gear.isActive = editSnapshot.isActive
             }
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
             isSaving = false

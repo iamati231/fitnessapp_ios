@@ -737,16 +737,33 @@ public struct ProfileEditorView: View {
         }
     }
 
-    /// Paket 1 (Laufcoach-Plananpassung): der erste aktive Plan, falls
-    /// einer existiert - reuse der bereits geladenen `allPlans` (DEL-047),
-    /// keine zweite Query noetig.
+    /// Paket 1 (Laufcoach-Plananpassung): der Laufcoaching-relevante aktive
+    /// Plan, falls einer existiert - reuse der bereits geladenen `allPlans`
+    /// (DEL-047), keine zweite Query noetig. Task 9 (Review-Nachbesserung,
+    /// dritte Runde): vorher `allPlans.first { $0.isActive }` - ein dritter
+    /// Twin derselben nicht-deterministischen `@Query`-Reihenfolge-Auswahl
+    /// wie `DashboardView`s und `PlansListView`s inzwischen gefixte
+    /// Pendants (siehe `coachAdjustmentModel`-Doku unten: alle drei bilden
+    /// gemeinsam die Leitplanke-6-Verdrahtung). Review-Nachbesserung
+    /// (fuenfte Runde): `allPlans` laedt laut DEL-047-Doku oben AUCH
+    /// inaktive Plaene (bewusst, fuer den Trainingsort-Sync) -
+    /// `ActivePlanResolver` dokumentiert "unter den aktiven Plaenen" nur als
+    /// Praecondition, erzwingt sie nicht selbst. `.filter(\.isActive)`
+    /// unmittelbar davor ist deshalb zwingend, sonst koennte z.B. ein
+    /// einzelner laengst deaktivierter Cardio-Coach-Plan den case-1-Zweig
+    /// treffen und faelschlich zurueckgeliefert werden.
     private var activePlan: TrainingPlan? {
-        allPlans.first { $0.isActive }
+        ActivePlanResolver.cardioRelevantPlan(among: allPlans.filter(\.isActive))
     }
 
     /// Leitplanke 6: hat Vorrang vor `feasibilityModel`, sobald ein aktiver
     /// Plan existiert - siehe `feasibilityModel`s Guard unten und
     /// `CoachAdjustmentCardModel`s Typ-Doku fuer den vollen Vertrag.
+    /// Nachbesserung (finales Branch-Review, Fix 3): dieses `if/guard`-Paar
+    /// ist absichtlich dasselbe Muster wie `DashboardView`s fixer Kartenslot
+    /// und `PlansListView.coachAdjustmentModel`/`coachAdjustmentSection` -
+    /// die drei Stellen bilden gemeinsam die vollstaendige Leitplanke-6-
+    /// Verdrahtung, keine isolierte Einzelloesung hier.
     private var coachAdjustmentModel: CoachAdjustmentCardModel? {
         CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
     }
@@ -765,11 +782,16 @@ public struct ProfileEditorView: View {
                      : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                Text(model.verdict.feasible
-                     ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
-                     : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
-                    .font(.caption)
-                    .foregroundStyle(Color.Deltiq.textSecondary)
+                // Fix I-4 (Final-Review, Round 2): ohne Verdikt keine
+                // Machbarkeits-Aussage - siehe `CoachAdjustmentPreviewView.
+                // swift`s identischer Kommentar.
+                if let verdict = model.verdict {
+                    Text(verdict.feasible
+                         ? String(localized: "profile.cardio.feasibility.feasibleHeadline", bundle: .module)
+                         : String(localized: "profile.cardio.feasibility.infeasibleHeadline", bundle: .module))
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -1030,16 +1052,6 @@ public struct ProfileEditorView: View {
     // MARK: - Row helpers
 
     /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
-    private func hintRow(_ text: String, color: Color = Color.Deltiq.textSecondary) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(color)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     private static var minBirthDate: Date {
         Calendar.current.date(byAdding: .year, value: -125, to: Date()) ?? Date.distantPast
     }

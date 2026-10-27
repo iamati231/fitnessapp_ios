@@ -20,6 +20,19 @@ struct ExerciseCard: View {
     /// `SessionContentResolver` für die Auflösung.
     let content: TrainingDayContentSnapshot.ExerciseEntry
     let session: WorkoutSession
+    /// Task 8 (laufcoaching-remediation-round-2, Decision 1): durchgereicht
+    /// von `ActiveWorkoutView`s live `@Query private var profiles` bis zu
+    /// jeder `SetRow` - siehe dortige Doku-Kommentare fuer die "live, nicht
+    /// eingefroren"-Begruendung. Beide Felder sind reine Pass-through-Werte,
+    /// kein eigener State/Cache hier.
+    let cardioCoachingEnabled: Bool
+    let current5kReferenceSeconds: Int?
+    /// Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2: `true`
+    /// fuer JEDEN generator-gebauten Plan (`.planBuilder` ODER
+    /// `.cardioCoach`), `false` fuer `.manual` (Template-instanziiert) ODER
+    /// wenn Tag/Plan/Quelle unbekannt ist (`nil`) - siehe
+    /// `SetRow.targetPaceHint` fuer die konkrete Gating-Verwendung.
+    let isGeneratorPlan: Bool
     /// DEL-097 + DEL-108: Session-weiter Time-Set-Lock (Exercise × setIndex).
     /// Reicht durch zur SetRow, die den Lock claimt bzw. den eigenen
     /// Start-Button blockiert, wenn ein anderer Satz (gleicher oder fremder
@@ -76,6 +89,11 @@ struct ExerciseCard: View {
     /// braucht (ein `enum` mit `static let` hat keinen).
     @ScaledMetric(relativeTo: .title2) private var checkmarkColumnPlaceholderWidth: CGFloat = 28
 
+    /// Audit-Fix (Save-Fehler in Satz-Logging): sichtbarer Hinweis statt
+    /// stillem `try?`-Swallow in `logSet`/`unlogSet`. Kein globaler Toast -
+    /// eine Karte pro Uebung, der Hinweis gehoert zu GENAU dieser Karte.
+    @State private var saveErrorMessage: String?
+
     var body: some View {
         // UX-203: berechne EINMAL pro Render den aktiven Satz — der erste
         // mit `existingLog == nil`. Wenn alle completed sind, bleibt es nil
@@ -115,6 +133,9 @@ struct ExerciseCard: View {
                     session: session,
                     existingLog: existingLog(forSetIndex: setIndex),
                     previousLog: previousLog(forSetIndex: setIndex),
+                    cardioCoachingEnabled: cardioCoachingEnabled,
+                    current5kReferenceSeconds: current5kReferenceSeconds,
+                    isGeneratorPlan: isGeneratorPlan,
                     seedLog: seedLog(forSetIndex: setIndex),
                     onRequestDelete: content.sets > 1 ? { removeSet(at: setIndex) } : nil,
                     activeTimedSet: $activeTimedSet,
@@ -134,6 +155,12 @@ struct ExerciseCard: View {
                     // uebernimmt weiterhin die primaere visuelle Trennung.
                     Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
                 }
+            }
+
+            if let saveErrorMessage {
+                Text(saveErrorMessage)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.error)
             }
 
             if completedSetCount >= content.sets {
@@ -503,7 +530,7 @@ struct ExerciseCard: View {
               !exercise.isCardio,
               !exercise.isTimeBased,
               exercise.role == .workingSet,
-              isBarbellExercise,
+              exercise.isBarbellExercise,
               let workingKg = referenceWeightKg else { return nil }
 
         if weightUnitRaw == "lbs" {
@@ -519,16 +546,7 @@ struct ExerciseCard: View {
         return WarmupRampCalculator.ramp(workingWeightKg: workingKg)
     }
 
-    /// Barbell-Detection: DEL-159-Override gewinnt, sonst Library-Lookup
-    /// über den System-Namen. Custom-Übungen ohne Equipment → kein Ramp.
-    private var isBarbellExercise: Bool {
-        if let equipment = exercise.equipment {
-            return equipment == .barbell
-        }
-        return ExerciseLibraryData.all.first { $0.name == exercise.name }?.equipment == .barbell
-    }
-
-    /// Zielgewicht für die Rampe: Plan-Vorschlag (Smart-Progression pflegt
+/// Zielgewicht für die Rampe: Plan-Vorschlag (Smart-Progression pflegt
     /// `suggestedWeight`), sonst das Gewicht von Satz 1 der letzten Session.
     private var referenceWeightKg: Double? {
         if let suggested = exercise.suggestedWeight, suggested > 0 {
@@ -605,6 +623,7 @@ struct ExerciseCard: View {
     /// auch das bereits bestehende Kaltstart-sichere `unlogSet` direkt
     /// darunter als Gegenbeispiel (siehe dessen Doku-Kommentar).
     private func logSet(setIndex: Int, values: LoggedSetValues) {
+        saveErrorMessage = nil
         let log = ExerciseLog(
             date: Date(),
             setIndex: setIndex,
@@ -619,7 +638,19 @@ struct ExerciseCard: View {
             durationSeconds: values.durationSeconds
         )
         modelContext.insert(log)
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            // Gezielter Undo NUR dieses einen frisch eingefuegten Logs (kein
+            // `modelContext.rollback()`): `insert()` wirkt sofort auf den
+            // Live-Graphen, auf dem `existingLog(forSetIndex:)` liest - ohne
+            // dieses `delete` wuerde der Haken trotz fehlgeschlagenem Save
+            // bis zum naechsten Kaltstart faelschlich "geloggt" zeigen
+            // (siehe Doku-Kommentar oben zum urspruenglichen Kaltstart-Bug).
+            modelContext.delete(log)
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return
+        }
         onSetLogged(setIndex)
     }
 
@@ -637,9 +668,19 @@ struct ExerciseCard: View {
     /// stets `TrainingDayContentSnapshotWriter.recordSetCountChange` folgt,
     /// der selbst speichert — `unlogSet` hat keinen solchen Folgeaufruf.
     private func unlogSet(setIndex: Int) {
+        saveErrorMessage = nil
         guard let log = existingLog(forSetIndex: setIndex) else { return }
         modelContext.delete(log)
-        try? modelContext.save()
+        // Anders als in `logSet`: `delete()` wirkt ebenfalls sofort auf den
+        // Live-Graphen, die Zeile faellt also schon jetzt korrekt in den
+        // editierbaren Zustand zurueck, unabhaengig vom Save-Ergebnis - der
+        // Toast informiert nur ueber die Persistenz, kein zusaetzlicher
+        // Undo noetig oder (ohne eine "Re-Insert"-API) sinnvoll moeglich.
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
     }
 
     // MARK: - DEL-157 Dynamisches Set-Management

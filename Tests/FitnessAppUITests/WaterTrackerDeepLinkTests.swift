@@ -116,7 +116,7 @@ final class WaterTrackerDeepLinkTests: XCTestCase {
             XCTFail("groupNavigationSection not found in SettingsView.swift")
             return
         }
-        guard let end = settingsSource.range(of: "private func hintRow", range: start.upperBound..<settingsSource.endIndex) else {
+        guard let end = settingsSource.range(of: "private var dangerZoneSection: some View {", range: start.upperBound..<settingsSource.endIndex) else {
             XCTFail("could not find end of groupNavigationSection")
             return
         }

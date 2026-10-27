@@ -122,6 +122,40 @@ struct MealExtractionResponse {
     var items: [MealExtractionItem]
 }
 
+// Bugfix (writing-block.md 7.3, "zweite Ausgabe ist in ~90% der Faelle
+// unknown"): `unit`/`mealType` were plain `String` fields with a prose
+// @Guide description ("One of: gram, piece, ..., unknown") — that is NOT
+// constrained generation, just a hint. The model could (and per the ticket,
+// apparently did) return any string, and MealTextCandidateUnit(rawValue:)/
+// MealTextCandidateMealType(rawValue:) did an exact, case-sensitive match,
+// silently collapsing ANY deviation (casing, plural, a word in the input's
+// own language, extra punctuation) to `nil` — i.e. "unknown" even for a
+// clearly-stated value. Real `@Generable` enums (verified against Apple's
+// own FoundationModels docs via context7 — see `improving-the-safety-of-
+// generative-model-output`'s `Breakfast` example and `adding-intelligent-
+// app-features-with-generative-models`'s `Kind` enum nested inside a
+// `Generable` struct) give the framework's constrained sampling an actual
+// closed set of valid tokens to pick from, instead of free text the model
+// merely has a hint about.
+@available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
+@Generable
+enum MealExtractionUnit {
+    case gram
+    case piece
+    case milliliter
+    case unknown
+}
+
+@available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
+@Generable
+enum MealExtractionMealType {
+    case breakfast
+    case lunch
+    case dinner
+    case snack
+    case unknown
+}
+
 @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
 @Generable
 struct MealExtractionItem {
@@ -129,10 +163,10 @@ struct MealExtractionItem {
     var foodText: String
     @Guide(description: "The numeric amount stated for this food. Omit entirely if no amount was stated.")
     var quantity: Double?
-    @Guide(description: "Unit for quantity. One of: gram, piece, milliliter, unknown.")
-    var unit: String
-    @Guide(description: "Meal type suggested by the text (e.g. time-of-day words). One of: breakfast, lunch, dinner, snack, unknown.")
-    var mealType: String
+    @Guide(description: "Unit for the stated quantity. Pick unknown only if no unit is stated or implied at all.")
+    var unit: MealExtractionUnit
+    @Guide(description: "Meal type suggested by context (e.g. time-of-day words). Pick unknown only if nothing in the text implies one.")
+    var mealType: MealExtractionMealType
 }
 #endif
 
@@ -164,9 +198,34 @@ public struct FoundationModelsMealExtractor: NutritionAIMealExtracting {
         MealTextCandidate(
             foodText: item.foodText,
             quantity: item.quantity,
-            unit: MealTextCandidateUnit(rawValue: item.unit),
-            mealType: MealTextCandidateMealType(rawValue: item.mealType)
+            unit: Self.candidateUnit(from: item.unit),
+            mealType: Self.candidateMealType(from: item.mealType)
         )
+    }
+
+    /// Internal (not `private`) so `MealTextExtractorMappingTests` can verify
+    /// the mapping directly via `@testable import` — no FoundationModels
+    /// session/device needed to prove the switch covers every case and maps
+    /// `.unknown` to `nil`.
+    @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
+    static func candidateUnit(from unit: MealExtractionUnit) -> MealTextCandidateUnit? {
+        switch unit {
+        case .gram: return .gram
+        case .piece: return .piece
+        case .milliliter: return .milliliter
+        case .unknown: return nil
+        }
+    }
+
+    @available(iOS 26.0, macOS 26.0, visionOS 26.0, *)
+    static func candidateMealType(from mealType: MealExtractionMealType) -> MealTextCandidateMealType? {
+        switch mealType {
+        case .breakfast: return .breakfast
+        case .lunch: return .lunch
+        case .dinner: return .dinner
+        case .snack: return .snack
+        case .unknown: return nil
+        }
     }
     #endif
 }

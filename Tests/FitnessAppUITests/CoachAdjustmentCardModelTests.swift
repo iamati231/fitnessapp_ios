@@ -2,7 +2,7 @@
 import XCTest
 import SwiftData
 @testable import FitnessAppUI
-import FitnessAppData
+@testable import FitnessAppData
 import FitnessAppCore
 
 /// Paket 1 (Laufcoach-Plananpassung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
@@ -18,6 +18,43 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
 
     override func setUpWithError() throws {
         container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    }
+
+    override func tearDownWithError() throws {
+        container = nil
+        // Gleiches Muster wie `CardioFeasibilityCardModelTests`: statischer
+        // Test-DI-Seam auf dem Typ, nicht Instanz-State - muss nach jedem
+        // Test zurueckgesetzt werden, sonst "leakt" ein hier gesetzter Mock
+        // in alle nachfolgenden Tests.
+        PlanGeneratorInstantiator.saveOverrideForTesting = nil
+    }
+
+    private struct TestSaveError: Error {}
+
+    private var sourcesRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // this file
+            .deletingLastPathComponent() // FitnessAppUITests
+            .deletingLastPathComponent() // Tests
+            .appendingPathComponent("Sources/FitnessAppUI")
+    }
+
+    private func contents(of relativePath: String) throws -> String {
+        try String(contentsOf: sourcesRoot.appendingPathComponent(relativePath), encoding: .utf8)
+    }
+
+    private static func matchingBraceBlock(in source: String, afterOpenBrace start: String.Index) -> String? {
+        var depth = 1
+        var index = start
+        while index < source.endIndex {
+            let char = source[index]
+            if char == "{" { depth += 1 } else if char == "}" {
+                depth -= 1
+                if depth == 0 { return String(source[start..<index]) }
+            }
+            index = source.index(after: index)
+        }
+        return nil
     }
 
     /// Profil mit erreichbarem Laufziel (10K, 20 Wochen verfuegbar, 20 km/
@@ -49,10 +86,33 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
         return (profile, plan)
     }
 
+    /// Finding 1 (Lauf-Coaching-Audit): fuegt `count` zusaetzliche, sofort einfuegbare Ruhetage
+    /// (`isAutoFilledPlaceholder: true`, identisch zum echten `ProgramInstantiator`-Muster) zu
+    /// `plan` hinzu - lokal pro Test, NICHT in `makeProfileAndPlan` selbst, damit die vielen
+    /// anderen Tests, die `plan.days.count == 1` auf der unveraenderten Fixture voraussetzen
+    /// (z. B. `testKeepingAsIsLeavesCoachingPreferenceAndPlanUntouched`), unangetastet bleiben.
+    private func addEligibleRestDays(count: Int, to plan: TrainingPlan, startingWeekday: Int) {
+        for offset in 0..<count {
+            let restDay = TrainingDay(
+                name: "Ruhetag", weekday: startingWeekday + offset, type: .rest, plan: plan,
+                localizationKey: "day.restDay.title", isAutoFilledPlaceholder: true
+            )
+            context.insert(restDay)
+            plan.days.append(restDay)
+        }
+    }
+
     // MARK: - Leitplanke 2: Coach-Präferenz vs. Planübernahme getrennt
 
     func testAcceptNeverChangesCardioCoachingEnabled() throws {
         let (profile, plan) = makeProfileAndPlan()
+        // Finding 1 (Lauf-Coaching-Audit): `makeProfileAndPlan`s Standardziel `.tenK` braucht 3
+        // Lauftage, die Fixture hat aber nur 1 anfassbaren Tag - ohne freie Ruhetage wirft
+        // `accept()` jetzt korrekt `insufficientRestDays` (kein stiller Teilerfolg mehr), statt
+        // wie vor dem Fix still nur 1 von 3 Tagen zu ersetzen. 2 zusaetzliche Ruhetage geben dem
+        // Einfuege-Pfad genug Platz, damit dieser Test seine eigentliche Aussage (Coach-Praeferenz
+        // bleibt unberuehrt) ueberhaupt erreichen kann.
+        addEligibleRestDays(count: 2, to: plan, startingWeekday: 3)
         guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
             return XCTFail("expected model")
         }
@@ -83,21 +143,37 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
     /// zusätzlicher Tag, keine zusätzlichen Übungen.
     func testAcceptTwiceOnSameModelInstanceIsIdempotent() throws {
         let (profile, plan) = makeProfileAndPlan()
+        // Finding 1 (Lauf-Coaching-Audit): `.tenK` braucht 3 Lauftage, die Fixture hat nur 1
+        // anfassbaren Tag - 2 zusaetzliche Ruhetage geben dem Einfuege-Pfad genug Platz. Der erste
+        // `accept()` beruehrt dadurch DREI Tage (1 ersetzt + 2 eingefuegt), nicht mehr nur einen -
+        // der Doppeltap-No-Op muss daher ueber ALLE drei geprueft werden, nicht nur ueber
+        // `plan.days[0]`.
+        addEligibleRestDays(count: 2, to: plan, startingWeekday: 3)
         guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
             return XCTFail("expected model")
         }
 
         let firstCount = try model.accept(plan: plan, profile: profile, in: context)
         XCTAssertGreaterThan(firstCount, 0)
-        let dayIDAfterFirst = plan.days[0].persistentModelID
-        let exerciseCountAfterFirst = plan.days[0].activeExercises.count
         XCTAssertEqual(profile.cardioPlanAdjustmentFingerprint, model.fingerprint)
+        // Einfuegen konvertiert bestehende Ruhetage, erzeugt nie neue `TrainingDay`-Objekte (siehe
+        // `PlanGeneratorInstantiator.applyCoachCardioAdjustmentInsertingRemainder`) - der
+        // Tag-Bestand bleibt identisch zur Fixture (1 urspruenglicher + 2 hinzugefuegte Ruhetage).
+        XCTAssertEqual(plan.days.count, 3)
+        let snapshotAfterFirst = plan.days.map { (id: $0.persistentModelID, name: $0.name, type: $0.type, exerciseNames: $0.activeExercises.map(\.name)) }
 
         let secondCount = try model.accept(plan: plan, profile: profile, in: context)
         XCTAssertEqual(secondCount, 0, "zweiter Aufruf (Doppeltap) muss ein No-Op sein")
-        XCTAssertEqual(plan.days.count, 1, "kein zusätzlicher Tag")
-        XCTAssertEqual(plan.days[0].persistentModelID, dayIDAfterFirst)
-        XCTAssertEqual(plan.days[0].activeExercises.count, exerciseCountAfterFirst, "keine zusätzlichen Übungen")
+        XCTAssertEqual(plan.days.count, 3, "kein zusätzlicher Tag")
+        let snapshotAfterSecond = plan.days.map { (id: $0.persistentModelID, name: $0.name, type: $0.type, exerciseNames: $0.activeExercises.map(\.name)) }
+        for before in snapshotAfterFirst {
+            guard let after = snapshotAfterSecond.first(where: { $0.id == before.id }) else {
+                return XCTFail("Tag \(before.id) ist nach dem zweiten accept()-Aufruf verschwunden")
+            }
+            XCTAssertEqual(after.name, before.name, "keine Namensaenderung durch den No-Op-Aufruf")
+            XCTAssertEqual(after.type, before.type, "keine Typaenderung durch den No-Op-Aufruf")
+            XCTAssertEqual(after.exerciseNames, before.exerciseNames, "keine zusätzlichen Übungen")
+        }
     }
 
     /// Ein frisch über `make(for:activePlan:)` berechnetes, NEUES
@@ -108,6 +184,9 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
     /// Snapshot.
     func testFreshlyMadeModelAfterAcceptReportsAlreadyApplied() throws {
         let (profile, plan) = makeProfileAndPlan()
+        // Finding 1 (Lauf-Coaching-Audit): siehe `testAcceptNeverChangesCardioCoachingEnabled` -
+        // `.tenK` braucht 3 Lauftage, die Fixture hat nur 1 anfassbaren Tag.
+        addEligibleRestDays(count: 2, to: plan, startingWeekday: 3)
         guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
             return XCTFail("expected model")
         }
@@ -119,6 +198,489 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
         XCTAssertTrue(secondModel.isAlreadyApplied)
         let count = try secondModel.accept(plan: plan, profile: profile, in: context)
         XCTAssertEqual(count, 0)
+    }
+
+    // MARK: - proposedGoal (Task 6, Decision 3 Teil 1: Machbarkeits-Check einfalten)
+
+    /// (a) Feasibler Verdikt (10K, 20 Wochen verfuegbar, 20 km/Woche Basis,
+    /// siehe `makeProfileAndPlan`) -> `proposedGoal` bleibt das vom Nutzer
+    /// gepflegte `profile.cardioGoal`, kein Downgrade noetig.
+    func testProposedGoalEqualsCurrentGoalWhenFeasible() {
+        let (profile, plan) = makeProfileAndPlan()
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertEqual(model.proposedGoal, profile.cardioGoal)
+    }
+
+    /// (b) Infeasibler Verdikt mit kleinerem erreichbarem Ziel (Marathon in 7
+    /// Wochen bei 15 km/Woche Basis -> 5K bleibt als einziges erreichbares
+    /// Ziel, identisch zum Testaufbau in `CardioFeasibilityCardModelTests`)
+    /// -> `proposedGoal` MUSS das vorgeschlagene kleinere Ziel sein, NICHT
+    /// das weiterhin unveraenderte `profile.cardioGoal`.
+    func testProposedGoalEqualsSuggestedGoalWhenInfeasible() {
+        let (profile, plan) = makeProfileAndPlan()
+        profile.cardioGoal = .marathon
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertEqual(model.verdict?.feasible, false, "Testaufbau: Marathon in 7 Wochen bei 15 km Basis muss NICHT erreichbar sein")
+        XCTAssertEqual(model.proposedGoal, .fiveK, "proposedGoal muss das vorgeschlagene kleinere Ziel sein, nicht das unveraenderte profile.cardioGoal")
+    }
+
+    /// (c) Kein Renn-Datum/Wochenvolumen gepflegt -> kein Machbarkeits-Check
+    /// moeglich, `CoachAdjustmentCardModel.make` darf deswegen NICHT `nil`
+    /// liefern (ein aktiver Plan mit anfassbarem Cardio-Tag reicht fuer die
+    /// reine "aktuelles Ziel uebernehmen"-Anpassung) - `proposedGoal` faellt
+    /// in diesem Fall auf das unveraenderte `profile.cardioGoal` zurueck.
+    func testProposedGoalFallsBackToCurrentGoalAndModelStaysNonNilWithoutRaceDateOrVolume() {
+        let (profile, plan) = makeProfileAndPlan()
+        profile.cardioRaceDate = nil
+        profile.weeklyBaseVolumeKm = nil
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("make() must still return non-nil without race date/weekly volume (no feasibility opinion possible, not a reason to suppress the plain adjustment)")
+        }
+        XCTAssertNil(model.verdict, "ohne Renn-Datum/Wochenvolumen kann kein Verdikt berechnet werden")
+        XCTAssertEqual(model.proposedGoal, profile.cardioGoal)
+    }
+
+    // MARK: - cardioRunProfile (Task 9 Nachbesserung, Review-Fund)
+
+    /// Ohne diesen Parameter blieb `targetPaceMinutesPerKm` auf jedem ueber
+    /// diesen Merge-Pfad erzeugten Lauf-Tag immer `nil`, weil
+    /// `cardioOnlyDaySpecs` `CardioFeasibilityCalculator.planGeneratorInput`
+    /// ohne Baseline aufrief.
+    func testCardioOnlyDaySpecsThreadsCardioRunProfileIntoRunExercises() {
+        let profile = CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        let specs = CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: .tenK, cardioRunProfile: profile)
+        let easyOrTempoExercises = specs.flatMap(\.exercises).filter { $0.isCardio && $0.targetDurationMinutes != nil }
+        XCTAssertFalse(easyOrTempoExercises.isEmpty, "expected at least one duration-based (easy/tempo) run exercise")
+        XCTAssertTrue(easyOrTempoExercises.allSatisfy { $0.targetPaceMinutesPerKm != nil }, "every easy/tempo run exercise must carry the baseline pace")
+    }
+
+    /// Review Focus 1 (dieser Plan): omitting the new defaulted trailing
+    /// parameter must reproduce the previous (always-nil-pace) output
+    /// exactly - no accidental behavior change for existing callers.
+    func testOmittingCardioRunProfileReproducesThePreviousOutputExactly() {
+        for goal in CardioGoal.allCases {
+            let withExplicitNil = CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: goal, cardioRunProfile: nil)
+            let withOmittedParameter = CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: goal)
+            XCTAssertEqual(withExplicitNil, withOmittedParameter)
+            XCTAssertTrue(withOmittedParameter.flatMap(\.exercises).allSatisfy { $0.targetPaceMinutesPerKm == nil })
+        }
+    }
+
+    // MARK: - Task 7 (Decision 3 Teil 2): accept() wendet das vorgeschlagene, nicht das stale Ziel an
+
+    /// Mirror von `CardioFeasibilityCardModelTests.
+    /// testAcceptAppliesTheSuggestedGoalNotTheStaleInfeasibleGoalWhenAdjustingInPlace`
+    /// fuer den In-Place-Merge-Pfad: Marathon in 7 Wochen bei 15 km/Woche
+    /// Basis ist nicht erreichbar, 5K ist das einzige kleinere erreichbare
+    /// Ziel (`testProposedGoalEqualsSuggestedGoalWhenInfeasible` oben prueft
+    /// bereits `model.proposedGoal` selbst) - `accept()` muss diesen
+    /// Vorschlag tatsaechlich auf den Plan anwenden UND `profile.cardioGoal`
+    /// damit mitziehen, nicht am stale `.marathon` haengen bleiben.
+    func testAcceptAppliesTheSuggestedGoalNotTheStaleInfeasibleGoalWhenAdjustingInPlace() throws {
+        let (profile, plan) = makeProfileAndPlan()
+        // Der urspruenglich einzige Tag der Fixture - ID VOR dem Hinzufuegen weiterer Ruhetage
+        // erfasst, damit die spaetere Zuordnung nicht von der (nicht garantierten) Reihenfolge von
+        // `plan.days` abhaengt.
+        let originalDayID = try XCTUnwrap(plan.days.first).persistentModelID
+        profile.cardioGoal = .marathon
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        // Finding 1 (Lauf-Coaching-Audit): das vorgeschlagene Ersatzziel ist 5K (2 Lauftage,
+        // siehe unten), die Fixture hat nur 1 anfassbaren Tag - 1 zusaetzlicher Ruhetag reicht,
+        // 2 schaden nicht (der zweite bleibt schlicht ungenutzter Ruhetag).
+        addEligibleRestDays(count: 2, to: plan, startingWeekday: 3)
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertEqual(model.verdict?.feasible, false, "Testaufbau: Marathon in 7 Wochen bei 15 km Basis muss NICHT erreichbar sein")
+        guard let proposedGoal = model.proposedGoal else {
+            return XCTFail("Testaufbau: es sollte ein kleineres, erreichbares Ziel vorgeschlagen werden")
+        }
+        XCTAssertNotEqual(proposedGoal, profile.cardioGoal, "Testaufbau: der Vorschlag muss vom urspruenglichen Ziel abweichen")
+
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertGreaterThan(count, 0)
+
+        // (b) profile.cardioGoal muss auf das vorgeschlagene Ziel mitgezogen worden sein - NICHT
+        // das alte, nicht erreichbare Ziel.
+        XCTAssertEqual(profile.cardioGoal, proposedGoal)
+
+        // (a) der urspruenglich anfassbare Tag muss den Spezifikationen fuer `proposedGoal`
+        // entsprechen - per ID nachgeschlagen, nicht per Array-Index (`plan.days[0]` ist seit der
+        // Ergaenzung weiterer Tage nicht mehr garantiert derselbe Tag).
+        let expectedSpecs = CoachAdjustmentCardModel.cardioOnlyDaySpecs(
+            for: proposedGoal,
+            cardioRunProfile: CardioRunProfile(
+                goal: proposedGoal,
+                current5kReferenceSeconds: profile.current5kReferenceSeconds,
+                weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm
+            )
+        )
+        XCTAssertFalse(expectedSpecs.isEmpty, "Testaufbau: es sollte Cardio-Tagesinhalte fuer das vorgeschlagene Ziel geben")
+        let originalDay = try XCTUnwrap(plan.days.first { $0.persistentModelID == originalDayID })
+        XCTAssertEqual(
+            originalDay.activeExercises.map(\.name), expectedSpecs[0].exercises.map(\.name),
+            "der angepasste Tag muss den Inhalt fuer das VORGESCHLAGENE Ziel tragen"
+        )
+    }
+
+    /// Mirror von `CardioFeasibilityCardModelTests.
+    /// testAcceptRestoresTheOriginalCardioGoalWhenTheInPlaceAdjustmentFails`
+    /// fuer den In-Place-Merge-Pfad: erzwingt ueber denselben
+    /// `PlanGeneratorInstantiator.saveOverrideForTesting`-DI-Seam einen Fehlschlag
+    /// im echten `save()` innerhalb `applyCoachCardioAdjustment` - `profile.cardioGoal`
+    /// darf danach nicht auf das Vorschlags-Ziel haengen bleiben, obwohl nichts
+    /// uebernommen wurde.
+    func testAcceptRestoresTheOriginalCardioGoalWhenTheInPlaceAdjustmentFails() throws {
+        let (profile, plan) = makeProfileAndPlan()
+        profile.cardioGoal = .marathon
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        guard let proposedGoal = model.proposedGoal else {
+            return XCTFail("Testaufbau: es sollte ein kleineres, erreichbares Ziel vorgeschlagen werden")
+        }
+        XCTAssertNotEqual(proposedGoal, profile.cardioGoal, "Testaufbau: der Vorschlag muss vom urspruenglichen Ziel abweichen")
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        XCTAssertThrowsError(try model.accept(plan: plan, profile: profile, in: context))
+
+        XCTAssertEqual(
+            profile.cardioGoal, .marathon,
+            "ein gescheiterter Versuch darf profile.cardioGoal nicht auf das Vorschlags-Ziel haengen lassen"
+        )
+        XCTAssertNil(profile.cardioPlanAdjustmentFingerprint, "nichts wurde uebernommen - kein Fingerprint darf gesetzt sein")
+    }
+
+    // MARK: - Fix I-1 (Final-Review, Round 2): fingerprint folgt proposedGoal, nicht dem stale Ziel
+
+    /// Reproduziert exakt den Reappearing-Card-Bug: eine FRISCHE `make()`-
+    /// Auswertung nach erfolgreichem `accept()` im infeasiblen Szenario
+    /// (identisches Marathon/7-Wochen/15km-Fixture wie oben) muss
+    /// `isAlreadyApplied == true` liefern. Vor dem Fix berechnete `make()`
+    /// den Fingerprint aus dem inzwischen aktualisierten `profile.cardioGoal`
+    /// (jetzt `.fiveK`), der nicht mehr zum gespeicherten, aus dem ALTEN
+    /// `.marathon`-Ziel berechneten Fingerprint passte - die Karte erschien
+    /// faelschlich wieder als ausstehend, und ein zweiter `accept()`-Aufruf
+    /// haette dieselbe Anpassung doppelt angewendet.
+    func testFreshlyMadeModelAfterAcceptReportsAlreadyAppliedWhenGoalWasDowngraded() throws {
+        let (profile, plan) = makeProfileAndPlan()
+        profile.cardioGoal = .marathon
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 7)
+        profile.weeklyBaseVolumeKm = 15
+        // Finding 1 (Lauf-Coaching-Audit): das vorgeschlagene Ersatzziel ist 5K (2 Lauftage), die
+        // Fixture hat nur 1 anfassbaren Tag - genug freie Ruhetage fuer den Einfuege-Pfad.
+        addEligibleRestDays(count: 2, to: plan, startingWeekday: 3)
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertEqual(model.verdict?.feasible, false, "Testaufbau: Marathon in 7 Wochen bei 15 km Basis muss NICHT erreichbar sein")
+
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertGreaterThan(count, 0)
+
+        guard let freshModel = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        XCTAssertTrue(
+            freshModel.isAlreadyApplied,
+            "eine frische make()-Auswertung nach erfolgreichem accept() muss die Anpassung als bereits uebernommen erkennen, obwohl sich profile.cardioGoal zwischenzeitlich auf das vorgeschlagene Ziel geaendert hat"
+        )
+
+        let secondCount = try freshModel.accept(plan: plan, profile: profile, in: context)
+        XCTAssertEqual(secondCount, 0, "ein zweiter accept()-Aufruf nach bereits erfolgter Uebernahme muss ein No-Op sein, keine doppelte Anwendung")
+    }
+
+    // MARK: - Task 7: CoachAdjustmentPreviewView nutzt model.proposedGoal fuer die Tagesgenerierung
+
+    /// Source-introspection (kein SwiftUI-Render-Harness in diesem Repo),
+    /// gleiches Muster wie `CardioFeasibilityDayRowPaceTests`: stellt sicher,
+    /// dass die Vorschau dasselbe Ziel anzeigt, das `accept()` tatsaechlich
+    /// anwendet (`model.proposedGoal`), statt des rohen, moeglicherweise
+    /// nicht erreichbaren `profile.cardioGoal`.
+    func testCoachAdjustmentPreviewViewUsesModelProposedGoalForDayGeneration() throws {
+        let source = try contents(of: "Cardio/CoachAdjustmentPreviewView.swift")
+        guard let funcRange = source.range(of: "private func newCardioDays(for model: CoachAdjustmentCardModel) -> [DaySpec] {") else {
+            XCTFail("newCardioDays(for:) function not found"); return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: funcRange.upperBound))
+        XCTAssertTrue(
+            block.contains("model.proposedGoal ?? profile.cardioGoal"),
+            "must use the model's proposed goal, falling back to the raw profile goal only when there is no suggestion"
+        )
+
+        XCTAssertTrue(
+            source.contains("newCardioDays(for: model)"),
+            "the call site inside beforeAfterSection must pass the model through, not read the stale standalone property"
+        )
+    }
+
+    // MARK: - Task 10 (Protection regression suite): insertion-path specific coverage
+    //
+    // `testAcceptTwiceOnSameModelInstanceIsIdempotent` and
+    // `testAcceptRestoresTheOriginalCardioGoalWhenTheInPlaceAdjustmentFails`
+    // above both use `makeProfileAndPlan()`, whose plan already has one
+    // eligible cardio day. `testAcceptRestoresTheOriginalCardioGoalWhenTheInPlaceAdjustmentFails`
+    // forces its failure before any insertion decision is made, so it still only exercises the
+    // REPLACE branch (`applyCoachCardioAdjustment`). `testAcceptTwiceOnSameModelInstanceIsIdempotent`
+    // (Finding 1, Lauf-Coaching-Audit) now ALSO exercises `applyCoachCardioAdjustmentInsertingRemainder`
+    // (its fixture needs 2 extra rest days for `.tenK`'s 3 run-days) - but neither test proves the
+    // same two guarantees hold on the dedicated, zero-eligible-days INSERTION branch
+    // (`insertCoachCardioDays`, Task 6/7). These two tests close that gap,
+    // reusing the identical `saveOverrideForTesting` DI seam
+    // `CoachCardioInsertionTests.swift` already established for the
+    // insertion mechanics themselves.
+
+    /// Zero-cardio-day plan with exactly as many `isAutoFilledPlaceholder`
+    /// rest days as `.fiveK` needs run-days for (`CardioFeasibilityCalculator.
+    /// planGeneratorInput`: `.fiveK` -> `runDays: 2`, `strengthDays: 2` -
+    /// `cardioOnlyDaySpecs` filters the strength days out, so exactly 2
+    /// cardio-only specs come back) - `accept()` must therefore take the
+    /// `eligibleDays.isEmpty` -> `insertCoachCardioDays` branch, not the
+    /// replace branch. No race date/weekly volume set (same reasoning as
+    /// `testProposedGoalFallsBackToCurrentGoalAndModelStaysNonNilWithoutRaceDateOrVolume`
+    /// above): keeps `verdict == nil`/`proposedGoal == profile.cardioGoal`,
+    /// so the only moving part under test is the insertion branch itself.
+    private func makeProfileAndZeroCardioPlanWithTwoInsertableRestDays() -> (UserBodyProfile, TrainingPlan, [TrainingDay]) {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: .fiveK
+        )
+        context.insert(profile)
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+
+        let restDay1 = TrainingDay(name: "Ruhetag", weekday: 2, type: .rest, plan: plan, isAutoFilledPlaceholder: true)
+        let restDay2 = TrainingDay(name: "Ruhetag", weekday: 4, type: .rest, plan: plan, isAutoFilledPlaceholder: true)
+        context.insert(restDay1)
+        context.insert(restDay2)
+        plan.days.append(restDay1)
+        plan.days.append(restDay2)
+
+        try? context.save()
+        return (profile, plan, [restDay1, restDay2])
+    }
+
+    /// Review-Punkt 7 / historisches Round-2-Bugmuster, jetzt fuer den
+    /// Einfuege-Pfad: ein Doppeltap ruft `accept()` zweimal auf DERSELBEN
+    /// Modell-Instanz auf. Der Schutz in `accept()` (`guard profile.
+    /// cardioPlanAdjustmentFingerprint != fingerprint else { return 0 }`,
+    /// siehe dortige Doku "Bugfix (Leitplanke 3, ...)") liest `profile` LIVE
+    /// und sitzt VOR der Verzweigung in Ersetzungs-/Einfuege-Pfad - dieser
+    /// Test beweist, dass das tatsaechlich auch fuer den Einfuege-Pfad gilt,
+    /// nicht nur behauptet wird.
+    func testAcceptTwiceOnSameModelInstanceIsIdempotentForTheInsertionPath() throws {
+        let (profile, plan, restDays) = makeProfileAndZeroCardioPlanWithTwoInsertableRestDays()
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+
+        let firstCount = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertEqual(firstCount, 2, "both insertable rest days must have been converted")
+        XCTAssertTrue(restDays.allSatisfy { $0.type == .cardio }, "both selected rest days must now be cardio days")
+        let dayIDsAfterFirst = Set(plan.days.map(\.persistentModelID))
+        let exerciseCountsAfterFirst = restDays.map(\.activeExercises.count)
+        XCTAssertEqual(profile.cardioPlanAdjustmentFingerprint, model.fingerprint)
+
+        let secondCount = try model.accept(plan: plan, profile: profile, in: context)
+
+        XCTAssertEqual(secondCount, 0, "zweiter Aufruf (Doppeltap) muss auch auf dem Einfuege-Pfad ein No-Op sein")
+        XCTAssertEqual(plan.days.count, 2, "kein zusaetzlicher Tag darf eingefuegt worden sein")
+        XCTAssertEqual(Set(plan.days.map(\.persistentModelID)), dayIDsAfterFirst)
+        XCTAssertEqual(restDays.map(\.activeExercises.count), exerciseCountsAfterFirst, "keine zusaetzlichen Uebungen")
+    }
+
+    /// Integrations-Version von `CoachCardioInsertionTests.
+    /// test_insertCoachCardioDays_revertOnFailure_restoresDayTypeToRest`,
+    /// hier durch `CoachAdjustmentCardModel.accept` statt direkt durch
+    /// `PlanGeneratorInstantiator.insertCoachCardioDays` getrieben - beweist,
+    /// dass der komplette Aufrufpfad (inklusive `accept()`s eigener
+    /// Nachbereitung) bei einem gescheiterten Save weder einen Tag halb
+    /// umgewandelt laesst noch `cardioPlanAdjustmentFingerprint`/
+    /// `cardioGoal` faelschlich setzt.
+    func testInsertionAcceptSaveFailureLeavesNoPartialDaysAndNoFingerprint() throws {
+        let (profile, plan, restDays) = makeProfileAndZeroCardioPlanWithTwoInsertableRestDays()
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        let originalGoal = profile.cardioGoal
+
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        XCTAssertThrowsError(try model.accept(plan: plan, profile: profile, in: context))
+
+        for day in restDays {
+            XCTAssertEqual(day.type, .rest, "oldType muss zurueckgeschrieben werden")
+            XCTAssertEqual(day.name, "Ruhetag")
+            XCTAssertNil(day.customName)
+            XCTAssertTrue(day.activeExercises.isEmpty, "eingefuegte Uebungen muessen wieder geloescht sein")
+            XCTAssertNil(day.generationFingerprint)
+            XCTAssertTrue(day.isAutoFilledPlaceholder, "der Herkunfts-Stempel bleibt unveraendert stehen")
+        }
+        XCTAssertNil(profile.cardioPlanAdjustmentFingerprint, "nichts wurde uebernommen - kein Fingerprint darf gesetzt sein")
+        XCTAssertEqual(profile.cardioGoal, originalGoal, "ein gescheiterter Versuch darf profile.cardioGoal nicht anfassen")
+    }
+
+    // MARK: - Finding 1 (Lauf-Coaching-Audit): Zielwechsel braucht mehr/weniger Lauftage als vorhanden
+    //
+    // Vorher: `accept()` verzweigte nur auf `eligibleDays.isEmpty`, nie auf einen
+    // Anzahl-Mismatch gegen `newCardioDays` - `applyCoachCardioAdjustment`s `zip` stoppte
+    // still bei `min(count)`, meldete das als vollstaendigen Erfolg und setzte den
+    // Fingerprint, obwohl der Plan nicht die vom neuen Ziel verlangte Anzahl Lauftage hatte.
+
+    /// Finding 1 (Lauf-Coaching-Audit): Profil + aktiver Plan mit `eligibleCardioDayCount`
+    /// anfassbaren Cardio-Tagen (identisches Muster wie `makeProfileAndPlan` oben, nur mit
+    /// variabler Anzahl) UND `insertableRestDayCount` zusaetzlichen einfuegbaren Ruhetagen.
+    /// Kein Renn-Datum/Wochenvolumen gesetzt (`verdict == nil`), damit
+    /// `effectiveProposedGoal` in `accept()` direkt `profile.cardioGoal` ist - der einzige
+    /// bewegliche Teil in diesen Tests bleibt die Zaehl-Logik (grow/shrink) selbst, nicht
+    /// die Machbarkeits-Berechnung.
+    private func makeProfileAndPlan(
+        goal: CardioGoal, eligibleCardioDayCount: Int, insertableRestDayCount: Int = 0
+    ) -> (UserBodyProfile, TrainingPlan, eligibleDays: [TrainingDay]) {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: goal
+        )
+        context.insert(profile)
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+
+        var eligibleDays: [TrainingDay] = []
+        for index in 0..<eligibleCardioDayCount {
+            let day = TrainingDay(name: "Run \(index)", weekday: index + 1, type: .fullBody, plan: plan)
+            context.insert(day)
+            let run = Exercise(name: "Easy Run", isCardio: true, day: day)
+            context.insert(run)
+            day.exercises.append(run)
+            day.generationFingerprint = day.currentContentFingerprint
+            plan.days.append(day)
+            eligibleDays.append(day)
+        }
+        for index in 0..<insertableRestDayCount {
+            let restDay = TrainingDay(
+                name: "Ruhetag", weekday: eligibleCardioDayCount + index + 1, type: .rest, plan: plan,
+                isAutoFilledPlaceholder: true
+            )
+            context.insert(restDay)
+            plan.days.append(restDay)
+        }
+
+        try? context.save()
+        return (profile, plan, eligibleDays)
+    }
+
+    /// Goal-Upgrade: 2 bestehende anfassbare Cardio-Tage, Ziel wechselt auf Marathon (braucht
+    /// 5 Lauftage) mit genug freien Ruhetagen -> `accept()` darf NICHT bei `min(2, 5) == 2`
+    /// stehen bleiben (der urspruengliche Bug), sondern muss alle 5 tatsaechlich anwenden:
+    /// beide bestehenden Tage ersetzen UND 3 weitere Ruhetage einfuegen, atomar.
+    func testAcceptAppliesFullGoalWhenNewGoalNeedsMoreDaysThanExist() throws {
+        let (profile, plan, eligibleDays) = makeProfileAndPlan(
+            goal: .marathon, eligibleCardioDayCount: 2, insertableRestDayCount: 3
+        )
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+
+        XCTAssertEqual(count, 5, "Marathon braucht 5 Lauftage - der alte Bug lieferte hier min(2,5) == 2")
+        XCTAssertEqual(profile.cardioPlanAdjustmentFingerprint, model.fingerprint)
+        let cardioContentDays = plan.days.filter { !$0.activeExercises.isEmpty && $0.activeExercises.allSatisfy(\.isCardio) }
+        XCTAssertEqual(cardioContentDays.count, 5, "der Plan muss am Ende tatsaechlich 5 Cardio-Tage haben, nicht nur 2")
+        XCTAssertTrue(eligibleDays.allSatisfy { $0.activeExercises.allSatisfy(\.isCardio) }, "beide urspruenglich anfassbaren Tage muessen ersetzt worden sein")
+    }
+
+    /// Goal-Upgrade ohne genug freie Ruhetage: darf NICHT still nur 2 von 5 anwenden (der
+    /// alte Bug) - muss stattdessen komplett fehlschlagen, kein Fingerprint, kein
+    /// `cardioGoal`-Wechsel, kein einziger Tag angefasst.
+    func testAcceptThrowsAndWritesNothingWhenNewGoalNeedsMoreDaysThanAvailableRestDays() throws {
+        let (profile, plan, eligibleDays) = makeProfileAndPlan(
+            goal: .marathon, eligibleCardioDayCount: 2, insertableRestDayCount: 1
+        )
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        let originalGoal = profile.cardioGoal
+        let originalDayCount = plan.days.count
+        let eligibleDaySnapshot = eligibleDays.map { ($0.persistentModelID, $0.activeExercises.map(\.name)) }
+
+        XCTAssertThrowsError(try model.accept(plan: plan, profile: profile, in: context)) { error in
+            XCTAssertEqual(error as? PlanGeneratorInstantiator.CardioInsertionError, .insufficientRestDays)
+        }
+
+        XCTAssertNil(profile.cardioPlanAdjustmentFingerprint, "nichts wurde uebernommen - kein Fingerprint darf gesetzt sein")
+        XCTAssertEqual(profile.cardioGoal, originalGoal, "ein gescheiterter Versuch darf profile.cardioGoal nicht anfassen")
+        XCTAssertEqual(plan.days.count, originalDayCount, "kein zusaetzlicher Tag darf entstanden sein")
+        for (id, names) in eligibleDaySnapshot {
+            let day = plan.days.first { $0.persistentModelID == id }
+            XCTAssertEqual(day?.activeExercises.map(\.name), names, "kein bestehender Tag darf halb/teilweise ersetzt worden sein")
+        }
+    }
+
+    /// Goal-Downgrade: 5 bestehende anfassbare Cardio-Tage, Ziel wechselt auf 5K (braucht nur
+    /// 2 Lauftage) -> die ersten 2 werden ersetzt, die ueberzaehligen 3 muessen auf Ruhetage
+    /// zurueckgesetzt werden statt unveraendert/unerklaert als alte Cardio-Tage stehen zu
+    /// bleiben (der alte Bug liess sie einfach unberuehrt).
+    func testAcceptReleasesSurplusDaysToRestWhenNewGoalNeedsFewerDaysThanExist() throws {
+        let (profile, plan, eligibleDays) = makeProfileAndPlan(goal: .fiveK, eligibleCardioDayCount: 5)
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+
+        XCTAssertEqual(count, 2, "5K braucht nur 2 Lauftage")
+        XCTAssertEqual(profile.cardioPlanAdjustmentFingerprint, model.fingerprint)
+        let cardioContentDays = plan.days.filter { !$0.activeExercises.isEmpty && $0.activeExercises.allSatisfy(\.isCardio) }
+        let restDays = plan.days.filter { $0.type == .rest }
+        XCTAssertEqual(cardioContentDays.count, 2, "nur 2 Tage duerfen am Ende noch Cardio-Inhalt tragen")
+        XCTAssertEqual(restDays.count, 3, "die ueberzaehligen 3 Tage muessen zu Ruhetagen zurueckgesetzt worden sein")
+        for restDay in restDays {
+            XCTAssertTrue(eligibleDays.contains { $0.persistentModelID == restDay.persistentModelID }, "nur bereits anfassbare Tage duerfen zurueckgesetzt worden sein")
+            XCTAssertTrue(restDay.activeExercises.isEmpty)
+            XCTAssertNil(restDay.customName)
+        }
+    }
+
+    /// Ein manuell editierter (nicht anfassbarer) Cardio-Tag darf von der
+    /// Zuruecksetzen-Logik NIE angefasst werden, auch wenn genug andere, echte anfassbare
+    /// Tage den Shrink-Pfad ausloesen.
+    func testAcceptNeverTouchesAManuallyEditedCardioDayWhenReleasingSurplus() throws {
+        let (profile, plan, _) = makeProfileAndPlan(goal: .fiveK, eligibleCardioDayCount: 5)
+        let manuallyEditedDay = TrainingDay(name: "Mein eigener Lauf", weekday: 6, type: .fullBody, plan: plan)
+        context.insert(manuallyEditedDay)
+        let run = Exercise(name: "Mein Lauf", isCardio: true, day: manuallyEditedDay)
+        context.insert(run)
+        manuallyEditedDay.exercises.append(run)
+        // Mismatched fingerprint = seit der Erzeugung manuell editiert -> von `eligibleDays`
+        // ausgeschlossen (siehe `RunCoachPlanAdjustment.isEligibleForAdjustment`).
+        manuallyEditedDay.generationFingerprint = "stale-fingerprint-not-matching-current-content"
+        plan.days.append(manuallyEditedDay)
+        try? context.save()
+
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        let originalName = manuallyEditedDay.name
+        let originalExerciseNames = manuallyEditedDay.activeExercises.map(\.name)
+
+        _ = try model.accept(plan: plan, profile: profile, in: context)
+
+        XCTAssertEqual(manuallyEditedDay.name, originalName, "ein manuell editierter Tag darf nie angefasst werden")
+        XCTAssertEqual(manuallyEditedDay.activeExercises.map(\.name), originalExerciseNames)
+        XCTAssertEqual(manuallyEditedDay.type, .fullBody)
     }
 }
 #endif

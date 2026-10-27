@@ -33,11 +33,11 @@ struct CardioGoalEditorView: View {
 
     @State private var draftCardioCoachingEnabled: Bool
     @State private var draftEnduranceModality: EnduranceModality?
-    @State private var draftCardioGoal: CardioGoal
-    @State private var draftCardioRaceDate: Date?
-    @State private var draftWeeklyBaseVolumeKm: Double?
-    @State private var draftMaxHeartRateBpm: Int?
-    @State private var draftFiveKReferenceText: String
+    /// Gemeinsamer Setup-Entwurf (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): ersetzt die
+    /// fuenf vormals getrennten `draftCardioGoal`/`draftCardioRaceDate`/`draftWeeklyBaseVolumeKm`/
+    /// `draftMaxHeartRateBpm`/`draftFiveKReferenceText`-Vars - identische Felder, jetzt EIN Wert,
+    /// geteilt mit Onboarding/PlanBuilder ueber `CardioCoachSetupFields`.
+    @State private var cardioSetupDraft: CardioCoachSetupDraft
 
     @State private var showingDiscardConfirm = false
     @State private var pendingCardioBaseline: CardioBaselineCalculator.Result?
@@ -61,13 +61,13 @@ struct CardioGoalEditorView: View {
         self.profile = profile
         _draftCardioCoachingEnabled = State(initialValue: profile.cardioCoachingEnabled)
         _draftEnduranceModality = State(initialValue: profile.enduranceModality)
-        _draftCardioGoal = State(initialValue: profile.cardioGoal)
-        _draftCardioRaceDate = State(initialValue: profile.cardioRaceDate)
-        _draftWeeklyBaseVolumeKm = State(initialValue: profile.weeklyBaseVolumeKm)
-        _draftMaxHeartRateBpm = State(initialValue: profile.maxHeartRateBpm)
-        _draftFiveKReferenceText = State(
-            initialValue: profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
-        )
+        _cardioSetupDraft = State(initialValue: CardioCoachSetupDraft(
+            goal: profile.cardioGoal,
+            raceDate: profile.cardioRaceDate,
+            weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm,
+            maxHeartRateBpm: profile.maxHeartRateBpm,
+            fiveKReferenceText: profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
+        ))
     }
 
     var body: some View {
@@ -84,7 +84,7 @@ struct CardioGoalEditorView: View {
                             // (MM:SS) muss vor dem Speichern valide sein, sonst
                             // wuerde eine ungueltige Eingabe von `save()` still
                             // auf `nil` fallen (siehe `PaceCalculator.
-                            // parseDurationToSeconds`) statt den Nutzer auf den
+                            // parseFiveKReferenceSeconds`) statt den Nutzer auf den
                             // Tippfehler hinzuweisen.
                             isDisabled: !canSave || isSaving,
                             accessibilityLabel: String(localized: "common.save", bundle: .module)
@@ -186,24 +186,27 @@ struct CardioGoalEditorView: View {
     private var isDirty: Bool {
         draftCardioCoachingEnabled != profile.cardioCoachingEnabled
             || draftEnduranceModality != profile.enduranceModality
-            || draftCardioGoal != profile.cardioGoal
-            || draftCardioRaceDate != profile.cardioRaceDate
-            || draftWeeklyBaseVolumeKm != profile.weeklyBaseVolumeKm
-            || draftMaxHeartRateBpm != profile.maxHeartRateBpm
-            || draftFiveKReferenceText != (profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? "")
+            || cardioSetupDraft.goal != profile.cardioGoal
+            || cardioSetupDraft.raceDate != profile.cardioRaceDate
+            || cardioSetupDraft.weeklyBaseVolumeKm != profile.weeklyBaseVolumeKm
+            || cardioSetupDraft.maxHeartRateBpm != profile.maxHeartRateBpm
+            || cardioSetupDraft.fiveKReferenceText != (profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? "")
     }
 
     /// Task 5 (d): gate fuer das Save-Haekchen — das einzige Freitext-
     /// Zahlenfeld dieses Editors (`draftFiveKReferenceText`, MM:SS) muss
     /// entweder leer (keine Referenzzeit) oder ueber `PaceCalculator.
-    /// parseDurationToSeconds` parsbar sein. Die uebrigen Zahlenfelder
+    /// parseFiveKReferenceSeconds` parsbar sein. Fund B (Geraete-Nachtest):
+    /// bewusst NICHT `parseDurationToSeconds` — dessen "bare Zahl = Minuten"-
+    /// Fallback liess eine Eingabe wie "2500" (ohne Doppelpunkt) als 2500
+    /// Minuten durchgehen statt abgelehnt zu werden. Die uebrigen Zahlenfelder
     /// (`draftWeeklyBaseVolumeKm`/`draftMaxHeartRateBpm`) sind bereits ueber
     /// typisierte `TextField(value:)`-Bindings gegen ungueltige Eingaben
     /// geschuetzt und brauchen keine zusaetzliche Pruefung hier.
     private var canSave: Bool {
         guard draftCardioCoachingEnabled else { return true }
-        let text = draftFiveKReferenceText.trimmingCharacters(in: .whitespaces)
-        return text.isEmpty || PaceCalculator.parseDurationToSeconds(text) != nil
+        let text = cardioSetupDraft.fiveKReferenceText.trimmingCharacters(in: .whitespaces)
+        return text.isEmpty || PaceCalculator.parseFiveKReferenceSeconds(text) != nil
     }
 
     private func save() {
@@ -216,12 +219,30 @@ struct CardioGoalEditorView: View {
         // sie nicht erneut.
         let coachJustActivated = !profile.cardioCoachingEnabled && draftCardioCoachingEnabled
 
+        // Finding 3 (Laufcoaching-Audit): Schnappschuss ALLER sieben Felder,
+        // die gleich mutiert werden - inklusive der beiden, die
+        // `setEnduranceModality` selbst anfasst (siehe dortige Doku:
+        // `enduranceModality` UND `cardioCoachingEnabled` zusammen), nicht
+        // nur die fuenf direkt sichtbaren Zeilen darunter. Ohne das blieb
+        // `profile` nach einem fehlgeschlagenen `context.save()` mit den nie
+        // bestaetigten Entwurfswerten stehen - `isDirty` oben haette den
+        // Editor faelschlich als "sauber" gelesen (Vergleich gegen das
+        // bereits mutierte `profile`), und ein spaeterer, unabhaengiger Save
+        // haette diese Werte versehentlich mitpersistiert.
+        let originalEnduranceModality = profile.enduranceModality
+        let originalCardioCoachingEnabled = profile.cardioCoachingEnabled
+        let originalCardioGoal = profile.cardioGoal
+        let originalCardioRaceDate = profile.cardioRaceDate
+        let originalWeeklyBaseVolumeKm = profile.weeklyBaseVolumeKm
+        let originalMaxHeartRateBpm = profile.maxHeartRateBpm
+        let originalCurrent5kReferenceSeconds = profile.current5kReferenceSeconds
+
         profile.setEnduranceModality(draftEnduranceModality, runCoachEnabled: draftCardioCoachingEnabled)
-        profile.cardioGoal = draftCardioGoal
-        profile.cardioRaceDate = draftCardioRaceDate
-        profile.weeklyBaseVolumeKm = draftWeeklyBaseVolumeKm
-        profile.maxHeartRateBpm = draftMaxHeartRateBpm
-        profile.current5kReferenceSeconds = PaceCalculator.parseDurationToSeconds(draftFiveKReferenceText)
+        profile.cardioGoal = cardioSetupDraft.goal
+        profile.cardioRaceDate = cardioSetupDraft.raceDate
+        profile.weeklyBaseVolumeKm = cardioSetupDraft.weeklyBaseVolumeKm
+        profile.maxHeartRateBpm = cardioSetupDraft.maxHeartRateBpm
+        profile.current5kReferenceSeconds = cardioSetupDraft.current5kReferenceSeconds
         // Geraete-Nachtest (Runde 5, docs/DELTIQ_DEVICE_ACCEPTANCE.md): ohne
         // diesen expliziten Save ging ein gerade bestaetigtes Cardio-Update
         // bei einem Kaltstart kurz danach wieder verloren (SwiftDatas
@@ -232,12 +253,24 @@ struct CardioGoalEditorView: View {
         do {
             try modelContext.save()
         } catch {
+            // Finding 3: KEIN `modelContext.rollback()` - das wuerde auch
+            // andere, unabhaengige, noch ausstehende Aenderungen im
+            // (typischerweise app-weit geteilten) Context verwerfen. Gezielte
+            // Feld-fuer-Feld-Wiederherstellung aus dem Schnappschuss oben
+            // bleibt stattdessen auf genau diese sieben Felder beschraenkt.
+            profile.enduranceModality = originalEnduranceModality
+            profile.cardioCoachingEnabled = originalCardioCoachingEnabled
+            profile.cardioGoal = originalCardioGoal
+            profile.cardioRaceDate = originalCardioRaceDate
+            profile.weeklyBaseVolumeKm = originalWeeklyBaseVolumeKm
+            profile.maxHeartRateBpm = originalMaxHeartRateBpm
+            profile.current5kReferenceSeconds = originalCurrent5kReferenceSeconds
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
             isSaving = false
             return
         }
 
-        if coachJustActivated, let plan = activePlans.first {
+        if coachJustActivated, let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
             planForAdjustmentPreview = plan
             showingAdjustmentPreview = true
         } else {
@@ -341,98 +374,12 @@ struct CardioGoalEditorView: View {
                 Rectangle()
                     .fill(Color.Deltiq.divider)
                     .frame(height: 1)
-                DeltiqControlRow(label: String(localized: "profile.cardio.goal", bundle: .module)) {
-                    Picker(selection: $draftCardioGoal) {
-                        ForEach(CardioGoal.allCases, id: \.self) { goal in
-                            Label {
-                                Text(goal.localizedName)
-                            } icon: {
-                                Image(systemName: goal.symbol)
-                            }
-                            .tag(goal)
-                        }
-                    } label: {
-                        EmptyView()
-                    }
-                    .pickerStyle(.menu)
-                }
-                DeltiqControlRow(label: String(localized: "profile.cardio.fiveKReference", bundle: .module)) {
-                    TextField("MM:SS", text: $draftFiveKReferenceText, prompt: Text("MM:SS"))
-                        #if os(iOS)
-                        .keyboardType(.numbersAndPunctuation)
-                        #endif
-                        .monospacedDigit()
-                        .multilineTextAlignment(.trailing)
-                        .font(.system(size: 15))
-                        .fitnessNumberStyle()
-                        .frame(maxWidth: 90)
-                }
-                if let zonesSummary {
-                    hintRow(zonesSummary)
-                }
-                DeltiqControlRow(
-                    label: String(localized: "profile.cardio.raceDateToggle", bundle: .module),
-                    showsDivider: draftCardioRaceDate != nil
-                ) {
-                    Toggle("", isOn: cardioRaceDateToggleBinding)
-                        .labelsHidden()
-                        .tint(Color.deltiqOrange)
-                        .accessibilityLabel(Text("profile.cardio.raceDateToggle", bundle: .module))
-                }
-                if draftCardioRaceDate != nil {
-                    DeltiqControlRow(label: String(localized: "profile.cardio.raceDateValue", bundle: .module)) {
-                        DatePicker(
-                            selection: Binding(
-                                get: { draftCardioRaceDate ?? Self.defaultRaceDate },
-                                set: { draftCardioRaceDate = $0 }
-                            ),
-                            in: Date()...,
-                            displayedComponents: .date
-                        ) {
-                            EmptyView()
-                        }
-                        .labelsHidden()
-                    }
-                }
-                DeltiqControlRow(label: String(localized: "profile.cardio.weeklyVolume", bundle: .module)) {
-                    decimalField(
-                        String(localized: "profile.cardio.weeklyVolume", bundle: .module),
-                        value: $draftWeeklyBaseVolumeKm,
-                        placeholder: String(localized: "profile.cardio.weeklyVolumePlaceholder", bundle: .module)
-                    )
-                }
-                DeltiqControlRow(label: String(localized: "profile.cardio.maxHeartRate", bundle: .module), showsDivider: false) {
-                    intField(
-                        String(localized: "profile.cardio.maxHeartRate", bundle: .module),
-                        value: $draftMaxHeartRateBpm,
-                        placeholder: String(localized: "profile.cardio.maxHeartRatePlaceholder", bundle: .module)
-                    )
-                }
+                // Gemeinsamer Setup-Feldsatz (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt):
+                // dieselbe View wie im Onboarding/PlanBuilder-Setup-Schritt, siehe dortige Doku.
+                CardioCoachSetupFields(draft: $cardioSetupDraft)
             }
             hintRow(String(localized: "profile.cardio.footer", bundle: .module))
         }
-    }
-
-    private var zonesSummary: String? {
-        guard let seconds = PaceCalculator.parseDurationToSeconds(draftFiveKReferenceText),
-              let easy = PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: seconds),
-              let tempo = PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: seconds)
-        else { return nil }
-        let template = String(localized: "profile.cardio.paceZones", bundle: .module)
-        return String(format: template, PaceCalculator.formatPace(easy), PaceCalculator.formatPace(tempo))
-    }
-
-    private var cardioRaceDateToggleBinding: Binding<Bool> {
-        Binding(
-            get: { draftCardioRaceDate != nil },
-            set: { isOn in
-                draftCardioRaceDate = isOn ? (draftCardioRaceDate ?? Self.defaultRaceDate) : nil
-            }
-        )
-    }
-
-    private static var defaultRaceDate: Date {
-        Calendar.current.date(byAdding: .weekOfYear, value: 12, to: Date()) ?? Date()
     }
 
     // MARK: - DEL-251 Retro-Sync (auf den lokalen Draft statt `profile`)
@@ -460,12 +407,19 @@ struct CardioGoalEditorView: View {
     }
 
     private func applyCardioBaseline(_ result: CardioBaselineCalculator.Result) {
+        var weeklyBaseVolumeKm = cardioSetupDraft.weeklyBaseVolumeKm
+        var fiveKReferenceText = cardioSetupDraft.fiveKReferenceText
         if let weeklyVolumeKm = result.weeklyVolumeKm {
-            draftWeeklyBaseVolumeKm = weeklyVolumeKm
+            weeklyBaseVolumeKm = weeklyVolumeKm
         }
         if let referenceSeconds = result.referenceSeconds {
-            draftFiveKReferenceText = PaceCalculator.formatDuration(referenceSeconds)
+            fiveKReferenceText = PaceCalculator.formatDuration(referenceSeconds)
         }
+        cardioSetupDraft = CardioCoachSetupDraft(
+            goal: cardioSetupDraft.goal, raceDate: cardioSetupDraft.raceDate,
+            weeklyBaseVolumeKm: weeklyBaseVolumeKm, maxHeartRateBpm: cardioSetupDraft.maxHeartRateBpm,
+            fiveKReferenceText: fiveKReferenceText
+        )
     }
 
     private func cardioBaselineMessage(_ result: CardioBaselineCalculator.Result) -> String {
@@ -486,38 +440,6 @@ struct CardioGoalEditorView: View {
     }
 
     // MARK: - Fields (identisch zu ProfileEditorView, DEL-250-Muster)
-
-    @ViewBuilder
-    private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String) -> some View {
-        TextField(label, value: value, format: .number, prompt: Text(placeholder))
-            .decimalKeyboard()
-            .multilineTextAlignment(.trailing)
-            .font(.system(size: 15))
-            .fitnessNumberStyle()
-            .frame(maxWidth: 140)
-    }
-
-    @ViewBuilder
-    private func intField(_ label: String, value: Binding<Int?>, placeholder: String) -> some View {
-        TextField(label, value: value, format: .number, prompt: Text(placeholder))
-            #if os(iOS)
-            .keyboardType(.numberPad)
-            #endif
-            .multilineTextAlignment(.trailing)
-            .font(.system(size: 15))
-            .fitnessNumberStyle()
-            .frame(maxWidth: 140)
-    }
-
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
 
     /// Task 5: identisches Inline-Fehler-Muster wie `GearListView.gearCard`.
     private func errorRow(_ text: String) -> some View {

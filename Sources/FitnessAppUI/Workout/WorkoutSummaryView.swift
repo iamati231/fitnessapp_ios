@@ -55,6 +55,15 @@ public struct WorkoutSummaryView: View {
     /// kein Dialog offen.
     @State private var exerciseToRemove: Exercise?
 
+    /// Audit-Fix (Save-Fehlerbehandlung): sichtbarer Hinweis statt stillem
+    /// `try?`-Swallow fuer die diskreten Speicher-Aktionen unten (Edit-Mode
+    /// verlassen, Satz/Uebung hinzufuegen/entfernen, Gear zuweisen). Bei
+    /// einem Fehler wird NICHTS zurueckgerollt - die bereits mutierten
+    /// Objekte bleiben im ModelContext pending, ein erneuter Versuch bzw.
+    /// der naechste erfolgreiche Save (an dieser oder anderer Stelle) nimmt
+    /// sie automatisch mit.
+    @State private var saveErrorMessage: String?
+
     @Environment(\.dismiss) private var dismiss
 
     public init(session: WorkoutSession, isReadOnly: Bool = false) {
@@ -99,7 +108,17 @@ public struct WorkoutSummaryView: View {
                             // + persistieren, falls der User Set-Werte angefasst hat.
                             sweepEmptyPlaceholderLogs()
                             recalculateSessionTotals()
-                            try? modelContext.save()
+                            // Audit-Fix: ein fehlgeschlagener Save bleibt jetzt
+                            // sichtbar UND der Edit-Mode bleibt offen (kein
+                            // `isEditingHistory.toggle()`), statt dem User
+                            // "Fertig" vorzutaeuschen - er kann den Checkmark
+                            // erneut antippen, um es noch einmal zu versuchen.
+                            do {
+                                try modelContext.save()
+                            } catch {
+                                showSaveErrorToast()
+                                return
+                            }
                             // Bugfix (Audit): ohne dies blieb die Trophy Room
                             // nach einer History-Korrektur (z.B. ein falsch
                             // getipptes Gewicht oder eine falsche AMRAP-
@@ -110,7 +129,12 @@ public struct WorkoutSummaryView: View {
                             // korrekte "alles neu berechnen"-Operation (siehe
                             // "Aus History neu berechnen" im Trophy Room).
                             PersonalRecordSync.rebuild(in: modelContext)
-                            try? modelContext.save()
+                            do {
+                                try modelContext.save()
+                            } catch {
+                                showSaveErrorToast()
+                                return
+                            }
                         }
                         isEditingHistory.toggle()
                     },
@@ -197,7 +221,17 @@ public struct WorkoutSummaryView: View {
         .onDisappear {
             guard isReadOnly else { return }
             recalculateSessionTotals()
-            try? modelContext.save()
+            // Audit-Fix: bekannte Grenze - eine View, die bereits verschwindet,
+            // kann ihren eigenen Toast nicht zuverlaessig mehr anzeigen (die
+            // Navigation ist zu diesem Zeitpunkt schon im Gang). Trotzdem kein
+            // stilles `try?` mehr: bei einem Fehler bleiben die neu berechneten
+            // Felder im ModelContext pending (kein Rollback) und werden vom
+            // naechsten erfolgreichen Save andernorts automatisch mitgespeichert.
+            do {
+                try modelContext.save()
+            } catch {
+                showSaveErrorToast()
+            }
         }
         // DEL-136 Part A: Confirmation-Dialog vor dem destruktiven Delete.
         // Default-Branch ist Cancel — User kann nicht versehentlich Workout-
@@ -272,6 +306,33 @@ public struct WorkoutSummaryView: View {
                 }
             )
         }
+        // Audit-Fix (Save-Fehlerbehandlung): sichtbarer Hinweis statt
+        // stillem `try?`-Swallow, siehe `saveErrorMessage`-Doku oben.
+        .overlay(alignment: .bottom) {
+            if let saveErrorMessage {
+                Label(saveErrorMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.error)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+    }
+
+    /// Audit-Fix (Save-Fehlerbehandlung): gleiches Toast-Muster wie
+    /// `ProfileEditorView.showAggregateToast`/`DayEditorView.showTransientToast`.
+    private func showSaveErrorToast() {
+        withAnimation(.easeOut(duration: 0.2)) {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                saveErrorMessage = nil
+            }
+        }
     }
 
     private var navigationTitleText: String {
@@ -286,14 +347,6 @@ public struct WorkoutSummaryView: View {
     /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention.
     /// `.textCase(nil)` verhindert, dass List den bereits grossgeschriebenen
     /// String noch einmal automatisch transformiert.
-    private func sectionHeader(_ text: String) -> some View {
-        Text(text.uppercased())
-            .font(.system(size: 10, weight: .heavy))
-            .tracking(1.5)
-            .foregroundStyle(Color.deltiqOrange)
-            .textCase(nil)
-    }
-
     /// Im Edit-Mode bekommt der User Datum + Dauer als editierbare Felder.
     /// Wird oben in der List eingeblendet, ueber statsSection.
     private var editMetaSection: some View {
@@ -504,7 +557,11 @@ public struct WorkoutSummaryView: View {
         }
         // Totals neu berechnen, damit Dashboard/History stimmen.
         recalculateSessionTotals()
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            showSaveErrorToast()
+        }
     }
 
     /// DEL-136 Part C: Erstellt eine neue Exercise tied to session-only
@@ -557,7 +614,11 @@ public struct WorkoutSummaryView: View {
             )
             modelContext.insert(log)
         }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            showSaveErrorToast()
+        }
     }
 
     /// DEL-136 Part C: Custom-Variante — User hat im Picker keinen Library-
@@ -592,7 +653,11 @@ public struct WorkoutSummaryView: View {
             )
             modelContext.insert(log)
         }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            showSaveErrorToast()
+        }
     }
 
     /// DEL-136 Part C-Iteration: Fuegt EINEN weiteren Satz zur Exercise
@@ -715,7 +780,11 @@ public struct WorkoutSummaryView: View {
         // mit eigenem Clamp.
         GearOdometer.transfer(km: sessionCardioDistanceKm, from: old, to: newGear)
         session.gear = newGear
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            showSaveErrorToast()
+        }
     }
 
     private func addSet(to exercise: Exercise) {
@@ -733,7 +802,11 @@ public struct WorkoutSummaryView: View {
         )
         modelContext.insert(log)
         recalculateSessionTotals()
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            showSaveErrorToast()
+        }
     }
 
     /// DEL-136 Part A: Loescht die komplette Session inkl. aller ExerciseLogs.
@@ -2133,15 +2206,8 @@ private struct PRBadge: View {
             }
             return "\(Int(record.newValue)) Runden + \(record.reps) \(repUnit) (\(prev) \(prevRounds) Runden)"
         case .fastestTime:
-            return "\(formatDuration(record.newValue)) (\(prev) \(formatDuration(record.previousValue)))"
+            return "\(PaceCalculator.formatDuration(Int(record.newValue.rounded()))) (\(prev) \(PaceCalculator.formatDuration(Int(record.previousValue.rounded()))))"
         }
-    }
-
-    /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet
-    /// `PaceCalculator.formatDuration` statt eines eigenen mm:ss-Formatters
-    /// (dieselbe Funktion ruft die Datei bereits an anderer Stelle, Z. 1923).
-    private func formatDuration(_ totalSeconds: Double) -> String {
-        PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
     }
 }
 

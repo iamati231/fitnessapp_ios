@@ -23,6 +23,11 @@ import FitnessAppFoodLookup
 final class OnlineFoodSearchController: ObservableObject {
     @Published private(set) var candidates: [OnlineFoodCandidate] = []
     @Published private(set) var isSearching: Bool = false
+    @Published private(set) var isLoadingMore: Bool = false
+    /// `true` once a search succeeds and the API says further pages exist —
+    /// the single source of truth the UI reads to decide whether to show a
+    /// "load more" affordance at all. Never derived from `candidates.count`.
+    @Published private(set) var hasMoreResults: Bool = false
     @Published private(set) var errorMessage: String?
     /// Non-nil while the preview/confirm sheet is open for a specific tapped
     /// candidate. `OnlineFoodCandidate` is already `Identifiable`, so this
@@ -30,6 +35,12 @@ final class OnlineFoodSearchController: ObservableObject {
     @Published var selectedCandidate: OnlineFoodCandidate?
 
     private let searcher: OnlineFoodSearching
+    /// Query/locale/next-page state for `loadMore()` — set fresh by every
+    /// `search()` call, so a "load more" tap always continues the CURRENT
+    /// search, never a stale one.
+    private var lastQuery: String = ""
+    private var lastLocale: Locale = .current
+    private var nextPage: Int = 1
 
     init(searcher: OnlineFoodSearching) {
         self.searcher = searcher
@@ -47,9 +58,42 @@ final class OnlineFoodSearchController: ObservableObject {
         isSearching = true
         errorMessage = nil
         candidates = []
+        hasMoreResults = false
+        lastQuery = query
+        lastLocale = locale
+        nextPage = 1
         defer { isSearching = false }
         do {
-            candidates = try await searcher.search(query: query, locale: locale)
+            let page = try await searcher.search(query: query, locale: locale, page: 1)
+            candidates = page.candidates
+            hasMoreResults = page.hasMore
+            nextPage = page.page + 1
+        } catch let error as OnlineFoodSearchError {
+            errorMessage = errorText(error)
+        } catch {
+            errorMessage = errorText(.invalidResponse)
+        }
+    }
+
+    /// Fetches the next page for the CURRENT search and appends it — never
+    /// replaces `candidates`, so already-shown results stay visible even if
+    /// this fails. A failure leaves `candidates`/`hasMoreResults` untouched
+    /// (only `errorMessage` changes), so the same tap is retryable.
+    /// Duplicate protection: `!isSearching`/`!isLoadingMore` rules out a
+    /// concurrent request from a double tap, and appended candidates are
+    /// filtered against already-known ids (Open Food Facts' stable product
+    /// code) in case the same product resurfaces across pages.
+    func loadMore(errorText: (OnlineFoodSearchError) -> String) async {
+        guard hasMoreResults, !isSearching, !isLoadingMore else { return }
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+        do {
+            let page = try await searcher.search(query: lastQuery, locale: lastLocale, page: nextPage)
+            errorMessage = nil
+            let existingIDs = Set(candidates.map(\.id))
+            candidates.append(contentsOf: page.candidates.filter { !existingIDs.contains($0.id) })
+            hasMoreResults = page.hasMore
+            nextPage = page.page + 1
         } catch let error as OnlineFoodSearchError {
             errorMessage = errorText(error)
         } catch {
@@ -81,6 +125,8 @@ final class OnlineFoodSearchController: ObservableObject {
         candidates = []
         errorMessage = nil
         selectedCandidate = nil
+        hasMoreResults = false
+        nextPage = 1
     }
 }
 #endif

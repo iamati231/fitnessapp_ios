@@ -202,7 +202,7 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
 
         XCTAssertEqual(draft.items.count, 1)
         XCTAssertEqual(draft.items.first?.catalogID, entry.catalogID)
-        XCTAssertEqual(draft.items.first?.nutrients.kcal, 539 * 50 / 100)
+        XCTAssertEqual(draft.items.first?.nutrients.kcal.value, 539 * 50 / 100)
 
         let result = draft.save(into: context)
         switch result {
@@ -214,6 +214,18 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
 
     // MARK: - Task 5: second entry point from an AI candidate with no catalog match
 
+    /// Writing-block.md 7.2 refactor: the online-search block used to be
+    /// inlined directly in `hasNoCatalogMatch`'s branch; it now lives once in
+    /// `onlineSearchFallback(for:)`, called from BOTH `hasNoCatalogMatch` and
+    /// `isAmbiguous` (see `testAICandidateAmbiguousBranchAlsoOffersTheOnlineSearchFallback`
+    /// below) — tests that used to inspect the inline block now locate this
+    /// function's own block instead.
+    private func onlineSearchFallbackBlock(in source: String) throws -> String {
+        let signature = "private func onlineSearchFallback(for candidate: MealDraftCandidate) -> some View {"
+        let range = try XCTUnwrap(source.range(of: signature), "onlineSearchFallback(for:) nicht gefunden")
+        return try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: range.upperBound))
+    }
+
     /// Step 1 (Task 5 brief): a `hasNoCatalogMatch` AI candidate must show an
     /// "Online suchen" action prefilled with `candidate.foodText`, reusing
     /// Task 4's exact gate/components (no second, divergent implementation).
@@ -224,18 +236,25 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
             return
         }
         let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
+        XCTAssertTrue(block.contains("onlineSearchFallback(for: candidate)"))
 
+        let fallbackBlock = try onlineSearchFallbackBlock(in: source)
         // Gleicher Gate-Key wie Task 4 (kein eigener/divergenter Toggle).
-        XCTAssertTrue(block.contains("if onlineFoodLookupEnabled {"))
+        XCTAssertTrue(fallbackBlock.contains("if onlineFoodLookupEnabled {"))
         // Vorausgefuellt mit `foodText`, ueber dieselbe (nicht duplizierte)
         // `runOnlineSearch`-Funktion wie der manuelle Einstiegspunkt (jetzt
         // mit `origin:`, siehe Final-Review-Fix I1 — trackt, WELCHE Zeile die
         // Suche gestartet hat).
-        XCTAssertTrue(block.contains("runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)"))
+        XCTAssertTrue(fallbackBlock.contains("runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)"))
         // Wiederverwendet Task 4's Trefferlisten-/Fehler-Komponenten 1:1,
-        // keine zweite, abweichende Implementierung.
-        XCTAssertTrue(block.contains("OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)"))
-        XCTAssertTrue(block.contains("onlineSearch.errorMessage"))
+        // keine zweite, abweichende Implementierung. Pagination (Task:
+        // Ernaehrungssuche erweitern) reformatierte diesen Aufruf auf
+        // mehrere Zeilen, deshalb Teil-Strings statt eines exakten
+        // Ein-Zeilen-Treffers.
+        XCTAssertTrue(fallbackBlock.contains("OnlineFoodResultsList("))
+        XCTAssertTrue(fallbackBlock.contains("candidates: onlineSearch.candidates,"))
+        XCTAssertTrue(fallbackBlock.contains("onSelect: onlineSearch.select,"))
+        XCTAssertTrue(fallbackBlock.contains("onlineSearch.errorMessage"))
         XCTAssertTrue(source.contains("\"nutrition.addMeal.onlineSearch.action\""))
     }
 
@@ -245,7 +264,10 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
     /// SAME `hasNoCatalogMatch` branch, EVERY button in that branch must
     /// carry its own `.buttonStyle(.borderless)` hit target — otherwise taps
     /// collapse onto the last button's action, exactly like the original C1
-    /// bug in the `isAmbiguous` branch below it.
+    /// bug in the `isAmbiguous` branch below it. Writing-block.md 7.2
+    /// refactor: the "online suchen" button itself moved into
+    /// `onlineSearchFallback(for:)` (checked separately below), so this
+    /// branch's own block now directly holds the other two.
     func testAICandidateNoMatchBranchButtonsAreAllBorderless() throws {
         let source = try contents(of: "Nutrition/AddMealView.swift")
         guard let noMatchRange = source.range(of: "if candidate.hasNoCatalogMatch {") else {
@@ -255,11 +277,31 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
         let buttonCount = block.components(separatedBy: "Button {").count - 1
         let borderlessCount = block.components(separatedBy: ".buttonStyle(.borderless)").count - 1
-        // Task 6 added a third ("eigenes Lebensmittel anlegen") button to this
-        // same shared Form-row VStack, alongside Task 4/5's "manuell suchen"
-        // and "online suchen".
-        XCTAssertEqual(buttonCount, 3, "erwartet: 'manuell suchen' + 'online suchen' + 'eigenes Lebensmittel anlegen' Button in diesem Zweig")
+        XCTAssertEqual(buttonCount, 2, "erwartet: 'manuell suchen' + 'eigenes Lebensmittel anlegen' Button direkt in diesem Zweig ('online suchen' lebt jetzt in onlineSearchFallback)")
         XCTAssertEqual(borderlessCount, buttonCount, "jeder Button in diesem gemeinsamen Form-Row-VStack braucht .buttonStyle(.borderless), sonst C1-Regression")
+
+        let fallbackBlock = try onlineSearchFallbackBlock(in: source)
+        let fallbackButtonCount = fallbackBlock.components(separatedBy: "Button {").count - 1
+        let fallbackBorderlessCount = fallbackBlock.components(separatedBy: ".buttonStyle(.borderless)").count - 1
+        XCTAssertEqual(fallbackButtonCount, 1, "erwartet genau den 'online suchen'-Button in onlineSearchFallback")
+        XCTAssertEqual(fallbackBorderlessCount, fallbackButtonCount, "auch der ausgelagerte Button braucht .buttonStyle(.borderless), sonst C1-Regression")
+    }
+
+    /// Writing-block.md 7.2: the escape hatch must ALSO be reachable when
+    /// local matches exist but none of them fit (not just when there is no
+    /// local match at all) — the ticket's own example (Haehnchenbrust/
+    /// -keule exist, Haehnchenfluegel doesn't).
+    func testAICandidateAmbiguousBranchAlsoOffersTheOnlineSearchFallback() throws {
+        let source = try contents(of: "Nutrition/AddMealView.swift")
+        guard let ambiguousRange = source.range(of: "} else if candidate.isAmbiguous {") else {
+            XCTFail("kein `isAmbiguous` Zweig in aiCandidateRow gefunden")
+            return
+        }
+        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: ambiguousRange.upperBound))
+        XCTAssertTrue(
+            block.contains("onlineSearchFallback(for: candidate)"),
+            "lokale Treffer vorhanden, aber keiner passt, muss trotzdem die Online-Suche anbieten"
+        )
     }
 
     // MARK: - Task 6: third, network/AI-independent entry point reuses the same AddMealView state
@@ -308,27 +350,79 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         XCTAssertEqual(successController.candidates.count, 3)
     }
 
-    // MARK: - Final-review fix (C1): missing nutrients must never be fabricated as 0
+    // MARK: - OFF-01: unbekannte Naehrwerte sind zulaessig, aber nie 0
 
-    /// A candidate with kcal present but protein/carbs/fat missing must not
-    /// be constructible as `OnlineFoodImportValues` at all — the only path
-    /// `OnlineFoodCandidatePreviewSheet.confirm()` has to create one, and the
-    /// same condition gates its "Add" button's `.disabled`. No
-    /// `FoodCatalogEntry` can come from a `nil` result.
-    func testPartialCandidateCannotBeConfirmedAndCreatesNothing() throws {
-        let values = OnlineFoodImportValues(
+    /// OFF-01 (docs/AUDIT_2026-10-23_DELTIQ.md): Ein Treffer mit einem
+    /// fehlenden Makro ist uebernehmbar — der fehlende Wert bleibt `nil`
+    /// (unbekannt), wird NICHT als 0 gespeichert und die Vorschau markiert
+    /// ihn als unvollstaendig. Vorher war genau dieser Fall eine Sackgasse.
+    func testPartialCandidateIsImportableWithUnknownValuesStoredAsUnknown() throws {
+        let values = try XCTUnwrap(OnlineFoodImportValues(
             name: "Teilprodukt",
             kcalPer100g: 100,
+            proteinPer100g: nil,
+            carbsPer100g: 5,
+            fatPer100g: nil
+        ))
+        XCTAssertTrue(values.hasUnknownValues, "fehlende Makros muessen als unvollstaendig markiert sein")
+        XCTAssertFalse(values.isComplete)
+
+        let entry = FoodCatalogEntry(
+            displayName: values.name,
+            source: .onlineImported,
+            category: .other,
+            kcalPer100g: values.kcalPer100g,
+            proteinPer100g: values.proteinPer100g,
+            carbsPer100g: values.carbsPer100g,
+            fatPer100g: values.fatPer100g
+        )
+        context.insert(entry)
+        try context.save()
+
+        let stored = try XCTUnwrap(context.fetch(FetchDescriptor<FoodCatalogEntry>()).first)
+        let nutrients = stored.nutrientsPer100g
+        XCTAssertEqual(nutrients.kcal.value, 100)
+        XCTAssertEqual(nutrients.carbsG.value, 5)
+        XCTAssertTrue(nutrients.proteinG.isUnknown, "fehlendes Protein bleibt unbekannt, nicht 0")
+        XCTAssertTrue(nutrients.fatG.isUnknown, "fehlendes Fett bleibt unbekannt, nicht 0")
+        XCTAssertTrue(nutrients.partiallyKnown)
+
+        // Der Snapshot in der Mahlzeit traegt die Unbekannt-Markierung mit.
+        let itemNutrients = try XCTUnwrap(NutritionCalculations.nutrients(for: stored.asCatalogItem, quantity: 100, unit: .gram))
+        let meal = MealEntry(date: Date(), mealType: .lunch)
+        context.insert(meal)
+        let item = MealItem(catalogID: stored.catalogID, nameSnapshot: "Teilprodukt", quantity: 100, unit: .gram,
+                            nutrients: itemNutrients, meal: meal)
+        context.insert(item)
+        try context.save()
+
+        XCTAssertTrue(item.nutrientsSnapshot.fatG.isUnknown)
+        XCTAssertEqual(item.nutrientsSnapshot.kcal.value, 100)
+    }
+
+    /// OFF-01: Ein Eintrag ganz ohne Naehrwerte traegt keine Information und
+    /// bleibt nicht bestaetigbar (die Vorschau bietet stattdessen den Weg
+    /// zum manuellen Anlegen an).
+    func testCandidateWithoutAnyNutrientValueCannotBeConfirmed() throws {
+        // Nur der unbekannte Fall: ein Negativwert ist ein Eingabefehler und
+        // keine Luecke — in Swift unterscheidet der Compiler die beiden
+        // `init?`-Varianten anhand des Parameter-Typs, hier bewusst `nil`.
+        let values: OnlineFoodImportValues? = OnlineFoodImportValues(
+            name: "Ohne Werte",
+            kcalPer100g: nil,
             proteinPer100g: nil,
             carbsPer100g: nil,
             fatPer100g: nil
         )
-        XCTAssertNil(values, "fehlende Makros duerfen nicht als 0 bestaetigbar sein")
+        XCTAssertNil(values, "ohne jeden Naehrwert gibt es nichts zu uebernehmen")
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<FoodCatalogEntry>()), 0)
     }
 
     func testNegativeMacroCandidateCannotBeConfirmed() {
-        let values = OnlineFoodImportValues(
+        // Expliziter `Double?`-Kontext, damit die `Double?`-Variante von
+        // `OnlineFoodImportValues.init?` gewaehlt wird (die `Double`-Variante
+        // wuerde die Absicht — „negativ = ungueltig" — nur zufaellig treffen).
+        let values: OnlineFoodImportValues? = OnlineFoodImportValues(
             name: "Teilprodukt",
             kcalPer100g: 100,
             proteinPer100g: -1,
@@ -339,7 +433,7 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
     }
 
     func testBlankNameCandidateCannotBeConfirmed() {
-        let values = OnlineFoodImportValues(
+        let values: OnlineFoodImportValues? = OnlineFoodImportValues(
             name: "   ",
             kcalPer100g: 100,
             proteinPer100g: 1,
@@ -364,18 +458,18 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
         )
     }
 
+    /// Writing-block.md 7.2 refactor: the nested `onlineFoodLookupEnabled`
+    /// gate used to live directly inside `hasNoCatalogMatch`'s own block; it
+    /// now lives once in `onlineSearchFallback(for:)` (shared by both
+    /// branches that call it), so this checks that function's block instead.
     func testAICandidateOnlineSearchResultsAreScopedToThatCandidatesOwnOrigin() throws {
         let source = try contents(of: "Nutrition/AddMealView.swift")
-        guard let noMatchRange = source.range(of: "if candidate.hasNoCatalogMatch {") else {
-            XCTFail("kein `if candidate.hasNoCatalogMatch` Zweig gefunden")
+        let fallbackBlock = try onlineSearchFallbackBlock(in: source)
+        guard let gateRange = fallbackBlock.range(of: "if onlineFoodLookupEnabled {") else {
+            XCTFail("kein onlineFoodLookupEnabled-Gate in onlineSearchFallback gefunden")
             return
         }
-        let block = try XCTUnwrap(Self.matchingBraceBlock(in: source, afterOpenBrace: noMatchRange.upperBound))
-        guard let gateRange = block.range(of: "if onlineFoodLookupEnabled {") else {
-            XCTFail("kein verschachteltes onlineFoodLookupEnabled-Gate in aiCandidateRow gefunden")
-            return
-        }
-        let gatedBlock = try XCTUnwrap(Self.matchingBraceBlock(in: block, afterOpenBrace: gateRange.upperBound))
+        let gatedBlock = try XCTUnwrap(Self.matchingBraceBlock(in: fallbackBlock, afterOpenBrace: gateRange.upperBound))
         XCTAssertTrue(
             gatedBlock.contains("if onlineSearchOrigin == .aiCandidate(candidate) {"),
             "Ergebnisse/Fehler duerfen nur unter GENAU diesem Kandidaten erscheinen, nicht unter jedem unmatched Kandidaten"
@@ -423,11 +517,192 @@ final class OnlineFoodLookupFlowTests: XCTestCase {
 }
 
 /// Deterministic `OnlineFoodSearching` stand-in — no network, no `URLSession`.
+/// `.single` keeps every pre-pagination test above unchanged (wraps a plain
+/// candidate list into a one-page, `hasMore: false` result); `.byPage`
+/// drives the pagination tests below, where different pages need different
+/// results/errors.
 private struct FakeOnlineFoodSearcher: OnlineFoodSearching {
-    let result: Result<[OnlineFoodCandidate], OnlineFoodSearchError>
+    enum Behavior {
+        case single(Result<[OnlineFoodCandidate], OnlineFoodSearchError>)
+        case byPage((Int) -> Result<OnlineFoodSearchPage, OnlineFoodSearchError>)
+    }
 
-    func search(query: String, locale: Locale) async throws -> [OnlineFoodCandidate] {
-        try result.get()
+    private let behavior: Behavior
+
+    init(result: Result<[OnlineFoodCandidate], OnlineFoodSearchError>) {
+        behavior = .single(result)
+    }
+
+    init(byPage: @escaping (Int) -> Result<OnlineFoodSearchPage, OnlineFoodSearchError>) {
+        behavior = .byPage(byPage)
+    }
+
+    func search(query: String, locale: Locale, page: Int) async throws -> OnlineFoodSearchPage {
+        switch behavior {
+        case .single(let result):
+            return OnlineFoodSearchPage(candidates: try result.get(), page: page, hasMore: false)
+        case .byPage(let handler):
+            return try handler(page).get()
+        }
+    }
+}
+
+/// Counts calls so the "repeated tap -> no concurrent request" pagination
+/// test can assert exactly how many actual `search` invocations happened —
+/// a plain `struct` fake can't hold mutable state across concurrent async
+/// calls, hence a lock-protected class here instead.
+private final class SpyOnlineFoodSearcher: OnlineFoodSearching, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _callCount = 0
+    var callCount: Int { lock.lock(); defer { lock.unlock() }; return _callCount }
+
+    private let pageHandler: (Int) -> Result<OnlineFoodSearchPage, OnlineFoodSearchError>
+
+    init(pageHandler: @escaping (Int) -> Result<OnlineFoodSearchPage, OnlineFoodSearchError>) {
+        self.pageHandler = pageHandler
+    }
+
+    func search(query: String, locale: Locale, page: Int) async throws -> OnlineFoodSearchPage {
+        lock.lock(); _callCount += 1; lock.unlock()
+        return try pageHandler(page).get()
+    }
+}
+
+/// Task: Ernährungssuche erweitern — pagination tests for
+/// `OnlineFoodSearchController.loadMore`. Client-level request-shape/
+/// metadata tests live in `OnlineFoodSearchClientTests`; these cover the
+/// controller's state machine (append, dedupe, error-keeps-results,
+/// no-concurrent-requests), which only exists at this layer.
+@available(iOS 17.0, macOS 14.0, *)
+@MainActor
+final class OnlineFoodSearchControllerPaginationTests: XCTestCase {
+
+    private static let candidateA = OnlineFoodCandidate(
+        id: "a", name: "Produkt A", brand: nil, kcalPer100g: 100, proteinPer100g: 10, carbsPer100g: 5, fatPer100g: 2
+    )
+    private static let candidateB = OnlineFoodCandidate(
+        id: "b", name: "Produkt B", brand: nil, kcalPer100g: 200, proteinPer100g: 20, carbsPer100g: 10, fatPer100g: 4
+    )
+    private static let candidateC = OnlineFoodCandidate(
+        id: "c", name: "Produkt C", brand: nil, kcalPer100g: 300, proteinPer100g: 30, carbsPer100g: 15, fatPer100g: 6
+    )
+
+    // Pagination test 3 + 4: second page appends, is deduplicated by id, and
+    // the last page clears `hasMoreResults`.
+    func testLoadMoreAppendsNextPageAndDedupesByIdAndClearsHasMoreOnLastPage() async {
+        let page1 = OnlineFoodSearchPage(candidates: [Self.candidateA, Self.candidateB], page: 1, hasMore: true)
+        // candidateB re-appears on page 2 (OFF can legitimately resurface a
+        // hit across pages) — must not be duplicated in the appended list.
+        let page2 = OnlineFoodSearchPage(candidates: [Self.candidateB, Self.candidateC], page: 2, hasMore: false)
+        let fake = FakeOnlineFoodSearcher(byPage: { $0 == 1 ? .success(page1) : .success(page2) })
+        let controller = OnlineFoodSearchController(searcher: fake)
+
+        await controller.search(query: "milch", locale: Locale(identifier: "de_DE")) { _ in "" }
+        XCTAssertTrue(controller.hasMoreResults)
+
+        await controller.loadMore { _ in "" }
+
+        XCTAssertEqual(controller.candidates, [Self.candidateA, Self.candidateB, Self.candidateC])
+        XCTAssertFalse(controller.hasMoreResults, "letzte Seite muss das Nachladen beenden")
+    }
+
+    /// Fails the FIRST call for a given page, then succeeds on every later
+    /// call for that same page — models "the next page fails once, then a
+    /// retry of the SAME page succeeds".
+    private final class FlakyOnceSearcher: OnlineFoodSearching, @unchecked Sendable {
+        private let lock = NSLock()
+        private var failedPages: Set<Int> = []
+        private let pageHandler: (Int) -> OnlineFoodSearchPage
+
+        init(pageHandler: @escaping (Int) -> OnlineFoodSearchPage) {
+            self.pageHandler = pageHandler
+        }
+
+        func search(query: String, locale: Locale, page: Int) async throws -> OnlineFoodSearchPage {
+            // Page 1 (the initial search) always succeeds immediately — only
+            // later pages (`loadMore`) exercise the fail-once behavior.
+            guard page > 1 else { return pageHandler(page) }
+            lock.lock()
+            let alreadyFailedOnce = failedPages.contains(page)
+            if !alreadyFailedOnce { failedPages.insert(page) }
+            lock.unlock()
+            guard alreadyFailedOnce else { throw OnlineFoodSearchError.noNetwork }
+            return pageHandler(page)
+        }
+    }
+
+    // Pagination test 5: a failed next page keeps existing results and stays retryable
+    func testFailedLoadMoreKeepsExistingResultsAndStaysRetryable() async {
+        let searcher = FlakyOnceSearcher { page in
+            page == 1
+                ? OnlineFoodSearchPage(candidates: [Self.candidateA], page: 1, hasMore: true)
+                : OnlineFoodSearchPage(candidates: [Self.candidateB], page: 2, hasMore: false)
+        }
+        let controller = OnlineFoodSearchController(searcher: searcher)
+
+        await controller.search(query: "milch", locale: Locale(identifier: "de_DE")) { _ in "" }
+        XCTAssertEqual(controller.candidates, [Self.candidateA])
+
+        // First load-more attempt (page 2) fails.
+        await controller.loadMore { error in error == .noNetwork ? "Keine Internetverbindung." : "" }
+        XCTAssertEqual(controller.candidates, [Self.candidateA], "Treffer duerfen bei einem fehlgeschlagenen Nachladen nicht verschwinden")
+        XCTAssertEqual(controller.errorMessage, "Keine Internetverbindung.")
+        XCTAssertTrue(controller.hasMoreResults, "muss wiederholbar bleiben")
+
+        // Retry of the SAME page (nextPage was never advanced on failure).
+        await controller.loadMore { _ in "" }
+        XCTAssertEqual(controller.candidates, [Self.candidateA, Self.candidateB])
+        XCTAssertNil(controller.errorMessage)
+        XCTAssertFalse(controller.hasMoreResults)
+    }
+
+    // Pagination test 6: repeated taps never fire a concurrent request or duplicate results
+    func testRepeatedLoadMoreTapsDoNotTriggerConcurrentRequestsOrDuplicates() async {
+        let page1 = OnlineFoodSearchPage(candidates: [Self.candidateA], page: 1, hasMore: true)
+        let page2 = OnlineFoodSearchPage(candidates: [Self.candidateB], page: 2, hasMore: false)
+        let spy = SpyOnlineFoodSearcher(pageHandler: { $0 == 1 ? .success(page1) : .success(page2) })
+        let controller = OnlineFoodSearchController(searcher: spy)
+
+        await controller.search(query: "milch", locale: Locale(identifier: "de_DE")) { _ in "" }
+        XCTAssertEqual(spy.callCount, 1)
+
+        // Two "taps" started back-to-back before either has a chance to
+        // finish — the guard inside `loadMore` must let only one through.
+        async let first: Void = controller.loadMore { _ in "" }
+        async let second: Void = controller.loadMore { _ in "" }
+        _ = await (first, second)
+
+        XCTAssertEqual(spy.callCount, 2, "genau ein Nachlade-Request darf tatsaechlich rausgehen, der zweite Tap ist ein No-Op")
+        XCTAssertEqual(controller.candidates, [Self.candidateA, Self.candidateB])
+    }
+
+    /// Returns a `hasMore: true` page on its first call, then a
+    /// `hasMore: false` page on every call after — lets ONE controller/
+    /// searcher pair drive two successive, differently-shaped searches.
+    private final class TwoSearchesSearcher: OnlineFoodSearching, @unchecked Sendable {
+        private let lock = NSLock()
+        private var callCount = 0
+
+        func search(query: String, locale: Locale, page: Int) async throws -> OnlineFoodSearchPage {
+            lock.lock(); callCount += 1; let isFirstCall = callCount == 1; lock.unlock()
+            return isFirstCall
+                ? OnlineFoodSearchPage(candidates: [OnlineFoodSearchControllerPaginationTests.candidateA], page: 1, hasMore: true)
+                : OnlineFoodSearchPage(candidates: [OnlineFoodSearchControllerPaginationTests.candidateC], page: 1, hasMore: false)
+        }
+    }
+
+    // Pagination test: starting a NEW search on the SAME controller resets
+    // its previous page/hasMore state, never carries it into the new search.
+    func testNewSearchOnSameControllerResetsPaginationState() async {
+        let controller = OnlineFoodSearchController(searcher: TwoSearchesSearcher())
+
+        await controller.search(query: "erste Suche", locale: Locale(identifier: "de_DE")) { _ in "" }
+        XCTAssertTrue(controller.hasMoreResults)
+        XCTAssertEqual(controller.candidates, [Self.candidateA])
+
+        await controller.search(query: "zweite Suche", locale: Locale(identifier: "de_DE")) { _ in "" }
+        XCTAssertFalse(controller.hasMoreResults, "eine neue Suche darf das `hasMoreResults` der vorherigen Suche nicht uebernehmen")
+        XCTAssertEqual(controller.candidates, [Self.candidateC], "Treffer der vorherigen Suche duerfen nicht mit den neuen vermischt werden")
     }
 }
 #endif

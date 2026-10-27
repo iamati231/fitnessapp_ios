@@ -89,6 +89,21 @@ final class MissedRunDaysCardModelTests: XCTestCase {
         return (profile, plan, runDay)
     }
 
+    /// Finding 1 (Lauf-Coaching-Audit): fuegt `count` zusaetzliche, sofort einfuegbare Ruhetage
+    /// (`isAutoFilledPlaceholder: true`, identisch zum echten `ProgramInstantiator`-Muster) zu
+    /// `plan` hinzu - lokal pro Test, NICHT in `makeProfileAndPlan` selbst, damit die anderen,
+    /// nicht `accept()` aufrufenden Tests in dieser Datei unangetastet bleiben.
+    private func addEligibleRestDays(count: Int, to plan: TrainingPlan, startingWeekday: Int) {
+        for offset in 0..<count {
+            let restDay = TrainingDay(
+                name: "Ruhetag", weekday: startingWeekday + offset, type: .rest, plan: plan,
+                localizationKey: "day.restDay.title", isAutoFilledPlaceholder: true
+            )
+            context.insert(restDay)
+            plan.days.append(restDay)
+        }
+    }
+
     @discardableResult
     private func logSession(day: TrainingDay, date: Date, outcome: PlanParticipationEvaluator.SessionOccurrence.Outcome) -> WorkoutSession {
         switch outcome {
@@ -375,6 +390,11 @@ final class MissedRunDaysCardModelTests: XCTestCase {
     func testAcceptingAdjustmentOnSamePlanDoesNotImmediatelyRetriggerHintFromStaleMisses() throws {
         let fixedNow = d(2024, 2, 1)
         let (profile, plan, _) = makeProfileAndPlan(activatedAt: d(2024, 1, 1))
+        // Finding 1 (Lauf-Coaching-Audit): `makeProfileAndPlan`s Standardziel `.tenK` braucht 3
+        // Lauftage, die Fixture hat nur 1 anfassbaren Tag - ohne freie Ruhetage wirft `accept()`
+        // jetzt korrekt `insufficientRestDays` statt wie vor dem Fix still nur 1 von 3 Tagen zu
+        // ersetzen. 2 zusaetzliche Ruhetage geben dem Einfuege-Pfad genug Platz.
+        addEligibleRestDays(count: 2, to: plan, startingWeekday: 3)
         guard let model = MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: fixedNow, calendar: utc) else {
             return XCTFail("Hinweis haette erscheinen muessen")
         }
@@ -446,6 +466,11 @@ final class MissedRunDaysCardModelTests: XCTestCase {
     func testAdoptionStaysExclusivelyInThePackageOneAdjustmentPath() throws {
         let fixedNow = d(2024, 2, 1)
         let (profile, plan, runDay) = makeProfileAndPlan(activatedAt: d(2024, 1, 1))
+        // Finding 1 (Lauf-Coaching-Audit): `.tenK` braucht 3 Lauftage, die Fixture hat nur 1
+        // anfassbaren Tag - 2 zusaetzliche Ruhetage geben dem spaeteren `accept()`-Aufruf (unten)
+        // genug Platz. Sie sind von Anfang an Teil von `plan.days`, daher die angepasste Zahl 3
+        // (statt 1) in der folgenden "dismiss() ruehrt den Plan nicht an"-Pruefung.
+        addEligibleRestDays(count: 2, to: plan, startingWeekday: 3)
         guard let model = MissedRunDaysCardModel.make(for: profile, activePlan: plan, in: context, now: fixedNow, calendar: utc) else {
             return XCTFail("Hinweis haette erscheinen muessen")
         }
@@ -453,7 +478,7 @@ final class MissedRunDaysCardModelTests: XCTestCase {
         // `dismiss()` ist die einzige Mutation, die `MissedRunDaysCardModel`
         // SELBST anbietet — sie ruehrt den Plan nicht an.
         model.dismiss(profile: profile)
-        XCTAssertEqual(plan.days.count, 1)
+        XCTAssertEqual(plan.days.count, 3)
         XCTAssertEqual(runDay.activeExercises.count, 1)
 
         // Jede tatsaechliche PLAN-Aenderung laeuft ausschliesslich ueber den
