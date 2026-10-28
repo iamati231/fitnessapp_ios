@@ -26,7 +26,7 @@ struct VoiceSingleSetSheet: View {
 
     // MARK: - State
 
-    private enum Phase { case idle, permissionDenied, recording, reviewing(String), draft(VoiceDraftSet), saving, error(String) }
+    private enum Phase { case idle, permissionDenied, recording, finalizing, reviewing(String), draft(VoiceDraftSet), saving, error(String) }
     @State private var phase: Phase = .idle
     @State private var liveTranscript = ""
     @State private var isSaving = false
@@ -49,6 +49,8 @@ struct VoiceSingleSetSheet: View {
                         permissionDeniedView
                     case .recording:
                         recordingView
+                    case .finalizing:
+                        finalizingView
                     case .reviewing(let text):
                         reviewingView(text: text)
                     case .draft:
@@ -138,6 +140,15 @@ struct VoiceSingleSetSheet: View {
             }
             .deltiqButtonStyle()
         }
+    }
+
+    private var finalizingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+            Text(String(localized: "common.saving", bundle: .module))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+        }
+        .padding()
     }
 
     private func reviewingView(text: String) -> some View {
@@ -294,12 +305,14 @@ struct VoiceSingleSetSheet: View {
                 if let t = text, !t.isEmpty {
                     phase = .reviewing(t)
                 } else {
+                    // No speech recognised — return to idle so user can try again.
                     phase = .idle
                 }
             }
         }
         rec.onError = { error in
             DispatchQueue.main.async {
+                liveTranscript = ""
                 phase = .error(error.localizedDescription)
             }
         }
@@ -323,13 +336,15 @@ struct VoiceSingleSetSheet: View {
 
     private func stopRecordingManually() {
         #if canImport(Speech) && canImport(AVFoundation)
+        phase = .finalizing
         recognizer.stopRecording()
         #endif
     }
 
     private func stopRecordingIfNeeded() {
+        // Cancel (not stop) on dismiss — no callback needed after view is gone.
         #if canImport(Speech) && canImport(AVFoundation)
-        if case .recording = phase { recognizer.stopRecording() }
+        recognizer.cancelRecording()
         #endif
     }
 

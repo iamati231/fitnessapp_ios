@@ -19,7 +19,7 @@ struct VoiceWorkoutDictationView: View {
 
     // MARK: - State
 
-    private enum Phase { case input, recording, parsed([VoiceDraftSet]), saving, error(String) }
+    private enum Phase { case input, recording, finalizing, parsed([VoiceDraftSet]), saving, error(String) }
     @State private var phase: Phase = .input
     @State private var inputText = ""
     @State private var liveTranscript = ""
@@ -36,6 +36,8 @@ struct VoiceWorkoutDictationView: View {
                         inputView
                     case .recording:
                         recordingView
+                    case .finalizing:
+                        ProgressView().padding()
                     case .parsed:
                         draftListView
                     case .saving:
@@ -197,7 +199,12 @@ struct VoiceWorkoutDictationView: View {
                 if !t.isEmpty { parseDrafts(from: t) } else { phase = .input }
             }
         }
-        rec.onError = { error in DispatchQueue.main.async { phase = .error(error.localizedDescription) } }
+        rec.onError = { error in
+            DispatchQueue.main.async {
+                liveTranscript = ""
+                phase = .error(error.localizedDescription)
+            }
+        }
         rec.requestPermission { granted in
             DispatchQueue.main.async {
                 guard granted else { phase = .error(String(localized: "voice.error.permissionDenied", bundle: .module)); return }
@@ -216,13 +223,14 @@ struct VoiceWorkoutDictationView: View {
 
     private func stopRecordingManually() {
         #if canImport(Speech) && canImport(AVFoundation)
+        phase = .finalizing
         recognizer.stopRecording()
         #endif
     }
 
     private func stopRecordingIfNeeded() {
         #if canImport(Speech) && canImport(AVFoundation)
-        if case .recording = phase { recognizer.stopRecording() }
+        recognizer.cancelRecording()
         #endif
     }
 
