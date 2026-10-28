@@ -6,11 +6,25 @@ public enum PlateauDetector {
 
     // MARK: - Konstanten
 
-    public static let minExpositions      = 4
-    public static let minPeriodDays       = 28
-    public static let minImprovementFraction = 0.02   // < 2 % → Plateau
-    public static let robustWindowSize    = 2         // Median über jeweils 2 früheste / 2 späteste
-    public static let repRange            = 1...12    // Kraftbereich; außerhalb → ungültig
+    public static let minExpositions         = 4
+    public static let minPeriodDays          = 28
+    /// Obergrenze für "kein Fortschritt": relChange < +2 % → Befund.
+    public static let minImprovementFraction = 0.02
+    /// Untergrenze für Stagnation: relChange < −10 % → Regression (nicht Plateau).
+    public static let regressionThreshold    = 0.10
+    public static let robustWindowSize       = 2         // Median über jeweils 2 früheste / 2 späteste
+    public static let repRange               = 1...12    // Kraftbereich; außerhalb → ungültig
+
+    // MARK: - Status
+
+    public enum DetectionStatus: Sendable {
+        /// −regressionThreshold ≤ relChange < +minImprovementFraction.
+        /// Passende xcstrings-Keys: coaching.plateauDetected.*.
+        case stagnation
+        /// relChange < −regressionThreshold (mehr als 10 % Rückgang).
+        /// Kein Emitter/xcstrings-Key vorhanden — wird vom Dashboard-Layer nicht angezeigt.
+        case regression
+    }
 
     // MARK: - Input
 
@@ -41,23 +55,30 @@ public enum PlateauDetector {
         public let expositionCount: Int
         public let periodDays: Int
         /// (latestMedian − earlyMedian) / earlyMedian.
-        /// Negativ = Regression, ~0 = Plateau.
+        /// Negativ = Rückgang, ~0 = Stagnation.
         public let relativeChangeFraction: Double
+        public let status: DetectionStatus
     }
 
     // MARK: - Hauptfunktion
 
-    /// Gibt den ersten Plateau-Befund zurück, oder nil wenn nichts stagniert.
+    /// Gibt den deterministischen Top-Befund zurück, oder nil wenn nichts stagniert
+    /// oder zurückgegangen ist.
+    /// Sortierung: längste Beobachtungsperiode zuerst, Übungsname als stabiler Tiebreaker.
     public static func detect(expositions: [Exposition]) -> Finding? {
         var groups: [GroupKey: [Exposition]] = [:]
         for exp in expositions {
             let k = GroupKey(templateID: exp.exerciseTemplateID, name: exp.exerciseName)
             groups[k, default: []].append(exp)
         }
-        for (_, exps) in groups {
-            if let f = evaluate(exps) { return f }
-        }
-        return nil
+        return groups.values
+            .compactMap { evaluate($0) }
+            .sorted { lhs, rhs in
+                lhs.periodDays != rhs.periodDays
+                    ? lhs.periodDays > rhs.periodDays
+                    : lhs.exerciseName < rhs.exerciseName
+            }
+            .first
     }
 
     // MARK: - Private
@@ -90,13 +111,16 @@ public enum PlateauDetector {
         guard earlyMedian > 0, earlyMedian.isFinite, lateMedian.isFinite else { return nil }
 
         let relChange = (lateMedian - earlyMedian) / earlyMedian
-        guard relChange < minImprovementFraction else { return nil }
+        guard relChange < minImprovementFraction else { return nil }   // klarer Fortschritt → kein Befund
+
+        let status: DetectionStatus = relChange < -regressionThreshold ? .regression : .stagnation
 
         return Finding(
             exerciseName: raw.first?.exerciseName ?? "",
             expositionCount: deduped.count,
             periodDays: days,
-            relativeChangeFraction: relChange
+            relativeChangeFraction: relChange,
+            status: status
         )
     }
 

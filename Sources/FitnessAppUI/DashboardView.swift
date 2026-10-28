@@ -2173,6 +2173,18 @@ public struct DashboardView: View {
         return latest?.isCNSOverloaded ?? false
     }
 
+    /// Projiziert completedSessions auf Expositionen und gibt den stärksten
+    /// Stagnations-Befund zurück — oder nil wenn nichts stagniert oder die Daten
+    /// unzureichend sind.
+    ///
+    /// Regression (> 10 % e1RM-Rückgang über den Beobachtungszeitraum) wird
+    /// bewusst NICHT zurückgegeben: es gibt noch keine xcstrings-Keys dafür
+    /// und die Plateau-Meldungen wären inhaltlich falsch.
+    ///
+    /// shortcut: diese Berechnung läuft bei jedem SwiftUI-Render-Pass erneut —
+    /// einmal in activeCoachingContext (nil-Check) und einmal hier (Übungsname).
+    /// Für typische Datenmengen (< 500 Sessions × 10 Logs) ist der O(n·m)-Aufwand
+    /// vertretbar. Upgrade auf @State-Cache sobald Profiling Bedarf zeigt.
     private var activePlateauFinding: PlateauDetector.Finding? {
         let calendar = Calendar.current
         var exps: [PlateauDetector.Exposition] = []
@@ -2194,7 +2206,8 @@ public struct DashboardView: View {
                 ))
             }
         }
-        return PlateauDetector.detect(expositions: exps)
+        let result = PlateauDetector.detect(expositions: exps)
+        return result?.status == .stagnation ? result : nil
     }
 
     /// Sequential-rotation pick. Delegates to `PlanNavigator` (Core) so widgets
