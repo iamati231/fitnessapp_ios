@@ -107,7 +107,6 @@ public struct ActiveWorkoutView: View {
     /// kein Custom-Eintippen (Ad-Hoc soll schnell sein, der User waehlt
     /// aus der Library und legt los).
     @State private var showingAdHocPicker = false
-    @State private var showingVoiceInput = false
 
     /// DEL-097 + DEL-108: Session-weiter Single-Lock fuer time-based Halte-
     /// Timer. Nur EIN Halte-Set (Exercise × setIndex) darf gleichzeitig
@@ -293,15 +292,6 @@ public struct ActiveWorkoutView: View {
         } message: {
             Text(String(format: String(localized: "active.discard.message", bundle: .module), loggedSetsCount))
         }
-        .sheet(isPresented: $showingVoiceInput) {
-            VoiceSingleSetSheet(
-                session: session,
-                prefilledExercise: resolvedExercises.indices.contains(currentPageIndex)
-                    ? resolvedExercises[currentPageIndex].exercise
-                    : nil,
-                onSaved: { _ in }
-            )
-        }
         // DEL-096: Ad-Hoc-Picker. Custom-Eintragen ist hier bewusst nicht
         // erlaubt — Library-Pick reicht, alles weitere lebt im DayEditor.
         .sheet(isPresented: $showingAdHocPicker) {
@@ -387,12 +377,6 @@ public struct ActiveWorkoutView: View {
                 showingAdHocPicker = true
             })
         }
-        actions.append(DeltiqHeaderAction(
-            systemImage: "mic.fill",
-            accessibilityLabel: String(localized: "voice.action.dictate", bundle: .module)
-        ) {
-            showingVoiceInput = true
-        })
         // Explizites `menu:`-Label statt bare trailing closure - sonst muss
         // der Compiler zwischen den beiden DeltiqHeaderAction-Initializern
         // (action: () -> Void vs. menu: () -> MenuContent) per Typ-Inferenz
