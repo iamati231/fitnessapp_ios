@@ -1609,7 +1609,12 @@ public struct DashboardView: View {
                 tone: profile.coachingTone,
                 goal: profile.trainingGoal
             )
-            if !msg.isEmpty { return msg }
+            if !msg.isEmpty {
+                if context == .plateauDetected, let finding = activePlateauFinding {
+                    return "\(finding.exerciseName): \(msg)"
+                }
+                return msg
+            }
         }
         // DEL-206: P1.5 — goal-basierte Tages-Empfehlung. Kreuzt den
         // heutigen/gestrigen Workout-State mit dem TrainingGoal über die
@@ -2134,20 +2139,19 @@ public struct DashboardView: View {
         }
     }
 
-    /// Wahlt den passenden Coaching-Context aus dem Heute-Zustand des
-    /// Plans und der juengsten Trainings-Last. Prioritaet:
-    ///   1. **`.cnsOverloaded`** — eine `isCNSOverloaded`-Session in den
-    ///      letzten 48h. Hat Vorrang vor Plan-Ruhetag, weil "ZNS gegrillt"
-    ///      ein wichtigerer Hinweis ist als "heute ist Mittwoch-Pause".
+    /// Wahlt den passenden Coaching-Context. Prioritaet:
+    ///   1. **`.cnsOverloaded`** — isCNSOverloaded-Session in den letzten 48h.
     ///   2. **`.restDay`** — heutiger Plan-Tag ist `.rest`.
-    ///   3. Sonst nil (kein Coaching-Card auf dem Dashboard).
-    /// Plateau-Detection + newPR sind Folge-Wellen — brauchen weitere
-    /// Wochen-Aggregation (PR-Diff-Auswertung, Progressions-Slope).
+    ///   3. **`.plateauDetected`** — Stagnation erkannt (≥4 Expositionen,
+    ///      ≥28 Tage, <2 % e1RM-Zuwachs). Greift auch ohne aktiven Plan.
+    ///   4. nil — kein Coaching-Card auf dem Dashboard.
     private var activeCoachingContext: CoachingContext? {
         if isRecentSessionCNSOverloaded { return .cnsOverloaded }
-        guard let plan = activePlans.first, !plan.days.isEmpty else { return nil }
-        let day = nextScheduledDay(in: plan)
-        if day.type == .rest { return .restDay }
+        if let plan = activePlans.first, !plan.days.isEmpty {
+            let day = nextScheduledDay(in: plan)
+            if day.type == .rest { return .restDay }
+        }
+        if activePlateauFinding != nil { return .plateauDetected }
         return nil
     }
 
@@ -2167,6 +2171,30 @@ public struct DashboardView: View {
             .sorted { $0.endTime > $1.endTime }
             .first
         return latest?.isCNSOverloaded ?? false
+    }
+
+    private var activePlateauFinding: PlateauDetector.Finding? {
+        let calendar = Calendar.current
+        var exps: [PlateauDetector.Exposition] = []
+        for session in completedSessions where session.isRealWorkout {
+            let day = calendar.startOfDay(for: session.startTime)
+            for log in session.logs {
+                guard !log.resolvedIsCardio, !log.resolvedIsTimeBased,
+                      log.weight > 0, PlateauDetector.repRange.contains(log.reps),
+                      let name = log.resolvedExerciseName, !name.isEmpty,
+                      let e1rm = ExerciseCalculations.estimate1RMAverage(
+                          weightKg: log.weight, reps: log.reps),
+                      e1rm.isFinite
+                else { continue }
+                exps.append(PlateauDetector.Exposition(
+                    exerciseName: name,
+                    exerciseTemplateID: log.resolvedExerciseTemplateID,
+                    calendarDay: day,
+                    bestE1RM: e1rm
+                ))
+            }
+        }
+        return PlateauDetector.detect(expositions: exps)
     }
 
     /// Sequential-rotation pick. Delegates to `PlanNavigator` (Core) so widgets
