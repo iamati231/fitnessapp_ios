@@ -65,6 +65,9 @@ public enum DeloadManager {
         in context: ModelContext,
         factor: Double = defaultFactor
     ) throws -> Int {
+        // Spiegelt den Guard aus `AbsenceDeload.apply` — kein stilles Erhoehen
+        // von Gewichten bei factor >= 1, kein NaN/Inf.
+        guard factor.isFinite, factor > 0, factor < 1.0 else { return 0 }
         let plans = try context.fetch(
             FetchDescriptor<TrainingPlan>(predicate: #Predicate { $0.isActive == true })
         )
