@@ -576,7 +576,7 @@ struct SetRow: View {
         // Bugfix: war hartcodiert deutsch ("Hantel-Aufladung anzeigen"),
         // nie uebersetzt.
         .accessibilityLabel(Text("activeSet.plateCalculator.accessibilityLabel", bundle: .module))
-        .popover(isPresented: $showingPlatePopover, arrowEdge: .top) {
+        .popover(isPresented: $showingPlatePopover) {
             PlatePopoverContent(
                 targetWeight: weight,
                 barWeight: barWeightKgRaw,
