@@ -15,7 +15,7 @@ final class RunCoachingPersistenceTests: XCTestCase {
             CardioRunProfile(goal: goal, current5kReferenceSeconds: $0, weeklyBaseVolumeKm: nil)
         }
         let sel = PlanGeneratorTypeSelection(
-            kind: .running, daysPerWeek: 3, sessionDurationMinutes: 45,
+            kind: .running, daysPerWeek: 4, sessionDurationMinutes: 45,
             experience: .intermediate, cardioRunProfile: profile
         )
         return PlanGenerator.generate(from: PlanGeneratorInput(
