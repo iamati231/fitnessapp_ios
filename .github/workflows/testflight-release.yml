@@ -51,12 +51,6 @@ on:
         required: true
         type: boolean
         default: false
-  # Automatisch nach erfolgreichem CI-Lauf starten.
-  # Wirkt erst nach dem Merge in main (workflow_run liest immer den
-  # Workflow-Stand auf dem Default-Branch).
-  workflow_run:
-    workflows: ["Apple CI Vergleichslauf (manuell)"]
-    types: [completed]
 
 permissions:
   contents: read
@@ -71,8 +65,6 @@ env:
 jobs:
   test-gate:
     name: Release-Gate — Swift-Package-Tests
-    # Bei workflow_run nur starten, wenn der CI-Lauf tatsächlich erfolgreich war.
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -237,9 +229,7 @@ jobs:
   upload-to-testflight:
     name: TestFlight-Upload (separat freigegeben)
     needs: build-and-sign
-    # Bei workflow_dispatch: expliziter Input-Flag.
-    # Bei workflow_run (Auto nach CI): immer hochladen.
-    if: ${{ inputs.upload_to_testflight || github.event_name == 'workflow_run' }}
+    if: ${{ inputs.upload_to_testflight }}
     runs-on: macos-latest
     environment: appstore-release
     timeout-minutes: 20
