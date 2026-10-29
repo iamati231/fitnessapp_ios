@@ -174,6 +174,11 @@ public struct DashboardView: View {
     /// Sheet/keine neue Card-Komponente.
     @State private var showingMissedRunAdjustmentPreview = false
 
+    /// Gecachter Plateau-Befund — wird via .onChange(of: completedSessions, initial: true)
+    /// aktualisiert, sodass die O(n·m)-Berechnung nur einmal pro Datenaenderung laeuft
+    /// statt bis zu 4× pro SwiftUI-Render-Pass.
+    @State private var cachedPlateauFinding: PlateauDetector.Finding?
+
     public init() {}
 
     public var body: some View {
@@ -347,6 +352,11 @@ public struct DashboardView: View {
             if OnboardingPlanCreationNotice.consumeIfPending() {
                 showingOnboardingPlanCreationFailedAlert = true
             }
+        }
+        // Plateau-Cache: einmal beim Erscheinen und bei jeder Session-Änderung neu
+        // berechnen, damit activePlateauFinding nicht O(n·m) pro Render-Pass kostet.
+        .onChange(of: completedSessions, initial: true) {
+            cachedPlateauFinding = computePlateauFinding()
         }
         .alert(
             Text("dashboard.onboardingPlanCreationFailed.title", bundle: .module),
@@ -2151,7 +2161,15 @@ public struct DashboardView: View {
             let day = nextScheduledDay(in: plan)
             if day.type == .rest { return .restDay }
         }
-        if activePlateauFinding != nil { return .plateauDetected }
+        if cachedPlateauFinding != nil,
+           let profile = profiles.first,
+           !CoachingMessageProvider.message(
+               for: .plateauDetected,
+               tone: profile.coachingTone,
+               goal: profile.trainingGoal
+           ).isEmpty {
+            return .plateauDetected
+        }
         return nil
     }
 
@@ -2173,19 +2191,15 @@ public struct DashboardView: View {
         return latest?.isCNSOverloaded ?? false
     }
 
+    /// Gibt den gecachten Plateau-Befund zurück. Der Cache wird via
+    /// `.onChange(of: completedSessions, initial: true)` aktuell gehalten.
+    private var activePlateauFinding: PlateauDetector.Finding? { cachedPlateauFinding }
+
     /// Projiziert completedSessions auf Expositionen und gibt den stärksten
     /// Stagnations-Befund zurück — oder nil wenn nichts stagniert oder die Daten
-    /// unzureichend sind.
-    ///
-    /// Regression (> 10 % e1RM-Rückgang über den Beobachtungszeitraum) wird
-    /// bewusst NICHT zurückgegeben: es gibt noch keine xcstrings-Keys dafür
-    /// und die Plateau-Meldungen wären inhaltlich falsch.
-    ///
-    /// shortcut: diese Berechnung läuft bei jedem SwiftUI-Render-Pass erneut —
-    /// einmal in activeCoachingContext (nil-Check) und einmal hier (Übungsname).
-    /// Für typische Datenmengen (< 500 Sessions × 10 Logs) ist der O(n·m)-Aufwand
-    /// vertretbar. Upgrade auf @State-Cache sobald Profiling Bedarf zeigt.
-    private var activePlateauFinding: PlateauDetector.Finding? {
+    /// unzureichend sind. Regression (> 10 %) wird bewusst ausgefiltert: keine
+    /// xcstrings-Keys vorhanden, Plateau-Meldungen wären inhaltlich falsch.
+    private func computePlateauFinding() -> PlateauDetector.Finding? {
         let calendar = Calendar.current
         var exps: [PlateauDetector.Exposition] = []
         for session in completedSessions where session.isRealWorkout {
