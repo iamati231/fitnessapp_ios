@@ -45,6 +45,11 @@ public struct ExerciseSpec: Sendable, Hashable {
     /// zurueckgeraten).
     public let enduranceSportKind: TrainingTypeKind?
 
+    /// Laufcoaching-Begründung — warum dieser Trainingsreiz, dieses Volumen,
+    /// diese Intensität. Vom Plan-Generator für Lauf-Einheiten gesetzt;
+    /// nil für Kraft, Rad, und manuell angelegte Einheiten.
+    public let coachingRationale: String?
+
     public init(
         name: String,
         sets: Int,
@@ -57,7 +62,8 @@ public struct ExerciseSpec: Sendable, Hashable {
         targetDurationMinutes: Int? = nil,
         targetPaceMinutesPerKm: Double? = nil,
         role: ExerciseRole = .workingSet,
-        enduranceSportKind: TrainingTypeKind? = nil
+        enduranceSportKind: TrainingTypeKind? = nil,
+        coachingRationale: String? = nil
     ) {
         self.name = name
         self.sets = sets
@@ -71,6 +77,7 @@ public struct ExerciseSpec: Sendable, Hashable {
         self.targetPaceMinutesPerKm = targetPaceMinutesPerKm
         self.role = role
         self.enduranceSportKind = enduranceSportKind
+        self.coachingRationale = coachingRationale
     }
 
     /// Equipment-Vielfalt Phase 1 Task i1 fix: returns a copy with only
@@ -82,6 +89,6 @@ public struct ExerciseSpec: Sendable, Hashable {
                      restSeconds: restSeconds, targetRir: targetRir, isCardio: isCardio,
                      targetDistanceKm: targetDistanceKm, targetDurationMinutes: targetDurationMinutes,
                      targetPaceMinutesPerKm: targetPaceMinutesPerKm, role: role,
-                     enduranceSportKind: enduranceSportKind)
+                     enduranceSportKind: enduranceSportKind, coachingRationale: coachingRationale)
     }
 }

@@ -774,13 +774,20 @@ public enum PlanGenerator {
             let exercise: ExerciseSpec
             switch zone {
             case .interval:
+                let intervalRationale: String = {
+                    if let g = selection.cardioRunProfile?.goal.label {
+                        return "Intervalle für \(g) – kurze Sprints auf maximaler Intensität mit vollständiger Pause dazwischen. Entscheidend für VO₂max und Tempoverbesserungen."
+                    }
+                    return "Intervalltraining – kurze Sprints mit vollständiger Erholung. Steigert VO₂max und Schnelligkeit."
+                }()
                 exercise = ExerciseSpec(
                     name: zone.exerciseName,
                     sets: 6, repsMin: 1, repsMax: 1,
                     restSeconds: 90,
                     isCardio: true,
                     targetDistanceKm: 0.4,
-                    enduranceSportKind: .running
+                    enduranceSportKind: .running,
+                    coachingRationale: intervalRationale
                 )
             case .easy, .tempo:
                 // Laufcoaching-Plan-Integration (Task 3): Pace nur gesetzt,
@@ -796,13 +803,24 @@ public enum PlanGenerator {
                 } else {
                     pace = nil
                 }
+                let easyTempoRationale: String = {
+                    if let g = selection.cardioRunProfile?.goal.label {
+                        return zone == .easy
+                            ? "Grundlagentraining für \(g) – Tempo so wählen, dass du problemlos reden kannst. Ruhige Einheiten machen ca. 80 % des Laufvolumens aus."
+                            : "Tempolauf für \(g) – anspruchsvoll, aber 20–30 Minuten kontrolliert haltbar. Verbessert Laktattoleranz und Laufökonomie."
+                    }
+                    return zone == .easy
+                        ? "Ruhiges Grundlagentraining – Herzfrequenz niedrig halten, Ausdauerbasis aufbauen."
+                        : "Tempolauf – anstrengend aber kontrolliert. Verbessert Laufökonomie und Laktattoleranz."
+                }()
                 exercise = ExerciseSpec(
                     name: zone.exerciseName,
                     sets: 1, repsMin: 0, repsMax: 0,
                     isCardio: true,
                     targetDurationMinutes: volumeAwareDurationMinutes(for: selection),
                     targetPaceMinutesPerKm: pace,
-                    enduranceSportKind: .running
+                    enduranceSportKind: .running,
+                    coachingRationale: easyTempoRationale
                 )
             }
             return Candidate(

@@ -268,6 +268,8 @@ public enum ProgramInstantiator {
         // statt als weiterer Init-Parameter, um die bestehende, bereits sehr
         // lange Aufrufliste nicht an allen Call-Sites anzufassen.
         exercise.enduranceSportKind = spec.enduranceSportKind
+        exercise.targetPaceMinutesPerKm = spec.targetPaceMinutesPerKm
+        exercise.coachingRationale = spec.coachingRationale
         return exercise
     }
 

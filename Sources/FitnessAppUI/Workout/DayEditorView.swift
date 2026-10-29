@@ -1694,6 +1694,15 @@ private struct ExerciseRow: View {
             )
         }
         if exercise.isCardio {
+            if let mins = exercise.targetDurationMinutes, mins > 0 {
+                if let pace = exercise.targetPaceMinutesPerKm {
+                    return "\(mins) Min · \(PaceCalculator.formatPace(pace))"
+                }
+                return "\(mins) Min"
+            }
+            if let km = exercise.targetDistanceKm {
+                return String(format: "%.1f km", km)
+            }
             return String(format: String(localized: "workout.detail.cardio", bundle: .module), exercise.restSeconds)
         }
         let repsText = exercise.repsMin == exercise.repsMax

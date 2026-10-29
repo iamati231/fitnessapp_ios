@@ -522,6 +522,17 @@ public struct ExerciseEditorView: View {
             }
             .disabled(isReadOnly)
             .listRowBackground(Color.Deltiq.surface)
+            if let rationale = exercise.coachingRationale {
+                LabeledContent {
+                    Text(rationale)
+                        .font(.footnote)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .multilineTextAlignment(.trailing)
+                } label: {
+                    Text("editor.exercise.field.coachingRationale", bundle: .module)
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            }
         } header: {
             Text("editor.exercise.section.cardioTarget", bundle: .module)
         }

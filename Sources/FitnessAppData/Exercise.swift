@@ -98,6 +98,16 @@ public final class Exercise {
     /// fixe Distanz ("30 Min Easy"). Nil bei Strength.
     public var targetDurationMinutes: Int?
 
+    /// Ziel-Pace in min/km — vom Plan-Generator fuer Lauf-Einheiten gesetzt.
+    /// Nil bei Strength, Radfahren, und Laeufen ohne bekannte 5K-Referenz.
+    /// Lightweight-Migration: nil-Default, kein Schema-Konflikt.
+    public var targetPaceMinutesPerKm: Double? = nil
+
+    /// Coaching-Begruendung — warum dieser Trainingsreiz, warum dieses Volumen.
+    /// Vom Plan-Generator gesetzt, read-only im UI. Nil fuer manuell angelegte
+    /// Einheiten. Lightweight-Migration: nil-Default.
+    public var coachingRationale: String? = nil
+
     /// DEL-155: Gewaehltes Cardio-Equipment (Laufband / Fahrrad / Ergometer /
     /// Rudergeraet / kein Geraet). Persistiert als String-RawValue fuer
     /// Lightweight-Migration; `nil` = noch nicht gesetzt (Bestandsdaten +

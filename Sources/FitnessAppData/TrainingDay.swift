@@ -160,6 +160,7 @@ public final class TrainingDay {
                     "\($0.targetRir)",
                     $0.targetDistanceKm.map { "\($0)" } ?? "-",
                     $0.targetDurationMinutes.map { "\($0)" } ?? "-",
+                    $0.targetPaceMinutesPerKm.map { "\($0)" } ?? "-",
                     $0.enduranceSportKindRaw ?? "-"
                 ].joined(separator: "|")
             }

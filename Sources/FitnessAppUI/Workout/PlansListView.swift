@@ -925,6 +925,8 @@ public struct PlansListView: View {
                     equipment: ex.equipment,
                     day: dayCopy
                 )
+                exCopy.targetPaceMinutesPerKm = ex.targetPaceMinutesPerKm
+                exCopy.coachingRationale = ex.coachingRationale
                 modelContext.insert(exCopy)
             }
         }

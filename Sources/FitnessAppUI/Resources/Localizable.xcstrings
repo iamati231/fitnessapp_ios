@@ -31006,6 +31006,29 @@
         }
       }
     },
+    "editor.exercise.field.coachingRationale": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coaching-Hinweis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coaching Note"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koçluk Notu"
+          }
+        }
+      }
+    },
     "editor.exercise.field.distanceExample": {
       "extractionState": "manual",
       "localizations": {
