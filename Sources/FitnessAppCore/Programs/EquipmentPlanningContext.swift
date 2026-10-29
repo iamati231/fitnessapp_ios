@@ -88,6 +88,17 @@ public enum EquipmentPlanningResolver {
 }
 
 public extension UserEquipmentProfile {
+    /// Alle 10 `EquipmentItem`-Faelle auf `.available` — wird als bestaetigt
+    /// gespeichertes Profil verwendet, wenn der Nutzer "Gym" als Trainingsort
+    /// waehlt. Kein `.unknown`, kein `confirmRemainingAsUnavailable` noetig.
+    public static var gymFull: UserEquipmentProfile {
+        var profile = UserEquipmentProfile()
+        for item in EquipmentItem.allCases {
+            profile.availability[item] = .available
+        }
+        return profile
+    }
+
     /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
     /// §4): zentral definierte, explizit dokumentierte Annahme für ein
     /// ÜBLICHES kommerzielles Fitnessstudio — keine Spezialgeräte, keine

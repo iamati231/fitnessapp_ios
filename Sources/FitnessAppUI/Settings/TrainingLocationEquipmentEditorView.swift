@@ -59,7 +59,12 @@ struct TrainingLocationEquipmentEditorView: View {
     init(profile: UserBodyProfile) {
         self.profile = profile
         _draftEnvironment = State(initialValue: profile.environment)
-        _draftEquipmentProfile = State(initialValue: profile.equipmentProfile)
+        // Gym ohne bestaetigtes Profil: direkt mit gymFull vorbefuellen,
+        // damit der Nutzer beim Speichern automatisch alle Items bestaetigt.
+        let initialEquipment = (profile.environment == .gym && !profile.equipmentProfileConfirmedComplete)
+            ? UserEquipmentProfile.gymFull
+            : profile.equipmentProfile
+        _draftEquipmentProfile = State(initialValue: initialEquipment)
     }
 
     var body: some View {
@@ -105,6 +110,17 @@ struct TrainingLocationEquipmentEditorView: View {
             // Dialog vorbei. Ohne Aenderungen (`!isDirty`) bleibt es normal
             // moeglich (direktes Schliessen).
             .interactiveDismissDisabled(isDirty)
+            .onAppear {
+                if draftEnvironment == .gym, !profile.equipmentProfileConfirmedComplete {
+                    equipmentTouched = true
+                }
+            }
+            .onChange(of: draftEnvironment) { _, newValue in
+                if newValue == .gym {
+                    draftEquipmentProfile = .gymFull
+                    equipmentTouched = true
+                }
+            }
             // P5.1: analog `ProfileEditorView`s `envSwap`-Dialog (siehe
             // dortige Button-Texte, hier wiederverwendet — gleiche
             // Ja/Nein-Semantik, nur ein anderer Ausloeser). Erscheint ERST

@@ -301,8 +301,13 @@ public struct OnboardingView: View {
             // diese auch am neuen Ort gelten") — der jeweilige Equipment-
             // Schritt (Gym-Hinweis/Home-Gym-Editor/Kein-Equipment-Kurzfrage)
             // verlangt dadurch eine frische Bestaetigung fuer den neuen Ort.
-            .onChange(of: environment) { _, _ in
-                equipmentProfileConfirmedComplete = false
+            .onChange(of: environment) { _, newValue in
+                if newValue == .gym {
+                    equipmentProfile = .gymFull
+                    equipmentProfileConfirmedComplete = true
+                } else {
+                    equipmentProfileConfirmedComplete = false
+                }
             }
             // DEL-056: Plan-Detail-Sheet. Wird auf Step 3 geoeffnet, wenn der
             // User einen Template-Row antippt. Adopt-Button finalisiert die
@@ -1160,6 +1165,11 @@ public struct OnboardingView: View {
                     .foregroundStyle(.tertiary)
             }
             .padding()
+        }
+        .onAppear {
+            guard !equipmentProfileConfirmedComplete else { return }
+            equipmentProfile = .gymFull
+            equipmentProfileConfirmedComplete = true
         }
         .sheet(isPresented: $showingGymEquipmentSheet) {
             gymEquipmentSheet
