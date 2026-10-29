@@ -114,7 +114,7 @@ struct BarcodeScannerSheet: View {
 
     private func statusCard(message: LocalizedStringKey, showsOpenSettings: Bool = false) -> some View {
         VStack(spacing: 16) {
-            Image(systemName: "camera.metering.unknown")
+            Image(systemName: "barcode.viewfinder")
                 .font(.system(size: 36))
                 .foregroundStyle(Color.Deltiq.textSecondary)
             Text(message, bundle: .module)
