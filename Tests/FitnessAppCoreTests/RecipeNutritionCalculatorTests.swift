@@ -100,6 +100,32 @@ final class RecipeNutritionCalculatorTests: XCTestCase {
         XCTAssertTrue(result.partiallyKnown)
     }
 
+    // MARK: - Randwerte
+
+    func testZeroServings_treatedAsOneServing() throws {
+        // servings == 0 ist ein Datenfehler; max(0, 1) verhindert Division durch 0.
+        // Ergebnis muss identisch mit servings == 1 sein.
+        let recipe = singleIngredientRecipe(amountGrams: 150, servings: 0)
+        let result = try XCTUnwrap(
+            RecipeNutritionCalculator.nutrients(for: recipe, catalog: [chickenItem]).get()
+        )
+        XCTAssertEqual(result.kcal.value ?? -1, 247.5, accuracy: 0.001,
+                       "servings==0 wird als 1 behandelt — kein Absturz, korrektes Ergebnis")
+    }
+
+    func testZeroPortionMultiplier_returnsKnownZero() throws {
+        // 0 Portionen: Menge ist null, auch wenn Naehrwert pro 100g unbekannt waere.
+        let result = try XCTUnwrap(
+            RecipeNutritionCalculator.nutrients(
+                for: singleIngredientRecipe(),
+                catalog: [chickenItem],
+                portionMultiplier: 0
+            ).get()
+        )
+        XCTAssertEqual(result.kcal.value, 0, accuracy: 0.001)
+        XCTAssertFalse(result.partiallyKnown, "0-Portion ist bekannt=0, nie unknown")
+    }
+
     // MARK: - Mehrzutaten-Rezept
 
     func testMultipleIngredients_sumsCorrectly() throws {

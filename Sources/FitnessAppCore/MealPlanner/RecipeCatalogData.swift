@@ -9,11 +9,18 @@ public enum RecipeCatalogData {
     public static let all: [Recipe] = load()
 
     private static func load() -> [Recipe] {
-        guard let url = Bundle.module.url(forResource: "recipes", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let catalog = try? JSONDecoder().decode(RecipeFileCatalog.self, from: data)
-        else { return [] }
-        return catalog.recipes
+        guard let url = Bundle.module.url(forResource: "recipes", withExtension: "json") else {
+            assertionFailure("recipes.json nicht im Bundle — fehlt .process(\"Resources\") in Package.swift?")
+            return []
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            let catalog = try JSONDecoder().decode(RecipeFileCatalog.self, from: data)
+            return catalog.recipes
+        } catch {
+            assertionFailure("recipes.json konnte nicht dekodiert werden: \(error)")
+            return []
+        }
     }
 }
 
