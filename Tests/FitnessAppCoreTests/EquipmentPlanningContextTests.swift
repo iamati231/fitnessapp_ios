@@ -22,37 +22,38 @@ final class EquipmentPlanningContextTests: XCTestCase {
 
     // MARK: - Pflicht-Test 1: Gym ohne Anpassung
 
-    func testGymWithoutCustomizationUsesGymDefaultAsAssumptionNotConfirmed() {
+    /// Neues Verhalten (DEL-Gym-Auto): Gym gibt immer confirmed+gymFull zurueck —
+    /// keine Annahme mehr, kein manueller Bestaetigunsschritt noetig.
+    func testGymWithoutCustomizationIsConfirmedWithGymFullProfile() {
         let context = EquipmentPlanningResolver.resolve(
             environment: .gym, individualProfile: UserEquipmentProfile(), confirmedComplete: false
         )
-        XCTAssertEqual(context.source, .gymAssumption)
-        XCTAssertTrue(context.isAssumption)
+        XCTAssertEqual(context.source, .confirmed)
+        XCTAssertFalse(context.isAssumption)
         XCTAssertEqual(context.effectiveProfile.availability(for: .barbell), .available)
-        XCTAssertEqual(context.effectiveProfile.availability(for: .kettlebell), .unknown)
+        XCTAssertEqual(context.effectiveProfile.availability(for: .kettlebell), .available,
+                       "Gym = gymFull: alle Items available, auch Kettlebell")
     }
 
     // MARK: - Pflicht-Test 2: Gym mit explizit fehlendem Gerät
 
-    /// Ein individuell bestaetigt FEHLENDES Geraet darf die Gym-Annahme
-    /// niemals ueberschreiben — auch wenn es Teil des Standard-Gym-Profils
-    /// waere.
-    func testGymDefaultNeverOverridesAnExplicitlyMissingItem() {
+    /// Ohne confirmedComplete gilt gymFull — individuelle Korrekturen haben
+    /// keinen Effekt auf das effektive Planungsprofil. Nur eine abgeschlossene
+    /// Bestaetigung (confirmedComplete=true) ersetzt gymFull.
+    func testGymWithoutConfirmationIgnoresIndividualCorrections() {
         var individual = UserEquipmentProfile()
         individual.availability[.rack] = .unavailable
         let context = EquipmentPlanningResolver.resolve(
             environment: .gym, individualProfile: individual, confirmedComplete: false
         )
-        XCTAssertEqual(context.source, .gymAssumption)
-        XCTAssertEqual(context.effectiveProfile.availability(for: .rack), .unavailable,
-                       "Individuell bestaetigt fehlendes Rack bleibt fehlend, trotz Gym-Annahme")
-        // Alles andere bleibt die Annahme — eine einzelne Korrektur loescht
-        // nicht die gesamte Annahme.
+        XCTAssertEqual(context.source, .confirmed)
+        XCTAssertEqual(context.effectiveProfile.availability(for: .rack), .available,
+                       "gymFull gewinnt — individuelle Korrektur ohne confirmedComplete hat keinen Effekt")
         XCTAssertEqual(context.effectiveProfile.availability(for: .barbell), .available)
     }
 
-    /// Gegenprobe: eine individuell bestaetigt VORHANDENE Kettlebell (die
-    /// Gym-Annahme selbst laesst Kettlebell offen) wird uebernommen.
+    /// gymFull hat Kettlebell bereits als available. Individuelle Zaehlangaben
+    /// werden ohne confirmedComplete nicht uebernommen.
     func testGymDefaultIncorporatesAnIndividuallyConfirmedExtraItem() {
         var individual = UserEquipmentProfile()
         individual.availability[.kettlebell] = .available
@@ -60,8 +61,9 @@ final class EquipmentPlanningContextTests: XCTestCase {
         let context = EquipmentPlanningResolver.resolve(
             environment: .gym, individualProfile: individual, confirmedComplete: false
         )
+        // gymFull hat Kettlebell als available — erwartet dasselbe Ergebnis
         XCTAssertEqual(context.effectiveProfile.availability(for: .kettlebell), .available)
-        XCTAssertEqual(context.effectiveProfile.count(for: .kettlebell), 2)
+        // Individuelle Zaehlangaben werden ohne confirmedComplete nicht uebernommen
     }
 
     /// Eine vollstaendig ABGESCHLOSSENE Erfassung (User hat im Gym
@@ -149,7 +151,10 @@ final class EquipmentPlanningContextTests: XCTestCase {
     /// und ein Standard-Item explizit als fehlend bestaetigt), muss
     /// `isStale` das erkennen — "veränderte Inhalte benötigen erneute
     /// Freigabe" (Vorgabe wörtlich).
-    func testGymAssumptionSelectionBecomesStaleWhenIndividualCorrectionChangesTheEffectiveProfile() {
+    /// Individuelle Korrekturen ohne confirmedComplete aendern das effektive
+    /// Gym-Profil nicht (gymFull bleibt). Vorschau und Übernahme liefern
+    /// dasselbe gymFull → kein Stale.
+    func testGymSelectionNotStaleWhenIndividualCorrectionWithoutConfirmation() {
         let template = ProgramTemplates.all.first { $0.id == "hybrid_balanced" }!
         let initialContext = EquipmentPlanningResolver.resolve(
             environment: .gym, individualProfile: UserEquipmentProfile(), confirmedComplete: false
@@ -164,7 +169,8 @@ final class EquipmentPlanningContextTests: XCTestCase {
         let laterContext = EquipmentPlanningResolver.resolve(
             environment: .gym, individualProfile: corrected, confirmedComplete: false
         )
-        XCTAssertTrue(previewSelection.isStale(comparedTo: laterContext.effectiveProfile),
-                      "Eine individuelle Korrektur an der Gym-Annahme macht die vorherige Auswahl veraltet")
+        // Beide Kontexte liefern gymFull — identisches effektives Profil, kein Stale
+        XCTAssertFalse(previewSelection.isStale(comparedTo: laterContext.effectiveProfile),
+                       "Ohne confirmedComplete bleibt gymFull unveraendert — kein Stale")
     }
 }

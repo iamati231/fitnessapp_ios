@@ -36,20 +36,20 @@ final class SetDisplayModeSettingTests: XCTestCase {
         try String(contentsOf: sourcesRoot.appendingPathComponent(relativePath), encoding: .utf8)
     }
 
-    func testAllThreeCallSitesUseTheSameDisplayModeStorageKey() throws {
-        let expectedDeclaration = "@AppStorage(\"pref_set_display_mode\") private var setDisplayModeRaw: String = \"column\""
-
+    /// Regressionswächter: Satzanzeige-Einstellung (pref_set_display_mode)
+    /// wurde bewusst entfernt (classic-Layout ist jetzt fest codiert).
+    /// Stellt sicher, dass der Key nicht versehentlich wieder eingebaut wird.
+    func testSetDisplayModeKeyIsRemovedFromAllCallSites() throws {
         for relativePath in [
             "Workout/SetRow.swift",
             "Workout/ExerciseCard.swift",
             "Settings/SettingsAppExperienceView.swift"
         ] {
             let source = try contents(of: relativePath)
-            XCTAssertTrue(
-                source.contains(expectedDeclaration),
-                "\(relativePath) muss denselben AppStorage-Key/Default fuer die Satzanzeige-Einstellung "
-                    + "deklarieren wie die anderen beiden Call-Sites, sonst wirkt ein Umschalten in den "
-                    + "Einstellungen nicht ueberall."
+            XCTAssertFalse(
+                source.contains("pref_set_display_mode"),
+                "\(relativePath) darf keinen pref_set_display_mode-Key mehr enthalten — "
+                    + "Satzanzeige wurde auf classic-Layout festgelegt."
             )
         }
     }
@@ -63,28 +63,15 @@ final class SetDisplayModeSettingTests: XCTestCase {
         )
     }
 
-    func testSetDisplayPickerConstrainsItsWidthSoLongValuesCannotOverflowIntoNeighboringRows() throws {
+    /// Regressionswächter: Satzanzeige-Picker ist entfernt worden; der
+    /// entsprechende Lokalisierungsstring darf nicht mehr in SettingsAppExperienceView
+    /// auftauchen (wäre ein Hinweis auf versehentliches Wiedereinbauen).
+    func testSetDisplayPickerStringIsRemovedFromSettings() throws {
         let source = try contents(of: "Settings/SettingsAppExperienceView.swift")
-        guard let pickerRange = source.range(of: "settings.training.displayMode.classic") else {
-            XCTFail("Set-display-Picker nicht gefunden - hat sich SettingsAppExperienceView.swift strukturell geaendert?")
-            return
-        }
-        guard let rowEnd = source[pickerRange.upperBound...].range(of: "\n            }") else {
-            XCTFail("Ende des Set-display-Pickers nicht gefunden")
-            return
-        }
-        let pickerBody = source[pickerRange.upperBound..<rowEnd.lowerBound]
-        XCTAssertTrue(
-            pickerBody.contains(".frame(maxWidth:") && pickerBody.contains("maxHeight:"),
-            "Der Set-display-Picker muss Breite UND Hoehe begrenzen, sonst lief \"Previous layout\" bei "
-                + "AX5 (Geraete-Nachtest Runde 10) ueber mehrere Nachbar-Reihen hinweg."
-        )
-        XCTAssertTrue(
-            pickerBody.contains(".clipped()"),
-            "Der Set-display-Picker muss .clipped() setzen - reine maxWidth/maxHeight reichte im ersten "
-                + "Fix-Versuch NICHT, da .pickerStyle(.menu) seinen eingeklappten Wert bei AX5 ueber ein "
-                + "natives UIKit-Label rendert, das SwiftUIs Frame-Begrenzung ignoriert, bis sie durch "
-                + "clipped() tatsaechlich erzwungen wird."
+        XCTAssertFalse(
+            source.contains("settings.training.displayMode.classic"),
+            "Der Set-display-Picker wurde entfernt — dieser Lokalisierungsstring sollte nicht mehr in "
+                + "SettingsAppExperienceView.swift vorkommen."
         )
     }
 }

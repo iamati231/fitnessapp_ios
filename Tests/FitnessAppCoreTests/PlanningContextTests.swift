@@ -142,17 +142,19 @@ final class PlanningContextTests: XCTestCase {
 
     // MARK: - Abnahme 3: Equipment-Aufloesung nutzt den bestehenden Resolver
 
-    func testGymEnvironmentWithoutConfirmationUsesExistingGymAssumptionNotASilentGap() {
+    /// Neues Verhalten: Gym gibt immer confirmed+gymFull zurueck — keine
+    /// Annahme, keine stille Luecke.
+    func testGymEnvironmentWithoutConfirmationUsesGymFullConfirmedNotASilentGap() {
         let context = makeValidContext(
             environment: .gym,
             equipmentProfile: UserEquipmentProfile(),
             equipmentProfileConfirmedComplete: false
         )
         let effective = context.effectiveEquipment
-        XCTAssertEqual(effective.source, .gymAssumption)
-        XCTAssertTrue(effective.isAssumption)
+        XCTAssertEqual(effective.source, .confirmed)
+        XCTAssertFalse(effective.isAssumption)
         XCTAssertEqual(effective.effectiveProfile.availability(for: .barbell), .available,
-                       "Leeres Profil + Gym + nicht bestaetigt darf keine stille Luecke sein")
+                       "Gym ohne Bestaetigung gibt gymFull zurueck — kein stiller Planungsluecke")
     }
 
     func testConfirmedCompleteProfileIsUsedAsIsEvenWhenEmpty() {
