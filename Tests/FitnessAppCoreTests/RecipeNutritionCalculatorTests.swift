@@ -122,7 +122,7 @@ final class RecipeNutritionCalculatorTests: XCTestCase {
                 portionMultiplier: 0
             ).get()
         )
-        XCTAssertEqual(result.kcal.value, 0, accuracy: 0.001)
+        XCTAssertEqual(result.kcal.value ?? -1, 0, accuracy: 0.001)
         XCTAssertFalse(result.partiallyKnown, "0-Portion ist bekannt=0, nie unknown")
     }
 

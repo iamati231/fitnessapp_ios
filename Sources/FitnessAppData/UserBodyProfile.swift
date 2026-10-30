@@ -589,6 +589,36 @@ public final class UserBodyProfile {
         }
     }
 
+    // MARK: - DEL-Ernährungsplaner Phase 3: Ernährungspräferenzen
+    //
+    // Flaches Feld-pro-Wert-Muster wie bei allen anderen Profile-Erweiterungen.
+    // Lightweight-Migration: Default-Literale reichen, kein VersionedSchema nötig.
+
+    /// Ernährungsstil für den MealPlanGenerator. Default .omnivor (keine Einschränkung).
+    public var mealPlanDietaryStyleRaw: String = DietaryStyle.omnivor.rawValue
+
+    /// Ausgeschlossene Allergene (RecipeAllergen.rawValue). Default leer.
+    public var mealPlanAllergenExclusionsRaw: [String] = []
+
+    /// Vom Nutzer manuell ausgeschlossene Rezept-IDs. Default leer.
+    public var mealPlanExcludedRecipeIDsRaw: [String] = []
+
+    /// Typisierter Accessor — liest/schreibt alle drei Felder oben als einen Value.
+    public var nutritionPreferences: UserNutritionPreferences {
+        get {
+            UserNutritionPreferences(
+                dietaryStyle: DietaryStyle(rawValue: mealPlanDietaryStyleRaw) ?? .omnivor,
+                allergenExclusions: Set(mealPlanAllergenExclusionsRaw.compactMap { RecipeAllergen(rawValue: $0) }),
+                excludedRecipeIDs: Set(mealPlanExcludedRecipeIDsRaw)
+            )
+        }
+        set {
+            mealPlanDietaryStyleRaw = newValue.dietaryStyle.rawValue
+            mealPlanAllergenExclusionsRaw = newValue.allergenExclusions.map(\.rawValue).sorted()
+            mealPlanExcludedRecipeIDsRaw = newValue.excludedRecipeIDs.sorted()
+        }
+    }
+
     public init(
         birthDate: Date,
         heightCm: Double,
