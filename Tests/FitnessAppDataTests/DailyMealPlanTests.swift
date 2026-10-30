@@ -14,8 +14,17 @@ final class DailyMealPlanTests: XCTestCase {
         return try ModelContainer(for: schema, configurations: config)
     }
 
+    func testInit_normalizesDateToStartOfDay() {
+        let date = Date(timeIntervalSince1970: 1_000_000)
+        let plan = DailyMealPlan(date: date)
+        let expected = Calendar.current.startOfDay(for: date)
+        XCTAssertEqual(plan.date, expected, "DailyMealPlan.init muss Datum auf Tagesbeginn normalisieren")
+    }
+
     func testFetchOrCreate_sameDay_returnsSamePlan() throws {
-        let ctx = try makeContainer().mainContext
+        // container muss benannt bleiben — ModelContext hält keine starke Referenz auf ModelContainer
+        let container = try makeContainer()
+        let ctx = container.mainContext
         let date = Date(timeIntervalSince1970: 1_000_000)
 
         let plan1 = try DailyMealPlan.fetchOrCreate(for: date, in: ctx)
@@ -25,7 +34,8 @@ final class DailyMealPlanTests: XCTestCase {
     }
 
     func testFetchOrCreate_differentTimeSameDay_returnsSamePlan() throws {
-        let ctx = try makeContainer().mainContext
+        let container = try makeContainer()
+        let ctx = container.mainContext
         let dayStart = Calendar.current.startOfDay(for: Date(timeIntervalSince1970: 1_000_000))
         let morning = dayStart.addingTimeInterval(3_600)   // 01:00
         let evening = dayStart.addingTimeInterval(72_000)  // 20:00
@@ -37,9 +47,10 @@ final class DailyMealPlanTests: XCTestCase {
     }
 
     func testFetchOrCreate_differentDays_returnsDifferentPlans() throws {
-        let ctx = try makeContainer().mainContext
+        let container = try makeContainer()
+        let ctx = container.mainContext
         let day1 = Date(timeIntervalSince1970: 1_000_000)
-        let day2 = day1.addingTimeInterval(86_400)
+        let day2 = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: day1))!
 
         let plan1 = try DailyMealPlan.fetchOrCreate(for: day1, in: ctx)
         let plan2 = try DailyMealPlan.fetchOrCreate(for: day2, in: ctx)
@@ -47,15 +58,9 @@ final class DailyMealPlanTests: XCTestCase {
         XCTAssertFalse(plan1 === plan2, "Verschiedene Tage müssen verschiedene Pläne liefern")
     }
 
-    func testInit_normalizesDateToStartOfDay() {
-        let date = Date(timeIntervalSince1970: 1_000_000)
-        let plan = DailyMealPlan(date: date)
-        let expected = Calendar.current.startOfDay(for: date)
-        XCTAssertEqual(plan.date, expected, "DailyMealPlan.init muss Datum auf Tagesbeginn normalisieren")
-    }
-
     func testUpsertGenerated_generatedPlan_isOverwritten() throws {
-        let ctx = try makeContainer().mainContext
+        let container = try makeContainer()
+        let ctx = container.mainContext
         let date = Date(timeIntervalSince1970: 1_000_000)
 
         let a1 = PlannedMealAssignment(recipeID: "r1", mealType: .lunch)
@@ -72,7 +77,8 @@ final class DailyMealPlanTests: XCTestCase {
     }
 
     func testUpsertGenerated_manuallyAdjustedPlan_isNotOverwritten() throws {
-        let ctx = try makeContainer().mainContext
+        let container = try makeContainer()
+        let ctx = container.mainContext
         let date = Date(timeIntervalSince1970: 1_000_000)
 
         let plan = try DailyMealPlan.fetchOrCreate(for: date, in: ctx)
