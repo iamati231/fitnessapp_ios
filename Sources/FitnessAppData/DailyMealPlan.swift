@@ -23,7 +23,7 @@ public final class DailyMealPlan {
     public var isManuallyAdjusted: Bool = false
 
     public init(date: Date, generatorWarning: String? = nil) {
-        self.date = date
+        self.date = Calendar.current.startOfDay(for: date)
         self.generatorWarning = generatorWarning
     }
 

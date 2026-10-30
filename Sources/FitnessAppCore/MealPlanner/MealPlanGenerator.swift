@@ -162,11 +162,14 @@ public enum MealPlanGenerator {
 
         var baseKcal = 0.0, baseProtein = 0.0, baseCarbs = 0.0, baseFat = 0.0
         var unknownKcal = false, unknownProtein = false, unknownCarbs = false, unknownFat = false
+        // Eine fehlgeschlagene Nährwertberechnung (z. B. unbekannte Zutat) darf
+        // den Basiswert nicht still auf 0 schrumpfen lassen — Skalierung wäre falsch.
+        var anyCalculationFailed = false
 
         for a in assignments {
             guard let recipe = recipes.first(where: { $0.id == a.recipeID }) else { continue }
             guard case .success(let n) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: foodCatalog)
-            else { continue }
+            else { anyCalculationFailed = true; continue }
 
             if let v = n.kcal.value { baseKcal += v } else { unknownKcal = true }
             if let v = n.proteinG.value { baseProtein += v } else { unknownProtein = true }
@@ -175,19 +178,19 @@ public enum MealPlanGenerator {
         }
 
         // Gewichteter Durchschnitt der impliziten Multiplikatoren pro Zieldimension.
-        // Unbekannte Basiswerte werden ausgeschlossen — NICHT als 0 gewertet.
+        // Unbekannte Basiswerte und gescheiterte Berechnungen werden ausgeschlossen.
         var multipliers: [(value: Double, weight: Double)] = []
 
-        if let goal = calorieGoalKcal, !unknownKcal, baseKcal > 0 {
+        if let goal = calorieGoalKcal, !unknownKcal, !anyCalculationFailed, baseKcal > 0 {
             multipliers.append((Double(goal) / baseKcal, 1.0))
         }
-        if let goal = proteinGoalG, !unknownProtein, baseProtein > 0 {
+        if let goal = proteinGoalG, !unknownProtein, !anyCalculationFailed, baseProtein > 0 {
             multipliers.append((goal / baseProtein, 1.0))
         }
-        if let goal = carbGoalG, !unknownCarbs, baseCarbs > 0 {
+        if let goal = carbGoalG, !unknownCarbs, !anyCalculationFailed, baseCarbs > 0 {
             multipliers.append((goal / baseCarbs, 0.5))
         }
-        if let goal = fatGoalG, !unknownFat, baseFat > 0 {
+        if let goal = fatGoalG, !unknownFat, !anyCalculationFailed, baseFat > 0 {
             multipliers.append((goal / baseFat, 0.5))
         }
 

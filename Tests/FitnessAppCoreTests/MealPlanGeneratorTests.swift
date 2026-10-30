@@ -320,6 +320,37 @@ final class MealPlanGeneratorTests: XCTestCase {
             "Portionen dürfen bei unbekannten Nährwerten nicht verändert werden")
     }
 
+    func testScaleToNutritionGoals_mixedRecipes_failedRecipeBlocksScaling() {
+        // Ein bekanntes + ein unbekanntes Rezept: Teilbasis darf Skalierung nicht antreiben.
+        let knownRecipe = Recipe(
+            id: "chicken_rice_bowl", nameKey: "test.known",
+            mealTypes: [.lunch], dietaryTags: [], allergens: [],
+            allergenVerified: true, halalVerifiedBy: nil,
+            servings: 1, prepMinutes: 5,
+            ingredients: [RecipeIngredient(ingredientID: "chicken_breast_cooked", amountGrams: 100)]
+        )
+        let unknownRecipe = Recipe(
+            id: "test_mixed_unknown", nameKey: "test.unknown",
+            mealTypes: [.dinner], dietaryTags: [], allergens: [],
+            allergenVerified: true, halalVerifiedBy: nil,
+            servings: 1, prepMinutes: 5,
+            ingredients: [RecipeIngredient(ingredientID: "nonexistent_xyz_2", amountGrams: 100)]
+        )
+        let assignments = [
+            MealPlanAssignmentValue(recipeID: "chicken_rice_bowl", mealType: .lunch, portionMultiplier: 1.0),
+            MealPlanAssignmentValue(recipeID: "test_mixed_unknown", mealType: .dinner, portionMultiplier: 1.0)
+        ]
+        let (scaled, warning) = MealPlanGenerator.scaleToNutritionGoals(
+            assignments, calorieGoalKcal: 2000, proteinGoalG: nil, carbGoalG: nil, fatGoalG: nil,
+            recipes: [knownRecipe, unknownRecipe], foodCatalog: FoodCatalogData.all
+        )
+        XCTAssertNotNil(warning, "Teilweise berechnete Basis muss Warnung setzen")
+        for a in scaled {
+            XCTAssertEqual(a.portionMultiplier, 1.0, accuracy: 0.001,
+                "Skalierung auf unvollständiger Basis darf nicht stattfinden")
+        }
+    }
+
     // MARK: - Ernährungsfilter-Hierarchie
 
     func testMatchesDietaryStyle_veganIncludedForVegetarian() {
