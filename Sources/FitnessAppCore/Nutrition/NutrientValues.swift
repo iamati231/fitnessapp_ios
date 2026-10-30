@@ -127,6 +127,20 @@ public struct NutrientValues: Sendable, Codable, Equatable {
     }
 }
 
+public extension NutrientValues {
+    /// Skaliert alle vier Dimensionen gleichmaessig.
+    /// Benutzt intern `NutrientValues.scaled(_:by:)` — selbe Semantik:
+    /// `factor == 0` ergibt `known(0)`, unbekannte Werte bleiben unbekannt.
+    func scaled(by factor: Double) -> NutrientValues {
+        NutrientValues(
+            kcal: NutrientValues.scaled(kcal, by: factor),
+            proteinG: NutrientValues.scaled(proteinG, by: factor),
+            carbsG: NutrientValues.scaled(carbsG, by: factor),
+            fatG: NutrientValues.scaled(fatG, by: factor)
+        )
+    }
+}
+
 /// OFF-01: Liest einen einzelnen Naehrwert aus einer Backup-Zeile, wobei die
 /// additive Bitzmaske entscheidet, ob der gespeicherte Wert Inhalt ist oder
 /// nur der Platzhalter eines unbekannten Werts. Bewusst hier in Core, damit

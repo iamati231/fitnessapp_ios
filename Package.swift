@@ -27,7 +27,8 @@ let package = Package(
     targets: [
         .target(
             name: "FitnessAppCore",
-            path: "Sources/FitnessAppCore"
+            path: "Sources/FitnessAppCore",
+            resources: [.process("Resources")]
         ),
         .target(
             name: "FitnessAppData",

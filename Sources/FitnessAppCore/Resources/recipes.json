@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "recipes": [
+    {
+      "id": "chicken_rice_bowl",
+      "nameKey": "recipe.chicken_rice_bowl.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "chicken_breast_cooked", "amountGrams": 150},
+        {"ingredientID": "rice_basmati_cooked",   "amountGrams": 180},
+        {"ingredientID": "broccoli_cooked",        "amountGrams": 100},
+        {"ingredientID": "olive_oil",              "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "oatmeal_berry_skyr",
+      "nameKey": "recipe.oatmeal_berry_skyr.name",
+      "mealTypes": ["breakfast"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["gluten", "lactose"],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "oats",      "amountGrams": 80},
+        {"ingredientID": "skyr",      "amountGrams": 150},
+        {"ingredientID": "blueberry", "amountGrams": 80},
+        {"ingredientID": "banana",    "amountGrams": 50}
+      ]
+    },
+    {
+      "id": "red_lentil_soup",
+      "nameKey": "recipe.red_lentil_soup.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 2,
+      "prepMinutes": 30,
+      "ingredients": [
+        {"ingredientID": "lentils_cooked", "amountGrams": 400},
+        {"ingredientID": "tomato_raw",     "amountGrams": 200},
+        {"ingredientID": "onion_raw",      "amountGrams": 100},
+        {"ingredientID": "garlic_raw",     "amountGrams": 10},
+        {"ingredientID": "olive_oil",      "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "greek_yogurt_bowl",
+      "nameKey": "recipe.greek_yogurt_bowl.name",
+      "mealTypes": ["breakfast", "snack"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["lactose", "nuts"],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "yogurt_greek", "amountGrams": 200},
+        {"ingredientID": "blueberry",    "amountGrams": 80},
+        {"ingredientID": "strawberry",   "amountGrams": 80},
+        {"ingredientID": "almonds",      "amountGrams": 20}
+      ]
+    },
+    {
+      "id": "tuna_salad",
+      "nameKey": "recipe.tuna_salad.name",
+      "mealTypes": ["lunch"],
+      "dietaryTags": ["pescetarian"],
+      "allergens": ["fish"],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 10,
+      "ingredients": [
+        {"ingredientID": "tuna_canned_water", "amountGrams": 150},
+        {"ingredientID": "tomato_raw",        "amountGrams": 100},
+        {"ingredientID": "cucumber_raw",      "amountGrams": 100},
+        {"ingredientID": "olive_oil",         "amountGrams": 15}
+      ]
+    }
+  ]
+}
