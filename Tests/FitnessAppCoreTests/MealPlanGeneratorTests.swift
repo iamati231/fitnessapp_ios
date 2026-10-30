@@ -87,14 +87,14 @@ final class MealPlanGeneratorTests: XCTestCase {
         XCTAssertEqual(result.map(\.id), ["r1"])
     }
 
-    func testEligibleRecipes_vegetarianFilter_veganOnlyTag_excluded() {
-        // .vegan-Tag allein reicht nicht für .vegetarian-Filter
+    func testEligibleRecipes_vegetarianFilter_veganOnlyTag_includedByHierarchy() {
+        // Hierarchie-Fix: vegan ⊂ vegetarisch — veganes Rezept ohne .vegetarian-Tag muss sichtbar sein
         let vegan = makeRecipe(id: "r1", dietaryTags: [.vegan])
         let result = MealPlanGenerator.eligibleRecipes(
             in: [vegan], for: .lunch,
             preferences: .init(dietaryStyle: .vegetarian)
         )
-        XCTAssertTrue(result.isEmpty, "Vegetarian-Filter prüft .vegetarian-Tag, nicht .vegan")
+        XCTAssertFalse(result.isEmpty, "Veganes Rezept muss für Vegetarier sichtbar sein (vegan ⊂ vegetarisch)")
     }
 
     // MARK: - eligibleRecipes: Allergen-Ausschluss
@@ -222,23 +222,130 @@ final class MealPlanGeneratorTests: XCTestCase {
         XCTAssertTrue(plan.assignments.contains { $0.mealType == .dinner })
     }
 
-    // MARK: - scaleToCalorieGoal: Klammerung
+    // MARK: - scaleToNutritionGoals: Klammerung
 
-    func testScaleToCalorieGoal_clampsToMaximum() {
-        // Sehr hohes Ziel → maximal 2.5
+    func testScaleToNutritionGoals_clampsToMaximum() {
         let assignment = MealPlanAssignmentValue(recipeID: "chicken_rice_bowl", mealType: .lunch, portionMultiplier: 1.0)
-        let scaled = MealPlanGenerator.scaleToCalorieGoal(
-            [assignment], goalKcal: 99999, recipes: RecipeCatalogData.all, foodCatalog: FoodCatalogData.all
+        let (scaled, _) = MealPlanGenerator.scaleToNutritionGoals(
+            [assignment], calorieGoalKcal: 99999, proteinGoalG: nil, carbGoalG: nil, fatGoalG: nil,
+            recipes: RecipeCatalogData.all, foodCatalog: FoodCatalogData.all
         )
         XCTAssertLessThanOrEqual(scaled.first?.portionMultiplier ?? 0, 2.5)
     }
 
-    func testScaleToCalorieGoal_clampsToMinimum() {
-        // Sehr niedriges Ziel → mindestens 0.5
+    func testScaleToNutritionGoals_clampsToMinimum() {
         let assignment = MealPlanAssignmentValue(recipeID: "chicken_rice_bowl", mealType: .lunch, portionMultiplier: 1.0)
-        let scaled = MealPlanGenerator.scaleToCalorieGoal(
-            [assignment], goalKcal: 1, recipes: RecipeCatalogData.all, foodCatalog: FoodCatalogData.all
+        let (scaled, _) = MealPlanGenerator.scaleToNutritionGoals(
+            [assignment], calorieGoalKcal: 1, proteinGoalG: nil, carbGoalG: nil, fatGoalG: nil,
+            recipes: RecipeCatalogData.all, foodCatalog: FoodCatalogData.all
         )
         XCTAssertGreaterThanOrEqual(scaled.first?.portionMultiplier ?? 0, 0.5)
+    }
+
+    // MARK: - scaleToNutritionGoals: Makroziele
+
+    func testScaleToNutritionGoals_proteinGoalOnly_clampsToMax() {
+        // Extrem hohes Proteinziel → Skalierung maximal 2.5
+        let assignment = MealPlanAssignmentValue(recipeID: "chicken_rice_bowl", mealType: .lunch, portionMultiplier: 1.0)
+        let (scaled, _) = MealPlanGenerator.scaleToNutritionGoals(
+            [assignment], calorieGoalKcal: nil, proteinGoalG: 99999, carbGoalG: nil, fatGoalG: nil,
+            recipes: RecipeCatalogData.all, foodCatalog: FoodCatalogData.all
+        )
+        XCTAssertEqual(scaled.first?.portionMultiplier ?? 0, 2.5, accuracy: 0.001)
+    }
+
+    func testScaleToNutritionGoals_goalConflict_emitsWarning() {
+        // Kalorienziel → ×0.5 (extrem niedrig), Proteinziel → ×2.5 (extrem hoch): Konflikt
+        let assignment = MealPlanAssignmentValue(recipeID: "chicken_rice_bowl", mealType: .lunch, portionMultiplier: 1.0)
+        let (_, warning) = MealPlanGenerator.scaleToNutritionGoals(
+            [assignment], calorieGoalKcal: 1, proteinGoalG: 99999, carbGoalG: nil, fatGoalG: nil,
+            recipes: RecipeCatalogData.all, foodCatalog: FoodCatalogData.all
+        )
+        XCTAssertNotNil(warning, "Zielkonflikt muss Warnung setzen")
+        XCTAssertTrue(warning?.contains("Zielkonflikt") == true, "Warnung muss 'Zielkonflikt' enthalten")
+    }
+
+    // MARK: - scaleToNutritionGoals: Leerer Katalog
+
+    func testScaleToNutritionGoals_emptyFoodCatalog_emitsWarning() {
+        let assignment = MealPlanAssignmentValue(recipeID: "chicken_rice_bowl", mealType: .lunch, portionMultiplier: 1.0)
+        let (scaled, warning) = MealPlanGenerator.scaleToNutritionGoals(
+            [assignment], calorieGoalKcal: 2000, proteinGoalG: nil, carbGoalG: nil, fatGoalG: nil,
+            recipes: RecipeCatalogData.all, foodCatalog: []
+        )
+        XCTAssertNotNil(warning, "Leerer Katalog muss Warnung setzen")
+        XCTAssertTrue(warning?.contains("Lebensmittelkatalog") == true)
+        XCTAssertEqual(scaled.first?.portionMultiplier ?? 0, 1.0, accuracy: 0.001,
+            "Portionen dürfen bei fehlendem Katalog nicht verändert werden")
+    }
+
+    func testGenerate_emptyFoodCatalog_withCalorieGoal_emitsWarning() throws {
+        let r1 = makeRecipe(id: "r1", mealTypes: [.lunch])
+        let r2 = makeRecipe(id: "r2", mealTypes: [.lunch])
+        let plan = try XCTUnwrap(MealPlanGenerator.generate(
+            for: Date(timeIntervalSince1970: 1_000_000),
+            mealTypes: [.lunch],
+            preferences: .init(),
+            dailyCalorieGoalKcal: 2000,
+            recentRecipeIDs: [],
+            recipeCatalog: [r1, r2],
+            foodCatalog: []
+        ).get())
+        XCTAssertNotNil(plan.insufficientSelectionWarning, "Fehlender Katalog bei gesetztem Ziel muss Warnung setzen")
+    }
+
+    // MARK: - scaleToNutritionGoals: Unbekannte Nährwerte
+
+    func testScaleToNutritionGoals_unknownIngredient_cannotScale_emitsWarning() {
+        // Rezept mit nicht im Katalog enthaltener Zutat → Nährwerte unberechenbar → kein Scaling
+        let unknownRecipe = Recipe(
+            id: "test_unknown_ingr",
+            nameKey: "test.unknown",
+            mealTypes: [.lunch],
+            dietaryTags: [],
+            allergens: [],
+            allergenVerified: true,
+            halalVerifiedBy: nil,
+            servings: 1,
+            prepMinutes: 5,
+            ingredients: [RecipeIngredient(ingredientID: "nonexistent_xyz", amountGrams: 100)]
+        )
+        let assignment = MealPlanAssignmentValue(recipeID: "test_unknown_ingr", mealType: .lunch, portionMultiplier: 1.0)
+        let (scaled, warning) = MealPlanGenerator.scaleToNutritionGoals(
+            [assignment], calorieGoalKcal: 2000, proteinGoalG: nil, carbGoalG: nil, fatGoalG: nil,
+            recipes: [unknownRecipe], foodCatalog: FoodCatalogData.all
+        )
+        XCTAssertNotNil(warning, "Unbekannte Zutat muss Warnung setzen")
+        XCTAssertEqual(scaled.first?.portionMultiplier ?? 0, 1.0, accuracy: 0.001,
+            "Portionen dürfen bei unbekannten Nährwerten nicht verändert werden")
+    }
+
+    // MARK: - Ernährungsfilter-Hierarchie
+
+    func testMatchesDietaryStyle_veganIncludedForVegetarian() {
+        let vegan = makeRecipe(id: "r1", dietaryTags: [.vegan])
+        XCTAssertTrue(MealPlanGenerator.matchesDietaryStyle(vegan, style: .vegetarian),
+            "Veganes Rezept gilt implizit als vegetarisch (vegan ⊂ vegetarisch)")
+    }
+
+    func testMatchesDietaryStyle_veganIncludedForPescetarian() {
+        let vegan = makeRecipe(id: "r1", dietaryTags: [.vegan])
+        XCTAssertTrue(MealPlanGenerator.matchesDietaryStyle(vegan, style: .pescetarian),
+            "Veganes Rezept gilt implizit als pescetarisch")
+    }
+
+    func testMatchesDietaryStyle_vegetarianIncludedForPescetarian() {
+        let vegetarian = makeRecipe(id: "r1", dietaryTags: [.vegetarian])
+        XCTAssertTrue(MealPlanGenerator.matchesDietaryStyle(vegetarian, style: .pescetarian),
+            "Vegetarisches Rezept gilt implizit als pescetarisch")
+    }
+
+    func testEligibleRecipes_pescetarianFilter_vegetarianTag_included() {
+        let vegetarian = makeRecipe(id: "r1", mealTypes: [.lunch], dietaryTags: [.vegetarian])
+        let result = MealPlanGenerator.eligibleRecipes(
+            in: [vegetarian], for: .lunch,
+            preferences: .init(dietaryStyle: .pescetarian)
+        )
+        XCTAssertFalse(result.isEmpty, "Vegetarisches Rezept muss für Pescetarier sichtbar sein")
     }
 }
