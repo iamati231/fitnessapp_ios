@@ -5,10 +5,10 @@ import XCTest
 /// und die redaktionellen Sicherheits-Invarianten einhält.
 final class RecipeCatalogTests: XCTestCase {
 
-    func testCatalogLoads_atLeastFiveRecipes() {
+    func testCatalogLoads_atLeastTwentyFiveRecipes() {
         XCTAssertGreaterThanOrEqual(
-            RecipeCatalogData.all.count, 5,
-            "recipes.json muss mindestens 5 Testrezepte enthalten"
+            RecipeCatalogData.all.count, 25,
+            "recipes.json muss mindestens 25 Rezepte enthalten (Phase 2)"
         )
     }
 
@@ -63,5 +63,52 @@ final class RecipeCatalogTests: XCTestCase {
                 XCTFail("Naehrwertberechnung fuer '\(recipe.id)' schlug fehl: \(err)")
             }
         }
+    }
+
+    // MARK: - Phase-2-Validierung
+
+    func testAllRecipeIDs_areUnique() {
+        let ids = RecipeCatalogData.all.map(\.id)
+        XCTAssertEqual(ids.count, Set(ids).count, "Rezept-IDs muessen eindeutig sein")
+    }
+
+    func testAllIngredientAmounts_arePositive() {
+        for recipe in RecipeCatalogData.all {
+            for ingredient in recipe.ingredients {
+                XCTAssertGreaterThan(
+                    ingredient.amountGrams, 0,
+                    "Rezept '\(recipe.id)', Zutat '\(ingredient.ingredientID)': amountGrams muss > 0 sein"
+                )
+            }
+        }
+    }
+
+    func testAllRecipes_haveAtLeastOneServing() {
+        for recipe in RecipeCatalogData.all {
+            XCTAssertGreaterThanOrEqual(
+                recipe.servings, 1,
+                "Rezept '\(recipe.id)': servings muss >= 1 sein"
+            )
+        }
+    }
+
+    func testAllRecipes_haveAtLeastOneMealType() {
+        for recipe in RecipeCatalogData.all {
+            XCTAssertFalse(
+                recipe.mealTypes.isEmpty,
+                "Rezept '\(recipe.id)': mealTypes darf nicht leer sein"
+            )
+        }
+    }
+
+    func testExactlyFiveRecipes_haveAllergenVerifiedTrue() {
+        // Nur die 5 redaktionell geprueften Testrezepte duerfen allergenVerified=true tragen.
+        // Ein neues Rezept darf nicht pauschal verifiziert werden — dieser Test schlaegt
+        // an, sobald jemand allergenVerified ohne tatsaechliche Pruefung auf true setzt.
+        let verifiedIDs = RecipeCatalogData.all.filter(\.allergenVerified).map(\.id).sorted()
+        let expected = ["chicken_rice_bowl", "greek_yogurt_bowl", "oatmeal_berry_skyr",
+                        "red_lentil_soup", "tuna_salad"].sorted()
+        XCTAssertEqual(verifiedIDs, expected,
+            "Genau diese 5 Rezepte duerfen allergenVerified=true haben")
     }
 }
