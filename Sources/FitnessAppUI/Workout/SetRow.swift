@@ -131,11 +131,7 @@ struct SetRow: View {
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
     @AppStorage("pref_bar_weight_kg") private var barWeightKgRaw: Double = 20
     /// Runde 10 (Settings → Training): "column" (Default, bisheriges
-    /// Verhalten unveraendert) vs. "classic" (neue, selbst-beschriftete
-    /// Darstellung ohne gemeinsamen Spaltenkopf). Gleicher Persistenz-
-    /// Mechanismus wie `weight_unit` — ueberlebt per `@AppStorage`/
-    /// `UserDefaults` jeden Kaltstart.
-    @AppStorage("pref_set_display_mode") private var setDisplayModeRaw: String = "column"
+    @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
 
     enum HoldState: Equatable {
         case idle
@@ -397,16 +393,9 @@ struct SetRow: View {
     /// kein zweites Logging-Modell, kein Datenwechsel.
     @ViewBuilder
     private var inputRow: some View {
-        if setDisplayModeRaw == "classic" {
-            ViewThatFits(in: .horizontal) {
-                classicSingleLineRow
-                classicTwoLineRow
-            }
-        } else {
-            ViewThatFits(in: .horizontal) {
-                singleLineInputRow
-                twoLineInputRow
-            }
+        ViewThatFits(in: .horizontal) {
+            classicSingleLineRow
+            classicTwoLineRow
         }
     }
 
@@ -425,9 +414,11 @@ struct SetRow: View {
             // eigenes, unmittelbar angrenzendes Inline-Label, damit die
             // Kapsel-Bedeutung ohne den (jetzt nicht mehr passenden)
             // Header-Platz eindeutig bleibt.
-            Text("set.column.rirLabel", bundle: .module)
-                .deltiqLabel()
-            rirCapsule
+            if showRirTooltips {
+                Text("set.column.rirLabel", bundle: .module)
+                    .deltiqLabel()
+                rirCapsule
+            }
             checkmarkButton
         }
     }
@@ -488,7 +479,7 @@ struct SetRow: View {
             labeledField(repsCaptionText) { repsInput }
             plateColumn
             Spacer(minLength: 6)
-            rirCapsule
+            if showRirTooltips { rirCapsule }
             checkmarkButton
         }
         .frame(minHeight: 44)

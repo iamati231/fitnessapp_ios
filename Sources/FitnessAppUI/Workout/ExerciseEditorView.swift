@@ -45,13 +45,7 @@ public struct ExerciseEditorView: View {
     /// Oeffnen des Sheets — siehe `ExerciseSnapshot` weiter unten.
     @State private var snapshot: ExerciseSnapshot
 
-    /// DEL-143: User-Toggle für RIR-Tooltips, gleicher AppStorage-Key
-    /// wie SetRow. Default true.
     @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
-
-    /// DEL-143: Tooltip-Controller für den Target-RIR-Slider in der
-    /// Pause-RIR-Section. Wird beim Drag-Start gezeigt, Drag-Release
-    /// + 1.8s → fade-out.
     @State private var rirTooltip = RIRTooltipController()
 
     public init(exercise: Exercise) {

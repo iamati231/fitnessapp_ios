@@ -129,6 +129,7 @@ public struct DashboardView: View {
     /// DEL-238: Deload-Automatik. Gated die Empfehlung UND die
     /// Absenz-Rueckfrage — nie einen laufenden Deload.
     @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
+    @AppStorage("pref_plateau_detection_enabled") private var plateauDetectionEnabled: Bool = true
 
     /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
     /// das Gewichts-Hero-Tile (`heroMetricCard(for: .weight, ...)`) zeigte
@@ -2161,7 +2162,8 @@ public struct DashboardView: View {
             let day = nextScheduledDay(in: plan)
             if day.type == .rest { return .restDay }
         }
-        if cachedPlateauFinding != nil,
+        if plateauDetectionEnabled,
+           cachedPlateauFinding != nil,
            let profile = profiles.first,
            !CoachingMessageProvider.message(
                for: .plateauDetected,

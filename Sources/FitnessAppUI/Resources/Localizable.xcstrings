@@ -34738,13 +34738,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zeigt kurze Erklärungen beim Einstellen der Intensität (Reps in Reserve)."
+            "value": "Zeigt die RIR-Anzeige (Reps in Reserve) während des Trainings und beim Bearbeiten von Übungen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shows short explanations when setting intensity (Reps in Reserve)."
+            "value": "Shows the RIR display (Reps in Reserve) during workouts and when editing exercises."
           }
         },
         "tr": {
@@ -43560,6 +43560,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deltiq aşırı yüklenmeyi ve uzun molaları algılar ve çalışma ağırlıklarını geçici olarak düşürmeyi önerir. Kapalı: artık öneri gelmez — hâlihazırda düşürülmüş ağırlıklar, aşağıdan sıfırlayana kadar öyle kalır."
+          }
+        }
+      }
+    },
+    "settings.plateau.toggle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plateau-Erkennung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plateau detection"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plato tespiti"
+          }
+        }
+      }
+    },
+    "settings.plateau.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq erkennt Stagnation bei einzelnen Übungen und zeigt einen Hinweis auf dem Dashboard. Aus heißt: keine Hinweise mehr."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq detects stagnation in individual exercises and shows a hint on the dashboard. Off means no more hints."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltiq egzersizlerde durağanlaşmayı algılar ve panoda bir ipucu gösterir. Kapalı: artık ipucu gösterilmez."
           }
         }
       }
