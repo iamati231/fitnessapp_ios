@@ -131,6 +131,14 @@ public struct DashboardView: View {
     @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
     @AppStorage("pref_plateau_detection_enabled") private var plateauDetectionEnabled: Bool = true
 
+    /// 3A: letztes Check-in-Datum — via .task geladen, nie per @Query (vermeidet Render-Schleife).
+    @State private var lastCheckInDate: Date?
+    /// Bis wann die Check-in-Karte uebersprungen wird (Unix-Timestamp).
+    @AppStorage("pref_checkin_card_skip_until") private var checkInCardSkipUntil: Double = 0
+    /// Navigation-Targets fuer die Dashboard-Cards.
+    @State private var showingPeriodicCheckIn = false
+    @State private var showingFourWeekReview = false
+
     /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
     /// das Gewichts-Hero-Tile (`heroMetricCard(for: .weight, ...)`) zeigte
     /// bisher immer kg, unabhaengig vom Einheiten-Setting.
@@ -275,6 +283,16 @@ public struct DashboardView: View {
                         cardioFeasibilityDashboardCard(model)
                     }
 
+                    // 3A: Kurzer Rückblick — erscheint wenn letzter Check-in >7 Tage zurückliegt.
+                    if isCheckInDue && !isCheckInSkipped {
+                        checkInDashboardCard
+                    }
+
+                    // 4B: Vier-Wochen-Rückblick — erscheint wenn mindestens ein aktiver Plan fällig ist.
+                    if isFourWeekReviewDue {
+                        fourWeekReviewDashboardCard
+                    }
+
                     // DEL-109: Dynamisches Widget-Rendering. Reihenfolge +
                     // Sichtbarkeit kommen aus dem User-Profil; jeder Case
                     // mappt auf den entsprechenden Card-View. Neue Widget-
@@ -326,6 +344,12 @@ public struct DashboardView: View {
         .navigationDestination(isPresented: $showingNewMeasurement) {
             MeasurementView()
         }
+        .navigationDestination(isPresented: $showingPeriodicCheckIn) {
+            PeriodicCheckInView()
+        }
+        .navigationDestination(isPresented: $showingFourWeekReview) {
+            FourWeekReviewEntryView()
+        }
         // Task 9: `nutritionCard`'s "Mahlzeit hinzufuegen"-Button.
         .sheet(isPresented: $showingAddMealFromDashboard) {
             AddMealView()
@@ -343,6 +367,14 @@ public struct DashboardView: View {
         // Pfad: App nach einer Woche wieder öffnen.
         .task {
             autoEndDeloadIfExpired()
+        }
+        // 3A: letztes Check-in-Datum einmalig laden — kein @Query (vermeidet Render-Schleife, siehe FourWeekReviewView).
+        .task {
+            var descriptor = FetchDescriptor<PeriodicCheckIn>(
+                sortBy: [SortDescriptor(\.date, order: .reverse)]
+            )
+            descriptor.fetchLimit = 1
+            lastCheckInDate = (try? modelContext.fetch(descriptor))?.first?.date
         }
         // Nachbesserung (Task #197, zweite Runde): siehe
         // `showingOnboardingPlanCreationFailedAlert`-Doku. `.task` ohne
@@ -1596,6 +1628,85 @@ public struct DashboardView: View {
                         withAnimation { endDeload() }
                     } label: {
                         Text("dashboard.deload.endButton", bundle: .module)
+                            .font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Color.deltiqOrange)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    // MARK: - 3A/4B Dashboard Cards
+
+    private var isCheckInDue: Bool {
+        guard let last = lastCheckInDate else { return true }
+        return Date.now.timeIntervalSince(last) > 7 * 86400
+    }
+
+    private var isCheckInSkipped: Bool {
+        Date.now.timeIntervalSince1970 < checkInCardSkipUntil
+    }
+
+    private var isFourWeekReviewDue: Bool {
+        FourWeekReviewDueStatus.isAnyDue(among: activePlans)
+    }
+
+    @ViewBuilder
+    private var checkInDashboardCard: some View {
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "calendar.badge.checkmark")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("dashboard.checkIn.title", bundle: .module)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 8) {
+                        Button {
+                            showingPeriodicCheckIn = true
+                        } label: {
+                            Text("dashboard.checkIn.startButton", bundle: .module)
+                                .font(.caption.weight(.semibold))
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(Color.deltiqOrange)
+                        Button {
+                            checkInCardSkipUntil = Date.now.timeIntervalSince1970 + 7 * 86400
+                        } label: {
+                            Text("dashboard.checkIn.skipButton", bundle: .module)
+                                .font(.caption)
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var fourWeekReviewDashboardCard: some View {
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "calendar.badge.clock")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("dashboard.fourWeekReview.title", bundle: .module)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button {
+                        showingFourWeekReview = true
+                    } label: {
+                        Text("dashboard.fourWeekReview.startButton", bundle: .module)
                             .font(.caption.weight(.semibold))
                     }
                     .buttonStyle(.bordered)
