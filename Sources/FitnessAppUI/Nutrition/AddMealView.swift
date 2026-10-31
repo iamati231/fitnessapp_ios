@@ -170,8 +170,7 @@ public struct AddMealView: View {
     }
 
     public var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // Bugfix (writing-block.md 4.2, "Speichern und Abbrechen
                 // verwenden nicht die Deltiq-Standardnavigation"): ersetzt
                 // die native `.navigationTitle`/`ToolbarItem(.cancellation
@@ -239,6 +238,9 @@ public struct AddMealView: View {
             .toolbar(.hidden, for: .navigationBar)
             #endif
             .navigationBarBackButtonHidden(true)
+            // Issue #5: swipe-back in push context — blocked when dirty, enabled when clean.
+            // No-op in sheet context (no UINavigationController to attach to).
+            .deltiqSwipeBackEnabled(!isDirty)
             .confirmationDialog(
                 Text("nutrition.editMeal.deleteConfirm", bundle: .module),
                 isPresented: $showingDeleteConfirm,
@@ -324,7 +326,6 @@ public struct AddMealView: View {
             .onChange(of: selectedCategory) { _, _ in
                 localResultsDisplayLimit = Self.localResultsPageSize
             }
-        }
     }
 
     // MARK: Sections

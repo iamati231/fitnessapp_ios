@@ -319,6 +319,14 @@ struct MainTabView: View {
                             NutritionGoalsView()
                         }
                     }
+                    .navigationDestination(for: AddMealRoute.self) { route in
+                        switch route {
+                        case .addMeal(let date, let mealType):
+                            AddMealView(date: date, mealType: mealType)
+                        case .editMeal(let meal):
+                            AddMealView(editing: meal)
+                        }
+                    }
             }
             .tabItem {
                 Label {

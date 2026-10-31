@@ -126,7 +126,11 @@ public struct NutritionDayView: View {
                         systemImage: "plus",
                         accessibilityLabel: String(localized: "nutrition.day.addMeal.button", bundle: .module)
                     ) {
-                        showingAddMeal = true
+                        if isTabRoot {
+                            navigation.nutritionPath.append(AddMealRoute.addMeal(date: selectedDate, mealType: .snack))
+                        } else {
+                            showingAddMeal = true
+                        }
                     },
                     DeltiqHeaderAction(
                         systemImage: "gearshape",
@@ -427,7 +431,13 @@ public struct NutritionDayView: View {
             title: "nutrition.day.empty.title",
             description: "nutrition.day.empty.message",
             ctaTitle: "nutrition.day.addMeal.button",
-            ctaAction: { showingAddMeal = true }
+            ctaAction: {
+                if isTabRoot {
+                    navigation.nutritionPath.append(AddMealRoute.addMeal(date: selectedDate, mealType: .snack))
+                } else {
+                    showingAddMeal = true
+                }
+            }
         )
         .deltiqCardStyle()
     }
@@ -454,7 +464,11 @@ public struct NutritionDayView: View {
     /// der einzige Aufrufer von `AddMealView(editing:)` im ganzen Plan.
     private func mealEntryRow(_ meal: MealEntry, showsDivider: Bool) -> some View {
         Button {
-            editingMeal = meal
+            if isTabRoot {
+                navigation.nutritionPath.append(AddMealRoute.editMeal(meal))
+            } else {
+                editingMeal = meal
+            }
         } label: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: 12) {

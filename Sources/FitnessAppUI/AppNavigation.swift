@@ -44,6 +44,14 @@ public enum MealPlannerRoute: Hashable, Sendable {
     case goals
 }
 
+/// Issue #5 (2026-10-31): Push-Navigation fuer AddMealView aus NutritionDayView.
+/// Folgt dem ActiveSessionRoute-Muster — kein Sendable, MealEntry direkt gespeichert.
+@available(iOS 17.0, macOS 14.0, *)
+public enum AddMealRoute: Hashable {
+    case addMeal(date: Date, mealType: MealType)
+    case editMeal(MealEntry)
+}
+
 /// DEL-212, main-navigation Plan Task 3 Fix-Runde 1 (2026-10-22): Wertbasierte
 /// Pushes fuer den Teilpfad SettingsView → CalculatorsView → WaterTrackerView,
 /// registriert als `navigationDestination(for: CalculatorsRoute.self)` auf
