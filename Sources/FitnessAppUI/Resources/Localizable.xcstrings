@@ -62220,6 +62220,30 @@
         "en": { "stringUnit": { "state": "translated", "value": "Recipe unavailable" } },
         "tr": { "stringUnit": { "state": "translated", "value": "Tarif mevcut değil" } }
       }
+    },
+    "recipe.detail.addToDiary.success": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zum Tagebuch hinzugefügt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Added to Diary" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Günlüğe Eklendi" } }
+      }
+    },
+    "recipe.detail.addToDiary.error.missingIngredient": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Unbekannte Zutaten – Eintrag nicht möglich" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Unknown ingredients – cannot add to diary" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bilinmeyen malzemeler – günlüğe eklenemiyor" } }
+      }
+    },
+    "recipe.detail.addToDiary.error.saveFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Speichern fehlgeschlagen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Failed to save" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kaydedilemedi" } }
+      }
     }
   }
 }

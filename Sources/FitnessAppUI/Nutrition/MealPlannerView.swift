@@ -290,7 +290,8 @@ public struct MealPlannerView: View {
             navigation.nutritionPath.append(MealPlannerRoute.recipeDetail(
                 recipeID: assignment.recipeID,
                 mealType: assignment.mealType,
-                portionMultiplier: assignment.portionMultiplier
+                portionMultiplier: assignment.portionMultiplier,
+                date: Calendar.current.startOfDay(for: selectedDate)
             ))
         } label: {
         VStack(alignment: .leading, spacing: 0) {

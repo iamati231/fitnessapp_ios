@@ -1,28 +1,38 @@
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) && canImport(SwiftData)
 import SwiftUI
+import SwiftData
 import FitnessAppCore
+import FitnessAppData
 
 /// Phase 4.3 (2026-10-31): Rezeptdetail-Ansicht mit Portionsanpassung.
+/// Phase 4.4 (2026-10-31): "Zum Tagebuch hinzufügen" persistiert MealEntry + MealItems.
 /// Wird aus MealPlannerView via `MealPlannerRoute.recipeDetail` gepusht.
-/// Keine SwiftData-Schreibzugriffe — Persistenz folgt in Phase 4.4.
 ///
 /// OFF-01-konform: unbekannte Naehrwerte werden als "–" angezeigt, niemals als 0.
+/// Snapshot-Semantik: gespeicherte Naehrwerte sind zum Zeitpunkt des Speicherns
+/// eingefroren — nachträgliche Katalogänderungen berühren historische Einträge nie.
 @available(iOS 17.0, macOS 14.0, *)
 public struct RecipeDetailView: View {
 
     let recipeID: String
     let mealType: MealType
+    let date: Date
 
     @State private var portionMultiplier: Double
+    @State private var isSaving = false
+    @State private var saveSuccess = false
+    @State private var saveError: String? = nil
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     private let recipeCatalog: [Recipe] = RecipeCatalogData.all
     private let foodCatalog: [FoodCatalogItem] = FoodCatalogData.all
 
-    public init(recipeID: String, mealType: MealType, initialPortionMultiplier: Double) {
+    public init(recipeID: String, mealType: MealType, initialPortionMultiplier: Double, date: Date) {
         self.recipeID = recipeID
         self.mealType = mealType
+        self.date = date
         _portionMultiplier = State(initialValue: max(0.5, min(10.0, initialPortionMultiplier)))
     }
 
@@ -197,21 +207,85 @@ public struct RecipeDetailView: View {
         }
     }
 
-    // MARK: - Add to Diary (Phase 4.4: Persistenz)
+    // MARK: - Add to Diary
 
     private var addToDiaryButton: some View {
-        Button {
-            // shortcut: kein-op, Phase 4.4 implementiert MealEntry-Erstellung
-        } label: {
-            Text("recipe.detail.addToDiary.button", bundle: .module)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.deltiqOrange)
-                .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+        VStack(spacing: 8) {
+            if let error = saveError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
+            Button {
+                saveRecipeToDiary()
+            } label: {
+                Text(saveSuccess
+                    ? String(localized: "recipe.detail.addToDiary.success", bundle: .module)
+                    : String(localized: "recipe.detail.addToDiary.button", bundle: .module))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.deltiqOrange.opacity(isSaving || saveSuccess ? 0.5 : 1.0))
+                    .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(isSaving || saveSuccess)
         }
-        .buttonStyle(.plain)
+    }
+
+    private func saveRecipeToDiary() {
+        guard let r = recipe, !isSaving, !saveSuccess else { return }
+        isSaving = true
+        saveError = nil
+
+        let factor = portionMultiplier / Double(max(r.servings, 1))
+        let foodByID = Dictionary(uniqueKeysWithValues: foodCatalog.map { ($0.id, $0) })
+
+        for ingredient in r.ingredients {
+            guard foodByID[ingredient.ingredientID] != nil else {
+                saveError = String(localized: "recipe.detail.addToDiary.error.missingIngredient", bundle: .module)
+                isSaving = false
+                return
+            }
+        }
+
+        let entry = MealEntry(date: date, mealType: mealType)
+        modelContext.insert(entry)
+        var insertedItems: [MealItem] = []
+
+        for ingredient in r.ingredients {
+            let food = foodByID[ingredient.ingredientID]!
+            let scaledGrams = ingredient.amountGrams * factor
+            let nutrients = NutritionCalculations.nutrients(for: food, quantity: scaledGrams, unit: .gram)
+                ?? NutrientValues(kcal: .unknown, proteinG: .unknown, carbsG: .unknown, fatG: .unknown)
+            let name = String(localized: String.LocalizationValue(food.nameKey), bundle: .module)
+            let item = MealItem(
+                catalogID: food.id,
+                nameSnapshot: name,
+                quantity: scaledGrams,
+                unit: .gram,
+                nutrients: nutrients,
+                meal: entry
+            )
+            modelContext.insert(item)
+            insertedItems.append(item)
+        }
+
+        do {
+            try modelContext.save()
+            isSaving = false
+            saveSuccess = true
+        } catch {
+            for item in insertedItems {
+                entry.items.removeAll { $0.persistentModelID == item.persistentModelID }
+                modelContext.delete(item)
+            }
+            modelContext.delete(entry)
+            isSaving = false
+            saveError = String(localized: "recipe.detail.addToDiary.error.saveFailed", bundle: .module)
+        }
     }
 }
 
@@ -220,13 +294,19 @@ public struct RecipeDetailView: View {
 #if DEBUG
 @available(iOS 17.0, macOS 14.0, *)
 #Preview("Rezeptdetails – Mittagessen") {
-    NavigationStack {
+    let container = try! ModelContainer(
+        for: Schema(AppSchema.types),
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    return NavigationStack {
         RecipeDetailView(
             recipeID: "chicken_rice_bowl",
             mealType: .lunch,
-            initialPortionMultiplier: 1.0
+            initialPortionMultiplier: 1.0,
+            date: Calendar.current.startOfDay(for: Date())
         )
     }
+    .modelContainer(container)
     .environment(AppNavigation())
 }
 #endif
