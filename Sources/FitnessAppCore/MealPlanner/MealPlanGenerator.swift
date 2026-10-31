@@ -86,6 +86,37 @@ public enum MealPlanGenerator {
         ))
     }
 
+    /// Wählt eine einzelne Alternative für einen Slot.
+    ///
+    /// Auswahlstrategie: Seed-basiert (normalerweise aktuelle Zeit) — wiederholte Aufrufe
+    /// mit verschiedenen Seeds liefern unterschiedliche Ergebnisse. Tests übergeben
+    /// einen festen Seed für deterministische Resultate.
+    ///
+    /// - Parameters:
+    ///   - mealType: Der Slot, für den eine Alternative gesucht wird.
+    ///   - currentID: Die aktuell zugewiesene Rezept-ID — wird immer ausgeschlossen.
+    ///   - otherPlanIDs: IDs aus anderen Slots desselben Plans — werden bevorzugt
+    ///                   ausgeschlossen, aber nicht hart, wenn kein frisches Rezept übrig bleibt.
+    ///   - catalog: Vollständige Rezeptliste.
+    ///   - preferences: Ernährungspräferenzen (Stil, Allergene, Ausschlüsse).
+    ///   - seed: Auswahlseed. Standard: aktuelle Unix-Zeit in Sekunden.
+    /// - Returns: Ein geeignetes alternatives Rezept, oder `nil` wenn keines verfügbar ist.
+    public static func alternativeRecipe(
+        for mealType: MealType,
+        excluding currentID: String,
+        preferExcluding otherPlanIDs: Set<String> = [],
+        from catalog: [Recipe],
+        preferences: UserNutritionPreferences,
+        seed: Int = Int(Date().timeIntervalSinceReferenceDate)
+    ) -> Recipe? {
+        let eligible = eligibleRecipes(in: catalog, for: mealType, preferences: preferences)
+            .filter { $0.id != currentID }
+        guard !eligible.isEmpty else { return nil }
+        let fresh = eligible.filter { !otherPlanIDs.contains($0.id) }
+        let pool = fresh.isEmpty ? eligible : fresh
+        return pool[abs(seed) % pool.count]
+    }
+
     // MARK: - Internal (internal for testability)
 
     /// Liefert alle Rezepte, die für `mealType` und `preferences` geeignet sind.

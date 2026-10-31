@@ -22,6 +22,8 @@ public struct MealPlannerView: View {
     @State private var replacingAssignment: PlannedMealAssignment? = nil
     @State private var removingAssignment: PlannedMealAssignment? = nil
     @State private var generationError: String? = nil
+    @State private var regeneratingAssignment: PlannedMealAssignment? = nil
+    @State private var showRegenerationError = false
 
     @Query private var allPlans: [DailyMealPlan]
     @Query private var profiles: [UserBodyProfile]
@@ -129,6 +131,14 @@ public struct MealPlannerView: View {
                 if let a = removingAssignment { removeAssignment(a) }
             }
             Button(String(localized: "common.cancel", bundle: .module), role: .cancel) {}
+        }
+        .alert(
+            String(localized: "mealPlanner.regenerate.noAlternative.title", bundle: .module),
+            isPresented: $showRegenerationError
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("mealPlanner.regenerate.noAlternative.message", bundle: .module)
         }
     }
 
@@ -367,7 +377,18 @@ public struct MealPlannerView: View {
             }
         }
         .buttonStyle(.plain)
+        .overlay {
+            if regeneratingAssignment === assignment {
+                Color.Deltiq.background.opacity(0.8)
+                    .overlay { ProgressView() }
+            }
+        }
         .contextMenu {
+            Button {
+                regenerateAssignment(assignment)
+            } label: {
+                Label(String(localized: "mealPlanner.action.regenerate", bundle: .module), systemImage: "sparkles")
+            }
             Button {
                 replacingAssignment = assignment
             } label: {
@@ -395,6 +416,30 @@ public struct MealPlannerView: View {
         modelContext.delete(assignment)
         try? modelContext.save()
         removingAssignment = nil
+    }
+
+    private func regenerateAssignment(_ assignment: PlannedMealAssignment) {
+        guard regeneratingAssignment == nil else { return }
+        regeneratingAssignment = assignment
+        Task { @MainActor in
+            defer { regeneratingAssignment = nil }
+            let prefs = userProfile?.nutritionPreferences ?? UserNutritionPreferences()
+            let usedIDs = Set(planForSelectedDate?.assignments.map(\.recipeID) ?? [])
+            guard let alternative = MealPlanGenerator.alternativeRecipe(
+                for: assignment.mealType,
+                excluding: assignment.recipeID,
+                preferExcluding: usedIDs,
+                from: recipeCatalog,
+                preferences: prefs
+            ) else {
+                showRegenerationError = true
+                return
+            }
+            assignment.recipeID = alternative.id
+            assignment.portionMultiplier = 1.0
+            if let plan = assignment.plan { plan.isManuallyAdjusted = true }
+            try? modelContext.save()
+        }
     }
 
     private func macroText(_ label: String, value: KnownValue) -> some View {

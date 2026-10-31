@@ -2256,6 +2256,30 @@
         }
       }
     },
+    "mealPlanner.action.regenerate": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Alternative generieren" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Auto-suggest Alternative" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Otomatik Alternatif" } }
+      }
+    },
+    "mealPlanner.regenerate.noAlternative.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine Alternative verfügbar" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No Alternative Available" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Alternatif Bulunamadı" } }
+      }
+    },
+    "mealPlanner.regenerate.noAlternative.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Für diese Mahlzeit ist kein geeignetes Rezept verfügbar. Passen Sie Ihre Ernährungseinstellungen an." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No suitable recipe available for this meal. Adjust your dietary preferences." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bu öğün için uygun tarif bulunamadı. Beslenme tercihlerinizi ayarlayın." } }
+      }
+    },
     "mealPlanner.action.swap": {
       "extractionState": "manual",
       "localizations": {
