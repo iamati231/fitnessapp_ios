@@ -1,5 +1,7 @@
 #if canImport(SwiftUI)
 import SwiftUI
+import FitnessAppCore
+import FitnessAppData
 
 /// App-wide navigation state. One per `RootView` — passed through the environment so
 /// any view can switch tabs or manipulate the workout-tab navigation stack without
