@@ -62,6 +62,9 @@ public struct NutritionDayView: View {
     // Task F: explicit UI locale instead of NutritionAIService's `.current`
     // default, same reasoning as AddMealView (Task E review, M2).
     @Environment(\.locale) private var locale
+    // Phase 4.1 (2026-10-31): Einstieg in MealPlannerView; nur wenn als Tab-Root
+    // eingebettet (dann existiert AppNavigation garantiert im Environment).
+    @Environment(AppNavigation.self) private var navigation
 
     @Query private var profiles: [UserBodyProfile]
 
@@ -130,6 +133,12 @@ public struct NutritionDayView: View {
                         accessibilityLabel: String(localized: "nutrition.day.goals.button", bundle: .module)
                     ) {
                         showingGoals = true
+                    },
+                    DeltiqHeaderAction(
+                        systemImage: "fork.knife.circle",
+                        accessibilityLabel: String(localized: "nutrition.day.mealPlanner.button", bundle: .module)
+                    ) {
+                        navigation.nutritionPath.append(MealPlannerRoute.planner)
                     }
                 ]
             )
@@ -666,6 +675,7 @@ public struct NutritionDayView: View {
         NutritionDayView()
     }
     .modelContainer(container)
+    .environment(AppNavigation())
 }
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -678,6 +688,7 @@ public struct NutritionDayView: View {
         NutritionDayView()
     }
     .modelContainer(container)
+    .environment(AppNavigation())
 }
 #endif
 #endif

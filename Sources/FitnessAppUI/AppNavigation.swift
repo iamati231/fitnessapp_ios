@@ -24,6 +24,7 @@ public final class AppNavigation {
     /// Notification direkt bis zum WaterTracker, ohne den User nur auf dem
     /// Tab abzusetzen.
     public var toolsPath = NavigationPath()
+    public var nutritionPath = NavigationPath()
 
     public init() {}
 
@@ -33,6 +34,14 @@ public final class AppNavigation {
         workoutPath = NavigationPath()
         selectedTab = .dashboard
     }
+}
+
+/// Phase 4.1 (2026-10-31): Push-Navigation fuer MealPlannerView — analog zu
+/// `CalculatorsRoute` / `toolsPath`. Ein einziger `.planner`-Fall genuegt fuer
+/// Phase 4.1; weitere Tiefen-Routen kommen in spaeterern Phasen.
+@available(iOS 17.0, macOS 14.0, *)
+public enum MealPlannerRoute: Hashable, Sendable {
+    case planner
 }
 
 /// DEL-212, main-navigation Plan Task 3 Fix-Runde 1 (2026-10-22): Wertbasierte

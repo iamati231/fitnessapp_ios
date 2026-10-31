@@ -307,8 +307,13 @@ struct MainTabView: View {
             // main-navigation Plan, 2026-10-22, Task 1: eigener Ernaehrungs-
             // Tab zwischen Training und Fortschritt, statt nur ueber die
             // Dashboard-Kachel erreichbar zu sein.
-            NavigationStack {
+            // Phase 4.1 (2026-10-31): path-bound auf `nutritionPath` analog zu
+            // `toolsPath`; navigationDestination leitet `.planner` → MealPlannerView.
+            NavigationStack(path: $navigation.nutritionPath) {
                 NutritionDayView(isTabRoot: true)
+                    .navigationDestination(for: MealPlannerRoute.self) { _ in
+                        MealPlannerView()
+                    }
             }
             .tabItem {
                 Label {
