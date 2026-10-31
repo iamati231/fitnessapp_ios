@@ -53674,6 +53674,86 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Porsiyon artır" } }
       }
     },
+    "mealPlanner.optimize.button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Tagesplan optimieren" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Optimize Day Plan" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Günlük planı optimize et" } }
+      }
+    },
+    "mealPlanner.optimize.noChange": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Der Plan entspricht bereits deinen Zielen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The plan already matches your goals." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan zaten hedeflerinle uyumlu." } }
+      }
+    },
+    "mealPlanner.optimize.noGoals": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine Ernährungsziele gesetzt. Ziele im Profil eingeben." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No nutrition goals set. Enter goals in your profile." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme hedefi belirlenmemiş. Profilden hedef girin." } }
+      }
+    },
+    "mealPlanner.optimize.preview.after": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nach Optimierung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "After Optimization" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Optimizasyon Sonrası" } }
+      }
+    },
+    "mealPlanner.optimize.preview.before": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Aktuell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Current" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Mevcut" } }
+      }
+    },
+    "mealPlanner.optimize.preview.confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Übernehmen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Apply" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Uygula" } }
+      }
+    },
+    "mealPlanner.optimize.preview.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Optimierungsvorschlag" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Optimization Preview" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Optimizasyon Önizlemesi" } }
+      }
+    },
+    "mealPlanner.optimize.protected.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dieser Plan enthält manuelle Änderungen und kann nicht automatisch optimiert werden." } },
+        "en": { "stringUnit": { "state": "translated", "value": "This plan contains manual changes and cannot be automatically optimized." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bu plan manuel değişiklikler içeriyor ve otomatik optimize edilemiyor." } }
+      }
+    },
+    "mealPlanner.optimize.protected.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Plan ist geschützt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Plan Is Protected" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plan Korumalı" } }
+      }
+    },
+    "mealPlanner.optimize.swap.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rezept geändert" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Recipe changed" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tarif değiştirildi" } }
+      }
+    },
     "nutrition.macro.fat.short": {
       "extractionState": "manual",
       "localizations": {

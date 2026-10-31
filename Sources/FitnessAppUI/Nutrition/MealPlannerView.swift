@@ -24,6 +24,10 @@ public struct MealPlannerView: View {
     @State private var generationError: String? = nil
     @State private var regeneratingAssignment: PlannedMealAssignment? = nil
     @State private var showRegenerationError = false
+    @State private var optimizationProposal: OptimizedPlanProposal? = nil
+    @State private var isOptimizing = false
+    @State private var showOptimizationProtectedAlert = false
+    @State private var showOptimizationNoGoalsAlert = false
 
     @Query private var allPlans: [DailyMealPlan]
     @Query private var profiles: [UserBodyProfile]
@@ -96,6 +100,9 @@ public struct MealPlannerView: View {
                     if let (totals, hasUnknown) = planTotals {
                         dayOverviewSection(totals: totals, hasUnknown: hasUnknown)
                     }
+                    if planForSelectedDate != nil {
+                        optimizeCard
+                    }
                     ForEach(MealType.allCases, id: \.self) { type in
                         mealTypeSection(type)
                     }
@@ -139,6 +146,23 @@ public struct MealPlannerView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("mealPlanner.regenerate.noAlternative.message", bundle: .module)
+        }
+        .sheet(item: $optimizationProposal) { proposal in
+            optimizationPreviewSheet(proposal)
+        }
+        .alert(
+            String(localized: "mealPlanner.optimize.protected.title", bundle: .module),
+            isPresented: $showOptimizationProtectedAlert
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("mealPlanner.optimize.protected.message", bundle: .module)
+        }
+        .alert(
+            String(localized: "mealPlanner.optimize.noGoals", bundle: .module),
+            isPresented: $showOptimizationNoGoalsAlert
+        ) {
+            Button("OK", role: .cancel) {}
         }
     }
 
@@ -566,6 +590,169 @@ public struct MealPlannerView: View {
             )
         case .failure:
             generationError = String(localized: "nutrition.mealPlanner.generate.noRecipe", bundle: .module)
+        }
+    }
+
+    // MARK: - Optimize Plan
+
+    private var optimizeCard: some View {
+        DeltiqCard {
+            Button {
+                Task { await startOptimization() }
+            } label: {
+                if isOptimizing {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                } else {
+                    Text("mealPlanner.optimize.button", bundle: .module)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.deltiqOrange)
+                        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(isOptimizing)
+        }
+    }
+
+    @MainActor
+    private func startOptimization() async {
+        guard let plan = planForSelectedDate else { return }
+        guard !plan.isManuallyAdjusted else {
+            showOptimizationProtectedAlert = true
+            return
+        }
+        let profile = userProfile
+        guard profile?.dailyCalorieGoalKcal != nil
+            || profile?.dailyProteinGoalG != nil
+            || profile?.dailyCarbGoalG != nil
+            || profile?.dailyFatGoalG != nil else {
+            showOptimizationNoGoalsAlert = true
+            return
+        }
+        isOptimizing = true
+        defer { isOptimizing = false }
+        let assignments = plan.assignments.map {
+            (recipeID: $0.recipeID, mealType: $0.mealType, portionMultiplier: $0.portionMultiplier)
+        }
+        let prefs = profile?.nutritionPreferences ?? UserNutritionPreferences()
+        let result = MealPlanOptimizer.optimize(
+            assignments: assignments,
+            calorieGoal: profile?.dailyCalorieGoalKcal,
+            proteinGoal: profile?.dailyProteinGoalG,
+            carbGoal: profile?.dailyCarbGoalG,
+            fatGoal: profile?.dailyFatGoalG,
+            recipeCatalog: recipeCatalog,
+            foodCatalog: foodCatalog,
+            preferences: prefs
+        )
+        if case .success(let proposal) = result {
+            optimizationProposal = proposal
+        }
+    }
+
+    private func applyOptimization(_ proposal: OptimizedPlanProposal) {
+        guard let plan = planForSelectedDate else { return }
+        for change in proposal.changes where change.hasChange {
+            guard let assignment = plan.assignments.first(where: {
+                $0.mealType == change.mealType && $0.recipeID == change.currentRecipeID
+            }) else { continue }
+            assignment.recipeID = change.proposedRecipeID
+            assignment.portionMultiplier = change.proposedMultiplier
+        }
+        plan.isManuallyAdjusted = true
+        try? modelContext.save()
+        optimizationProposal = nil
+    }
+
+    @ViewBuilder
+    private func optimizationPreviewSheet(_ proposal: OptimizedPlanProposal) -> some View {
+        NavigationStack {
+            List {
+                if let warning = proposal.warning {
+                    Section {
+                        Text(warning)
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    }
+                }
+                Section(String(localized: "mealPlanner.optimize.preview.before", bundle: .module)) {
+                    nutrientPreviewRow("kcal", value: proposal.currentTotals.kcal, unit: "kcal")
+                    nutrientPreviewRow(String(localized: "nutrition.goals.protein.label", bundle: .module), value: proposal.currentTotals.proteinG, unit: "g")
+                    nutrientPreviewRow(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: proposal.currentTotals.carbsG, unit: "g")
+                    nutrientPreviewRow(String(localized: "nutrition.goals.fat.label", bundle: .module), value: proposal.currentTotals.fatG, unit: "g")
+                }
+                Section(String(localized: "mealPlanner.optimize.preview.after", bundle: .module)) {
+                    nutrientPreviewRow("kcal", value: proposal.proposedTotals.kcal, unit: "kcal")
+                    nutrientPreviewRow(String(localized: "nutrition.goals.protein.label", bundle: .module), value: proposal.proposedTotals.proteinG, unit: "g")
+                    nutrientPreviewRow(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: proposal.proposedTotals.carbsG, unit: "g")
+                    nutrientPreviewRow(String(localized: "nutrition.goals.fat.label", bundle: .module), value: proposal.proposedTotals.fatG, unit: "g")
+                }
+                let changedSlots = proposal.changes.filter { $0.hasChange }
+                if !changedSlots.isEmpty {
+                    Section {
+                        ForEach(changedSlots) { change in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(String(localized: String.LocalizationValue(change.mealType.localizationKey), bundle: .module))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                HStack(spacing: 6) {
+                                    Text("×\(change.currentMultiplier.formatted(.number.precision(.fractionLength(0...1))))")
+                                    Image(systemName: "arrow.right")
+                                        .font(.caption2)
+                                    Text("×\(change.proposedMultiplier.formatted(.number.precision(.fractionLength(0...1))))")
+                                        .bold()
+                                    if change.recipeChanged {
+                                        Spacer()
+                                        Text("mealPlanner.optimize.swap.label", bundle: .module)
+                                            .font(.caption2)
+                                            .foregroundStyle(Color.deltiqOrange)
+                                    }
+                                }
+                                .font(.system(size: 14))
+                            }
+                        }
+                    }
+                }
+                if !proposal.hasChanges {
+                    Section {
+                        Text("mealPlanner.optimize.noChange", bundle: .module)
+                            .font(.callout)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "mealPlanner.optimize.preview.title", bundle: .module))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "common.cancel", bundle: .module)) {
+                        optimizationProposal = nil
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "mealPlanner.optimize.preview.confirm", bundle: .module)) {
+                        applyOptimization(proposal)
+                    }
+                    .disabled(!proposal.hasChanges)
+                }
+            }
+        }
+    }
+
+    private func nutrientPreviewRow(_ label: String, value: KnownValue, unit: String) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            Text(NutritionDisplay.text(value, unit: unit))
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .fitnessNumberStyle()
         }
     }
 }
