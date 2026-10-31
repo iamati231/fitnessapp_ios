@@ -40,10 +40,12 @@ public final class AppNavigation {
 
 /// Nav-Unification (2026-10-31): Push-Navigation fuer alle Nutrition-Screens.
 /// `.planner` — MealPlannerView; `.goals` — NutritionGoalsView.
+/// Phase 4.3 (2026-10-31): `.recipeDetail` — RecipeDetailView mit Portionsanpassung.
 @available(iOS 17.0, macOS 14.0, *)
 public enum MealPlannerRoute: Hashable, Sendable {
     case planner
     case goals
+    case recipeDetail(recipeID: String, mealType: MealType, portionMultiplier: Double)
 }
 
 /// Issue #5 (2026-10-31): Push-Navigation fuer AddMealView aus NutritionDayView.

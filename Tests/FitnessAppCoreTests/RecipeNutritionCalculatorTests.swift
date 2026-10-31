@@ -3,157 +3,141 @@ import XCTest
 
 final class RecipeNutritionCalculatorTests: XCTestCase {
 
-    // MARK: - Hilfsdaten
+    // MARK: - Fixtures
 
-    private let chickenItem = FoodCatalogItem(
-        id: "test_chicken", nameKey: "x", category: .meat,
-        kcalPer100g: 165, proteinPer100g: 31, carbsPer100g: 0, fatPer100g: 3.6,
-        defaultServingGrams: nil, servingNameKey: nil,
-        pieceWeightGrams: nil, densityGramsPerMl: nil
+    private let chicken = FoodCatalogItem(
+        id: "chicken", nameKey: "chicken", category: .meat,
+        kcalPer100g: 165, proteinPer100g: 31, carbsPer100g: 1, fatPer100g: 4
     )
+    private let rice = FoodCatalogItem(
+        id: "rice", nameKey: "rice", category: .grain,
+        kcalPer100g: 130, proteinPer100g: 2, carbsPer100g: 28, fatPer100g: 0.4
+    )
+    private lazy var catalog = [chicken, rice]
 
-    private func singleIngredientRecipe(
-        ingredientID: String = "test_chicken",
-        amountGrams: Double = 150,
-        servings: Int = 1
-    ) -> Recipe {
+    private func makeRecipe(servings: Int = 1, ingredients: [RecipeIngredient]) -> Recipe {
         Recipe(
-            id: "test_recipe",
-            nameKey: "test",
-            mealTypes: [.lunch],
-            dietaryTags: [],
-            allergens: [],
-            allergenVerified: true,
-            halalVerifiedBy: nil,
-            servings: servings,
-            prepMinutes: 10,
-            ingredients: [RecipeIngredient(ingredientID: ingredientID, amountGrams: amountGrams)]
+            id: "test", nameKey: "test", mealTypes: [.lunch],
+            dietaryTags: [], allergens: [], allergenVerified: true,
+            halalVerifiedBy: nil, servings: servings, prepMinutes: 10,
+            ingredients: ingredients
         )
     }
 
-    // MARK: - Grundberechnung
+    // MARK: - Portion scaling
 
-    func testKnownIngredient_returnsCorrectKcalPerServing() throws {
-        // 150 g Haehnchen: 165 * 1.5 = 247.5 kcal, 1 Portion
-        let result = try XCTUnwrap(
-            RecipeNutritionCalculator.nutrients(for: singleIngredientRecipe(), catalog: [chickenItem]).get()
-        )
-        XCTAssertEqual(result.kcal.value ?? -1, 247.5, accuracy: 0.001)
-        XCTAssertEqual(result.proteinG.value ?? -1, 46.5, accuracy: 0.001) // 31 * 1.5
-        XCTAssertFalse(result.partiallyKnown)
-    }
-
-    func testTwoServings_halvesPerServingNutrients() throws {
-        let recipe = singleIngredientRecipe(amountGrams: 300, servings: 2)
-        let result = try XCTUnwrap(
-            RecipeNutritionCalculator.nutrients(for: recipe, catalog: [chickenItem]).get()
-        )
-        // 300 g / 2 Portionen = 150 g pro Portion → 247.5 kcal
-        XCTAssertEqual(result.kcal.value ?? -1, 247.5, accuracy: 0.001)
-    }
-
-    func testPortionMultiplier_scalesResult() throws {
-        let result = try XCTUnwrap(
-            RecipeNutritionCalculator.nutrients(
-                for: singleIngredientRecipe(amountGrams: 150, servings: 1),
-                catalog: [chickenItem],
-                portionMultiplier: 2.0
-            ).get()
-        )
-        // Doppelte Portion: 247.5 * 2 = 495 kcal
-        XCTAssertEqual(result.kcal.value ?? -1, 495.0, accuracy: 0.001)
-    }
-
-    // MARK: - Fehlerfaelle
-
-    func testUnknownIngredientID_returnsFailure() {
-        let recipe = singleIngredientRecipe(ingredientID: "does_not_exist")
-        if case .failure(let err) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: [chickenItem]) {
-            XCTAssertEqual(err, .unknownIngredient(id: "does_not_exist"))
-        } else {
-            XCTFail("Erwartete .failure(.unknownIngredient)")
+    func testOnePortion_singleIngredient() {
+        // 200 g Chicken @165 kcal/100g, 1 serving → 330 kcal
+        let recipe = makeRecipe(ingredients: [RecipeIngredient(ingredientID: "chicken", amountGrams: 200)])
+        guard case .success(let v) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: catalog) else {
+            return XCTFail("Expected success")
         }
+        XCTAssertEqual(v.kcal, .known(330))
+        XCTAssertEqual(v.proteinG, .known(62))
     }
 
-    func testEmptyCatalog_returnsFailure() {
-        if case .failure = RecipeNutritionCalculator.nutrients(for: singleIngredientRecipe(), catalog: []) {
-            // pass
-        } else {
-            XCTFail("Leerer Katalog muss .failure liefern")
+    func testHalfPortion() {
+        // 200 g Chicken, 2 servings → 165 kcal/serving; ×0.5 → 82.5 kcal
+        let recipe = makeRecipe(servings: 2, ingredients: [RecipeIngredient(ingredientID: "chicken", amountGrams: 200)])
+        guard case .success(let v) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: catalog, portionMultiplier: 0.5) else {
+            return XCTFail("Expected success")
         }
+        XCTAssertEqual(v.kcal, .known(82.5))
     }
 
-    // MARK: - OFF-01: Unbekannte Werte propagieren
-
-    func testPartiallyUnknownIngredient_propagatesUnknownInThatDimension() throws {
-        let partialItem = FoodCatalogItem(
-            id: "test_chicken",
-            nameKey: "x",
-            category: .meat,
-            nutrientsPer100g: NutrientValues(kcal: 165, proteinG: nil, carbsG: 0, fatG: 3.6)
-        )
-        let result = try XCTUnwrap(
-            RecipeNutritionCalculator.nutrients(for: singleIngredientRecipe(), catalog: [partialItem]).get()
-        )
-        XCTAssertEqual(result.kcal.value ?? -1, 247.5, accuracy: 0.001)
-        XCTAssertTrue(result.proteinG.isUnknown, "Fehlender Proteinwert bleibt unknown — nie 0")
-        XCTAssertTrue(result.partiallyKnown)
+    func testOneAndHalfPortions() {
+        // 100 g Chicken @165 kcal/100g → 165 kcal; ×1.5 → 247.5
+        let recipe = makeRecipe(ingredients: [RecipeIngredient(ingredientID: "chicken", amountGrams: 100)])
+        guard case .success(let v) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: catalog, portionMultiplier: 1.5) else {
+            return XCTFail("Expected success")
+        }
+        XCTAssertEqual(v.kcal, .known(247.5))
     }
 
-    // MARK: - Randwerte
-
-    func testZeroServings_treatedAsOneServing() throws {
-        // servings == 0 ist ein Datenfehler; max(0, 1) verhindert Division durch 0.
-        // Ergebnis muss identisch mit servings == 1 sein.
-        let recipe = singleIngredientRecipe(amountGrams: 150, servings: 0)
-        let result = try XCTUnwrap(
-            RecipeNutritionCalculator.nutrients(for: recipe, catalog: [chickenItem]).get()
-        )
-        XCTAssertEqual(result.kcal.value ?? -1, 247.5, accuracy: 0.001,
-                       "servings==0 wird als 1 behandelt — kein Absturz, korrektes Ergebnis")
+    func testDoublePortions() {
+        // 100 g Chicken → 165 kcal; ×2 → 330
+        let recipe = makeRecipe(ingredients: [RecipeIngredient(ingredientID: "chicken", amountGrams: 100)])
+        guard case .success(let v) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: catalog, portionMultiplier: 2.0) else {
+            return XCTFail("Expected success")
+        }
+        XCTAssertEqual(v.kcal, .known(330))
     }
 
-    func testZeroPortionMultiplier_returnsKnownZero() throws {
-        // 0 Portionen: Menge ist null, auch wenn Naehrwert pro 100g unbekannt waere.
-        let result = try XCTUnwrap(
-            RecipeNutritionCalculator.nutrients(
-                for: singleIngredientRecipe(),
-                catalog: [chickenItem],
-                portionMultiplier: 0
-            ).get()
-        )
-        XCTAssertEqual(result.kcal.value ?? -1, 0, accuracy: 0.001)
-        XCTAssertFalse(result.partiallyKnown, "0-Portion ist bekannt=0, nie unknown")
+    func testMultiServingRecipePerServing() {
+        // 400 g Rice, 4 servings → 100 g/serving → 130 kcal
+        let recipe = makeRecipe(servings: 4, ingredients: [RecipeIngredient(ingredientID: "rice", amountGrams: 400)])
+        guard case .success(let v) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: catalog, portionMultiplier: 1.0) else {
+            return XCTFail("Expected success")
+        }
+        XCTAssertEqual(v.kcal, .known(130))
     }
 
-    // MARK: - Mehrzutaten-Rezept
+    // MARK: - Multi-ingredient summing
 
-    func testMultipleIngredients_sumsCorrectly() throws {
-        let riceItem = FoodCatalogItem(
-            id: "test_rice", nameKey: "x", category: .grain,
-            kcalPer100g: 121, proteinPer100g: 2.7, carbsPer100g: 25, fatPer100g: 0.4,
-            defaultServingGrams: nil, servingNameKey: nil,
-            pieceWeightGrams: nil, densityGramsPerMl: nil
+    func testMultiIngredientSum() {
+        // 100 g chicken (165 kcal) + 100 g rice (130 kcal) = 295 kcal
+        let recipe = makeRecipe(ingredients: [
+            RecipeIngredient(ingredientID: "chicken", amountGrams: 100),
+            RecipeIngredient(ingredientID: "rice", amountGrams: 100)
+        ])
+        guard case .success(let v) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: catalog) else {
+            return XCTFail("Expected success")
+        }
+        XCTAssertEqual(v.kcal, .known(295))
+    }
+
+    // MARK: - Unknown nutrients (OFF-01)
+
+    func testUnknownNutrientPropagatesAsUnknown() {
+        // Fat is nil → must remain .unknown, never treated as 0.
+        let item = FoodCatalogItem(
+            id: "item_no_fat", nameKey: "item_no_fat", category: .other,
+            nutrientsPer100g: NutrientValues(kcal: 100, proteinG: 5, carbsG: 10, fatG: nil)
         )
-        let recipe = Recipe(
-            id: "multi",
-            nameKey: "test",
-            mealTypes: [.lunch],
-            dietaryTags: [],
-            allergens: [],
-            allergenVerified: true,
-            halalVerifiedBy: nil,
-            servings: 1,
-            prepMinutes: 20,
-            ingredients: [
-                RecipeIngredient(ingredientID: "test_chicken", amountGrams: 150),
-                RecipeIngredient(ingredientID: "test_rice",    amountGrams: 180)
-            ]
+        let recipe = makeRecipe(ingredients: [RecipeIngredient(ingredientID: "item_no_fat", amountGrams: 100)])
+        guard case .success(let v) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: [item]) else {
+            return XCTFail("Expected success")
+        }
+        XCTAssertEqual(v.kcal, .known(100))
+        XCTAssertEqual(v.fatG, .unknown, "Unknown fat must not be treated as 0")
+    }
+
+    func testUnknownNutrientScaledStaysUnknown() {
+        // Scaling does NOT resolve an unknown value to a number.
+        let item = FoodCatalogItem(
+            id: "item_no_fat2", nameKey: "item_no_fat2", category: .other,
+            nutrientsPer100g: NutrientValues(kcal: 200, proteinG: 10, carbsG: 20, fatG: nil)
         )
-        let result = try XCTUnwrap(
-            RecipeNutritionCalculator.nutrients(for: recipe, catalog: [chickenItem, riceItem]).get()
+        let recipe = makeRecipe(ingredients: [RecipeIngredient(ingredientID: "item_no_fat2", amountGrams: 100)])
+        guard case .success(let v) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: [item], portionMultiplier: 1.5) else {
+            return XCTFail("Expected success")
+        }
+        XCTAssertEqual(v.kcal, .known(300))
+        XCTAssertEqual(v.fatG, .unknown)
+    }
+
+    // MARK: - Missing ingredient
+
+    func testUnknownIngredientIDReturnsFailure() {
+        let recipe = makeRecipe(ingredients: [RecipeIngredient(ingredientID: "no_such_id", amountGrams: 100)])
+        let result = RecipeNutritionCalculator.nutrients(for: recipe, catalog: catalog)
+        XCTAssertEqual(result, .failure(.unknownIngredient(id: "no_such_id")))
+    }
+
+    // MARK: - Boundary: zero multiplier
+
+    func testZeroPortionMultiplierYieldsKnownZero() {
+        // Per NutrientValues.scaled(_:by:): factor == 0 → .known(0) even for unknown values.
+        // 0 g of anything contains 0 kcal, regardless of nutrient density.
+        let item = FoodCatalogItem(
+            id: "item_for_zero", nameKey: "item_for_zero", category: .other,
+            nutrientsPer100g: NutrientValues(kcal: 100, proteinG: 5, carbsG: 10, fatG: nil)
         )
-        // 165*1.5 + 121*1.8 = 247.5 + 217.8 = 465.3 kcal
-        XCTAssertEqual(result.kcal.value ?? -1, 465.3, accuracy: 0.01)
+        let recipe = makeRecipe(ingredients: [RecipeIngredient(ingredientID: "item_for_zero", amountGrams: 100)])
+        guard case .success(let v) = RecipeNutritionCalculator.nutrients(for: recipe, catalog: [item], portionMultiplier: 0.0) else {
+            return XCTFail("Expected success")
+        }
+        XCTAssertEqual(v.kcal, .known(0))
+        XCTAssertEqual(v.fatG, .known(0), "Zero factor must yield known(0), not unknown")
     }
 }

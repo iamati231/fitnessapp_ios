@@ -15,6 +15,7 @@ import FitnessAppData
 public struct MealPlannerView: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppNavigation.self) private var navigation
 
     @State private var selectedDate: Date = Date()
 
@@ -285,7 +286,14 @@ public struct MealPlannerView: View {
     private func recipeCard(for assignment: PlannedMealAssignment, showsDivider: Bool) -> some View {
         let r = recipe(for: assignment)
         let n = nutrients(for: assignment)
-        return VStack(alignment: .leading, spacing: 0) {
+        return Button {
+            navigation.nutritionPath.append(MealPlannerRoute.recipeDetail(
+                recipeID: assignment.recipeID,
+                mealType: assignment.mealType,
+                portionMultiplier: assignment.portionMultiplier
+            ))
+        } label: {
+        VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
                     if let r {
@@ -326,6 +334,8 @@ public struct MealPlannerView: View {
                     .frame(height: 1)
             }
         }
+        }
+        .buttonStyle(.plain)
     }
 
     private func macroText(_ label: String, value: KnownValue) -> some View {

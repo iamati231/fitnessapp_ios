@@ -317,6 +317,8 @@ struct MainTabView: View {
                             MealPlannerView()
                         case .goals:
                             NutritionGoalsView()
+                        case .recipeDetail(let recipeID, let mealType, let portionMultiplier):
+                            RecipeDetailView(recipeID: recipeID, mealType: mealType, initialPortionMultiplier: portionMultiplier)
                         }
                     }
                     .navigationDestination(for: AddMealRoute.self) { route in

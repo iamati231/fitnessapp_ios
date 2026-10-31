@@ -62172,6 +62172,54 @@
         "en": { "stringUnit": { "state": "translated", "value": "Egg Avocado Snack" } },
         "tr": { "stringUnit": { "state": "translated", "value": "Yumurtalı Avokado Atıştırması" } }
       }
+    },
+    "recipe.detail.portion.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Portionen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Portions" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Porsiyon" } }
+      }
+    },
+    "recipe.detail.nutrition.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nährwerte" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Nutrition" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Besin Değerleri" } }
+      }
+    },
+    "recipe.detail.ingredients.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zutaten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Ingredients" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Malzemeler" } }
+      }
+    },
+    "recipe.detail.addToDiary.button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Zum Tagebuch hinzufügen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Add to Diary" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Günlüğe Ekle" } }
+      }
+    },
+    "recipe.detail.unknown.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Unbekanntes Rezept" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Unknown Recipe" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bilinmeyen Tarif" } }
+      }
+    },
+    "recipe.detail.ingredients.missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rezept nicht verfügbar" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Recipe unavailable" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tarif mevcut değil" } }
+      }
     }
   }
 }
