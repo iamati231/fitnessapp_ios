@@ -21181,6 +21181,14 @@
         }
       }
     },
+    "settings.group.nutritionPreferences": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ernährung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Nutrition" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme" } }
+      }
+    },
     "settings.group.tools": {
       "extractionState": "manual",
       "localizations": {
@@ -53722,6 +53730,14 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Bu Hafta" } }
       }
     },
+    "mealPlanner.preferences.button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ernährungspräferenzen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Nutrition Preferences" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme Tercihleri" } }
+      }
+    },
     "mealPlanner.optimize.button": {
       "extractionState": "manual",
       "localizations": {
@@ -53831,6 +53847,230 @@
             "value": "TDEE'den al"
           }
         }
+      }
+    },
+    "nutrition.preferences.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ernährungspräferenzen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Nutrition Preferences" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme Tercihleri" } }
+      }
+    },
+    "nutrition.preferences.style.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ernährungsform" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Dietary Style" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme Tarzı" } }
+      }
+    },
+    "nutrition.preferences.style.omnivor": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Omnivor" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Omnivore" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Omnivor" } }
+      }
+    },
+    "nutrition.preferences.style.vegetarian": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Vegetarisch" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Vegetarian" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Vejetaryen" } }
+      }
+    },
+    "nutrition.preferences.style.vegan": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Vegan" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Vegan" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Vegan" } }
+      }
+    },
+    "nutrition.preferences.style.pescetarian": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Pescetarisch" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Pescetarian" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Balık Yiyen" } }
+      }
+    },
+    "nutrition.preferences.halal.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Halal" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Halal" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Helal" } }
+      }
+    },
+    "nutrition.preferences.halal.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nur verifizierte Rezepte" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Verified recipes only" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yalnızca onaylı tarifler" } }
+      }
+    },
+    "nutrition.preferences.halal.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nur redaktionell verifizierte Rezepte werden im Plan berücksichtigt. Halal wird niemals automatisch aus Zutaten abgeleitet." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Only editorially verified recipes are included in the plan. Halal is never inferred automatically from ingredients." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plana yalnızca editoryal olarak doğrulanmış tarifler dahil edilir. Helal asla malzemelerden otomatik olarak çıkarılmaz." } }
+      }
+    },
+    "nutrition.preferences.allergens.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Allergene ausschließen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Exclude Allergens" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Alerjen Hariç Tut" } }
+      }
+    },
+    "nutrition.preferences.allergens.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rezepte mit unbekannten Allergeninformationen werden bei aktiven Ausschlüssen sicher herausgefiltert." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Recipes with unknown allergen information are safely excluded when any allergen filter is active." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Alerjen bilgisi bilinmeyen tarifler, herhangi bir filtre aktifken güvenli şekilde hariç tutulur." } }
+      }
+    },
+    "nutrition.preferences.excluded.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ausgeschlossene Rezepte" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Excluded Recipes" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hariç Tutulan Tarifler" } }
+      }
+    },
+    "nutrition.preferences.excluded.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine Rezepte ausgeschlossen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No recipes excluded." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hariç tutulan tarif yok." } }
+      }
+    },
+    "nutrition.preferences.excluded.restore": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Aufheben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Restore" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Geri Al" } }
+      }
+    },
+    "allergen.gluten": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gluten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Gluten" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Gluten" } }
+      }
+    },
+    "allergen.lactose": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Laktose" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Lactose" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Laktoz" } }
+      }
+    },
+    "allergen.nuts": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schalenfrüchte (Nüsse)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tree Nuts" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kabuklu Kuruyemişler" } }
+      }
+    },
+    "allergen.peanuts": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erdnüsse" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Peanuts" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yer Fıstığı" } }
+      }
+    },
+    "allergen.eggs": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Eier" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Eggs" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yumurta" } }
+      }
+    },
+    "allergen.soy": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Soja" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Soy" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Soya" } }
+      }
+    },
+    "allergen.fish": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fisch" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Fish" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Balık" } }
+      }
+    },
+    "allergen.shellfish": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Krebstiere" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Shellfish" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kabuklu Deniz Ürünleri" } }
+      }
+    },
+    "allergen.sesame": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Sesam" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sesame" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Susam" } }
+      }
+    },
+    "allergen.celery": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Sellerie" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Celery" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kereviz" } }
+      }
+    },
+    "allergen.mustard": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Senf" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Mustard" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hardal" } }
+      }
+    },
+    "allergen.sulfites": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Sulfite" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sulfites" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sülfitler" } }
+      }
+    },
+    "allergen.lupin": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Lupinen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Lupin" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Acı Bakla" } }
+      }
+    },
+    "allergen.molluscs": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Weichtiere" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Molluscs" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yumuşakçalar" } }
       }
     },
     "nutrition.food.chicken_breast_raw.name": {

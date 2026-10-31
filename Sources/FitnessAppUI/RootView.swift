@@ -321,6 +321,8 @@ struct MainTabView: View {
                             MealPlannerView(initialDate: date)
                         case .goals:
                             NutritionGoalsView()
+                        case .nutritionPreferences:
+                            NutritionPreferencesView()
                         case .recipeDetail(let recipeID, let mealType, let portionMultiplier, let date):
                             RecipeDetailView(recipeID: recipeID, mealType: mealType, initialPortionMultiplier: portionMultiplier, date: date)
                         }

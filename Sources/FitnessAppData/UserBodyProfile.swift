@@ -597,23 +597,29 @@ public final class UserBodyProfile {
     /// Ernährungsstil für den MealPlanGenerator. Default .omnivor (keine Einschränkung).
     public var mealPlanDietaryStyleRaw: String = DietaryStyle.omnivor.rawValue
 
+    /// Halal-Anforderung: nur Rezepte mit verifizierter Halal-Kennzeichnung. Default false.
+    /// Lightweight-Migration: Bool-Feld, Default-Literal reicht.
+    public var mealPlanRequiresHalal: Bool = false
+
     /// Ausgeschlossene Allergene (RecipeAllergen.rawValue). Default leer.
     public var mealPlanAllergenExclusionsRaw: [String] = []
 
     /// Vom Nutzer manuell ausgeschlossene Rezept-IDs. Default leer.
     public var mealPlanExcludedRecipeIDsRaw: [String] = []
 
-    /// Typisierter Accessor — liest/schreibt alle drei Felder oben als einen Value.
+    /// Typisierter Accessor — liest/schreibt alle vier Felder oben als einen Value.
     public var nutritionPreferences: UserNutritionPreferences {
         get {
             UserNutritionPreferences(
                 dietaryStyle: DietaryStyle(rawValue: mealPlanDietaryStyleRaw) ?? .omnivor,
+                requiresHalal: mealPlanRequiresHalal,
                 allergenExclusions: Set(mealPlanAllergenExclusionsRaw.compactMap { RecipeAllergen(rawValue: $0) }),
                 excludedRecipeIDs: Set(mealPlanExcludedRecipeIDsRaw)
             )
         }
         set {
             mealPlanDietaryStyleRaw = newValue.dietaryStyle.rawValue
+            mealPlanRequiresHalal = newValue.requiresHalal
             mealPlanAllergenExclusionsRaw = newValue.allergenExclusions.map(\.rawValue).sorted()
             mealPlanExcludedRecipeIDsRaw = newValue.excludedRecipeIDs.sorted()
         }

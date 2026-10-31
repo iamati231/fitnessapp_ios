@@ -97,6 +97,7 @@ public struct MealPlannerView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     dateNavCard
                     weekOverviewButton
+                    preferencesButton
                     if planForSelectedDate == nil {
                         generatePlanCard
                     }
@@ -219,6 +220,29 @@ public struct MealPlannerView: View {
                 Image(systemName: "calendar")
                     .foregroundStyle(Color.deltiqOrange)
                 Text("mealPlanner.week.button", bundle: .module)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.Deltiq.fill)
+            .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var preferencesButton: some View {
+        Button {
+            navigation.nutritionPath.append(MealPlannerRoute.nutritionPreferences)
+        } label: {
+            HStack {
+                Image(systemName: "slider.horizontal.3")
+                    .foregroundStyle(Color.deltiqOrange)
+                Text("mealPlanner.preferences.button", bundle: .module)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.Deltiq.textSecondary)
                 Spacer()

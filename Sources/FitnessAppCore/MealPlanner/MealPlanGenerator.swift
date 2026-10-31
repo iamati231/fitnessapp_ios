@@ -135,6 +135,11 @@ public enum MealPlanGenerator {
             guard !preferences.excludedRecipeIDs.contains(recipe.id) else { return false }
             guard matchesDietaryStyle(recipe, style: preferences.dietaryStyle) else { return false }
 
+            // Halal: nur Rezepte mit verifizierter Kennzeichnung. Niemals ableiten.
+            if preferences.requiresHalal {
+                guard recipe.isHalalVerified else { return false }
+            }
+
             if preferences.hasAllergenFilter {
                 // allergenVerified=false → unbekannter Status → immer ausschließen
                 guard recipe.allergenVerified else { return false }

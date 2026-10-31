@@ -178,6 +178,7 @@ public struct SettingsView: View {
         Group {
             toolsSection
             libraryEquipmentSection
+            nutritionPreferencesSection
             appExperienceSection
             dataConnectionsSection
             helpInfoSection
@@ -215,6 +216,21 @@ public struct SettingsView: View {
                 DeltiqRow(
                     icon: "figure.strengthtraining.traditional",
                     label: String(localized: "settings.group.libraryEquipment", bundle: .module),
+                    showsChevron: true,
+                    showsDivider: false
+                )
+            }
+        }
+    }
+
+    private var nutritionPreferencesSection: some View {
+        DeltiqSection(String(localized: "settings.group.nutritionPreferences", bundle: .module).uppercased()) {
+            NavigationLink {
+                NutritionPreferencesView()
+            } label: {
+                DeltiqRow(
+                    icon: "fork.knife.circle",
+                    label: String(localized: "settings.group.nutritionPreferences", bundle: .module),
                     showsChevron: true,
                     showsDivider: false
                 )

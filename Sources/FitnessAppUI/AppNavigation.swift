@@ -42,6 +42,7 @@ public final class AppNavigation {
 /// `.planner` — MealPlannerView; `.goals` — NutritionGoalsView.
 /// Phase 4.3 (2026-10-31): `.recipeDetail` — RecipeDetailView mit Portionsanpassung.
 /// Phase 4.4 (2026-10-31): `date` mitgefuehrt fuer den Tagebucheintrag.
+/// Phase 5.0 (2026-11-01): `.nutritionPreferences` — NutritionPreferencesView.
 /// Phase 5.1 (2026-11-01): `.weekOverview` — WeekPlannerView; `.plannerDay` — MealPlannerView mit initialem Datum.
 @available(iOS 17.0, macOS 14.0, *)
 public enum MealPlannerRoute: Hashable, Sendable {
@@ -49,6 +50,7 @@ public enum MealPlannerRoute: Hashable, Sendable {
     case weekOverview
     case plannerDay(Date)
     case goals
+    case nutritionPreferences
     case recipeDetail(recipeID: String, mealType: MealType, portionMultiplier: Double, date: Date)
 }
 
