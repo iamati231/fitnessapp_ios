@@ -729,7 +729,9 @@ public struct MealPlannerView: View {
                 }
             }
             .navigationTitle(String(localized: "mealPlanner.optimize.preview.title", bundle: .module))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common.cancel", bundle: .module)) {
