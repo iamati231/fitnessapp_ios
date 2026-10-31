@@ -36,7 +36,9 @@ struct RecipePickerView: View {
                 }
             }
             .navigationTitle(String(localized: "mealPlanner.picker.title", bundle: .module))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common.cancel", bundle: .module)) { dismiss() }
