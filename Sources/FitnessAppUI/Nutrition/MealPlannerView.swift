@@ -21,6 +21,7 @@ public struct MealPlannerView: View {
     @State private var selectedDate: Date = Date()
     @State private var replacingAssignment: PlannedMealAssignment? = nil
     @State private var removingAssignment: PlannedMealAssignment? = nil
+    @State private var generationError: String? = nil
 
     @Query private var allPlans: [DailyMealPlan]
     @Query private var profiles: [UserBodyProfile]
@@ -87,6 +88,9 @@ public struct MealPlannerView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     dateNavCard
+                    if planForSelectedDate == nil {
+                        generatePlanCard
+                    }
                     if let (totals, hasUnknown) = planTotals {
                         dayOverviewSection(totals: totals, hasUnknown: hasUnknown)
                     }
@@ -409,6 +413,66 @@ public struct MealPlannerView: View {
     private func changeDay(by offset: Int) {
         guard let newDate = Calendar.current.date(byAdding: .day, value: offset, to: selectedDate) else { return }
         selectedDate = newDate
+    }
+
+    // MARK: - Generate Plan
+
+    private var generatePlanCard: some View {
+        DeltiqCard {
+            VStack(spacing: 10) {
+                if let error = generationError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .multilineTextAlignment(.center)
+                }
+                Button {
+                    generatePlan()
+                } label: {
+                    Text("nutrition.mealPlanner.generate.button", bundle: .module)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.deltiqOrange)
+                        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func generatePlan() {
+        generationError = nil
+        let prefs = userProfile?.nutritionPreferences ?? UserNutritionPreferences()
+        let result = MealPlanGenerator.generate(
+            for: selectedDate,
+            mealTypes: MealType.allCases,
+            preferences: prefs,
+            dailyCalorieGoalKcal: userProfile?.dailyCalorieGoalKcal,
+            dailyProteinGoalG: userProfile?.dailyProteinGoalG,
+            dailyCarbGoalG: userProfile?.dailyCarbGoalG,
+            dailyFatGoalG: userProfile?.dailyFatGoalG,
+            recentRecipeIDs: [], // shortcut: no recency tracking, upgrade in Phase 6
+            recipeCatalog: recipeCatalog,
+            foodCatalog: foodCatalog
+        )
+        switch result {
+        case .success(let plan):
+            let assignments = plan.assignments.map { a -> PlannedMealAssignment in
+                let pa = PlannedMealAssignment(recipeID: a.recipeID, mealType: a.mealType, portionMultiplier: a.portionMultiplier)
+                modelContext.insert(pa)
+                return pa
+            }
+            try? DailyMealPlan.upsertGenerated(
+                date: selectedDate,
+                assignments: assignments,
+                warning: plan.insufficientSelectionWarning,
+                in: modelContext
+            )
+        case .failure:
+            generationError = String(localized: "nutrition.mealPlanner.generate.noRecipe", bundle: .module)
+        }
     }
 }
 

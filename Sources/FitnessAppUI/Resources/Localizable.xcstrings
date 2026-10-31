@@ -2304,6 +2304,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Uygun alternatif bulunamadı." } }
       }
     },
+    "nutrition.mealPlanner.generate.button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Tagesplan generieren" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Generate Meal Plan" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Günlük Plan Oluştur" } }
+      }
+    },
+    "nutrition.mealPlanner.generate.noRecipe": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kein geeignetes Rezept verfügbar. Passen Sie Ihre Ernährungseinstellungen an." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No suitable recipe available. Adjust your dietary preferences." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Uygun tarif bulunamadı. Beslenme tercihlerinizi ayarlayın." } }
+      }
+    },
     "sex.male": {
       "extractionState": "manual",
       "localizations": {
