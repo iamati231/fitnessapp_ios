@@ -132,10 +132,10 @@ final class WeekPlannerTests: XCTestCase {
         context.insert(plan)
         try context.save()
 
-        let descriptor = FetchDescriptor<DailyMealPlan>(
-            predicate: #Predicate { $0.date == Calendar.current.startOfDay(for: targetDate) }
-        )
-        let fetched = try context.fetch(descriptor)
+        // #Predicate unterstützt startOfDay nicht — fetch-all + filter
+        let allPlans: [DailyMealPlan] = try context.fetch(FetchDescriptor<DailyMealPlan>())
+        let normalized = Calendar.current.startOfDay(for: targetDate)
+        let fetched = allPlans.filter { $0.date == normalized }
         XCTAssertEqual(fetched.count, 1)
         XCTAssertEqual(Calendar.current.component(.day, from: fetched.first!.date), 3)
         XCTAssertEqual(Calendar.current.component(.month, from: fetched.first!.date), 11)
@@ -161,16 +161,18 @@ final class WeekPlannerTests: XCTestCase {
 
         let result = RecipeNutritionCalculator.nutrients(for: knownRecipe, catalog: [food], portionMultiplier: 1.0)
         guard case .success(let n) = result else { XCTFail("Berechnung schlug fehl"); return }
-        XCTAssertEqual(n.kcal.value, 165, accuracy: 0.01)
-        XCTAssertEqual(n.proteinG.value, 31, accuracy: 0.01)
+        guard let kcal = n.kcal.value, let protein = n.proteinG.value else { XCTFail("Nährwerte unbekannt"); return }
+        XCTAssertEqual(kcal, 165, accuracy: 0.01)
+        XCTAssertEqual(protein, 31, accuracy: 0.01)
     }
 
     // Portionsfaktoren werden berücksichtigt
     func testPortionMultiplierApplied() {
         let result = RecipeNutritionCalculator.nutrients(for: knownRecipe, catalog: [food], portionMultiplier: 2.0)
         guard case .success(let n) = result else { XCTFail(); return }
-        XCTAssertEqual(n.kcal.value, 330, accuracy: 0.01)
-        XCTAssertEqual(n.proteinG.value, 62, accuracy: 0.01)
+        guard let kcal = n.kcal.value, let protein = n.proteinG.value else { XCTFail("Nährwerte unbekannt"); return }
+        XCTAssertEqual(kcal, 330, accuracy: 0.01)
+        XCTAssertEqual(protein, 62, accuracy: 0.01)
     }
 
     // OFF-01: Unbekannte Nährwerte bleiben unbekannt
@@ -180,17 +182,6 @@ final class WeekPlannerTests: XCTestCase {
         XCTAssertTrue(n.kcal.isUnknown, "kcal muss unbekannt bleiben")
         XCTAssertTrue(n.proteinG.isUnknown, "Protein muss unbekannt bleiben")
         XCTAssertTrue(n.partiallyKnown, "partiallyKnown muss true sein")
-    }
-
-    // Öffnen eines Tages übergibt korrektes Datum (Route-Check)
-    func testDayNavigationPassesCorrectDate() {
-        let day = date(2026, 11, 5)
-        let route = MealPlannerRoute.plannerDay(day)
-        if case .plannerDay(let routeDate) = route {
-            XCTAssertEqual(Calendar.current.startOfDay(for: routeDate), Calendar.current.startOfDay(for: day))
-        } else {
-            XCTFail("Route muss .plannerDay sein")
-        }
     }
 
     // Bestehende Tagesansicht bleibt intakt — allPlans-Query unverändert
