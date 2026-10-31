@@ -53658,6 +53658,22 @@
         "tr": { "stringUnit": { "state": "translated", "value": "KH" } }
       }
     },
+    "mealPlanner.portion.decrease": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Portion verkleinern" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Decrease portion" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Porsiyon azalt" } }
+      }
+    },
+    "mealPlanner.portion.increase": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Portion vergrößern" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Increase portion" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Porsiyon artır" } }
+      }
+    },
     "nutrition.macro.fat.short": {
       "extractionState": "manual",
       "localizations": {

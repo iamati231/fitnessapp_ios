@@ -326,15 +326,16 @@ public struct MealPlannerView: View {
     private func recipeCard(for assignment: PlannedMealAssignment, showsDivider: Bool) -> some View {
         let r = recipe(for: assignment)
         let n = nutrients(for: assignment)
-        return Button {
-            navigation.nutritionPath.append(MealPlannerRoute.recipeDetail(
-                recipeID: assignment.recipeID,
-                mealType: assignment.mealType,
-                portionMultiplier: assignment.portionMultiplier,
-                date: Calendar.current.startOfDay(for: selectedDate)
-            ))
-        } label: {
-            VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: 0) {
+            // Tappable area: navigiert zur Rezeptdetailseite
+            Button {
+                navigation.nutritionPath.append(MealPlannerRoute.recipeDetail(
+                    recipeID: assignment.recipeID,
+                    mealType: assignment.mealType,
+                    portionMultiplier: assignment.portionMultiplier,
+                    date: Calendar.current.startOfDay(for: selectedDate)
+                ))
+            } label: {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline) {
                         if let r {
@@ -361,22 +362,25 @@ public struct MealPlannerView: View {
                             macroText(String(localized: "nutrition.macro.fat.short", bundle: .module), value: n.fatG)
                         }
                     }
-                    if assignment.portionMultiplier != 1.0 {
-                        Text("×\(assignment.portionMultiplier.formatted(.number.precision(.fractionLength(0...1))))")
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                    }
                 }
                 .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                if showsDivider {
-                    Rectangle()
-                        .fill(Color.Deltiq.divider)
-                        .frame(height: 1)
-                }
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+
+            // Portions-Stepper: außerhalb des Navigations-Buttons
+            portionStepper(for: assignment)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 12)
+
+            if showsDivider {
+                Rectangle()
+                    .fill(Color.Deltiq.divider)
+                    .frame(height: 1)
             }
         }
-        .buttonStyle(.plain)
         .overlay {
             if regeneratingAssignment === assignment {
                 Color.Deltiq.background.opacity(0.8)
@@ -402,7 +406,52 @@ public struct MealPlannerView: View {
         }
     }
 
+    private func portionStepper(for assignment: PlannedMealAssignment) -> some View {
+        HStack(spacing: 10) {
+            Button {
+                adjustPortion(assignment, by: -0.5)
+            } label: {
+                Image(systemName: "minus")
+                    .font(.system(size: 11, weight: .bold))
+                    .frame(width: 28, height: 28)
+                    .background(Color.Deltiq.fill)
+                    .clipShape(Circle())
+                    .foregroundStyle(assignment.portionMultiplier <= 0.5 ? Color.Deltiq.textSecondary : Color.deltiqOrange)
+            }
+            .buttonStyle(.plain)
+            .disabled(assignment.portionMultiplier <= 0.5)
+            .accessibilityLabel(Text("mealPlanner.portion.decrease", bundle: .module))
+
+            Text("×\(assignment.portionMultiplier.formatted(.number.precision(.fractionLength(0...1))))")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .frame(minWidth: 30)
+
+            Button {
+                adjustPortion(assignment, by: 0.5)
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .bold))
+                    .frame(width: 28, height: 28)
+                    .background(Color.Deltiq.fill)
+                    .clipShape(Circle())
+                    .foregroundStyle(assignment.portionMultiplier >= 5.0 ? Color.Deltiq.textSecondary : Color.deltiqOrange)
+            }
+            .buttonStyle(.plain)
+            .disabled(assignment.portionMultiplier >= 5.0)
+            .accessibilityLabel(Text("mealPlanner.portion.increase", bundle: .module))
+        }
+    }
+
     // MARK: - Edit Actions
+
+    private func adjustPortion(_ assignment: PlannedMealAssignment, by delta: Double) {
+        let clamped = min(max(assignment.portionMultiplier + delta, 0.5), 5.0)
+        guard clamped != assignment.portionMultiplier else { return }
+        assignment.portionMultiplier = clamped
+        if let plan = assignment.plan { plan.isManuallyAdjusted = true }
+        try? modelContext.save()
+    }
 
     private func swapAssignment(_ assignment: PlannedMealAssignment, to newRecipe: Recipe) {
         assignment.recipeID = newRecipe.id
