@@ -266,12 +266,12 @@ final class MealPlanOptimizerIntegrationTests: XCTestCase {
     // MARK: - 11. Swap wird vorgeschlagen für unlösbaren Slot
 
     func testSwap_proposedForUnresolvableSlot() {
-        // unknownRecipe kann nicht berechnet werden → lunchRecipe wird als Swap vorgeschlagen
+        // unknownRecipe verwendet "mystery", das nicht im Katalog liegt → .failure(.unknownIngredient) → Swap
         let result = MealPlanOptimizer.optimize(
             assignments: [(recipeID: "r_unknown", mealType: .lunch, portionMultiplier: 1.0)],
             calorieGoal: 2000, proteinGoal: nil, carbGoal: nil, fatGoal: nil,
             recipeCatalog: [unknownRecipe, lunchRecipe],
-            foodCatalog: [food, unknownFood],
+            foodCatalog: [food],
             preferences: defaultPrefs()
         )
         guard case .success(let p) = result else { XCTFail(); return }
