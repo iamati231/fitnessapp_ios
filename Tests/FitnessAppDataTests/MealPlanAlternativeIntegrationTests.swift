@@ -2,7 +2,7 @@
 import XCTest
 import SwiftData
 @testable import FitnessAppData
-import FitnessAppCore
+@testable import FitnessAppCore
 
 /// Phase 4.7: SwiftData-Integrationstests für „Alternative generieren".
 /// Testet den vollständigen Persistenzpfad, wie er in regenerateAssignment() läuft.

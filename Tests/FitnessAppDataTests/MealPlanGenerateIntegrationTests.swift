@@ -2,7 +2,7 @@
 import XCTest
 import SwiftData
 @testable import FitnessAppData
-import FitnessAppCore
+@testable import FitnessAppCore
 
 /// Phase 5: Testet den generate→upsert-Datenpfad (analog generatePlan() in MealPlannerView).
 /// Die Rezeptliste ist inline definiert — kein Bundle.module-Zugriff in Tests nötig.
