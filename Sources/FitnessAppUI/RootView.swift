@@ -315,6 +315,10 @@ struct MainTabView: View {
                         switch route {
                         case .planner:
                             MealPlannerView()
+                        case .weekOverview:
+                            WeekPlannerView()
+                        case .plannerDay(let date):
+                            MealPlannerView(initialDate: date)
                         case .goals:
                             NutritionGoalsView()
                         case .recipeDetail(let recipeID, let mealType, let portionMultiplier, let date):

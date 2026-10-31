@@ -53674,6 +53674,54 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Porsiyon artır" } }
       }
     },
+    "mealPlanner.week.button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wochenübersicht" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Week Overview" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Haftalık Genel Bakış" } }
+      }
+    },
+    "mealPlanner.week.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wochenübersicht" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Week Overview" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Haftalık Genel Bakış" } }
+      }
+    },
+    "mealPlanner.week.noplan": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nicht geplant" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Not planned" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Planlanmadı" } }
+      }
+    },
+    "mealPlanner.week.prevWeek": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Vorherige Woche" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Previous week" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Önceki hafta" } }
+      }
+    },
+    "mealPlanner.week.nextWeek": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nächste Woche" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Next week" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sonraki hafta" } }
+      }
+    },
+    "mealPlanner.week.thisWeek": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Diese Woche" } },
+        "en": { "stringUnit": { "state": "translated", "value": "This Week" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bu Hafta" } }
+      }
+    },
     "mealPlanner.optimize.button": {
       "extractionState": "manual",
       "localizations": {

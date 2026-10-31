@@ -18,7 +18,7 @@ public struct MealPlannerView: View {
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.modelContext) private var modelContext
 
-    @State private var selectedDate: Date = Date()
+    @State private var selectedDate: Date
     @State private var replacingAssignment: PlannedMealAssignment? = nil
     @State private var removingAssignment: PlannedMealAssignment? = nil
     @State private var generationError: String? = nil
@@ -36,7 +36,9 @@ public struct MealPlannerView: View {
     private let recipeCatalog: [Recipe] = RecipeCatalogData.all
     private let foodCatalog: [FoodCatalogItem] = FoodCatalogData.all
 
-    public init() {}
+    public init(initialDate: Date = Date()) {
+        _selectedDate = State(initialValue: Calendar.current.startOfDay(for: initialDate))
+    }
 
     // MARK: - Derived state
 
@@ -94,6 +96,7 @@ public struct MealPlannerView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     dateNavCard
+                    weekOverviewButton
                     if planForSelectedDate == nil {
                         generatePlanCard
                     }
@@ -206,6 +209,29 @@ public struct MealPlannerView: View {
             }
             .frame(maxWidth: .infinity)
         }
+    }
+
+    private var weekOverviewButton: some View {
+        Button {
+            navigation.nutritionPath.append(MealPlannerRoute.weekOverview)
+        } label: {
+            HStack {
+                Image(systemName: "calendar")
+                    .foregroundStyle(Color.deltiqOrange)
+                Text("mealPlanner.week.button", bundle: .module)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.Deltiq.fill)
+            .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Day Overview
