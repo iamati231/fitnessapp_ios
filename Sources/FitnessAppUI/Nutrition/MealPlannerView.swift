@@ -356,9 +356,9 @@ public struct MealPlannerView: View {
                     }
                     if let n {
                         HStack(spacing: 16) {
-                            macroText(String(localized: "nutrition.goals.protein.label", bundle: .module), value: n.proteinG)
-                            macroText(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: n.carbsG)
-                            macroText(String(localized: "nutrition.goals.fat.label", bundle: .module), value: n.fatG)
+                            macroText(String(localized: "nutrition.macro.protein.short", bundle: .module), value: n.proteinG)
+                            macroText(String(localized: "nutrition.macro.carbs.short", bundle: .module), value: n.carbsG)
+                            macroText(String(localized: "nutrition.macro.fat.short", bundle: .module), value: n.fatG)
                         }
                     }
                     if assignment.portionMultiplier != 1.0 {

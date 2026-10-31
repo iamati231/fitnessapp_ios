@@ -53642,6 +53642,30 @@
         }
       }
     },
+    "nutrition.macro.protein.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Protein" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Protein" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Protein" } }
+      }
+    },
+    "nutrition.macro.carbs.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "KH" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Carbs" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "KH" } }
+      }
+    },
+    "nutrition.macro.fat.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fett" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Fat" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yağ" } }
+      }
+    },
     "nutrition.goals.adoptFromTDEE.button": {
       "extractionState": "manual",
       "localizations": {

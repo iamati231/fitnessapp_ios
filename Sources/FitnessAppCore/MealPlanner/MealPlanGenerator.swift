@@ -34,6 +34,7 @@ public enum MealPlanGenerator {
         var assignments: [MealPlanAssignmentValue] = []
         var warning: String?
         let dayOrd = Calendar.current.ordinality(of: .day, in: .year, for: date) ?? 1
+        var assignedIDs: Set<String> = []
 
         for (slotIndex, mealType) in mealTypes.enumerated() {
             let suitable = eligibleRecipes(in: recipeCatalog, for: mealType, preferences: preferences)
@@ -47,13 +48,15 @@ public enum MealPlanGenerator {
                 warning = warning.map { $0 + " | " + w } ?? w
             }
 
-            // Bevorzuge Rezepte außerhalb des Wiederholungsfensters
-            let fresh = suitable.filter { !recentRecipeIDs.contains($0.id) }
-            let pool = fresh.isEmpty ? suitable : fresh
+            // Bevorzuge Rezepte außerhalb des Wiederholungsfensters und nicht bereits im Plan
+            let fresh = suitable.filter { !recentRecipeIDs.contains($0.id) && !assignedIDs.contains($0.id) }
+            let noRecent = fresh.isEmpty ? suitable.filter { !assignedIDs.contains($0.id) } : fresh
+            let pool = noRecent.isEmpty ? suitable : noRecent
 
             // Deterministischer Index: Tag-im-Jahr × 37 + Slot-Position
             let seed = (dayOrd &* 37) &+ slotIndex
             let recipe = pool[abs(seed) % pool.count]
+            assignedIDs.insert(recipe.id)
             assignments.append(MealPlanAssignmentValue(
                 recipeID: recipe.id,
                 mealType: mealType,

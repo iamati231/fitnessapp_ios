@@ -129,6 +129,30 @@ final class MealPlanGenerateIntegrationTests: XCTestCase {
         XCTAssertEqual(plans.count, 1, "Zweiter Generate-Aufruf darf keinen zweiten Plan anlegen")
     }
 
+    // MARK: - 5. Kein Duplikat-Rezept wenn Katalog groß genug
+
+    func testGenerateNoDuplicateRecipesWhenCatalogLargeEnough() {
+        let allTypes = MealType.allCases
+        let multiRecipes = (0..<5).map { i in
+            Recipe(
+                id: "multi_\(i)", nameKey: "test.multi_\(i)",
+                mealTypes: allTypes, dietaryTags: [], allergens: [], allergenVerified: true,
+                halalVerifiedBy: nil, servings: 1, prepMinutes: 5,
+                ingredients: [RecipeIngredient(ingredientID: "x", amountGrams: 100)]
+            )
+        }
+        guard case .success(let plan) = MealPlanGenerator.generate(
+            for: Date(), mealTypes: allTypes,
+            preferences: UserNutritionPreferences(),
+            dailyCalorieGoalKcal: nil,
+            recentRecipeIDs: [],
+            recipeCatalog: multiRecipes
+        ) else { XCTFail("generate sollte Erfolg liefern"); return }
+
+        let ids = plan.assignments.map(\.recipeID)
+        XCTAssertEqual(Set(ids).count, ids.count, "Kein Rezept darf im selben Plan doppelt vorkommen")
+    }
+
     // MARK: - 4. Tagebuch-Einträge bleiben unberührt
 
     func testGenerateDoesNotTouchMealEntries() throws {
