@@ -113,7 +113,7 @@ final class MealPlanOptimizerIntegrationTests: XCTestCase {
             recipeCatalog: [lunchRecipe], foodCatalog: [food],
             preferences: defaultPrefs()
         )
-        XCTAssertEqual(result, .failure(.noGoalSet))
+        guard case .failure(.noGoalSet) = result else { XCTFail("Erwartet .noGoalSet, war: \(result)"); return }
     }
 
     // MARK: - 2. Keine Zuweisungen → noAssignments
@@ -125,7 +125,7 @@ final class MealPlanOptimizerIntegrationTests: XCTestCase {
             recipeCatalog: [lunchRecipe], foodCatalog: [food],
             preferences: defaultPrefs()
         )
-        XCTAssertEqual(result, .failure(.noAssignments))
+        guard case .failure(.noAssignments) = result else { XCTFail("Erwartet .noAssignments, war: \(result)"); return }
     }
 
     // MARK: - 3. Einfache kcal-Skalierung
@@ -139,7 +139,8 @@ final class MealPlanOptimizerIntegrationTests: XCTestCase {
             preferences: defaultPrefs()
         )
         guard case .success(let p) = result else { XCTFail("Ergebnis muss success sein"); return }
-        XCTAssertEqual(p.changes.first?.proposedMultiplier, 2.0, accuracy: 0.001)
+        guard let proposed = p.changes.first?.proposedMultiplier else { XCTFail("Kein SlotChange"); return }
+        XCTAssertEqual(proposed, 2.0, accuracy: 0.001)
     }
 
     // MARK: - 4. Schrittweite 0.5
@@ -153,7 +154,7 @@ final class MealPlanOptimizerIntegrationTests: XCTestCase {
             preferences: defaultPrefs()
         )
         guard case .success(let p) = result else { XCTFail(); return }
-        let proposed = p.changes.first?.proposedMultiplier ?? 0
+        guard let proposed = p.changes.first?.proposedMultiplier else { XCTFail("Kein SlotChange"); return }
         XCTAssertEqual(proposed.truncatingRemainder(dividingBy: 0.5), 0.0,
                        "Multiplier muss Vielfaches von 0.5 sein")
     }
@@ -169,7 +170,8 @@ final class MealPlanOptimizerIntegrationTests: XCTestCase {
             preferences: defaultPrefs()
         )
         guard case .success(let p) = result else { XCTFail(); return }
-        XCTAssertEqual(p.changes.first?.proposedMultiplier, 0.5)
+        guard let proposed = p.changes.first?.proposedMultiplier else { XCTFail("Kein SlotChange"); return }
+        XCTAssertEqual(proposed, 0.5)
     }
 
     // MARK: - 6. Clamp Maximum 5.0
@@ -183,7 +185,8 @@ final class MealPlanOptimizerIntegrationTests: XCTestCase {
             preferences: defaultPrefs()
         )
         guard case .success(let p) = result else { XCTFail(); return }
-        XCTAssertEqual(p.changes.first?.proposedMultiplier, 5.0)
+        guard let proposed = p.changes.first?.proposedMultiplier else { XCTFail("Kein SlotChange"); return }
+        XCTAssertEqual(proposed, 5.0)
     }
 
     // MARK: - 7. OFF-01: Unbekannte Nährwerte bleiben unbekannt
@@ -354,7 +357,8 @@ final class MealPlanOptimizerIntegrationTests: XCTestCase {
         guard case .success(let p) = result else { XCTFail(); return }
         XCTAssertNotNil(p.warning, "Vollständig unbekannte Nährwerte müssen eine Warnung erzeugen")
         // Wenn kein Multiplier berechnet werden kann, bleibt der ursprüngliche Wert
-        XCTAssertEqual(p.changes.first?.proposedMultiplier, 1.0)
+        guard let proposed = p.changes.first?.proposedMultiplier else { XCTFail("Kein SlotChange"); return }
+        XCTAssertEqual(proposed, 1.0)
     }
 
     // MARK: - 17. MealEntry/MealItem unberührt nach Apply (Diary-Isolation)
