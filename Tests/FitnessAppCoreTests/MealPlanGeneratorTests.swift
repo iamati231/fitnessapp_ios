@@ -384,10 +384,10 @@ final class MealPlanGeneratorTests: XCTestCase {
 
     func testPhase45_eligibleRecipes_allergenExclusion() {
         let safe = makeRecipe(id: "safe", allergens: [], allergenVerified: true)
-        let nuts = makeRecipe(id: "nuts", allergens: [.treenutsAndNuts], allergenVerified: true)
+        let nuts = makeRecipe(id: "nuts", allergens: [.nuts], allergenVerified: true)
         let result = MealPlanGenerator.eligibleRecipes(
             in: [safe, nuts], for: .lunch,
-            preferences: .init(allergenExclusions: [.treenutsAndNuts])
+            preferences: .init(allergenExclusions: [.nuts])
         )
         XCTAssertEqual(result.count, 1)
         XCTAssertEqual(result.first?.id, "safe")
