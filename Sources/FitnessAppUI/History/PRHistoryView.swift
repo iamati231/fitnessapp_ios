@@ -237,9 +237,19 @@ public struct PRHistoryView: View {
 
     private func rebuild() {
         let inserted = PersonalRecordSync.rebuild(in: modelContext)
-        try? modelContext.save()
+        // Audit-Fix (Save-Fehler): zeigte bisher UNBEDINGT "N Rekorde
+        // detektiert", auch wenn der Save fehlschlug - schlimmer als ein
+        // stilles Verschlucken, weil es aktiv einen nie gespeicherten Erfolg
+        // behauptet. Jetzt nur bei tatsaechlich erfolgreichem Save.
+        let message: String
+        do {
+            try modelContext.save()
+            message = "\(inserted) Rekorde detektiert"
+        } catch {
+            message = String(localized: "day.editor.save.failed", bundle: .module)
+        }
         withAnimation(.easeOut(duration: 0.2)) {
-            rebuildToast = "\(inserted) Rekorde detektiert"
+            rebuildToast = message
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
             withAnimation(.easeIn(duration: 0.2)) {
@@ -438,7 +448,7 @@ private struct ExerciseTrophySection: View {
     @ViewBuilder
     private var entriesList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Alle Rekorde")
+            Text("prHistory.allRecords", bundle: .module)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .padding(.bottom, 4)
@@ -593,14 +603,8 @@ private struct PRHistoryRow: View {
             }
             return "\(Int(entry.value)) Runden + \(entry.reps) Wdh (vorher \(Int(entry.previousValue)) Runden)"
         case .fastestTime:
-            return "\(formatDuration(entry.value)) (vorher \(formatDuration(entry.previousValue)))"
+            return "\(PaceCalculator.formatDuration(Int(entry.value.rounded()))) (vorher \(PaceCalculator.formatDuration(Int(entry.previousValue.rounded()))))"
         }
-    }
-
-    /// Formatiert Auf-Zeit-Ergebnisse (Sekunden). Wiederverwendet
-    /// `PaceCalculator.formatDuration` statt eines eigenen mm:ss-Formatters.
-    private func formatDuration(_ totalSeconds: Double) -> String {
-        PaceCalculator.formatDuration(Int(totalSeconds.rounded()))
     }
 }
 

@@ -121,8 +121,36 @@ public struct AddMealView: View {
     private enum OnlineSearchOrigin: Equatable {
         case manual
         case aiCandidate(MealDraftCandidate)
+        /// Barcode-scan result (Task: Ernährungssuche erweitern + Barcode).
+        /// Falls into the SAME `else` branch as `.manual` in
+        /// `confirmOnlineImport` (plain `selectEntry`, no AI candidate to
+        /// remove) — listed as its own case only so results/errors can be
+        /// scoped to it like every other origin.
+        case barcode
     }
     @State private var onlineSearchOrigin: OnlineSearchOrigin?
+
+    // Task: Ernährungssuche erweitern + Barcode-Scan ergänzen — Barcode
+    // lookup reuses `onlineSearch`'s OWN preview/confirm sheet (via
+    // `onlineSearch.select`), it just gets there through the camera instead
+    // of a text query. Only the network call + scanner state are separate.
+    @StateObject private var barcodeLookup = BarcodeLookupController(
+        lookup: OpenFoodFactsBarcodeLookupClient(userAgent: "Deltiq/1.0 (a.isik@atamya.com)")
+    )
+    @State private var showingBarcodeScanner: Bool = false
+    /// UX-Katalog-Erweiterung (Scanner-Einstieg bei deaktiviertem Opt-in,
+    /// Spec 2.3): oeffnet die bestehende Einstellungen-Seite statt eines
+    /// erfundenen Navigationspfads — gleiche Seite, die auch ueber
+    /// Einstellungen > Daten & Verbindungen erreichbar ist.
+    @State private var showingDataConnectionsSettings: Bool = false
+
+    /// UX-Katalog-Erweiterung (Spec 2.5): kompakter Kategorie-Filter ueber den
+    /// lokalen Katalog, zusaetzlich zum Suchtext — `nil` = kein Filter aktiv.
+    @State private var selectedCategory: FoodCategory?
+    /// UX-Katalog-Erweiterung (Spec 2.5): begrenzte Anfangsanzeige fuer
+    /// Suche/Kategorie-Treffer statt aller Treffer auf einmal — waechst ueber
+    /// "Weitere lokale Treffer" statt komplizierter echter Paginierung.
+    @State private var localResultsDisplayLimit: Int = AddMealView.localResultsPageSize
 
     public init(date: Date = Date(), mealType: MealType = .snack) {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
@@ -142,73 +170,77 @@ public struct AddMealView: View {
     }
 
     public var body: some View {
-        NavigationStack {
-            Form {
-                detailsSection
-                aiSection
-                searchSection
-                if !draft.items.isEmpty {
-                    itemsSection
-                    previewSection
-                }
-                if editingMeal != nil {
-                    deleteSection
-                }
-                // UI-Konsistenz-Fix: ersetzt den vormaligen SwiftUI-Alert
-                // -- gleiche Section-Form wie `CustomFoodEntrySheet`s eigene
-                // `saveErrorMessage`-Row.
-                if let saveErrorMessage {
-                    Section {
-                        Text(saveErrorMessage)
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                            .listRowBackground(Color.Deltiq.surface)
+        VStack(spacing: 0) {
+                // Bugfix (writing-block.md 4.2, "Speichern und Abbrechen
+                // verwenden nicht die Deltiq-Standardnavigation"): ersetzt
+                // die native `.navigationTitle`/`ToolbarItem(.cancellation
+                // Action/.confirmationAction)`-Leiste durch dasselbe
+                // `DeltiqHeader`-Geruest, das "Neuer Plan"
+                // (`PlanBuilderView`) und die anderen Formular-Editoren
+                // (z.B. `TrainingLocationEquipmentEditorView`) bereits
+                // verwenden — Zurueck-Chevron links, Haken rechts statt
+                // System-Textbuttons. Semantik unveraendert: derselbe
+                // Verwerfen-Rueckfrage-Pfad fuer "Zurueck", derselbe
+                // `saveMeal()`/`disabled(...)`-Zustand fuer "Speichern".
+                DeltiqHeader(
+                    eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
+                    title: String(localized: editingMeal == nil ? "nutrition.addMeal.title" : "nutrition.editMeal.title", bundle: .module),
+                    onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
+                    actions: [
+                        DeltiqHeaderAction(
+                            systemImage: "checkmark",
+                            isDisabled: (draft.didSaveSuccessfully && !draft.hasPendingCleanup) || draft.items.isEmpty,
+                            accessibilityLabel: String(localized: editingMeal == nil ? "nutrition.addMeal.save" : "nutrition.editMeal.save", bundle: .module)
+                        ) {
+                            saveMeal()
+                        }
+                    ]
+                )
+                Form {
+                    detailsSection
+                    aiSection
+                    searchSection
+                    if !draft.items.isEmpty {
+                        itemsSection
+                        previewSection
                     }
-                    .listRowSeparatorTint(Color.Deltiq.divider)
+                    if editingMeal != nil {
+                        deleteSection
+                    }
+                    // UI-Konsistenz-Fix: ersetzt den vormaligen SwiftUI-Alert
+                    // -- gleiche Section-Form wie `CustomFoodEntrySheet`s eigene
+                    // `saveErrorMessage`-Row.
+                    if let saveErrorMessage {
+                        Section {
+                            Text(saveErrorMessage)
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                                .listRowBackground(Color.Deltiq.surface)
+                        }
+                        .listRowSeparatorTint(Color.Deltiq.divider)
+                    }
                 }
-            }
-            // Task A: Mengenbereich haengt NICHT mehr im scrollenden Form-Flow
-            // (vorher musste man die bis zu ~130 Eintraege lange Trefferliste
-            // ganz durchscrollen, um ihn ueberhaupt zu erreichen) — stattdessen
-            // unten verankert, unabhaengig vom Scroll-Stand der Suche. Exaktes
-            // Vorbild: ActiveWorkoutView.swift's RestTimerBar-safeAreaInset.
-            .safeAreaInset(edge: .bottom) {
-                if let selectedEntry {
-                    quantityBottomBar(for: selectedEntry)
+                // Task A: Mengenbereich haengt NICHT mehr im scrollenden Form-Flow
+                // (vorher musste man die bis zu ~130 Eintraege lange Trefferliste
+                // ganz durchscrollen, um ihn ueberhaupt zu erreichen) — stattdessen
+                // unten verankert, unabhaengig vom Scroll-Stand der Suche. Exaktes
+                // Vorbild: ActiveWorkoutView.swift's RestTimerBar-safeAreaInset.
+                .safeAreaInset(edge: .bottom) {
+                    if let selectedEntry {
+                        quantityBottomBar(for: selectedEntry)
+                    }
                 }
+                .scrollContentBackground(.hidden)
+                .keyboardDismissToolbar()
             }
-            .scrollContentBackground(.hidden)
             .background(Color.Deltiq.background.ignoresSafeArea())
-            .navigationTitle(Text(editingMeal == nil ? "nutrition.addMeal.title" : "nutrition.editMeal.title", bundle: .module))
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             #endif
-            .keyboardDismissToolbar()
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    // Task 8: verwirft den MealDraft weiterhin kommentarlos
-                    // OHNE Entwurfsdaten (kein save()-Aufruf, keine Spur im
-                    // ModelContext) -- MIT Entwurfsdaten (siehe `isDirty`)
-                    // fragt derselbe Button jetzt erst per
-                    // `discardChangesConfirmation` nach.
-                    Button {
-                        isDirty ? (showingDiscardConfirm = true) : dismiss()
-                    } label: {
-                        Text("nutrition.addMeal.cancel", bundle: .module)
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        saveMeal()
-                    } label: {
-                        Text(editingMeal == nil ? "nutrition.addMeal.save" : "nutrition.editMeal.save", bundle: .module)
-                    }
-                    // UI-seitige Zusatz-Absicherung — die eigentlichen
-                    // Garantien (Doppeltap-Schutz, leere-Items-Guard) sitzen
-                    // in MealDraft.save() selbst.
-                    .disabled(draft.didSaveSuccessfully || draft.items.isEmpty)
-                }
-            }
+            .navigationBarBackButtonHidden(true)
+            // Issue #5: swipe-back in push context — blocked when dirty, enabled when clean.
+            // No-op in sheet context (no UINavigationController to attach to).
+            .deltiqSwipeBackEnabled(!isDirty)
             .confirmationDialog(
                 Text("nutrition.editMeal.deleteConfirm", bundle: .module),
                 isPresented: $showingDeleteConfirm,
@@ -240,7 +272,21 @@ public struct AddMealView: View {
                 OnlineFoodCandidatePreviewSheet(
                     candidate: candidate,
                     onConfirm: { confirmOnlineImport($0) },
-                    onCancel: { onlineSearch.dismissPreview() }
+                    onCancel: { onlineSearch.dismissPreview() },
+                    // OFF-01: manueller Weg aus der Vorschau heraus, wenn
+                    // die Datenlage fuer einen Import nicht reicht.
+                    onCreateManually: { prefill in
+                        let origin = onlineSearchOrigin
+                        onlineSearch.dismissPreview()
+                        onlineSearch.reset()
+                        barcodeLookup.reset()
+                        onlineSearchOrigin = nil
+                        if case .aiCandidate(let pending) = origin {
+                            removeAICandidate(pending)
+                        }
+                        customFoodPrefillName = prefill.trimmingCharacters(in: .whitespacesAndNewlines)
+                        showingCustomFoodEntry = true
+                    }
                 )
             }
             // Task 6: manuelles Anlegen — `CustomFoodEntrySheet` persistiert
@@ -259,7 +305,27 @@ public struct AddMealView: View {
                     }
                 )
             }
-        }
+            // Task: Barcode-Scan — `BarcodeScannerSheet` closes itself (via
+            // `onCancel`/`onDetect`) before the preview sheet above ever
+            // opens, so the two sheets never fight for presentation.
+            .sheet(isPresented: $showingBarcodeScanner) {
+                BarcodeScannerSheet(
+                    onDetect: handleBarcodeDetected,
+                    onCancel: { showingBarcodeScanner = false }
+                )
+            }
+            // UX-Katalog-Erweiterung (Spec 2.3): derselbe Settings-Screen,
+            // ueber den das Opt-in auch regulaer erreichbar ist — kein
+            // zweiter/erfundener Navigationspfad.
+            .sheet(isPresented: $showingDataConnectionsSettings) {
+                SettingsDataConnectionsView()
+            }
+            .onChange(of: searchText) { _, _ in
+                localResultsDisplayLimit = Self.localResultsPageSize
+            }
+            .onChange(of: selectedCategory) { _, _ in
+                localResultsDisplayLimit = Self.localResultsPageSize
+            }
     }
 
     // MARK: Sections
@@ -289,18 +355,40 @@ public struct AddMealView: View {
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
+    /// UX-Katalog-Erweiterung: neue Reihenfolge (Spec 2.1) — Suchfeld,
+    /// Barcode-Einstieg (jederzeit sichtbar, direkt unter dem Suchfeld),
+    /// Kategorie-Chips, dann Beliebt-Auswahl/lokale Treffer/Online-Fallback.
+    /// `customFoodButton` wandert ans Ende (Spec 2.6: soll Suche+Scanner nicht
+    /// visuell ueberladen).
+    ///
+    /// Wichtig fuer die Bestandstests (`OnlineFoodLookupFlowTests`): die hier
+    /// INLINE stehende `onlineFoodLookupEnabled`-Pruefung (manuelle
+    /// Suchergebnisse) muss im Datei-Text weiterhin VOR jeder anderen
+    /// gleichlautenden Pruefung stehen — `barcodeEntryRow`s eigene Pruefung
+    /// ist deshalb absichtlich eine SEPARATE, WEITER UNTEN in dieser Datei
+    /// definierte Property, obwohl sie visuell weiter oben erscheint.
     private var searchSection: some View {
         Section {
             searchField
                 .listRowBackground(Color.Deltiq.surface)
 
-            // Task 6: jederzeit sichtbar — NICHT nur im 0-Treffer-Zweig
-            // darunter (Brief-Vorgabe) — unabhaengig von Netz/KI, deshalb
-            // ausserhalb des `onlineFoodLookupEnabled`-Gates.
-            customFoodButton
+            barcodeEntryRow
+
+            categoryChipsRow
                 .listRowBackground(Color.Deltiq.surface)
 
-            if filteredEntries.isEmpty {
+            if isBrowsingWithoutQuery {
+                // Spec 2.4: kein leeres Suchfeld rendert mehr den gesamten
+                // `catalogEntries`-Katalog — stattdessen eine kleine,
+                // deterministische Auswahl stabiler Katalog-IDs.
+                Text("nutrition.addMeal.popularSection", bundle: .module)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+                ForEach(popularEntries) { entry in
+                    catalogRow(entry)
+                }
+            } else if filteredEntries.isEmpty {
                 Text("nutrition.addMeal.noResults", bundle: .module)
                     .foregroundStyle(Color.Deltiq.textSecondary)
                     .listRowBackground(Color.Deltiq.surface)
@@ -327,31 +415,57 @@ public struct AddMealView: View {
                                 .listRowBackground(Color.Deltiq.surface)
                         }
 
-                        OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
+                        OnlineFoodResultsList(
+                            candidates: onlineSearch.candidates,
+                            onSelect: onlineSearch.select,
+                            hasMore: onlineSearch.hasMoreResults,
+                            isLoadingMore: onlineSearch.isLoadingMore,
+                            onLoadMore: { runLoadMore(origin: .manual) }
+                        )
                     }
                 }
             } else {
-                // DEL-Picker-Muster (siehe ExerciseLibraryView.filtered):
-                // Live-Filter ueber die aufgeloeste Katalog-Bezeichnung.
-                ForEach(filteredEntries) { entry in
+                // Spec 2.5: bei groesserer Treffermenge nicht alle auf einmal
+                // rendern — begrenzte Anzeige mit "Weitere lokale Treffer".
+                ForEach(filteredEntries.prefix(localResultsDisplayLimit)) { entry in
+                    catalogRow(entry)
+                }
+                if filteredEntries.count > localResultsDisplayLimit {
                     Button {
-                        selectEntry(entry)
+                        localResultsDisplayLimit += Self.localResultsPageSize
                     } label: {
-                        HStack {
-                            Text(resolvedName(for: entry))
-                                .foregroundStyle(Color.primary)
-                            Spacer()
-                            if selectedEntry?.catalogID == entry.catalogID {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(Color.deltiqOrange)
-                            }
-                        }
+                        Text("nutrition.addMeal.loadMoreLocal", bundle: .module)
                     }
                     .listRowBackground(Color.Deltiq.surface)
                 }
             }
+
+            // Task 6: jederzeit sichtbar, unabhaengig von Netz/KI — ans Ende
+            // verschoben (Spec 2.6), damit Suchfeld+Scanner-Karte oben nicht
+            // visuell ueberladen werden.
+            customFoodButton
+                .listRowBackground(Color.Deltiq.surface)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// Eine Trefferzeile (Beliebt-Liste UND gefilterte lokale Treffer teilen
+    /// sich dieselbe Zeilen-Darstellung).
+    private func catalogRow(_ entry: FoodCatalogEntry) -> some View {
+        Button {
+            selectEntry(entry)
+        } label: {
+            HStack {
+                Text(resolvedName(for: entry))
+                    .foregroundStyle(Color.primary)
+                Spacer()
+                if selectedEntry?.catalogID == entry.catalogID {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.deltiqOrange)
+                }
+            }
+        }
+        .listRowBackground(Color.Deltiq.surface)
     }
 
     /// Task 3 (docs/superpowers/sdd/2026-10-22-ui-consistency): same
@@ -407,6 +521,133 @@ public struct AddMealView: View {
             }
         }
         .disabled(onlineSearch.isSearching)
+    }
+
+    /// UX-Katalog-Erweiterung (Spec 2.1/2.2): prominente Aktionskarte direkt
+    /// unter dem Suchfeld — vorher ein einfacher Text-Button ganz unten
+    /// hinter der lokalen Trefferliste (`barcodeScanButton`, siehe Git-
+    /// History). Oeffnet weiterhin denselben `BarcodeScannerSheet`; `reset()`
+    /// vorher stellt sicher, dass ein erneuter Scan nach einem Fehler/Erfolg
+    /// wieder genau einen Barcode verarbeitet (`BarcodeLookupController
+    /// .hasStartedLookup`). Jederzeit sichtbar, auch bei lokalen Treffern
+    /// (Spec 2.2 letzter Punkt) — liegt deshalb AUSSERHALB von
+    /// `filteredEntries.isEmpty` in `searchSection`.
+    ///
+    /// Spec 2.3: bei deaktiviertem Online-Opt-in weder Kamera noch
+    /// Netzwerkzugriff — stattdessen ein Hinweis mit Link auf die
+    /// bestehende Einstellungen-Seite, an DERSELBEN Stelle (nicht
+    /// unsichtbar).
+    @ViewBuilder
+    private var barcodeEntryRow: some View {
+        if onlineFoodLookupEnabled {
+            Button {
+                barcodeLookup.reset()
+                onlineSearchOrigin = .barcode
+                showingBarcodeScanner = true
+            } label: {
+                barcodeCardLabel(subtitle: String(localized: "nutrition.barcode.scanSubtitle", bundle: .module), isLookingUp: barcodeLookup.isLookingUp)
+            }
+            .buttonStyle(.plain)
+            .disabled(barcodeLookup.isLookingUp)
+            .accessibilityLabel(Text("nutrition.barcode.scanAction", bundle: .module))
+            .accessibilityHint(Text("nutrition.barcode.scanSubtitle", bundle: .module))
+            .listRowBackground(Color.deltiqOrange.opacity(0.10))
+
+            if onlineSearchOrigin == .barcode, let message = barcodeLookup.errorMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                barcodeCardLabel(subtitle: String(localized: "nutrition.barcode.requiresOptIn", bundle: .module), isLookingUp: false)
+                    .opacity(0.6)
+                Button {
+                    showingDataConnectionsSettings = true
+                } label: {
+                    Text("nutrition.barcode.openSettings", bundle: .module)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.deltiqOrange)
+                }
+                .buttonStyle(.plain)
+            }
+            .listRowBackground(Color.Deltiq.fill)
+        }
+    }
+
+    /// Gemeinsames Label fuer beide `barcodeEntryRow`-Zustaende — grosse
+    /// Touch-Flaeche, Icon+Titel+Untertitel (Spec 2.2: "keine winzige
+    /// Icon-only-Flaeche"), Dynamic-Type-faehig ueber Standard-`Text`-Fonts.
+    private func barcodeCardLabel(subtitle: String, isLookingUp: Bool) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: "barcode.viewfinder")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(Color.Deltiq.primaryGradient)
+                .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("nutrition.barcode.scanAction", bundle: .module)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Color.primary)
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+            }
+
+            Spacer(minLength: 8)
+
+            if isLookingUp {
+                ProgressView()
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.Deltiq.textTertiary)
+            }
+        }
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+    }
+
+    /// UX-Katalog-Erweiterung (Spec 2.5): kompakte, horizontal scrollbare
+    /// Kategorie-Chips — nutzt `FoodCategory`/dessen vorhandene
+    /// Localization-Keys, keine zweite Kategorie-Definition. Ein "Alle"-Chip
+    /// macht das Zuruecksetzen eines aktiven Filters eindeutig erkennbar,
+    /// statt sich auf verstecktes erneutes Antippen zu verlassen.
+    private var categoryChipsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                categoryChip(nil, label: String(localized: "nutrition.addMeal.category.all", bundle: .module))
+                ForEach(FoodCategory.allCases, id: \.self) { category in
+                    categoryChip(category, label: categoryLabel(category))
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func categoryChip(_ category: FoodCategory?, label: String) -> some View {
+        let isSelected = selectedCategory == category
+        return Button {
+            selectedCategory = category
+        } label: {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .lineLimit(1)
+                .foregroundStyle(isSelected ? Color.white : Color.primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(isSelected ? Color.deltiqOrange : Color.Deltiq.fill)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func categoryLabel(_ category: FoodCategory) -> String {
+        String(localized: String.LocalizationValue(category.localizationKey), bundle: .module)
     }
 
     /// Task 6: oeffnet `CustomFoodEntrySheet`, vorausgefuellt mit dem
@@ -518,41 +759,7 @@ public struct AddMealView: View {
                 // style as an independently tappable hit target.
                 .buttonStyle(.borderless)
 
-                // Task 5 (docs/superpowers/sdd/2026-10-22-online-food-lookup):
-                // second entry point for Task 4's online lookup — same
-                // `onlineFoodLookupEnabled` gate, same shared `onlineSearch`
-                // controller/components, prefilled with this candidate's
-                // `foodText` instead of the manual search field.
-                if onlineFoodLookupEnabled {
-                    Button {
-                        runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)
-                    } label: {
-                        HStack {
-                            if onlineSearch.isSearching && onlineSearchOrigin == .aiCandidate(candidate) {
-                                ProgressView()
-                                    .controlSize(.small)
-                            }
-                            Text("nutrition.addMeal.onlineSearch.action", bundle: .module)
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .disabled(onlineSearch.isSearching)
-
-                    // I1 fix: with several unmatched candidates sharing this
-                    // one controller, only render THIS candidate's results/
-                    // error under THIS row — never under every unmatched
-                    // candidate, and never here while the manual search
-                    // entry point is the one active.
-                    if onlineSearchOrigin == .aiCandidate(candidate) {
-                        if let message = onlineSearch.errorMessage {
-                            Text(message)
-                                .font(.caption)
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-
-                        OnlineFoodResultsList(candidates: onlineSearch.candidates, onSelect: onlineSearch.select)
-                    }
-                }
+                onlineSearchFallback(for: candidate)
 
                 // Task 6: dritter, von Netz/KI unabhaengiger Einstiegspunkt
                 // fuer EXAKT diesen Kandidaten — vorausgefuellt mit
@@ -589,6 +796,17 @@ public struct AddMealView: View {
                         .buttonStyle(.borderless)
                     }
                 }
+                // Bugfix (writing-block.md 7.2, "Online-Suche muss immer als
+                // Alternative verfuegbar sein"): previously this entry point
+                // only existed in the `hasNoCatalogMatch` branch above — a
+                // candidate with SEVERAL local matches (e.g. "Haehnchenbrust"/
+                // "Haehnchenkeule" for "Haehnchen") had no way out if NONE of
+                // them was the right variant (the ticket's own example:
+                // "Haehnchenfluegel" missing from the local catalog). Local
+                // search stays tried first (the matches above are still
+                // shown); online search only ADDS an escape hatch at the
+                // bottom, it never replaces the local list.
+                onlineSearchFallback(for: candidate)
             } else if let match = candidate.matches.first,
                       let entry = catalogEntries.first(where: { $0.catalogID == match.catalogID }) {
                 Button {
@@ -599,6 +817,52 @@ public struct AddMealView: View {
             }
         }
         .listRowBackground(Color.Deltiq.surface)
+    }
+
+    /// Online-Such-Einstiegspunkt fuer EINEN AI-Kandidaten — ausgelagert aus
+    /// `aiCandidateRow`, weil er jetzt aus ZWEI Zweigen aufgerufen wird
+    /// (`hasNoCatalogMatch` UND `isAmbiguous`, siehe dortiger 7.2-Kommentar),
+    /// statt ihn ein zweites Mal hinzuschreiben.
+    @ViewBuilder
+    private func onlineSearchFallback(for candidate: MealDraftCandidate) -> some View {
+        // Task 5 (docs/superpowers/sdd/2026-10-22-online-food-lookup): selber
+        // `onlineFoodLookupEnabled`-Gate, selber geteilter `onlineSearch`-
+        // Controller/dieselben Komponenten wie der manuelle Such-Einstieg.
+        if onlineFoodLookupEnabled {
+            Button {
+                runOnlineSearch(origin: .aiCandidate(candidate), query: candidate.foodText)
+            } label: {
+                HStack {
+                    if onlineSearch.isSearching && onlineSearchOrigin == .aiCandidate(candidate) {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Text("nutrition.addMeal.onlineSearch.action", bundle: .module)
+                }
+            }
+            .buttonStyle(.borderless)
+            .disabled(onlineSearch.isSearching)
+
+            // I1 fix: mit mehreren Kandidaten, die sich diesen EINEN
+            // Controller teilen, werden Ergebnisse/Fehler nur unter GENAU
+            // diesem Kandidaten gerendert — nie unter jedem Kandidaten, und
+            // nie hier, waehrend der manuelle Such-Einstieg der aktive ist.
+            if onlineSearchOrigin == .aiCandidate(candidate) {
+                if let message = onlineSearch.errorMessage {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+
+                OnlineFoodResultsList(
+                    candidates: onlineSearch.candidates,
+                    onSelect: onlineSearch.select,
+                    hasMore: onlineSearch.hasMoreResults,
+                    isLoadingMore: onlineSearch.isLoadingMore,
+                    onLoadMore: { runLoadMore(origin: .aiCandidate(candidate)) }
+                )
+            }
+        }
     }
 
     /// Task A: Ersatz fuer das vormalige `quantitySection(for:)` — lebt jetzt
@@ -673,17 +937,67 @@ public struct AddMealView: View {
 
     private var itemsSection: some View {
         Section {
+            // NUT-01: Ist der Edit committet, aber der Cleanup offen, zeigt
+            // die Positionen-Liste den GESPEICHERTEN Stand (alte + neue) —
+            // nicht den Entwurf, der nach einem Retry schon anders aussieht.
+            if showsStoredStateInsteadOfDraft {
+                // Alte (noch nicht entfernte) Positionen — nur per
+                // mitgesicherten Werten, keine Objekt-Referenz.
+                ForEach(draft.pendingCleanupSummaries) { stale in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(stale.name)
+                                .foregroundStyle(Color.primary)
+                            Text("\(stale.quantity.truncated(to: 2).formattedTwoDecimals) \(unitLabel(stale.unit))")
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Spacer()
+                        Text(NutritionDisplay.text(stale.kcal, unit: "kcal", decimals: 0))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
+                }
+                ForEach(draft.items) { item in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            // writing-block.md Punkt 6: katalogbasierte Namen
+                            // folgen der aktuellen App-Sprache, nicht dem bei
+                            // `addItem` eingefrorenen Snapshot.
+                            Text(resolvedMealItemName(nameSnapshot: item.nameSnapshot, catalogID: item.catalogID, catalogEntries: catalogEntries))
+                                .foregroundStyle(Color.primary)
+                            Text("\(item.quantity.truncated(to: 2).formattedTwoDecimals) \(unitLabel(item.unit))")
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Spacer()
+                        Text(NutritionDisplay.text(item.nutrients.kcal, unit: "kcal", decimals: 0))
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
+                }
+                Text("nutrition.addMeal.saveFailed.cleanupMessage", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            } else {
             ForEach(draft.items) { item in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(item.nameSnapshot)
+                        // writing-block.md Punkt 6: siehe Kommentar im
+                        // `showsStoredStateInsteadOfDraft`-Zweig oben.
+                        Text(resolvedMealItemName(nameSnapshot: item.nameSnapshot, catalogID: item.catalogID, catalogEntries: catalogEntries))
                             .foregroundStyle(Color.primary)
                         Text("\(item.quantity.truncated(to: 2).formattedTwoDecimals) \(unitLabel(item.unit))")
                             .font(.caption)
                             .foregroundStyle(Color.Deltiq.textSecondary)
                     }
                     Spacer()
-                    Text("\(item.nutrients.kcal.truncated(to: 0).formattedTwoDecimals) kcal")
+                    // OFF-01: ein unbekannter Naehrwert darf nicht als 0 in
+                    // der Positionszeile erscheinen.
+                    Text(NutritionDisplay.text(item.nutrients.kcal, unit: "kcal", decimals: 0))
                         .foregroundStyle(Color.Deltiq.textSecondary)
                         .fitnessNumberStyle()
                 }
@@ -696,6 +1010,7 @@ public struct AddMealView: View {
                 for index in offsets {
                     draft.removeItem(id: draft.items[index].id)
                 }
+            }
             }
         } header: {
             Text("nutrition.addMeal.positionsSection", bundle: .module)
@@ -712,17 +1027,25 @@ public struct AddMealView: View {
             previewRow(String(localized: "nutrition.goals.protein.label", bundle: .module), value: total.proteinG)
             previewRow(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: total.carbsG)
             previewRow(String(localized: "nutrition.goals.fat.label", bundle: .module), value: total.fatG)
+            // OFF-01: sagt an der Vorschau, dass mindestens eine Position
+            // einen unbekannten Wert enthaelt (die Summe ist dann „-").
+            if total.partiallyKnown {
+                Text("nutrition.day.total.incomplete", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .listRowBackground(Color.Deltiq.surface)
+            }
         } header: {
             Text("nutrition.addMeal.previewSection", bundle: .module)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
     }
 
-    private func previewRow(_ label: String, value: Double) -> some View {
+    private func previewRow(_ label: String, value: KnownValue) -> some View {
         HStack {
             Text(label).foregroundStyle(Color.primary)
             Spacer()
-            Text(value.truncated(to: 2).formattedTwoDecimals)
+            Text(NutritionDisplay.text(value))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .fitnessNumberStyle()
         }
@@ -795,10 +1118,50 @@ public struct AddMealView: View {
             || draft.mealType != mealTypeAtOpen
     }
 
+    /// NUT-01: Die Positionen, die der Store tatsaechlich enthaelt, fuer eine
+    /// Mahlzeit im Edit-Modus. Vor dem ersten Speichern (`itemsVersion == 0`)
+    /// ist der Entwurf die einzige Quelle; danach (Cleanup-Fehler, Retry)
+    /// zeigt die Ansicht den gespeicherten Stand.
+    /// NUT-01: `true`, solange der Edit committet ist, aber die alten
+    /// Positionen noch im Store stehen — die Ansicht zeigt den gespeicherten
+    /// Stand (alte + neue) und erklaert das.
+    private var showsStoredStateInsteadOfDraft: Bool {
+        editingMeal != nil && draft.hasPendingCleanup
+    }
+
+    /// Spec 2.4: stabile, bereits vorhandene Katalog-IDs fuer die
+    /// "Beliebt"-Schnellauswahl — keine erfundene Nutzungs-Historie/
+    /// Persistenzschicht, eine feste, deterministische Auswahl stattdessen.
+    private static let popularCatalogIDs: [String] = [
+        "chicken_breast_cooked", "egg_whole_cooked", "banana", "oats",
+        "rice_white_cooked", "yogurt_greek", "apple", "bread_wheat"
+    ]
+
+    /// Spec 2.5: Startgroesse/Schrittweite fuer "Weitere lokale Treffer".
+    private static let localResultsPageSize = 30
+
+    private var popularEntries: [FoodCatalogEntry] {
+        Self.popularCatalogIDs.compactMap { id in catalogEntries.first { $0.catalogID == id } }
+    }
+
+    /// Spec 2.4: `true`, solange weder ein Suchtext noch ein Kategorie-Filter
+    /// aktiv ist — in diesem Zustand zeigt `searchSection` `popularEntries`
+    /// statt des gesamten Katalogs oder `filteredEntries`.
+    private var isBrowsingWithoutQuery: Bool {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedCategory == nil
+    }
+
+    /// Spec 2.5: eine ausgewaehlte Kategorie filtert den Katalog auch ohne
+    /// Suchtext; ein Suchtext filtert zusaetzlich ueber den aufgeloesten
+    /// Namen. Wird nur konsultiert, wenn `isBrowsingWithoutQuery == false`.
     private var filteredEntries: [FoodCatalogEntry] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return catalogEntries }
-        return catalogEntries.filter { resolvedName(for: $0).localizedCaseInsensitiveContains(trimmed) }
+        var items = catalogEntries
+        if let selectedCategory {
+            items = items.filter { $0.category == selectedCategory }
+        }
+        guard !trimmed.isEmpty else { return items }
+        return items.filter { resolvedName(for: $0).localizedCaseInsensitiveContains(trimmed) }
     }
 
     /// Task E (M2 in task-D-review.md): explicit `locale` instead of
@@ -923,6 +1286,43 @@ public struct AddMealView: View {
         }
     }
 
+    /// Pagination: "load more" for whichever row (`origin`) currently owns
+    /// `onlineSearch`'s shared state — same reuse principle as
+    /// `runOnlineSearch`, no duplicated flow logic per entry point.
+    private func runLoadMore(origin: OnlineSearchOrigin) {
+        guard onlineSearchOrigin == origin else { return }
+        Task { @MainActor in
+            await onlineSearch.loadMore(errorText: onlineSearchErrorText)
+        }
+    }
+
+    /// Barcode-scan result handler: closes the scanner, then runs the SAME
+    /// Open-Food-Facts product lookup `barcodeEntryRow` started, routed
+    /// through `BarcodeLookupController`'s own double-processing guard.
+    private func handleBarcodeDetected(_ barcode: String) {
+        showingBarcodeScanner = false
+        Task { @MainActor in
+            await barcodeLookup.process(barcode: barcode, errorText: barcodeErrorText)
+            // Final-review-fix I1's principle applied here too: `select`
+            // routes into the SAME preview/confirm sheet as a text-search
+            // tap, so a barcode hit never bypasses the explicit confirm step.
+            if let candidate = barcodeLookup.foundCandidate {
+                onlineSearch.select(candidate)
+            }
+        }
+    }
+
+    private func barcodeErrorText(_ error: OnlineFoodSearchError) -> String {
+        switch error {
+        case .noNetwork:
+            return String(localized: "nutrition.addMeal.onlineSearch.noNetwork", bundle: .module)
+        case .noResults:
+            return String(localized: "nutrition.barcode.notFound", bundle: .module)
+        case .rateLimited, .invalidResponse:
+            return String(localized: "nutrition.addMeal.onlineSearch.error", bundle: .module)
+        }
+    }
+
     /// Confirm in `OnlineFoodCandidatePreviewSheet`: creates exactly ONE
     /// `FoodCatalogEntry` (`source == .onlineImported`) and routes it into
     /// the SAME `selectEntry`/`applyAICandidate` -> `quantityBottomBar` ->
@@ -937,6 +1337,9 @@ public struct AddMealView: View {
     /// dropped to `nil`, exactly like `applyAICandidate` already does for a
     /// normal catalog match. Reusing `applyAICandidate` itself (instead of
     /// duplicating that carry-over logic here) guarantees both.
+    /// OFF-01: Fehlende Naehrwerte werden als `nil` (unbekannt) gespeichert —
+    /// `FoodCatalogEntry`/`MealItem` unterscheiden das ueber eine additive
+    /// Bitzmaske. Es gibt hier bewusst KEIN `?? 0`.
     private func confirmOnlineImport(_ values: OnlineFoodImportValues) {
         let entry = FoodCatalogEntry(
             displayName: values.name,
@@ -951,6 +1354,7 @@ public struct AddMealView: View {
         let origin = onlineSearchOrigin
         onlineSearch.dismissPreview()
         onlineSearch.reset()
+        barcodeLookup.reset()
         onlineSearchOrigin = nil
 
         if case .aiCandidate(let candidate) = origin {
@@ -965,8 +1369,20 @@ public struct AddMealView: View {
         switch result {
         case .success:
             dismiss()
-        case .failure:
-            saveErrorMessage = String(localized: "nutrition.addMeal.saveFailed.message", bundle: .module)
+        case .failure(let error):
+            // NUT-01: Der Edit selbst (Datum/Typ + Positionen) IST gespeichert,
+            // nur das Entfernen der alten Positionen ist gescheitert — dann
+            // nicht „nichts geändert" behaupten, sondern den gespeicherten
+            // Stand benennen (eigener Hinweis-Key). Das Sheet bleibt offen,
+            // weil `draft.save()` beim nächsten Tap erneut aufräumt
+            // (`finishPendingCleanup`), statt Positionen zu duplizieren.
+            saveErrorMessage = error is MealDraftItemCleanupError
+                ? String(localized: "nutrition.addMeal.saveFailed.cleanupMessage", bundle: .module)
+                : String(localized: "nutrition.addMeal.saveFailed.message", bundle: .module)
+            // Ein erneuter Tap ist nach dem Fehler wieder möglich: der Button
+            // war per `didSaveSuccessfully` deaktiviert, das ist für den
+            // Cleanup-Retry nicht sinnvoll.
+            draft.enableRetryAfterFailedCleanup()
         }
     }
 
@@ -976,6 +1392,9 @@ public struct AddMealView: View {
     /// reisst alle `MealItem`s also automatisch mit.
     private func deleteMeal() {
         guard let editingMeal else { return }
+        // NUT-01: Offener Cleanup haette nach dem Loeschen nichts mehr zu
+        // adressieren — die Positionen gehen per Cascade mit.
+        draft.clearPendingCleanupAfterDelete()
         modelContext.delete(editingMeal)
         do {
             try modelContext.save()
@@ -987,13 +1406,9 @@ public struct AddMealView: View {
 
     // MARK: Localization helpers
 
-    private func resolvedName(for entry: FoodCatalogEntry) -> String {
-        // Online-importierte/manuell angelegte Eintraege haben einen
-        // Klartext-Namen statt eines xcstrings-Keys (kein Lokalisierungs-
-        // Key fuer vom Nutzer/einer Online-Quelle stammenden Text) — der hat
-        // Vorrang vor `nameKey`.
-        entry.displayName ?? String(localized: String.LocalizationValue(entry.nameKey), bundle: .module)
-    }
+    // `resolvedName(for:)` moved to `Extensions/FoodCatalogEntry+DisplayName.swift`
+    // (writing-block.md Punkt 6) — `NutritionDayView` needs the identical
+    // logic, now a shared top-level function instead of a second copy.
 
     private func mealTypeLabel(_ type: MealType) -> String {
         String(localized: String.LocalizationValue(type.localizationKey), bundle: .module)

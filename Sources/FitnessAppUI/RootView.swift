@@ -118,6 +118,13 @@ public struct RootView: View {
             // could ever be added. Idempotent — fetchCount short-circuits
             // when rows already exist, same as LibrarySeeder above.
             FoodCatalogSeeder.seedIfNeeded(in: modelContext)
+            // UX-Katalog-Erweiterung: Backfill fuer System-Katalogeintraege,
+            // die NACH dem ersten Seed hinzugekommen sind (130 -> 234
+            // Eintraege) — ohne das waeren sie fuer jeden Bestandsnutzer
+            // dauerhaft unsichtbar, weil `seedIfNeeded` einen nicht-leeren
+            // Katalog nie erneut befuellt. Idempotent — Diff gegen bereits
+            // vorhandene `.seeded`-catalogIDs.
+            FoodCatalogSeeder.backfillNewCatalogEntriesIfNeeded(in: modelContext)
             // README 2.35: Backfill fuer Library-Eintraege, die NACH dem
             // ersten Seed hinzugekommen sind (z.B. "Lauf-Intervall"/
             // "Rad-Intervall") - ohne das waeren sie fuer jeden
@@ -300,8 +307,28 @@ struct MainTabView: View {
             // main-navigation Plan, 2026-10-22, Task 1: eigener Ernaehrungs-
             // Tab zwischen Training und Fortschritt, statt nur ueber die
             // Dashboard-Kachel erreichbar zu sein.
-            NavigationStack {
+            // Phase 4.1 (2026-10-31): path-bound auf `nutritionPath` analog zu
+            // `toolsPath`; navigationDestination leitet `.planner` → MealPlannerView.
+            NavigationStack(path: $navigation.nutritionPath) {
                 NutritionDayView(isTabRoot: true)
+                    .navigationDestination(for: MealPlannerRoute.self) { route in
+                        switch route {
+                        case .planner:
+                            MealPlannerView()
+                        case .goals:
+                            NutritionGoalsView()
+                        case .recipeDetail(let recipeID, let mealType, let portionMultiplier, let date):
+                            RecipeDetailView(recipeID: recipeID, mealType: mealType, initialPortionMultiplier: portionMultiplier, date: date)
+                        }
+                    }
+                    .navigationDestination(for: AddMealRoute.self) { route in
+                        switch route {
+                        case .addMeal(let date, let mealType):
+                            AddMealView(date: date, mealType: mealType)
+                        case .editMeal(let meal):
+                            AddMealView(editing: meal)
+                        }
+                    }
             }
             .tabItem {
                 Label {

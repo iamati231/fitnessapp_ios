@@ -35,6 +35,33 @@ struct SetRow: View {
     let session: WorkoutSession
     let existingLog: ExerciseLog?
     let previousLog: ExerciseLog?
+    /// Task 8 (laufcoaching-remediation-round-2, Decision 1): Laufcoach
+    /// an/aus, live aus `ActiveWorkoutView`s `@Query private var profiles`
+    /// durchgereicht (ueber `ExerciseCard`) - NIE auf `content` (dem
+    /// eingefrorenen Session-Inhalt) oder in eigenem State zwischengespeichert,
+    /// damit eine Profil-Aenderung waehrend der offenen Session sofort
+    /// greift. Gleiche Gating-Rolle wie `PlanBuilderView.scopeLine`s
+    /// `cardioCoachingEnabled`-Check (Review Focus 1: Coach aus -> keine
+    /// Verhaltensaenderung).
+    let cardioCoachingEnabled: Bool
+    /// Task 8: 5-km-Referenzzeit, ebenfalls live aus `profiles.first?.
+    /// current5kReferenceSeconds` durchgereicht - siehe `cardioCoachingEnabled`
+    /// oben fuer die "live, nicht eingefroren"-Begruendung.
+    let current5kReferenceSeconds: Int?
+    /// Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2: `true`
+    /// fuer `session.day?.plan?.generationSource != .manual` (ODER
+    /// `.planBuilder` ODER `.cardioCoach`), `false` fuer `.manual`
+    /// (Template-instanziiert) ODER unbekannte Quelle (`nil`). Reine
+    /// `== .cardioCoach`-Gate (erste Fassung) war zu eng: die beiden echten
+    /// Coach-Pfade (Onboarding, `PlanBuilderView`-Assistent) stempeln
+    /// `generationSource == .planBuilder`, nicht `.cardioCoach` (das steht
+    /// nur auf den "separaten neuen Plan erzeugen"-Fallback-Pfaden in
+    /// `CardioFeasibilityCardModel`) - mit der zu engen Gate haette die
+    /// Ziel-Pace fuer fast alle echten Nutzer nie angezeigt. `.manual`
+    /// (Template-Plaene, `ProgramTemplates.swift`) bleibt ausgeschlossen,
+    /// weil dort Uebungen namens "Long Run" eine komplett andere,
+    /// nicht-Tempo-Bedeutung tragen.
+    let isGeneratorPlan: Bool
     /// DEL-157: Log des Satzes DIREKT DARUEBER in DIESER Session. Dient als
     /// Seed-Quelle fuer dynamisch hinzugefuegte Saetze ("+ Satz") — der neue
     /// Satz erbt Gewicht/Reps/RIR vom darueberliegenden. `nil` fuer den
@@ -104,11 +131,7 @@ struct SetRow: View {
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
     @AppStorage("pref_bar_weight_kg") private var barWeightKgRaw: Double = 20
     /// Runde 10 (Settings → Training): "column" (Default, bisheriges
-    /// Verhalten unveraendert) vs. "classic" (neue, selbst-beschriftete
-    /// Darstellung ohne gemeinsamen Spaltenkopf). Gleicher Persistenz-
-    /// Mechanismus wie `weight_unit` — ueberlebt per `@AppStorage`/
-    /// `UserDefaults` jeden Kaltstart.
-    @AppStorage("pref_set_display_mode") private var setDisplayModeRaw: String = "column"
+    @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
 
     enum HoldState: Equatable {
         case idle
@@ -370,16 +393,9 @@ struct SetRow: View {
     /// kein zweites Logging-Modell, kein Datenwechsel.
     @ViewBuilder
     private var inputRow: some View {
-        if setDisplayModeRaw == "classic" {
-            ViewThatFits(in: .horizontal) {
-                classicSingleLineRow
-                classicTwoLineRow
-            }
-        } else {
-            ViewThatFits(in: .horizontal) {
-                singleLineInputRow
-                twoLineInputRow
-            }
+        ViewThatFits(in: .horizontal) {
+            classicSingleLineRow
+            classicTwoLineRow
         }
     }
 
@@ -398,9 +414,11 @@ struct SetRow: View {
             // eigenes, unmittelbar angrenzendes Inline-Label, damit die
             // Kapsel-Bedeutung ohne den (jetzt nicht mehr passenden)
             // Header-Platz eindeutig bleibt.
-            Text("set.column.rirLabel", bundle: .module)
-                .deltiqLabel()
-            rirCapsule
+            if showRirTooltips {
+                Text("set.column.rirLabel", bundle: .module)
+                    .deltiqLabel()
+                rirCapsule
+            }
             checkmarkButton
         }
     }
@@ -461,7 +479,7 @@ struct SetRow: View {
             labeledField(repsCaptionText) { repsInput }
             plateColumn
             Spacer(minLength: 6)
-            rirCapsule
+            if showRirTooltips { rirCapsule }
             checkmarkButton
         }
         .frame(minHeight: 44)
@@ -513,7 +531,7 @@ struct SetRow: View {
     /// breit ist.
     @ViewBuilder
     private var plateColumn: some View {
-        if isBarbellExercise {
+        if exercise.isBarbellExercise {
             let plateShown = (weight ?? 0) > 0
             plateCalculatorButton(weight: weight ?? 0)
                 .opacity(plateShown ? 1 : 0)
@@ -524,17 +542,7 @@ struct SetRow: View {
         }
     }
 
-    /// Signature-Geruest 2.17: Barbell-Detection nach demselben Fallback-
-    /// Muster wie `ExerciseCard.isBarbellExercise` — DEL-159-Override
-    /// gewinnt, sonst Library-Lookup ueber den System-Namen.
-    private var isBarbellExercise: Bool {
-        if let equipment = exercise.equipment {
-            return equipment == .barbell
-        }
-        return ExerciseLibraryData.all.first { $0.name == exercise.name }?.equipment == .barbell
-    }
-
-    /// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Korrektur
+/// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Korrektur
     /// post-Review: eigene Spalte (`plateColumn`) statt Overlay auf
     /// `weightInput` — das Overlay ueberdeckte dort die Gewichtszahl.
     /// Sichtbar (Opacity/HitTesting, Spaltenbreite bleibt reserviert) wenn
@@ -559,7 +567,7 @@ struct SetRow: View {
         // Bugfix: war hartcodiert deutsch ("Hantel-Aufladung anzeigen"),
         // nie uebersetzt.
         .accessibilityLabel(Text("activeSet.plateCalculator.accessibilityLabel", bundle: .module))
-        .popover(isPresented: $showingPlatePopover, arrowEdge: .top) {
+        .popover(isPresented: $showingPlatePopover) {
             PlatePopoverContent(
                 targetWeight: weight,
                 barWeight: barWeightKgRaw,
@@ -896,7 +904,7 @@ struct SetRow: View {
                         HStack {
                             Spacer()
                             Image(systemName: "play.fill")
-                            Text("Start")
+                            Text("baseline.timer.start", bundle: .module)
                                 .font(.headline)
                             Spacer()
                         }
@@ -1503,7 +1511,7 @@ struct SetRow: View {
     /// (z.B. "12:45 /km" Walk-Pace).
     private var cardioPaceLabel: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            Text("PACE").deltiqLabel()
+            Text("cardio.paceLabel", bundle: .module).deltiqLabel()
             Text(currentPace)
                 .font(.system(size: 14, weight: .bold, design: .rounded).monospacedDigit())
                 .foregroundStyle(Color.deltiqOrange)
@@ -1534,7 +1542,9 @@ struct SetRow: View {
     }
 
     /// Statuszeile unter den Inputs — abgeschlossener Set zeigt geloggtes
-    /// Resultat, editable State zeigt previous-Run-Hint (falls vorhanden).
+    /// Resultat, editable State zeigt previous-Run-Hint (falls vorhanden),
+    /// Task 8: sonst (noch nichts eingeloggt, kein vorheriger Lauf) die
+    /// Ziel-Pace des Tages, falls bestimmbar.
     @ViewBuilder
     private var cardioStatusZone: some View {
         if isCompleted, let log = existingLog {
@@ -1545,15 +1555,76 @@ struct SetRow: View {
         } else if let prev = previousLog,
                   prev.distanceKm != nil || prev.durationSeconds != nil {
             // Bug-Fix 2026-05-22: lokalisiert via active.set.previousFormat.
-            Text(String(format:
+            let previousText = String(format:
                 String(localized: "active.set.previousFormat", bundle: .module),
-                cardioPreviousHint(prev)))
+                cardioPreviousHint(prev))
+            // Fix I-3 (Final-Review, Round 2): die Ziel-Pace muss NEBEN dem
+            // "letztes Mal"-Hinweis sichtbar bleiben, nicht nur in dessen
+            // Abwesenheit - sonst verschwindet sie dauerhaft, sobald die
+            // Uebung einmal geloggt wurde (jede folgende, noch nicht
+            // geloggte Session traefe sonst immer zuerst diesen Zweig).
+            if let targetPaceHint {
+                let targetText = String(format:
+                    String(localized: "active.set.targetPaceFormat", bundle: .module),
+                    targetPaceHint)
+                Text("\(targetText) · \(previousText)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text(previousText)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else if let targetPaceHint {
+            Text(String(format:
+                String(localized: "active.set.targetPaceFormat", bundle: .module),
+                targetPaceHint))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             Color.clear
         }
+    }
+
+    /// Task 8 (Decision 1 - "Pace muss zum tatsaechlich uebernommenen
+    /// Trainingsinhalt passen"): dieselbe Gating-/Berechnungs-Logik wie
+    /// `PlanBuilderView.scopeLine`/`CardioFeasibilityDayRow.subtitle`
+    /// (Runde 1) - nur bei aktivem Coach, einer der beiden pace-tragenden
+    /// Lauf-Zonen (Easy/Tempo) UND einem Dauer-Ziel (der distanzbasierte
+    /// Intervall-Zweig traegt laut Task 3 nie eine Pace). Klassifiziert
+    /// ZWINGEND ueber `content.nameSnapshot` (stabiler Anker), NIE ueber
+    /// `content.customNameSnapshot` (user-umbenennbar) - Task 1s
+    /// Reviewer-Hinweis fuer genau diese Stelle.
+    ///
+    /// Fix round 1 (Review): der Fallback auf `cardioFeasibility.day.
+    /// paceUnknown` haengt am Ergebnis von `PaceZoneCalculator`, nicht nur
+    /// daran, ob `current5kReferenceSeconds` `nil` war - eine nicht-positive
+    /// Referenzzeit (`0`, oder kaputte/importierte Daten, siehe
+    /// `DataImportService.swift:746`) liess `PaceZoneCalculator.
+    /// easyPaceMinutesPerKm`/`.tempoPaceMinutesPerKm` ebenfalls `nil`
+    /// liefern (Divisions-Sicherheit, `CardioProfile.swift`), wodurch vorher
+    /// `PaceCalculator.formatPace(nil)` den rohen "—:—— /km"-Platzhalter
+    /// zurückgab statt des qualitativen Fallbacks - "keine falsch-praezise
+    /// Pace ohne Referenzzeit" gilt auch fuer eine UNBRAUCHBARE Referenzzeit.
+    /// Gleiches Muster wie `CardioFeasibilityDayRow.subtitle`, die ebenfalls
+    /// das BERECHNETE Pace-Ergebnis prueft, nicht nur die Eingabe.
+    private var targetPaceHint: String? {
+        guard content.isCardio, content.targetDurationMinutes != nil, cardioCoachingEnabled,
+              isGeneratorPlan else { return nil }
+        let zone = CardioExerciseZone.forExerciseName(content.nameSnapshot)
+        guard zone == .easy || zone == .tempo else { return nil }
+        let paceMinutesPerKm = current5kReferenceSeconds.flatMap { referenceSeconds in
+            zone == .easy
+                ? PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+                : PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+        }
+        guard let paceMinutesPerKm else {
+            return String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module)
+        }
+        return PaceCalculator.formatPace(paceMinutesPerKm)
     }
 
     private func cardioCompletedSummary(_ log: ExerciseLog) -> String {
@@ -1686,7 +1757,10 @@ private struct PlatePopoverContent: View {
                 Self.rememberBarType(newValue, for: exerciseName)
             }
 
-            Text("Stange: \(effectiveBarWeight.formattedWholeOrTwoDecimals) \(unit.rawValue)")
+            Text(String(
+                format: String(localized: "barbell.loading.barWeight", bundle: .module),
+                effectiveBarWeight.formattedWholeOrTwoDecimals, unit.rawValue
+            ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -1716,7 +1790,11 @@ private struct PlatePopoverContent: View {
             }
 
             if abs(actualWeight - targetWeight) > 0.01 {
-                Text("Erreichbar: \(actualWeight.formattedWholeOrTwoDecimals) \(unit.rawValue) (Δ \((actualWeight - targetWeight).formattedWholeOrTwoDecimals) \(unit.rawValue))")
+                Text(String(
+                    format: String(localized: "barbell.loading.reachable", bundle: .module),
+                    actualWeight.formattedWholeOrTwoDecimals, unit.rawValue,
+                    (actualWeight - targetWeight).formattedWholeOrTwoDecimals, unit.rawValue
+                ))
                     .font(.caption2)
                     .foregroundStyle(.orange)
             }

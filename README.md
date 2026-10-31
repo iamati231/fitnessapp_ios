@@ -21,7 +21,7 @@ iOS-App für **Krafttraining, Ausdauer und Körperwerte**: Trainingspläne plane
 
 ## 1. Was ist Deltiq?
 
-Deltiq begleitet dich von der Planung bis zur Auswertung: Du wählst oder baust einen Trainingsplan, führst das Training mit Satz-Logging, Pausen-Timer und Zeitformaten (AMRAP, EMOM, Auf Zeit, Zirkel) durch, siehst Rekorde, Trends und Coaching-Hinweise und behältst Gewicht, Körperfett und Wasserzufuhr im Blick. Die App braucht kein Konto und keinen Cloud-Dienst; der Quellcode enthält keine Netzwerkzugriffe.
+Deltiq begleitet dich von der Planung bis zur Auswertung: Du wählst oder baust einen Trainingsplan, führst das Training mit Satz-Logging, Pausen-Timer und Zeitformaten (AMRAP, EMOM, Auf Zeit, Zirkel) durch, siehst Rekorde, Trends und Coaching-Hinweise und behältst Gewicht, Körperfett und Wasserzufuhr im Blick. Die App braucht kein Konto und keinen Cloud-Dienst und ist lokal ausgerichtet; einzige Ausnahme ist die optionale Online-Lebensmittelsuche, die nach Aktivierung Suchanfragen per HTTPS an Open Food Facts sendet.
 
 | | |
 |---|---|
@@ -403,7 +403,7 @@ Die Erinnerungen werden nach dem Onboarding, nach Imports und Backup-Wiederherst
 
 - **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1806 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/FitnessApp/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Rest-Timer-Live-Activity (die Live Activity der Zeitformate folgt der App-Sprache), einige Hinweis- und Fehlermeldungen.
 - **Design:** Akzentfarbe Orange; Erscheinungsbild System, Hell oder Dunkel.
-- **Datenschutz:** alle Daten bleiben lokal. Die App fragt **keinen** Zugriff auf Kamera, Fotos, Standort oder Mikrofon an und nutzt kein Netzwerk. Berechtigungen im Überblick: [6.2](#62-voraussetzungen-und-berechtigungen).
+- **Datenschutz:** alle Daten bleiben lokal. Die App fragt **keinen** Zugriff auf Kamera, Fotos, Standort oder Mikrofon an und braucht standardmäßig kein Netzwerk; nur die optionale Online-Lebensmittelsuche (Einstellungen → Verbindungen) sendet nach Aktivierung Suchanfragen an Open Food Facts. Berechtigungen im Überblick: [6.2](#62-voraussetzungen-und-berechtigungen).
 
 ---
 
@@ -432,7 +432,7 @@ Hinweise: Für *interne* Tester verlangt Apple einen Eintrag im App-Store-Connec
 | Apple Health – Trainings lesen | gehört zum Verbinden-Dialog (zusammen mit dem Schreiben); beim Einschalten von *Workout-Import* nur, wenn iOS „Trainings“ noch nicht gefragt hat | Läufe/Radfahrten anderer Apps importieren; Doppelte beim Export vermeiden |
 | Live Activities | in den iOS-Einstellungen | Pausen-Timer auf Sperrbildschirm/Dynamic Island |
 
-Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder Netzwerk.
+Keine Berechtigung benötigt die App für Kamera, Fotos, Standort oder Mikrofon. Netzwerk braucht nur die optionale, standardmäßig deaktivierte Online-Lebensmittelsuche (Einstellungen → Verbindungen) – ohne OS-Berechtigungsdialog, da HTTPS-Anfragen auf iOS keine gesonderte Freigabe erfordern.
 
 ### 6.3 Was es zu testen gibt – Checkliste
 

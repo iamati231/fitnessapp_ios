@@ -74,7 +74,19 @@ public enum SessionDurationRepair {
             else { continue }
             if session.repairDuration() { repaired += 1 }
         }
-        if repaired > 0 { try? context.save() }
+        // Audit-Fix: `try?` schluckte einen fehlgeschlagenen Save bisher
+        // lautlos - `runIfNeeded` setzte `doneKey` trotzdem, weil `repaired`
+        // weiterhin > 0 war. Anders als bei den anderen Migrationen in
+        // diesem Ordner (idempotent ueber Neu-Erkennung) kann diese bei
+        // gesetztem Flag nie wieder retryen - ein gescheiterter Save muss
+        // daher wie ein gescheitertes Laden behandelt werden (`nil`).
+        if repaired > 0 {
+            do {
+                try context.save()
+            } catch {
+                return nil
+            }
+        }
         return repaired
     }
 }

@@ -34,5 +34,17 @@ final class DataImportLegacyColumnDefaultTests: XCTestCase {
         let legacyRow = row(["name": "Testschuh"])
         XCTAssertEqual(legacyRow.bool("is_active"), false)
     }
+
+    /// Phase B (Laufcoaching Dual-Path, Task 5): unlike `is_active`/
+    /// `is_custom`/`smart_progression_enabled`, `is_auto_filled_placeholder`'s
+    /// intended default for an ABSENT column (a backup written before this
+    /// field existed) IS `false` ("don't guess" — Condition 1) — the plain
+    /// `row.bool(...) ?? false` pattern `DataImportService.importPlanDays`
+    /// uses for it is therefore already correct, no `optionalSkippableBool`
+    /// needed here.
+    func test_dataImportService_olderBackupWithoutColumn_defaultsToFalse() {
+        let legacyRow = row(["name": "Ruhetag"])
+        XCTAssertEqual(legacyRow.bool("is_auto_filled_placeholder") ?? false, false)
+    }
 }
 #endif

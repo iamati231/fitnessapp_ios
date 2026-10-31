@@ -439,6 +439,41 @@ final class DataPortabilityRoundtripTests: XCTestCase {
                        "\"neu rechnen\" braucht generatorInputRaw, um nach einem Restore weiter zu funktionieren")
     }
 
+    /// Phase B (Laufcoaching Dual-Path, Task 5): `TrainingDay.isAutoFilledPlaceholder`
+    /// muss den Export/Import-Roundtrip ueberleben - ohne die additive
+    /// `is_auto_filled_placeholder`-Spalte in `buildDays`/`importPlanDays`
+    /// wuerde ein exportierter und re-importierter Plan jeden echten
+    /// Auto-Ruhetag stillschweigend auf `false` zuruecksetzen und damit
+    /// `RunCoachPlanAdjustment.eligibleRestDaysForInsertion` leer laufen
+    /// lassen. Mix aus `true`/`false`, damit kein Test versehentlich beide
+    /// Werte verwechselt (z.B. durch einen `?? true`-Tippfehler).
+    func test_dataImportService_roundTrip_preservesIsAutoFilledPlaceholder() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let plan = TrainingPlan(name: "Ganzkoerper-Plan", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let autoRestDay = TrainingDay(name: "Ruhetag", weekday: 3, type: .rest, plan: plan, isAutoFilledPlaceholder: true)
+        ctx.insert(autoRestDay)
+        let manualRestDay = TrainingDay(name: "Ruhetag", weekday: 5, type: .rest, plan: plan)
+        ctx.insert(manualRestDay)
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        _ = try await DataImportService.performImport(
+            zipData: bundle.data,
+            context: target.mainContext,
+            strategy: .appendOnly
+        )
+
+        let importedDays = try target.mainContext.fetch(FetchDescriptor<TrainingDay>())
+        let importedAutoRestDay = try XCTUnwrap(importedDays.first { $0.weekday == 3 })
+        let importedManualRestDay = try XCTUnwrap(importedDays.first { $0.weekday == 5 })
+        XCTAssertTrue(importedAutoRestDay.isAutoFilledPlaceholder)
+        XCTAssertFalse(importedManualRestDay.isAutoFilledPlaceholder)
+    }
+
     /// Nutzer-Feedback (13. August, zweite Runde): neues `.circuit`-Zeitformat
     /// - deckt sowohl die drei neuen `TrainingDay`-Felder (`circuitRounds`/
     /// `circuitRestSeconds`/`circuitMode`) als auch die drei neuen
@@ -1134,6 +1169,59 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         let freeEntry = try XCTUnwrap(importedMeal.items.first { $0.catalogID == nil })
         XCTAssertEqual(freeEntry.nameSnapshot, "Freier Eintrag")
         XCTAssertEqual(freeEntry.unit, .piece)
+    }
+
+    /// OFF-01 (docs/AUDIT_2026-10-23_DELTIQ.md): Unbekannte Naehrwerte
+    /// ueberleben einen Export/Import-Roundtrip als unbekannt — sie werden
+    /// NICHT zu 0. Frueher hätte `?? 0` beim Import aus jedem fehlenden Wert
+    /// stillschweigend eine 0 gemacht.
+    func testUnknownNutrientValuesSurviveExportImportRoundtrip() async throws {
+        let source = try makeContainer()
+        let ctx = source.mainContext
+
+        let partial = FoodCatalogEntry(
+            displayName: "Teilprodukt",
+            source: .onlineImported,
+            category: .other,
+            kcalPer100g: 250,
+            proteinPer100g: nil,
+            carbsPer100g: 12,
+            fatPer100g: nil
+        )
+        ctx.insert(partial)
+
+        let meal = MealEntry(date: Date(timeIntervalSince1970: 1_750_100_000), mealType: .snack)
+        ctx.insert(meal)
+        ctx.insert(MealItem(
+            catalogID: partial.catalogID, nameSnapshot: "Teilprodukt", quantity: 100, unit: .gram,
+            nutrients: NutrientValues(kcal: 250, proteinG: nil, carbsG: 12, fatG: nil), meal: meal
+        ))
+        try ctx.save()
+
+        let bundle = try DataExportService.makeExport(context: ctx)
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+        XCTAssertEqual(result.errorRows, 0)
+
+        let tctx = target.mainContext
+
+        // Nur DIESER Eintrag (der Container ist frisch).
+        let importedEntry = try XCTUnwrap(
+            try tctx.fetch(FetchDescriptor<FoodCatalogEntry>()).first { $0.displayName == "Teilprodukt" }
+        )
+        XCTAssertEqual(importedEntry.displayName, "Teilprodukt")
+        XCTAssertEqual(importedEntry.nutrientsPer100g.kcal.value, 250)
+        XCTAssertEqual(importedEntry.nutrientsPer100g.carbsG.value, 12)
+        XCTAssertTrue(importedEntry.nutrientsPer100g.proteinG.isUnknown)
+        XCTAssertTrue(importedEntry.nutrientsPer100g.fatG.isUnknown)
+
+        let importedItem = try XCTUnwrap(try tctx.fetch(FetchDescriptor<MealItem>()).first)
+        XCTAssertEqual(importedItem.nutrientsSnapshot.kcal.value, 250)
+        XCTAssertEqual(importedItem.nutrientsSnapshot.carbsG.value, 12)
+        XCTAssertTrue(importedItem.nutrientsSnapshot.proteinG.isUnknown, "fehlendes Protein darf nach dem Restore nicht 0 sein")
+        XCTAssertTrue(importedItem.nutrientsSnapshot.fatG.isUnknown, "fehlendes Fett darf nach dem Restore nicht 0 sein")
     }
 
     /// DEL-250: ein Profil OHNE Cardio-Ziele (Default-Zustand, z.B.

@@ -230,16 +230,6 @@ public struct DataExportView: View {
     }
 
     /// DEL-106-Muster (siehe SettingsView.hintRow): Inline-Caption am Fuss einer Section.
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     // MARK: - Export logic
 
     private func startExport() {

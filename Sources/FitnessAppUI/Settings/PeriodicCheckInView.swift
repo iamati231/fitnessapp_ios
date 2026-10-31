@@ -338,16 +338,6 @@ public struct PeriodicCheckInView: View {
         )
     }
 
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     private func save() {
         guard !isSaving else { return }
         isSaving = true

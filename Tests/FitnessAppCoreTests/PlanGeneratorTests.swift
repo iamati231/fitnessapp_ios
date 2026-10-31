@@ -8,9 +8,13 @@ final class PlanGeneratorTests: XCTestCase {
         days: Int,
         minutes: Int = 45,
         experience: DifficultyLevel = .intermediate,
-        timeFormat: WorkoutTimeFormat? = nil
+        timeFormat: WorkoutTimeFormat? = nil,
+        equipmentPool: Set<Equipment>? = nil
     ) -> PlanGeneratorTypeSelection {
-        PlanGeneratorTypeSelection(kind: kind, daysPerWeek: days, sessionDurationMinutes: minutes, experience: experience, timeFormat: timeFormat)
+        PlanGeneratorTypeSelection(
+            kind: kind, daysPerWeek: days, sessionDurationMinutes: minutes, experience: experience,
+            timeFormat: timeFormat, equipmentPool: equipmentPool
+        )
     }
 
     private func input(
@@ -44,6 +48,105 @@ final class PlanGeneratorTests: XCTestCase {
         let result = PlanGenerator.generate(from: input([selection(.dumbbell, days: 4)]))
         let indices = result.days.map(\.spec.sequenceIndex)
         XCTAssertEqual(indices, [1, 2, 3, 4])
+    }
+
+    // MARK: - writing-block.md 3.2: Maschine als eigener TrainingTypeKind
+
+    /// Regression (Punkt 3.2): eine Maschine-Auswahl muss echte Uebungen
+    /// erzeugen - vor diesem Fix hatte `.machine` keinen `TrainingTypeKind`-
+    /// Fall und `strengthCandidates`/`equipmentFilter` haetten es gar nicht
+    /// erst erreicht.
+    func testMachineSelectionProducesRequestedDayCount() {
+        let result = PlanGenerator.generate(from: input([selection(.machine, days: 3)]))
+        XCTAssertEqual(result.days.count, 3)
+        XCTAssertTrue(result.days.allSatisfy { !$0.spec.exercises.isEmpty })
+    }
+
+    /// Kern des Bugs aus Punkt 3.2: eine Maschine-Auswahl darf NIE
+    /// Koerpergewicht- (oder andere Ausstattungs-)Uebungen enthalten - jede
+    /// generierte Uebung muss tatsaechlich im `.machine`-Pool der
+    /// Bibliothek stehen.
+    func testMachineSelectionOnlyUsesMachineEquipmentExercises() {
+        let machinePool = Set(ExerciseLibraryData.all.filter { $0.equipment == .machine }.map(\.name))
+        let result = PlanGenerator.generate(from: input([selection(.machine, days: 4)]))
+        let usedNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertFalse(usedNames.isEmpty)
+        XCTAssertTrue(usedNames.isSubset(of: machinePool), "jede generierte Uebung muss aus dem Maschine-Pool stammen, nicht aus Koerpergewicht/anderer Ausstattung")
+    }
+
+    func testMachineDayTitleUsesTheMachineLabel() {
+        let result = PlanGenerator.generate(from: input([selection(.machine, days: 1)]))
+        XCTAssertTrue(result.days[0].spec.name.hasPrefix("Maschine"), "Tagestitel sollte mit dem Maschine-Label beginnen, aktuell: \(result.days[0].spec.name)")
+    }
+
+    // MARK: - Device-Bugreport: "Plan wird nach Geraeteart statt
+    // Trainingstagen aufgeteilt" (mehrere Gerätearten muessen EINEN
+    // gemeinsamen Uebungspool bilden, nicht pro-Geraeteart exklusive Tage)
+
+    func testMixedEquipmentPoolProducesRequestedDayCountNotOneDayPerEquipmentType() {
+        let pool: Set<Equipment> = [.barbell, .dumbbell, .kettlebell]
+        let result = PlanGenerator.generate(from: input([
+            selection(.barbell, days: 3, equipmentPool: pool)
+        ]))
+        XCTAssertEqual(result.days.count, 3, "3 Trainingstage angefordert - unabhaengig davon, wie viele Gerätearten gewaehlt wurden")
+    }
+
+    /// Kern des gemeldeten Bugs: jeder Tag darf Uebungen aus MEHREREN der
+    /// gewaehlten Gerätearten kombinieren, statt dass jede Geraeteart ihren
+    /// eigenen exklusiven Tag bekommt.
+    func testMixedEquipmentPoolCombinesMultipleEquipmentTypesWithinASingleDay() {
+        let pool: Set<Equipment> = [.barbell, .dumbbell, .kettlebell]
+        let equipmentByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0.equipment) })
+        let result = PlanGenerator.generate(from: input([
+            selection(.barbell, days: 3, equipmentPool: pool)
+        ]))
+        let equipmentUsedPerDay = result.days.map { day in
+            Set(day.spec.exercises.compactMap { equipmentByName[$0.name] })
+        }
+        XCTAssertTrue(
+            equipmentUsedPerDay.contains { $0.count > 1 },
+            "mindestens ein Tag sollte Uebungen aus mehr als einer gewaehlten Geraeteart kombinieren, tatsaechlich: \(equipmentUsedPerDay)"
+        )
+    }
+
+    /// Ausschluss: keine generierte Uebung darf aus einer NICHT gewaehlten
+    /// Geraeteart stammen (z. B. Maschine, wenn nur Langhantel/Kurzhantel/
+    /// Kettlebell im Pool sind).
+    func testMixedEquipmentPoolNeverUsesExercisesOutsideTheSelectedEquipment() {
+        let pool: Set<Equipment> = [.barbell, .dumbbell, .kettlebell]
+        let allowedNames = Set(ExerciseLibraryData.all.filter { pool.contains($0.equipment) }.map(\.name))
+        let result = PlanGenerator.generate(from: input([
+            selection(.barbell, days: 4, equipmentPool: pool)
+        ]))
+        let usedNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertFalse(usedNames.isEmpty)
+        XCTAssertTrue(usedNames.isSubset(of: allowedNames), "jede generierte Uebung muss aus einer der gewaehlten Gerätearten stammen")
+    }
+
+    /// Einzelne Geraeteart (kein `equipmentPool`) bleibt unveraendert - keine
+    /// Regression fuer den bisherigen, einfachen Fall.
+    func testSingleEquipmentTypeWithoutPoolBehavesExactlyAsBefore() {
+        let result = PlanGenerator.generate(from: input([selection(.dumbbell, days: 3)]))
+        let dumbbellPool = Set(ExerciseLibraryData.all.filter { $0.equipment == .dumbbell }.map(\.name))
+        let usedNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertTrue(usedNames.isSubset(of: dumbbellPool))
+        XCTAssertTrue(result.days[0].spec.name.hasPrefix("Kurzhantel"))
+    }
+
+    /// Akzeptanzkriterium 6: bei mehreren Gerätearten soll der Tages-Titel
+    /// den Trainingssplit beschreiben (z. B. "Push & Pull"), nicht pauschal
+    /// eine einzelne Geraeteart nennen, die den Tag gar nicht exklusiv traegt.
+    func testMixedEquipmentPoolDayTitleDescribesSplitNotASingleEquipmentType() {
+        let pool: Set<Equipment> = [.barbell, .dumbbell, .kettlebell]
+        let result = PlanGenerator.generate(from: input([
+            selection(.barbell, days: 3, equipmentPool: pool)
+        ]))
+        for day in result.days {
+            XCTAssertFalse(day.spec.name.hasPrefix("Langhantel"))
+            XCTAssertFalse(day.spec.name.hasPrefix("Kurzhantel"))
+            XCTAssertFalse(day.spec.name.hasPrefix("Kettlebell"))
+            XCTAssertFalse((day.spec.localizationKey ?? "").hasPrefix("planBuilder.type."))
+        }
     }
 
     // MARK: - README 2.20: Kettlebell-EMOM-Finisher
@@ -150,6 +253,156 @@ final class PlanGeneratorTests: XCTestCase {
         XCTAssertEqual(result.days.count, 2)
         XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.map(\.name) == ["Radfahren (outdoor)"] })
         XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .cycling } })
+    }
+
+    // MARK: - Laufcoaching-Plan-Integration (Task 3): Baseline-bewusste Pace
+
+    func testCardioCandidatesSetsEasyAndTempoPaceWhenBaselineIsKnown() {
+        let selection = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 3, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        )
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [selection], equipmentPreferences: [], usesFixedWeekdays: false))
+        // `generate(from:)` re-sorts candidates by hardness (`spreadByHardness`),
+        // so the easy day is NOT reliably at index 0 - find it by its exact
+        // library exercise name ("Easy Run", `RunZone.exerciseName` for `.easy`)
+        // instead of assuming cycle order survives into the result.
+        let easyDay = result.days.first { $0.spec.exercises.first?.name == "Easy Run" }!.spec.exercises[0]
+        XCTAssertEqual(easyDay.targetPaceMinutesPerKm, PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: 1500))
+
+        // Final-review Fix 5: a reviewer noted that swapping the easy/tempo
+        // pace-factor calls in `PlanGenerator.cardioCandidates` would still
+        // pass CI, because only the easy-zone day's pace was asserted here.
+        // Same name-based lookup as above (never index-based, see the
+        // `spreadByHardness`-reordering comment) - `RunZone.tempo.exerciseName`
+        // is "Long Run" (distinct from "Easy Run"). Fix M-2 (Final-Review,
+        // Round 2): this 10K-profile 3-day selection is Task 3's
+        // GOAL-DRIVEN mix (`runTypeMix(for: .tenK) == [.easy, .quality]`),
+        // which here resolves to easy/tempo/easy - it does NOT produce an
+        // "Intervalle" day (that only happens on the profile-less, fixed
+        // easy/interval/tempo cycle, or on a LATER `.quality` occurrence
+        // across more days/weeks - see `cardioCandidates`'s doc comment).
+
+        let tempoDay = result.days.first { $0.spec.exercises.first?.name == "Long Run" }!.spec.exercises[0]
+        XCTAssertEqual(tempoDay.targetPaceMinutesPerKm, PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: 1500))
+    }
+
+    func testCardioCandidatesLeavesPaceNilWithoutReferenceTime() {
+        let selection = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 1, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [selection], equipmentPreferences: [], usesFixedWeekdays: false))
+        XCTAssertNil(result.days[0].spec.exercises[0].targetPaceMinutesPerKm)
+    }
+
+    /// Regression fuer Review Focus 1: dieselbe Selection wie
+    /// `testRunningThreeDaysCoversAllThreeZones`, aber ohne `cardioRunProfile`
+    /// (default `nil`) - muss exakt dieselben Zonen/Namen liefern wie vor
+    /// Einfuehrung des neuen, additiven Felds.
+    func testCardioCandidatesWithoutProfileMatchesPreviousOutputExactly() {
+        let result = PlanGenerator.generate(from: input([selection(.running, days: 3)]))
+        let exerciseNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertEqual(exerciseNames, ["Easy Run", "Long Run", "Intervalle"])
+        XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .running } })
+
+        // Task 3 (Review Focus 1): no `cardioRunProfile` at all must leave
+        // every duration/distance target byte-for-byte identical to the
+        // pre-Task-3 behaviour - plain `sessionDurationMinutes`, no
+        // volume-aware scaling, `.interval` still fixed at 0.4 km.
+        let easyDay = result.days.first { $0.spec.exercises.first?.name == "Easy Run" }!.spec.exercises[0]
+        XCTAssertEqual(easyDay.targetDurationMinutes, 45)
+        let tempoDay = result.days.first { $0.spec.exercises.first?.name == "Long Run" }!.spec.exercises[0]
+        XCTAssertEqual(tempoDay.targetDurationMinutes, 45)
+        let intervalDay = result.days.first { $0.spec.exercises.first?.name == "Intervalle" }!.spec.exercises[0]
+        XCTAssertEqual(intervalDay.targetDistanceKm, 0.4)
+    }
+
+    // MARK: - Laufcoaching-Plan-Integration (Task 3): Ziel-/Volumen-bewusste Struktur
+
+    /// Step 1(a): ein Profil mit Ziel, aber OHNE Wochenvolumen, darf die
+    /// Dauer-Zielwerte nicht veraendern - "zu wenig Daten" bleibt konservativ
+    /// beim heutigen `sessionDurationMinutes`.
+    func testCardioCandidatesWithProfileButNoVolumeKeepsTodaysDuration() {
+        let withProfile = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 2, sessionDurationMinutes: 40, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [withProfile], equipmentPreferences: [], usesFixedWeekdays: false))
+        for day in result.days {
+            XCTAssertEqual(day.spec.exercises[0].targetDurationMinutes, 40)
+        }
+    }
+
+    /// Step 1(b): zwei verschiedene Ziele mit Profil (aber ohne Volumen)
+    /// muessen unterschiedliche Lauf-TYP-Mischungen (Task 2's `runTypeMix`)
+    /// liefern, bei GLEICHER Tagesanzahl - die Tages-Allokation selbst ist
+    /// unveraendert `GoalDrivenPlanSelectionBuilder`s Sache, nicht dieser Task.
+    func testCardioCandidatesRunTypeMixDiffersByGoalWithSameDayCount() {
+        let generalFitness = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 3, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .generalFitness, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let tenK = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 3, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let generalResult = PlanGenerator.generate(from: PlanGeneratorInput(selections: [generalFitness], equipmentPreferences: [], usesFixedWeekdays: false))
+        let tenKResult = PlanGenerator.generate(from: PlanGeneratorInput(selections: [tenK], equipmentPreferences: [], usesFixedWeekdays: false))
+
+        XCTAssertEqual(generalResult.days.count, tenKResult.days.count, "Tages-Allokation bleibt diesem Task fremd")
+
+        let generalNames = Set(generalResult.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertEqual(generalNames, ["Easy Run"], "generalFitness -> runTypeMix ist rein .easy (Task 2)")
+
+        let tenKNames = Set(tenKResult.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertTrue(tenKNames.contains("Long Run"), "tenK's Mix enthaelt einen .quality-Slot, anders als generalFitness")
+    }
+
+    /// Fix round 1 (Review-Fund + User-Entscheidung): `.quality` deckt laut
+    /// `RunPurpose`-Doku "sowohl Intervall- als auch Tempo-Laeufe ab" - ein
+    /// durchgaengiges `.tempo` liesse "Intervalle" komplett verschwinden,
+    /// sobald ein Profil vorliegt. Halbmarathon/Marathons Mix
+    /// `[.easy, .easy, .quality]` wiederholt sich bei 6 Tagen/Woche zweimal
+    /// und enthaelt damit zwei `.quality`-Vorkommen - diese muessen
+    /// zwischen `.tempo` ("Long Run") und `.interval` ("Intervalle")
+    /// wechseln, nicht immer denselben Wert liefern.
+    func testCardioCandidatesAlternatesQualitySlotsBetweenTempoAndInterval() {
+        let selection = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 6, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .halfMarathon, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [selection], equipmentPreferences: [], usesFixedWeekdays: false))
+        let names = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertTrue(names.contains("Long Run"), "erstes .quality-Vorkommen muss Tempo sein")
+        XCTAssertTrue(names.contains("Intervalle"), "zweites .quality-Vorkommen muss Intervall sein - Fix round 1")
+        // `.interval`s eigene Groessen-/Pace-Logik bleibt unberuehrt (Global
+        // Constraint) - auch wenn die Zone jetzt bei Profilen vorkommen kann.
+        let intervalDay = result.days.first { $0.spec.exercises.first?.name == "Intervalle" }!.spec.exercises[0]
+        XCTAssertEqual(intervalDay.targetDistanceKm, 0.4)
+    }
+
+    /// Step 1(c): ein Profil MIT glaubwuerdigem Wochenvolumen muss messbar
+    /// GROESSERE Dauer-Zielwerte liefern als eines ohne, fuer dasselbe Ziel -
+    /// `CardioFeasibilityCalculator.targetWeeklyVolumeKm(.tenK) == 30`, 45
+    /// km/Woche liegt klar darueber.
+    func testCardioCandidatesScalesDurationUpWithCredibleHigherWeeklyVolume() {
+        let withoutVolume = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 1, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: nil)
+        )
+        let withVolume = PlanGeneratorTypeSelection(
+            kind: .running, daysPerWeek: 1, sessionDurationMinutes: 30, experience: .intermediate,
+            cardioRunProfile: CardioRunProfile(goal: .tenK, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: 45)
+        )
+        let baseline = PlanGenerator.generate(from: PlanGeneratorInput(selections: [withoutVolume], equipmentPreferences: [], usesFixedWeekdays: false))
+        let scaled = PlanGenerator.generate(from: PlanGeneratorInput(selections: [withVolume], equipmentPreferences: [], usesFixedWeekdays: false))
+
+        let baselineDuration = baseline.days[0].spec.exercises[0].targetDurationMinutes
+        let scaledDuration = scaled.days[0].spec.exercises[0].targetDurationMinutes
+        XCTAssertEqual(baselineDuration, 30)
+        XCTAssertNotNil(scaledDuration)
+        XCTAssertGreaterThan(scaledDuration!, baselineDuration!)
     }
 
     // MARK: - DEL-098-Datentreue: keine erfundenen Uebungsnamen
@@ -513,5 +766,70 @@ final class PlanGeneratorTests: XCTestCase {
         let day = PlanGenerator.Result.GeneratedDay(spec: original.days[0].spec, loadLevel: original.days[0].loadLevel)
         let result = PlanGenerator.Result(days: [day])
         XCTAssertNil(result.explanationKey)
+    }
+
+    // MARK: - Bugfix Epic #3.3: duration must matter for beginners too
+
+    /// Regression: Kettlebell/Anfaenger has 9 exercises across only 4 muscle
+    /// groups (4 of them alone in "Schulter") — verified against the real
+    /// library (`ExerciseLibraryData`). Before this fix, the picker only ever
+    /// took ONE exercise per muscle group per day, so a long session
+    /// (exerciseCount target 7) still only ever got 4, identical to a short
+    /// one. This is the exact "15 und 100 Minuten fuehren zur gleichen
+    /// Uebungsanzahl" bug report for Beginner.
+    func testBeginnerKettlebellLongSessionGetsMoreExercisesThanShortOne() {
+        let shortResult = PlanGenerator.generate(from: input(
+            [selection(.kettlebell, days: 1, minutes: 15, experience: .beginner)]
+        ))
+        let longResult = PlanGenerator.generate(from: input(
+            [selection(.kettlebell, days: 1, minutes: 100, experience: .beginner)]
+        ))
+        let shortCount = shortResult.days.first?.spec.exercises.count ?? 0
+        let longCount = longResult.days.first?.spec.exercises.count ?? 0
+        XCTAssertGreaterThan(longCount, shortCount,
+                              "a 100-minute beginner session must get more exercises than a 15-minute one")
+        // The real library has 9 beginner kettlebell exercises total — the
+        // long session's target (exerciseCount = 7) should now be fully
+        // reachable, and the short session's target (3) reachable as before.
+        XCTAssertEqual(shortCount, 3)
+        XCTAssertEqual(longCount, 7)
+    }
+
+    /// A muscle group's SECOND (etc.) pick must be a genuinely different
+    /// exercise, never a repeat of the first.
+    func testRevisitingAMuscleGroupNeverPicksADuplicateExercise() {
+        let result = PlanGenerator.generate(from: input(
+            [selection(.kettlebell, days: 1, minutes: 100, experience: .beginner)]
+        ))
+        let names = result.days.first?.spec.exercises.map(\.name) ?? []
+        XCTAssertEqual(names.count, Set(names).count, "no exercise should appear twice in the same day")
+    }
+
+    /// Regression / honesty check: Barbell/Anfaenger has only 2 exercises in
+    /// the entire real library (one Bizeps-, one Schulter-Uebung) — this is a
+    /// genuine data ceiling, not an algorithm bug, and must stay exactly 2
+    /// regardless of duration. The fix must not invent exercises that don't
+    /// exist ("keine kuenstliche Auffuellung", Epic #3.3 acceptance).
+    func testBeginnerBarbellStaysAtTheRealDataCeilingRegardlessOfDuration() {
+        for minutes in [15, 45, 100] {
+            let result = PlanGenerator.generate(from: input(
+                [selection(.barbell, days: 1, minutes: minutes, experience: .beginner)]
+            ))
+            XCTAssertEqual(result.days.first?.spec.exercises.count, 2,
+                           "barbell/beginner has exactly 2 real exercises in the library — \(minutes) min")
+        }
+    }
+
+    /// Existing intermediate/advanced duration-scaling behavior (already
+    /// working per the bug report) must be unaffected by this fix.
+    func testIntermediateDumbbellDurationScalingIsUnaffected() {
+        let shortResult = PlanGenerator.generate(from: input(
+            [selection(.dumbbell, days: 1, minutes: 15, experience: .intermediate)]
+        ))
+        let longResult = PlanGenerator.generate(from: input(
+            [selection(.dumbbell, days: 1, minutes: 100, experience: .intermediate)]
+        ))
+        XCTAssertEqual(shortResult.days.first?.spec.exercises.count, 3)
+        XCTAssertEqual(longResult.days.first?.spec.exercises.count, 7)
     }
 }

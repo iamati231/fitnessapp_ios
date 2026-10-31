@@ -215,4 +215,83 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
             XCTAssertLessThanOrEqual(input.totalDaysPerWeek, 7)
         }
     }
+
+    // MARK: - cardioRunProfile (Task 9 Nachbesserung, Review-Fund)
+
+    /// Ohne diesen Parameter blieb `targetPaceMinutesPerKm` auf jedem ueber
+    /// `CardioFeasibilityCardModel`/`CoachAdjustmentCardModel` erzeugten
+    /// Lauf-Tag immer `nil` - `PlanGenerator.cardioCandidates` liest die
+    /// Baseline ausschliesslich aus `PlanGeneratorTypeSelection.
+    /// cardioRunProfile`.
+    func testCardioRunProfileIsSetOnlyOnTheRunningSelection() {
+        let profile = CardioRunProfile(goal: .tenK, current5kReferenceSeconds: 1500, weeklyBaseVolumeKm: 20)
+        let input = CardioFeasibilityCalculator.planGeneratorInput(for: .tenK, cardioRunProfile: profile)
+        let runningSelection = input.selections.first { $0.kind == .running }
+        XCTAssertEqual(runningSelection?.cardioRunProfile, profile)
+        // .tenK mischt Lauf MIT Kraft (siehe testTenKAndHalfMarathonMixIsThreeRunTwoStrength) -
+        // die Kraft-Selection bleibt ohne Profil, analog
+        // `GoalDrivenPlanSelectionBuilder.enduranceSelections`s Kraft-Zweig.
+        let strengthSelection = input.selections.first { $0.kind == .bodyweight }
+        XCTAssertNil(strengthSelection?.cardioRunProfile)
+    }
+
+    /// Review Focus 1 (dieser Plan): ein neuer, defaulteter Trailing-Parameter
+    /// darf bestehende Aufrufer ohne Baseline nicht veraendern - omitting it
+    /// muss byte-identisch dasselbe `PlanGeneratorInput` reproduzieren wie vor
+    /// dieser Aenderung.
+    func testOmittingCardioRunProfileReproducesThePreviousOutputExactly() {
+        for goal in CardioGoal.allCases {
+            let withExplicitNil = CardioFeasibilityCalculator.planGeneratorInput(for: goal, cardioRunProfile: nil)
+            let withOmittedParameter = CardioFeasibilityCalculator.planGeneratorInput(for: goal)
+            XCTAssertEqual(withExplicitNil, withOmittedParameter)
+            for selection in withOmittedParameter.selections {
+                XCTAssertNil(selection.cardioRunProfile)
+            }
+        }
+    }
+
+    // MARK: - runTypeMix (Task 2: Ziel bestimmt Lauf-Struktur, getrennt von Pace/Volumen)
+
+    func testGeneralFitnessRunTypeMixIsEasyOnly() {
+        XCTAssertEqual(CardioFeasibilityCalculator.runTypeMix(for: .generalFitness), [.easy])
+    }
+
+    func testFiveKAndTenKRunTypeMixIsHalfQuality() {
+        for goal in [CardioGoal.fiveK, .tenK] {
+            XCTAssertEqual(CardioFeasibilityCalculator.runTypeMix(for: goal), [.easy, .quality])
+        }
+    }
+
+    func testHalfMarathonAndMarathonRunTypeMixLeansEasy() {
+        for goal in [CardioGoal.halfMarathon, .marathon] {
+            XCTAssertEqual(CardioFeasibilityCalculator.runTypeMix(for: goal), [.easy, .easy, .quality])
+        }
+    }
+
+    /// Checkpoint #2: unterschiedliche Ziele muessen fachlich unterschiedliche
+    /// Ergebnisse liefern, nicht nur unterschiedliche Arrays zufaellig.
+    /// 5 km traegt anteilig mehr Qualitaetsarbeit als Marathon.
+    func testFiveKHasHigherQualityShareThanMarathon() {
+        func qualityShare(_ goal: CardioGoal) -> Double {
+            let mix = CardioFeasibilityCalculator.runTypeMix(for: goal)
+            return Double(mix.filter { $0 == .quality }.count) / Double(mix.count)
+        }
+        XCTAssertGreaterThan(qualityShare(.fiveK), qualityShare(.marathon))
+    }
+
+    func testRunTypeMixNeverEmpty() {
+        for goal in CardioGoal.allCases {
+            XCTAssertFalse(CardioFeasibilityCalculator.runTypeMix(for: goal).isEmpty)
+        }
+    }
+
+    /// Diese Funktion ist reine Ziel-Logik - keine Volumen-/Pace-Abhaengigkeit.
+    /// Dokumentiert als Test, nicht nur als Kommentar: derselbe Aufruf mit
+    /// demselben `goal` liefert immer dasselbe Ergebnis, unabhaengig von
+    /// irgendwelchen anderen Werten (es gibt schlicht keine weiteren Parameter).
+    func testRunTypeMixIsDeterministicPerGoal() {
+        for goal in CardioGoal.allCases {
+            XCTAssertEqual(CardioFeasibilityCalculator.runTypeMix(for: goal), CardioFeasibilityCalculator.runTypeMix(for: goal))
+        }
+    }
 }

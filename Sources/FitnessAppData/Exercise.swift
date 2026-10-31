@@ -98,6 +98,16 @@ public final class Exercise {
     /// fixe Distanz ("30 Min Easy"). Nil bei Strength.
     public var targetDurationMinutes: Int?
 
+    /// Ziel-Pace in min/km — vom Plan-Generator fuer Lauf-Einheiten gesetzt.
+    /// Nil bei Strength, Radfahren, und Laeufen ohne bekannte 5K-Referenz.
+    /// Lightweight-Migration: nil-Default, kein Schema-Konflikt.
+    public var targetPaceMinutesPerKm: Double? = nil
+
+    /// Coaching-Begruendung — warum dieser Trainingsreiz, warum dieses Volumen.
+    /// Vom Plan-Generator gesetzt, read-only im UI. Nil fuer manuell angelegte
+    /// Einheiten. Lightweight-Migration: nil-Default.
+    public var coachingRationale: String? = nil
+
     /// DEL-155: Gewaehltes Cardio-Equipment (Laufband / Fahrrad / Ergometer /
     /// Rudergeraet / kein Geraet). Persistiert als String-RawValue fuer
     /// Lightweight-Migration; `nil` = noch nicht gesetzt (Bestandsdaten +
@@ -151,6 +161,16 @@ public final class Exercise {
     public var equipment: Equipment? {
         get { equipmentRaw.flatMap(Equipment.init(rawValue:)) }
         set { equipmentRaw = newValue?.rawValue }
+    }
+
+    /// Audit-Fix (Lean): war identisch in `SetRow.swift` und
+    /// `ExerciseCard.swift` dupliziert. DEL-159-Override gewinnt, sonst
+    /// Library-Lookup ueber den System-Namen.
+    public var isBarbellExercise: Bool {
+        if let equipment {
+            return equipment == .barbell
+        }
+        return ExerciseLibraryData.all.first { $0.name == name }?.equipment == .barbell
     }
 
     /// DEL-200: Snapshot des Arbeitsgewichts VOR einer Deload-Woche.

@@ -52,8 +52,17 @@ public struct TimedWorkoutPlayerView: View {
 /// Nutzer-Feedback (13. August, zweite Runde): nicht mehr `private` -
 /// `CircuitPlayerView` (eigene Datei, `CircuitWorkoutPlayerView.swift`)
 /// braucht denselben Speicherpfad wie die drei Player hier.
+/// Audit-Fix (Save-Fehler in Live-Workouts): gibt zurueck, ob der Abschluss
+/// tatsaechlich persistiert wurde. Bei `false` NAVIGIERT diese Funktion
+/// bewusst NICHT zur Summary - ein Caller, der trotzdem weiterspringt,
+/// wuerde einen Abschluss zeigen, der nie gespeichert wurde (dieselbe
+/// Falle wie `PRHistoryView.rebuild()` vor dessen Audit-Fix). Jeder der
+/// fuenf Caller (AMRAP/EMOM/ForTime/Circuit/Endurance) zeigt bei `false`
+/// stattdessen seinen eigenen Fehler-Toast und bleibt auf dem Player -
+/// ein erneuter Tap auf "Speichern" versucht es wieder.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
+@discardableResult
 func finishTimedSession(
     _ session: WorkoutSession,
     modelContext: ModelContext,
@@ -61,7 +70,7 @@ func finishTimedSession(
     prNotifications: PRNotificationCenter,
     navigation: AppNavigation,
     prCelebrationsEnabled: Bool
-) {
+) -> Bool {
     DeltiqHaptics.notify(.success)
 
     let endTime = Date()
@@ -114,9 +123,14 @@ func finishTimedSession(
     // `completeRound()`-Doku) - ohne explizites Save ueberstehen weder der
     // Abschluss-Zustand noch ein schneller Kill direkt danach einen
     // echten Kaltstart.
-    try? modelContext.save()
+    do {
+        try modelContext.save()
+    } catch {
+        return false
+    }
 
     navigation.workoutPath.append(SummaryRoute(session: session))
+    return true
 }
 
 /// Loescht eine noch nicht abgeschlossene Zeitformat-Session (Abbrechen-Pfad
@@ -134,8 +148,17 @@ func finishTimedSession(
 /// danach gelesen, weil die Beziehung ohne Inverse nullified (Task #115).
 /// Nicht mehr `private` (Nutzer-Feedback, 13. August, zweite Runde) -
 /// `CircuitPlayerView` (eigene Datei) braucht denselben Abbrechen-Pfad.
+///
+/// Audit-Fix (Save-Fehler in Live-Workouts): gibt zurueck, ob das Loeschen
+/// tatsaechlich persistiert wurde. Bei `false` wird NICHT `dismiss()`
+/// aufgerufen - gleiches Prinzip wie `DayEditorView.discardOpenSession-
+/// AndStartNew()` (Audit-Fix dieser Session): der User soll nicht
+/// verlassen, waehrend die (in-memory bereits vorgemerkte) Loeschung noch
+/// nicht sicher ist. Kein Rollback der bereits vorgemerkten Deletes - ein
+/// erneuter "Verwerfen"-Tap versucht denselben Save einfach noch einmal.
 @MainActor
-func discardTimedSession(_ session: WorkoutSession, modelContext: ModelContext, dismiss: DismissAction) {
+@discardableResult
+func discardTimedSession(_ session: WorkoutSession, modelContext: ModelContext, dismiss: DismissAction) -> Bool {
     let orphanedAdHocDay = session.isAdHoc ? session.day : nil
     modelContext.delete(session)
     if let orphanedAdHocDay {
@@ -145,8 +168,48 @@ func discardTimedSession(_ session: WorkoutSession, modelContext: ModelContext, 
     // `PlansListView.deletePlans` - ohne explizites Save kann ein
     // Kaltstart kurz nach dem Verwerfen die geloeschte Session
     // (und den verwaisten Ad-Hoc-Tag) wieder zurueckbringen.
-    try? modelContext.save()
+    do {
+        try modelContext.save()
+    } catch {
+        return false
+    }
     dismiss()
+    return true
+}
+
+/// Audit-Fix (Save-Fehler in Live-Workouts): gemeinsamer Toast-Helper fuer
+/// AMRAP/EMOM/ForTime (diese Datei) - `CircuitPlayerView`/
+/// `EnduranceIntervalPlayerView` haben je ihr eigenes, identisches Pendant
+/// in ihrer eigenen Datei (siehe Ticket: "gemeinsame private Helper pro
+/// Datei"). Gleiches Toast-Muster wie `WorkoutSummaryView.showSaveErrorToast`.
+@available(iOS 17.0, macOS 14.0, *)
+@MainActor
+func showTimedWorkoutSaveErrorToast(_ message: Binding<String?>) {
+    withAnimation(.easeOut(duration: 0.2)) {
+        message.wrappedValue = String(localized: "day.editor.save.failed", bundle: .module)
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        withAnimation(.easeIn(duration: 0.2)) {
+            message.wrappedValue = nil
+        }
+    }
+}
+
+/// Audit-Fix: gemeinsamer Toast-Overlay fuer alle fuenf Player (AMRAP/EMOM/
+/// ForTime/Circuit/Endurance) - haengt sich an den jeweiligen Player-`body`.
+@available(iOS 17.0, macOS 14.0, *)
+@ViewBuilder
+func timedWorkoutSaveErrorOverlay(_ message: String?) -> some View {
+    if let message {
+        Label(message, systemImage: "exclamationmark.triangle.fill")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Color.Deltiq.error)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .padding(.bottom, 24)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
 }
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -400,6 +463,8 @@ private struct AMRAPPlayerView: View {
     /// abgespielt wird.
     @State private var hasFiredLastMinuteWarning = false
     @State private var showingDiscardConfirm = false
+    /// Audit-Fix (Save-Fehler in Live-Workouts): siehe `showTimedWorkoutSaveErrorToast`.
+    @State private var saveErrorMessage: String?
     /// Hintergrund-Lauf (stilles Audio + Live Activity), siehe
     /// `TimedWorkoutBackground`. Haengt an der Lebensdauer des Players: Wird er
     /// zerstoert, waehrend er nicht sichtbar ist (anderer Tab, dann App-Reset oder
@@ -703,10 +768,18 @@ private struct AMRAPPlayerView: View {
             titleVisibility: .visible
         ) {
             Button(role: .destructive) {
-                discardTimedSession(session, modelContext: modelContext, dismiss: dismiss)
+                if !discardTimedSession(session, modelContext: modelContext, dismiss: dismiss) {
+                    showTimedWorkoutSaveErrorToast($saveErrorMessage)
+                }
             } label: {
                 Text("timedWorkout.discard.confirmButton", bundle: .module)
             }
+        }
+        // Audit-Fix (Save-Fehler in Live-Workouts): sichtbarer Hinweis statt
+        // stillem `try?`-Swallow in finishPreroll()/completeRound() sowie
+        // einem fehlgeschlagenen saveNow()/Verwerfen oben.
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
         }
     }
 
@@ -749,11 +822,13 @@ private struct AMRAPPlayerView: View {
         session.partialRepsExerciseName = partialReps > 0 ? partialRepsExercise?.displayName : nil
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .amrap
-        finishTimedSession(
+        if !finishTimedSession(
             session, modelContext: modelContext, healthKit: healthKit,
             prNotifications: prNotifications, navigation: navigation,
             prCelebrationsEnabled: prCelebrationsEnabled
-        )
+        ) {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 
     /// README 2.15/23b-23c: Uebergang von Vorlauf in den echten Lauf - egal
@@ -773,7 +848,16 @@ private struct AMRAPPlayerView: View {
         // "Vorlauf schon durchlaufen", siehe `init`) nach einem Kaltstart
         // VOR der ersten Runde wieder auf `nil` zurueck - der Vorlauf
         // wuerde faelschlich neu starten.
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen statt verschlucken. Der
+        // Vorlauf-Zustand selbst wird NICHT zurueckgesetzt (Ticket-Vorgabe:
+        // kein pauschales Reset laufender Fortschritts-Uebergaenge) - die
+        // Uhr laeuft im UI unveraendert weiter, der naechste erfolgreiche
+        // Save nimmt diese Mutation automatisch mit.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         startBackground()
     }
@@ -782,12 +866,7 @@ private struct AMRAPPlayerView: View {
     /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
     /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
     private func startBackground() {
-        background.begin(
-            sessionKey: session.backgroundSessionKey,
-            format: .amrap,
-            dayName: session.displayDayName,
-            soundEnabled: timerSoundEnabled
-        )
+        background.begin(for: session, format: .amrap, soundEnabled: timerSoundEnabled)
         syncBackground()
     }
 
@@ -870,7 +949,15 @@ private struct AMRAPPlayerView: View {
     private func completeRound() {
         roundsCompleted += 1
         session.roundsCompleted = roundsCompleted
-        try? modelContext.save()
+        // Audit-Fix: wie `finishPreroll()` oben - Fehler sichtbar machen,
+        // die bereits gezaehlte Runde aber NICHT zurueckdrehen (der User
+        // hat die Runde real geschafft; das waere ein irrefuehrender, nicht
+        // ein ehrlicher Rueckbau).
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         DeltiqHaptics.notify(.success)
         syncBackground()
     }
@@ -1040,6 +1127,8 @@ private struct EMOMPlayerView: View {
     /// Notification bereits abgespielt hat. Ohne dieses Flag wuerde der
     /// lange Ton beim Zurueckkehren ein zweites Mal ausgeloest.
     @State private var wasBackgroundedSinceLastResync = false
+    /// Audit-Fix (Save-Fehler in Live-Workouts): siehe `showTimedWorkoutSaveErrorToast`.
+    @State private var saveErrorMessage: String?
     /// Hintergrund-Lauf (stilles Audio + Live Activity), siehe
     /// `TimedWorkoutBackground`. Haengt an der Lebensdauer des Players: Wird er
     /// zerstoert, waehrend er nicht sichtbar ist (anderer Tab, dann App-Reset oder
@@ -1351,10 +1440,18 @@ private struct EMOMPlayerView: View {
             titleVisibility: .visible
         ) {
             Button(role: .destructive) {
-                discardTimedSession(session, modelContext: modelContext, dismiss: dismiss)
+                if !discardTimedSession(session, modelContext: modelContext, dismiss: dismiss) {
+                    showTimedWorkoutSaveErrorToast($saveErrorMessage)
+                }
             } label: {
                 Text("timedWorkout.discard.confirmButton", bundle: .module)
             }
+        }
+        // Audit-Fix (Save-Fehler in Live-Workouts): sichtbarer Hinweis statt
+        // stillem `try?`-Swallow in finishPreroll()/doneBar sowie einem
+        // fehlgeschlagenen saveNow()/Verwerfen oben.
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
         }
     }
 
@@ -1393,11 +1490,13 @@ private struct EMOMPlayerView: View {
         session.completedMinuteCount = completedMinutes.count
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .emom
-        finishTimedSession(
+        if !finishTimedSession(
             session, modelContext: modelContext, healthKit: healthKit,
             prNotifications: prNotifications, navigation: navigation,
             prCelebrationsEnabled: prCelebrationsEnabled
-        )
+        ) {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 
     /// README 2.15/23b-23c: Uebergang von Vorlauf in den echten Lauf - egal
@@ -1417,7 +1516,13 @@ private struct EMOMPlayerView: View {
         // ersten abgehakten Minute wieder auf `nil` zurueck - der Vorlauf
         // wuerde faelschlich neu starten (identisches Muster wie AMRAPs
         // `finishPreroll()`).
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen statt verschlucken, Vorlauf-
+        // Uebergang selbst NICHT zurueckgesetzt (siehe AMRAPs Pendant).
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         scheduleBackgroundSignals(audioRunning: startBackground())
     }
@@ -1428,12 +1533,7 @@ private struct EMOMPlayerView: View {
     /// ob das Hintergrund-Audio laeuft (siehe `scheduleBackgroundSignals`).
     @discardableResult
     private func startBackground() -> Bool {
-        background.begin(
-            sessionKey: session.backgroundSessionKey,
-            format: .emom,
-            dayName: session.displayDayName,
-            soundEnabled: timerSoundEnabled
-        )
+        background.begin(for: session, format: .emom, soundEnabled: timerSoundEnabled)
         syncBackground()
         return TimedWorkoutBackground.shared.isAudioRunning
     }
@@ -1552,7 +1652,14 @@ private struct EMOMPlayerView: View {
                 // ohne `context.save()` uebersteht keinen echten Kaltstart
                 // (siehe `completeRound()`-Doku, identisches Muster).
                 session.completedMinuteCount = completedMinutes.count
-                try? modelContext.save()
+                // Audit-Fix: Fehler sichtbar machen, die bereits abgehakte
+                // Minute aber NICHT zurueckdrehen (real geschafft, siehe
+                // AMRAPs `completeRound()`-Begruendung).
+                do {
+                    try modelContext.save()
+                } catch {
+                    showTimedWorkoutSaveErrorToast($saveErrorMessage)
+                }
                 DeltiqHaptics.notify(.success)
             }
         } label: {
@@ -1628,6 +1735,8 @@ private struct ForTimePlayerView: View {
     /// geloescht.
     @State private var finishedElapsedSeconds: Int?
     @State private var showingDiscardConfirm = false
+    /// Audit-Fix (Save-Fehler in Live-Workouts): siehe `showTimedWorkoutSaveErrorToast`.
+    @State private var saveErrorMessage: String?
     /// Hintergrund-Lauf (stilles Audio + Live Activity), siehe
     /// `TimedWorkoutBackground`. Haengt an der Lebensdauer des Players: Wird er
     /// zerstoert, waehrend er nicht sichtbar ist (anderer Tab, dann App-Reset oder
@@ -1950,10 +2059,18 @@ private struct ForTimePlayerView: View {
             titleVisibility: .visible
         ) {
             Button(role: .destructive) {
-                discardTimedSession(session, modelContext: modelContext, dismiss: dismiss)
+                if !discardTimedSession(session, modelContext: modelContext, dismiss: dismiss) {
+                    showTimedWorkoutSaveErrorToast($saveErrorMessage)
+                }
             } label: {
                 Text("timedWorkout.discard.confirmButton", bundle: .module)
             }
+        }
+        // Audit-Fix (Save-Fehler in Live-Workouts): sichtbarer Hinweis statt
+        // stillem `try?`-Swallow in finishPreroll()/toggleRound() sowie
+        // einem fehlgeschlagenen saveNow()/Verwerfen oben.
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
         }
     }
 
@@ -1997,11 +2114,13 @@ private struct ForTimePlayerView: View {
         session.finishTimeSeconds = resultElapsedSeconds
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .forTime
-        finishTimedSession(
+        if !finishTimedSession(
             session, modelContext: modelContext, healthKit: healthKit,
             prNotifications: prNotifications, navigation: navigation,
             prCelebrationsEnabled: prCelebrationsEnabled
-        )
+        ) {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
     }
 
     /// README 2.15/23b-23c: Uebergang von Vorlauf in den echten Lauf - egal
@@ -2021,7 +2140,13 @@ private struct ForTimePlayerView: View {
         // dieses Save faellt der Marker nach einem Kaltstart VOR dem ersten
         // Haekchen wieder auf `nil` zurueck - der Vorlauf wuerde faelschlich
         // neu starten (identisches Muster wie AMRAPs `finishPreroll()`).
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen statt verschlucken, Vorlauf-
+        // Uebergang selbst NICHT zurueckgesetzt (siehe AMRAPs Pendant).
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         playPrerollTone(remaining: 0, enabled: timerSoundEnabled)
         startBackground()
     }
@@ -2030,12 +2155,7 @@ private struct ForTimePlayerView: View {
     /// Wiederaufnehmen ("Training fortsetzen") wieder aufnehmen - erst, wenn die Uhr
     /// laeuft: `session.startTime` ist erst nach dem Vorlauf der Anker.
     private func startBackground() {
-        background.begin(
-            sessionKey: session.backgroundSessionKey,
-            format: .forTime,
-            dayName: session.displayDayName,
-            soundEnabled: timerSoundEnabled
-        )
+        background.begin(for: session, format: .forTime, soundEnabled: timerSoundEnabled)
         syncBackground()
     }
 
@@ -2135,7 +2255,14 @@ private struct ForTimePlayerView: View {
         // `context.save()` uebersteht keinen echten Kaltstart (siehe
         // `completeRound()`-Doku, identisches Muster).
         session.forTimeCheckedRoundsRaw = Self.encodeCheckedRounds(checkedRounds, exercises: resolvedExercises)
-        try? modelContext.save()
+        // Audit-Fix: Fehler sichtbar machen, die bereits abgehakte Runde
+        // aber NICHT zurueckdrehen (real geschafft, siehe AMRAPs
+        // `completeRound()`-Begruendung).
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         DeltiqHaptics.notify(.success)
         if checkedBoxes == totalBoxes {
             isFinished = true

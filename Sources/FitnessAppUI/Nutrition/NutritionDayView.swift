@@ -17,6 +17,13 @@ public enum NutritionDayAggregator {
         Dictionary(grouping: meals, by: \.mealType)
     }
 
+    /// OFF-01: `true`, sobald an mindestens einer Position mindestens ein
+    /// Naehrwert unbekannt ist — dann sind die Tagessummen lueckenhaft und
+    /// die UI sagt das (statt eine zu kleine Zahl als Tatsache zu zeigen).
+    public static func hasUnknownNutrients(meals: [MealEntry]) -> Bool {
+        meals.contains { meal in meal.items.contains { $0.nutrientsSnapshot.partiallyKnown } }
+    }
+
     public static func dailyTotal(meals: [MealEntry]) -> NutrientValues {
         NutrientValues.sum(meals.flatMap { $0.items.map(\.nutrientsSnapshot) })
     }
@@ -55,6 +62,9 @@ public struct NutritionDayView: View {
     // Task F: explicit UI locale instead of NutritionAIService's `.current`
     // default, same reasoning as AddMealView (Task E review, M2).
     @Environment(\.locale) private var locale
+    // Phase 4.1 (2026-10-31): Einstieg in MealPlannerView; nur wenn als Tab-Root
+    // eingebettet (dann existiert AppNavigation garantiert im Environment).
+    @Environment(AppNavigation.self) private var navigation
 
     @Query private var profiles: [UserBodyProfile]
 
@@ -64,10 +74,21 @@ public struct NutritionDayView: View {
     @Query(sort: \MealEntry.date, order: .reverse)
     private var allMeals: [MealEntry]
 
+    /// Bugfix (writing-block.md Punkt 6): fuer `resolvedMealItemName` — ein
+    /// katalogbasierter Mahlzeit-Eintrag muss seinen Namen per aktueller
+    /// `FoodCatalogEntry` (locale-abhaengig), nicht per eingefrorenem
+    /// `nameSnapshot` zeigen.
+    @Query(sort: \FoodCatalogEntry.catalogID)
+    private var catalogEntries: [FoodCatalogEntry]
+
     @State private var selectedDate: Date = Date()
     @State private var showingAddMeal = false
     @State private var showingGoals = false
     @State private var editingMeal: MealEntry?
+    /// Bugfix (writing-block.md 4.3, "Datum direkt auswaehlen"): die Pfeile
+    /// decken nur +/-1 Tag ab - umstaendlich, wenn mehrere Tage uebersprungen
+    /// werden sollen. Tippen auf das Datum oeffnet diesen Sheet.
+    @State private var showingDatePicker = false
 
     // Task F: optional local AI coaching text. `nil` = not (yet) shown, either
     // still generating or the last attempt failed — the rest of the screen
@@ -105,15 +126,30 @@ public struct NutritionDayView: View {
                         systemImage: "plus",
                         accessibilityLabel: String(localized: "nutrition.day.addMeal.button", bundle: .module)
                     ) {
-                        showingAddMeal = true
+                        if isTabRoot {
+                            navigation.nutritionPath.append(AddMealRoute.addMeal(date: selectedDate, mealType: .snack))
+                        } else {
+                            showingAddMeal = true
+                        }
                     },
                     DeltiqHeaderAction(
                         systemImage: "gearshape",
                         accessibilityLabel: String(localized: "nutrition.day.goals.button", bundle: .module)
                     ) {
-                        showingGoals = true
+                        if isTabRoot {
+                            navigation.nutritionPath.append(MealPlannerRoute.goals)
+                        } else {
+                            showingGoals = true
+                        }
                     }
-                ]
+                ] + (isTabRoot ? [
+                    DeltiqHeaderAction(
+                        systemImage: "fork.knife.circle",
+                        accessibilityLabel: String(localized: "nutrition.day.mealPlanner.button", bundle: .module)
+                    ) {
+                        navigation.nutritionPath.append(MealPlannerRoute.planner)
+                    }
+                ] : [])
             )
 
             VStack(alignment: .leading, spacing: 18) {
@@ -172,6 +208,44 @@ public struct NutritionDayView: View {
         .sheet(item: $editingMeal) { meal in
             AddMealView(editing: meal)
         }
+        .sheet(isPresented: $showingDatePicker) {
+            datePickerSheet
+        }
+    }
+
+    /// Bugfix (writing-block.md 4.3): `.graphical` DatePicker, dismissed
+    /// explizit ueber "Fertig" statt sofort beim ersten Tag-Tap - gleiches
+    /// Bestaetigungs-Prinzip wie jeder andere Editor in diesem Designsystem
+    /// (kein stiller Auto-Dismiss). `selectedDate` ist dieselbe Quelle, die
+    /// die Pfeile (`changeDay`) schon verwenden - bereits erfasste Mahlzeiten
+    /// werden rein ueber dieses eine Binding gefiltert (`filteredMeals`
+    /// unten), nie dupliziert oder umgeschrieben.
+    private var datePickerSheet: some View {
+        NavigationStack {
+            DatePicker(
+                String(localized: "summary.date", bundle: .module),
+                selection: $selectedDate,
+                displayedComponents: .date
+            )
+            .datePickerStyle(.graphical)
+            .labelsHidden()
+            .padding()
+            .background(Color.Deltiq.background.ignoresSafeArea())
+            .navigationTitle(Text("summary.date", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        showingDatePicker = false
+                    } label: {
+                        Text("common.done", bundle: .module)
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 
     // MARK: Sections
@@ -194,9 +268,14 @@ public struct NutritionDayView: View {
 
                 Spacer()
 
-                Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.primary)
+                Button {
+                    showingDatePicker = true
+                } label: {
+                    Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                }
+                .buttonStyle(.plain)
 
                 Spacer()
 
@@ -228,18 +307,29 @@ public struct NutritionDayView: View {
                 nutrientRow(String(localized: "nutrition.goals.protein.label", bundle: .module), value: total.proteinG, unit: "g")
                 nutrientRow(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: total.carbsG, unit: "g")
                 nutrientRow(String(localized: "nutrition.goals.fat.label", bundle: .module), value: total.fatG, unit: "g")
+                // OFF-01: Die Tagessumme ist nur vollstaendig, wenn jeder
+                // einzelne Wert bekannt ist. Sonst sagen wir das hier
+                // ausdruecklich, statt eine zu kleine Zahl als Tatsache
+                // hinzustellen.
+                if total.partiallyKnown || NutritionDayAggregator.hasUnknownNutrients(meals: mealsForSelectedDate) {
+                    Text("nutrition.day.total.incomplete", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private func nutrientRow(_ label: String, value: Double, unit: String) -> some View {
+    /// OFF-01: Unbekannte Werte erscheinen als „-" (ueber
+    /// `NutritionDisplay.unknownValue`), nie als 0.
+    private func nutrientRow(_ label: String, value: KnownValue, unit: String) -> some View {
         HStack {
             Text(label)
                 .font(.system(size: 15))
                 .foregroundStyle(Color.primary)
             Spacer()
-            Text("\(value.truncated(to: 2).formattedTwoDecimals) \(unit)")
+            Text(NutritionDisplay.text(value, unit: unit))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .fitnessNumberStyle()
         }
@@ -257,6 +347,15 @@ public struct NutritionDayView: View {
                 ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                     goalProgressRow(row, showsDivider: index < rows.count - 1)
                 }
+                // OFF-01: mindestens ein Ziel-Fortschritt ist unbekannt, weil
+                // die Tagessumme dieser Dimension unvollstaendig ist.
+                if rows.contains(where: { $0.current.isUnknown }) {
+                    Text("nutrition.day.total.incomplete", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                }
             }
         }
     }
@@ -269,13 +368,24 @@ public struct NutritionDayView: View {
                         .font(.system(size: 15))
                         .foregroundStyle(Color.primary)
                     Spacer()
-                    Text("\(row.current.truncated(to: 0).formattedTwoDecimals) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                        .fitnessNumberStyle()
+                    // OFF-01: unbekannte Tagessumme → "– / 150 g", kein
+                    // Fortschrittsbalken (er wuerde 0 % suggerieren).
+                    if let current = row.current.value {
+                        Text("\(current.truncated(to: 0).formattedTwoDecimals) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    } else {
+                        Text("\(NutritionDisplay.unknownValue) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fitnessNumberStyle()
+                    }
                 }
-                ProgressView(value: row.fraction)
-                    .tint(Color.deltiqOrange)
+                if row.current.value != nil {
+                    ProgressView(value: row.fraction)
+                        .tint(Color.deltiqOrange)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
@@ -321,7 +431,13 @@ public struct NutritionDayView: View {
             title: "nutrition.day.empty.title",
             description: "nutrition.day.empty.message",
             ctaTitle: "nutrition.day.addMeal.button",
-            ctaAction: { showingAddMeal = true }
+            ctaAction: {
+                if isTabRoot {
+                    navigation.nutritionPath.append(AddMealRoute.addMeal(date: selectedDate, mealType: .snack))
+                } else {
+                    showingAddMeal = true
+                }
+            }
         )
         .deltiqCardStyle()
     }
@@ -348,20 +464,30 @@ public struct NutritionDayView: View {
     /// der einzige Aufrufer von `AddMealView(editing:)` im ganzen Plan.
     private func mealEntryRow(_ meal: MealEntry, showsDivider: Bool) -> some View {
         Button {
-            editingMeal = meal
+            if isTabRoot {
+                navigation.nutritionPath.append(AddMealRoute.editMeal(meal))
+            } else {
+                editingMeal = meal
+            }
         } label: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
                         ForEach(Array(meal.items.enumerated()), id: \.element.persistentModelID) { _, item in
-                            Text(item.nameSnapshot)
+                            // writing-block.md Punkt 6 ("Lebensmittelname
+                            // folgt nicht der aktuellen App-Sprache"): dies
+                            // ist die Tagesuebersicht - genau die Stelle, an
+                            // der ein vor Wochen in einer anderen Sprache
+                            // protokolliertes, katalogbasiertes Lebensmittel
+                            // bisher den eingefrorenen `nameSnapshot` zeigte.
+                            Text(resolvedMealItemName(nameSnapshot: item.nameSnapshot, catalogID: item.catalogID, catalogEntries: catalogEntries))
                                 .font(.system(size: 15))
                                 .foregroundStyle(Color.primary)
                         }
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("\(mealTotal(meal).kcal.truncated(to: 0).formattedTwoDecimals) kcal")
+                        Text(NutritionDisplay.text(mealTotal(meal).kcal, unit: "kcal"))
                             .font(.system(size: 15))
                             .foregroundStyle(Color.Deltiq.textSecondary)
                             .fitnessNumberStyle()
@@ -454,8 +580,11 @@ public struct NutritionDayView: View {
     /// formula as `GoalRow.fraction` above) and hands it to the AI prompt as
     /// a plain pre-computed number — the model never calculates this itself.
     /// `nil` whenever the goal itself is `nil`/not set.
-    private func insightGoalProgress(current: Double, goal: Double?) -> NutritionInsightInput.GoalProgress? {
-        guard let goal, let progress = NutritionCalculations.goalProgress(current: current, goal: goal) else { return nil }
+    private func insightGoalProgress(current currentValue: KnownValue, goal: Double?) -> NutritionInsightInput.GoalProgress? {
+        // OFF-01: ohne bekannte Tagessumme keine Prozent-/Restaussage an die KI.
+        guard let current = currentValue.value,
+              let goal,
+              let progress = NutritionCalculations.goalProgress(current: current, goal: goal) else { return nil }
         return NutritionInsightInput.GoalProgress(percent: progress.percent, remaining: progress.remaining)
     }
 
@@ -467,10 +596,10 @@ public struct NutritionDayView: View {
         guard showsInsightSection else { return }
         let context = insightContext
         let input = NutritionInsightInput(
-            totalKcal: context.total.kcal,
-            totalProteinG: context.total.proteinG,
-            totalCarbsG: context.total.carbsG,
-            totalFatG: context.total.fatG,
+            totalKcal: context.total.kcal.value,
+            totalProteinG: context.total.proteinG.value,
+            totalCarbsG: context.total.carbsG.value,
+            totalFatG: context.total.fatG.value,
             calorieGoalKcal: context.calorieGoal,
             proteinGoalG: context.proteinGoal,
             carbGoalG: context.carbGoal,
@@ -497,14 +626,17 @@ public struct NutritionDayView: View {
 
     private struct GoalRow {
         let label: String
-        let current: Double
+        /// OFF-01: `.unknown`, sobald die Tagessumme dieser Dimension nicht
+        /// vollstaendig ist.
+        let current: KnownValue
         let goal: Double
         let unit: String
 
         // Shared with the AI insight prompt's percent/remaining facts — see
         // `NutritionCalculations.GoalProgress`'s doc comment.
         var fraction: Double {
-            NutritionCalculations.goalProgress(current: current, goal: goal)?.fraction ?? 0
+            guard let current = current.value else { return 0 }
+            return NutritionCalculations.goalProgress(current: current, goal: goal)?.fraction ?? 0
         }
     }
 
@@ -562,6 +694,7 @@ public struct NutritionDayView: View {
         NutritionDayView()
     }
     .modelContainer(container)
+    .environment(AppNavigation())
 }
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -574,6 +707,7 @@ public struct NutritionDayView: View {
         NutritionDayView()
     }
     .modelContainer(container)
+    .environment(AppNavigation())
 }
 #endif
 #endif

@@ -193,7 +193,8 @@ public enum ProgramInstantiator {
                 weekday: weekday,
                 type: .rest,
                 plan: plan,
-                localizationKey: "day.restDay.title"
+                localizationKey: "day.restDay.title",
+                isAutoFilledPlaceholder: true
             )
             context.insert(restDay)
         }
@@ -267,6 +268,8 @@ public enum ProgramInstantiator {
         // statt als weiterer Init-Parameter, um die bestehende, bereits sehr
         // lange Aufrufliste nicht an allen Call-Sites anzufassen.
         exercise.enduranceSportKind = spec.enduranceSportKind
+        exercise.targetPaceMinutesPerKm = spec.targetPaceMinutesPerKm
+        exercise.coachingRationale = spec.coachingRationale
         return exercise
     }
 

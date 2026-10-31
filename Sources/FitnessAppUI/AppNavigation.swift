@@ -1,5 +1,7 @@
 #if canImport(SwiftUI)
 import SwiftUI
+import FitnessAppCore
+import FitnessAppData
 
 /// App-wide navigation state. One per `RootView` — passed through the environment so
 /// any view can switch tabs or manipulate the workout-tab navigation stack without
@@ -24,6 +26,7 @@ public final class AppNavigation {
     /// Notification direkt bis zum WaterTracker, ohne den User nur auf dem
     /// Tab abzusetzen.
     public var toolsPath = NavigationPath()
+    public var nutritionPath = NavigationPath()
 
     public init() {}
 
@@ -33,6 +36,25 @@ public final class AppNavigation {
         workoutPath = NavigationPath()
         selectedTab = .dashboard
     }
+}
+
+/// Nav-Unification (2026-10-31): Push-Navigation fuer alle Nutrition-Screens.
+/// `.planner` — MealPlannerView; `.goals` — NutritionGoalsView.
+/// Phase 4.3 (2026-10-31): `.recipeDetail` — RecipeDetailView mit Portionsanpassung.
+/// Phase 4.4 (2026-10-31): `date` mitgefuehrt fuer den Tagebucheintrag.
+@available(iOS 17.0, macOS 14.0, *)
+public enum MealPlannerRoute: Hashable, Sendable {
+    case planner
+    case goals
+    case recipeDetail(recipeID: String, mealType: MealType, portionMultiplier: Double, date: Date)
+}
+
+/// Issue #5 (2026-10-31): Push-Navigation fuer AddMealView aus NutritionDayView.
+/// Folgt dem ActiveSessionRoute-Muster — kein Sendable, MealEntry direkt gespeichert.
+@available(iOS 17.0, macOS 14.0, *)
+public enum AddMealRoute: Hashable {
+    case addMeal(date: Date, mealType: MealType)
+    case editMeal(MealEntry)
 }
 
 /// DEL-212, main-navigation Plan Task 3 Fix-Runde 1 (2026-10-22): Wertbasierte

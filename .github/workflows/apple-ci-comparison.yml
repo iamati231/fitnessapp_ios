@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   apple-build-and-test:
@@ -178,3 +179,18 @@ jobs:
             otool-dylibs-release.txt
             otool-loadcommands-release.txt
             foundationmodels-link-kind.txt
+
+  trigger-testflight:
+    name: TestFlight-Build auslösen (gleicher Branch)
+    needs: apple-build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: testflight-release.yml auf demselben Branch starten
+        run: |
+          gh workflow run testflight-release.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$GITHUB_REF" \
+            -f upload_to_testflight=true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

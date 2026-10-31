@@ -394,7 +394,7 @@ public struct MeasurementView: View {
                 valueText(profile.heightCm.formattedTwoDecimals + " cm")
             }
             DeltiqControlRow(label: loc("measurement.profile.age.label")) {
-                valueText("\(ageYears(for: profile)) \(loc("measurement.profile.age.unit"))")
+                valueText("\(profile.ageYears) \(loc("measurement.profile.age.unit"))")
             }
             DeltiqControlRow(
                 label: loc("measurement.profile.sex.label"),
@@ -533,16 +533,6 @@ public struct MeasurementView: View {
 
     /// Abschnitt 1.6: Hinweistext (12pt, sekundaer) als letzte Zeile in der
     /// Karte statt als Footer darunter.
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     // MARK: - Sektion 3: Weitere Umfaenge (geschlechtsspezifische Reihenfolge)
 
     @ViewBuilder
@@ -687,7 +677,10 @@ public struct MeasurementView: View {
                 case .sharingAuthorized:
                     DeltiqControlRow(icon: "heart.fill", label: loc("measurement.healthkit.connected")) {
                         if let lastSync = healthKit.lastSyncDate {
-                            Text("Sync \(lastSync.formatted(.relative(presentation: .named)))")
+                            Text(String(
+                                format: String(localized: "measurement.healthkit.lastSync", bundle: .module),
+                                lastSync.formatted(.relative(presentation: .named))
+                            ))
                                 .font(.system(size: 12))
                                 .foregroundStyle(Color.Deltiq.textSecondary)
                         }
@@ -970,16 +963,12 @@ public struct MeasurementView: View {
 
     // MARK: - Domain glue + validation
 
-    private func ageYears(for profile: UserBodyProfile) -> Int {
-        Calendar.current.dateComponents([.year], from: profile.birthDate, to: Date()).year ?? 0
-    }
-
     private func derivedMetrics(for profile: UserBodyProfile) -> DerivedBodyMetrics? {
         guard let weightKg, weightKg > 0, profile.heightCm > 0 else { return nil }
         return BodyCalculations.computeDerivedFields(
             weightKg: weightKg,
             heightCm: profile.heightCm,
-            ageYears: ageYears(for: profile),
+            ageYears: profile.ageYears,
             profile: profile.profile,
             neckCm: neckCm,
             waistCm: waistCm,
@@ -1014,6 +1003,37 @@ public struct MeasurementView: View {
         saveErrorMessage = nil
 
         if let existing = editingMeasurement {
+            // Rollback-Fix (Audit, gleicher Musterfehler wie `CardioGoalEditorView.save()`,
+            // Commit 8bdb416): Schnappschuss ALLER Felder, die dieser Zweig potenziell anfasst,
+            // VOR jeder Mutation - ein fehlgeschlagener `context.save()` unten liess bisher jedes
+            // bereits geschriebene Feld auf `existing` stehen (bis zu 20 unbestaetigte Werte,
+            // teils berechnet wie BMI/Koerperfett/FFMI), obwohl der Nutzer "Speichern
+            // fehlgeschlagen" sah. Welche Teilmenge dieser Aufruf tatsaechlich schreibt, haengt
+            // von `hasFullCircumferences`/den Prefill-Vergleichen weiter unten ab - der komplette
+            // Schnappschuss macht ein Zurueckschreiben auf ein bereits korrektes Feld zu einem
+            // harmlosen No-op, statt die Teilmenge nachzuverfolgen.
+            let originalWeightKg = existing.weightKg
+            let originalNeckCm = existing.neckCm
+            let originalWaistCm = existing.waistCm
+            let originalHipCm = existing.hipCm
+            let originalShoulderCm = existing.shoulderCm
+            let originalChestCm = existing.chestCm
+            let originalCalfCm = existing.calfCm
+            let originalUpperArmCm = existing.upperArmCm
+            let originalUpperArmLeftCm = existing.upperArmLeftCm
+            let originalUpperArmRightCm = existing.upperArmRightCm
+            let originalThighCm = existing.thighCm
+            let originalThighLeftCm = existing.thighLeftCm
+            let originalThighRightCm = existing.thighRightCm
+            let originalBmi = existing.bmi
+            let originalNavyBodyFatPct = existing.navyBodyFatPct
+            let originalDeurenbergBodyFatPct = existing.deurenbergBodyFatPct
+            let originalSelectedBodyFatPct = existing.selectedBodyFatPct
+            let originalFatFreeMassKg = existing.fatFreeMassKg
+            let originalFfmi = existing.ffmi
+            let originalNormalizedFfmi = existing.normalizedFfmi
+            let originalBmr = existing.bmr
+
             // Settings-Epic Phase 3: am tatsaechlichen Feldstand entscheiden,
             // nicht am Ausgangszustand — eine urspruenglich umfangslose Zeile
             // darf beim Bearbeiten nachtraeglich zu einer vollen werden, wenn
@@ -1113,6 +1133,31 @@ public struct MeasurementView: View {
             do {
                 try modelContext.save()
             } catch {
+                // Rollback-Fix: alle 20 oben schnappschussten Felder zurueckschreiben, bevor der
+                // Nutzer "Speichern fehlgeschlagen" sieht - sonst bliebe der unbestaetigte Entwurf
+                // im Live-Objektgraphen stehen und ein spaeterer, unabhaengiger Save irgendwo
+                // sonst in der App wuerde ihn versehentlich mitpersistieren.
+                existing.weightKg = originalWeightKg
+                existing.neckCm = originalNeckCm
+                existing.waistCm = originalWaistCm
+                existing.hipCm = originalHipCm
+                existing.shoulderCm = originalShoulderCm
+                existing.chestCm = originalChestCm
+                existing.calfCm = originalCalfCm
+                existing.upperArmCm = originalUpperArmCm
+                existing.upperArmLeftCm = originalUpperArmLeftCm
+                existing.upperArmRightCm = originalUpperArmRightCm
+                existing.thighCm = originalThighCm
+                existing.thighLeftCm = originalThighLeftCm
+                existing.thighRightCm = originalThighRightCm
+                existing.bmi = originalBmi
+                existing.navyBodyFatPct = originalNavyBodyFatPct
+                existing.deurenbergBodyFatPct = originalDeurenbergBodyFatPct
+                existing.selectedBodyFatPct = originalSelectedBodyFatPct
+                existing.fatFreeMassKg = originalFatFreeMassKg
+                existing.ffmi = originalFfmi
+                existing.normalizedFfmi = originalNormalizedFfmi
+                existing.bmr = originalBmr
                 saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                 isSaving = false
                 return
@@ -1122,7 +1167,7 @@ public struct MeasurementView: View {
             dismiss()
         } else {
             let measurement = BodyMeasurement.makeDerived(
-                ageYears: ageYears(for: profile),
+                ageYears: profile.ageYears,
                 weightKg: weightKg,
                 heightCm: profile.heightCm,
                 profile: profile.profile,
@@ -1247,7 +1292,10 @@ private struct HistoryRow: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.primary)
                 if let kfa = bestBodyFatPct {
-                    Text("KFA \(kfa.truncated(to: 1).formattedTwoDecimals) %")
+                    Text(String(
+                        format: String(localized: "measurement.history.bodyFatAbbrev", bundle: .module),
+                        kfa.truncated(to: 1).formattedTwoDecimals
+                    ))
                         .font(.system(size: 12))
                         .foregroundStyle(Color.Deltiq.textSecondary)
                 }
@@ -1259,7 +1307,10 @@ private struct HistoryRow: View {
                     .foregroundStyle(Color.primary)
                     .fitnessNumberStyle()
                 if let bicepsAvg = bicepsDisplay {
-                    Text("Bizeps \(bicepsAvg.truncated(to: 1).formattedTwoDecimals) cm")
+                    Text(String(
+                        format: String(localized: "measurement.history.biceps", bundle: .module),
+                        bicepsAvg.truncated(to: 1).formattedTwoDecimals
+                    ))
                         .font(.system(size: 12))
                         .foregroundStyle(Color.Deltiq.textSecondary)
                         .fitnessNumberStyle()

@@ -326,6 +326,12 @@ public final class UserBodyProfile {
 
     public var baselineDesiredFirstWeekIntensityRaw: String?
 
+    /// Audit-Fix (Lean): war identisch 4x in FitnessAppUI dupliziert
+    /// (TDEEView, MeasurementView, NutritionGoalsView, SettingsView).
+    public var ageYears: Int {
+        Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0
+    }
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var cardioGoal: CardioGoal {
@@ -580,6 +586,36 @@ public final class UserBodyProfile {
         equipmentProfile = current
         if equipmentProfileConfirmedComplete {
             equipmentPreferences = current.legacyEquipmentPreferences
+        }
+    }
+
+    // MARK: - DEL-Ernährungsplaner Phase 3: Ernährungspräferenzen
+    //
+    // Flaches Feld-pro-Wert-Muster wie bei allen anderen Profile-Erweiterungen.
+    // Lightweight-Migration: Default-Literale reichen, kein VersionedSchema nötig.
+
+    /// Ernährungsstil für den MealPlanGenerator. Default .omnivor (keine Einschränkung).
+    public var mealPlanDietaryStyleRaw: String = DietaryStyle.omnivor.rawValue
+
+    /// Ausgeschlossene Allergene (RecipeAllergen.rawValue). Default leer.
+    public var mealPlanAllergenExclusionsRaw: [String] = []
+
+    /// Vom Nutzer manuell ausgeschlossene Rezept-IDs. Default leer.
+    public var mealPlanExcludedRecipeIDsRaw: [String] = []
+
+    /// Typisierter Accessor — liest/schreibt alle drei Felder oben als einen Value.
+    public var nutritionPreferences: UserNutritionPreferences {
+        get {
+            UserNutritionPreferences(
+                dietaryStyle: DietaryStyle(rawValue: mealPlanDietaryStyleRaw) ?? .omnivor,
+                allergenExclusions: Set(mealPlanAllergenExclusionsRaw.compactMap { RecipeAllergen(rawValue: $0) }),
+                excludedRecipeIDs: Set(mealPlanExcludedRecipeIDsRaw)
+            )
+        }
+        set {
+            mealPlanDietaryStyleRaw = newValue.dietaryStyle.rawValue
+            mealPlanAllergenExclusionsRaw = newValue.allergenExclusions.map(\.rawValue).sorted()
+            mealPlanExcludedRecipeIDsRaw = newValue.excludedRecipeIDs.sorted()
         }
     }
 

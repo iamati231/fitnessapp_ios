@@ -301,13 +301,13 @@ struct HistorySessionRow: View {
         switch session.sessionCategory {
         case .pureCardio:
             HStack(spacing: 6) {
-                Image(systemName: "clock")
+                Image(systemName: "clock").accessibilityHidden(true)
                 Text(durationText)
-                Text("•")
-                Image(systemName: "figure.run")
+                Text("•").accessibilityHidden(true)
+                Image(systemName: "figure.run").accessibilityHidden(true)
                 Text(totalDistanceText)
-                Text("•")
-                Image(systemName: "stopwatch")
+                Text("•").accessibilityHidden(true)
+                Image(systemName: "stopwatch").accessibilityHidden(true)
                 Text(averagePaceText)
             }
             .font(.caption)
@@ -316,13 +316,13 @@ struct HistorySessionRow: View {
 
         case .mixed:
             HStack(spacing: 6) {
-                Image(systemName: "clock")
+                Image(systemName: "clock").accessibilityHidden(true)
                 Text(durationText)
-                Text("•")
-                Image(systemName: "scalemass")
+                Text("•").accessibilityHidden(true)
+                Image(systemName: "scalemass").accessibilityHidden(true)
                 Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
-                Text("•")
-                Image(systemName: "figure.run")
+                Text("•").accessibilityHidden(true)
+                Image(systemName: "figure.run").accessibilityHidden(true)
                 Text(totalDistanceText)
             }
             .font(.caption)
@@ -331,13 +331,13 @@ struct HistorySessionRow: View {
 
         case .pureStrength:
             HStack(spacing: 6) {
-                Image(systemName: "clock")
+                Image(systemName: "clock").accessibilityHidden(true)
                 Text(durationText)
-                Text("•")
-                Image(systemName: "list.number")
+                Text("•").accessibilityHidden(true)
+                Image(systemName: "list.number").accessibilityHidden(true)
                 Text("\(session.totalSets)")
-                Text("•")
-                Image(systemName: "scalemass")
+                Text("•").accessibilityHidden(true)
+                Image(systemName: "scalemass").accessibilityHidden(true)
                 Text("\(session.totalVolumeKg.truncated(to: 0).formattedTwoDecimals) kg")
             }
             .font(.caption)

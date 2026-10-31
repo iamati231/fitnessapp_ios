@@ -64,9 +64,13 @@ final class AddMealViewSaveErrorStyleTests: XCTestCase {
         // Built with explicit "\n" (not a triple-quote literal) so the
         // expected indentation isn't silently reshaped by Swift's multiline
         // string dedenting -- this must match AddMealView.swift byte-for-byte.
+        // Indentation bumped by one level (writing-block.md 4.2): the whole
+        // `Form` moved one level deeper, nested inside the new DeltiqHeader-
+        // owning `VStack` that replaced the native `.navigationTitle`/
+        // `ToolbarItem` chrome.
         let errorRowBlock = "Text(saveErrorMessage)\n"
-            + "                            .font(.caption)\n"
-            + "                            .foregroundStyle(Color.Deltiq.textSecondary)"
+            + "                                .font(.caption)\n"
+            + "                                .foregroundStyle(Color.Deltiq.textSecondary)"
         XCTAssertTrue(
             source.contains(errorRowBlock),
             "saveErrorMessage row must use the same .font(.caption) + Color.Deltiq.textSecondary style as AddMealView's own aiErrorMessage/onlineSearch.errorMessage rows."

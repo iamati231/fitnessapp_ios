@@ -113,7 +113,7 @@ public struct DashboardSettingsView: View {
                 .onMove(perform: moveActive)
             }
         } header: {
-            sectionHeader("dashboardSettings.section.active.title")
+            sectionHeaderForKey("dashboardSettings.section.active.title")
         } footer: {
             Text("dashboardSettings.section.active.footer", bundle: .module)
                 .font(.system(size: 12))
@@ -125,14 +125,6 @@ public struct DashboardSettingsView: View {
     /// Eyebrow-Stil statt der nativen List-Section-Header-Konvention
     /// (Caps-Grau). `.textCase(nil)` verhindert, dass List den bereits
     /// grossgeschriebenen String noch einmal automatisch transformiert.
-    private func sectionHeader(_ key: String) -> some View {
-        Text(String(localized: String.LocalizationValue(stringLiteral: key), bundle: .module).uppercased())
-            .font(.system(size: 10, weight: .heavy))
-            .tracking(1.5)
-            .foregroundStyle(Color.deltiqOrange)
-            .textCase(nil)
-    }
-
     private func activeRow(_ widget: DashboardWidgetType) -> some View {
         HStack(spacing: 12) {
             Text(LocalizedStringKey(widget.localizationKey), bundle: .module)
@@ -246,7 +238,7 @@ public struct DashboardSettingsView: View {
                 .onMove(perform: moveHero)
             }
         } header: {
-            sectionHeader("dashboardSettings.section.hero.title")
+            sectionHeaderForKey("dashboardSettings.section.hero.title")
         } footer: {
             Text("dashboardSettings.section.hero.footer", bundle: .module)
                 .font(.system(size: 12))
@@ -347,7 +339,7 @@ public struct DashboardSettingsView: View {
                     .listRowBackground(Color.Deltiq.surface)
                 }
             } header: {
-                sectionHeader("dashboardSettings.section.heroInactive.title")
+                sectionHeaderForKey("dashboardSettings.section.heroInactive.title")
             } footer: {
                 Text(atMax
                      ? "dashboardSettings.section.hero.maxReached"
@@ -393,7 +385,7 @@ public struct DashboardSettingsView: View {
                     .listRowBackground(Color.Deltiq.surface)
                 }
             } header: {
-                sectionHeader("dashboardSettings.section.inactive.title")
+                sectionHeaderForKey("dashboardSettings.section.inactive.title")
             } footer: {
                 Text("dashboardSettings.section.inactive.footer", bundle: .module)
                     .font(.system(size: 12))

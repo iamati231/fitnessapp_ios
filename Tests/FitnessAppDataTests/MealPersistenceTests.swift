@@ -54,7 +54,7 @@ final class MealPersistenceTests: XCTestCase {
         entry.kcalPer100g = 9999
         try context.save()
 
-        XCTAssertEqual(item.nutrientsSnapshot.kcal, nutrients.kcal, "Snapshot darf sich nicht rueckwirkend aendern")
+        XCTAssertEqual(item.nutrientsSnapshot.kcal.value, nutrients.kcal.value, "Snapshot darf sich nicht rueckwirkend aendern")
     }
 }
 #endif

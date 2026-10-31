@@ -28,6 +28,11 @@ public struct WaterTrackerView: View {
     @Query(sort: \WaterEntry.date, order: .reverse)
     private var allEntries: [WaterEntry]
 
+    /// Audit-Fix (Save-Fehler): siehe `showTimedWorkoutSaveErrorToast`
+    /// (TimedWorkoutPlayerView.swift) — addEntry/delete/deleteTodayEntries
+    /// hingen bisher am impliziten Autosave.
+    @State private var saveErrorMessage: String?
+
     public init() {}
 
     public var body: some View {
@@ -70,6 +75,9 @@ public struct WaterTrackerView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        .overlay(alignment: .bottom) {
+            timedWorkoutSaveErrorOverlay(saveErrorMessage)
+        }
         // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
@@ -275,17 +283,38 @@ public struct WaterTrackerView: View {
     private func addEntry(amount: Int) {
         let entry = WaterEntry(date: Date(), amountMl: amount)
         modelContext.insert(entry)
+        // Audit-Fix (Save-Fehler): fehlender context.save() nach dem Insert -
+        // derselbe Musterfehler wie `ExerciseCard.logSet`.
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.delete(entry)
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+            return
+        }
         reloadWaterWidget()
     }
 
     private func delete(_ entry: WaterEntry) {
         modelContext.delete(entry)
+        // Audit-Fix (Save-Fehler): delete() wirkt sofort auf den Live-Graphen
+        // (wie `ExerciseCard.unlogSet`), kein Undo sinnvoll moeglich.
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+        }
         reloadWaterWidget()
     }
 
     private func deleteTodayEntries() {
         for entry in todayEntries {
             modelContext.delete(entry)
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
         }
         reloadWaterWidget()
     }

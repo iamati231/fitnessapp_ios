@@ -36,6 +36,107 @@ final class ProgressionApplicatorDeloadConflictTests: XCTestCase {
         return try ModelContainer(for: schema, configurations: config)
     }
 
+    // MARK: - DeloadManager.startDeload factor validation (DEL-Audit)
+
+    /// factor >= 1 wuerde Gewichte ERHOEHEN — guard muss das stumm ablehnen.
+    func testStartDeloadWithFactorAboveOneChangesNothing() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let plan = TrainingPlan(name: "P", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "A", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        let squat = Exercise(
+            name: "Kniebeuge", exerciseTemplateID: UUID(), sets: 1, repsMin: 8, repsMax: 10,
+            suggestedWeight: 100, orderIndex: 0, targetRir: 2, isCompound: true, day: day
+        )
+        context.insert(squat)
+        try context.save()
+
+        let adjusted = try DeloadManager.startDeload(in: context, factor: 1.5)
+        XCTAssertEqual(adjusted, 0, "factor > 1 darf keine Uebungen veraendern")
+        XCTAssertEqual(squat.suggestedWeight, 100, "Gewicht muss unveraendert bleiben")
+        XCTAssertNil(squat.deloadOriginalWeight, "kein Snapshot bei ungueltigem Faktor")
+    }
+
+    func testStartDeloadWithFactorOneChangesNothing() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let plan = TrainingPlan(name: "P", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "A", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        let squat = Exercise(
+            name: "Kniebeuge", exerciseTemplateID: UUID(), sets: 1, repsMin: 8, repsMax: 10,
+            suggestedWeight: 80, orderIndex: 0, targetRir: 2, isCompound: true, day: day
+        )
+        context.insert(squat)
+        try context.save()
+
+        let adjusted = try DeloadManager.startDeload(in: context, factor: 1.0)
+        XCTAssertEqual(adjusted, 0, "factor == 1 ist keine Reduktion")
+        XCTAssertNil(squat.deloadOriginalWeight)
+    }
+
+    func testStartDeloadWithZeroFactorChangesNothing() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let plan = TrainingPlan(name: "P", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "A", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        let squat = Exercise(
+            name: "Kniebeuge", exerciseTemplateID: UUID(), sets: 1, repsMin: 8, repsMax: 10,
+            suggestedWeight: 60, orderIndex: 0, targetRir: 2, isCompound: true, day: day
+        )
+        context.insert(squat)
+        try context.save()
+
+        let adjusted = try DeloadManager.startDeload(in: context, factor: 0)
+        XCTAssertEqual(adjusted, 0, "factor == 0 waere Nullgewicht — Guard muss ablehnen")
+        XCTAssertNil(squat.deloadOriginalWeight)
+    }
+
+    func testStartDeloadWithNaNChangesNothing() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let plan = TrainingPlan(name: "P", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "A", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        let squat = Exercise(
+            name: "Kniebeuge", exerciseTemplateID: UUID(), sets: 1, repsMin: 8, repsMax: 10,
+            suggestedWeight: 60, orderIndex: 0, targetRir: 2, isCompound: true, day: day
+        )
+        context.insert(squat)
+        try context.save()
+
+        let adjusted = try DeloadManager.startDeload(in: context, factor: .nan)
+        XCTAssertEqual(adjusted, 0, "NaN darf keine Uebungen veraendern")
+        XCTAssertNil(squat.deloadOriginalWeight)
+    }
+
+    /// Gegenprobe: der Standard-Faktor 0.5 laeuft weiterhin durch.
+    func testStartDeloadWithDefaultFactorReducesWeight() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let plan = TrainingPlan(name: "P", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "A", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        let squat = Exercise(
+            name: "Kniebeuge", exerciseTemplateID: UUID(), sets: 1, repsMin: 8, repsMax: 10,
+            suggestedWeight: 100, orderIndex: 0, targetRir: 2, isCompound: true, day: day
+        )
+        context.insert(squat)
+        try context.save()
+
+        let adjusted = try DeloadManager.startDeload(in: context)
+        XCTAssertEqual(adjusted, 1)
+        XCTAssertEqual(squat.suggestedWeight, 50)
+        XCTAssertEqual(squat.deloadOriginalWeight, 100)
+    }
+
     func testIncreaseWeightIsVetoedToHoldWhileAnExerciseHasAPendingDeloadSnapshot() throws {
         let container = try makeContainer()
         let context = container.mainContext

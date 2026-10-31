@@ -59,7 +59,12 @@ struct TrainingLocationEquipmentEditorView: View {
     init(profile: UserBodyProfile) {
         self.profile = profile
         _draftEnvironment = State(initialValue: profile.environment)
-        _draftEquipmentProfile = State(initialValue: profile.equipmentProfile)
+        // Gym ohne bestaetigtes Profil: direkt mit gymFull vorbefuellen,
+        // damit der Nutzer beim Speichern automatisch alle Items bestaetigt.
+        let initialEquipment = (profile.environment == .gym && !profile.equipmentProfileConfirmedComplete)
+            ? UserEquipmentProfile.gymFull
+            : profile.equipmentProfile
+        _draftEquipmentProfile = State(initialValue: initialEquipment)
     }
 
     var body: some View {
@@ -105,6 +110,17 @@ struct TrainingLocationEquipmentEditorView: View {
             // Dialog vorbei. Ohne Aenderungen (`!isDirty`) bleibt es normal
             // moeglich (direktes Schliessen).
             .interactiveDismissDisabled(isDirty)
+            .onAppear {
+                if draftEnvironment == .gym, !profile.equipmentProfileConfirmedComplete {
+                    equipmentTouched = true
+                }
+            }
+            .onChange(of: draftEnvironment) { _, newValue in
+                if newValue == .gym {
+                    draftEquipmentProfile = .gymFull
+                    equipmentTouched = true
+                }
+            }
             // P5.1: analog `ProfileEditorView`s `envSwap`-Dialog (siehe
             // dortige Button-Texte, hier wiederverwendet — gleiche
             // Ja/Nein-Semantik, nur ein anderer Ausloeser). Erscheint ERST
@@ -218,6 +234,18 @@ struct TrainingLocationEquipmentEditorView: View {
         // bereits der neue Wert und ein Vergleich waere immer `false`.
         let equipmentChanged = draftEquipmentProfile != profile.equipmentProfile
 
+        // Audit-Fund (Laufcoaching-Folgeauftrag, gleicher Fehler wie Finding 3 in
+        // `CardioGoalEditorView.save()`, Commit 8bdb416): Schnappschuss ALLER vier Felder, die
+        // gleich mutiert werden - inklusive der drei, die `confirmEquipmentProfileComplete()`
+        // selbst anfasst (siehe dortige Doku: `equipmentProfile`/`equipmentProfileConfirmedComplete`/
+        // `equipmentPreferences` zusammen), nicht nur die zwei direkt sichtbaren Zeilen darunter.
+        // Ohne das blieb `profile` nach einem fehlgeschlagenen `context.save()` mit den nie
+        // bestaetigten Entwurfswerten stehen.
+        let originalEnvironment = profile.environment
+        let originalEquipmentProfile = profile.equipmentProfile
+        let originalEquipmentProfileConfirmedComplete = profile.equipmentProfileConfirmedComplete
+        let originalEquipmentPreferences = profile.equipmentPreferences
+
         profile.environment = draftEnvironment
         profile.equipmentProfile = draftEquipmentProfile
         if equipmentTouched {
@@ -234,6 +262,12 @@ struct TrainingLocationEquipmentEditorView: View {
         do {
             try modelContext.save()
         } catch {
+            // KEIN `modelContext.rollback()` - das wuerde auch andere, unabhaengige, noch
+            // ausstehende Aenderungen im (typischerweise app-weit geteilten) Context verwerfen.
+            profile.environment = originalEnvironment
+            profile.equipmentProfile = originalEquipmentProfile
+            profile.equipmentProfileConfirmedComplete = originalEquipmentProfileConfirmedComplete
+            profile.equipmentPreferences = originalEquipmentPreferences
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
             isSaving = false
             return
@@ -285,16 +319,6 @@ struct TrainingLocationEquipmentEditorView: View {
             guard !draft.replacements.isEmpty else { continue }
             PlanEquipmentAdaptationApplier.apply(plan: plan, draft: draft, modelContext: modelContext)
         }
-    }
-
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
     }
 
     /// Task 5: identisches Inline-Fehler-Muster wie `GearListView.gearCard`.

@@ -249,6 +249,15 @@ struct BodyDataEditorView: View {
         guard !isSaving else { return }
         isSaving = true
 
+        // Audit-Fund (Rollback bei fehlgeschlagenem Save): Schnappschuss der beiden
+        // Felder, die gleich auf das bereits lebende `profile` mutiert werden - ohne
+        // das bliebe `profile` nach einem fehlgeschlagenen `context.save()` mit den nie
+        // bestaetigten Entwurfswerten stehen, und ein spaeterer, unabhaengiger Save
+        // irgendwo sonst in der App wuerde sie versehentlich mitpersistieren. Identisches
+        // Prinzip wie `CardioGoalEditorView.save()` (Commit 8bdb416).
+        let originalHeightCm = profile.heightCm
+        let originalGoalWeightKg = profile.goalWeightKg
+
         profile.heightCm = draftHeightCm
         profile.goalWeightKg = draftGoalWeightKg
         // Groesse/Zielgewicht allein (oder ein nie angefasstes Gewichtsfeld)
@@ -281,21 +290,16 @@ struct BodyDataEditorView: View {
             if let insertedMeasurement {
                 modelContext.delete(insertedMeasurement)
             }
+            // KEIN `modelContext.rollback()` - das wuerde auch andere, unabhaengige,
+            // noch ausstehende Aenderungen im (typischerweise app-weit geteilten)
+            // Context verwerfen. Gezielte Feld-Wiederherstellung aus dem Schnappschuss.
+            profile.heightCm = originalHeightCm
+            profile.goalWeightKg = originalGoalWeightKg
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
             isSaving = false
             return
         }
         dismiss()
-    }
-
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
     }
 
     /// Task 5: identisches Inline-Fehler-Muster wie `GearListView.gearCard`s

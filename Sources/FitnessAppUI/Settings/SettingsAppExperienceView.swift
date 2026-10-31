@@ -41,13 +41,9 @@ public struct SettingsAppExperienceView: View {
     @AppStorage("pref_measurement_reminder_weekday") private var measurementWeekday: Int = 1
     @AppStorage("pref_measurement_reminder_hour") private var measurementHour: Int = 8
     @AppStorage("pref_show_warmups") private var showWarmups: Bool = true
-    /// Runde 10: identischer Key wie `SetRow.setDisplayModeRaw` /
-    /// `ExerciseCard.setDisplayModeRaw` — "column" (Default, bisheriges
-    /// Verhalten) vs. "classic" (neue, selbst-beschriftete Darstellung ohne
-    /// gemeinsamen Spaltenkopf).
-    @AppStorage("pref_set_display_mode") private var setDisplayModeRaw: String = "column"
     @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
     @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
+    @AppStorage("pref_plateau_detection_enabled") private var plateauDetectionEnabled: Bool = true
 
     @State private var deloadRestoreMessage: String?
 
@@ -267,36 +263,6 @@ public struct SettingsAppExperienceView: View {
                     .tint(Color.deltiqOrange)
                     .accessibilityLabel(Text("settings.training.rirTooltip.title", bundle: .module))
             }
-            DeltiqControlRow(
-                icon: "square.split.2x1",
-                label: String(localized: "settings.training.displayMode.label", bundle: .module)
-            ) {
-                Picker(selection: $setDisplayModeRaw) {
-                    Text("settings.training.displayMode.column", bundle: .module).tag("column")
-                    Text("settings.training.displayMode.classic", bundle: .module).tag("classic")
-                } label: { EmptyView() }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                // Geraete-Abnahme (Runde 10, Nachbesserung): "Previous
-                // layout"/"Column overview" sind laenger als die uebrigen
-                // Picker-Werte dieses Screens ("Metric", "Dark", ...). Bei
-                // AX5 rendert `.pickerStyle(.menu)` seinen eingeklappten
-                // Wert ueber ein natives UIKit-Button-Label, das SwiftUIs
-                // `.lineLimit`/`.minimumScaleFactor` ignoriert und
-                // stattdessen selbst mehrzeilig umbricht - eine blosse
-                // `maxWidth` (erster Versuch) reichte NICHT, der Text lief
-                // weiterhin ueber mehrere Nachbar-Reihen hinweg ueber.
-                // `maxHeight` + `.clipped()` deckelt das hart: der Wert
-                // bleibt bei AX5 ggf. sichtbar unvollstaendig, aber NIE
-                // mehr faellt er in andere Settings-Reihen hinein - ein
-                // bewusster Kompromiss zwischen Eigenname-Lesbarkeit und
-                // Nicht-Ueberlappung, entschieden zugunsten Letzterem.
-                .frame(maxWidth: 150, maxHeight: 44, alignment: .trailing)
-                .clipped()
-                .accessibilityLabel(Text("settings.training.displayMode.label", bundle: .module))
-            }
             periodicCheckInRow
             fourWeekReviewRow
             DeltiqControlRow(
@@ -307,6 +273,14 @@ public struct SettingsAppExperienceView: View {
                 Toggle(isOn: $deloadEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
                     .accessibilityLabel(Text("settings.deload.toggle", bundle: .module))
+            }
+            DeltiqControlRow(
+                icon: "chart.line.flattrend.xyaxis",
+                label: String(localized: "settings.plateau.toggle", bundle: .module)
+            ) {
+                Toggle(isOn: $plateauDetectionEnabled) { EmptyView() }
+                    .tint(Color.deltiqOrange)
+                    .accessibilityLabel(Text("settings.plateau.toggle", bundle: .module))
             }
             if pendingDeloadCount > 0 {
                 Button {
@@ -334,8 +308,8 @@ public struct SettingsAppExperienceView: View {
                 [
                     String(localized: "settings.workout.footer", bundle: .module),
                     String(localized: "settings.training.rirTooltip.description", bundle: .module),
-                    String(localized: "settings.training.displayMode.footer", bundle: .module),
-                    String(localized: "settings.deload.description", bundle: .module)
+                    String(localized: "settings.deload.description", bundle: .module),
+                    String(localized: "settings.plateau.description", bundle: .module)
                 ].joined(separator: "\n")
             )
         }
@@ -510,16 +484,6 @@ public struct SettingsAppExperienceView: View {
         } else {
             await ReminderScheduler.cancelMeasurementReminder()
         }
-    }
-
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
     }
 }
 #endif

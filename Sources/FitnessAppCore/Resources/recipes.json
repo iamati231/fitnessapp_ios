@@ -1,0 +1,427 @@
+{
+  "schemaVersion": 1,
+  "recipes": [
+    {
+      "id": "chicken_rice_bowl",
+      "nameKey": "recipe.chicken_rice_bowl.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "chicken_breast_cooked", "amountGrams": 150},
+        {"ingredientID": "rice_basmati_cooked",   "amountGrams": 180},
+        {"ingredientID": "broccoli_cooked",        "amountGrams": 100},
+        {"ingredientID": "olive_oil",              "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "oatmeal_berry_skyr",
+      "nameKey": "recipe.oatmeal_berry_skyr.name",
+      "mealTypes": ["breakfast"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["gluten", "lactose"],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "oats",      "amountGrams": 80},
+        {"ingredientID": "skyr",      "amountGrams": 150},
+        {"ingredientID": "blueberry", "amountGrams": 80},
+        {"ingredientID": "banana",    "amountGrams": 50}
+      ]
+    },
+    {
+      "id": "red_lentil_soup",
+      "nameKey": "recipe.red_lentil_soup.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 2,
+      "prepMinutes": 30,
+      "ingredients": [
+        {"ingredientID": "lentils_cooked", "amountGrams": 400},
+        {"ingredientID": "tomato_raw",     "amountGrams": 200},
+        {"ingredientID": "onion_raw",      "amountGrams": 100},
+        {"ingredientID": "garlic_raw",     "amountGrams": 10},
+        {"ingredientID": "olive_oil",      "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "greek_yogurt_bowl",
+      "nameKey": "recipe.greek_yogurt_bowl.name",
+      "mealTypes": ["breakfast", "snack"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["lactose", "nuts"],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "yogurt_greek", "amountGrams": 200},
+        {"ingredientID": "blueberry",    "amountGrams": 80},
+        {"ingredientID": "strawberry",   "amountGrams": 80},
+        {"ingredientID": "almonds",      "amountGrams": 20}
+      ]
+    },
+    {
+      "id": "tuna_salad",
+      "nameKey": "recipe.tuna_salad.name",
+      "mealTypes": ["lunch"],
+      "dietaryTags": ["pescetarian"],
+      "allergens": ["fish"],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 10,
+      "ingredients": [
+        {"ingredientID": "tuna_canned_water", "amountGrams": 150},
+        {"ingredientID": "tomato_raw",        "amountGrams": 100},
+        {"ingredientID": "cucumber_raw",      "amountGrams": 100},
+        {"ingredientID": "olive_oil",         "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "scrambled_eggs_toast",
+      "nameKey": "recipe.scrambled_eggs_toast.name",
+      "mealTypes": ["breakfast"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["eggs", "gluten"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 10,
+      "ingredients": [
+        {"ingredientID": "egg_scrambled",    "amountGrams": 150},
+        {"ingredientID": "bread_whole_grain","amountGrams": 70},
+        {"ingredientID": "olive_oil",        "amountGrams": 5}
+      ]
+    },
+    {
+      "id": "banana_oat_pancakes",
+      "nameKey": "recipe.banana_oat_pancakes.name",
+      "mealTypes": ["breakfast"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["gluten", "eggs", "lactose"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 15,
+      "ingredients": [
+        {"ingredientID": "oats",         "amountGrams": 80},
+        {"ingredientID": "banana",       "amountGrams": 100},
+        {"ingredientID": "egg_whole_raw","amountGrams": 116},
+        {"ingredientID": "milk_whole",   "amountGrams": 100}
+      ]
+    },
+    {
+      "id": "cottage_cheese_fruit_bowl",
+      "nameKey": "recipe.cottage_cheese_fruit_bowl.name",
+      "mealTypes": ["breakfast", "snack"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["lactose"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "cottage_cheese","amountGrams": 200},
+        {"ingredientID": "strawberry",    "amountGrams": 100},
+        {"ingredientID": "banana",        "amountGrams": 80}
+      ]
+    },
+    {
+      "id": "avocado_toast_egg",
+      "nameKey": "recipe.avocado_toast_egg.name",
+      "mealTypes": ["breakfast"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["gluten", "eggs"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 10,
+      "ingredients": [
+        {"ingredientID": "bread_whole_grain", "amountGrams": 70},
+        {"ingredientID": "avocado",           "amountGrams": 100},
+        {"ingredientID": "egg_whole_cooked",  "amountGrams": 116}
+      ]
+    },
+    {
+      "id": "quark_berry_bowl",
+      "nameKey": "recipe.quark_berry_bowl.name",
+      "mealTypes": ["breakfast", "snack"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["lactose"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "quark_lowfat","amountGrams": 200},
+        {"ingredientID": "blueberry",   "amountGrams": 100},
+        {"ingredientID": "honey",       "amountGrams": 20}
+      ]
+    },
+    {
+      "id": "turkey_quinoa_bowl",
+      "nameKey": "recipe.turkey_quinoa_bowl.name",
+      "mealTypes": ["lunch"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "turkey_breast_cooked","amountGrams": 150},
+        {"ingredientID": "quinoa_cooked",        "amountGrams": 150},
+        {"ingredientID": "spinach_cooked",       "amountGrams": 100},
+        {"ingredientID": "tomato_raw",           "amountGrams": 100},
+        {"ingredientID": "olive_oil",            "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "beef_rice_stir_fry",
+      "nameKey": "recipe.beef_rice_stir_fry.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": [],
+      "allergens": ["soy", "gluten"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "beef_mince_cooked","amountGrams": 150},
+        {"ingredientID": "rice_white_cooked","amountGrams": 180},
+        {"ingredientID": "broccoli_cooked",  "amountGrams": 150},
+        {"ingredientID": "soy_sauce",        "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "salmon_sweet_potato_bowl",
+      "nameKey": "recipe.salmon_sweet_potato_bowl.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": ["pescetarian"],
+      "allergens": ["fish"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 25,
+      "ingredients": [
+        {"ingredientID": "salmon_cooked",      "amountGrams": 150},
+        {"ingredientID": "sweet_potato_cooked","amountGrams": 200},
+        {"ingredientID": "spinach_cooked",     "amountGrams": 100},
+        {"ingredientID": "olive_oil",          "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "chickpea_quinoa_bowl",
+      "nameKey": "recipe.chickpea_quinoa_bowl.name",
+      "mealTypes": ["lunch"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 15,
+      "ingredients": [
+        {"ingredientID": "chickpeas_cooked","amountGrams": 200},
+        {"ingredientID": "quinoa_cooked",   "amountGrams": 120},
+        {"ingredientID": "cucumber_raw",    "amountGrams": 100},
+        {"ingredientID": "tomato_raw",      "amountGrams": 100},
+        {"ingredientID": "olive_oil",       "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "tofu_brown_rice_bowl",
+      "nameKey": "recipe.tofu_brown_rice_bowl.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": ["soy", "gluten"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "tofu",            "amountGrams": 200},
+        {"ingredientID": "rice_brown_cooked","amountGrams": 150},
+        {"ingredientID": "broccoli_cooked", "amountGrams": 150},
+        {"ingredientID": "carrot_raw",      "amountGrams": 100},
+        {"ingredientID": "soy_sauce",       "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "beef_steak_potato",
+      "nameKey": "recipe.beef_steak_potato.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 30,
+      "ingredients": [
+        {"ingredientID": "beef_steak_cooked","amountGrams": 180},
+        {"ingredientID": "potato_cooked",    "amountGrams": 200},
+        {"ingredientID": "broccoli_cooked",  "amountGrams": 150},
+        {"ingredientID": "olive_oil",        "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "cod_couscous_vegetable",
+      "nameKey": "recipe.cod_couscous_vegetable.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": ["pescetarian"],
+      "allergens": ["fish", "gluten"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 25,
+      "ingredients": [
+        {"ingredientID": "cod_cooked",     "amountGrams": 150},
+        {"ingredientID": "couscous_cooked","amountGrams": 180},
+        {"ingredientID": "zucchini_raw",   "amountGrams": 150},
+        {"ingredientID": "tomato_raw",     "amountGrams": 100},
+        {"ingredientID": "olive_oil",      "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "lamb_bulgur_plate",
+      "nameKey": "recipe.lamb_bulgur_plate.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": [],
+      "allergens": ["gluten"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 2,
+      "prepMinutes": 35,
+      "ingredients": [
+        {"ingredientID": "lamb_mince_raw","amountGrams": 400},
+        {"ingredientID": "bulgur_cooked", "amountGrams": 300},
+        {"ingredientID": "tomato_raw",    "amountGrams": 200},
+        {"ingredientID": "onion_raw",     "amountGrams": 100},
+        {"ingredientID": "olive_oil",     "amountGrams": 20}
+      ]
+    },
+    {
+      "id": "chicken_thigh_tomato_pasta",
+      "nameKey": "recipe.chicken_thigh_tomato_pasta.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": [],
+      "allergens": ["gluten", "lactose"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 25,
+      "ingredients": [
+        {"ingredientID": "chicken_thigh_cooked","amountGrams": 150},
+        {"ingredientID": "pasta_cooked",         "amountGrams": 200},
+        {"ingredientID": "tomato_sauce",         "amountGrams": 100},
+        {"ingredientID": "cheese_parmesan",      "amountGrams": 20}
+      ]
+    },
+    {
+      "id": "lentil_sweet_potato_curry",
+      "nameKey": "recipe.lentil_sweet_potato_curry.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 2,
+      "prepMinutes": 40,
+      "ingredients": [
+        {"ingredientID": "lentils_cooked",     "amountGrams": 400},
+        {"ingredientID": "sweet_potato_cooked","amountGrams": 400},
+        {"ingredientID": "spinach_cooked",     "amountGrams": 200},
+        {"ingredientID": "coconut_oil",        "amountGrams": 20},
+        {"ingredientID": "onion_raw",          "amountGrams": 150},
+        {"ingredientID": "garlic_raw",         "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "peanut_butter_banana",
+      "nameKey": "recipe.peanut_butter_banana.name",
+      "mealTypes": ["snack", "breakfast"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": ["peanuts"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 2,
+      "ingredients": [
+        {"ingredientID": "peanut_butter","amountGrams": 30},
+        {"ingredientID": "banana",       "amountGrams": 120}
+      ]
+    },
+    {
+      "id": "almond_apple_snack",
+      "nameKey": "recipe.almond_apple_snack.name",
+      "mealTypes": ["snack"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": ["nuts"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 2,
+      "ingredients": [
+        {"ingredientID": "almonds","amountGrams": 30},
+        {"ingredientID": "apple",  "amountGrams": 150}
+      ]
+    },
+    {
+      "id": "hummus_veggie_sticks",
+      "nameKey": "recipe.hummus_veggie_sticks.name",
+      "mealTypes": ["snack"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": ["sesame"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "hummus",       "amountGrams": 80},
+        {"ingredientID": "carrot_raw",   "amountGrams": 100},
+        {"ingredientID": "cucumber_raw", "amountGrams": 100},
+        {"ingredientID": "bell_pepper_raw","amountGrams": 100}
+      ]
+    },
+    {
+      "id": "skyr_berry_snack",
+      "nameKey": "recipe.skyr_berry_snack.name",
+      "mealTypes": ["snack"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["lactose"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 3,
+      "ingredients": [
+        {"ingredientID": "skyr",      "amountGrams": 150},
+        {"ingredientID": "strawberry","amountGrams": 80},
+        {"ingredientID": "blueberry", "amountGrams": 60}
+      ]
+    },
+    {
+      "id": "egg_avocado_snack",
+      "nameKey": "recipe.egg_avocado_snack.name",
+      "mealTypes": ["snack", "breakfast"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["eggs"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "egg_whole_cooked","amountGrams": 116},
+        {"ingredientID": "avocado",         "amountGrams": 100}
+      ]
+    }
+  ]
+}

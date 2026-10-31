@@ -9,28 +9,35 @@ import FitnessAppActivities
 import UIKit
 #endif
 
-/// Settings hub. Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md, Teil 3):
-/// umgebaut auf gruppierte Navigation (5 Gruppen) statt 10 flacher Sections —
-/// jede Gruppe ihre eigene Seite (`SettingsAppExperienceView`/
-/// `SettingsLibraryEquipmentView`/`SettingsDataConnectionsView`/
-/// `SettingsHelpInfoView`), reine Verschiebung bestehender Inhalte — dieselben
-/// `NavigationLink`+`DeltiqRow`-Konventionen wie ueberall sonst, MIT EINER
-/// Ausnahme: main-navigation Plan, 2026-10-22, Task 3 (Fix-Runde 1) macht die
-/// "Werkzeuge"-Zeile in `groupNavigationSection` wertbasiert
+/// Settings hub / "Mehr"-Tab. Settings-Epic Phase 3 (docs/SETTINGS_UX_AUDIT.md,
+/// Teil 3): gruppierte Navigation statt flacher Sections — jede Gruppe ihre
+/// eigene Seite (`SettingsAppExperienceView`/`SettingsLibraryEquipmentView`/
+/// `SettingsDataConnectionsView`/`SettingsHelpInfoView`), reine Verschiebung
+/// bestehender Inhalte — dieselben `NavigationLink`+`DeltiqRow`-Konventionen
+/// wie ueberall sonst, MIT EINER Ausnahme: main-navigation Plan, 2026-10-22,
+/// Task 3 (Fix-Runde 1) macht die "Werkzeuge"-Zeile wertbasiert
 /// (`NavigationLink(value: CalculatorsRoute.calculators)` statt eines
 /// plain `NavigationLink { ... }`) — sie muss per Deep-Link aus der
 /// Wasser-Erinnerung direkt bis zum WaterTracker durchgeschaltet werden
 /// koennen, die anderen 4 Gruppen-Zeilen brauchen das nicht und bleiben
-/// view-basiert. Reihenfolge der Gruppen-Zeilen (Settings-Restructure-Task,
-/// 2026-10-23): App-Erlebnis, Bibliothek & Ausstattung, Werkzeuge,
-/// Daten & Verbindungen, Hilfe & Informationen (siehe
-/// `groupNavigationSection`). "Profil & Training" hat nur EINEN Eintrag (den
-/// Profil-Editor, der jetzt auch Koerperdaten + Trainingsort/Ausstattung
-/// als eigene Unterseiten traegt) und bleibt deshalb ein direkter Link statt
-/// einer eigenen Gruppen-Seite — eine zusaetzliche Navigationsebene fuer
-/// genau einen Eintrag waere reine Reibung. "App zuruecksetzen" bleibt
-/// bewusst auf dieser obersten Seite, ganz unten, separat von allen Gruppen
-/// (Vorgabe: gefaehrliche Aktion nicht in einer Gruppen-Unterseite verstecken).
+/// view-basiert.
+///
+/// UI-Ticket ("Mehr-Informationsarchitektur", 2026-10-24): die 5 Gruppen
+/// waren vorher EINER gemeinsamen `DeltiqSection` mit dem Titel
+/// "Weitere Einstellungen" untergeordnet — fachlich falsch fuer Werkzeuge
+/// (eigenstaendige Rechner) und Bibliothek & Ausruestung (Trainingsinhalt,
+/// Uebungsbibliothek), beides keine App-Einstellungen. `groupNavigationSection`
+/// baut die 5 Gruppen jetzt als FUENF EIGENSTAENDIGE `DeltiqSection`s ohne
+/// gemeinsame Sammelueberschrift - jede mit ihrem eigenen, klaren Namen.
+/// Reihenfolge: Werkzeuge, Bibliothek & Ausruestung, App-Einstellungen
+/// (umbenannt von "App & Trainingserlebnis" - deckt exakt "Konfiguration des
+/// App-Verhaltens" ab, siehe `SettingsAppExperienceView`), Daten &
+/// Verbindungen, Hilfe & Informationen. "Profil & Ziele" bleibt wie zuvor nur
+/// EIN Eintrag (der Profil-Editor, der auch Koerperdaten + Trainingsort/
+/// Ausstattung als eigene Unterseiten traegt) und damit ein direkter Link
+/// statt einer eigenen Gruppen-Seite. "App zuruecksetzen" bleibt bewusst auf
+/// dieser obersten Seite, ganz unten, separat von allen Gruppen (Vorgabe:
+/// gefaehrliche Aktion nicht in einer Gruppen-Unterseite verstecken).
 @available(iOS 17.0, macOS 14.0, *)
 public struct SettingsView: View {
 
@@ -147,7 +154,7 @@ public struct SettingsView: View {
 
     private func profileHeadline(_ profile: UserBodyProfile) -> String {
         let sex = String(localized: profile.profile == .male ? "sex.male" : "sex.female", bundle: .module)
-        let years = String(format: String(localized: "settings.profile.years", bundle: .module), ageYears(for: profile))
+        let years = String(format: String(localized: "settings.profile.years", bundle: .module), profile.ageYears)
         return "\(sex) • \(years)"
     }
 
@@ -160,58 +167,93 @@ public struct SettingsView: View {
         return parts.joined(separator: " • ")
     }
 
-    /// Settings-Epic Phase 3: die 4 Gruppen-Seiten (siehe Datei-Kommentar) —
-    /// plus (main-navigation Plan, 2026-10-22, Task 3) ein 5. Eintrag,
-    /// Werkzeuge/CalculatorsView. Reihenfolge (Settings-Restructure-Task,
-    /// 2026-10-23): App-Erlebnis, Bibliothek & Ausstattung, Werkzeuge,
-    /// Daten & Verbindungen, Hilfe & Informationen — Hilfe & Informationen
-    /// steht bewusst zuletzt (`showsDivider: false` wandert mit).
+    /// UI-Ticket ("Mehr-Informationsarchitektur"): die 5 Gruppen-Seiten (siehe
+    /// Datei-Kommentar), jede jetzt eine EIGENE `DeltiqSection` statt einer
+    /// Zeile unter der entfallenen Sammelueberschrift "Weitere Einstellungen"
+    /// — jede Section traegt genau eine Zeile, deshalb `showsDivider: false`
+    /// bei allen (keine Trennlinie VOR dem eigenen Kartenrand noetig).
+    /// Reihenfolge: Werkzeuge, Bibliothek & Ausruestung, App-Einstellungen,
+    /// Daten & Verbindungen, Hilfe & Informationen.
     private var groupNavigationSection: some View {
-        DeltiqSection(String(localized: "settings.section.more", bundle: .module).uppercased()) {
-            NavigationLink {
-                SettingsAppExperienceView()
-            } label: {
+        Group {
+            toolsSection
+            libraryEquipmentSection
+            appExperienceSection
+            dataConnectionsSection
+            helpInfoSection
+        }
+    }
+
+    // main-navigation Plan, 2026-10-22, Task 3, Fix-Runde 1: CalculatorsView
+    // zieht vom entfallenen Werkzeuge-Tab eine Ebene tief unter "Mehr" ein.
+    // Anders als die anderen 4 Gruppen hier wertbasiert (`NavigationLink(value:)`
+    // + `CalculatorsRoute`/`navigationDestination(for:)`, registriert in
+    // RootView) statt view-basiert — dieselbe Route-Maschinerie, die der
+    // Wassertracker-Deep-Link benutzt. Damit landet jeder Zustand auf diesem
+    // Teilpfad zuverlaessig in `toolsPath`, und ein Reset+Append des
+    // Deep-Links trifft garantiert exakt den WaterTracker, egal wie der User
+    // vorher manuell navigiert hat — kein Mix aus wert- und view-basierten
+    // Pushes mehr zwischen SettingsView und WaterTrackerView.
+    private var toolsSection: some View {
+        DeltiqSection(String(localized: "settings.group.tools", bundle: .module).uppercased()) {
+            NavigationLink(value: CalculatorsRoute.calculators) {
                 DeltiqRow(
-                    icon: "slider.horizontal.3",
-                    label: String(localized: "settings.group.appExperience", bundle: .module),
-                    showsChevron: true
+                    icon: "wrench.and.screwdriver",
+                    label: String(localized: "settings.group.tools", bundle: .module),
+                    showsChevron: true,
+                    showsDivider: false
                 )
             }
+        }
+    }
+
+    private var libraryEquipmentSection: some View {
+        DeltiqSection(String(localized: "settings.group.libraryEquipment", bundle: .module).uppercased()) {
             NavigationLink {
                 SettingsLibraryEquipmentView()
             } label: {
                 DeltiqRow(
                     icon: "figure.strengthtraining.traditional",
                     label: String(localized: "settings.group.libraryEquipment", bundle: .module),
-                    showsChevron: true
+                    showsChevron: true,
+                    showsDivider: false
                 )
             }
-            // main-navigation Plan, 2026-10-22, Task 3, Fix-Runde 1: CalculatorsView
-            // zieht vom entfallenen Werkzeuge-Tab eine Ebene tief unter "Mehr" ein.
-            // Anders als die 4 Eintraege hier wertbasiert (`NavigationLink(value:)` +
-            // `CalculatorsRoute`/`navigationDestination(for:)`, registriert in
-            // RootView) statt view-basiert — dieselbe Route-Maschinerie, die der
-            // Wassertracker-Deep-Link benutzt. Damit landet jeder Zustand auf
-            // diesem Teilpfad zuverlaessig in `toolsPath`, und ein Reset+Append
-            // des Deep-Links trifft garantiert exakt den WaterTracker, egal wie
-            // der User vorher manuell navigiert hat — kein Mix aus wert- und
-            // view-basierten Pushes mehr zwischen SettingsView und WaterTrackerView.
-            NavigationLink(value: CalculatorsRoute.calculators) {
+        }
+    }
+
+    private var appExperienceSection: some View {
+        DeltiqSection(String(localized: "settings.group.appExperience", bundle: .module).uppercased()) {
+            NavigationLink {
+                SettingsAppExperienceView()
+            } label: {
                 DeltiqRow(
-                    icon: "wrench.and.screwdriver",
-                    label: String(localized: "settings.group.tools", bundle: .module),
-                    showsChevron: true
+                    icon: "slider.horizontal.3",
+                    label: String(localized: "settings.group.appExperience", bundle: .module),
+                    showsChevron: true,
+                    showsDivider: false
                 )
             }
+        }
+    }
+
+    private var dataConnectionsSection: some View {
+        DeltiqSection(String(localized: "settings.group.dataConnections", bundle: .module).uppercased()) {
             NavigationLink {
                 SettingsDataConnectionsView()
             } label: {
                 DeltiqRow(
                     icon: "icloud",
                     label: String(localized: "settings.group.dataConnections", bundle: .module),
-                    showsChevron: true
+                    showsChevron: true,
+                    showsDivider: false
                 )
             }
+        }
+    }
+
+    private var helpInfoSection: some View {
+        DeltiqSection(String(localized: "settings.group.helpInfo", bundle: .module).uppercased()) {
             NavigationLink {
                 SettingsHelpInfoView()
             } label: {
@@ -229,16 +271,6 @@ public struct SettingsView: View {
     /// `DeltiqFormSection`s Footer-Slot vorsah — nur jetzt IN der Karte
     /// als letzte Zeile statt darunter. 12pt, sekundaerer Text, keine
     /// Trennlinie darueber.
-    private func hintRow(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Color.Deltiq.textSecondary)
-            .lineSpacing(4)
-            .padding(.horizontal, 14)
-            .padding(.top, 4)
-            .padding(.bottom, 8)
-    }
-
     private var dangerZoneSection: some View {
         DeltiqSection(String(localized: "settings.section.danger_zone", bundle: .module).uppercased()) {
             Button(role: .destructive) {
@@ -418,10 +450,6 @@ public struct SettingsView: View {
     }
 
     // MARK: Formatters
-
-    private func ageYears(for profile: UserBodyProfile) -> Int {
-        Calendar.current.dateComponents([.year], from: profile.birthDate, to: Date()).year ?? 0
-    }
 
     /// Always reads cm from DB; converts to inches when the user prefers imperial.
     private func formattedHeight(_ cm: Double) -> String {

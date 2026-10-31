@@ -66,10 +66,10 @@ final class OnlineFoodSearchClientTests: XCTestCase {
         """
         stub(status: 200, body: Data(json.utf8))
 
-        let result = try await makeClient().search(query: "nutella", locale: Locale(identifier: "de_DE"))
+        let result = try await makeClient().search(query: "nutella", locale: Locale(identifier: "de_DE"), page: 1)
 
-        XCTAssertEqual(result.count, 1)
-        let candidate = result[0]
+        XCTAssertEqual(result.candidates.count, 1)
+        let candidate = result.candidates[0]
         XCTAssertEqual(candidate.id, "0013402060046")
         XCTAssertEqual(candidate.name, "Nutella")
         XCTAssertEqual(candidate.brand, "Nutella")
@@ -88,11 +88,11 @@ final class OnlineFoodSearchClientTests: XCTestCase {
         """
         stub(status: 200, body: Data(json.utf8))
 
-        let result = try await makeClient().search(query: "mystery", locale: Locale(identifier: "en_US"))
+        let result = try await makeClient().search(query: "mystery", locale: Locale(identifier: "en_US"), page: 1)
 
-        XCTAssertEqual(result.count, 1)
-        XCTAssertNil(result[0].proteinPer100g)
-        XCTAssertEqual(result[0].kcalPer100g, 400)
+        XCTAssertEqual(result.candidates.count, 1)
+        XCTAssertNil(result.candidates[0].proteinPer100g)
+        XCTAssertEqual(result.candidates[0].kcalPer100g, 400)
     }
 
     func test_search_withNoNutrimentsObjectAtAll_mapsAllNutrientsToNil() async throws {
@@ -101,14 +101,14 @@ final class OnlineFoodSearchClientTests: XCTestCase {
         """
         stub(status: 200, body: Data(json.utf8))
 
-        let result = try await makeClient().search(query: "nodata", locale: Locale(identifier: "en_US"))
+        let result = try await makeClient().search(query: "nodata", locale: Locale(identifier: "en_US"), page: 1)
 
-        XCTAssertEqual(result.count, 1)
-        XCTAssertNil(result[0].kcalPer100g)
-        XCTAssertNil(result[0].proteinPer100g)
-        XCTAssertNil(result[0].carbsPer100g)
-        XCTAssertNil(result[0].fatPer100g)
-        XCTAssertNil(result[0].brand)
+        XCTAssertEqual(result.candidates.count, 1)
+        XCTAssertNil(result.candidates[0].kcalPer100g)
+        XCTAssertNil(result.candidates[0].proteinPer100g)
+        XCTAssertNil(result.candidates[0].carbsPer100g)
+        XCTAssertNil(result.candidates[0].fatPer100g)
+        XCTAssertNil(result.candidates[0].brand)
     }
 
     // MARK: kJ-only energy -> converted to kcal, not nil
@@ -120,11 +120,11 @@ final class OnlineFoodSearchClientTests: XCTestCase {
         """
         stub(status: 200, body: Data(json.utf8))
 
-        let result = try await makeClient().search(query: "kjonly", locale: Locale(identifier: "en_US"))
+        let result = try await makeClient().search(query: "kjonly", locale: Locale(identifier: "en_US"), page: 1)
 
-        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result.candidates.count, 1)
         // 1673 kJ / 4.184 ≈ 399.86 kcal
-        XCTAssertEqual(result[0].kcalPer100g ?? -1, 399.86, accuracy: 0.1)
+        XCTAssertEqual(result.candidates[0].kcalPer100g ?? -1, 399.86, accuracy: 0.1)
     }
 
     func test_search_withBothEnergyKcalAndKj_usesKcalAsIsNotKj() async throws {
@@ -134,19 +134,19 @@ final class OnlineFoodSearchClientTests: XCTestCase {
         """
         stub(status: 200, body: Data(json.utf8))
 
-        let result = try await makeClient().search(query: "bothenergy", locale: Locale(identifier: "en_US"))
+        let result = try await makeClient().search(query: "bothenergy", locale: Locale(identifier: "en_US"), page: 1)
 
-        XCTAssertEqual(result.count, 1)
-        XCTAssertEqual(result[0].kcalPer100g, 400)
+        XCTAssertEqual(result.candidates.count, 1)
+        XCTAssertEqual(result.candidates[0].kcalPer100g, 400)
     }
 
-    // MARK: Empty hits -> noResults
+    // MARK: Empty hits -> noResults (first page only)
 
     func test_search_withEmptyHits_throwsNoResults() async throws {
         stub(status: 200, body: Data(#"{"hits":[]}"#.utf8))
 
         do {
-            _ = try await makeClient().search(query: "zzzznonexistent", locale: Locale(identifier: "en_US"))
+            _ = try await makeClient().search(query: "zzzznonexistent", locale: Locale(identifier: "en_US"), page: 1)
             XCTFail("expected noResults")
         } catch let error as OnlineFoodSearchError {
             XCTAssertEqual(error, .noResults)
@@ -159,7 +159,7 @@ final class OnlineFoodSearchClientTests: XCTestCase {
         stub(status: 503, body: Data())
 
         do {
-            _ = try await makeClient().search(query: "nutella", locale: Locale(identifier: "en_US"))
+            _ = try await makeClient().search(query: "nutella", locale: Locale(identifier: "en_US"), page: 1)
             XCTFail("expected rateLimited")
         } catch let error as OnlineFoodSearchError {
             XCTAssertEqual(error, .rateLimited)
@@ -174,7 +174,7 @@ final class OnlineFoodSearchClientTests: XCTestCase {
         }
 
         do {
-            _ = try await makeClient().search(query: "nutella", locale: Locale(identifier: "en_US"))
+            _ = try await makeClient().search(query: "nutella", locale: Locale(identifier: "en_US"), page: 1)
             XCTFail("expected noNetwork")
         } catch let error as OnlineFoodSearchError {
             XCTAssertEqual(error, .noNetwork)
@@ -187,10 +187,88 @@ final class OnlineFoodSearchClientTests: XCTestCase {
         stub(status: 200, body: Data("not json at all".utf8))
 
         do {
-            _ = try await makeClient().search(query: "nutella", locale: Locale(identifier: "en_US"))
+            _ = try await makeClient().search(query: "nutella", locale: Locale(identifier: "en_US"), page: 1)
             XCTFail("expected invalidResponse")
         } catch let error as OnlineFoodSearchError {
             XCTAssertEqual(error, .invalidResponse)
         }
+    }
+
+    // MARK: Pagination — Test 1: first page uses expected request parameters
+
+    func test_search_firstPage_usesExpectedQueryParametersAndRespectsPageCount() async throws {
+        var capturedURL: URL?
+        MockURLProtocol.requestHandler = { request in
+            capturedURL = request.url
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+            let json = #"{"hits":[{"code":"1","product_name":"A"}],"page":1,"page_count":3}"#
+            return (response, Data(json.utf8), nil)
+        }
+
+        let result = try await makeClient().search(query: "milch", locale: Locale(identifier: "de_DE"), page: 1)
+
+        let url = try XCTUnwrap(capturedURL)
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        XCTAssertEqual(items.first(where: { $0.name == "page" })?.value, "1")
+        XCTAssertEqual(items.first(where: { $0.name == "page_size" })?.value, "20")
+        XCTAssertEqual(items.first(where: { $0.name == "q" })?.value, "milch")
+        XCTAssertTrue(result.hasMore, "page 1 of 3 muss weitere Seiten melden")
+        XCTAssertEqual(result.page, 1)
+    }
+
+    // MARK: Pagination — Test 2: load-more requests the next page number
+
+    func test_search_loadMore_requestsNextPageNumber() async throws {
+        var capturedURL: URL?
+        MockURLProtocol.requestHandler = { request in
+            capturedURL = request.url
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+            let json = #"{"hits":[{"code":"2","product_name":"B"}],"page":2,"page_count":2}"#
+            return (response, Data(json.utf8), nil)
+        }
+
+        let result = try await makeClient().search(query: "milch", locale: Locale(identifier: "de_DE"), page: 2)
+
+        let url = try XCTUnwrap(capturedURL)
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        XCTAssertEqual(items.first(where: { $0.name == "page" })?.value, "2")
+        XCTAssertEqual(result.candidates.count, 1)
+    }
+
+    // MARK: Pagination — Test 4: last page (page == page_count) reports hasMore == false
+
+    func test_search_lastPage_reportsHasMoreFalse() async throws {
+        stub(status: 200, body: Data(#"{"hits":[{"code":"2","product_name":"B"}],"page":2,"page_count":2}"#.utf8))
+
+        let result = try await makeClient().search(query: "milch", locale: Locale(identifier: "en_US"), page: 2)
+
+        XCTAssertFalse(result.hasMore)
+    }
+
+    // MARK: Pagination — Test 7: missing/incomplete metadata doesn't crash or loop forever
+
+    func test_search_withMissingPageCountMetadata_fallsBackToPageSizeHeuristicWithoutCrashing() async throws {
+        let json = """
+        {"hits":[{"code":"1","product_name":"A"},{"code":"2","product_name":"B"}]}
+        """
+        stub(status: 200, body: Data(json.utf8))
+
+        let result = try await makeClient().search(query: "milch", locale: Locale(identifier: "en_US"), page: 1)
+
+        XCTAssertEqual(result.candidates.count, 2)
+        // 2 hits < the 20-item page size -> treated as the last page, never
+        // an infinite "maybe more" that a caller could loop on forever.
+        XCTAssertFalse(result.hasMore)
+    }
+
+    // MARK: Pagination — a second page with no hits ends pagination instead of throwing noResults
+
+    func test_search_secondPageWithEmptyHits_returnsEmptyPageInsteadOfThrowing() async throws {
+        stub(status: 200, body: Data(#"{"hits":[],"page":2,"page_count":2}"#.utf8))
+
+        let result = try await makeClient().search(query: "milch", locale: Locale(identifier: "en_US"), page: 2)
+
+        XCTAssertTrue(result.candidates.isEmpty)
+        XCTAssertFalse(result.hasMore)
     }
 }

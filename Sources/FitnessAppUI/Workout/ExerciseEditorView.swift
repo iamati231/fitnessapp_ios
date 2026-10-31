@@ -45,13 +45,7 @@ public struct ExerciseEditorView: View {
     /// Oeffnen des Sheets — siehe `ExerciseSnapshot` weiter unten.
     @State private var snapshot: ExerciseSnapshot
 
-    /// DEL-143: User-Toggle für RIR-Tooltips, gleicher AppStorage-Key
-    /// wie SetRow. Default true.
     @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
-
-    /// DEL-143: Tooltip-Controller für den Target-RIR-Slider in der
-    /// Pause-RIR-Section. Wird beim Drag-Start gezeigt, Drag-Release
-    /// + 1.8s → fade-out.
     @State private var rirTooltip = RIRTooltipController()
 
     public init(exercise: Exercise) {
@@ -522,6 +516,17 @@ public struct ExerciseEditorView: View {
             }
             .disabled(isReadOnly)
             .listRowBackground(Color.Deltiq.surface)
+            if let rationale = exercise.coachingRationale {
+                LabeledContent {
+                    Text(rationale)
+                        .font(.footnote)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        .multilineTextAlignment(.trailing)
+                } label: {
+                    Text("editor.exercise.field.coachingRationale", bundle: .module)
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            }
         } header: {
             Text("editor.exercise.section.cardioTarget", bundle: .module)
         }
@@ -584,7 +589,7 @@ public struct ExerciseEditorView: View {
                 }
                 .tint(Color.deltiqOrange)
                 .listRowBackground(Color.Deltiq.surface)
-                Picker("Inkrement", selection: stepBinding) {
+                Picker(String(localized: "editor.exercise.incrementPicker", bundle: .module), selection: stepBinding) {
                     ForEach(ProgressionStep.allCases, id: \.self) { step in
                         Text(step.label).tag(step)
                     }
@@ -592,7 +597,7 @@ public struct ExerciseEditorView: View {
                 .listRowBackground(Color.Deltiq.surface)
             }
         } header: {
-            Text("Smart-Progression")
+            Text("editor.exercise.section.smartProgression", bundle: .module)
         } footer: {
             if exercise.smartProgressionEnabled {
                 Text(progressionFooterText)

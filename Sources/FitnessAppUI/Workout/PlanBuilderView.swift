@@ -122,6 +122,21 @@ public struct PlanBuilderView: View {
     /// die Entscheidung stattdessen direkt selbst, siehe `adoptPlan()`.
     private let onEnduranceModalityChosen: (@MainActor (EnduranceModality?, Bool) -> Void)?
 
+    /// Ticket "Gym: Alle Gewichte und Geraete standardmaessig beruecksichtigen":
+    /// `equipmentPreferences` startet sonst leer (siehe dortige Doku) - ein
+    /// Gym-Nutzer muesste sonst jede Ausstattung im Wizard einzeln antippen,
+    /// obwohl ein uebliches Studio praktisch alles davon hat. `true` nur,
+    /// wenn ein `initialInput` die Auswahl bereits explizit vorgibt (Cardio-
+    /// Handoff/"Plan anpassen"/Onboarding) - dort darf der Gym-Default sie
+    /// nie ueberschreiben.
+    private let hasExplicitEquipmentPreferences: Bool
+    /// Einmaliger Anwende-Schutz fuer den Gym-Default (siehe `.onAppear`
+    /// unten) - verhindert, dass ein spaeteres Leeren aller Checkboxen durch
+    /// den User beim naechsten `.onAppear` (Schritt-Wechsel feuert KEIN
+    /// erneutes `.onAppear`, aber defensiv) stillschweigend rueckgaengig
+    /// gemacht wird.
+    @State private var hasAppliedGymEquipmentDefault = false
+
     /// Handoff "Lauf-Coaching - Machbarkeits-Check", Nachtrag "Plan
     /// anpassen": seedet Schritt 1/2 aus einem vorhandenen Input statt der
     /// leeren Defaults - der Nutzer landet weiterhin bei Schritt 1, sieht
@@ -155,6 +170,7 @@ public struct PlanBuilderView: View {
         initialInput: PlanGeneratorInput? = nil,
         preseededEnduranceModality: EnduranceModality? = nil,
         preseededRunCoachWanted: Bool = false,
+        preseededCardioCoachSetupDraft: CardioCoachSetupDraft? = nil,
         preseededGoal: TrainingGoal? = nil,
         preseededDaysPerWeek: Int? = nil,
         onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil,
@@ -162,6 +178,7 @@ public struct PlanBuilderView: View {
     ) {
         self.onGenerated = onGenerated
         self.onEnduranceModalityChosen = onEnduranceModalityChosen
+        self.hasExplicitEquipmentPreferences = initialInput != nil
         if let initialInput {
             _selectedKinds = State(initialValue: initialInput.selections.map(\.kind))
             _configByKind = State(initialValue: Dictionary(
@@ -174,6 +191,16 @@ public struct PlanBuilderView: View {
         }
         _selectedEnduranceModality = State(initialValue: preseededEnduranceModality)
         _runCoachWanted = State(initialValue: preseededRunCoachWanted)
+        // Finding 1 (Laufcoaching-Audit-Fixes), erweitert um den gemeinsamen Setup-Entwurf
+        // (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): das endgueltige `UserBodyProfile`
+        // existiert im Onboarding noch nicht - ohne diese Vorbefuellung haette `currentInput`
+        // fuer die Laufcoach-Komponente von `cardioRunProfile` keine Quelle. `OnboardingView`
+        // uebergibt hier seinen eigenen, bereits im Onboarding-Schritt erfassten Setup-Entwurf
+        // (Ziel + optional Referenzzeit/Wochenumfang). Derselbe Entwurf dient im eigenstaendigen
+        // Modus (kein `onGenerated`, z.B. `PlansListView`s "+") als der lokal bearbeitbare Entwurf
+        // fuer das neue Setup-Sheet (siehe `enduranceModalitySubflow`) - ein frisches Profil ohne
+        // Vorgabe startet mit `.empty`, nie erfundenen Werten.
+        _cardioCoachSetupDraft = State(initialValue: preseededCardioCoachSetupDraft ?? .empty)
         // Geraete-Abnahme (A01): `trainingGoal`/`weeklyGoal` wurden im
         // umschliessenden `OnboardingView` bereits beantwortet, BEVOR der
         // User ueberhaupt in diesen eingebetteten Builder wechselt - ohne
@@ -291,6 +318,17 @@ public struct PlanBuilderView: View {
     /// unterstuetzt (`EnduranceModality.supportsRunCoach`) - siehe
     /// `applyEnduranceModalityChoiceIfNeeded`.
     @State private var runCoachWanted = false
+    /// Finding 1 (Laufcoaching-Audit-Fixes), erweitert um den gemeinsamen Setup-Entwurf
+    /// (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): der Laufcoach-Setup-Entwurf (Ziel,
+    /// optional Referenzzeit/Wochenumfang/Renndatum/max. Herzfrequenz) - siehe
+    /// `init(preseededCardioCoachSetupDraft:)`-Doku. Dient zwei Zwecken: (1) Fallback-Quelle fuer
+    /// `effectiveCardioRunProfile`, solange `profiles.first` (noch) kein Profil liefert
+    /// (Onboarding); (2) der lokal bearbeitbare Entwurf fuer das Setup-Sheet im eigenstaendigen
+    /// Modus (siehe `enduranceModalitySubflow`).
+    @State private var cardioCoachSetupDraft: CardioCoachSetupDraft = .empty
+    /// Steuert das neue Setup-Sheet (eigenstaendiger Modus, erstmalige Aktivierung) - siehe
+    /// `enduranceModalitySubflow`.
+    @State private var showingCardioCoachSetup = false
 
     private var selectedTrainingGoal: TrainingGoal? {
         guard let selectedGoalCard else { return nil }
@@ -350,6 +388,25 @@ public struct PlanBuilderView: View {
     // Vorschlaege sind, bevor der Nutzer eine davon uebernimmt.
     @State private var alternativesDialogDayID: DraftDayID?
     @State private var currentAlternativeOptions: [DaySpec] = []
+
+    /// UI-Ticket ("Plan Bauen Schritt 3: Übungsalternativen"): dasselbe
+    /// Muster wie oben, nur fuer eine EINZELNE Uebung statt eines ganzen
+    /// Tages - `ExerciseAlternativeTarget` identifiziert Tag + Uebung,
+    /// `currentExerciseAlternativeOptions` die gerade angebotenen Kandidaten
+    /// (`ExerciseAlternativeFinder.alternatives`).
+    private struct ExerciseAlternativeTarget: Equatable {
+        let dayID: DraftDayID
+        let exerciseID: DraftExerciseID
+    }
+    @State private var exerciseAlternativeTarget: ExerciseAlternativeTarget?
+    @State private var currentExerciseAlternativeOptions: [ExerciseTemplateSpec] = []
+
+    /// UI-Ticket ("Mehr-Informationsarchitektur"): kontextueller Zugang zur
+    /// bestehenden Uebungsbibliothek (`ExerciseLibraryView`, sonst nur unter
+    /// "Mehr") sowohl beim Bearbeiten eines Plans (per-Tag-Menu) als auch bei
+    /// der Auswahl einer Uebungsalternative (Dialog-Button unten) - derselbe
+    /// Screen, dieselben Daten, kein zweiter Bibliotheks-Screen.
+    @State private var showingExerciseLibrary = false
 
     /// Audit-Korrektur (Review nach P2.1): treibt den expliziten Fehler-
     /// Zustand, wenn `adoptPlan()` im eigenstaendigen Modus kein Profil
@@ -586,6 +643,30 @@ public struct PlanBuilderView: View {
                 Text(adoptSaveErrorMessage ?? "")
             }
         }
+        // Gym-Default (siehe `hasExplicitEquipmentPreferences`-Doku): feuert
+        // genau einmal beim Oeffnen dieses Sheets, nicht pro Wizard-Schritt -
+        // `currentStepView` schaltet nur den Inhalt EINER `Group` um, pusht
+        // keine neue View, also loest kein Schritt-Wechsel ein weiteres
+        // `.onAppear` aus.
+        .onAppear {
+            applyGymEquipmentDefaultIfNeeded()
+        }
+    }
+
+    /// Setzt `equipmentPreferences` einmalig auf "alles ausgewaehlt", wenn
+    /// dieser Builder OHNE vorgegebene Auswahl gestartet wurde (kein
+    /// `initialInput`) und das Profil Gym als Trainingsort fuehrt - der
+    /// Nutzer kann jedes Item danach weiterhin frei abwaehlen (siehe
+    /// `equipmentStep`/`alltagsrahmenStep`).
+    private func applyGymEquipmentDefaultIfNeeded() {
+        guard !hasAppliedGymEquipmentDefault, let profile = profiles.first,
+              let defaults = Equipment.defaultWizardSelection(
+                  forEnvironment: profile.environment,
+                  hasExplicitInput: hasExplicitEquipmentPreferences
+              )
+        else { return }
+        equipmentPreferences = defaults
+        hasAppliedGymEquipmentDefault = true
     }
 
     /// P3.1: Schritt 1/2 zeigen je nach Pfad unterschiedlichen Inhalt (siehe
@@ -877,7 +958,13 @@ public struct PlanBuilderView: View {
             // gewaehlte Zeitformat-Struktur stillschweigend auf "Saetze &
             // Wdh." zuruecksetzen, weil der Memberwise-Reconstruct sonst
             // keinen Wert dafuer mitgibt.
-            timeFormat: current.timeFormat
+            timeFormat: current.timeFormat,
+            // Nachbesserung (finales Branch-Review, Fix 4): dieselbe Luecke
+            // wie bei `timeFormat` oben, nur fuer die Pace-Baseline (Task
+            // 3/4) - ohne dieses Feld wuerde jede Aenderung an
+            // Tagen/Dauer/Erfahrung die Pace stillschweigend auf "nach
+            // Gefuehl" zuruecksetzen.
+            cardioRunProfile: current.cardioRunProfile
         )
     }
 
@@ -894,7 +981,10 @@ public struct PlanBuilderView: View {
             daysPerWeek: current.daysPerWeek,
             sessionDurationMinutes: current.sessionDurationMinutes,
             experience: current.experience,
-            timeFormat: timeFormat
+            timeFormat: timeFormat,
+            // Nachbesserung (finales Branch-Review, Fix 4): siehe `updateConfig` -
+            // dieselbe Pace-Baseline-Luecke, hier beim Aendern des Zeitformats.
+            cardioRunProfile: current.cardioRunProfile
         )
     }
 
@@ -903,6 +993,10 @@ public struct PlanBuilderView: View {
         case .barbell:    return "figure.strengthtraining.traditional"
         case .dumbbell:   return "dumbbell"
         case .kettlebell: return "figure.strengthtraining.functional"
+        // Gleiches Icon wie EquipmentItem.machineStation (DomainEnums+
+        // Localization.swift) - dieselbe Ausstattungskategorie, konsistente
+        // Darstellung.
+        case .machine:    return "gearshape"
         case .bodyweight: return "figure.core.training"
         case .running:    return "figure.run"
         case .cycling:    return "bicycle"
@@ -1028,7 +1122,82 @@ public struct PlanBuilderView: View {
                         titleKey: "planBuilder.goal.runCoach.withCoach.title",
                         blurbKey: "planBuilder.goal.runCoach.withCoach.blurb",
                         isSelected: runCoachWanted
-                    ) { runCoachWanted = true }
+                    ) {
+                        runCoachWanted = true
+                        // Vor jeder Entscheidung: Entwurf aus dem evtl. bereits vorhandenen Profil
+                        // neu seeden (nicht den `.empty`-Init-Default stehenlassen) - sonst wuerde
+                        // `applyEnduranceModalityChoiceIfNeeded` unten ein bereits eingerichtetes
+                        // Profil mit leeren Werten ueberschreiben, wenn das Sheet (weil schon
+                        // eingerichtet) gar nicht erst gezeigt wird. "Bestehende Daten gehen nicht
+                        // verloren" (Auftrag, Abschnitt 3/8).
+                        if let profile = profiles.first {
+                            cardioCoachSetupDraft = CardioCoachSetupDraft(
+                                goal: profile.cardioGoal, raceDate: profile.cardioRaceDate,
+                                weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm, maxHeartRateBpm: profile.maxHeartRateBpm,
+                                fiveKReferenceText: profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
+                            )
+                        }
+                        // Gemeinsamer Setup-Schritt (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt):
+                        // nur im EIGENSTAENDIGEN Modus (`onGenerated == nil`, z.B. `PlansListView`s
+                        // "+") - im eingebetteten Onboarding-Modus hat `OnboardingView` den Entwurf
+                        // bereits VOR dem Oeffnen dieses Builders inline erfasst (siehe dortige
+                        // Doku), ein zweites Sheet hier waere eine doppelte Abfrage.
+                        if onGenerated == nil, Self.needsCardioCoachSetup(
+                            runCoachWanted: true, hasExistingCoachSetup: profiles.first?.cardioCoachingEnabled == true
+                        ) {
+                            showingCardioCoachSetup = true
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingCardioCoachSetup) { cardioCoachSetupSheet }
+    }
+
+    /// Gemeinsamer Setup-Schritt: ob der Setup-Schritt (erneut) gezeigt werden muss - reine,
+    /// testbare Bedingung statt in der Button-Action verborgen. "Bereits eingerichtet" wird aus
+    /// `profile.cardioCoachingEnabled` abgeleitet (siehe Auftrags-Design, Abschnitt 4), kein neues
+    /// persistiertes Flag: erst wenn alle drei Aktivierungs-Stellen (Onboarding, PlanBuilder,
+    /// Settings) ausnahmslos ueber diesen Setup-Schritt laufen, bevor `cardioCoachingEnabled` auf
+    /// `true` gesetzt wird, ist dieses Flag selbst der verlaessliche Beweis "wurde mindestens
+    /// einmal eingerichtet".
+    static func needsCardioCoachSetup(runCoachWanted: Bool, hasExistingCoachSetup: Bool) -> Bool {
+        runCoachWanted && !hasExistingCoachSetup
+    }
+
+    /// Gemeinsamer Setup-Schritt: Abbruch verwirft den Entwurf (naechstes Oeffnen startet wieder
+    /// von den zuletzt gespeicherten/leeren Werten, siehe `init`) UND nimmt die gerade getroffene
+    /// "mit Coach"-Auswahl zurueck - "keine teilweise Einrichtung wird als erfolgreich
+    /// persistiert" (Auftrag, Abschnitt 8, Fall 8).
+    @ViewBuilder
+    private var cardioCoachSetupSheet: some View {
+        NavigationStack {
+            ScrollView {
+                DeltiqSection(String(localized: "profile.section.cardio", bundle: .module).uppercased()) {
+                    CardioCoachSetupFields(draft: $cardioCoachSetupDraft)
+                }
+                .padding()
+            }
+            .background(Color.Deltiq.background.ignoresSafeArea())
+            .navigationTitle(Text("profile.section.cardio", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        runCoachWanted = false
+                        showingCardioCoachSetup = false
+                    } label: {
+                        Text("common.cancel", bundle: .module)
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        showingCardioCoachSetup = false
+                    } label: {
+                        Text("common.done", bundle: .module)
+                    }
                 }
             }
         }
@@ -1336,6 +1505,37 @@ public struct PlanBuilderView: View {
 
     // MARK: - Schritt 3: die gerechnete Woche
 
+    /// Finding 1 (Laufcoaching-Audit-Fixes): reine, SwiftData-freie Herleitung der
+    /// Lauf-Coach-Eingabe aus der AKTUELLEN Builder-Auswahl (`CardioRunProfile`s
+    /// eigene Typ-Doku: "bleibt ohne SwiftData testbar") - die EINZIGE Quelle fuer
+    /// `currentInput`, damit es nicht noch eine zweite, womoeglich abweichende Stelle
+    /// gibt (doppelte/widersprüchliche Quellen fuer dieselbe Auswahl). Das Gate ist
+    /// `runCoachWanted` (die aktuelle Builder-Auswahl), NICHT das moeglicherweise noch
+    /// nicht existierende oder bereits veraltete gespeicherte Profil - sonst weicht ein
+    /// frisch im Builder umgeschalteter Coach, oder das Onboarding (noch kein Profil),
+    /// von dem ab, was der Nutzer hier tatsaechlich sieht und bestaetigt. `savedCardioGoal`
+    /// faellt auf `preseededCardioGoal` zurueck, wenn noch kein Profil existiert (Onboarding
+    /// oder frischer Setup-Entwurf im eigenstaendigen Modus) - erweitert
+    /// (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt) um denselben Fallback fuer
+    /// Referenzzeit/Wochenvolumen: fehlt BEIDES (kein Profil UND kein Entwurfswert), bleiben
+    /// sie `nil` - NIE erfunden.
+    static func effectiveCardioRunProfile(
+        runCoachWanted: Bool,
+        savedCardioGoal: CardioGoal?,
+        savedCurrent5kReferenceSeconds: Int?,
+        savedWeeklyBaseVolumeKm: Double?,
+        preseededCardioGoal: CardioGoal,
+        preseededCurrent5kReferenceSeconds: Int? = nil,
+        preseededWeeklyBaseVolumeKm: Double? = nil
+    ) -> CardioRunProfile? {
+        guard runCoachWanted else { return nil }
+        return CardioRunProfile(
+            goal: savedCardioGoal ?? preseededCardioGoal,
+            current5kReferenceSeconds: savedCurrent5kReferenceSeconds ?? preseededCurrent5kReferenceSeconds,
+            weeklyBaseVolumeKm: savedWeeklyBaseVolumeKm ?? preseededWeeklyBaseVolumeKm
+        )
+    }
+
     private var currentInput: PlanGeneratorInput {
         let selections: [PlanGeneratorTypeSelection]
         if isPreSeededFlow {
@@ -1346,13 +1546,30 @@ public struct PlanBuilderView: View {
             // in dieselben `PlanGeneratorTypeSelection`-Eingaben, die der
             // UNVERAENDERTE `PlanGenerator` schon immer erwartet hat - siehe
             // dortige Typ-Doku.
+            // Requirement A: der Lauf-Coach wirkt auf die generierten Tage nur,
+            // wenn der Nutzer ihn aktiv eingeschaltet hat - sonst exakt das
+            // bisherige Verhalten (siehe `CardioRunProfile`-Typ-Doku).
+            //
+            // Finding 1 (Laufcoaching-Audit-Fixes): siehe `effectiveCardioRunProfile`-Doku -
+            // einzige Quelle fuer diese Herleitung, damit Vorschau/gespeicherter Plan nie
+            // auseinanderlaufen koennen.
+            let cardioRunProfile = Self.effectiveCardioRunProfile(
+                runCoachWanted: runCoachWanted,
+                savedCardioGoal: profiles.first?.cardioGoal,
+                savedCurrent5kReferenceSeconds: profiles.first?.current5kReferenceSeconds,
+                savedWeeklyBaseVolumeKm: profiles.first?.weeklyBaseVolumeKm,
+                preseededCardioGoal: cardioCoachSetupDraft.goal,
+                preseededCurrent5kReferenceSeconds: cardioCoachSetupDraft.current5kReferenceSeconds,
+                preseededWeeklyBaseVolumeKm: cardioCoachSetupDraft.weeklyBaseVolumeKm
+            )
             selections = GoalDrivenPlanSelectionBuilder.makeSelections(
                 goal: selectedTrainingGoal ?? .hybrid,
                 enduranceModality: selectedEnduranceModality,
                 totalDaysPerWeek: totalDaysPerWeek,
                 sessionDurationMinutes: sessionDurationMinutes,
                 experience: experience,
-                equipmentPreferences: equipmentPreferences
+                equipmentPreferences: equipmentPreferences,
+                cardioRunProfile: cardioRunProfile
             )
         }
         return PlanGeneratorInput(
@@ -1574,6 +1791,47 @@ public struct PlanBuilderView: View {
                         Text("common.cancel", bundle: .module)
                     }
                 }
+                // UI-Ticket ("Plan Bauen Schritt 3: Übungsalternativen"):
+                // dasselbe Dialog-Muster wie oben, nur pro Uebung statt pro
+                // Tag - ausgeloest vom Alternative-Button jeder Uebungszeile
+                // in `resultDayRow`.
+                .confirmationDialog(
+                    Text("planBuilder.result.exerciseAlternatives.title", bundle: .module),
+                    isPresented: Binding(
+                        get: { exerciseAlternativeTarget != nil },
+                        set: { if !$0 { exerciseAlternativeTarget = nil } }
+                    ),
+                    titleVisibility: .visible
+                ) {
+                    ForEach(Array(currentExerciseAlternativeOptions.enumerated()), id: \.offset) { _, alternative in
+                        Button(localizedExerciseName(alternative.name)) {
+                            if let target = exerciseAlternativeTarget {
+                                applyExerciseAlternative(alternative, to: target)
+                            }
+                            exerciseAlternativeTarget = nil
+                        }
+                    }
+                    // UI-Ticket ("Mehr-Informationsarchitektur"): zweiter
+                    // kontextueller Zugang zur Uebungsbibliothek, direkt bei
+                    // der Alternativen-Auswahl - schliesst diesen Dialog und
+                    // oeffnet denselben Bibliotheks-Screen wie oben.
+                    Button {
+                        exerciseAlternativeTarget = nil
+                        showingExerciseLibrary = true
+                    } label: {
+                        Text("planBuilder.exerciseLibrary.action", bundle: .module)
+                    }
+                    Button(role: .cancel) {
+                        exerciseAlternativeTarget = nil
+                    } label: {
+                        Text("common.cancel", bundle: .module)
+                    }
+                }
+                .sheet(isPresented: $showingExerciseLibrary) {
+                    NavigationStack {
+                        ExerciseLibraryView()
+                    }
+                }
                 .overlay(alignment: .bottom) {
                     if let footerToastMessage {
                         Label(footerToastMessage, systemImage: footerToastSystemImage)
@@ -1679,6 +1937,60 @@ public struct PlanBuilderView: View {
         guard var currentDraft = draft else { return }
         guard currentDraft.replaceContent(of: dayID, with: alternative) else { return }
         loadLevelByDayID.removeValue(forKey: dayID)
+        draft = currentDraft
+    }
+
+    /// UI-Ticket ("Plan Bauen Schritt 3: Übungsalternativen"): Cardio- und
+    /// jeder Zeitformat-Tag (AMRAP/EMOM/Auf Zeit) bleibt wie bei
+    /// `ExerciseSubstitutionEngine.isEligibleForSubstitution` global
+    /// ausgeschlossen - der Dialog zeigt dafuer denselben verstaendlichen
+    /// "keine Alternative"-Hinweis wie ein Tag ohne echte Alternative
+    /// (`presentAlternatives` oben), statt eines stillen No-Ops.
+    private func presentExerciseAlternatives(
+        for exercise: ExerciseSpec, dayID: DraftDayID, exerciseID: DraftExerciseID, dayFormat: WorkoutTimeFormat?
+    ) {
+        let candidates: [ExerciseTemplateSpec] = dayFormat == nil
+            ? ExerciseAlternativeFinder.alternatives(
+                for: exercise.name, equipmentPool: equipmentPreferences, maxExperience: experience
+            )
+            : []
+        guard !candidates.isEmpty else {
+            showFooterToast(
+                String(localized: "planBuilder.result.noExerciseAlternatives.toast", bundle: .module),
+                systemImage: "exclamationmark.triangle.fill"
+            )
+            return
+        }
+        currentExerciseAlternativeOptions = candidates
+        exerciseAlternativeTarget = ExerciseAlternativeTarget(dayID: dayID, exerciseID: exerciseID)
+    }
+
+    /// Ersetzt NUR die eine betroffene Uebung (`PlanDraft.replaceExercise`,
+    /// verweigert bereits selbst bei `isContentFixed`) - alle anderen
+    /// Uebungen, ihre Reihenfolge und die Tagesstruktur bleiben unangetastet.
+    /// `ExerciseAlternativeFinder.adjustedSpec` entscheidet, ob Saetze/Wdh./
+    /// Pause der Original-Uebung fuer die Ersatz-Uebung noch passen.
+    ///
+    /// Bugfix (Device-Bugreport "Übungsalternative wird nicht übernommen"):
+    /// anders als `applyAlternative` oben entfernt dies den Tag NICHT aus
+    /// `loadLevelByDayID`. `PlanDraftResultAdapter.makeResult` (siehe dort)
+    /// verlangt fuer JEDEN Tag einen Eintrag und wirft sonst
+    /// `missingLoadLevel` - `currentResult` faengt das ueber `try?` zu `nil`
+    /// ab, OHNE jede sichtbare Fehlermeldung, UND der "Plan uebernehmen"-
+    /// Knopf bleibt dabei aktiviert (`isDisabled` prueft nicht `currentResult`).
+    /// Ergebnis: `adoptPlan()`s `guard let result = currentResult else {
+    /// return }` greift lautlos - ein Tap auf "Plan uebernehmen" tut dann
+    /// buchstaeblich nichts mehr, fuer die GESAMTE restliche Sitzung in
+    /// diesem Schritt-3-Entwurf. Eine einzelne ausgetauschte Uebung aendert
+    /// die Gesamt-Haerte eines Tages (anders als `replaceContent`s kompletter
+    /// Tagesaustausch) nur geringfuegig - die bestehende Einstufung fuer
+    /// diesen einen Tag beizubehalten ist eine kleine, aber UNGEFAEHRLICHE
+    /// Ungenauigkeit, verglichen mit dem kompletten Ausfall der Uebernahme.
+    private func applyExerciseAlternative(_ alternative: ExerciseTemplateSpec, to target: ExerciseAlternativeTarget) {
+        guard var currentDraft = draft, let dayIndex = currentDraft.index(of: target.dayID) else { return }
+        guard let original = currentDraft.days[dayIndex].exercises.first(where: { $0.id == target.exerciseID })?.spec else { return }
+        let adjusted = ExerciseAlternativeFinder.adjustedSpec(replacing: original, with: alternative)
+        guard currentDraft.replaceExercise(dayID: target.dayID, exerciseID: target.exerciseID, with: adjusted) else { return }
         draft = currentDraft
     }
 
@@ -1789,7 +2101,79 @@ public struct PlanBuilderView: View {
         let spec = day.spec(sequenceIndex: 1)
         let currentIndex = draft?.index(of: day.id) ?? 0
         let totalDays = draft?.days.count ?? 0
-        return HStack(alignment: .top, spacing: 12) {
+        return VStack(alignment: .leading, spacing: 10) {
+            resultDayHeaderRow(spec: spec, day: day, loadLevel: loadLevel, currentIndex: currentIndex, totalDays: totalDays)
+            // UI-Ticket ("Plan Bauen Schritt 3: Template-Layout und
+            // Übungsalternativen"): Typografie/Abstaende/Trennlinie jetzt
+            // IDENTISCH zu `ProgramTemplatePickerView.dayCard`s Uebungszeile
+            // (`.body.weight(.medium)`/`Color.primary` Name,
+            // `.caption`/`Color.Deltiq.textSecondary` Detail, 14/10pt
+            // Padding, `Color.Deltiq.divider` zwischen den Zeilen) statt
+            // einer eigens erfundenen Darstellung - gleiche
+            // `detailLine`-Aufloesung wie dort, keine zweite Logik. Iteriert
+            // `day.exercises` (statt `spec.exercises`), um die stabile
+            // `DraftExerciseID` fuer den Alternativen-Tausch zu behalten.
+            if !day.exercises.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(day.exercises.enumerated()), id: \.element.id) { index, draftExercise in
+                        VStack(alignment: .leading, spacing: 0) {
+                            Button {
+                                presentExerciseAlternatives(
+                                    for: draftExercise.spec, dayID: day.id, exerciseID: draftExercise.id,
+                                    dayFormat: spec.timeFormat
+                                )
+                            } label: {
+                                HStack(spacing: 8) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(localizedExerciseName(draftExercise.spec.name))
+                                            .font(.body.weight(.medium))
+                                            .foregroundStyle(Color.primary)
+                                        Text(detailLine(for: draftExercise.spec, dayFormat: spec.timeFormat))
+                                            .font(.caption)
+                                            .foregroundStyle(Color.Deltiq.textSecondary)
+                                    }
+                                    Spacer(minLength: 8)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(Color.Deltiq.textTertiary)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Text(
+                                String(
+                                    format: String(localized: "planBuilder.result.chooseExerciseAlternative", bundle: .module),
+                                    localizedExerciseName(draftExercise.spec.name)
+                                )
+                            ))
+                            if index < day.exercises.count - 1 {
+                                Rectangle()
+                                    .fill(Color.Deltiq.divider)
+                                    .frame(height: 1)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.secondary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
+    }
+
+    /// Name, Fixierungs-Badges, Belastungs-Badge und das Aktionen-Menu — die
+    /// bisherige `resultDayRow`-Kopfzeile, unveraendert ausgelagert, damit
+    /// die neue Uebungsliste darunter Platz hat.
+    @ViewBuilder
+    private func resultDayHeaderRow(spec: DaySpec, day: DraftDay, loadLevel: PlanLoadLevel?, currentIndex: Int, totalDays: Int) -> some View {
+        HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     // DEL-247: `displayName` statt `.name` - loest den seit
@@ -1900,6 +2284,20 @@ public struct PlanBuilderView: View {
                     }
                 }
                 .disabled(day.isContentFixed)
+                // UI-Ticket ("Mehr-Informationsarchitektur"): kontextueller
+                // Zugang zur bestehenden Uebungsbibliothek beim Bearbeiten
+                // eines Plans - oeffnet dieselbe `ExerciseLibraryView` wie
+                // unter "Mehr" (keine zweite Implementierung), siehe
+                // `showingExerciseLibrary`.
+                Button {
+                    showingExerciseLibrary = true
+                } label: {
+                    Label {
+                        Text("planBuilder.exerciseLibrary.action", bundle: .module)
+                    } icon: {
+                        Image(systemName: "books.vertical")
+                    }
+                }
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .foregroundStyle(.secondary)
@@ -1908,14 +2306,6 @@ public struct PlanBuilderView: View {
             }
             .accessibilityLabel(Text("planBuilder.result.dayActions", bundle: .module))
         }
-        .padding(12)
-        .background(Color.secondary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
     }
 
     /// Fasst Name/Umfang/Belastung/Fixierungsstatus in EINER Ansage zusammen
@@ -1940,6 +2330,10 @@ public struct PlanBuilderView: View {
         if day.isContentFixed {
             parts.append(String(localized: "planBuilder.result.fixed.content.badge", bundle: .module))
         }
+        // Schritt-3-Vorschau: die sichtbare Uebungsliste braucht dasselbe
+        // Pendant fuer VoiceOver, sonst bekommen sehende und blinde Nutzer
+        // unterschiedliche Informationstiefe fuer dieselbe Zeile.
+        parts.append(contentsOf: spec.exercises.map(\.name).map(localizedExerciseName))
         return parts.joined(separator: ", ")
     }
 
@@ -1962,7 +2356,25 @@ public struct PlanBuilderView: View {
         }
         if spec.exercises.count == 1, let exercise = spec.exercises.first, exercise.isCardio {
             if let duration = exercise.targetDurationMinutes {
-                return String(format: String(localized: "planBuilder.wizard.minutesValue", bundle: .module), duration)
+                let durationText = String(format: String(localized: "planBuilder.wizard.minutesValue", bundle: .module), duration)
+                // Task 9: gleiche Pace-Ergaenzung wie
+                // `CardioFeasibilityDayRow.subtitle` - diese Zeile ist die
+                // "fuellere" Geschwister-Darstellung derselben
+                // Easy/Tempo-Tage, siehe dortige Doku.
+                // Nachbesserung (finales Branch-Review, Fix 1): NUR fuer
+                // Laufen UND nur, wenn der Coach ueberhaupt aktiv ist - sonst
+                // zeigte dieser Zweig die Pace/den Fallback auch bei
+                // abgeschaltetem Coach und bei Radfahren (beide tragen
+                // ebenfalls `targetDurationMinutes`), was Review Focus 1
+                // ("Coach aus -> keine Verhaltensaenderung") fuer genau diese
+                // Vorschau verletzte.
+                if exercise.enduranceSportKind == .running, profiles.first?.cardioCoachingEnabled == true {
+                    if let pace = exercise.targetPaceMinutesPerKm {
+                        return "\(durationText) · \(PaceCalculator.formatPace(pace))"
+                    }
+                    return "\(durationText) · \(String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module))"
+                }
+                return durationText
             }
             if let distance = exercise.targetDistanceKm {
                 // README 2.21: "%.1f km" ohne Locale ("0.4 km" statt "0,4 km"
@@ -2034,10 +2446,24 @@ public struct PlanBuilderView: View {
     }
 
     /// Siehe `onEnduranceModalityChosen`-Doku und `adoptPlan()`s Aufrufstelle
-    /// im eigenstaendigen Modus.
+    /// im eigenstaendigen Modus. Gemeinsamer Setup-Schritt
+    /// (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): persistiert danach denselben
+    /// `cardioCoachSetupDraft`, den `currentInput`/die Vorschau bereits verwendet haben
+    /// (Auftrag, Abschnitt 9/10: "Bestaetigung: gespeicherter Plan entspricht exakt der
+    /// Vorschau") - identisches Muster wie `CardioGoalEditorView.save()`/
+    /// `OnboardingView.finishOnboarding()`. `profile.cardioCoachingEnabled` wird ERST NACH
+    /// `setEnduranceModality` gelesen, weil dieser Aufruf den tatsaechlichen Wert setzt
+    /// (inkl. `supportsRunCoach`-Veto), nicht das rohe `runCoachWanted`.
     private func applyEnduranceModalityChoiceIfNeeded(to profile: UserBodyProfile) {
         guard !isPreSeededFlow, let goal = selectedTrainingGoal, goal == .endurance || goal == .hybrid else { return }
         profile.setEnduranceModality(selectedEnduranceModality, runCoachEnabled: runCoachWanted)
+        if profile.cardioCoachingEnabled {
+            profile.cardioGoal = cardioCoachSetupDraft.goal
+            profile.cardioRaceDate = cardioCoachSetupDraft.raceDate
+            profile.weeklyBaseVolumeKm = cardioCoachSetupDraft.weeklyBaseVolumeKm
+            profile.maxHeartRateBpm = cardioCoachSetupDraft.maxHeartRateBpm
+            profile.current5kReferenceSeconds = cardioCoachSetupDraft.current5kReferenceSeconds
+        }
     }
 
     private func adoptPlan() {

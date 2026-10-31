@@ -41,15 +41,13 @@ public enum ComebackAdvisor {
     /// - Parameters:
     ///   - gapDays: Tage seit der letzten echten Session.
     ///   - medianGap: Median-Abstand der letzten Sessions (persoenliche Norm).
-    ///   - sessionsBeforeGap: Sessions in den 28 Tagen VOR der Pause. Das
-    ///     Fenster endet an der letzten Session, nicht heute — sonst waere es
-    ///     bei langen Pausen zwangslaeufig leer und die Bedingung sinnlos.
-    ///     Mindestens 3 verlangt, weil nur dann ueberhaupt eine Last existiert,
-    ///     von der sich reduzieren laesst. Wer noch nie regelmaessig trainiert
-    ///     hat, braucht kein Comeback, sondern einen Einstieg.
+    ///   - priorStrengthSessionCount: Kraft-Sessions in der GESAMTEN Historie
+    ///     (DEL-240). Mindestens 3 verlangt, weil nur dann ueberhaupt eine
+    ///     etablierte Last existiert, von der sich reduzieren laesst. Wer noch
+    ///     nie regelmaessig trainiert hat, braucht kein Comeback, sondern einen
+    ///     Einstieg.
     ///
-    ///     **DEL-240: ueber die GESAMTE Historie gezaehlt, nicht in einem
-    ///     Fenster vor der Pause.** Die erste Fassung nahm die 28 Tage vor der
+    ///     **DEL-240: GESAMTE Historie, nicht 28-Tage-Fenster vor der Pause.** Die erste Fassung nahm die 28 Tage vor der
     ///     letzten Kraft-Session. Das verwechselt "Anfaenger" mit "hatte
     ///     letzten Monat wenig Zeit": wer zwei Jahre trainiert hat, dann einen
     ///     ruhigen Monat, dann drei Wochen Pause, ist genau der Fall, fuer den
