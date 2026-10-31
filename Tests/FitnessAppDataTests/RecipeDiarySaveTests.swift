@@ -13,7 +13,7 @@ final class RecipeDiarySaveTests: XCTestCase {
     private var container: ModelContainer!
     private var context: ModelContext!
 
-    override func setUp() throws {
+    override func setUpWithError() throws {
         container = try ModelContainer(
             for: Schema(AppSchema.types),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
