@@ -379,4 +379,44 @@ final class MealPlanGeneratorTests: XCTestCase {
         )
         XCTAssertFalse(result.isEmpty, "Vegetarisches Rezept muss für Pescetarier sichtbar sein")
     }
+
+    // MARK: - Phase 4.5: public eligibleRecipes (Specs 10–12)
+
+    func testPhase45_eligibleRecipes_allergenExclusion() {
+        let safe = makeRecipe(id: "safe", allergens: [], allergenVerified: true)
+        let nuts = makeRecipe(id: "nuts", allergens: [.treenutsAndNuts], allergenVerified: true)
+        let result = MealPlanGenerator.eligibleRecipes(
+            in: [safe, nuts], for: .lunch,
+            preferences: .init(allergenExclusions: [.treenutsAndNuts])
+        )
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result.first?.id, "safe")
+    }
+
+    func testPhase45_eligibleRecipes_dietaryStyle() {
+        let vegan = makeRecipe(id: "v", dietaryTags: [.vegan])
+        let omnivor = makeRecipe(id: "o", dietaryTags: [])
+        let result = MealPlanGenerator.eligibleRecipes(
+            in: [vegan, omnivor], for: .lunch,
+            preferences: .init(dietaryStyle: .vegan)
+        )
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result.first?.id, "v")
+    }
+
+    func testPhase45_eligibleRecipes_excludedIDs() {
+        let included = makeRecipe(id: "included")
+        let excluded = makeRecipe(id: "excluded")
+        let result = MealPlanGenerator.eligibleRecipes(
+            in: [included, excluded], for: .lunch,
+            preferences: .init(excludedRecipeIDs: ["excluded"])
+        )
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result.first?.id, "included")
+    }
+
+    func testPhase45_eligibleRecipes_emptyLeadsToEmptyAlternatives() {
+        let result = MealPlanGenerator.eligibleRecipes(in: [], for: .lunch, preferences: .init())
+        XCTAssertTrue(result.isEmpty)
+    }
 }

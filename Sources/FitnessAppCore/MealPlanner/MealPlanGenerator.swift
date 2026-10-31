@@ -91,7 +91,7 @@ public enum MealPlanGenerator {
     /// Liefert alle Rezepte, die für `mealType` und `preferences` geeignet sind.
     /// Unbekannte Allergeninformationen (allergenVerified=false) werden bei aktivem
     /// Allergenfilter sicher ausgeschlossen.
-    static func eligibleRecipes(
+    public static func eligibleRecipes(
         in catalog: [Recipe],
         for mealType: MealType,
         preferences: UserNutritionPreferences

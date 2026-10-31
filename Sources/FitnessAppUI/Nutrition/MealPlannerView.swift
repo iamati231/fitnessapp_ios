@@ -16,8 +16,11 @@ public struct MealPlannerView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AppNavigation.self) private var navigation
+    @Environment(\.modelContext) private var modelContext
 
     @State private var selectedDate: Date = Date()
+    @State private var replacingAssignment: PlannedMealAssignment? = nil
+    @State private var removingAssignment: PlannedMealAssignment? = nil
 
     @Query private var allPlans: [DailyMealPlan]
     @Query private var profiles: [UserBodyProfile]
@@ -100,6 +103,29 @@ public struct MealPlannerView: View {
         #endif
         .navigationBarBackButtonHidden(true)
         .deltiqSwipeBackEnabled()
+        .sheet(item: $replacingAssignment) { assignment in
+            RecipePickerView(
+                mealType: assignment.mealType,
+                currentRecipeID: assignment.recipeID,
+                preferences: userProfile?.nutritionPreferences ?? UserNutritionPreferences(),
+                onSelect: { newRecipe in
+                    swapAssignment(assignment, to: newRecipe)
+                }
+            )
+        }
+        .confirmationDialog(
+            String(localized: "mealPlanner.remove.confirm.title", bundle: .module),
+            isPresented: Binding(
+                get: { removingAssignment != nil },
+                set: { if !$0 { removingAssignment = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "mealPlanner.remove.confirm.action", bundle: .module), role: .destructive) {
+                if let a = removingAssignment { removeAssignment(a) }
+            }
+            Button(String(localized: "common.cancel", bundle: .module), role: .cancel) {}
+        }
     }
 
     // MARK: - Date Navigation
@@ -294,49 +320,77 @@ public struct MealPlannerView: View {
                 date: Calendar.current.startOfDay(for: selectedDate)
             ))
         } label: {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    if let r {
-                        Text(String(localized: String.LocalizationValue(r.nameKey), bundle: .module))
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.primary)
-                    } else {
-                        Text("nutrition.mealPlanner.recipe.unknown", bundle: .module)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.Deltiq.textSecondary)
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        if let r {
+                            Text(String(localized: String.LocalizationValue(r.nameKey), bundle: .module))
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Color.primary)
+                        } else {
+                            Text("nutrition.mealPlanner.recipe.unknown", bundle: .module)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Spacer()
+                        if let n {
+                            Text(NutritionDisplay.text(n.kcal, unit: "kcal"))
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                                .fitnessNumberStyle()
+                        }
                     }
-                    Spacer()
                     if let n {
-                        Text(NutritionDisplay.text(n.kcal, unit: "kcal"))
+                        HStack(spacing: 16) {
+                            macroText(String(localized: "nutrition.goals.protein.label", bundle: .module), value: n.proteinG)
+                            macroText(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: n.carbsG)
+                            macroText(String(localized: "nutrition.goals.fat.label", bundle: .module), value: n.fatG)
+                        }
+                    }
+                    if assignment.portionMultiplier != 1.0 {
+                        Text("×\(assignment.portionMultiplier.formatted(.number.precision(.fractionLength(0...1))))")
                             .font(.caption)
                             .foregroundStyle(Color.Deltiq.textSecondary)
-                            .fitnessNumberStyle()
                     }
                 }
-                if let n {
-                    HStack(spacing: 16) {
-                        macroText(String(localized: "nutrition.goals.protein.label", bundle: .module), value: n.proteinG)
-                        macroText(String(localized: "nutrition.goals.carbs.label", bundle: .module), value: n.carbsG)
-                        macroText(String(localized: "nutrition.goals.fat.label", bundle: .module), value: n.fatG)
-                    }
-                }
-                if assignment.portionMultiplier != 1.0 {
-                    Text("×\(assignment.portionMultiplier.formatted(.number.precision(.fractionLength(0...1))))")
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                if showsDivider {
+                    Rectangle()
+                        .fill(Color.Deltiq.divider)
+                        .frame(height: 1)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            if showsDivider {
-                Rectangle()
-                    .fill(Color.Deltiq.divider)
-                    .frame(height: 1)
-            }
-        }
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                replacingAssignment = assignment
+            } label: {
+                Label(String(localized: "mealPlanner.action.swap", bundle: .module), systemImage: "arrow.triangle.2.circlepath")
+            }
+            Button(role: .destructive) {
+                removingAssignment = assignment
+            } label: {
+                Label(String(localized: "mealPlanner.action.remove", bundle: .module), systemImage: "trash")
+            }
+        }
+    }
+
+    // MARK: - Edit Actions
+
+    private func swapAssignment(_ assignment: PlannedMealAssignment, to newRecipe: Recipe) {
+        assignment.recipeID = newRecipe.id
+        assignment.portionMultiplier = 1.0
+        if let plan = assignment.plan { plan.isManuallyAdjusted = true }
+        try? modelContext.save()
+    }
+
+    private func removeAssignment(_ assignment: PlannedMealAssignment) {
+        if let plan = assignment.plan { plan.isManuallyAdjusted = true }
+        modelContext.delete(assignment)
+        try? modelContext.save()
+        removingAssignment = nil
     }
 
     private func macroText(_ label: String, value: KnownValue) -> some View {

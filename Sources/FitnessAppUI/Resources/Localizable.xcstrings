@@ -2256,6 +2256,54 @@
         }
       }
     },
+    "mealPlanner.action.swap": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rezept austauschen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Replace Recipe" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tarifi Değiştir" } }
+      }
+    },
+    "mealPlanner.action.remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Aus Tagesplan entfernen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Remove from Plan" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Plandan Kaldır" } }
+      }
+    },
+    "mealPlanner.remove.confirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rezept aus Tagesplan entfernen?" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Remove Recipe from Plan?" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tarif Plandan Kaldırılsın mı?" } }
+      }
+    },
+    "mealPlanner.remove.confirm.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Entfernen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Remove" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kaldır" } }
+      }
+    },
+    "mealPlanner.picker.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rezept auswählen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Choose Recipe" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tarif Seç" } }
+      }
+    },
+    "mealPlanner.picker.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine geeigneten Alternativen verfügbar." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No suitable alternatives available." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Uygun alternatif bulunamadı." } }
+      }
+    },
     "sex.male": {
       "extractionState": "manual",
       "localizations": {
