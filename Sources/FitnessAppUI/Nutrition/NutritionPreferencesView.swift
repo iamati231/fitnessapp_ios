@@ -11,8 +11,6 @@ import FitnessAppData
 public struct NutritionPreferencesView: View {
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
-
     @Query private var profiles: [UserBodyProfile]
 
     private let recipeCatalog: [Recipe] = RecipeCatalogData.all
@@ -44,8 +42,8 @@ public struct NutritionPreferencesView: View {
         .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
-        #endif
         .navigationBarBackButtonHidden(true)
+        #endif
         .deltiqSwipeBackEnabled()
     }
 
