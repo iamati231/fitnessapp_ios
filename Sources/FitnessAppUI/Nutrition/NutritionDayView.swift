@@ -132,7 +132,11 @@ public struct NutritionDayView: View {
                         systemImage: "gearshape",
                         accessibilityLabel: String(localized: "nutrition.day.goals.button", bundle: .module)
                     ) {
-                        showingGoals = true
+                        if isTabRoot {
+                            navigation.nutritionPath.append(MealPlannerRoute.goals)
+                        } else {
+                            showingGoals = true
+                        }
                     }
                 ] + (isTabRoot ? [
                     DeltiqHeaderAction(

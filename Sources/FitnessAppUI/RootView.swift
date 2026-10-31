@@ -311,8 +311,13 @@ struct MainTabView: View {
             // `toolsPath`; navigationDestination leitet `.planner` → MealPlannerView.
             NavigationStack(path: $navigation.nutritionPath) {
                 NutritionDayView(isTabRoot: true)
-                    .navigationDestination(for: MealPlannerRoute.self) { _ in
-                        MealPlannerView()
+                    .navigationDestination(for: MealPlannerRoute.self) { route in
+                        switch route {
+                        case .planner:
+                            MealPlannerView()
+                        case .goals:
+                            NutritionGoalsView()
+                        }
                     }
             }
             .tabItem {

@@ -61956,6 +61956,222 @@
         "en": { "stringUnit": { "state": "translated", "value": "Saving..." } },
         "tr": { "stringUnit": { "state": "translated", "value": "Kaydediliyor..." } }
       }
+    },
+    "nutrition.mealPlanner.overview.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Tagesübersicht" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Day Overview" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Günlük Özet" } }
+      }
+    },
+    "nutrition.mealPlanner.recipe.unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Unbekanntes Rezept" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Unknown Recipe" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bilinmeyen Tarif" } }
+      }
+    },
+    "recipe.chicken_rice_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hähnchen-Reis-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Chicken Rice Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tavuklu Pirinç Kasesi" } }
+      }
+    },
+    "recipe.oatmeal_berry_skyr.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Haferbrei mit Beeren & Skyr" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Oatmeal Berry Skyr" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yulaf Ezmeli Meyveli Skyr" } }
+      }
+    },
+    "recipe.red_lentil_soup.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rote Linsensuppe" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Red Lentil Soup" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kırmızı Mercimek Çorbası" } }
+      }
+    },
+    "recipe.greek_yogurt_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Griechische Joghurt-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Greek Yogurt Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yunan Yoğurdu Kasesi" } }
+      }
+    },
+    "recipe.tuna_salad.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Thunfischsalat" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tuna Salad" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ton Balıklı Salata" } }
+      }
+    },
+    "recipe.scrambled_eggs_toast.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rührei-Toast" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Scrambled Eggs Toast" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sahanda Yumurtalı Tost" } }
+      }
+    },
+    "recipe.banana_oat_pancakes.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Bananen-Hafer-Pancakes" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Banana Oat Pancakes" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Muzlu Yulaf Pankek" } }
+      }
+    },
+    "recipe.cottage_cheese_fruit_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hüttenkäse-Frucht-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cottage Cheese Fruit Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Lor Peynirli Meyve Kasesi" } }
+      }
+    },
+    "recipe.avocado_toast_egg.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Avocado-Toast mit Ei" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Avocado Toast with Egg" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Avokadolu Tost ve Yumurta" } }
+      }
+    },
+    "recipe.quark_berry_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Quark-Beeren-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Quark Berry Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Quark Meyve Kasesi" } }
+      }
+    },
+    "recipe.turkey_quinoa_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Puten-Quinoa-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Turkey Quinoa Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hindi Etli Kinoa Kasesi" } }
+      }
+    },
+    "recipe.beef_rice_stir_fry.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rind-Reis-Pfanne" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Beef Rice Stir Fry" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Etli Pirinç Kavurması" } }
+      }
+    },
+    "recipe.salmon_sweet_potato_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Lachs-Süßkartoffel-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Salmon Sweet Potato Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Somonlu Tatlı Patates Kasesi" } }
+      }
+    },
+    "recipe.chickpea_quinoa_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kichererbsen-Quinoa-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Chickpea Quinoa Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Nohutlu Kinoa Kasesi" } }
+      }
+    },
+    "recipe.tofu_brown_rice_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Tofu-Vollkornreis-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tofu Brown Rice Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tofulu Kahverengi Pirinç Kasesi" } }
+      }
+    },
+    "recipe.beef_steak_potato.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rindersteak mit Kartoffel" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Beef Steak with Potato" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Biftek ve Patates" } }
+      }
+    },
+    "recipe.cod_couscous_vegetable.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kabeljau-Couscous mit Gemüse" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cod Couscous with Vegetables" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Morinali Kuskus ve Sebze" } }
+      }
+    },
+    "recipe.lamb_bulgur_plate.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Lamm-Bulgur-Teller" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Lamb Bulgur Plate" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kuzulu Bulgur Tabağı" } }
+      }
+    },
+    "recipe.chicken_thigh_tomato_pasta.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hähnchenschenkel-Tomaten-Pasta" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Chicken Thigh Tomato Pasta" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tavuk Butlu Domatesli Makarna" } }
+      }
+    },
+    "recipe.lentil_sweet_potato_curry.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Linsen-Süßkartoffel-Curry" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Lentil Sweet Potato Curry" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Mercimekli Tatlı Patates Köri" } }
+      }
+    },
+    "recipe.peanut_butter_banana.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erdnussbutter-Banane" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Peanut Butter Banana" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Fıstık Ezmeli Muz" } }
+      }
+    },
+    "recipe.almond_apple_snack.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Mandel-Apfel-Snack" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Almond Apple Snack" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bademli Elma Atıştırması" } }
+      }
+    },
+    "recipe.hummus_veggie_sticks.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hummus mit Gemüsesticks" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Hummus with Veggie Sticks" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Humus ve Sebze Çubukları" } }
+      }
+    },
+    "recipe.skyr_berry_snack.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Skyr-Beeren-Snack" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Skyr Berry Snack" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Skyr ve Meyve Atıştırması" } }
+      }
+    },
+    "recipe.egg_avocado_snack.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ei-Avocado-Snack" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Egg Avocado Snack" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yumurtalı Avokado Atıştırması" } }
+      }
     }
   }
 }

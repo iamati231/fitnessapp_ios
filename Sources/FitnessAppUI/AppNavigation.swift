@@ -36,12 +36,12 @@ public final class AppNavigation {
     }
 }
 
-/// Phase 4.1 (2026-10-31): Push-Navigation fuer MealPlannerView — analog zu
-/// `CalculatorsRoute` / `toolsPath`. Ein einziger `.planner`-Fall genuegt fuer
-/// Phase 4.1; weitere Tiefen-Routen kommen in spaeterern Phasen.
+/// Nav-Unification (2026-10-31): Push-Navigation fuer alle Nutrition-Screens.
+/// `.planner` — MealPlannerView; `.goals` — NutritionGoalsView.
 @available(iOS 17.0, macOS 14.0, *)
 public enum MealPlannerRoute: Hashable, Sendable {
     case planner
+    case goals
 }
 
 /// DEL-212, main-navigation Plan Task 3 Fix-Runde 1 (2026-10-22): Wertbasierte
