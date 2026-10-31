@@ -528,7 +528,7 @@ public struct DeltiqHeader: View {
         self.eyebrow = eyebrow
         self.title = title
         self.onBack = onBack
-        self.actions = Array(actions.prefix(2))
+        self.actions = Array(actions.prefix(3))
     }
 
     public var body: some View {

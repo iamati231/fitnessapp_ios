@@ -133,14 +133,15 @@ public struct NutritionDayView: View {
                         accessibilityLabel: String(localized: "nutrition.day.goals.button", bundle: .module)
                     ) {
                         showingGoals = true
-                    },
+                    }
+                ] + (isTabRoot ? [
                     DeltiqHeaderAction(
                         systemImage: "fork.knife.circle",
                         accessibilityLabel: String(localized: "nutrition.day.mealPlanner.button", bundle: .module)
                     ) {
                         navigation.nutritionPath.append(MealPlannerRoute.planner)
                     }
-                ]
+                ] : [])
             )
 
             VStack(alignment: .leading, spacing: 18) {
