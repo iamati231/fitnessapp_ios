@@ -677,6 +677,211 @@
         {"ingredientID": "chia_seeds",    "amountGrams": 25},
         {"ingredientID": "coconut_water", "amountGrams": 150}
       ]
+    },
+    {
+      "id": "banana_rice_porridge",
+      "nameKey": "recipe.banana_rice_porridge.name",
+      "mealTypes": ["breakfast"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "rice_white_cooked", "amountGrams": 200},
+        {"ingredientID": "banana",            "amountGrams": 100},
+        {"ingredientID": "honey",             "amountGrams": 20}
+      ]
+    },
+    {
+      "id": "mixed_fruit_bowl",
+      "nameKey": "recipe.mixed_fruit_bowl.name",
+      "mealTypes": ["breakfast", "snack"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "strawberry", "amountGrams": 100},
+        {"ingredientID": "blueberry",  "amountGrams": 80},
+        {"ingredientID": "mango",      "amountGrams": 100},
+        {"ingredientID": "kiwi",       "amountGrams": 75}
+      ]
+    },
+    {
+      "id": "chicken_potato_hash",
+      "nameKey": "recipe.chicken_potato_hash.name",
+      "mealTypes": ["breakfast", "lunch"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "chicken_breast_cooked", "amountGrams": 120},
+        {"ingredientID": "potato_cooked",         "amountGrams": 150},
+        {"ingredientID": "bell_pepper_raw",       "amountGrams": 80},
+        {"ingredientID": "olive_oil",             "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "turkey_sweet_potato_bowl",
+      "nameKey": "recipe.turkey_sweet_potato_bowl.name",
+      "mealTypes": ["lunch"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "turkey_breast_cooked",  "amountGrams": 150},
+        {"ingredientID": "sweet_potato_cooked",   "amountGrams": 200},
+        {"ingredientID": "broccoli_cooked",       "amountGrams": 100},
+        {"ingredientID": "olive_oil",             "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "beef_pepper_rice",
+      "nameKey": "recipe.beef_pepper_rice.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "beef_mince_cooked",  "amountGrams": 150},
+        {"ingredientID": "rice_white_cooked",  "amountGrams": 180},
+        {"ingredientID": "bell_pepper_raw",    "amountGrams": 100},
+        {"ingredientID": "onion_raw",          "amountGrams": 80},
+        {"ingredientID": "olive_oil",          "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "tuna_vegetable_salad",
+      "nameKey": "recipe.tuna_vegetable_salad.name",
+      "mealTypes": ["lunch"],
+      "dietaryTags": ["pescetarian"],
+      "allergens": ["fish"],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 10,
+      "ingredients": [
+        {"ingredientID": "tuna_canned_water", "amountGrams": 150},
+        {"ingredientID": "cucumber_raw",      "amountGrams": 100},
+        {"ingredientID": "carrot_raw",        "amountGrams": 80},
+        {"ingredientID": "tomato_raw",        "amountGrams": 100},
+        {"ingredientID": "olive_oil",         "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "lamb_rice_bowl",
+      "nameKey": "recipe.lamb_rice_bowl.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 25,
+      "ingredients": [
+        {"ingredientID": "lamb_mince_raw",       "amountGrams": 200},
+        {"ingredientID": "rice_basmati_cooked",  "amountGrams": 180},
+        {"ingredientID": "tomato_raw",           "amountGrams": 100},
+        {"ingredientID": "onion_raw",            "amountGrams": 80},
+        {"ingredientID": "olive_oil",            "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "chicken_broccoli_potato",
+      "nameKey": "recipe.chicken_broccoli_potato.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 25,
+      "ingredients": [
+        {"ingredientID": "chicken_breast_cooked", "amountGrams": 180},
+        {"ingredientID": "broccoli_cooked",       "amountGrams": 150},
+        {"ingredientID": "potato_cooked",         "amountGrams": 200},
+        {"ingredientID": "olive_oil",             "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "turkey_zucchini_tomato",
+      "nameKey": "recipe.turkey_zucchini_tomato.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "turkey_breast_cooked", "amountGrams": 150},
+        {"ingredientID": "zucchini_raw",         "amountGrams": 200},
+        {"ingredientID": "tomato_raw",           "amountGrams": 150},
+        {"ingredientID": "onion_raw",            "amountGrams": 80},
+        {"ingredientID": "olive_oil",            "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "cod_vegetable_plate",
+      "nameKey": "recipe.cod_vegetable_plate.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": ["pescetarian"],
+      "allergens": ["fish"],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 25,
+      "ingredients": [
+        {"ingredientID": "cod_cooked",     "amountGrams": 150},
+        {"ingredientID": "potato_cooked",  "amountGrams": 200},
+        {"ingredientID": "carrot_raw",     "amountGrams": 100},
+        {"ingredientID": "broccoli_cooked","amountGrams": 150},
+        {"ingredientID": "olive_oil",      "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "apple_carrot_snack",
+      "nameKey": "recipe.apple_carrot_snack.name",
+      "mealTypes": ["snack"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 2,
+      "ingredients": [
+        {"ingredientID": "apple",     "amountGrams": 150},
+        {"ingredientID": "carrot_raw","amountGrams": 100}
+      ]
+    },
+    {
+      "id": "mixed_berry_bowl",
+      "nameKey": "recipe.mixed_berry_bowl.name",
+      "mealTypes": ["snack"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": true,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 3,
+      "ingredients": [
+        {"ingredientID": "strawberry", "amountGrams": 100},
+        {"ingredientID": "blueberry",  "amountGrams": 80},
+        {"ingredientID": "raspberry",  "amountGrams": 80}
+      ]
     }
   ]
 }

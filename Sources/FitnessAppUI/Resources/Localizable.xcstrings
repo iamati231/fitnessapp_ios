@@ -62789,6 +62789,102 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Mangolu Chia Kasesi" } }
       }
     },
+    "recipe.banana_rice_porridge.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Bananen-Reisbrei" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Banana Rice Porridge" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Muzlu Pirinç Lapası" } }
+      }
+    },
+    "recipe.mixed_fruit_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gemischte Fruchtschale" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Mixed Fruit Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Karışık Meyve Kasesi" } }
+      }
+    },
+    "recipe.chicken_potato_hash.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hähnchen-Kartoffel-Pfanne" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Chicken Potato Hash" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tavuklu Patates Kavurma" } }
+      }
+    },
+    "recipe.turkey_sweet_potato_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Puten-Süßkartoffel-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Turkey Sweet Potato Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hindili Tatlı Patates Kasesi" } }
+      }
+    },
+    "recipe.beef_pepper_rice.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rinder-Paprika-Reis" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Beef Pepper Rice" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Biberli Dana Pilav" } }
+      }
+    },
+    "recipe.tuna_vegetable_salad.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Thunfisch-Gemüse-Salat" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tuna Vegetable Salad" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Ton Balıklı Sebze Salatası" } }
+      }
+    },
+    "recipe.lamb_rice_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Lammhack-Reis-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Lamb Rice Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kuzu Etli Pilav Kasesi" } }
+      }
+    },
+    "recipe.chicken_broccoli_potato.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hähnchen mit Brokkoli und Kartoffeln" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Chicken Broccoli Potato" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Brokollili Tavuk ve Patates" } }
+      }
+    },
+    "recipe.turkey_zucchini_tomato.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Puten-Zucchini-Pfanne" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Turkey Zucchini Tomato" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hindi Kabak Domates" } }
+      }
+    },
+    "recipe.cod_vegetable_plate.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kabeljau-Gemüse-Teller" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cod Vegetable Plate" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Morina Sebze Tabağı" } }
+      }
+    },
+    "recipe.apple_carrot_snack.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Apfel-Möhren-Snack" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Apple Carrot Snack" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Elmalı Havuç Atıştırması" } }
+      }
+    },
+    "recipe.mixed_berry_bowl.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Beeren-Mix-Bowl" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Mixed Berry Bowl" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Karışık Beri Kasesi" } }
+      }
+    },
     "recipe.detail.portion.label": {
       "extractionState": "manual",
       "localizations": {
