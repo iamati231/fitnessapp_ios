@@ -57868,6 +57868,14 @@
         }
       }
     },
+    "nutrition.addMeal.quantityPlaceholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "z. B. 100" } },
+        "en": { "stringUnit": { "state": "translated", "value": "e.g. 100" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "örn. 100" } }
+      }
+    },
     "nutrition.addMeal.positionsSection": {
       "extractionState": "manual",
       "localizations": {

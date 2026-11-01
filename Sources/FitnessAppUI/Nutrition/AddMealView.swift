@@ -152,7 +152,7 @@ public struct AddMealView: View {
     /// "Weitere lokale Treffer" statt komplizierter echter Paginierung.
     @State private var localResultsDisplayLimit: Int = AddMealView.localResultsPageSize
 
-    public init(date: Date = Date(), mealType: MealType = .snack) {
+    public init(date: Date = Date(), mealType: MealType = MealType.suggested()) {
         _draft = StateObject(wrappedValue: MealDraft(date: date, mealType: mealType))
         self.editingMeal = nil
         self.itemsAtOpen = []
@@ -886,11 +886,15 @@ public struct AddMealView: View {
             HStack {
                 Text("nutrition.addMeal.quantityLabel", bundle: .module)
                 Spacer()
-                TextField("", value: $quantity, format: .number)
-                    .decimalKeyboard()
-                    .multilineTextAlignment(.trailing)
-                    .fitnessNumberStyle()
-                    .frame(maxWidth: 100)
+                TextField(
+                    String(localized: "nutrition.addMeal.quantityPlaceholder", bundle: .module),
+                    value: $quantity,
+                    format: .number
+                )
+                .decimalKeyboard()
+                .multilineTextAlignment(.trailing)
+                .fitnessNumberStyle()
+                .frame(maxWidth: 100)
             }
 
             DeltiqSegmentedPicker(
