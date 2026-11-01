@@ -129,12 +129,12 @@ final class WaterTrackerDeepLinkTests: XCTestCase {
             sectionBody.contains("NavigationLink {\n                CalculatorsView()"),
             "The Werkzeuge row must not use a plain view-based NavigationLink to CalculatorsView anymore."
         )
-        // The 4 pre-existing groups stay view-based (out of this fix's scope) —
-        // only the count of plain `NavigationLink {` pushes should be unchanged at 4.
+        // Phase 5.0 added one view-based NavigationLink for NutritionPreferencesView (Settings → Ernährung).
+        // The count is now 5; CalculatorsView must still be value-based (asserted above).
         let plainNavigationLinkCount = sectionBody.components(separatedBy: "NavigationLink {").count - 1
         XCTAssertEqual(
-            plainNavigationLinkCount, 4,
-            "Only the 4 pre-existing group links should remain plain/view-based NavigationLinks; CalculatorsView must be value-based."
+            plainNavigationLinkCount, 5,
+            "5 plain/view-based NavigationLinks expected (4 pre-existing + 1 NutritionPreferencesView); CalculatorsView must be value-based."
         )
     }
 
