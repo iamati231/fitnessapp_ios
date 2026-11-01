@@ -1655,12 +1655,16 @@ public struct PlanBuilderView: View {
         guard selectedTrainingGoal != nil, let profile = profiles.first,
               let days = currentResult?.days.map(\.spec), !days.isEmpty
         else { return nil }
-        let effectiveProfile = EquipmentPlanningResolver.resolve(
+        let context = EquipmentPlanningResolver.resolve(
             environment: profile.environment,
             individualProfile: profile.equipmentProfile,
             confirmedComplete: profile.equipmentProfileConfirmedComplete
-        ).effectiveProfile
-        return PlanEquipmentChecker.check(days: days, against: effectiveProfile)
+        )
+        let status = PlanEquipmentChecker.check(days: days, against: context.effectiveProfile)
+        // Fuer bestaetigt vollstaendige Profile (Gym oder manuell bestaetigt):
+        // .unknown durch fehlende Katalog-Annotationen ist nicht handlungsbeduerft.
+        if context.source == .confirmed, status.isUnknown { return nil }
+        return status
     }
 
     @ViewBuilder
