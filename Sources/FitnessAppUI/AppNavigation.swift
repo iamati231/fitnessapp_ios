@@ -27,6 +27,8 @@ public final class AppNavigation {
     /// Tab abzusetzen.
     public var toolsPath = NavigationPath()
     public var nutritionPath = NavigationPath()
+    public var showingTour: Bool = false
+    public var tourStartsFromInvitation: Bool = false
 
     public init() {}
 

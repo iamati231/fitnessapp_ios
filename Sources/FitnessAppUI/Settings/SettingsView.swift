@@ -180,6 +180,7 @@ public struct SettingsView: View {
             libraryEquipmentSection
             nutritionPreferencesSection
             appExperienceSection
+            appTourSection
             dataConnectionsSection
             helpInfoSection
         }
@@ -250,6 +251,23 @@ public struct SettingsView: View {
                     showsDivider: false
                 )
             }
+        }
+    }
+
+    private var appTourSection: some View {
+        DeltiqSection(String(localized: "settings.group.appTour", bundle: .module).uppercased()) {
+            Button {
+                navigation.tourStartsFromInvitation = false
+                navigation.showingTour = true
+            } label: {
+                DeltiqRow(
+                    icon: "sparkles",
+                    label: String(localized: "settings.action.restartTour", bundle: .module),
+                    showsChevron: false,
+                    showsDivider: false
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -422,7 +440,8 @@ public struct SettingsView: View {
         // entfernt — tote Keys, werden im ganzen Repo nirgends sonst
         // gelesen oder geschrieben (verifiziert), reine Altlast.
         for key in ["deload_until", "lastDataExportAt",
-                    AbsenceDeload.lastAppliedKey, AbsenceDeload.suppressedUntilGapKey] {
+                    AbsenceDeload.lastAppliedKey, AbsenceDeload.suppressedUntilGapKey,
+                    AppTourStatus.initialInvitationHandledKey] {
             UserDefaults.standard.removeObject(forKey: key)
         }
 

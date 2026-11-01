@@ -277,6 +277,8 @@ struct MainTabView: View {
     /// damit SwiftUI das @Observable-Tracking automatisch einrichtet.
     @State private var notificationRouter = NotificationRouter.shared
 
+    @AppStorage("hasHandledInitialAppTour") private var hasHandledInitialAppTour: Bool = false
+
     var body: some View {
         @Bindable var navigation = navigation
         TabView(selection: $navigation.selectedTab) {
@@ -392,9 +394,22 @@ struct MainTabView: View {
         .onAppear {
             applyPendingRouteIfAny()
             configureTabBarAppearance()
+            if !hasHandledInitialAppTour {
+                hasHandledInitialAppTour = true
+                navigation.tourStartsFromInvitation = true
+                navigation.showingTour = true
+            }
         }
         .onChange(of: notificationRouter.pendingRoute) { _, _ in
             applyPendingRouteIfAny()
+        }
+        .sheet(isPresented: Binding(
+            get: { navigation.showingTour },
+            set: { navigation.showingTour = $0 }
+        )) {
+            AppTourSheet(showInvitation: navigation.tourStartsFromInvitation) {
+                navigation.showingTour = false
+            }
         }
     }
 
