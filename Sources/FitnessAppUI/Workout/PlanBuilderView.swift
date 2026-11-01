@@ -1557,8 +1557,8 @@ public struct PlanBuilderView: View {
                     daysPerWeek: config.daysPerWeek,
                     sessionDurationMinutes: config.sessionDurationMinutes,
                     experience: config.experience,
-                    equipmentPool: pool,
                     timeFormat: config.timeFormat,
+                    equipmentPool: pool,
                     cardioRunProfile: config.cardioRunProfile
                 )
             }
