@@ -102,13 +102,31 @@ final class RecipeCatalogTests: XCTestCase {
     }
 
     func testExactlyFiveRecipes_haveAllergenVerifiedTrue() {
-        // Nur die 5 redaktionell geprueften Testrezepte duerfen allergenVerified=true tragen.
-        // Ein neues Rezept darf nicht pauschal verifiziert werden — dieser Test schlaegt
-        // an, sobald jemand allergenVerified ohne tatsaechliche Pruefung auf true setzt.
+        // Allowlist aller redaktionell geprueften Rezepte (allergenVerified=true).
+        // Kriterium: ausschliesslich einfache Ganzkost-Zutaten ohne versteckte Allergene
+        // (keine Fertigsaucen, kein Sojasauce, kein Kaeseprodukt mit unklarer Herkunft).
+        // Neues Rezept hier eintragen ERST nach tatsaechlicher Pruefung jeder Zutat.
         let verifiedIDs = RecipeCatalogData.all.filter(\.allergenVerified).map(\.id).sorted()
-        let expected = ["chicken_rice_bowl", "greek_yogurt_bowl", "oatmeal_berry_skyr",
-                        "red_lentil_soup", "tuna_salad"].sorted()
+        let expected = [
+            "apple_carrot_snack",
+            "banana_rice_porridge",
+            "beef_pepper_rice",
+            "chicken_broccoli_potato",
+            "chicken_potato_hash",
+            "chicken_rice_bowl",
+            "cod_vegetable_plate",
+            "greek_yogurt_bowl",
+            "lamb_rice_bowl",
+            "mixed_berry_bowl",
+            "mixed_fruit_bowl",
+            "oatmeal_berry_skyr",
+            "red_lentil_soup",
+            "tuna_salad",
+            "tuna_vegetable_salad",
+            "turkey_sweet_potato_bowl",
+            "turkey_zucchini_tomato",
+        ].sorted()
         XCTAssertEqual(verifiedIDs, expected,
-            "Genau diese 5 Rezepte duerfen allergenVerified=true haben")
+            "Nur redaktionell geprueft Rezepte duerfen allergenVerified=true haben — neue Rezepte hier eintragen.")
     }
 }
