@@ -317,6 +317,19 @@ public enum CalorieGoalType: String, CaseIterable, Sendable {
         Int(tdee.truncated(to: 0)) + adjustmentKcal
     }
 
+    /// Empfohlene Proteinmenge in g pro kg Körpergewicht pro Ziel.
+    /// Cut: höher (Muskelerhalt im Defizit), Bulk: leicht erhöht, Erhalt: moderat.
+    public var proteinGPerKg: Double {
+        switch self {
+        case .cut:         return 2.0
+        case .maintenance: return 1.6
+        case .bulk:        return 1.8
+        }
+    }
+
+    /// Fett als Anteil der Gesamtkalorien (uniform 25% — Minimum für Hormonhaushalt).
+    public var fatKcalFraction: Double { 0.25 }
+
     public var localizedName: LocalizedStringResource {
         switch self {
         case .cut:         LocalizedStringResource("calc.tdee.cut",         bundle: .module)

@@ -186,7 +186,16 @@ public struct NutritionGoalsView: View {
             profile: profile.profile
         )
         let tdee = BodyCalculations.tdee(bmr: bmr, activityFactor: tdeeActivity.factor)
-        profile.dailyCalorieGoalKcal = tdeeGoalType.dailyGoalKcal(tdee: tdee)
+        let kcal = tdeeGoalType.dailyGoalKcal(tdee: tdee)
+        profile.dailyCalorieGoalKcal = kcal
+
+        // Makros: Protein pro kg Körpergewicht, Fett 25% der Kalorien, Carbs = Rest.
+        let proteinG = (tdeeGoalType.proteinGPerKg * weightKg).truncated(to: 0)
+        let fatG = (Double(kcal) * tdeeGoalType.fatKcalFraction / 9).truncated(to: 0)
+        let carbG = max(0, (Double(kcal) - proteinG * 4 - fatG * 9) / 4).truncated(to: 0)
+        profile.dailyProteinGoalG = proteinG
+        profile.dailyFatGoalG = fatG
+        profile.dailyCarbGoalG = carbG
     }
 
     // MARK: Field helpers (DEL-106-Muster, identisch zu TDEEView/CardioGoalEditorView)
