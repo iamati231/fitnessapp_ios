@@ -422,6 +422,261 @@
         {"ingredientID": "egg_whole_cooked","amountGrams": 116},
         {"ingredientID": "avocado",         "amountGrams": 100}
       ]
+    },
+    {
+      "id": "chia_oat_pudding",
+      "nameKey": "recipe.chia_oat_pudding.name",
+      "mealTypes": ["breakfast", "snack"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": ["gluten"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "chia_seeds", "amountGrams": 30},
+        {"ingredientID": "oat_milk",   "amountGrams": 200},
+        {"ingredientID": "banana",     "amountGrams": 80},
+        {"ingredientID": "blueberry",  "amountGrams": 60}
+      ]
+    },
+    {
+      "id": "mushroom_spinach_omelette",
+      "nameKey": "recipe.mushroom_spinach_omelette.name",
+      "mealTypes": ["breakfast"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["eggs"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 10,
+      "ingredients": [
+        {"ingredientID": "egg_whole_raw", "amountGrams": 150},
+        {"ingredientID": "mushroom_raw",  "amountGrams": 150},
+        {"ingredientID": "spinach_raw",   "amountGrams": 80},
+        {"ingredientID": "olive_oil",     "amountGrams": 8}
+      ]
+    },
+    {
+      "id": "protein_pancakes",
+      "nameKey": "recipe.protein_pancakes.name",
+      "mealTypes": ["breakfast"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["eggs", "gluten", "lactose"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 15,
+      "ingredients": [
+        {"ingredientID": "quark_lowfat",  "amountGrams": 150},
+        {"ingredientID": "oats",          "amountGrams": 60},
+        {"ingredientID": "egg_whole_raw", "amountGrams": 116},
+        {"ingredientID": "banana",        "amountGrams": 80}
+      ]
+    },
+    {
+      "id": "shrimp_noodle_bowl",
+      "nameKey": "recipe.shrimp_noodle_bowl.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": ["pescetarian"],
+      "allergens": [],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "shrimp_cooked",        "amountGrams": 150},
+        {"ingredientID": "rice_noodles_cooked",  "amountGrams": 180},
+        {"ingredientID": "bell_pepper_raw",       "amountGrams": 100},
+        {"ingredientID": "carrot_raw",            "amountGrams": 80},
+        {"ingredientID": "soy_sauce",             "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "black_bean_rice_bowl",
+      "nameKey": "recipe.black_bean_rice_bowl.name",
+      "mealTypes": ["lunch"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 15,
+      "ingredients": [
+        {"ingredientID": "black_beans_cooked",   "amountGrams": 200},
+        {"ingredientID": "rice_basmati_cooked",  "amountGrams": 150},
+        {"ingredientID": "corn_cooked",          "amountGrams": 80},
+        {"ingredientID": "bell_pepper_raw",      "amountGrams": 100},
+        {"ingredientID": "olive_oil",            "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "greek_salad_chicken",
+      "nameKey": "recipe.greek_salad_chicken.name",
+      "mealTypes": ["lunch"],
+      "dietaryTags": [],
+      "allergens": ["lactose"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 10,
+      "ingredients": [
+        {"ingredientID": "chicken_breast_cooked", "amountGrams": 150},
+        {"ingredientID": "cucumber_raw",          "amountGrams": 100},
+        {"ingredientID": "tomato_raw",            "amountGrams": 150},
+        {"ingredientID": "olives_green",          "amountGrams": 50},
+        {"ingredientID": "cheese_feta",           "amountGrams": 60},
+        {"ingredientID": "olive_oil",             "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "tempeh_quinoa_bowl",
+      "nameKey": "recipe.tempeh_quinoa_bowl.name",
+      "mealTypes": ["lunch", "dinner"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": ["soy", "gluten"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "tempeh",        "amountGrams": 180},
+        {"ingredientID": "quinoa_cooked", "amountGrams": 150},
+        {"ingredientID": "kale_raw",      "amountGrams": 100},
+        {"ingredientID": "carrot_raw",    "amountGrams": 80},
+        {"ingredientID": "soy_sauce",     "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "salmon_pasta",
+      "nameKey": "recipe.salmon_pasta.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": ["pescetarian"],
+      "allergens": ["fish", "gluten"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 20,
+      "ingredients": [
+        {"ingredientID": "salmon_cooked",  "amountGrams": 150},
+        {"ingredientID": "pasta_cooked",   "amountGrams": 180},
+        {"ingredientID": "spinach_cooked", "amountGrams": 100},
+        {"ingredientID": "olive_oil",      "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "eggplant_mozzarella_bake",
+      "nameKey": "recipe.eggplant_mozzarella_bake.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": ["vegetarian", "pescetarian"],
+      "allergens": ["lactose"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 2,
+      "prepMinutes": 40,
+      "ingredients": [
+        {"ingredientID": "eggplant_raw",       "amountGrams": 300},
+        {"ingredientID": "tomato_raw",         "amountGrams": 200},
+        {"ingredientID": "cheese_mozzarella",  "amountGrams": 100},
+        {"ingredientID": "olive_oil",          "amountGrams": 20},
+        {"ingredientID": "garlic_raw",         "amountGrams": 10}
+      ]
+    },
+    {
+      "id": "beef_mushroom_bolognese",
+      "nameKey": "recipe.beef_mushroom_bolognese.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": [],
+      "allergens": ["gluten"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 30,
+      "ingredients": [
+        {"ingredientID": "beef_mince_cooked", "amountGrams": 150},
+        {"ingredientID": "pasta_cooked",      "amountGrams": 200},
+        {"ingredientID": "mushroom_raw",      "amountGrams": 150},
+        {"ingredientID": "tomato_sauce",      "amountGrams": 100},
+        {"ingredientID": "onion_raw",         "amountGrams": 80}
+      ]
+    },
+    {
+      "id": "chicken_sweet_potato_curry",
+      "nameKey": "recipe.chicken_sweet_potato_curry.name",
+      "mealTypes": ["dinner"],
+      "dietaryTags": [],
+      "allergens": [],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 30,
+      "ingredients": [
+        {"ingredientID": "chicken_breast_cooked", "amountGrams": 180},
+        {"ingredientID": "sweet_potato_cooked",   "amountGrams": 200},
+        {"ingredientID": "spinach_cooked",        "amountGrams": 100},
+        {"ingredientID": "onion_raw",             "amountGrams": 100},
+        {"ingredientID": "coconut_oil",           "amountGrams": 15}
+      ]
+    },
+    {
+      "id": "edamame_snack",
+      "nameKey": "recipe.edamame_snack.name",
+      "mealTypes": ["snack"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": ["soy"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "edamame_cooked", "amountGrams": 150}
+      ]
+    },
+    {
+      "id": "dark_chocolate_almond",
+      "nameKey": "recipe.dark_chocolate_almond.name",
+      "mealTypes": ["snack"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": ["nuts"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 2,
+      "ingredients": [
+        {"ingredientID": "dark_chocolate", "amountGrams": 30},
+        {"ingredientID": "almonds",        "amountGrams": 25}
+      ]
+    },
+    {
+      "id": "rice_cakes_peanut_butter",
+      "nameKey": "recipe.rice_cakes_peanut_butter.name",
+      "mealTypes": ["snack"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": ["peanuts"],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 2,
+      "ingredients": [
+        {"ingredientID": "rice_cakes",   "amountGrams": 27},
+        {"ingredientID": "peanut_butter","amountGrams": 30}
+      ]
+    },
+    {
+      "id": "mango_chia_bowl",
+      "nameKey": "recipe.mango_chia_bowl.name",
+      "mealTypes": ["snack", "breakfast"],
+      "dietaryTags": ["vegan", "vegetarian", "pescetarian"],
+      "allergens": [],
+      "allergenVerified": false,
+      "halalVerifiedBy": null,
+      "servings": 1,
+      "prepMinutes": 5,
+      "ingredients": [
+        {"ingredientID": "mango",         "amountGrams": 150},
+        {"ingredientID": "chia_seeds",    "amountGrams": 25},
+        {"ingredientID": "coconut_water", "amountGrams": 150}
+      ]
     }
   ]
 }
