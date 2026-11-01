@@ -229,8 +229,8 @@ enum TourContent {
 
     struct Step {
         let systemImage: String
-        let titleKey: String.LocalizationValue
-        let descriptionKey: String.LocalizationValue
+        let titleKey: LocalizedStringKey
+        let descriptionKey: LocalizedStringKey
     }
 
     static let steps: [Step] = [
