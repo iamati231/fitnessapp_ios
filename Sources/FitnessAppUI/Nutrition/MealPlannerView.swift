@@ -98,7 +98,7 @@ public struct MealPlannerView: View {
                     dateNavCard
                     weekOverviewButton
                     preferencesButton
-                    if planForSelectedDate == nil {
+                    if planForSelectedDate?.isManuallyAdjusted != true {
                         generatePlanCard
                     }
                     if let (totals, hasUnknown) = planTotals {
