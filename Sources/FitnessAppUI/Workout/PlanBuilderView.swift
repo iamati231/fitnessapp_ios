@@ -1539,7 +1539,29 @@ public struct PlanBuilderView: View {
     private var currentInput: PlanGeneratorInput {
         let selections: [PlanGeneratorTypeSelection]
         if isPreSeededFlow {
-            selections = selectedKinds.compactMap { configByKind[$0] }
+            // Bug-Fix (Plan bauen Gym-Equipment): configByKind speichert
+            // equipmentPool=nil, weil selectKind() zum Zeitpunkt des Tippens
+            // die noch unbekannte Ausstattung nicht kennt. Hier - beim Lesen
+            // des finalen Inputs - leiten wir denselben Pool wie der
+            // Goal-Driven-Pfad aus equipmentPreferences ab und injizieren
+            // ihn in alle Kraft-Selections, damit Gym + alle Geraete auch
+            // wirklich gemischte Uebungen erzeugt.
+            let strengthKinds = GoalDrivenPlanSelectionBuilder.preferredStrengthKinds(from: equipmentPreferences)
+            let mixedPool: Set<Equipment>? = strengthKinds.count > 1
+                ? Set(strengthKinds.compactMap(\.equipmentFilter)) : nil
+            selections = selectedKinds.compactMap { kind -> PlanGeneratorTypeSelection? in
+                guard let config = configByKind[kind] else { return nil }
+                guard !kind.isCardio, let pool = mixedPool else { return config }
+                return PlanGeneratorTypeSelection(
+                    kind: config.kind,
+                    daysPerWeek: config.daysPerWeek,
+                    sessionDurationMinutes: config.sessionDurationMinutes,
+                    experience: config.experience,
+                    equipmentPool: pool,
+                    timeFormat: config.timeFormat,
+                    cardioRunProfile: config.cardioRunProfile
+                )
+            }
         } else {
             // P3.1 (Doc01 §3 "Ziel zuerst, nicht Langhantel-/Kurzhanteltage"):
             // `GoalDrivenPlanSelectionBuilder` uebersetzt Ziel + Alltagsrahmen
