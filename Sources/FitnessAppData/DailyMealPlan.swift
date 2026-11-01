@@ -57,6 +57,8 @@ public final class DailyMealPlan {
         in context: ModelContext
     ) throws -> Bool {
         let plan = try fetchOrCreate(for: date, in: context)
+        // Empty plan has nothing to protect — reset so generator can fill it.
+        if plan.assignments.isEmpty { plan.isManuallyAdjusted = false }
         guard !plan.isManuallyAdjusted else { return false }
         plan.assignments.forEach { context.delete($0) }
         plan.assignments = newAssignments

@@ -76,19 +76,42 @@ final class DailyMealPlanTests: XCTestCase {
         XCTAssertEqual(plan.generatorWarning, "W")
     }
 
-    func testUpsertGenerated_manuallyAdjustedPlan_isNotOverwritten() throws {
+    func testUpsertGenerated_manuallyAdjustedNonEmptyPlan_isNotOverwritten() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let date = Date(timeIntervalSince1970: 1_000_000)
 
         let plan = try DailyMealPlan.fetchOrCreate(for: date, in: ctx)
+        let existing = PlannedMealAssignment(recipeID: "existing", mealType: .lunch)
+        ctx.insert(existing)
+        plan.assignments = [existing]
         plan.isManuallyAdjusted = true
 
         let a = PlannedMealAssignment(recipeID: "r1", mealType: .lunch)
         let updated = try DailyMealPlan.upsertGenerated(date: date, assignments: [a], warning: nil, in: ctx)
 
-        XCTAssertFalse(updated, "Manuell angepasster Plan darf nicht überschrieben werden")
-        XCTAssertTrue(plan.assignments.isEmpty, "Assignments dürfen nicht verändert worden sein")
+        XCTAssertFalse(updated, "Manuell angepasster Plan mit Einträgen darf nicht überschrieben werden")
+        XCTAssertEqual(plan.assignments.count, 1)
+        XCTAssertEqual(plan.assignments.first?.recipeID, "existing")
+    }
+
+    func testUpsertGenerated_manuallyAdjustedEmptyPlan_isOverwritten() throws {
+        // User deleted all entries manually → empty plan must be regeneratable.
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let date = Date(timeIntervalSince1970: 2_000_000)
+
+        let plan = try DailyMealPlan.fetchOrCreate(for: date, in: ctx)
+        plan.isManuallyAdjusted = true
+        XCTAssertTrue(plan.assignments.isEmpty)
+
+        let a = PlannedMealAssignment(recipeID: "r1", mealType: .dinner)
+        ctx.insert(a)
+        let updated = try DailyMealPlan.upsertGenerated(date: date, assignments: [a], warning: nil, in: ctx)
+
+        XCTAssertTrue(updated, "Leerer manuell-markierter Plan muss vom Generator überschrieben werden können")
+        XCTAssertFalse(plan.isManuallyAdjusted, "Flag wird nach leerem Überschreiben zurückgesetzt")
+        XCTAssertEqual(plan.assignments.first?.recipeID, "r1")
     }
 }
 #endif

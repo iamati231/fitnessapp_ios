@@ -202,12 +202,12 @@ public struct NutritionPreferencesView: View {
 // MARK: - DietaryStyle Localization
 
 extension DietaryStyle {
-    var localizedName: LocalizedStringKey {
+    var localizedName: String {
         switch self {
-        case .omnivor:      return "nutrition.preferences.style.omnivor"
-        case .vegetarian:   return "nutrition.preferences.style.vegetarian"
-        case .vegan:        return "nutrition.preferences.style.vegan"
-        case .pescetarian:  return "nutrition.preferences.style.pescetarian"
+        case .omnivor:      return String(localized: "nutrition.preferences.style.omnivor", bundle: .module)
+        case .vegetarian:   return String(localized: "nutrition.preferences.style.vegetarian", bundle: .module)
+        case .vegan:        return String(localized: "nutrition.preferences.style.vegan", bundle: .module)
+        case .pescetarian:  return String(localized: "nutrition.preferences.style.pescetarian", bundle: .module)
         }
     }
 }
@@ -215,22 +215,22 @@ extension DietaryStyle {
 // MARK: - RecipeAllergen Localization
 
 extension RecipeAllergen {
-    var localizedName: LocalizedStringKey {
+    var localizedName: String {
         switch self {
-        case .gluten:    return "allergen.gluten"
-        case .lactose:   return "allergen.lactose"
-        case .nuts:      return "allergen.nuts"
-        case .peanuts:   return "allergen.peanuts"
-        case .eggs:      return "allergen.eggs"
-        case .soy:       return "allergen.soy"
-        case .fish:      return "allergen.fish"
-        case .shellfish: return "allergen.shellfish"
-        case .sesame:    return "allergen.sesame"
-        case .celery:    return "allergen.celery"
-        case .mustard:   return "allergen.mustard"
-        case .sulfites:  return "allergen.sulfites"
-        case .lupin:     return "allergen.lupin"
-        case .molluscs:  return "allergen.molluscs"
+        case .gluten:    return String(localized: "allergen.gluten", bundle: .module)
+        case .lactose:   return String(localized: "allergen.lactose", bundle: .module)
+        case .nuts:      return String(localized: "allergen.nuts", bundle: .module)
+        case .peanuts:   return String(localized: "allergen.peanuts", bundle: .module)
+        case .eggs:      return String(localized: "allergen.eggs", bundle: .module)
+        case .soy:       return String(localized: "allergen.soy", bundle: .module)
+        case .fish:      return String(localized: "allergen.fish", bundle: .module)
+        case .shellfish: return String(localized: "allergen.shellfish", bundle: .module)
+        case .sesame:    return String(localized: "allergen.sesame", bundle: .module)
+        case .celery:    return String(localized: "allergen.celery", bundle: .module)
+        case .mustard:   return String(localized: "allergen.mustard", bundle: .module)
+        case .sulfites:  return String(localized: "allergen.sulfites", bundle: .module)
+        case .lupin:     return String(localized: "allergen.lupin", bundle: .module)
+        case .molluscs:  return String(localized: "allergen.molluscs", bundle: .module)
         }
     }
 }
