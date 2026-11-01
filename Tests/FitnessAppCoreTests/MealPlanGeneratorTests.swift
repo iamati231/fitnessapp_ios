@@ -420,80 +420,64 @@ final class MealPlanGeneratorTests: XCTestCase {
         XCTAssertTrue(result.isEmpty)
     }
 
-    // MARK: - Phase 5.0: Halal-Filter
+    // MARK: - Phase 5.0: Halal-Filter (Schwein + Alkohol ausschließen)
+    // Halal = kein Schwein, kein Alkohol. Keine redaktionelle Verifikation nötig.
 
-    private func makeHalalRecipe(id: String, verifiedBy: String?) -> Recipe {
-        Recipe(
-            id: id,
-            nameKey: "test.\(id)",
-            mealTypes: [.lunch],
-            dietaryTags: [],
-            allergens: [],
-            allergenVerified: true,
-            halalVerifiedBy: verifiedBy,
-            servings: 1,
-            prepMinutes: 10,
-            ingredients: [RecipeIngredient(ingredientID: "chicken_breast_cooked", amountGrams: 100)]
-        )
+    private func makeRecipeWithTags(id: String, tags: [RecipeDietaryTag]) -> Recipe {
+        Recipe(id: id, nameKey: "test.\(id)", mealTypes: [.lunch],
+               dietaryTags: tags, allergens: [], allergenVerified: true,
+               halalVerifiedBy: nil, servings: 1, prepMinutes: 10,
+               ingredients: [RecipeIngredient(ingredientID: "chicken_breast_cooked", amountGrams: 100)])
     }
 
-    func testHalal_verifiedRecipeIncluded() {
+    func testHalal_noPorkNoAlcohol_included() {
         let prefs = UserNutritionPreferences(requiresHalal: true)
-        let recipe = makeHalalRecipe(id: "halal_verified", verifiedBy: "editorial_team")
-        let result = MealPlanGenerator.eligibleRecipes(in: [recipe], for: .lunch, preferences: prefs)
-        XCTAssertEqual(result.count, 1)
+        let chicken = makeRecipeWithTags(id: "chicken", tags: [])
+        XCTAssertEqual(MealPlanGenerator.eligibleRecipes(in: [chicken], for: .lunch, preferences: prefs).count, 1)
     }
 
-    func testHalal_unverifiedRecipeExcluded() {
+    func testHalal_containsPork_excluded() {
         let prefs = UserNutritionPreferences(requiresHalal: true)
-        let recipe = makeHalalRecipe(id: "halal_unverified", verifiedBy: nil)
-        let result = MealPlanGenerator.eligibleRecipes(in: [recipe], for: .lunch, preferences: prefs)
-        XCTAssertTrue(result.isEmpty, "Ohne Halal-Verifikation muss das Rezept ausgeschlossen werden.")
+        let pork = makeRecipeWithTags(id: "pork_dish", tags: [.containsPork])
+        XCTAssertTrue(MealPlanGenerator.eligibleRecipes(in: [pork], for: .lunch, preferences: prefs).isEmpty,
+                      "Rezept mit .containsPork muss bei aktivem Halal-Filter ausgeschlossen werden.")
     }
 
-    func testHalal_notRequired_unverifiedIncluded() {
+    func testHalal_containsAlcohol_excluded() {
+        let prefs = UserNutritionPreferences(requiresHalal: true)
+        let alcohol = makeRecipeWithTags(id: "wine_sauce", tags: [.containsAlcohol])
+        XCTAssertTrue(MealPlanGenerator.eligibleRecipes(in: [alcohol], for: .lunch, preferences: prefs).isEmpty,
+                      "Rezept mit .containsAlcohol muss bei aktivem Halal-Filter ausgeschlossen werden.")
+    }
+
+    func testHalal_notRequired_porkIncluded() {
         let prefs = UserNutritionPreferences(requiresHalal: false)
-        let recipe = makeHalalRecipe(id: "any_recipe", verifiedBy: nil)
-        let result = MealPlanGenerator.eligibleRecipes(in: [recipe], for: .lunch, preferences: prefs)
-        XCTAssertEqual(result.count, 1)
+        let pork = makeRecipeWithTags(id: "pork_dish", tags: [.containsPork])
+        XCTAssertEqual(MealPlanGenerator.eligibleRecipes(in: [pork], for: .lunch, preferences: prefs).count, 1)
     }
 
-    func testVeganPlusHalal_onlyVerifiedVeganIncluded() {
+    func testVeganPlusHalal_nonPorkVeganIncluded() {
         let prefs = UserNutritionPreferences(dietaryStyle: .vegan, requiresHalal: true)
-        let veganVerified = Recipe(id: "vegan_halal", nameKey: "test.vegan_halal",
-            mealTypes: [.lunch], dietaryTags: [.vegan], allergens: [], allergenVerified: true,
-            halalVerifiedBy: "ed", servings: 1, prepMinutes: 5, ingredients: [])
-        let veganUnverified = Recipe(id: "vegan_noh", nameKey: "test.vegan_noh",
-            mealTypes: [.lunch], dietaryTags: [.vegan], allergens: [], allergenVerified: true,
-            halalVerifiedBy: nil, servings: 1, prepMinutes: 5, ingredients: [])
-        let omniHalal = Recipe(id: "omni_halal", nameKey: "test.omni_halal",
-            mealTypes: [.lunch], dietaryTags: [], allergens: [], allergenVerified: true,
-            halalVerifiedBy: "ed", servings: 1, prepMinutes: 5, ingredients: [])
-        let result = MealPlanGenerator.eligibleRecipes(in: [veganVerified, veganUnverified, omniHalal], for: .lunch, preferences: prefs)
-        XCTAssertEqual(result.map(\.id), ["vegan_halal"])
+        let veganA = makeRecipeWithTags(id: "vegan_a", tags: [.vegan])
+        let veganB = makeRecipeWithTags(id: "vegan_b", tags: [.vegan])
+        let omni  = makeRecipeWithTags(id: "omni", tags: [])
+        let result = MealPlanGenerator.eligibleRecipes(in: [veganA, veganB, omni], for: .lunch, preferences: prefs)
+        XCTAssertEqual(Set(result.map(\.id)), ["vegan_a", "vegan_b"])
     }
 
-    func testVegetarianPlusHalal_onlyVerifiedVegetarianIncluded() {
+    func testVegetarianPlusHalal_nonPorkVegetarianIncluded() {
         let prefs = UserNutritionPreferences(dietaryStyle: .vegetarian, requiresHalal: true)
-        let vegVerified = Recipe(id: "veg_halal", nameKey: "test.veg_halal",
-            mealTypes: [.lunch], dietaryTags: [.vegetarian], allergens: [], allergenVerified: true,
-            halalVerifiedBy: "ed", servings: 1, prepMinutes: 5, ingredients: [])
-        let vegUnverified = Recipe(id: "veg_noh", nameKey: "test.veg_noh",
-            mealTypes: [.lunch], dietaryTags: [.vegetarian], allergens: [], allergenVerified: true,
-            halalVerifiedBy: nil, servings: 1, prepMinutes: 5, ingredients: [])
-        let result = MealPlanGenerator.eligibleRecipes(in: [vegVerified, vegUnverified], for: .lunch, preferences: prefs)
-        XCTAssertEqual(result.map(\.id), ["veg_halal"])
+        let vegA = makeRecipeWithTags(id: "veg_a", tags: [.vegetarian])
+        let vegB = makeRecipeWithTags(id: "veg_b", tags: [.vegetarian])
+        let result = MealPlanGenerator.eligibleRecipes(in: [vegA, vegB], for: .lunch, preferences: prefs)
+        XCTAssertEqual(result.count, 2, "Vegetarische Rezepte ohne Schwein/Alkohol sind halal-kompatibel.")
     }
 
-    func testPescetarianPlusHalal_onlyVerifiedPescetarianIncluded() {
+    func testPescetarianPlusHalal_porkVariantExcluded() {
         let prefs = UserNutritionPreferences(dietaryStyle: .pescetarian, requiresHalal: true)
-        let pescVerified = Recipe(id: "pesc_halal", nameKey: "test.pesc_halal",
-            mealTypes: [.lunch], dietaryTags: [.pescetarian], allergens: [], allergenVerified: true,
-            halalVerifiedBy: "ed", servings: 1, prepMinutes: 5, ingredients: [])
-        let pescUnverified = Recipe(id: "pesc_noh", nameKey: "test.pesc_noh",
-            mealTypes: [.lunch], dietaryTags: [.pescetarian], allergens: [], allergenVerified: true,
-            halalVerifiedBy: nil, servings: 1, prepMinutes: 5, ingredients: [])
-        let result = MealPlanGenerator.eligibleRecipes(in: [pescVerified, pescUnverified], for: .lunch, preferences: prefs)
-        XCTAssertEqual(result.map(\.id), ["pesc_halal"])
+        let fish   = makeRecipeWithTags(id: "fish_a", tags: [.pescetarian])
+        let fishPork = makeRecipeWithTags(id: "fish_pork", tags: [.pescetarian, .containsPork])
+        let result = MealPlanGenerator.eligibleRecipes(in: [fish, fishPork], for: .lunch, preferences: prefs)
+        XCTAssertEqual(result.map(\.id), ["fish_a"])
     }
 }

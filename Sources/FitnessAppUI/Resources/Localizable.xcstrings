@@ -53908,7 +53908,7 @@
     "nutrition.preferences.halal.subtitle": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Nur verifizierte Rezepte" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Kein Schwein, kein Alkohol" } },
         "en": { "stringUnit": { "state": "translated", "value": "Verified recipes only" } },
         "tr": { "stringUnit": { "state": "translated", "value": "Yalnızca onaylı tarifler" } }
       }
@@ -53916,7 +53916,7 @@
     "nutrition.preferences.halal.hint": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Nur redaktionell verifizierte Rezepte werden im Plan berücksichtigt. Halal wird niemals automatisch aus Zutaten abgeleitet." } },
+        "de": { "stringUnit": { "state": "translated", "value": "Rezepte mit Schweinefleisch oder Alkohol werden aus dem Plan ausgeschlossen." } },
         "en": { "stringUnit": { "state": "translated", "value": "Only editorially verified recipes are included in the plan. Halal is never inferred automatically from ingredients." } },
         "tr": { "stringUnit": { "state": "translated", "value": "Plana yalnızca editoryal olarak doğrulanmış tarifler dahil edilir. Helal asla malzemelerden otomatik olarak çıkarılmaz." } }
       }
