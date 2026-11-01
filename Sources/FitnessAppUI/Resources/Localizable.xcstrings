@@ -53832,19 +53832,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aus TDEE übernehmen"
+            "value": "Kalorien & Makros aus TDEE übernehmen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adopt from TDEE"
+            "value": "Adopt Calories & Macros from TDEE"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "TDEE'den al"
+            "value": "Kalori ve Makroları TDEE'den Al"
           }
         }
       }
