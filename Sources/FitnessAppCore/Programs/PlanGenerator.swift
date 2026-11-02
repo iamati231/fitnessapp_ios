@@ -56,19 +56,18 @@ public enum PlanGenerator {
         public struct GeneratedDay: Sendable {
             public let spec: DaySpec
             public let loadLevel: PlanLoadLevel
+            /// Primaere Muskelgruppe dieses Tages — stabil durch
+            /// spreadByHardness, da nur die Array-Position wechselt.
+            /// `nil` fuer Cardio- und EMOM-Tage.
+            public let focusMuscle: MuscleGroup?
 
-            /// P2.4: expliziter Public-Init. Ein `public struct` mit nur
-            /// `public let`-Feldern bekommt in Swift TROTZDEM nur einen
-            /// `internal` Memberwise-Init synthetisiert — ohne diesen Init
-            /// koennte `FitnessAppUI` (z.B. `PlanBuilderView`, um ein
-            /// Ergebnis aus einem bearbeiteten `PlanDraft` zu rekonstruieren,
-            /// siehe dortige Doku) keinen `GeneratedDay` bauen. Rein additiv,
-            /// identische Parameter-Reihenfolge/-Labels wie der bisherige
-            /// interne Konstruktionsaufruf in `generate(from:shuffle:)` —
-            /// kein Verhaltensunterschied fuer bestehende Aufrufer.
-            public init(spec: DaySpec, loadLevel: PlanLoadLevel) {
+            /// P2.4: expliziter Public-Init. `focusMuscle` hat Default `nil`
+            /// — bestehende externe Aufrufer (z.B. PlanBuilderView) kompilieren
+            /// ohne Aenderung weiter.
+            public init(spec: DaySpec, loadLevel: PlanLoadLevel, focusMuscle: MuscleGroup? = nil) {
                 self.spec = spec
                 self.loadLevel = loadLevel
+                self.focusMuscle = focusMuscle
             }
         }
         public let days: [GeneratedDay]
@@ -99,6 +98,11 @@ public enum PlanGenerator {
         let timeFormat: WorkoutTimeFormat?
         let timeCapMinutes: Int?
         let hardness: Double
+        /// Primaeere Muskelgruppe des Tages (= pickedMuscles.first aus
+        /// strengthCandidates). Bleibt durch spreadByHardness erhalten,
+        /// sodass Tests und UI den Tagesfokus stabil lesen koennen.
+        /// `nil` fuer Cardio- und EMOM-Kandidaten ohne Muskelfokus.
+        let focusMuscle: MuscleGroup?
     }
 
     /// `shuffle`: Bugfix (Nutzer-Feedback) - `generate(from:)` war komplett
@@ -141,7 +145,8 @@ public enum PlanGenerator {
                     timeFormat: candidate.timeFormat,
                     timeCapMinutes: candidate.timeCapMinutes
                 ),
-                loadLevel: levels[index]
+                loadLevel: levels[index],
+                focusMuscle: candidate.focusMuscle
             )
         }
 
@@ -343,7 +348,8 @@ public enum PlanGenerator {
                 exercises: exercises,
                 timeFormat: nil,
                 timeCapMinutes: nil,
-                hardness: hardness
+                hardness: hardness,
+                focusMuscle: pickedMuscles.first
             ))
         }
         disambiguateDuplicateNames(&result)
@@ -430,7 +436,8 @@ public enum PlanGenerator {
             // README 2.18/DayAnalyzer-Konvention: EMOM wird gegenueber
             // reinen Kraft-Score-Punkten eine Stufe milder eingeordnet
             // (die Pause steckt in der Minute) - hier grob mit 0.85 nachgebildet.
-            hardness: hardness * 0.85
+            hardness: hardness * 0.85,
+            focusMuscle: nil
         )
     }
 
@@ -846,7 +853,8 @@ public enum PlanGenerator {
                     )],
                     timeFormat: nil,
                     timeCapMinutes: nil,
-                    hardness: 20 * durationFactor
+                    hardness: 20 * durationFactor,
+                    focusMuscle: nil
                 )
             }
             disambiguateDuplicateNames(&result)
@@ -956,7 +964,8 @@ public enum PlanGenerator {
                 exercises: [exercise],
                 timeFormat: nil,
                 timeCapMinutes: nil,
-                hardness: zone.baseHardness * durationFactor
+                hardness: zone.baseHardness * durationFactor,
+                focusMuscle: nil
             )
         }
         // Bugfix (Audit): der 3-Zonen-Zyklus wiederholt sich ab Tag 4 (z.B.
@@ -1027,7 +1036,8 @@ public enum PlanGenerator {
                 )],
                 timeFormat: format,
                 timeCapMinutes: timeCapMinutes,
-                hardness: 30 * (Double(selection.sessionDurationMinutes) / 30.0)
+                hardness: 30 * (Double(selection.sessionDurationMinutes) / 30.0),
+                focusMuscle: nil
             )
         }
         // Gleicher Bugfix wie beim uniformen Radfahren-Zweig oben: mehrere
