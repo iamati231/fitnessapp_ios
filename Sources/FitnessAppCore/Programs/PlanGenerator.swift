@@ -296,7 +296,7 @@ public enum PlanGenerator {
                 continue
             }
 
-            var exercises: [ExerciseSpec] = []
+            var selectedSpecs: [ExerciseTemplateSpec] = []
             var pickedMuscles: [MuscleGroup] = []
             var hardness = 0.0
             var muscleCursor = dayIndex
@@ -305,12 +305,12 @@ public enum PlanGenerator {
             var usedEquipmentToday: Set<Equipment> = []
             var cnsLoadToday = 0.0
             let maxPicksForAnyMuscle = byMuscle.values.map(\.count).max() ?? 1
-            while exercises.count < exerciseCount, guardCount < muscleOrder.count * maxPicksForAnyMuscle {
+            while selectedSpecs.count < exerciseCount, guardCount < muscleOrder.count * maxPicksForAnyMuscle {
                 defer { guardCount += 1 }
                 let muscle = muscleOrder[muscleCursor % muscleOrder.count]
                 muscleCursor += 1
                 guard let group = byMuscle[muscle], !group.isEmpty else { continue }
-                let available = group.filter { c in !exercises.contains(where: { $0.name == c.name }) }
+                let available = group.filter { c in !selectedSpecs.contains(where: { $0.name == c.name }) }
                 guard !available.isEmpty else { continue }
                 let spec = shuffle
                     ? available.randomElement()!
@@ -322,17 +322,16 @@ public enum PlanGenerator {
                                          usedEquipmentToday: usedEquipmentToday, cnsLoadToday: cnsLoadToday,
                                          weeklyNames: weeklyNames)
                     })!
-                exercises.append(ExerciseSpec(
-                    name: spec.name,
-                    sets: sets,
-                    repsMin: repsMin,
-                    repsMax: repsMax,
-                    restSeconds: restSeconds
-                ))
+                selectedSpecs.append(spec)
                 pickedMuscles.append(muscle)
                 usedEquipmentToday.insert(spec.equipment)
                 cnsLoadToday += spec.cnsDemandFactor
                 hardness += strengthHardness(spec, sets: sets, experience: selection.experience)
+            }
+            // F5: physiologisch sinnvolle Reihenfolge — Fokus zuerst,
+            // dann absteigend nach Erholungsanforderung, Ermuedungs-Puffer.
+            let exercises = sortForSession(selectedSpecs, goal: goal).map {
+                ExerciseSpec(name: $0.name, sets: sets, repsMin: repsMin, repsMax: repsMax, restSeconds: restSeconds)
             }
             weeklyNames.formUnion(exercises.map(\.name))
 
@@ -510,6 +509,61 @@ public enum PlanGenerator {
         case .intermediate: return 0.70
         case .advanced:     return 1.00
         }
+    }
+
+    // MARK: - Session ordering (F5)
+
+    /// Bringt die ausgewaehlten Uebungen eines Trainingstages in eine
+    /// physiologisch sinnvolle Reihenfolge. Drei Stufen:
+    ///  1. Fokus-Uebung (hoechster `goalFit`) an Slot 0 — respektiert den
+    ///     Trainingsschwerpunkt des Ziels, keine fixen Prioritaets-Listen.
+    ///  2. Rest absteigend nach `readinessRequirement` — CNS, Komplexitaet,
+    ///     axiale Last und systemische Ermuedung gemeinsam bewertet.
+    ///  3. Ermuedungs-Puffer: zwei extreme Wirbelsaeulenlasten
+    ///     (axial >= 0.90 & CNS >= 0.80) kommen nicht direkt hintereinander.
+    /// Tie-Breaker ist `spec.name` (alphabetisch) — Library-Einfuegereihenfolge
+    /// beeinflusst das Ergebnis nie unbemerkt.
+    private static func sortForSession(
+        _ specs: [ExerciseTemplateSpec],
+        goal: TrainingGoal
+    ) -> [ExerciseTemplateSpec] {
+        guard specs.count > 1 else { return specs }
+        let focusIdx = specs.indices.max(by: { goalFit(specs[$0], goal) < goalFit(specs[$1], goal) })!
+        var rest = specs
+        let focus = rest.remove(at: focusIdx)
+        rest.sort {
+            let ra = readinessRequirement($0), rb = readinessRequirement($1)
+            if abs(ra - rb) > 0.04 { return ra > rb }
+            return $0.name < $1.name
+        }
+        var ordered = [focus] + rest
+        if ordered.count >= 3,
+           isExtremeAxialLoad(ordered[0]),
+           isExtremeAxialLoad(ordered[1]),
+           let bufferIdx = ordered.indices.dropFirst(2).first(where: { !isExtremeAxialLoad(ordered[$0]) }) {
+            let buffer = ordered.remove(at: bufferIdx)
+            ordered.insert(buffer, at: 1)
+        }
+        return ordered
+    }
+
+    /// Wie viel neuronale Frische benoetigt diese Uebung?
+    /// Core und Isolation haben niedrigste Anforderung — kommen ans Trainingsende.
+    private static func readinessRequirement(_ spec: ExerciseTemplateSpec) -> Double {
+        if spec.primaryMuscle == .core { return 0.0 }
+        if !spec.isSystemCompound && spec.cnsDemandFactor < 0.30 && spec.axialLoadFactor < 0.20 {
+            return 0.10 + spec.cnsDemandFactor  // Isolation / Finisher
+        }
+        return spec.cnsDemandFactor           * 0.35
+             + spec.technicalComplexityFactor * 0.30
+             + spec.axialLoadFactor           * 0.20
+             + spec.systemicFatigueFactor     * 0.15
+    }
+
+    /// Extreme Wirbelsaeulen- und CNS-Last: zwei solcher Uebungen direkt
+    /// hintereinander gefaehrden die Technikqualitaet der zweiten.
+    private static func isExtremeAxialLoad(_ spec: ExerciseTemplateSpec) -> Bool {
+        spec.axialLoadFactor >= 0.90 && spec.cnsDemandFactor >= 0.80
     }
 
     /// Bugfix (Nutzer-Feedback): gemeinsamer Gruppierungs-Helfer fuer

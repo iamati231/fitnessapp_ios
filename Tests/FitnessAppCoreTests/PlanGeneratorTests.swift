@@ -939,4 +939,173 @@ final class PlanGeneratorTests: XCTestCase {
             )
         }
     }
+
+    // MARK: - Physiologische Uebungsreihenfolge (F5)
+
+    /// Hilfsfunktionen: Spiegel der privaten PlanGenerator-Formeln fuer Test-Verifikation.
+    private func goalFitForTest(_ spec: ExerciseTemplateSpec, goal: TrainingGoal) -> Double {
+        switch goal {
+        case .strength:
+            return spec.axialLoadFactor * 0.50 + spec.cnsDemandFactor * 0.30
+                + (spec.isSystemCompound ? 0.20 : 0.0)
+        case .hypertrophy:
+            return spec.localMuscleDamageFactor * 0.55 + spec.systemicFatigueFactor * 0.30
+                + (spec.isSystemCompound ? 0.10 : 0.0) + (1.0 - spec.axialLoadFactor) * 0.05
+        case .functional, .hybrid:
+            let avg = (spec.systemicFatigueFactor + spec.cnsDemandFactor + spec.localMuscleDamageFactor) / 3.0
+            return avg * 0.85 + (spec.isSystemCompound ? 0.15 : 0.0)
+        case .weightLoss:
+            return spec.systemicFatigueFactor * 0.60 + spec.localMuscleDamageFactor * 0.40
+        case .endurance:
+            return spec.systemicFatigueFactor * 0.50 + spec.localMuscleDamageFactor * 0.50
+        }
+    }
+
+    private func readinessRequirementForTest(_ spec: ExerciseTemplateSpec) -> Double {
+        if spec.primaryMuscle == .core { return 0.0 }
+        if !spec.isSystemCompound && spec.cnsDemandFactor < 0.30 && spec.axialLoadFactor < 0.20 {
+            return 0.10 + spec.cnsDemandFactor
+        }
+        return spec.cnsDemandFactor           * 0.35
+             + spec.technicalComplexityFactor * 0.30
+             + spec.axialLoadFactor           * 0.20
+             + spec.systemicFatigueFactor     * 0.15
+    }
+
+    private func isExtremeAxialLoadForTest(_ spec: ExerciseTemplateSpec) -> Bool {
+        spec.axialLoadFactor >= 0.90 && spec.cnsDemandFactor >= 0.80
+    }
+
+    /// F5: Erste Uebung jedes Tages hat den hoechsten goalFit fuer Kraft-Ziel
+    /// (innerhalb einer Toleranz fuer Faelle mit nur einer Compound-Uebung pro Tag).
+    func testFocusExerciseHasHighestGoalFitForStrength() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(
+            selections: [selection(.barbell, days: 3, experience: .advanced)],
+            equipmentPreferences: [.barbell],
+            usesFixedWeekdays: false,
+            trainingGoal: .strength
+        ))
+        for day in result.days {
+            guard let firstName = day.spec.exercises.first?.name,
+                  let firstSpec = specByName[firstName] else { continue }
+            let firstFit = goalFitForTest(firstSpec, goal: .strength)
+            for exercise in day.spec.exercises.dropFirst() {
+                guard let spec = specByName[exercise.name] else { continue }
+                let fit = goalFitForTest(spec, goal: .strength)
+                XCTAssertGreaterThanOrEqual(
+                    firstFit + 0.05, fit,
+                    "Tag '\(day.spec.name)': '\(firstName)' (fit=\(String(format: "%.2f", firstFit))) sollte Kraft-Fokus sein, '\(exercise.name)' hat \(String(format: "%.2f", fit))"
+                )
+            }
+        }
+    }
+
+    /// F5: Erste Uebung jedes Tages hat den hoechsten goalFit fuer Hypertrophie-Ziel.
+    func testFocusExerciseHasHighestGoalFitForHypertrophy() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(
+            selections: [selection(.barbell, days: 3, experience: .advanced)],
+            equipmentPreferences: [.barbell],
+            usesFixedWeekdays: false,
+            trainingGoal: .hypertrophy
+        ))
+        for day in result.days {
+            guard let firstName = day.spec.exercises.first?.name,
+                  let firstSpec = specByName[firstName] else { continue }
+            let firstFit = goalFitForTest(firstSpec, goal: .hypertrophy)
+            for exercise in day.spec.exercises.dropFirst() {
+                guard let spec = specByName[exercise.name] else { continue }
+                let fit = goalFitForTest(spec, goal: .hypertrophy)
+                XCTAssertGreaterThanOrEqual(
+                    firstFit + 0.05, fit,
+                    "Tag '\(day.spec.name)': '\(firstName)' (fit=\(String(format: "%.2f", firstFit))) sollte Hypertrophie-Fokus sein, '\(exercise.name)' hat \(String(format: "%.2f", fit))"
+                )
+            }
+        }
+    }
+
+    /// F5: System-Compounds erscheinen immer vor reinen Isolation-/Finisher-Uebungen.
+    func testSystemCompoundsPrecedeIsolation() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        for goal: TrainingGoal in [.hypertrophy, .strength, .functional] {
+            let result = PlanGenerator.generate(from: PlanGeneratorInput(
+                selections: [selection(.barbell, days: 3, experience: .advanced)],
+                equipmentPreferences: [.barbell],
+                usesFixedWeekdays: false,
+                trainingGoal: goal
+            ))
+            for day in result.days {
+                let specs = day.spec.exercises.compactMap { specByName[$0.name] }
+                let lastCompoundIdx = specs.indices.last(where: { specs[$0].isSystemCompound })
+                let firstIsolationIdx = specs.indices.first {
+                    !specs[$0].isSystemCompound
+                    && specs[$0].cnsDemandFactor < 0.30
+                    && specs[$0].axialLoadFactor < 0.20
+                }
+                guard let lc = lastCompoundIdx, let fi = firstIsolationIdx else { continue }
+                XCTAssertGreaterThan(
+                    fi, lc,
+                    "Ziel \(goal) Tag '\(day.spec.name)': Isolation bei Index \(fi) vor Compound bei \(lc)"
+                )
+            }
+        }
+    }
+
+    /// F5: Core-Uebungen erscheinen immer nach allen Nicht-Core-Uebungen.
+    func testCoreExercisesAlwaysLast() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(
+            selections: [selection(.bodyweight, days: 3, experience: .intermediate)],
+            equipmentPreferences: [.bodyweight],
+            usesFixedWeekdays: false,
+            trainingGoal: .functional
+        ))
+        for day in result.days {
+            let specs = day.spec.exercises.compactMap { specByName[$0.name] }
+            let lastNonCoreIdx = specs.indices.last(where: { specs[$0].primaryMuscle != .core })
+            let firstCoreIdx = specs.indices.first(where: { specs[$0].primaryMuscle == .core })
+            guard let lnc = lastNonCoreIdx, let fc = firstCoreIdx else { continue }
+            XCTAssertGreaterThan(
+                fc, lnc,
+                "Tag '\(day.spec.name)': Core-Uebung bei Index \(fc) vor Nicht-Core bei Index \(lnc)"
+            )
+        }
+    }
+
+    /// F5: Zwei Uebungen mit extremer Axial-/CNS-Last erscheinen nie direkt hintereinander.
+    func testNoExtremeAxialLoadConsecutive() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(
+            selections: [selection(.barbell, days: 4, experience: .advanced)],
+            equipmentPreferences: [.barbell],
+            usesFixedWeekdays: false,
+            trainingGoal: .strength
+        ))
+        for day in result.days {
+            let specs = day.spec.exercises.compactMap { specByName[$0.name] }
+            for i in 0..<(specs.count - 1) {
+                let a = specs[i], b = specs[i + 1]
+                XCTAssertFalse(
+                    isExtremeAxialLoadForTest(a) && isExtremeAxialLoadForTest(b),
+                    "Tag '\(day.spec.name)': '\(a.name)' und '\(b.name)' sind beide extreme Axial-Uebungen direkt hintereinander"
+                )
+            }
+        }
+    }
+
+    /// F5: Gleicher Input erzeugt immer dieselbe Uebungsreihenfolge (Determinismus).
+    func testSessionOrderingIsDeterministic() {
+        let input = PlanGeneratorInput(
+            selections: [selection(.barbell, days: 3, experience: .advanced)],
+            equipmentPreferences: [.barbell],
+            usesFixedWeekdays: false,
+            trainingGoal: .strength
+        )
+        let reference = PlanGenerator.generate(from: input).days.map { $0.spec.exercises.map(\.name) }
+        for _ in 0..<30 {
+            let candidate = PlanGenerator.generate(from: input).days.map { $0.spec.exercises.map(\.name) }
+            XCTAssertEqual(candidate, reference, "Unterschiedliche Uebungsreihenfolge bei identischem Input")
+        }
+    }
 }
