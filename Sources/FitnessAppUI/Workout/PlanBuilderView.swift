@@ -1598,7 +1598,8 @@ public struct PlanBuilderView: View {
             selections: selections,
             equipmentPreferences: equipmentPreferences,
             usesFixedWeekdays: usesFixedWeekdays,
-            fixedWeekdays: Array(fixedWeekdays)
+            fixedWeekdays: Array(fixedWeekdays),
+            trainingGoal: selectedTrainingGoal
         )
     }
 

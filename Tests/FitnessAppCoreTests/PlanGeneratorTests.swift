@@ -832,4 +832,111 @@ final class PlanGeneratorTests: XCTestCase {
         XCTAssertEqual(shortResult.days.first?.spec.exercises.count, 3)
         XCTAssertEqual(longResult.days.first?.spec.exercises.count, 7)
     }
+
+    // MARK: - Score-basierte Uebungsauswahl (F1–F4)
+
+    /// `trainingGoal` ist optional mit Default `nil` — ein vor diesem Feld
+    /// gespeicherter JSON-Snapshot muss ohne Fehler zu `nil` decodieren.
+    func testTrainingGoalMissingInLegacyJSONDecodesToNil() {
+        let legacyJSON = """
+        {"selections":[],"equipmentPreferences":[],"usesFixedWeekdays":false,"fixedWeekdays":[]}
+        """
+        let decoded = try! JSONDecoder().decode(PlanGeneratorInput.self, from: Data(legacyJSON.utf8))
+        XCTAssertNil(decoded.trainingGoal)
+    }
+
+    /// `trainingGoal` muss verlustfrei durch Encode/Decode kommen.
+    func testTrainingGoalSurvivesJSONRoundtrip() {
+        for goal: TrainingGoal in [.hypertrophy, .strength, .hybrid, .weightLoss, .functional] {
+            let original = PlanGeneratorInput(
+                selections: [], equipmentPreferences: [], usesFixedWeekdays: false, trainingGoal: goal
+            )
+            let decoded = try! JSONDecoder().decode(
+                PlanGeneratorInput.self,
+                from: try! JSONEncoder().encode(original)
+            )
+            XCTAssertEqual(decoded.trainingGoal, goal)
+        }
+    }
+
+    /// F2 (Equipment-Vielfalt): Gym-Pool aus mehreren Gerätearten muss bei
+    /// gesetztem Ziel mind. einen Tag mit Uebungen aus mehr als einer
+    /// Geraeteart erzeugen — Vielfalt-Bonus verhindert Barbell-Monokultur.
+    func testEquipmentDiversityBonusProducesVarietyAcrossGoals() {
+        let fullPool: Set<Equipment> = [.barbell, .dumbbell, .machine]
+        let equipmentByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0.equipment) })
+        for goal: TrainingGoal in [.hypertrophy, .strength, .functional] {
+            let result = PlanGenerator.generate(from: PlanGeneratorInput(
+                selections: [selection(.barbell, days: 3, experience: .advanced, equipmentPool: fullPool)],
+                equipmentPreferences: fullPool,
+                usesFixedWeekdays: false,
+                trainingGoal: goal
+            ))
+            let equipmentPerDay = result.days.map { day in
+                Set(day.spec.exercises.compactMap { equipmentByName[$0.name] })
+            }
+            XCTAssertTrue(
+                equipmentPerDay.contains { $0.count > 1 },
+                "Ziel \(goal): mindestens ein Tag sollte Equipment-Vielfalt aufweisen; tatsaechlich: \(equipmentPerDay)"
+            )
+        }
+    }
+
+    /// F1 (Ziel-Passgenauigkeit): Kraft-Ziel bevorzugt System-Compounds —
+    /// mit Barbell-Pool und Fortgeschrittenen-Erfahrung muss mind. die
+    /// Haelfte der Tage ein System-Compound enthalten.
+    func testStrengthGoalFavorsSystemCompoundsFromBarbellPool() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(
+            selections: [selection(.barbell, days: 4, experience: .advanced)],
+            equipmentPreferences: [.barbell],
+            usesFixedWeekdays: false,
+            trainingGoal: .strength
+        ))
+        let compoundDays = result.days.filter { day in
+            day.spec.exercises.contains { specByName[$0.name]?.isSystemCompound == true }
+        }
+        XCTAssertGreaterThanOrEqual(
+            compoundDays.count, result.days.count / 2,
+            "Kraft-Ziel muss System-Compounds bevorzugen; Tage mit Compound: \(compoundDays.count)/\(result.days.count)"
+        )
+    }
+
+    /// F4 (Wochenwiederholungs-Penalty): 4-Tage-Plan sollte mehr eindeutige
+    /// Uebungen haben als ein einzelner Tag Slots — der Penalty foerdert
+    /// Abwechslung quer durch die Woche.
+    func testWeeklyRepetitionPenaltyProducesExerciseVarietyAcrossDays() {
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(
+            selections: [selection(.dumbbell, days: 4, experience: .advanced)],
+            equipmentPreferences: [.dumbbell],
+            usesFixedWeekdays: false,
+            trainingGoal: .hypertrophy
+        ))
+        guard result.days.count == 4, let exercisesPerDay = result.days.first?.spec.exercises.count else { return }
+        let allUnique = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertGreaterThan(
+            allUnique.count, exercisesPerDay,
+            "4-Tage-Plan sollte mehr eindeutige Uebungen haben als ein Tag Slots — F4-Penalty fehlt"
+        )
+    }
+
+    /// Regression: Score-Logik darf die Equipment-Pool-Filterung nicht umgehen.
+    /// Alle erzeugten Uebungen muessen auch bei gesetztem Ziel aus dem Pool stammen.
+    func testGoalScoringNeverViolatesEquipmentPoolConstraint() {
+        for goal: TrainingGoal in [.hypertrophy, .strength, .weightLoss] {
+            let pool: Set<Equipment> = [.kettlebell]
+            let allowedNames = Set(ExerciseLibraryData.all.filter { pool.contains($0.equipment) }.map(\.name))
+            let result = PlanGenerator.generate(from: PlanGeneratorInput(
+                selections: [selection(.kettlebell, days: 2, experience: .intermediate)],
+                equipmentPreferences: pool,
+                usesFixedWeekdays: false,
+                trainingGoal: goal
+            ))
+            let usedNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+            XCTAssertTrue(
+                usedNames.isSubset(of: allowedNames),
+                "Ziel \(goal): Uebungen ausserhalb des Kettlebell-Pools: \(usedNames.subtracting(allowedNames))"
+            )
+        }
+    }
 }

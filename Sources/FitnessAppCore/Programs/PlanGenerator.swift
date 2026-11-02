@@ -120,7 +120,7 @@ public enum PlanGenerator {
             if selection.kind.isCardio {
                 candidates.append(contentsOf: cardioCandidates(for: selection))
             } else {
-                candidates.append(contentsOf: strengthCandidates(for: selection, shuffle: shuffle))
+                candidates.append(contentsOf: strengthCandidates(for: selection, goal: input.trainingGoal ?? .functional, shuffle: shuffle))
             }
         }
 
@@ -193,7 +193,7 @@ public enum PlanGenerator {
 
         while alternatives.count < count, attempts < maxAttempts {
             attempts += 1
-            let candidates = strengthCandidates(for: selection, shuffle: true)
+            let candidates = strengthCandidates(for: selection, goal: input.trainingGoal ?? .functional, shuffle: true)
             guard let picked = candidates.randomElement() else { break }
             let pickedNames = Set(picked.exercises.map(\.name))
             guard !pickedNames.isEmpty, !seenExerciseSets.contains(pickedNames) else { continue }
@@ -257,7 +257,7 @@ public enum PlanGenerator {
         return []
     }
 
-    private static func strengthCandidates(for selection: PlanGeneratorTypeSelection, shuffle: Bool) -> [Candidate] {
+    private static func strengthCandidates(for selection: PlanGeneratorTypeSelection, goal: TrainingGoal, shuffle: Bool) -> [Candidate] {
         let equipmentSet = strengthEquipmentPool(for: selection)
         guard !equipmentSet.isEmpty else { return [] }
         let allowedDifficulties = difficultiesAtOrBelow(selection.experience)
@@ -278,6 +278,9 @@ public enum PlanGenerator {
         let isMixedEquipment = equipmentSet.count > 1
 
         var result: [Candidate] = []
+        // F4: Soft-Wochenpenalty — Uebungen, die an Tag N gewaehlt wurden,
+        // werden an Tag N+1 niedriger gerankt (nicht verboten).
+        var weeklyNames: Set<String> = []
         for dayIndex in 0..<selection.daysPerWeek {
             // README 2.20: letzter Tag einer >=3-taegigen Kettlebell-Auswahl
             // wird zum EMOM-Finisher - passt zum bereits gebauten CrossFit/
@@ -298,36 +301,27 @@ public enum PlanGenerator {
             var hardness = 0.0
             var muscleCursor = dayIndex
             var guardCount = 0
-            // Bugfix (Epic #3.3): tracks how many exercises have already been
-            // taken from EACH muscle this day. Previously every revisit to a
-            // muscle re-read `group[dayIndex % group.count]` — the exact same
-            // index every time, since `dayIndex` never changes within this
-            // loop — so a muscle contributed AT MOST one exercise per day no
-            // matter how many eligible candidates it actually had, capping
-            // `exercises.count` at the number of distinct muscle groups with
-            // any exercise at all. That ceiling can be far below
-            // `exerciseCount`: e.g. Kettlebell/Anfaenger has 9 exercises
-            // across only 4 muscle groups (4 Schulter-Uebungen alone) — a
-            // 100-Minuten-Plan (exerciseCount=7) still only ever got 4,
-            // regardless of the chosen duration. Tracking a per-muscle offset
-            // lets a second (and third, ...) pass pick the NEXT distinct
-            // exercise from a muscle that still has one, once every muscle
-            // has had its first pick — duration keeps mattering wherever the
-            // library actually has the variety to support it, with no
-            // artificial padding where it doesn't (a muscle with only one
-            // eligible exercise is simply skipped on later passes).
-            var picksByMuscle: [MuscleGroup: Int] = [:]
+            // F2: Equipment-Vielfalt-Bonus pro Tag; CNS-Last-Tracking.
+            var usedEquipmentToday: Set<Equipment> = []
+            var cnsLoadToday = 0.0
             let maxPicksForAnyMuscle = byMuscle.values.map(\.count).max() ?? 1
             while exercises.count < exerciseCount, guardCount < muscleOrder.count * maxPicksForAnyMuscle {
                 defer { guardCount += 1 }
                 let muscle = muscleOrder[muscleCursor % muscleOrder.count]
                 muscleCursor += 1
                 guard let group = byMuscle[muscle], !group.isEmpty else { continue }
-                let picks = picksByMuscle[muscle, default: 0]
-                guard picks < group.count else { continue }
-                let spec = group[(dayIndex + picks) % group.count]
-                picksByMuscle[muscle] = picks + 1
-                if exercises.contains(where: { $0.name == spec.name }) { continue }
+                let available = group.filter { c in !exercises.contains(where: { $0.name == c.name }) }
+                guard !available.isEmpty else { continue }
+                let spec = shuffle
+                    ? available.randomElement()!
+                    : available.max(by: {
+                        exerciseScore($0, goal: goal, experience: selection.experience,
+                                      usedEquipmentToday: usedEquipmentToday, cnsLoadToday: cnsLoadToday,
+                                      weeklyNames: weeklyNames)
+                        < exerciseScore($1, goal: goal, experience: selection.experience,
+                                         usedEquipmentToday: usedEquipmentToday, cnsLoadToday: cnsLoadToday,
+                                         weeklyNames: weeklyNames)
+                    })!
                 exercises.append(ExerciseSpec(
                     name: spec.name,
                     sets: sets,
@@ -336,8 +330,11 @@ public enum PlanGenerator {
                     restSeconds: restSeconds
                 ))
                 pickedMuscles.append(muscle)
+                usedEquipmentToday.insert(spec.equipment)
+                cnsLoadToday += spec.cnsDemandFactor
                 hardness += strengthHardness(spec, sets: sets, experience: selection.experience)
             }
+            weeklyNames.formUnion(exercises.map(\.name))
 
             let focusLabel = muscleFocusLabel(pickedMuscles, dayIndex: dayIndex)
             let focusKey = muscleFocusKey(pickedMuscles, dayIndex: dayIndex)
@@ -458,6 +455,60 @@ public enum PlanGenerator {
         case .beginner:     return (3, 10, 12, 90)
         case .intermediate: return (3, 8, 12, 90)
         case .advanced:     return (4, 6, 10, 100)
+        }
+    }
+
+    // MARK: - Exercise scoring (F1–F4)
+
+    /// Gesamtscore einer Uebung im Kontext des aktuellen Tages und der Woche.
+    /// Alle Gewichte addieren sich zu 1.0 im Best-Case (keine Penalties).
+    private static func exerciseScore(
+        _ spec: ExerciseTemplateSpec,
+        goal: TrainingGoal,
+        experience: DifficultyLevel,
+        usedEquipmentToday: Set<Equipment>,
+        cnsLoadToday: Double,
+        weeklyNames: Set<String>
+    ) -> Double {
+        // F1 (35 %): Ziel-Passgenauigkeit
+        let gf = goalFit(spec, goal) * 0.35
+        // F2 (15 %): Equipment-Vielfalt-Bonus — Aufwertung wenn Equipment heute noch nicht genutzt
+        let ev = usedEquipmentToday.contains(spec.equipment) ? 0.0 : 0.15
+        // F3 (40 % Strafe): technische Komplexitaet penalisieren je nach Erfahrung
+        let threshold = technicalThreshold(experience)
+        let tp = max(0, spec.technicalComplexityFactor - threshold) * 0.40
+        // CNS-Ueberlastungs-Penalty: Compound-Stapelung bremsen
+        let cnsOverload = max(0, cnsLoadToday + spec.cnsDemandFactor - 2.0) * 0.20
+        // F4 (10 % Strafe): Soft-Wochenwiederholung — bereits diese Woche genutzt
+        let rp = weeklyNames.contains(spec.name) ? 0.10 : 0.0
+        return 0.50 + gf + ev - tp - cnsOverload - rp
+    }
+
+    /// Ziel-Passgenauigkeit [0..~1] je Trainingsziel.
+    private static func goalFit(_ spec: ExerciseTemplateSpec, _ goal: TrainingGoal) -> Double {
+        switch goal {
+        case .strength:
+            return spec.axialLoadFactor * 0.50 + spec.cnsDemandFactor * 0.30
+                + (spec.isSystemCompound ? 0.20 : 0.0)
+        case .hypertrophy:
+            return spec.localMuscleDamageFactor * 0.55 + spec.systemicFatigueFactor * 0.30
+                + (spec.isSystemCompound ? 0.10 : 0.0) + (1.0 - spec.axialLoadFactor) * 0.05
+        case .functional, .hybrid:
+            let avg = (spec.systemicFatigueFactor + spec.cnsDemandFactor + spec.localMuscleDamageFactor) / 3.0
+            return avg * 0.85 + (spec.isSystemCompound ? 0.15 : 0.0)
+        case .weightLoss:
+            return spec.systemicFatigueFactor * 0.60 + spec.localMuscleDamageFactor * 0.40
+        case .endurance:
+            return spec.systemicFatigueFactor * 0.50 + spec.localMuscleDamageFactor * 0.50
+        }
+    }
+
+    /// Ab welchem `technicalComplexityFactor` Anfaenger/Fortgeschrittene bestraft werden.
+    private static func technicalThreshold(_ experience: DifficultyLevel) -> Double {
+        switch experience {
+        case .beginner:     return 0.50
+        case .intermediate: return 0.70
+        case .advanced:     return 1.00
         }
     }
 

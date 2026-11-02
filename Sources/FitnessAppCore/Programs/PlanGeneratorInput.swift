@@ -136,17 +136,24 @@ public struct PlanGeneratorInput: Codable, Sendable, Hashable {
     /// (1 = Sonntag ... 7 = Samstag), gleiche Konvention wie
     /// `ProgramInstantiator.instantiate(selectedWeekdays:)`.
     public let fixedWeekdays: [Int]
+    /// Trainingsziel fuer score-basierte Uebungsauswahl in
+    /// `PlanGenerator.strengthCandidates` — `nil` (Bestandsplaene vor diesem
+    /// Feld) waehlt den balancierten `.functional`-Pfad. Fehlender JSON-Key
+    /// decodiert automatisch zu `nil`, "Neu rechnen" bleibt ohne Migration.
+    public let trainingGoal: TrainingGoal?
 
     public init(
         selections: [PlanGeneratorTypeSelection],
         equipmentPreferences: Set<Equipment>,
         usesFixedWeekdays: Bool,
-        fixedWeekdays: [Int] = []
+        fixedWeekdays: [Int] = [],
+        trainingGoal: TrainingGoal? = nil
     ) {
         self.selections = selections
         self.equipmentPreferences = equipmentPreferences
         self.usesFixedWeekdays = usesFixedWeekdays
         self.fixedWeekdays = fixedWeekdays
+        self.trainingGoal = trainingGoal
     }
 
     public var totalDaysPerWeek: Int {
