@@ -46,7 +46,7 @@ public enum ProgramTemplates {
         ],
         targetEnvironment: .gym,
         iconSystemName: "figure.strengthtraining.traditional",
-        targetExperience: [.beginner, .intermediate],
+        targetExperience: [.beginner],
         targetGoals: [.hypertrophy, .functional]
     )
 
@@ -91,7 +91,7 @@ public enum ProgramTemplates {
         targetEnvironment: .gym,
         iconSystemName: "figure.strengthtraining.traditional",
         targetExperience: [.intermediate, .advanced],
-        targetGoals: [.hypertrophy, .strength]
+        targetGoals: [.hypertrophy]
     )
 
     // MARK: - 3. Fatburn Ganzkörper

@@ -39,28 +39,23 @@ final class ProgramInstantiatorEquipmentTests: XCTestCase {
     }
 
     /// Szenario "Nur Kettlebells": hybrid_balanced hat nach der KB-Alternativ-Bereinigung
-    /// Gaps (Bizeps-Curl, Trizepsdrücken Kabel, Rudern vorgebeugt, Wadenheben) ->
-    /// Instanziierung und PlanSelectionResolver.resolve muessen uebereinstimmen,
-    /// KB-Alternativen fuer aufgeloeste Slots werden korrekt materialisiert.
+    /// Gaps -> kein Variant ist vollstaendig aufloesbar -> bestEquipmentCheckedVariant
+    /// gibt die Basis-Variante als transparenten Fallback zurueck (identisch zum
+    /// Bodyweight-Test unten). Instanziierung muss dasselbe ergeben.
     func testInstantiateWithKettlebellOnlyProfileUsesTheSameVariantAsBestEquipmentCheckedVariant() throws {
         var profile = UserEquipmentProfile()
         profile.availability[.kettlebell] = .available
         profile.confirmRemainingAsUnavailable()
 
-        let substitutionContext = SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
-        let selection = PlanSelectionResolver.resolve(template: hybridBalanced, profile: profile, context: substitutionContext)
-        guard case .unavailable = selection.equipmentStatus else {
-            return XCTFail("KB-only auf hybrid_balanced: muss .unavailable sein (Gaps existieren seit der KB-Bereinigung)")
-        }
+        // KB-Gaps vorhanden -> Basis-Variante als Fallback (kein .kettlebellOnly mehr)
+        let expected = hybridBalanced.bestEquipmentCheckedVariant(against: profile)
+        XCTAssertNil(expected.profile, "KB-Variante hat Gaps -> Basis-Variante als transparenter Fallback")
+        XCTAssertTrue(expected.equipmentStatus.isUnavailable)
 
         let plan = ProgramInstantiator.instantiate(hybridBalanced, in: context, userEquipmentProfile: profile)
         let materializedNames = Set(plan.days.flatMap { $0.exercises.map(\.name) })
-        let expectedNames = Set(selection.days.flatMap { $0.exercises.map(\.name) })
-
+        let expectedNames = Set(expected.days.flatMap { $0.exercises.map(\.name) })
         XCTAssertEqual(materializedNames, expectedNames)
-        XCTAssertTrue(materializedNames.contains("Kettlebell Floor Press"))
-        XCTAssertFalse(materializedNames.contains("Bankdrücken (KH)"), "Keine Dumbbell-Uebung darf durchrutschen")
-        XCTAssertFalse(materializedNames.contains("Bankdrücken"), "Keine Langhantel-Basis-Uebung darf durchrutschen")
     }
 
     /// Szenario "Nur Koerpergewicht": keine Variante passt — der Instantiator

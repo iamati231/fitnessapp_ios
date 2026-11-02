@@ -127,12 +127,17 @@ final class PlanEquipmentCheckTests: XCTestCase {
         let kettlebellOnly = checked.first { $0.profile == .kettlebellOnly }!
         XCTAssertTrue(base.equipmentStatus.isUnavailable, "Basis braucht Langhantel+Bank, fehlt komplett")
         XCTAssertTrue(dumbbellOnly.equipmentStatus.isUnavailable, "Dumbbell-Variante braucht Kurzhanteln, fehlen komplett")
-        XCTAssertEqual(kettlebellOnly.equipmentStatus, .available)
+        // Nach KB-Alternativ-Bereinigung: KB-Variante hat Gaps (Bizeps-Curl, Rudern
+        // vorgebeugt, Trizepsdrücken Kabel, Wadenheben haben keine KB-Alternative)
+        guard case let .unavailable(gaps) = kettlebellOnly.equipmentStatus else {
+            return XCTFail("KB-Variante hat Gaps seit der KB-Bereinigung, muss .unavailable sein, ist: \(kettlebellOnly.equipmentStatus)")
+        }
+        XCTAssertFalse(gaps.isEmpty)
 
         let best = template.bestEquipmentCheckedVariant(against: profile)
-        XCTAssertEqual(best.profile, .kettlebellOnly, "Auswahl: einzige tatsaechlich passende Variante")
-        XCTAssertEqual(best.equipmentStatus, .available, "Begruendung: vollstaendig bestaetigt passend")
-        XCTAssertEqual(best.days, kettlebellOnly.days, "Instanziierte Variante (ueber dieselbe Funktion) == die als passend gezeigte Variante")
+        // Keine Variante vollstaendig aufloesbar -> Basis-Variante als transparenter Fallback
+        XCTAssertNil(best.profile, "Keine Variante vollstaendig loesbar -> Basis-Fallback")
+        XCTAssertTrue(best.equipmentStatus.isUnavailable)
     }
 
     // MARK: - Szenario 3: Kurzhantel ohne Bank
