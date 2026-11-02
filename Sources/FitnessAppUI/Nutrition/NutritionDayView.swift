@@ -575,6 +575,16 @@ public struct NutritionDayView: View {
         )
     }
 
+    // Bump the version suffix when prompt or model changes to invalidate cached results.
+    private func insightCacheKey(_ ctx: InsightContext) -> String {
+        let day = Int(ctx.day.timeIntervalSinceReferenceDate)
+        let kcal = Int(ctx.total.kcal.value ?? -1)
+        let prot = Int(ctx.total.proteinG.value ?? -1)
+        let carb = Int(ctx.total.carbsG.value ?? -1)
+        let fat  = Int(ctx.total.fatG.value ?? -1)
+        return "nut_insight_v1_\(day)_\(kcal)_\(prot)_\(carb)_\(fat)_\(ctx.calorieGoal ?? -1)_\(Int(ctx.proteinGoal ?? -1))_\(Int(ctx.carbGoal ?? -1))_\(Int(ctx.fatGoal ?? -1))"
+    }
+
     /// Computes the deterministic percent-of-goal/remaining fact for one
     /// nutrient via the shared `NutritionCalculations.goalProgress` (same
     /// formula as `GoalRow.fraction` above) and hands it to the AI prompt as
@@ -592,9 +602,19 @@ public struct NutritionDayView: View {
     /// Werte") — the day's total plus whichever goals are actually set, never
     /// the full meal history.
     private func loadInsight() async {
-        insightText = nil
         guard showsInsightSection else { return }
         let context = insightContext
+        let key = insightCacheKey(context)
+
+        // Serve from cache when data hasn't changed — avoids redundant API
+        // calls on tab switch and app restart. Invalidated automatically when
+        // any InsightContext field changes (new entry, different day, goal edit).
+        if let cached = UserDefaults.standard.string(forKey: key) {
+            insightText = cached
+            return
+        }
+
+        insightText = nil
         let input = NutritionInsightInput(
             totalKcal: context.total.kcal.value,
             totalProteinG: context.total.proteinG.value,
@@ -621,6 +641,7 @@ public struct NutritionDayView: View {
         // what is by then the wrong day.
         guard !Task.isCancelled else { return }
         isGeneratingInsight = false
+        if let result { UserDefaults.standard.set(result, forKey: key) }
         insightText = result
     }
 
