@@ -2415,10 +2415,7 @@ public struct PlanBuilderView: View {
     }
 
     private var weeklyTotalTimeLabel: String {
-        let totalMinutes = selectedKinds.reduce(0) { sum, kind in
-            guard let config = configByKind[kind] else { return sum }
-            return sum + config.daysPerWeek * config.sessionDurationMinutes
-        }
+        let totalMinutes = currentInput.selections.reduce(0) { $0 + $1.daysPerWeek * $1.sessionDurationMinutes }
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
         return String(format: "%lld:%02lld", hours, minutes)
