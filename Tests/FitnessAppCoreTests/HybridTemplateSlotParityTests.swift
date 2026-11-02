@@ -247,9 +247,9 @@ final class HybridTemplateSlotParityTests: XCTestCase {
     // MARK: - Final-review Fix 4: gap reason is the resolver's OR-aggregate,
     // never recomputed from the default exercise alone.
 
-    /// `hybrid_balanced`'s "Schulterdrücken (stehend)" slot: the default
+    /// `hybrid_balanced`'s "Kreuzheben (konventionell)" slot: the default
     /// (barbell, confirmed `.unavailable`) is definitively unmet, but its
-    /// first alternative "Schulterdrücken (KH)" (`.item(.dumbbell,
+    /// first alternative "Rumänisches Kreuzheben (KH)" (`.item(.dumbbell,
     /// minimumCount: 2)`) is merely UNKNOWN here (dumbbell `.available`, but
     /// no count ever recorded -> `RequirementStatus.unknown` per
     /// `ExerciseRequirement.evaluate`, `EquipmentRequirement.swift` line
@@ -272,11 +272,11 @@ final class HybridTemplateSlotParityTests: XCTestCase {
         guard let result = template("hybrid_balanced").resolvedSlots(against: profile) else {
             return XCTFail("hybrid_balanced: resolvedSlots(against:) lieferte nil")
         }
-        guard let gap = result.gaps.first(where: { $0.exerciseName == "Schulterdrücken (stehend)" }) else {
-            return XCTFail("Erwartet einen Gap fuer den 'Schulterdrücken (stehend)'-Slot, gaps: \(result.gaps)")
+        guard let gap = result.gaps.first(where: { $0.exerciseName == "Kreuzheben (konventionell)" }) else {
+            return XCTFail("Erwartet einen Gap fuer den 'Kreuzheben (konventionell)'-Slot, gaps: \(result.gaps)")
         }
         guard case let .uncertain(reasons) = gap.reason else {
-            return XCTFail("Default ist definitiv unerfuellt (Langhantel fehlt), aber die erste Alternative ('Schulterdrücken (KH)') ist nur UNKNOWN (Kurzhantel-Stueckzahl nie erfasst) — das OR-Aggregat muss `.uncertain` sein, ist aber: \(gap.reason)")
+            return XCTFail("Default ist definitiv unerfuellt (Langhantel fehlt), aber die erste Alternative ('Rumänisches Kreuzheben (KH)') ist nur UNKNOWN (Kurzhantel-Stueckzahl nie erfasst) — das OR-Aggregat muss `.uncertain` sein, ist aber: \(gap.reason)")
         }
         XCTAssertTrue(reasons.contains { $0.item == .dumbbell }, "Der uncertain-Grund muss von der Kurzhantel-Alternative stammen, nicht vom Langhantel-Default")
     }
