@@ -1172,6 +1172,78 @@ final class PlanGeneratorTests: XCTestCase {
         }
     }
 
+    // MARK: - Bugfix: Hybrid/Kraft+Ausdauer nutzt kombinierten Equipment-Pool
+
+    /// Szenario 4: Mehrere Geraetearten ausgewaehlt — generierter Plan nutzt
+    /// Uebungen aus MEHR als einer Geraeteart (nicht nur die erste Prioritaet).
+    func testMultipleEquipmentPoolProducesExercisesFromDifferentEquipmentTypes() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(
+            selections: [selection(.barbell, days: 4, equipmentPool: [.barbell, .dumbbell])],
+            equipmentPreferences: [.barbell, .dumbbell],
+            usesFixedWeekdays: false,
+            trainingGoal: .hypertrophy
+        ))
+        let allEquipment = Set(result.days.flatMap { $0.spec.exercises }.compactMap { specByName[$0.name]?.equipment })
+        XCTAssertTrue(allEquipment.count > 1,
+            "Langhantel+Kurzhantel gewaehlt: Plan sollte Uebungen beider Geraetearten enthalten, hat nur: \(allEquipment)")
+    }
+
+    /// Szenario 5: Alle Geraetearten ausgewaehlt — keine unbegruendete
+    /// Beschraenkung auf eine einzige Geraeteart.
+    func testAllEquipmentPoolIsNotRestrictedToSingleType() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        let allPool: Set<Equipment> = [.barbell, .dumbbell, .kettlebell, .machine]
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(
+            selections: [selection(.barbell, days: 5, equipmentPool: allPool)],
+            equipmentPreferences: allPool,
+            usesFixedWeekdays: false,
+            trainingGoal: .hypertrophy
+        ))
+        let allEquipment = Set(result.days.flatMap { $0.spec.exercises }.compactMap { specByName[$0.name]?.equipment })
+        XCTAssertTrue(allEquipment.count > 1,
+            "Alle Gerätearten ausgewaehlt: Plan auf eine einzige Geraeteart eingeschraenkt — \(allEquipment)")
+    }
+
+    /// Szenario 6: Geraeteart abgewaehlt → keine Uebung dieser Art im Plan.
+    func testRemovedEquipmentTypeProducesNoExercisesOfThatType() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        // Nur Kurzhantel — keine Langhantel-Uebungen erwartet
+        let result = PlanGenerator.generate(from: input([selection(.dumbbell, days: 3)]))
+        let usedEquipment = Set(result.days.flatMap { $0.spec.exercises }.compactMap { specByName[$0.name]?.equipment })
+        XCTAssertFalse(usedEquipment.contains(.barbell), "Nur Kurzhantel gewaehlt: keine Langhantel-Uebungen erwartet")
+    }
+
+    /// Szenario 10 (End-to-End): Hybrid-Ziel mit mehreren Geraetearten —
+    ///  nach dem Fix muessen Kraft- UND Ausdauereinheiten im Plan erscheinen,
+    ///  und der Kraftteil darf nicht auf eine Geraeteart beschraenkt sein.
+    func testHybridGoalEndToEndKraftAndAusdauerBothPresent() {
+        let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .hybrid, enduranceModality: .running, totalDaysPerWeek: 5,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.barbell, .dumbbell]
+        )
+        let result = PlanGenerator.generate(from: PlanGeneratorInput(
+            selections: selections, equipmentPreferences: [.barbell, .dumbbell],
+            usesFixedWeekdays: false, trainingGoal: .hybrid
+        ))
+        // Kraft- und Ausdauereinheiten vorhanden
+        let hasCardio = result.days.contains { $0.spec.exercises.contains(where: \.isCardio) }
+        let hasStrength = result.days.contains { $0.spec.exercises.contains { !$0.isCardio } }
+        XCTAssertTrue(hasCardio, "Hybrid-Plan: Ausdauereinheiten fehlen")
+        XCTAssertTrue(hasStrength, "Hybrid-Plan: Krafteinheiten fehlen")
+        // Krafteinheiten nutzen mehrere Gerätearten (Kern des Bugfixes)
+        let strengthEquipment = Set(
+            result.days
+                .filter { $0.spec.exercises.contains { !$0.isCardio } }
+                .flatMap { $0.spec.exercises }
+                .compactMap { specByName[$0.name]?.equipment }
+        )
+        XCTAssertTrue(strengthEquipment.count > 1,
+            "Hybrid-Plan mit Langhantel+Kurzhantel: Kraftteil nur \(strengthEquipment) — beide erwartet")
+    }
+
     /// F5-10: Gleicher Input erzeugt immer dieselbe Uebungsreihenfolge (30 Laeufe).
     func testSessionOrderingIsDeterministicAcrossRuns() {
         let input = PlanGeneratorInput(

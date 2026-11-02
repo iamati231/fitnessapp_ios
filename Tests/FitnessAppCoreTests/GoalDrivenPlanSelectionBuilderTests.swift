@@ -407,6 +407,58 @@ final class GoalDrivenPlanSelectionBuilderTests: XCTestCase {
         }
     }
 
+    // MARK: - makeSelections: Hybrid mit mehreren Ausstattungsarten (Bugfix)
+
+    /// Bugfix: `.hybrid`-Ziel mit mehreren Gerätearten muss `equipmentPool`
+    /// auf der Kraft-Selection setzen — dasselbe Muster wie reine Kraft-Ziele.
+    /// Vorher fehlte das, und nur die Langhantel (höchste Priorität) wurde im
+    /// generierten Plan verwendet.
+    func testHybridGoalWithMultipleEquipmentSetsEquipmentPoolOnStrengthSelection() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .hybrid, enduranceModality: .running, totalDaysPerWeek: 4,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.barbell, .dumbbell]
+        )
+        let strengthSel = selections.first(where: { !$0.kind.isCardio })
+        XCTAssertEqual(strengthSel?.equipmentPool, [.barbell, .dumbbell],
+            "Hybrid mit Langhantel+Kurzhantel muss equipmentPool=[.barbell,.dumbbell] setzen")
+    }
+
+    func testHybridGoalWithSingleEquipmentLeavesEquipmentPoolNilForStrength() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .hybrid, enduranceModality: .running, totalDaysPerWeek: 4,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.barbell]
+        )
+        let strengthSel = selections.first(where: { !$0.kind.isCardio })
+        XCTAssertNil(strengthSel?.equipmentPool,
+            "Hybrid mit nur einer Geraeteart muss equipmentPool=nil lassen (Fallback auf kind.equipmentFilter)")
+    }
+
+    func testHybridGoalWithAllEquipmentTypesHasFullStrengthPool() {
+        let allEquipment: Set<Equipment> = [.barbell, .dumbbell, .kettlebell, .machine]
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .hybrid, enduranceModality: .running, totalDaysPerWeek: 5,
+            sessionDurationMinutes: 45, experience: .advanced,
+            equipmentPreferences: allEquipment
+        )
+        let strengthSel = selections.first(where: { !$0.kind.isCardio })
+        XCTAssertEqual(strengthSel?.equipmentPool, allEquipment,
+            "Hybrid mit allen Gerätearten muss vollen Pool setzen")
+    }
+
+    /// Kraft- und Ausdauertage bleiben beide erhalten (Regression-Smoke).
+    func testHybridGoalWithMultipleEquipmentStillProducesStrengthAndEnduranceDays() {
+        let selections = GoalDrivenPlanSelectionBuilder.makeSelections(
+            goal: .hybrid, enduranceModality: .running, totalDaysPerWeek: 5,
+            sessionDurationMinutes: 45, experience: .intermediate,
+            equipmentPreferences: [.barbell, .dumbbell]
+        )
+        XCTAssertTrue(selections.contains(where: { !$0.kind.isCardio }), "Kraft-Selection fehlt")
+        XCTAssertTrue(selections.contains(where: { $0.kind.isCardio }), "Ausdauer-Selection fehlt")
+        XCTAssertEqual(selections.reduce(0) { $0 + $1.daysPerWeek }, 5, "Tagesanzahl stimmt nicht")
+    }
+
     /// Same invariant as above, specifically with MULTIPLE equipment types
     /// selected (Epic #3.1) — days must still sum exactly, for any equipment
     /// combination and any day count, never silently dropping a day.

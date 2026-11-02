@@ -181,6 +181,12 @@ public enum GoalDrivenPlanSelectionBuilder {
         case .hybrid:
             let modality = enduranceModality ?? .running
             let enduranceKinds = modality.trainingTypeKinds
+            // Bugfix (Hybrid/Kraft+Ausdauer Equipment-Pool): dasselbe Muster
+            // wie beim reinen Kraft-Zweig oben — mehrere gewaehlte Geraetearten
+            // bilden EINEN gemeinsamen Pool, kein stilles "nur die erstbeste".
+            let strengthKinds = preferredStrengthKinds(from: equipmentPreferences)
+            let strengthPool: Set<Equipment>? = strengthKinds.count > 1
+                ? Set(strengthKinds.compactMap(\.equipmentFilter)) : nil
             var strengthDays = Int((Double(totalDaysPerWeek) / 2).rounded(.up))
             var enduranceDays = totalDaysPerWeek - strengthDays
             // A12-Fix (docs/DELTIQ_DEVICE_ACCEPTANCE.md, Runde 11): die
@@ -211,7 +217,8 @@ public enum GoalDrivenPlanSelectionBuilder {
                     if strengthDays > 0 {
                         fallback.append(PlanGeneratorTypeSelection(
                             kind: preferredStrengthKind(from: equipmentPreferences), daysPerWeek: strengthDays,
-                            sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                            sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                            equipmentPool: strengthPool
                         ))
                     }
                     if enduranceDays > 0 {
@@ -231,7 +238,8 @@ public enum GoalDrivenPlanSelectionBuilder {
             if strengthDays > 0 {
                 result.append(PlanGeneratorTypeSelection(
                     kind: preferredStrengthKind(from: equipmentPreferences), daysPerWeek: strengthDays,
-                    sessionDurationMinutes: sessionDurationMinutes, experience: experience
+                    sessionDurationMinutes: sessionDurationMinutes, experience: experience,
+                    equipmentPool: strengthPool
                 ))
             }
             if enduranceDays > 0 {
