@@ -7,8 +7,15 @@ final class CardioExerciseZoneTests: XCTestCase {
         XCTAssertEqual(CardioExerciseZone.forExerciseName("Easy Run"), .easy)
     }
 
-    func testLongRunMapsToTempo() {
-        XCTAssertEqual(CardioExerciseZone.forExerciseName("Long Run"), .tempo)
+    func testTempoRunMapsToTempo() {
+        XCTAssertEqual(CardioExerciseZone.forExerciseName("Tempo Run"), .tempo)
+    }
+
+    func testLongRunMapsToEasy() {
+        // "Long Run" is used for genuine aerobic long runs in hybrid templates.
+        // Old coach-generated plans that stored the tempo session as "Long Run"
+        // now correctly get easy pace — semantically more appropriate than tempo.
+        XCTAssertEqual(CardioExerciseZone.forExerciseName("Long Run"), .easy)
     }
 
     func testUnrelatedNameMapsToOther() {

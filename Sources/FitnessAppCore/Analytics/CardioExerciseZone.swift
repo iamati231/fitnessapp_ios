@@ -12,10 +12,14 @@ public enum CardioExerciseZone: Sendable, Equatable {
     case easy, tempo, other
 
     /// Matches against `PlanGenerator.RunZone.exerciseName`'s exact values.
+    /// "Long Run" maps to .easy: it is used for genuine aerobic long runs in
+    /// hybrid templates and for older coach-generated plans. "Tempo Run" is
+    /// the current coach-generated tempo exercise (added DEL-PhaseA).
     public static func forExerciseName(_ name: String) -> CardioExerciseZone {
         switch name {
         case "Easy Run": return .easy
-        case "Long Run": return .tempo
+        case "Long Run": return .easy   // backwards-compat: genuine long run pace
+        case "Tempo Run": return .tempo
         default: return .other
         }
     }

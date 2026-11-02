@@ -242,6 +242,7 @@ final class ExerciseMediaProviderTests: XCTestCase {
             ("Freier Lauf", "0685-oLrKqDH.gif"),
             ("Easy Run", "0685-oLrKqDH.gif"),
             ("Long Run", "0685-oLrKqDH.gif"),
+            ("Tempo Run", "0685-oLrKqDH.gif"),
             ("Intervalle", "0685-oLrKqDH.gif"),
             ("Lauf-Intervall", "0685-oLrKqDH.gif"),
             ("Laufband", "0684-y5p0H8a.gif"),

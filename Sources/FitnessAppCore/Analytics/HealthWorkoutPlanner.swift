@@ -477,6 +477,7 @@ public enum HealthWorkoutPlanner {
         "exercise.name.run":             Modality(group: .running, indoor: false),
         "exercise.name.easyRun":         Modality(group: .running, indoor: false),
         "exercise.name.longRun":         Modality(group: .running, indoor: false),
+        "exercise.name.tempoRun":        Modality(group: .running, indoor: false),
         "exercise.name.intervals":       Modality(group: .running, indoor: nil),
         "exercise.name.runInterval":     Modality(group: .running, indoor: nil),
         "exercise.name.treadmill":       Modality(group: .running, indoor: true),

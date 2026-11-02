@@ -505,6 +505,13 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.55, cnsDemandFactor: 0.35, axialLoadFactor: 0.25, technicalComplexityFactor: 0.10, recoveryClass: .high,
                              localizationKey: "exercise.name.longRun",
                              equipmentRequirement: .all([])),
+        // DEL-PhaseA: eigene Uebung fuer die Tempo-Zone des Laufcoachings —
+        // "Long Run" bleibt fuer Hybrid-Plan-Langlaeufe; neue Plaene nutzen
+        // "Tempo Run" (→ "Tempolauf" DE) damit Name und Tages-Titel uebereinstimmen.
+        ExerciseTemplateSpec(name: "Tempo Run",                        equipment: .bodyweight, primaryMuscle: .core,      isCardio: true,
+                             systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.55, cnsDemandFactor: 0.40, axialLoadFactor: 0.25, technicalComplexityFactor: 0.15, recoveryClass: .high,
+                             localizationKey: "exercise.name.tempoRun",
+                             equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Intervalle",                       equipment: .bodyweight, primaryMuscle: .core,      isCardio: true,
                              systemicFatigueFactor: 0.75, localMuscleDamageFactor: 0.50, cnsDemandFactor: 0.55, axialLoadFactor: 0.20, technicalComplexityFactor: 0.20, recoveryClass: .high,
                              localizationKey: "exercise.name.intervals",

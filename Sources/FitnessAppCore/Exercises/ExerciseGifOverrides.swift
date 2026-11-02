@@ -84,6 +84,7 @@ public enum ExerciseGifOverrides {
             ("liegendes bein huft heben", "0865-9IxJdtC.gif"),
             ("liegestutze knie", "3211-ZOuKWir.gif"),
             ("long run", "0685-oLrKqDH.gif"),
+            ("tempo run", "0685-oLrKqDH.gif"),
             ("low bar kniebeuge lh", "1435-bTpEUcm.gif"),
             ("medizinball slam", "1354-oHg8eop.gif"),
             ("mountain climbers", "0630-RJgzwny.gif"),

@@ -14883,6 +14883,29 @@
         }
       }
     },
+    "exercise.name.tempoRun": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempolauf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo Run"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo Koşusu"
+          }
+        }
+      }
+    },
     "exercise.name.intervals": {
       "extractionState": "manual",
       "localizations": {

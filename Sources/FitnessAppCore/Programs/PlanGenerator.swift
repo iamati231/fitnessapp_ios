@@ -746,7 +746,7 @@ public enum PlanGenerator {
         var exerciseName: String {
             switch self {
             case .easy:     return "Easy Run"
-            case .tempo:    return "Long Run"
+            case .tempo:    return "Tempo Run"
             case .interval: return "Intervalle"
             }
         }
@@ -766,10 +766,9 @@ public enum PlanGenerator {
         /// Lauf-Zonen-Titel noch keine wiederverwendbare Entsprechung.
         /// Bewusst UNABHAENGIG von `exercise.name.intervals` etc., obwohl der
         /// DE-Wert fuer `.interval` zufaellig identisch ist - Tages-Titel und
-        /// Uebungs-Name sind semantisch getrennte Konzepte (siehe
-        /// `exerciseName` oben: `.tempo` nutzt "Long Run" als Uebung, aber
-        /// "Tempolauf" als Tages-Titel), die nicht ueber einen Key gekoppelt
-        /// sein sollten.
+        /// Uebungs-Name sind semantisch getrennte Konzepte (`.tempo` nutzt
+        /// "Tempo Run" als Uebung und "Tempolauf" als Tages-Titel), die nicht
+        /// ueber einen Key gekoppelt sein sollten.
         var localizationKey: String {
             switch self {
             case .easy:     return "planBuilder.day.runEasy"
