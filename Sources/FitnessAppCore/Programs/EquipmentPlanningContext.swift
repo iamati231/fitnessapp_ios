@@ -93,6 +93,7 @@ public extension UserEquipmentProfile {
         var profile = UserEquipmentProfile()
         for item in EquipmentItem.allCases {
             profile.availability[item] = .available
+            if item.supportsCount { profile.counts[item] = 2 }
         }
         return profile
     }

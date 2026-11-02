@@ -132,14 +132,14 @@ public enum ExerciseLibraryData {
 
         // ── DUMBBELL · SHOULDERS ───────────────────────────────────────────
         ExerciseTemplateSpec(name: "Schulterdrücken (KH)",              equipment: .dumbbell, primaryMuscle: .shoulders, localizationKey: "exercise.name.dumbbellShoulderPress",
-                             equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
+                             equipmentRequirement: .item(.dumbbell)),
         // README 2.9 Phase 6: gedaempfte KH-Variante des barbell "Push Press"
         // fuer crossfitWeighted "EMOM Ganzkörper" - dieselbe Explosiv-aus-den-
         // Beinen-Mechanik, nur mit Kurzhanteln statt Langhantel.
         ExerciseTemplateSpec(name: "Push Press (KH)",                  equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .advanced, localizationKey: "exercise.name.dumbbellPushPress",
                              equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
         ExerciseTemplateSpec(name: "Seitheben",                        equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.lateralRaise",
-                             equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
+                             equipmentRequirement: .item(.dumbbell)),
         ExerciseTemplateSpec(name: "Frontheben",                       equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.frontRaise",
                              equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
         ExerciseTemplateSpec(name: "Reverse Flyes (KH)",               equipment: .dumbbell, primaryMuscle: .shoulders,  difficultyLevel: .beginner, localizationKey: "exercise.name.reverseFlyDB",
@@ -155,7 +155,7 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Ausfallschritte (KH)",               equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.dumbbellLunge",
                              equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
         ExerciseTemplateSpec(name: "Bulgarische Kniebeuge (KH)",       equipment: .dumbbell, primaryMuscle: .quads, localizationKey: "exercise.name.bulgarianSplitSquatDB",
-                             equipmentRequirement: .all([.item(.dumbbell, minimumCount: 2), .any([.item(.flatBench), .item(.adjustableBench)])])),
+                             equipmentRequirement: .all([.item(.dumbbell), .any([.item(.flatBench), .item(.adjustableBench)])])),
         ExerciseTemplateSpec(name: "Rumänisches Kreuzheben (KH)",             equipment: .dumbbell, primaryMuscle: .hamstrings, localizationKey: "exercise.name.dumbbellRDL",
                              equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
         // README 2.9 Phase 6: KH-Pendant zum barbell "Kreuzheben (konven-
@@ -191,9 +191,9 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Hammer Curl",                      equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner,
                              systemicFatigueFactor: 0.15, localMuscleDamageFactor: 0.35, cnsDemandFactor: 0.10, axialLoadFactor: 0.00, technicalComplexityFactor: 0.15, recoveryClass: .low,
                              localizationKey: "exercise.name.hammerCurl",
-                             equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
+                             equipmentRequirement: .item(.dumbbell)),
         ExerciseTemplateSpec(name: "Schrägbank-Curl (KH)",                 equipment: .dumbbell, primaryMuscle: .biceps, localizationKey: "exercise.name.inclineDumbbellCurl",
-                             equipmentRequirement: .all([.item(.dumbbell, minimumCount: 2), .item(.adjustableBench)])),
+                             equipmentRequirement: .all([.item(.dumbbell), .item(.adjustableBench)])),
         ExerciseTemplateSpec(name: "Konzentrations-Curl (KH)",              equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner, localizationKey: "exercise.name.concentrationCurl",
                              equipmentRequirement: .item(.dumbbell)),
         ExerciseTemplateSpec(name: "Trizepsstrecker über Kopf (KH)",     equipment: .dumbbell, primaryMuscle: .triceps, localizationKey: "exercise.name.dumbbellOverheadTricepExtension",

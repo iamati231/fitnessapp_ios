@@ -97,6 +97,38 @@ final class ExerciseLibraryDataTests: XCTestCase {
         }
     }
 
+    // MARK: minimumCount correctness
+
+    /// Fuenf Uebungen, die auch mit einer einzelnen Kurzhantel ausgefuehrt
+    /// werden koennen (alternierend), duerfen nicht minimumCount: 2 verlangen
+    /// — sonst erscheint fuer Gym-Nutzer ohne eingegebene Stueckzahl
+    /// faelschlich die orange Equipment-Warnung (DEL-Equipment-Count-Fix).
+    func testSingleDumbbellExercisesRequireOnlyOneUnit() {
+        // Profil: KH vorhanden, Stueckzahl unbekannt (nil), Bankvarianten vorhanden
+        var profile = UserEquipmentProfile()
+        profile.availability[.dumbbell] = .available
+        profile.availability[.adjustableBench] = .available
+        profile.availability[.flatBench] = .available
+        // counts[.dumbbell] bewusst NICHT gesetzt → nil
+
+        let names = [
+            "Schulterdrücken (KH)",
+            "Seitheben",
+            "Bulgarische Kniebeuge (KH)",
+            "Hammer Curl",
+            "Schrägbank-Curl (KH)",
+        ]
+        for name in names {
+            guard let spec = ExerciseLibraryData.byName[name],
+                  let req = spec.equipmentRequirement else {
+                XCTFail("'\(name)' fehlt im Katalog oder hat keine Anforderung"); continue
+            }
+            let result = req.evaluate(against: profile)
+            XCTAssertTrue(result.isSatisfied,
+                          "'\(name)' soll mit 1 KH erfuellt sein, aber evaluate gab \(result) zurueck")
+        }
+    }
+
     // MARK: Equipment coverage
 
     func testEveryEquipmentTypeHasAtLeastOneEntry() {

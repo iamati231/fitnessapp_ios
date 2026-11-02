@@ -81,6 +81,21 @@ final class EquipmentPlanningContextTests: XCTestCase {
                        "Eine abgeschlossene Bestaetigung ersetzt die Gym-Annahme vollstaendig, auch fuer Standard-Items")
     }
 
+    // MARK: - gymFull counts
+
+    /// gymFull muss fuer alle Items mit `supportsCount == true` einen Count
+    /// von mindestens 2 setzen, damit Uebungen mit `minimumCount: 2` nicht
+    /// faelschlich `.unknown` zurueckgeben (DEL-Equipment-Count-Fix).
+    func testGymFullSetsCountsForCountableItems() {
+        let profile = UserEquipmentProfile.gymFull
+        for item in EquipmentItem.allCases where item.supportsCount {
+            XCTAssertGreaterThanOrEqual(
+                profile.count(for: item) ?? 0, 2,
+                "\(item) in gymFull braucht count >= 2 damit minimumCount:2-Uebungen nicht .unknown sind"
+            )
+        }
+    }
+
     // MARK: - Pflicht-Test 9/10: Home-Gym/Kein Equipment ohne Gym-Annahme
 
     /// Home-Gym und Kein-Equipment bekommen NIE die Gym-Annahme — nur der
