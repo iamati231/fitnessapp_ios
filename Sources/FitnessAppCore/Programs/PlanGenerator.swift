@@ -909,10 +909,10 @@ public enum PlanGenerator {
             switch zone {
             case .interval:
                 let intervalRationale: String = {
-                    if let g = selection.cardioRunProfile?.goal.label {
-                        return "Intervalle für \(g) – kurze Sprints auf maximaler Intensität mit vollständiger Pause dazwischen. Entscheidend für VO₂max und Tempoverbesserungen."
+                    if let goal = selection.cardioRunProfile?.goal {
+                        return "key:planBuilder.rationale.interval.withGoal|\(goal.rawValue)"
                     }
-                    return "Intervalltraining – kurze Sprints mit vollständiger Erholung. Steigert VO₂max und Schnelligkeit."
+                    return "key:planBuilder.rationale.interval.generic"
                 }()
                 exercise = ExerciseSpec(
                     name: zone.exerciseName,
@@ -938,14 +938,14 @@ public enum PlanGenerator {
                     pace = nil
                 }
                 let easyTempoRationale: String = {
-                    if let g = selection.cardioRunProfile?.goal.label {
+                    if let goal = selection.cardioRunProfile?.goal {
                         return zone == .easy
-                            ? "Grundlagentraining für \(g) – Tempo so wählen, dass du problemlos reden kannst. Ruhige Einheiten machen ca. 80 % des Laufvolumens aus."
-                            : "Tempolauf für \(g) – anspruchsvoll, aber 20–30 Minuten kontrolliert haltbar. Verbessert Laktattoleranz und Laufökonomie."
+                            ? "key:planBuilder.rationale.easy.withGoal|\(goal.rawValue)"
+                            : "key:planBuilder.rationale.tempo.withGoal|\(goal.rawValue)"
                     }
                     return zone == .easy
-                        ? "Ruhiges Grundlagentraining – Herzfrequenz niedrig halten, Ausdauerbasis aufbauen."
-                        : "Tempolauf – anstrengend aber kontrolliert. Verbessert Laufökonomie und Laktattoleranz."
+                        ? "key:planBuilder.rationale.easy.generic"
+                        : "key:planBuilder.rationale.tempo.generic"
                 }()
                 exercise = ExerciseSpec(
                     name: zone.exerciseName,

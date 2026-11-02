@@ -47,7 +47,8 @@ final class RunCoachingPersistenceTests: XCTestCase {
 
     func test_tempoRun_paceSet_when5KReferenceKnown() {
         let result = runningResult(fiveKSeconds: ref5KSeconds)
-        let ex = exercise(named: "Long Run", in: result)
+        // DEL-PhaseA: Tempo-Zone heisst jetzt "Tempo Run" statt "Long Run"
+        let ex = exercise(named: "Tempo Run", in: result)
         XCTAssertNotNil(ex?.targetPaceMinutesPerKm, "Tempo-Lauf muss Pace enthalten wenn 5K-Referenz bekannt")
     }
 
@@ -66,18 +67,18 @@ final class RunCoachingPersistenceTests: XCTestCase {
         let result = runningResult(goal: .marathon, fiveKSeconds: ref5KSeconds)
         let ex = exercise(named: "Easy Run", in: result)
         XCTAssertNotNil(ex?.coachingRationale, "Easy Run muss Rationale haben wenn Ziel bekannt")
-        XCTAssertTrue(ex?.coachingRationale?.contains("Marathon") == true,
-                      "Rationale soll das Ziel 'Marathon' erwähnen")
+        // DEL-PhaseB: Rationale ist jetzt ein lokalisierter Key mit Goal-Suffix
+        XCTAssertEqual(ex?.coachingRationale, "key:planBuilder.rationale.easy.withGoal|marathon")
     }
 
     // MARK: - 6. Rationale gesetzt für Tempo-Lauf mit Ziel
 
     func test_tempoRun_rationaleSet_withGoal() {
         let result = runningResult(goal: .halfMarathon, fiveKSeconds: ref5KSeconds)
-        let ex = exercise(named: "Long Run", in: result)
+        // DEL-PhaseA: Tempo-Zone heisst jetzt "Tempo Run" statt "Long Run"
+        let ex = exercise(named: "Tempo Run", in: result)
         XCTAssertNotNil(ex?.coachingRationale, "Tempo-Lauf muss Rationale haben wenn Ziel bekannt")
-        XCTAssertTrue(ex?.coachingRationale?.contains("Halbmarathon") == true,
-                      "Rationale soll 'Halbmarathon' erwähnen")
+        XCTAssertEqual(ex?.coachingRationale, "key:planBuilder.rationale.tempo.withGoal|halfMarathon")
     }
 
     // MARK: - 7. Rationale gesetzt für Intervalle mit Ziel
@@ -86,8 +87,7 @@ final class RunCoachingPersistenceTests: XCTestCase {
         let result = runningResult(goal: .tenK, fiveKSeconds: ref5KSeconds)
         let ex = exercise(named: "Intervalle", in: result)
         XCTAssertNotNil(ex?.coachingRationale, "Intervalle müssen Rationale haben wenn Ziel bekannt")
-        XCTAssertTrue(ex?.coachingRationale?.contains("10 km") == true,
-                      "Rationale soll '10 km' erwähnen")
+        XCTAssertEqual(ex?.coachingRationale, "key:planBuilder.rationale.interval.withGoal|tenK")
     }
 
     // MARK: - 8. Rationale generisch ohne Ziel (Fallback)

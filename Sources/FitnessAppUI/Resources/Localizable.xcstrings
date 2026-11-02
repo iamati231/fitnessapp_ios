@@ -60523,6 +60523,144 @@
         }
       }
     },
+    "planBuilder.rationale.easy.generic": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruhiges Grundlagentraining – Herzfrequenz niedrig halten, Ausdauerbasis aufbauen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Easy base training – keep heart rate low and build aerobic endurance."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sakin temel antrenman – kalp atış hızını düşük tut ve aerobik dayanıklılık geliştir."
+          }
+        }
+      }
+    },
+    "planBuilder.rationale.easy.withGoal": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grundlagentraining für %@ – Tempo so wählen, dass du problemlos reden kannst. Ruhige Einheiten bilden den Großteil (ca. 80 %%) des Laufvolumens."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Base training for %@ – run at a pace where you can hold a conversation. Easy runs make up about 80 %% of total running volume."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ için temel antrenman – konuşabildiğin tempoda koş. Sakin antrenmanlar toplam koşu hacminin yaklaşık %%80'ini oluşturur."
+          }
+        }
+      }
+    },
+    "planBuilder.rationale.interval.generic": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervalltraining – kurze Sprints mit vollständiger Erholung. Steigert VO₂max und Schnelligkeit."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interval training – short sprints with full recovery between sets. Boosts VO₂max and speed."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interval antrenmanı – tam dinlenme aralıklarıyla kısa sprintler. VO₂max ve hızı artırır."
+          }
+        }
+      }
+    },
+    "planBuilder.rationale.interval.withGoal": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervalle für %@ – kurze Sprints auf maximaler Intensität mit vollständiger Pause dazwischen. Entscheidend für VO₂max und Tempoverbesserungen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervals for %@ – short sprints at maximum intensity with full recovery between reps. Key for VO₂max and speed gains."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ için intervallar – tekrarlar arasında tam dinlenmeyle maksimum yoğunlukta kısa sprintler. VO₂max ve hız kazanımları için kritik."
+          }
+        }
+      }
+    },
+    "planBuilder.rationale.tempo.generic": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempolauf – anstrengend aber kontrolliert. Verbessert Laufökonomie und Laktattoleranz."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo run – challenging but controlled effort. Improves running economy and lactate threshold."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo koşusu – zorlu ama kontrollü efor. Koşu ekonomisini ve laktat eşiğini geliştirir."
+          }
+        }
+      }
+    },
+    "planBuilder.rationale.tempo.withGoal": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempolauf für %@ – anspruchsvoll, aber 20–30 Minuten kontrolliert haltbar. Verbessert Laktattoleranz und Laufökonomie."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo run for %@ – challenging but sustainably controllable for 20–30 minutes. Improves lactate threshold and running economy."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ için tempo koşusu – zorlu ama 20–30 dakika kontrollü sürdürülebilir. Laktat eşiğini ve koşu ekonomisini geliştirir."
+          }
+        }
+      }
+    },
     "onboarding.runCoachGoal.title": {
       "extractionState": "manual",
       "localizations": {

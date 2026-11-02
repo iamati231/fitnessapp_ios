@@ -468,6 +468,21 @@ public struct ExerciseEditorView: View {
         templates.forEach(apply)
     }
 
+    // DEL-PhaseB: Coaching-Begründungen sind als "key:name|goalRaw" kodiert,
+    // damit ExerciseEditorView sie lokalisiert darstellen kann. Alte Pläne
+    // enthalten noch den rohen deutschen Text — der wird unverändert angezeigt.
+    private func resolveCoachingRationale(_ raw: String) -> String {
+        guard raw.hasPrefix("key:") else { return raw }
+        let content = raw.dropFirst(4)
+        let parts = content.split(separator: "|", maxSplits: 1)
+        let key = String(parts[0])
+        let template = Bundle.module.localizedString(forKey: key, value: key, table: nil)
+        guard parts.count > 1 else { return template }
+        let goalKey = "cardioGoal.\(parts[1])"
+        let goalName = Bundle.module.localizedString(forKey: goalKey, value: String(parts[1]), table: nil)
+        return String(format: template, goalName)
+    }
+
     /// DEL-062: dedizierte Section fuer Cardio-Ziele. Distanz + Dauer sind
     /// optional — der User kann z.B. nur eine Ziel-Distanz setzen und die
     /// Dauer offen lassen ("how fast can I run 5k").
@@ -518,7 +533,7 @@ public struct ExerciseEditorView: View {
             .listRowBackground(Color.Deltiq.surface)
             if let rationale = exercise.coachingRationale {
                 LabeledContent {
-                    Text(rationale)
+                    Text(resolveCoachingRationale(rationale))
                         .font(.footnote)
                         .foregroundStyle(Color.Deltiq.textSecondary)
                         .multilineTextAlignment(.trailing)
