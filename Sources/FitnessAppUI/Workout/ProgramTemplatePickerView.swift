@@ -94,22 +94,24 @@ public struct ProgramTemplatePickerView: View {
         }
     }
 
-    /// DEL-055: Templates nach `focus` (Hybrid & Athletik / Kraft / Anfänger ...)
-    /// gruppiert. Reihenfolge der Sections entspricht der ersten Position des
-    /// jeweiligen Focus-Strings in `ProgramTemplates.all` — so bleibt die
-    /// kuratierte Display-Reihenfolge aus dem Core erhalten.
+    /// Groups templates by raw `focus` key, sorted by `ProgramTemplates.categoryOrder`.
+    /// Section header is the localized `displayFocus` of the first template in each group.
     private var groupedTemplates: [(focus: String, templates: [ProgramTemplate])] {
-        var ordered: [String] = []
+        var rawOrder: [String] = []
         var bucket: [String: [ProgramTemplate]] = [:]
-        // DEL-116: Section-Key auf `displayFocus` umgestellt, damit die
-        // Gruppierung auch in EN/TR die gleichen logischen Buckets bildet
-        // (gleicher rohes `focus` → gleicher displayFocus → eine Section).
         for template in filteredTemplates {
-            let focusKey = template.displayFocus
-            if bucket[focusKey] == nil { ordered.append(focusKey) }
-            bucket[focusKey, default: []].append(template)
+            let raw = template.focus
+            if bucket[raw] == nil { rawOrder.append(raw) }
+            bucket[raw, default: []].append(template)
         }
-        return ordered.map { ($0, bucket[$0] ?? []) }
+        let canonical = ProgramTemplates.categoryOrder
+        rawOrder.sort {
+            (canonical.firstIndex(of: $0) ?? Int.max) < (canonical.firstIndex(of: $1) ?? Int.max)
+        }
+        return rawOrder.compactMap { raw in
+            guard let templates = bucket[raw], let first = templates.first else { return nil }
+            return (first.displayFocus, templates)
+        }
     }
 
     /// Filtert nach `profile.environment`. Smart-Onboarding-Epic Phase 6

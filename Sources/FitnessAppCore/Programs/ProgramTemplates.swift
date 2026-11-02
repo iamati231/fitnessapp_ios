@@ -18,7 +18,7 @@ public enum ProgramTemplates {
         taglineKey: "plan.template.fullBody3x.tagline",
         descriptionText: "Hohe Trainingsfrequenz pro Muskelgruppe — ein bewährter Ansatz für den Einstieg. Maschinenfreundlich: die schweren freien Compound-Übungen entfallen, damit der Fokus von Beginn an auf der Ausführung liegt.",
         descriptionKey: "plan.template.fullBody3x.description",
-        focus: "Anfänger / Allgemein",
+        focus: "Anfänger",
         focusKey: "plan.template.fullBody3x.focus",
         daysPerWeek: 3,
         days: [
@@ -309,7 +309,7 @@ public enum ProgramTemplates {
         taglineKey: "plan.template.upperLower.tagline",
         descriptionText: "Balance aus Frequenz und Volumen: Kraft- und Aufbau-Tage wechseln sich ab. Ein bewährter Split für Fortgeschrittene mit vorhandener Technik in den Grundübungen.",
         descriptionKey: "plan.template.upperLower.description",
-        focus: "Kraft + Hypertrophie",
+        focus: "Kraft & Hypertrophie",
         focusKey: "plan.template.upperLower.focus",
         daysPerWeek: 4,
         days: [
@@ -1113,7 +1113,7 @@ public enum ProgramTemplates {
         taglineKey: "plan.template.crossfitBodyweightRx.tagline",
         descriptionText: "Benchmark-WODs nur mit Körpergewicht: ein 20-Minuten-AMRAP, ein Intensitäts-EMOM und eine Auf-Zeit-Rundenleiter. Volle Rx-Bewegungen — Klimmzüge, Liegestütze, Air Squats.",
         descriptionKey: "plan.template.crossfitBodyweightRx.description",
-        focus: "CrossFit & Kettlebell",
+        focus: "CrossFit",
         focusKey: "plan.template.crossfitBodyweightRx.focus",
         daysPerWeek: 3,
         days: [
@@ -1153,7 +1153,7 @@ public enum ProgramTemplates {
         taglineKey: "plan.template.crossfitBodyweightScaled.tagline",
         descriptionText: "Dieselben Benchmark-WODs wie Rx, mit Einsteiger-Bewegungen: Handtuch-Rudern statt Klimmzüge, Liegestütze auf den Knien und eine kürzere Rundenleiter.",
         descriptionKey: "plan.template.crossfitBodyweightScaled.description",
-        focus: "CrossFit & Kettlebell",
+        focus: "CrossFit",
         focusKey: "plan.template.crossfitBodyweightScaled.focus",
         daysPerWeek: 3,
         days: [
@@ -1193,7 +1193,7 @@ public enum ProgramTemplates {
         taglineKey: "plan.template.crossfitWeighted.tagline",
         descriptionText: "Metcon-Workouts mit Zusatzgewicht statt reinem Körpergewicht — die Schwierigkeit steuerst du über das Gewicht, nicht über die Bewegung. Für Einsteiger und Fortgeschrittene.",
         descriptionKey: "plan.template.crossfitWeighted.description",
-        focus: "CrossFit & Kettlebell",
+        focus: "CrossFit",
         focusKey: "plan.template.crossfitWeighted.focus",
         daysPerWeek: 3,
         days: [
@@ -1240,7 +1240,7 @@ public enum ProgramTemplates {
         taglineKey: "plan.template.kettlebellBeginner.tagline",
         descriptionText: "Einstieg ins Kettlebell-Training: saubere Grundtechnik bei Deadlift, Goblet Squat und Swing, ergänzt von einem AMRAP-Finisher zum Rundenaufbau.",
         descriptionKey: "plan.template.kettlebellBeginner.description",
-        focus: "CrossFit & Kettlebell",
+        focus: "Kettlebell",
         focusKey: "plan.template.kettlebellBeginner.focus",
         daysPerWeek: 3,
         days: [
@@ -1293,7 +1293,7 @@ public enum ProgramTemplates {
         taglineKey: "plan.template.kettlebellAdvanced.tagline",
         descriptionText: "Komplexe Kettlebell-Lifts (Snatch, Clean & Press) für erfahrene Trainierende, ergänzt von einem 20-Minuten-Metcon. Plane zwischen den Einheiten einen Tag aktiver Erholung ein.",
         descriptionKey: "plan.template.kettlebellAdvanced.description",
-        focus: "CrossFit & Kettlebell",
+        focus: "Kettlebell",
         focusKey: "plan.template.kettlebellAdvanced.focus",
         daysPerWeek: 3,
         days: [
@@ -1344,7 +1344,7 @@ public enum ProgramTemplates {
         taglineKey: "plan.template.kettlebellComplexes.tagline",
         descriptionText: "Fünf eigenständige Kettlebell-Komplexe für Ganzkörper-Athletik - von rundenbasierten Ganzkörper- und Explosivitäts-Komplexen bis zu einem AMRAP-Finisher für die Körpermitte. Moderates Gewicht wählen, saubere Technik vor Tempo.",
         descriptionKey: "plan.template.kettlebellComplexes.description",
-        focus: "CrossFit & Kettlebell",
+        focus: "Kettlebell",
         focusKey: "plan.template.kettlebellComplexes.focus",
         daysPerWeek: 5,
         days: [
@@ -1399,7 +1399,21 @@ public enum ProgramTemplates {
 
     // MARK: - Display order
 
-    /// Display order in the picker — beginner-friendly programs first, then specialised.
+    /// Canonical section order for the picker. Sections not in this list sort last.
+    public static let categoryOrder: [String] = [
+        "Anfänger",
+        "Kraft & Hypertrophie",
+        "Hypertrophie",
+        "Kraft",
+        "Hybrid & Athletik",
+        "Funktionelle Fitness",
+        "CrossFit",
+        "Kettlebell",
+        "Defizit-Phase",
+        "Athletik",
+    ]
+
+    /// Template order within each category in the picker.
     public static let all: [ProgramTemplate] = [
         fullBody,
         fullBody3xExperienced,
@@ -1418,9 +1432,7 @@ public enum ProgramTemplates {
         hybridBeginner,
         hybridBalanced,
         hybridPerformance,
-        // README 2.9 / Nachtrag Crossfit+Kettlebell. Gruppiert via
-        // `focus = "CrossFit & Kettlebell"`, gleiches Section-Muster wie
-        // die Hybrid-Familie oben.
+        // CrossFit-Templates (eigene Section "CrossFit")
         crossfitBodyweightRx,
         crossfitBodyweightScaled,
         crossfitWeighted,
