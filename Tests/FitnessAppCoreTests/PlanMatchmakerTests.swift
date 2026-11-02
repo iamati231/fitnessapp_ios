@@ -247,6 +247,20 @@ final class PlanMatchmakerTests: XCTestCase {
     /// Harter Filter: ein Starter sieht `arnold_split` (reiner Expertenplan,
     /// `targetExperience: [.advanced]`) ueberhaupt nicht in der Liste, auch
     /// nicht weit hinten — unabhaengig vom Score.
+    /// Phase 3 Catalog-Overhaul: full_body_3x_experienced muss bei erfahrenen
+    /// Trainierenden mit 3 Tagen über full_body ranken (Erfahrungs-Bonus +2).
+    func testExperiencedHypertrophyThreeDaysGymTopsWithFullBody3xExperienced() {
+        let track = ExperienceTrack.experienced
+        let answers = QuizAnswers(
+            goal: .hypertrophy,
+            experience: track.asExperienceLevel,
+            preferredDays: 3,
+            environment: .gym
+        )
+        let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: track)
+        XCTAssertEqual(ranked.first?.id, "full_body_3x_experienced")
+    }
+
     func testStarterNeverSeesExpertOnlyPlans() {
         let answers = QuizAnswers(goal: .hypertrophy, experience: .beginner, preferredDays: 6, environment: .gym)
         let ranked = PlanMatchmaker.rankPlans(for: answers, templates: allTemplates, experienceTrack: .starter)

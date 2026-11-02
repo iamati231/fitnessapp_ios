@@ -244,6 +244,22 @@ final class ProgramTemplatesTests: XCTestCase {
         }
     }
 
+    // MARK: Phase 3 Catalog-Overhaul: Library-Validation
+
+    /// Jeder Übungsname in einem Template muss in der ExerciseLibraryData
+    /// vorhanden sein — sonst bricht die Übungsdetail-Ansicht lautlos.
+    func testAllExerciseNamesExistInLibrary() {
+        let libraryNames = Set(ExerciseLibraryData.all.map(\.name))
+        for template in ProgramTemplates.all {
+            for day in template.days {
+                for exercise in day.exercises {
+                    XCTAssertTrue(libraryNames.contains(exercise.name),
+                                  "\(template.name) / \(day.name): '\(exercise.name)' nicht in ExerciseLibraryData")
+                }
+            }
+        }
+    }
+
     /// P5.3: `ExerciseRole.cooldown` existierte vorher nur im Datenmodell und
     /// in der UI-Anzeige (`ExerciseCard`), wurde aber von KEINEM Generator-
     /// oder Template-Pfad je tatsaechlich erzeugt. Regressionstest gegen ein

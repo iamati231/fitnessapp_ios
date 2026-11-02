@@ -122,7 +122,6 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Kniebeuge",                    sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 150),
                 ExerciseSpec(name: "Bankdrücken",                 sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 150),
                 ExerciseSpec(name: "Rudern vorgebeugt",            sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 120),
-                ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Bizeps-Curl (LH)",              sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Skull Crusher",                sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Laufband",            sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
@@ -131,7 +130,6 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 150),
                 ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Hammer Curl",                  sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Fahrradergometer",    sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
@@ -140,7 +138,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Hip Thrust (LH)",              sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Kabelrudern sitzend",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Bankdrücken (KH)",              sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
-                ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Seitheben",                    sets: 2, repsMin: 10, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Beinbeuger liegend",           sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Schrägbank-Curl (KH)",             sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Stepper",             sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
@@ -204,7 +202,7 @@ public enum ProgramTemplates {
         localizationKey: "plan.template.bodyweightMastery.name",
         tagline: "3 Tage · Funktionelles Training ohne Geräte",
         taglineKey: "plan.template.bodyweightMastery.tagline",
-        descriptionText: "Komplettes Körpergewichtstraining – die meisten Übungen brauchen kein Gerät. Für Rudern nutzt du einen stabilen Türrahmen, für Dips idealerweise Barren oder zwei stabile Erhöhungen.",
+        descriptionText: "Komplettes Körpergewichtstraining – alle Übungen gerätefrei, bis auf das Türrahmen-Rudern.",
         descriptionKey: "plan.template.bodyweightMastery.description",
         focus: "Funktionelle Fitness",
         focusKey: "plan.template.bodyweightMastery.focus",
@@ -213,7 +211,7 @@ public enum ProgramTemplates {
             DaySpec(name: "Push & Core", localizationKey: "plan.day.pushAndCore", type: .push, sequenceIndex: 1, exercises: [
                 ExerciseSpec(name: "Liegestütze",                 sets: 4, repsMin: 10, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Pike Liegestütze",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 60),
-                ExerciseSpec(name: "Dips (Trizeps)",               sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 60),
+                ExerciseSpec(name: "Diamant-Liegestütze",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 60),
                 ExerciseSpec(name: "Plank",                        sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60, targetRir: 3.0),
                 ExerciseSpec(name: "Mountain Climbers",            sets: 3, repsMin: 20, repsMax: 30, restSeconds: 60)
             ]),

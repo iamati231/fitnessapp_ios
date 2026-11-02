@@ -15694,19 +15694,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Komplettes Körpergewichtstraining – die meisten Übungen brauchen kein Gerät. Für Rudern nutzt du einen stabilen Türrahmen, für Dips idealerweise Barren oder zwei stabile Erhöhungen."
+            "value": "Komplettes Körpergewichtstraining – alle Übungen gerätefrei, bis auf das Türrahmen-Rudern."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Complete bodyweight training — most exercises need no equipment. Rows use a sturdy door frame, and dips work best with parallel bars or two stable elevated surfaces."
+            "value": "Complete bodyweight training — all exercises equipment-free, except for door-frame rows."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Komple vücut ağırlığı antrenmanı — çoğu hareket ekipman gerektirmez. Row hareketi için sağlam bir kapı çerçevesi, dips için paralel barlar veya iki sağlam yükseltilmiş yüzey idealdir."
+            "value": "Komple vücut ağırlığı antrenmanı — kapı çerçevesi gereken rowing hareketi dışında tüm egzersizler ekipmansız yapılabilir."
           }
         }
       }
