@@ -2259,89 +2259,254 @@
     "mealPlanner.action.regenerate": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Alternative generieren" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Auto-suggest Alternative" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Otomatik Alternatif" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alternative generieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-suggest Alternative"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otomatik Alternatif"
+          }
+        }
       }
     },
     "mealPlanner.regenerate.noAlternative.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Keine Alternative verfügbar" } },
-        "en": { "stringUnit": { "state": "translated", "value": "No Alternative Available" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Alternatif Bulunamadı" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Alternative verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Alternative Available"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alternatif Bulunamadı"
+          }
+        }
       }
     },
     "mealPlanner.regenerate.noAlternative.message": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Für diese Mahlzeit ist kein geeignetes Rezept verfügbar. Passen Sie Ihre Ernährungseinstellungen an." } },
-        "en": { "stringUnit": { "state": "translated", "value": "No suitable recipe available for this meal. Adjust your dietary preferences." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bu öğün için uygun tarif bulunamadı. Beslenme tercihlerinizi ayarlayın." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für diese Mahlzeit ist kein geeignetes Rezept verfügbar. Passen Sie Ihre Ernährungseinstellungen an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No suitable recipe available for this meal. Adjust your dietary preferences."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu öğün için uygun tarif bulunamadı. Beslenme tercihlerinizi ayarlayın."
+          }
+        }
       }
     },
     "mealPlanner.action.swap": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rezept austauschen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Replace Recipe" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tarifi Değiştir" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept austauschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace Recipe"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarifi Değiştir"
+          }
+        }
       }
     },
     "mealPlanner.action.remove": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Aus Tagesplan entfernen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Remove from Plan" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Plandan Kaldır" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus Tagesplan entfernen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from Plan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plandan Kaldır"
+          }
+        }
       }
     },
     "mealPlanner.remove.confirm.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rezept aus Tagesplan entfernen?" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Remove Recipe from Plan?" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tarif Plandan Kaldırılsın mı?" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept aus Tagesplan entfernen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove Recipe from Plan?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarif Plandan Kaldırılsın mı?"
+          }
+        }
       }
     },
     "mealPlanner.remove.confirm.action": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Entfernen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Remove" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kaldır" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entfernen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaldır"
+          }
+        }
       }
     },
     "mealPlanner.picker.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rezept auswählen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Choose Recipe" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tarif Seç" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Recipe"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarif Seç"
+          }
+        }
       }
     },
     "mealPlanner.picker.empty": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Keine geeigneten Alternativen verfügbar." } },
-        "en": { "stringUnit": { "state": "translated", "value": "No suitable alternatives available." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Uygun alternatif bulunamadı." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine geeigneten Alternativen verfügbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No suitable alternatives available."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uygun alternatif bulunamadı."
+          }
+        }
       }
     },
     "nutrition.mealPlanner.generate.button": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Tagesplan generieren" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Generate Meal Plan" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Günlük Plan Oluştur" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tagesplan generieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate Meal Plan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük Plan Oluştur"
+          }
+        }
       }
     },
     "nutrition.mealPlanner.generate.noRecipe": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kein geeignetes Rezept verfügbar. Passen Sie Ihre Ernährungseinstellungen an." } },
-        "en": { "stringUnit": { "state": "translated", "value": "No suitable recipe available. Adjust your dietary preferences." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Uygun tarif bulunamadı. Beslenme tercihlerinizi ayarlayın." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein geeignetes Rezept verfügbar. Passen Sie Ihre Ernährungseinstellungen an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No suitable recipe available. Adjust your dietary preferences."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uygun tarif bulunamadı. Beslenme tercihlerinizi ayarlayın."
+          }
+        }
       }
     },
     "sex.male": {
@@ -21713,9 +21878,24 @@
     "settings.group.nutritionPreferences": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ernährung" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Nutrition" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ernährung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutrition"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beslenme"
+          }
+        }
       }
     },
     "settings.group.tools": {
@@ -54182,177 +54362,507 @@
     "nutrition.macro.protein.short": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Protein" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Protein" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Protein" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein"
+          }
+        }
       }
     },
     "nutrition.macro.carbs.short": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "KH" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Carbs" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "KH" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KH"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carbs"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KH"
+          }
+        }
       }
     },
     "mealPlanner.portion.decrease": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Portion verkleinern" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Decrease portion" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Porsiyon azalt" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portion verkleinern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decrease portion"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porsiyon azalt"
+          }
+        }
       }
     },
     "mealPlanner.portion.increase": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Portion vergrößern" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Increase portion" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Porsiyon artır" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portion vergrößern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase portion"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porsiyon artır"
+          }
+        }
       }
     },
     "mealPlanner.week.button": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Wochenübersicht" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Week Overview" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Haftalık Genel Bakış" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochenübersicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Week Overview"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık Genel Bakış"
+          }
+        }
       }
     },
     "mealPlanner.week.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Wochenübersicht" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Week Overview" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Haftalık Genel Bakış" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochenübersicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Week Overview"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık Genel Bakış"
+          }
+        }
       }
     },
     "mealPlanner.week.noplan": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Nicht geplant" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Not planned" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Planlanmadı" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht geplant"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not planned"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planlanmadı"
+          }
+        }
       }
     },
     "mealPlanner.week.prevWeek": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Vorherige Woche" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Previous week" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Önceki hafta" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorherige Woche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous week"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önceki hafta"
+          }
+        }
       }
     },
     "mealPlanner.week.nextWeek": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Nächste Woche" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Next week" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sonraki hafta" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nächste Woche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next week"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonraki hafta"
+          }
+        }
       }
     },
     "mealPlanner.week.thisWeek": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Diese Woche" } },
-        "en": { "stringUnit": { "state": "translated", "value": "This Week" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bu Hafta" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Woche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Week"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu Hafta"
+          }
+        }
       }
     },
     "mealPlanner.preferences.button": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ernährungspräferenzen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Nutrition Preferences" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme Tercihleri" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ernährungspräferenzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutrition Preferences"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beslenme Tercihleri"
+          }
+        }
       }
     },
     "mealPlanner.optimize.button": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Tagesplan optimieren" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Optimize Day Plan" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Günlük planı optimize et" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tagesplan optimieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimize Day Plan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük planı optimize et"
+          }
+        }
       }
     },
     "mealPlanner.optimize.noChange": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Der Plan entspricht bereits deinen Zielen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "The plan already matches your goals." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Plan zaten hedeflerinle uyumlu." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Plan entspricht bereits deinen Zielen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The plan already matches your goals."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan zaten hedeflerinle uyumlu."
+          }
+        }
       }
     },
     "mealPlanner.optimize.noGoals": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Keine Ernährungsziele gesetzt. Ziele im Profil eingeben." } },
-        "en": { "stringUnit": { "state": "translated", "value": "No nutrition goals set. Enter goals in your profile." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme hedefi belirlenmemiş. Profilden hedef girin." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Ernährungsziele gesetzt. Ziele im Profil eingeben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No nutrition goals set. Enter goals in your profile."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beslenme hedefi belirlenmemiş. Profilden hedef girin."
+          }
+        }
       }
     },
     "mealPlanner.optimize.preview.after": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Nach Optimierung" } },
-        "en": { "stringUnit": { "state": "translated", "value": "After Optimization" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Optimizasyon Sonrası" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach Optimierung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After Optimization"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimizasyon Sonrası"
+          }
+        }
       }
     },
     "mealPlanner.optimize.preview.before": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Aktuell" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Current" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Mevcut" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuell"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevcut"
+          }
+        }
       }
     },
     "mealPlanner.optimize.preview.confirm": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Übernehmen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Apply" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Uygula" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übernehmen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uygula"
+          }
+        }
       }
     },
     "mealPlanner.optimize.preview.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Optimierungsvorschlag" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Optimization Preview" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Optimizasyon Önizlemesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimierungsvorschlag"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimization Preview"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimizasyon Önizlemesi"
+          }
+        }
       }
     },
     "mealPlanner.optimize.protected.message": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Dieser Plan enthält manuelle Änderungen und kann nicht automatisch optimiert werden." } },
-        "en": { "stringUnit": { "state": "translated", "value": "This plan contains manual changes and cannot be automatically optimized." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bu plan manuel değişiklikler içeriyor ve otomatik optimize edilemiyor." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Plan enthält manuelle Änderungen und kann nicht automatisch optimiert werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This plan contains manual changes and cannot be automatically optimized."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu plan manuel değişiklikler içeriyor ve otomatik optimize edilemiyor."
+          }
+        }
       }
     },
     "mealPlanner.optimize.protected.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Plan ist geschützt" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Plan Is Protected" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Plan Korumalı" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan ist geschützt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan Is Protected"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan Korumalı"
+          }
+        }
       }
     },
     "mealPlanner.optimize.swap.label": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rezept geändert" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Recipe changed" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tarif değiştirildi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept geändert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe changed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarif değiştirildi"
+          }
+        }
       }
     },
     "nutrition.macro.fat.short": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Fett" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Fat" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yağ" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fett"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fat"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yağ"
+          }
+        }
       }
     },
     "nutrition.goals.adoptFromTDEE.button": {
@@ -54381,225 +54891,645 @@
     "nutrition.preferences.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ernährungspräferenzen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Nutrition Preferences" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme Tercihleri" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ernährungspräferenzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutrition Preferences"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beslenme Tercihleri"
+          }
+        }
       }
     },
     "nutrition.preferences.style.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ernährungsform" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Dietary Style" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Beslenme Tarzı" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ernährungsform"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dietary Style"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beslenme Tarzı"
+          }
+        }
       }
     },
     "nutrition.preferences.style.omnivor": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Omnivor" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Omnivore" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Omnivor" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omnivor"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omnivore"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omnivor"
+          }
+        }
       }
     },
     "nutrition.preferences.style.vegetarian": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Vegetarisch" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Vegetarian" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Vejetaryen" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vegetarisch"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vegetarian"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vejetaryen"
+          }
+        }
       }
     },
     "nutrition.preferences.style.vegan": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Vegan" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Vegan" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Vegan" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vegan"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vegan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vegan"
+          }
+        }
       }
     },
     "nutrition.preferences.style.pescetarian": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Pescetarisch" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Pescetarian" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Balık Yiyen" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pescetarisch"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pescetarian"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balık Yiyen"
+          }
+        }
       }
     },
     "nutrition.preferences.halal.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Halal" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Halal" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Helal" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halal"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halal"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helal"
+          }
+        }
       }
     },
     "nutrition.preferences.halal.subtitle": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kein Schwein, kein Alkohol" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Verified recipes only" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yalnızca onaylı tarifler" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Schwein, kein Alkohol"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verified recipes only"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalnızca onaylı tarifler"
+          }
+        }
       }
     },
     "nutrition.preferences.halal.hint": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rezepte mit Schweinefleisch oder Alkohol werden aus dem Plan ausgeschlossen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Only editorially verified recipes are included in the plan. Halal is never inferred automatically from ingredients." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Plana yalnızca editoryal olarak doğrulanmış tarifler dahil edilir. Helal asla malzemelerden otomatik olarak çıkarılmaz." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezepte mit Schweinefleisch oder Alkohol werden aus dem Plan ausgeschlossen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only editorially verified recipes are included in the plan. Halal is never inferred automatically from ingredients."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plana yalnızca editoryal olarak doğrulanmış tarifler dahil edilir. Helal asla malzemelerden otomatik olarak çıkarılmaz."
+          }
+        }
       }
     },
     "nutrition.preferences.allergens.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Allergene ausschließen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Exclude Allergens" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Alerjen Hariç Tut" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allergene ausschließen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exclude Allergens"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alerjen Hariç Tut"
+          }
+        }
       }
     },
     "nutrition.preferences.allergens.hint": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rezepte mit unbekannten Allergeninformationen werden bei aktiven Ausschlüssen sicher herausgefiltert." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Recipes with unknown allergen information are safely excluded when any allergen filter is active." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Alerjen bilgisi bilinmeyen tarifler, herhangi bir filtre aktifken güvenli şekilde hariç tutulur." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezepte mit unbekannten Allergeninformationen werden bei aktiven Ausschlüssen sicher herausgefiltert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipes with unknown allergen information are safely excluded when any allergen filter is active."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alerjen bilgisi bilinmeyen tarifler, herhangi bir filtre aktifken güvenli şekilde hariç tutulur."
+          }
+        }
       }
     },
     "nutrition.preferences.excluded.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ausgeschlossene Rezepte" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Excluded Recipes" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hariç Tutulan Tarifler" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausgeschlossene Rezepte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excluded Recipes"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hariç Tutulan Tarifler"
+          }
+        }
       }
     },
     "nutrition.preferences.excluded.none": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Keine Rezepte ausgeschlossen." } },
-        "en": { "stringUnit": { "state": "translated", "value": "No recipes excluded." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hariç tutulan tarif yok." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Rezepte ausgeschlossen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No recipes excluded."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hariç tutulan tarif yok."
+          }
+        }
       }
     },
     "nutrition.preferences.excluded.restore": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Aufheben" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Restore" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Geri Al" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufheben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri Al"
+          }
+        }
       }
     },
     "allergen.gluten": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Gluten" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Gluten" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Gluten" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gluten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gluten"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gluten"
+          }
+        }
       }
     },
     "allergen.lactose": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Laktose" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Lactose" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Laktoz" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laktose"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lactose"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laktoz"
+          }
+        }
       }
     },
     "allergen.nuts": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Schalenfrüchte (Nüsse)" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Tree Nuts" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kabuklu Kuruyemişler" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schalenfrüchte (Nüsse)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tree Nuts"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kabuklu Kuruyemişler"
+          }
+        }
       }
     },
     "allergen.peanuts": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Erdnüsse" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Peanuts" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yer Fıstığı" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erdnüsse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peanuts"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yer Fıstığı"
+          }
+        }
       }
     },
     "allergen.eggs": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Eier" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Eggs" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yumurta" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eier"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eggs"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yumurta"
+          }
+        }
       }
     },
     "allergen.soy": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Soja" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Soy" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Soya" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soja"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soya"
+          }
+        }
       }
     },
     "allergen.fish": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Fisch" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Fish" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Balık" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fisch"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fish"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balık"
+          }
+        }
       }
     },
     "allergen.shellfish": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Krebstiere" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Shellfish" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kabuklu Deniz Ürünleri" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krebstiere"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shellfish"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kabuklu Deniz Ürünleri"
+          }
+        }
       }
     },
     "allergen.sesame": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Sesam" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Sesame" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Susam" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesam"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesame"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Susam"
+          }
+        }
       }
     },
     "allergen.celery": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Sellerie" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Celery" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kereviz" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sellerie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Celery"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kereviz"
+          }
+        }
       }
     },
     "allergen.mustard": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Senf" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Mustard" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hardal" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mustard"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hardal"
+          }
+        }
       }
     },
     "allergen.sulfites": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Sulfite" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Sulfites" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sülfitler" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sulfite"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sulfites"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sülfitler"
+          }
+        }
       }
     },
     "allergen.lupin": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Lupinen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Lupin" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Acı Bakla" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lupinen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lupin"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acı Bakla"
+          }
+        }
       }
     },
     "allergen.molluscs": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Weichtiere" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Molluscs" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yumuşakçalar" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weichtiere"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Molluscs"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yumuşakçalar"
+          }
+        }
       }
     },
     "nutrition.food.chicken_breast_raw.name": {
@@ -58400,9 +59330,24 @@
     "nutrition.addMeal.quantityPlaceholder": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "z. B. 100" } },
-        "en": { "stringUnit": { "state": "translated", "value": "e.g. 100" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "örn. 100" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "z. B. 100"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e.g. 100"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "örn. 100"
+          }
+        }
       }
     },
     "nutrition.addMeal.positionsSection": {
@@ -62985,513 +63930,1634 @@
     "common.saving": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Speichern..." } },
-        "en": { "stringUnit": { "state": "translated", "value": "Saving..." } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kaydediliyor..." } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern..."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving..."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydediliyor..."
+          }
+        }
       }
     },
     "nutrition.mealPlanner.overview.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Tagesübersicht" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Day Overview" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Günlük Özet" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tagesübersicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day Overview"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük Özet"
+          }
+        }
       }
     },
     "nutrition.mealPlanner.recipe.unknown": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Unbekanntes Rezept" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Unknown Recipe" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bilinmeyen Tarif" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekanntes Rezept"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown Recipe"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilinmeyen Tarif"
+          }
+        }
       }
     },
     "recipe.chicken_rice_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hähnchen-Reis-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Chicken Rice Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tavuklu Pirinç Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hähnchen-Reis-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chicken Rice Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tavuklu Pirinç Kasesi"
+          }
+        }
       }
     },
     "recipe.oatmeal_berry_skyr.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Haferbrei mit Beeren & Skyr" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Oatmeal Berry Skyr" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yulaf Ezmeli Meyveli Skyr" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haferbrei mit Beeren & Skyr"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oatmeal Berry Skyr"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yulaf Ezmeli Meyveli Skyr"
+          }
+        }
       }
     },
     "recipe.red_lentil_soup.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rote Linsensuppe" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Red Lentil Soup" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kırmızı Mercimek Çorbası" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rote Linsensuppe"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red Lentil Soup"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kırmızı Mercimek Çorbası"
+          }
+        }
       }
     },
     "recipe.greek_yogurt_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Griechische Joghurt-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Greek Yogurt Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yunan Yoğurdu Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Griechische Joghurt-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Greek Yogurt Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yunan Yoğurdu Kasesi"
+          }
+        }
       }
     },
     "recipe.tuna_salad.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Thunfischsalat" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Tuna Salad" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ton Balıklı Salata" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thunfischsalat"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuna Salad"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton Balıklı Salata"
+          }
+        }
       }
     },
     "recipe.scrambled_eggs_toast.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rührei-Toast" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Scrambled Eggs Toast" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Sahanda Yumurtalı Tost" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rührei-Toast"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrambled Eggs Toast"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sahanda Yumurtalı Tost"
+          }
+        }
       }
     },
     "recipe.banana_oat_pancakes.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Bananen-Hafer-Pancakes" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Banana Oat Pancakes" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Muzlu Yulaf Pankek" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bananen-Hafer-Pancakes"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banana Oat Pancakes"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muzlu Yulaf Pankek"
+          }
+        }
       }
     },
     "recipe.cottage_cheese_fruit_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hüttenkäse-Frucht-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Cottage Cheese Fruit Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Lor Peynirli Meyve Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hüttenkäse-Frucht-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cottage Cheese Fruit Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lor Peynirli Meyve Kasesi"
+          }
+        }
       }
     },
     "recipe.avocado_toast_egg.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Avocado-Toast mit Ei" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Avocado Toast with Egg" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Avokadolu Tost ve Yumurta" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avocado-Toast mit Ei"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avocado Toast with Egg"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avokadolu Tost ve Yumurta"
+          }
+        }
       }
     },
     "recipe.quark_berry_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Quark-Beeren-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Quark Berry Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Quark Meyve Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quark-Beeren-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quark Berry Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quark Meyve Kasesi"
+          }
+        }
       }
     },
     "recipe.turkey_quinoa_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Puten-Quinoa-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Turkey Quinoa Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hindi Etli Kinoa Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puten-Quinoa-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turkey Quinoa Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hindi Etli Kinoa Kasesi"
+          }
+        }
       }
     },
     "recipe.beef_rice_stir_fry.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rind-Reis-Pfanne" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Beef Rice Stir Fry" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Etli Pirinç Kavurması" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rind-Reis-Pfanne"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beef Rice Stir Fry"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etli Pirinç Kavurması"
+          }
+        }
       }
     },
     "recipe.salmon_sweet_potato_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Lachs-Süßkartoffel-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Salmon Sweet Potato Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Somonlu Tatlı Patates Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lachs-Süßkartoffel-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salmon Sweet Potato Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Somonlu Tatlı Patates Kasesi"
+          }
+        }
       }
     },
     "recipe.chickpea_quinoa_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kichererbsen-Quinoa-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Chickpea Quinoa Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Nohutlu Kinoa Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kichererbsen-Quinoa-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chickpea Quinoa Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nohutlu Kinoa Kasesi"
+          }
+        }
       }
     },
     "recipe.tofu_brown_rice_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Tofu-Vollkornreis-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Tofu Brown Rice Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tofulu Kahverengi Pirinç Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tofu-Vollkornreis-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tofu Brown Rice Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tofulu Kahverengi Pirinç Kasesi"
+          }
+        }
       }
     },
     "recipe.beef_steak_potato.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rindersteak mit Kartoffel" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Beef Steak with Potato" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Biftek ve Patates" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rindersteak mit Kartoffel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beef Steak with Potato"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biftek ve Patates"
+          }
+        }
       }
     },
     "recipe.cod_couscous_vegetable.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kabeljau-Couscous mit Gemüse" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Cod Couscous with Vegetables" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Morinali Kuskus ve Sebze" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kabeljau-Couscous mit Gemüse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cod Couscous with Vegetables"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morinali Kuskus ve Sebze"
+          }
+        }
       }
     },
     "recipe.lamb_bulgur_plate.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Lamm-Bulgur-Teller" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Lamb Bulgur Plate" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kuzulu Bulgur Tabağı" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lamm-Bulgur-Teller"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lamb Bulgur Plate"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuzulu Bulgur Tabağı"
+          }
+        }
       }
     },
     "recipe.chicken_thigh_tomato_pasta.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hähnchenschenkel-Tomaten-Pasta" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Chicken Thigh Tomato Pasta" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tavuk Butlu Domatesli Makarna" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hähnchenschenkel-Tomaten-Pasta"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chicken Thigh Tomato Pasta"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tavuk Butlu Domatesli Makarna"
+          }
+        }
       }
     },
     "recipe.lentil_sweet_potato_curry.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Linsen-Süßkartoffel-Curry" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Lentil Sweet Potato Curry" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Mercimekli Tatlı Patates Köri" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linsen-Süßkartoffel-Curry"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lentil Sweet Potato Curry"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mercimekli Tatlı Patates Köri"
+          }
+        }
       }
     },
     "recipe.peanut_butter_banana.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Erdnussbutter-Banane" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Peanut Butter Banana" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Fıstık Ezmeli Muz" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erdnussbutter-Banane"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peanut Butter Banana"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fıstık Ezmeli Muz"
+          }
+        }
       }
     },
     "recipe.almond_apple_snack.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Mandel-Apfel-Snack" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Almond Apple Snack" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bademli Elma Atıştırması" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mandel-Apfel-Snack"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Almond Apple Snack"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bademli Elma Atıştırması"
+          }
+        }
       }
     },
     "recipe.hummus_veggie_sticks.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hummus mit Gemüsesticks" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Hummus with Veggie Sticks" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Humus ve Sebze Çubukları" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hummus mit Gemüsesticks"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hummus with Veggie Sticks"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Humus ve Sebze Çubukları"
+          }
+        }
       }
     },
     "recipe.skyr_berry_snack.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Skyr-Beeren-Snack" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Skyr Berry Snack" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Skyr ve Meyve Atıştırması" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skyr-Beeren-Snack"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skyr Berry Snack"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skyr ve Meyve Atıştırması"
+          }
+        }
       }
     },
     "recipe.egg_avocado_snack.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ei-Avocado-Snack" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Egg Avocado Snack" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yumurtalı Avokado Atıştırması" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei-Avocado-Snack"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Egg Avocado Snack"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yumurtalı Avokado Atıştırması"
+          }
+        }
       }
     },
     "recipe.chia_oat_pudding.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Chia-Hafer-Pudding" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Chia Oat Pudding" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Chia Yulaf Pudingi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia-Hafer-Pudding"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia Oat Pudding"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia Yulaf Pudingi"
+          }
+        }
       }
     },
     "recipe.mushroom_spinach_omelette.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Champignon-Spinat-Omelett" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Mushroom Spinach Omelette" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Mantarlı Ispanak Omlet" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Champignon-Spinat-Omelett"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mushroom Spinach Omelette"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantarlı Ispanak Omlet"
+          }
+        }
       }
     },
     "recipe.protein_pancakes.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Protein-Pancakes" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Protein Pancakes" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Protein Krep" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein-Pancakes"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein Pancakes"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein Krep"
+          }
+        }
       }
     },
     "recipe.shrimp_noodle_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Garnelen-Nudel-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Shrimp Noodle Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Karidesli Erişte Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garnelen-Nudel-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shrimp Noodle Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karidesli Erişte Kasesi"
+          }
+        }
       }
     },
     "recipe.black_bean_rice_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Schwarze-Bohnen-Reis-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Black Bean Rice Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Siyah Fasülyeli Pilav Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schwarze-Bohnen-Reis-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Black Bean Rice Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siyah Fasülyeli Pilav Kasesi"
+          }
+        }
       }
     },
     "recipe.greek_salad_chicken.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Griechischer Salat mit Hähnchen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Greek Chicken Salad" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Yunan Tavuk Salatası" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Griechischer Salat mit Hähnchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Greek Chicken Salad"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yunan Tavuk Salatası"
+          }
+        }
       }
     },
     "recipe.tempeh_quinoa_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Tempeh-Quinoa-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Tempeh Quinoa Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tempeh Kinoa Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempeh-Quinoa-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempeh Quinoa Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempeh Kinoa Kasesi"
+          }
+        }
       }
     },
     "recipe.salmon_pasta.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Lachs-Pasta" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Salmon Pasta" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Somon Makarna" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lachs-Pasta"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salmon Pasta"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Somon Makarna"
+          }
+        }
       }
     },
     "recipe.eggplant_mozzarella_bake.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Auberginen-Mozzarella-Auflauf" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Eggplant Mozzarella Bake" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Patlıcan Mozzarella Fırını" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auberginen-Mozzarella-Auflauf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eggplant Mozzarella Bake"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Patlıcan Mozzarella Fırını"
+          }
+        }
       }
     },
     "recipe.beef_mushroom_bolognese.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rinder-Pilz-Bolognese" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Beef Mushroom Bolognese" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Mantarlı Dana Bolonez" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rinder-Pilz-Bolognese"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beef Mushroom Bolognese"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantarlı Dana Bolonez"
+          }
+        }
       }
     },
     "recipe.chicken_sweet_potato_curry.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hähnchen-Süßkartoffel-Curry" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Chicken Sweet Potato Curry" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tavuklu Tatlı Patates Köri" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hähnchen-Süßkartoffel-Curry"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chicken Sweet Potato Curry"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tavuklu Tatlı Patates Köri"
+          }
+        }
       }
     },
     "recipe.edamame_snack.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Edamame-Snack" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Edamame Snack" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Edamame Atıştırması" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edamame-Snack"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edamame Snack"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edamame Atıştırması"
+          }
+        }
       }
     },
     "recipe.dark_chocolate_almond.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Dunkle Schokolade mit Mandeln" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Dark Chocolate Almonds" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bademli Bitter Çikolata" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dunkle Schokolade mit Mandeln"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark Chocolate Almonds"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bademli Bitter Çikolata"
+          }
+        }
       }
     },
     "recipe.rice_cakes_peanut_butter.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Reiswaffeln mit Erdnussbutter" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Rice Cakes with Peanut Butter" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Fıstık Ezmeli Pirinç Keki" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reiswaffeln mit Erdnussbutter"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rice Cakes with Peanut Butter"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fıstık Ezmeli Pirinç Keki"
+          }
+        }
       }
     },
     "recipe.mango_chia_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Mango-Chia-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Mango Chia Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Mangolu Chia Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mango-Chia-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mango Chia Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mangolu Chia Kasesi"
+          }
+        }
       }
     },
     "recipe.banana_rice_porridge.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Bananen-Reisbrei" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Banana Rice Porridge" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Muzlu Pirinç Lapası" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bananen-Reisbrei"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banana Rice Porridge"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muzlu Pirinç Lapası"
+          }
+        }
       }
     },
     "recipe.mixed_fruit_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Gemischte Fruchtschale" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Mixed Fruit Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Karışık Meyve Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemischte Fruchtschale"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mixed Fruit Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karışık Meyve Kasesi"
+          }
+        }
       }
     },
     "recipe.chicken_potato_hash.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hähnchen-Kartoffel-Pfanne" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Chicken Potato Hash" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tavuklu Patates Kavurma" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hähnchen-Kartoffel-Pfanne"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chicken Potato Hash"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tavuklu Patates Kavurma"
+          }
+        }
       }
     },
     "recipe.turkey_sweet_potato_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Puten-Süßkartoffel-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Turkey Sweet Potato Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hindili Tatlı Patates Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puten-Süßkartoffel-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turkey Sweet Potato Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hindili Tatlı Patates Kasesi"
+          }
+        }
       }
     },
     "recipe.beef_pepper_rice.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rinder-Paprika-Reis" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Beef Pepper Rice" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Biberli Dana Pilav" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rinder-Paprika-Reis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beef Pepper Rice"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biberli Dana Pilav"
+          }
+        }
       }
     },
     "recipe.tuna_vegetable_salad.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Thunfisch-Gemüse-Salat" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Tuna Vegetable Salad" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Ton Balıklı Sebze Salatası" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thunfisch-Gemüse-Salat"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuna Vegetable Salad"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton Balıklı Sebze Salatası"
+          }
+        }
       }
     },
     "recipe.lamb_rice_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Lammhack-Reis-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Lamb Rice Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kuzu Etli Pilav Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lammhack-Reis-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lamb Rice Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuzu Etli Pilav Kasesi"
+          }
+        }
       }
     },
     "recipe.chicken_broccoli_potato.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Hähnchen mit Brokkoli und Kartoffeln" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Chicken Broccoli Potato" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Brokollili Tavuk ve Patates" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hähnchen mit Brokkoli und Kartoffeln"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chicken Broccoli Potato"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brokollili Tavuk ve Patates"
+          }
+        }
       }
     },
     "recipe.turkey_zucchini_tomato.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Puten-Zucchini-Pfanne" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Turkey Zucchini Tomato" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Hindi Kabak Domates" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puten-Zucchini-Pfanne"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turkey Zucchini Tomato"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hindi Kabak Domates"
+          }
+        }
       }
     },
     "recipe.cod_vegetable_plate.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Kabeljau-Gemüse-Teller" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Cod Vegetable Plate" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Morina Sebze Tabağı" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kabeljau-Gemüse-Teller"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cod Vegetable Plate"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morina Sebze Tabağı"
+          }
+        }
       }
     },
     "recipe.apple_carrot_snack.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Apfel-Möhren-Snack" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Apple Carrot Snack" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Elmalı Havuç Atıştırması" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apfel-Möhren-Snack"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Carrot Snack"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elmalı Havuç Atıştırması"
+          }
+        }
       }
     },
     "recipe.mixed_berry_bowl.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Beeren-Mix-Bowl" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Mixed Berry Bowl" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Karışık Beri Kasesi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beeren-Mix-Bowl"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mixed Berry Bowl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karışık Beri Kasesi"
+          }
+        }
       }
     },
     "recipe.detail.portion.label": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Portionen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Portions" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Porsiyon" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portions"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porsiyon"
+          }
+        }
       }
     },
     "recipe.detail.nutrition.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Nährwerte" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Nutrition" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Besin Değerleri" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nährwerte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutrition"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Besin Değerleri"
+          }
+        }
       }
     },
     "recipe.detail.ingredients.title": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Zutaten" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Ingredients" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Malzemeler" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutaten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingredients"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Malzemeler"
+          }
+        }
       }
     },
     "recipe.detail.addToDiary.button": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Zum Tagebuch hinzufügen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Add to Diary" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Günlüğe Ekle" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Tagebuch hinzufügen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to Diary"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlüğe Ekle"
+          }
+        }
       }
     },
     "recipe.detail.unknown.name": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Unbekanntes Rezept" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Unknown Recipe" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bilinmeyen Tarif" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekanntes Rezept"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown Recipe"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilinmeyen Tarif"
+          }
+        }
       }
     },
     "recipe.detail.ingredients.missing": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Rezept nicht verfügbar" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Recipe unavailable" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Tarif mevcut değil" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept nicht verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipe unavailable"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarif mevcut değil"
+          }
+        }
       }
     },
     "recipe.detail.addToDiary.success": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Zum Tagebuch hinzugefügt" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Added to Diary" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Günlüğe Eklendi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Tagebuch hinzugefügt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added to Diary"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlüğe Eklendi"
+          }
+        }
       }
     },
     "recipe.detail.addToDiary.error.missingIngredient": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Unbekannte Zutaten – Eintrag nicht möglich" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Unknown ingredients – cannot add to diary" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Bilinmeyen malzemeler – günlüğe eklenemiyor" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekannte Zutaten – Eintrag nicht möglich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown ingredients – cannot add to diary"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilinmeyen malzemeler – günlüğe eklenemiyor"
+          }
+        }
       }
     },
     "recipe.detail.addToDiary.error.saveFailed": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Speichern fehlgeschlagen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Failed to save" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Kaydedilemedi" } }
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern fehlgeschlagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to save"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydedilemedi"
+          }
+        }
+      }
+    },
+    "plan.template.fullBody3xExperienced.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ganzkörper 3x (Fortgeschrittene)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Body 3x (Experienced)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tüm Vücut 3x (Deneyimliler)"
+          }
+        }
+      }
+    },
+    "plan.template.fullBody3xExperienced.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Tage · Kraft & Hypertrophie für Fortgeschrittene"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Days · Strength & Hypertrophy for Experienced"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Gün · Deneyimliler için Güç & Hipertrofi"
+          }
+        }
+      }
+    },
+    "plan.template.fullBody3xExperienced.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drei vollständige Ganzkörper-Einheiten pro Woche — abgestimmt auf fortgeschrittenes Niveau: Krafttag mit niedrigen Wdh. (3–6), Zugtag mit schwerem Kreuzheben und Front Squat, Volumentag mit moderaten Wdh. (8–12) für maximale Hypertrophie."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Three full-body sessions per week scaled for experienced athletes: a strength day with low-rep compounds (3–6), a pull & hinge day with heavy deadlift and Front Squat, and a volume day in hypertrophy ranges (8–12)."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deneyimli sporcular için haftada üç tam vücut antrenmanı: düşük tekrarlı (3–6) güç günü, ağır deadlift ve ön squat içeren çekiş günü ve hipertrofi aralıklarında (8–12) hacim günü."
+          }
+        }
+      }
+    },
+    "plan.template.fullBody3xExperienced.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraft & Hypertrophie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength & Hypertrophy"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güç & Hipertrofi"
+          }
+        }
+      }
+    },
+    "plan.day.fullBodyKraft": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ganzkörper Kraft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Body Strength"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam Vücut Güç"
+          }
+        }
+      }
+    },
+    "plan.day.fullBodyZug": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ganzkörper Zug"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Body Pull"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam Vücut Çekiş"
+          }
+        }
+      }
+    },
+    "plan.day.fullBodyVolumen": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ganzkörper Volumen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Body Volume"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam Vücut Hacim"
+          }
+        }
       }
     }
   }

@@ -31,7 +31,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 2, repsMin: 10, repsMax: 15, restSeconds: 75)
             ]),
             DaySpec(name: "Ganzkörper B", localizationKey: "plan.day.fullBodyB", type: .fullBody, sequenceIndex: 2, exercises: [
-                ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 4,  repsMax: 6,  restSeconds: 180),
+                ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 5,  repsMax: 8,  restSeconds: 180),
                 ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
@@ -39,7 +39,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Dips (Trizeps)",               sets: 2, repsMin: 8,  repsMax: 12, restSeconds: 75)
             ]),
             DaySpec(name: "Ganzkörper C", localizationKey: "plan.day.fullBodyC", type: .fullBody, sequenceIndex: 3, exercises: [
-                ExerciseSpec(name: "Front Squat",                  sets: 3, repsMin: 6,  repsMax: 8,  restSeconds: 150),
+                ExerciseSpec(name: "Beinpresse",                    sets: 3, repsMin: 10, repsMax: 15, restSeconds: 120),
                 ExerciseSpec(name: "Hip Thrust (LH)",              sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Kabelrudern sitzend",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
@@ -53,7 +53,52 @@ public enum ProgramTemplates {
         targetGoals: [.hypertrophy, .functional]
     )
 
-    // MARK: - 2. Fatburn Ganzkörper
+    // MARK: - 2. Ganzkörper 3x (Fortgeschrittene)
+
+    private static let fullBody3xExperienced = ProgramTemplate(
+        id: "full_body_3x_experienced",
+        name: "Ganzkörper 3x (Fortgeschrittene)",
+        localizationKey: "plan.template.fullBody3xExperienced.name",
+        tagline: "3 Tage · Kraft & Hypertrophie für Fortgeschrittene",
+        taglineKey: "plan.template.fullBody3xExperienced.tagline",
+        descriptionText: "Drei vollständige Ganzkörper-Einheiten pro Woche — abgestimmt auf fortgeschrittenes Niveau: Krafttag mit niedrigen Wdh. (3–6), Zugtag mit schwerem Kreuzheben und Front Squat, Volumentag mit moderaten Wdh. (8–12) für maximale Hypertrophie.",
+        descriptionKey: "plan.template.fullBody3xExperienced.description",
+        focus: "Kraft & Hypertrophie",
+        focusKey: "plan.template.fullBody3xExperienced.focus",
+        daysPerWeek: 3,
+        days: [
+            DaySpec(name: "Ganzkörper Kraft", localizationKey: "plan.day.fullBodyKraft", type: .fullBody, sequenceIndex: 1, exercises: [
+                ExerciseSpec(name: "Kniebeuge",                  sets: 4, repsMin: 4, repsMax: 6,  restSeconds: 210, targetRir: 1),
+                ExerciseSpec(name: "Bankdrücken",               sets: 4, repsMin: 4, repsMax: 6,  restSeconds: 180, targetRir: 1),
+                ExerciseSpec(name: "Rudern vorgebeugt",          sets: 4, repsMin: 5, repsMax: 7,  restSeconds: 150, targetRir: 1),
+                ExerciseSpec(name: "Schulterdrücken (stehend)", sets: 3, repsMin: 6, repsMax: 8,  restSeconds: 120, targetRir: 2),
+                ExerciseSpec(name: "Bizeps-Curl (LH)",            sets: 3, repsMin: 8, repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Skull Crusher",              sets: 3, repsMin: 8, repsMax: 12, restSeconds: 90)
+            ]),
+            DaySpec(name: "Ganzkörper Zug", localizationKey: "plan.day.fullBodyZug", type: .fullBody, sequenceIndex: 2, exercises: [
+                ExerciseSpec(name: "Kreuzheben (konventionell)", sets: 4, repsMin: 3, repsMax: 5,  restSeconds: 240, targetRir: 1),
+                ExerciseSpec(name: "Front Squat",                sets: 3, repsMin: 4, repsMax: 6,  restSeconds: 180, targetRir: 2),
+                ExerciseSpec(name: "Latzug (weit)",              sets: 4, repsMin: 6, repsMax: 10, restSeconds: 120, targetRir: 2),
+                ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120, targetRir: 2),
+                ExerciseSpec(name: "Face Pull",                  sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Hammer Curl",                sets: 3, repsMin: 10, repsMax: 12, restSeconds: 75)
+            ]),
+            DaySpec(name: "Ganzkörper Volumen", localizationKey: "plan.day.fullBodyVolumen", type: .fullBody, sequenceIndex: 3, exercises: [
+                ExerciseSpec(name: "Hack Squat",                 sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2),
+                ExerciseSpec(name: "Hip Thrust (LH)",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2),
+                ExerciseSpec(name: "Kabelrudern sitzend",        sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 2),
+                ExerciseSpec(name: "Schulterdrücken (KH)",       sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90,  targetRir: 2),
+                ExerciseSpec(name: "Seitheben",                  sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Trizepsdrücken (Kabel)",    sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75)
+            ])
+        ],
+        targetEnvironment: .gym,
+        iconSystemName: "figure.strengthtraining.traditional",
+        targetExperience: [.intermediate, .advanced],
+        targetGoals: [.hypertrophy, .strength]
+    )
+
+    // MARK: - 3. Fatburn Ganzkörper
 
     private static let fatLossFullBody = ProgramTemplate(
         // DEL-169: Evidence-Rework. Vorher als "Fatburn"-Plan mit kurzen
@@ -1364,6 +1409,7 @@ public enum ProgramTemplates {
     /// Display order in the picker — beginner-friendly programs first, then specialised.
     public static let all: [ProgramTemplate] = [
         fullBody,
+        fullBody3xExperienced,
         fatLossFullBody,
         homeGymHero,
         bodyweightMastery,

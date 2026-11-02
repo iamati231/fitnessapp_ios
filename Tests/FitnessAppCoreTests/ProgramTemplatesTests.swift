@@ -10,7 +10,8 @@ final class ProgramTemplatesTests: XCTestCase {
         // CrossFit mit Gewichten, Kettlebell Beginner/Advanced dazu).
         // Nutzer-Upload (13. August, zweite Runde): 19 → 20 (Kettlebell
         // Komplexe, neues .circuit-Zeitformat).
-        XCTAssertEqual(ProgramTemplates.all.count, 20,
+        // Phase 2 Catalog-Overhaul: 20 → 21 (full_body_3x_experienced).
+        XCTAssertEqual(ProgramTemplates.all.count, 21,
                        "Editing the catalog needs an explicit count update — fail-fast prevents silent template drops")
     }
 
