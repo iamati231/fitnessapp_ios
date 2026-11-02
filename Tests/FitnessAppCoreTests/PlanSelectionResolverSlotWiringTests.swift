@@ -62,18 +62,21 @@ final class PlanSelectionResolverSlotWiringTests: XCTestCase {
         XCTAssertEqual(selection.days.first?.exercises.first?.name, "Kniebeuge")
     }
 
-    // MARK: - Outcome 2: .available via appliedAdaptation (alternatives used)
+    // MARK: - Outcome 2: .unavailable(gaps:) mit partiell angewandten Alternativen
 
+    // hybrid_beginner kettlebellOnly hat seit der KB-Alternativ-Bereinigung einen Gap:
+    // Bizeps-Curl (KH) hat keine KB-Alternative -> .unavailable(gaps: ["Bizeps-Curl (KH)"]).
+    // KB-Alternativen werden dennoch fuer alle anderen Slots angewandt (z.B. Kniebeuge ->
+    // Kettlebell Goblet Squat), aber appliedAdaptation ist nil solange gaps vorhanden sind.
     func testKettlebellOnlyProfileResolvesAvailableViaAppliedAdaptation() {
         let selection = PlanSelectionResolver.resolve(template: template("hybrid_beginner"), profile: kettlebellOnlyProfile, context: hypertrophyContext)
-        XCTAssertEqual(selection.equipmentStatus, .available, "Parity-Beweis (HybridTemplateSlotParityTests): 0 gaps fuer kettlebellOnly")
-        XCTAssertTrue(selection.isAdapted)
-        guard let adaptation = selection.appliedAdaptation else {
-            return XCTFail("Alternativen wurden verwendet -> appliedAdaptation darf nicht nil sein")
+        guard case let .unavailable(gaps) = selection.equipmentStatus else {
+            return XCTFail("KB-only auf hybrid_beginner: muss .unavailable sein (Gap: Bizeps-Curl (KH)), ist: \(selection.equipmentStatus)")
         }
-        XCTAssertFalse(adaptation.replacements.isEmpty)
-        XCTAssertTrue(adaptation.replacements.allSatisfy { $0.reasonKey == "picker.plan.equipment.slotAlternative" })
-        XCTAssertEqual(adaptation.replacements.first?.ruleID, "slot:Kniebeuge->Kettlebell Goblet Squat")
+        XCTAssertEqual(gaps.map(\.exerciseName).sorted(), ["Bizeps-Curl (KH)"])
+        XCTAssertFalse(selection.isAdapted, "Ein gemischtes Ergebnis (teils adaptiert, teils echter Gap) darf NIE als reines Adapted erscheinen")
+        XCTAssertNil(selection.appliedAdaptation, "appliedAdaptation bleibt nil solange gaps vorhanden sind")
+        // KB-Alternativen werden dennoch fuer aufgeloeste Slots gesetzt
         XCTAssertEqual(selection.days.first?.exercises.first?.name, "Kettlebell Goblet Squat")
     }
 

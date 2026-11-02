@@ -63,8 +63,12 @@ final class ResolvedPlanSelectionInstantiationTests: XCTestCase {
         let profile = fullyConfirmedProfile(available: [.kettlebell: nil])
         let substitutionContext = SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
         let selection = PlanSelectionResolver.resolve(template: hybridBalanced, profile: profile, context: substitutionContext)
-        XCTAssertTrue(selection.isAdapted, "Vorbedingung (seit der Slot-Konvertierung): jede benutzte reviewedAlternatives-Uebung zaehlt als Adaption")
-        XCTAssertEqual(selection.equipmentStatus, .available, "Parity-Beweis: 0 gaps fuer kettlebellOnly auf hybrid_balanced")
+        // Nach KB-Alternativ-Bereinigung: hybrid_balanced + KB-only hat Gaps ->
+        // isAdapted = false (Mixed-Resolution-Regel), equipmentStatus = .unavailable.
+        XCTAssertFalse(selection.isAdapted, "Gaps verhindern reines Adapted-Ergebnis (Mixed-Resolution-Regel)")
+        guard case .unavailable = selection.equipmentStatus else {
+            return XCTFail("KB-only auf hybrid_balanced muss .unavailable sein, ist: \(selection.equipmentStatus)")
+        }
 
         let plan = ProgramInstantiator.instantiate(hybridBalanced, in: context, resolvedSelection: selection)
         let materializedNames = Set(plan.days.flatMap { $0.exercises.map(\.name) })

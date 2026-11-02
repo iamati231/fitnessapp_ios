@@ -51,24 +51,21 @@ final class PlanSelectionResolverTests: XCTestCase {
 
         let selection = PlanSelectionResolver.resolve(template: template, profile: profile, context: hypertrophyContext)
 
-        // Parity-Beweis (HybridTemplateSlotParityTests.testHybridBalancedExhaustiveSlotParity):
-        // 0 gaps fuer ein kettlebellOnly-Profil auf hybrid_balanced.
-        XCTAssertEqual(selection.equipmentStatus, .available)
-        XCTAssertNil(selection.variantProfile, "Slot-Resolution ist an kein einzelnes benanntes EquipmentProfile gebunden")
-        XCTAssertTrue(selection.isAdapted)
-        guard let adaptation = selection.appliedAdaptation else {
-            return XCTFail("Jeder Strength-Slot musste hier auf eine reviewedAlternatives-Uebung ausweichen -> appliedAdaptation darf nicht nil sein")
+        // Nach KB-Alternativ-Bereinigung hat hybrid_balanced + kettlebellOnly 4 Gaps:
+        // Seitheben/Trizepsdrücken (Kabel) haben keine KB-Alt (Push-Tag),
+        // Rudern vorgebeugt/Bizeps-Curl (KH) haben keine KB-Alt (Pull-Tag),
+        // Wadenheben (stehend, LH) hat keine KB-Alt (Legs-Tag).
+        // -> .unavailable, appliedAdaptation = nil (Mixed-Resolution-Regel).
+        guard case let .unavailable(gaps) = selection.equipmentStatus else {
+            return XCTFail("hybrid_balanced + KB-only muss .unavailable sein, ist: \(selection.equipmentStatus)")
         }
-        XCTAssertFalse(adaptation.replacements.isEmpty)
-        XCTAssertEqual(adaptation.unresolved, [], "Der Slot-Zweig meldet Luecken ausschliesslich ueber equipmentStatus, nie zusaetzlich hier")
-        XCTAssertEqual(adaptation.validatorBlockers, [])
-        XCTAssertTrue(adaptation.replacements.allSatisfy { $0.reasonKey == "picker.plan.equipment.slotAlternative" })
-        XCTAssertTrue(adaptation.replacements.allSatisfy { $0.ruleID == "slot:\($0.originalName)->\($0.replacementName)" })
-        // Konkreter, aus dem Katalog hand-nachvollzogener Fall (Strength Push,
-        // erster Slot): "Bankdrücken" -> "Kettlebell Floor Press".
-        XCTAssertTrue(adaptation.replacements.contains {
-            $0.originalName == "Bankdrücken" && $0.replacementName == "Kettlebell Floor Press"
-        })
+        let gapNames = gaps.map(\.exerciseName).sorted()
+        XCTAssertEqual(gapNames, ["Bizeps-Curl (KH)", "Rudern vorgebeugt", "Trizepsdrücken (Kabel)", "Wadenheben (stehend, LH)"])
+        XCTAssertNil(selection.variantProfile, "Slot-Resolution ist an kein einzelnes benanntes EquipmentProfile gebunden")
+        XCTAssertFalse(selection.isAdapted, "Gaps verhindern reines Adapted-Ergebnis")
+        XCTAssertNil(selection.appliedAdaptation, "appliedAdaptation bleibt nil solange gaps vorhanden sind")
+        // KB-Alternativen werden dennoch fuer aufgeloeste Slots gesetzt (z.B. Push-Tag erster Slot)
+        XCTAssertEqual(selection.days.first?.exercises.first?.name, "Kettlebell Floor Press")
     }
 
     // MARK: - 16. Mehrere Quell-Varianten -> deterministisch die mit minimaler Aenderung
