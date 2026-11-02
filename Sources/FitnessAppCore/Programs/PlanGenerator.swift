@@ -330,7 +330,7 @@ public enum PlanGenerator {
             }
             // F5: physiologisch sinnvolle Reihenfolge — Fokus zuerst,
             // dann absteigend nach Erholungsanforderung, Ermuedungs-Puffer.
-            let exercises = sortForSession(selectedSpecs, goal: goal).map {
+            let exercises = sortForSession(selectedSpecs, goal: goal, dayPrimaryMuscle: pickedMuscles.first).map {
                 ExerciseSpec(name: $0.name, sets: sets, repsMin: repsMin, repsMax: repsMax, restSeconds: restSeconds)
             }
             weeklyNames.formUnion(exercises.map(\.name))
@@ -515,36 +515,58 @@ public enum PlanGenerator {
 
     /// Bringt die ausgewaehlten Uebungen eines Trainingstages in eine
     /// physiologisch sinnvolle Reihenfolge. Drei Stufen:
-    ///  1. Fokus-Uebung (hoechster `goalFit`) an Slot 0 — respektiert den
-    ///     Trainingsschwerpunkt des Ziels, keine fixen Prioritaets-Listen.
+    ///  1. Fokus-Uebung: beste Uebung fuer die primaere Muskelgruppe des Tages
+    ///     (aus `pickedMuscles.first` via muscleCursor=dayIndex). Kreuzheben
+    ///     fuehrt auf Back-Tagen, Kniebeuge auf Quad-Tagen — weil es den
+    ///     hoechsten goalFit innerhalb der Tages-Muskelgruppe hat, nicht weil
+    ///     eine feste Prio-Liste es vorschreibt. Kein Exercise fuer primaere
+    ///     Muskelgruppe: globaler Max als Fallback.
     ///  2. Rest absteigend nach `readinessRequirement` — CNS, Komplexitaet,
-    ///     axiale Last und systemische Ermuedung gemeinsam bewertet.
-    ///  3. Ermuedungs-Puffer: zwei extreme Wirbelsaeulenlasten
-    ///     (axial >= 0.90 & CNS >= 0.80) kommen nicht direkt hintereinander.
-    /// Tie-Breaker ist `spec.name` (alphabetisch) — Library-Einfuegereihenfolge
-    /// beeinflusst das Ergebnis nie unbemerkt.
+    ///     axiale Last und systemische Ermuedung gemeinsam bewertet. Exakter
+    ///     Tie-Breaker per Name (transitiv, Library-Reihenfolge-unabhaengig).
+    ///  3. `spreadExtremeExercises`: vollstaendiger Sweep — alle konsekutiven
+    ///     Extrem-Axial-Paare werden getrennt, nicht nur das erste.
     private static func sortForSession(
         _ specs: [ExerciseTemplateSpec],
-        goal: TrainingGoal
+        goal: TrainingGoal,
+        dayPrimaryMuscle: MuscleGroup?
     ) -> [ExerciseTemplateSpec] {
         guard specs.count > 1 else { return specs }
-        let focusIdx = specs.indices.max(by: { goalFit(specs[$0], goal) < goalFit(specs[$1], goal) })!
-        var rest = specs
-        let focus = rest.remove(at: focusIdx)
+
+        let primaryPool = dayPrimaryMuscle.map { pm in specs.filter { $0.primaryMuscle == pm } } ?? []
+        let focusPool = primaryPool.isEmpty ? specs : primaryPool
+        let focus = focusPool.sorted {
+            let fa = goalFit($0, goal), fb = goalFit($1, goal)
+            if fa != fb { return fa > fb }
+            return $0.name < $1.name
+        }.first!
+
+        var rest = specs.filter { $0.name != focus.name }
+        // Exact comparison avoids the non-transitive ordering that abs(a-b)>0.04 can produce.
         rest.sort {
             let ra = readinessRequirement($0), rb = readinessRequirement($1)
-            if abs(ra - rb) > 0.04 { return ra > rb }
+            if ra > rb { return true }
+            if ra < rb { return false }
             return $0.name < $1.name
         }
-        var ordered = [focus] + rest
-        if ordered.count >= 3,
-           isExtremeAxialLoad(ordered[0]),
-           isExtremeAxialLoad(ordered[1]),
-           let bufferIdx = ordered.indices.dropFirst(2).first(where: { !isExtremeAxialLoad(ordered[$0]) }) {
-            let buffer = ordered.remove(at: bufferIdx)
-            ordered.insert(buffer, at: 1)
+
+        return spreadExtremeExercises([focus] + rest)
+    }
+
+    /// Greedy-Sweep: kein Paar aufeinanderfolgender extremer Axial-/CNS-Uebungen.
+    /// Deckt 3+ Extreme — nicht nur das erste Paar.
+    private static func spreadExtremeExercises(_ specs: [ExerciseTemplateSpec]) -> [ExerciseTemplateSpec] {
+        guard specs.count >= 2 else { return specs }
+        var result = specs
+        var i = 1
+        while i < result.count {
+            if isExtremeAxialLoad(result[i - 1]) && isExtremeAxialLoad(result[i]),
+               let j = ((i + 1)..<result.count).first(where: { !isExtremeAxialLoad(result[$0]) }) {
+                result.insert(result.remove(at: j), at: i)
+            }
+            i += 1
         }
-        return ordered
+        return result
     }
 
     /// Wie viel neuronale Frische benoetigt diese Uebung?
