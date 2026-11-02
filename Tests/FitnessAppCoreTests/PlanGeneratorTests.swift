@@ -976,7 +976,9 @@ final class PlanGeneratorTests: XCTestCase {
         spec.axialLoadFactor >= 0.90 && spec.cnsDemandFactor >= 0.80
     }
 
-    /// F5-1: Tag 1 (Ruecken-Fokus per muscleCursor=dayIndex=1) — erste Uebung ist .back.
+    /// F5-1: 2-Tage-Barbell-Plan — mindestens eine Einheit beginnt mit .back.
+    /// result.days ist nach Haerte sortiert (spreadByHardness), nicht nach dayIndex —
+    /// daher pruefen wir "existiert in irgendeinem Tag", nicht "result.days[1]".
     func testBackFocusDayLeadsWithBackExercise() {
         let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
         let result = PlanGenerator.generate(from: PlanGeneratorInput(
@@ -985,13 +987,14 @@ final class PlanGeneratorTests: XCTestCase {
             usesFixedWeekdays: false,
             trainingGoal: .strength
         ))
-        guard result.days.count >= 2,
-              let firstSpec = result.days[1].spec.exercises.first.flatMap({ specByName[$0.name] }) else { return }
-        XCTAssertEqual(firstSpec.primaryMuscle, .back,
-            "dayIndex=1 (Ruecken-Tag): erste Uebung sollte .back sein, war '\(firstSpec.name)'")
+        let leadMuscles = result.days.compactMap { day -> MuscleGroup? in
+            day.spec.exercises.first.flatMap { specByName[$0.name]?.primaryMuscle }
+        }
+        XCTAssert(leadMuscles.contains(.back),
+            "2-Tage-Plan: mindestens eine Einheit sollte .back zuerst haben. Leads: \(leadMuscles)")
     }
 
-    /// F5-2: Tag 5 (Quad-Fokus per muscleCursor=dayIndex=5) — erste Uebung ist .quads.
+    /// F5-2: 6-Tage-Barbell-Plan — mindestens eine Einheit beginnt mit .quads.
     func testQuadFocusDayLeadsWithQuadExercise() {
         let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
         let result = PlanGenerator.generate(from: PlanGeneratorInput(
@@ -1000,17 +1003,17 @@ final class PlanGeneratorTests: XCTestCase {
             usesFixedWeekdays: false,
             trainingGoal: .strength
         ))
-        guard result.days.count >= 6,
-              let firstSpec = result.days[5].spec.exercises.first.flatMap({ specByName[$0.name] }) else { return }
-        XCTAssertEqual(firstSpec.primaryMuscle, .quads,
-            "dayIndex=5 (Quad-Tag): erste Uebung sollte .quads sein, war '\(firstSpec.name)'")
+        let leadMuscles = result.days.compactMap { day -> MuscleGroup? in
+            day.spec.exercises.first.flatMap { specByName[$0.name]?.primaryMuscle }
+        }
+        XCTAssert(leadMuscles.contains(.quads),
+            "6-Tage-Plan: mindestens eine Einheit sollte .quads zuerst haben. Leads: \(leadMuscles)")
     }
 
-    /// F5-3: 6-Tage-Plan — Tage 0 (.chest), 1 (.back) und 5 (.quads) treffen
-    ///        ihren erwarteten Muskel-Fokus fuer Kraft- und Hypertrophie-Ziel.
+    /// F5-3: 6-Tage-Plan — Kraft und Hypertrophie: .chest, .back und .quads
+    ///        erscheinen jeweils als Anführer mindestens einer Einheit.
     func testFocusExerciseAlwaysTargetsCorrectMuscle() {
         let specByName = Dictionary(uniqueKeysWithValues: ExerciseLibraryData.all.map { ($0.name, $0) })
-        let expectedMuscle: [Int: MuscleGroup] = [0: .chest, 1: .back, 5: .quads]
         for goal: TrainingGoal in [.strength, .hypertrophy] {
             let result = PlanGenerator.generate(from: PlanGeneratorInput(
                 selections: [selection(.barbell, days: 6, experience: .advanced)],
@@ -1018,11 +1021,12 @@ final class PlanGeneratorTests: XCTestCase {
                 usesFixedWeekdays: false,
                 trainingGoal: goal
             ))
-            guard result.days.count == 6 else { continue }
-            for (idx, muscle) in expectedMuscle {
-                guard let firstSpec = result.days[idx].spec.exercises.first.flatMap({ specByName[$0.name] }) else { continue }
-                XCTAssertEqual(firstSpec.primaryMuscle, muscle,
-                    "Ziel \(goal) dayIndex=\(idx): erste Uebung sollte \(muscle) sein, war '\(firstSpec.name)' (\(firstSpec.primaryMuscle))")
+            let leadMuscles = result.days.compactMap { day -> MuscleGroup? in
+                day.spec.exercises.first.flatMap { specByName[$0.name]?.primaryMuscle }
+            }
+            for muscle: MuscleGroup in [.chest, .back, .quads] {
+                XCTAssert(leadMuscles.contains(muscle),
+                    "Ziel \(goal): mindestens eine Einheit sollte \(muscle) als Leader haben. Leads: \(leadMuscles)")
             }
         }
     }
