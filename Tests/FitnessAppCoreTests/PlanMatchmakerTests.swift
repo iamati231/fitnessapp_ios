@@ -551,7 +551,9 @@ final class PlanMatchmakerTests: XCTestCase {
         let answers = QuizAnswers(goal: .hypertrophy, experience: .intermediate, preferredDays: 3, environment: .gym)
         let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
         XCTAssertFalse(result.isFallback)
-        XCTAssertEqual(result.templates.first?.id, "full_body")
+        // full_body ist seit dem Beginner-Overhaul targetExperience:[.beginner] ->
+        // full_body_3x_experienced (targetExperience:[.intermediate,.advanced]) gewinnt fuer Intermediate-User
+        XCTAssertEqual(result.templates.first?.id, "full_body_3x_experienced")
     }
 
     /// Extremfilter (wie `testFallbackProducesBodyweightPlansWhenAllFiltered`)
