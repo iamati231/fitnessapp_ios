@@ -2348,6 +2348,29 @@
         }
       }
     },
+    "mealPlanner.action.exclude": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept ausschließen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exclude Recipe"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarifi Dışla"
+          }
+        }
+      }
+    },
     "mealPlanner.action.remove": {
       "extractionState": "manual",
       "localizations": {

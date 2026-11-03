@@ -21,6 +21,7 @@ public struct MealPlannerView: View {
     @State private var selectedDate: Date
     @State private var replacingAssignment: PlannedMealAssignment? = nil
     @State private var removingAssignment: PlannedMealAssignment? = nil
+    @State private var cardSwipeOffset: [PersistentIdentifier: CGFloat] = [:]
     @State private var generationError: String? = nil
     @State private var regeneratingAssignment: PlannedMealAssignment? = nil
     @State private var showRegenerationError = false
@@ -399,67 +400,110 @@ public struct MealPlannerView: View {
     // MARK: - Recipe Card
 
     private func recipeCard(for assignment: PlannedMealAssignment, showsDivider: Bool) -> some View {
+        let assignmentID = assignment.persistentModelID
+        let swipeX = cardSwipeOffset[assignmentID] ?? 0
         let r = recipe(for: assignment)
         let n = nutrients(for: assignment)
-        return VStack(alignment: .leading, spacing: 0) {
-            // Tappable area: navigiert zur Rezeptdetailseite
-            Button {
-                navigation.nutritionPath.append(MealPlannerRoute.recipeDetail(
-                    recipeID: assignment.recipeID,
-                    mealType: assignment.mealType,
-                    portionMultiplier: assignment.portionMultiplier,
-                    date: Calendar.current.startOfDay(for: selectedDate)
-                ))
-            } label: {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .firstTextBaseline) {
-                        if let r {
-                            Text(String(localized: String.LocalizationValue(r.nameKey), bundle: .module))
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.primary)
-                        } else {
-                            Text("nutrition.mealPlanner.recipe.unknown", bundle: .module)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                        Spacer()
-                        if let n {
-                            Text(NutritionDisplay.text(n.kcal, unit: "kcal"))
-                                .font(.caption)
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                                .fitnessNumberStyle()
-                        }
+        return VStack(spacing: 0) {
+            ZStack(alignment: .trailing) {
+                // Delete background revealed on left-swipe
+                Color.red
+                    .overlay(alignment: .trailing) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.trailing, 20)
+                            .opacity(Double(min(abs(swipeX) / 40.0, 1.0)))
                     }
-                    if let n {
-                        HStack(spacing: 16) {
-                            macroText(String(localized: "nutrition.macro.protein.short", bundle: .module), value: n.proteinG)
-                            macroText(String(localized: "nutrition.macro.carbs.short", bundle: .module), value: n.carbsG)
-                            macroText(String(localized: "nutrition.macro.fat.short", bundle: .module), value: n.fatG)
+
+                // Sliding card content
+                VStack(alignment: .leading, spacing: 0) {
+                    // Tappable area: navigiert zur Rezeptdetailseite
+                    Button {
+                        navigation.nutritionPath.append(MealPlannerRoute.recipeDetail(
+                            recipeID: assignment.recipeID,
+                            mealType: assignment.mealType,
+                            portionMultiplier: assignment.portionMultiplier,
+                            date: Calendar.current.startOfDay(for: selectedDate)
+                        ))
+                    } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(alignment: .firstTextBaseline) {
+                                if let r {
+                                    Text(String(localized: String.LocalizationValue(r.nameKey), bundle: .module))
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(Color.primary)
+                                } else {
+                                    Text("nutrition.mealPlanner.recipe.unknown", bundle: .module)
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                                Spacer()
+                                if let n {
+                                    Text(NutritionDisplay.text(n.kcal, unit: "kcal"))
+                                        .font(.caption)
+                                        .foregroundStyle(Color.Deltiq.textSecondary)
+                                        .fitnessNumberStyle()
+                                }
+                            }
+                            if let n {
+                                HStack(spacing: 16) {
+                                    macroText(String(localized: "nutrition.macro.protein.short", bundle: .module), value: n.proteinG)
+                                    macroText(String(localized: "nutrition.macro.carbs.short", bundle: .module), value: n.carbsG)
+                                    macroText(String(localized: "nutrition.macro.fat.short", bundle: .module), value: n.fatG)
+                                }
+                            }
                         }
+                        .padding(.horizontal, 14)
+                        .padding(.top, 12)
+                        .padding(.bottom, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+
+                    // Portions-Stepper: außerhalb des Navigations-Buttons
+                    portionStepper(for: assignment)
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 12)
+                }
+                .background(Color.Deltiq.surface)
+                .offset(x: swipeX)
+                .overlay {
+                    if regeneratingAssignment === assignment {
+                        Color.Deltiq.background.opacity(0.8)
+                            .overlay { ProgressView() }
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .gesture(
+                    DragGesture(minimumDistance: 10)
+                        .onChanged { value in
+                            guard value.translation.width < 0,
+                                  abs(value.translation.width) > abs(value.translation.height) else { return }
+                            cardSwipeOffset[assignmentID] = max(value.translation.width, -120)
+                        }
+                        .onEnded { _ in
+                            if (cardSwipeOffset[assignmentID] ?? 0) <= -80 {
+                                withAnimation(.easeOut(duration: 0.2)) {
+                                    cardSwipeOffset[assignmentID] = -400
+                                }
+                                Task { @MainActor in
+                                    try? await Task.sleep(for: .seconds(0.2))
+                                    cardSwipeOffset.removeValue(forKey: assignmentID)
+                                    removeAssignment(assignment)
+                                }
+                            } else {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    cardSwipeOffset[assignmentID] = 0
+                                }
+                            }
+                        }
+                )
             }
-            .buttonStyle(.plain)
-
-            // Portions-Stepper: außerhalb des Navigations-Buttons
-            portionStepper(for: assignment)
-                .padding(.horizontal, 14)
-                .padding(.bottom, 12)
 
             if showsDivider {
                 Rectangle()
                     .fill(Color.Deltiq.divider)
                     .frame(height: 1)
-            }
-        }
-        .overlay {
-            if regeneratingAssignment === assignment {
-                Color.Deltiq.background.opacity(0.8)
-                    .overlay { ProgressView() }
             }
         }
         .contextMenu {
@@ -472,6 +516,16 @@ public struct MealPlannerView: View {
                 replacingAssignment = assignment
             } label: {
                 Label(String(localized: "mealPlanner.action.swap", bundle: .module), systemImage: "arrow.triangle.2.circlepath")
+            }
+            if let profile = userProfile,
+               !profile.mealPlanExcludedRecipeIDsRaw.contains(assignment.recipeID) {
+                Button {
+                    profile.mealPlanExcludedRecipeIDsRaw.append(assignment.recipeID)
+                    try? modelContext.save()
+                    removeAssignment(assignment)
+                } label: {
+                    Label(String(localized: "mealPlanner.action.exclude", bundle: .module), systemImage: "nosign")
+                }
             }
             Button(role: .destructive) {
                 removingAssignment = assignment
