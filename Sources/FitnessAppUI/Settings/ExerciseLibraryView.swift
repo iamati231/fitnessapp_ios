@@ -432,6 +432,11 @@ public struct ExerciseLibraryView: View {
     /// name, Felder kopiert) — es wird nichts kaskadiert.
     private func deleteTemplate(_ template: ExerciseTemplate) {
         guard template.isCustom else { return }
+        let tid = template.id
+        let prDesc = FetchDescriptor<PersonalRecordEntry>(
+            predicate: #Predicate { $0.exerciseTemplateID == tid }
+        )
+        ((try? modelContext.fetch(prDesc)) ?? []).forEach { modelContext.delete($0) }
         modelContext.delete(template)
         // Audit-Fix: `delete()` wirkt sofort auf den Live-Graphen (die Zeile
         // verschwindet also schon jetzt korrekt aus der `@Query`-Liste,

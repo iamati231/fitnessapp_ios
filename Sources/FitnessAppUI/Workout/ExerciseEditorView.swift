@@ -357,6 +357,11 @@ public struct ExerciseEditorView: View {
         )
         let templates = (try? modelContext.fetch(descriptor)) ?? []
         for template in templates {
+            let tid = template.id
+            let prDesc = FetchDescriptor<PersonalRecordEntry>(
+                predicate: #Predicate { $0.exerciseTemplateID == tid }
+            )
+            ((try? modelContext.fetch(prDesc)) ?? []).forEach { modelContext.delete($0) }
             modelContext.delete(template)
         }
 
