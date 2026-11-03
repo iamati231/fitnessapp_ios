@@ -147,6 +147,7 @@ struct CoachAdjustmentPreviewView: View {
                     Text("profile.cardio.adjustment.after", bundle: .module)
                 }
                 actionButtons(model)
+                trainingDetailSection(model)
             } else {
                 // Not the same state as `.planChanged` (that's a real
                 // race between preview-open and tap) and not the same as
@@ -195,6 +196,7 @@ struct CoachAdjustmentPreviewView: View {
                     Text("profile.cardio.adjustment.after", bundle: .module)
                 }
                 actionButtons(model)
+                trainingDetailSection(model)
             } else {
                 Section {
                     Text("profile.cardio.adjustment.noEligibleDay", bundle: .module)
@@ -234,6 +236,39 @@ struct CoachAdjustmentPreviewView: View {
             .disabled(isApplying || model.isAlreadyApplied)
         }
         createNewPlanButton(model)
+    }
+
+    /// Zeigt Paces und Startvolumen als Orientierung, wenn Profildaten vorhanden sind.
+    /// Sichtbar unabhaengig von `isAlreadyApplied` — relevant vor UND nach Annahme.
+    @ViewBuilder
+    private func trainingDetailSection(_ model: CoachAdjustmentCardModel) -> some View {
+        let refSecs = profile.current5kReferenceSeconds
+        let easy = refSecs.flatMap { PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: $0) }
+        let tempo = refSecs.flatMap { PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: $0) }
+        let hasAnything = easy != nil || (profile.weeklyBaseVolumeKm ?? 0) > 0
+        if hasAnything {
+            Section {
+                if let easy, let tempo {
+                    Text(String(
+                        format: String(localized: "profile.cardio.paceZones", bundle: .module),
+                        PaceCalculator.formatPace(easy),
+                        PaceCalculator.formatPace(tempo)
+                    ))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
+                if let vol = profile.weeklyBaseVolumeKm, vol > 0 {
+                    Text(String(
+                        format: String(localized: "profile.cardio.adjustment.detail.startVolume", bundle: .module),
+                        Int(vol)
+                    ))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("profile.cardio.adjustment.detail.header", bundle: .module)
+            }
+        }
     }
 
     /// "Als neuen Plan erstellen": reuse des bereits bestehenden, geprüften

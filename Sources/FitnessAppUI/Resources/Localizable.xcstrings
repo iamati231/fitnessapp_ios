@@ -40574,6 +40574,52 @@
         }
       }
     },
+    "profile.cardio.adjustment.detail.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training structure"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsaufbau"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman yapısı"
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.detail.startVolume": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting volume: ~%d km/week"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startvolumen: ~%d km/Woche"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlangıç hacmi: ~%d km/hafta"
+          }
+        }
+      }
+    },
     "profile.cardio.coachOff.title": {
       "extractionState": "manual",
       "localizations": {
