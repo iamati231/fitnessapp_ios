@@ -59,10 +59,10 @@ final class DashboardCardioCardPriorityTests: XCTestCase {
     func testNewCardReusesTheExistingMissedRunAdjustmentPreviewState() throws {
         let source = try contents(of: "DashboardView.swift")
         XCTAssertTrue(
-            source.contains("private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, plan: TrainingPlan) -> some View"),
-            "laufcoachingAdjustmentCard(_:plan:) fehlt oder hat eine andere Signatur"
+            source.contains("private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, nextDayName: String) -> some View"),
+            "laufcoachingAdjustmentCard(_:nextDayName:) fehlt oder hat eine andere Signatur"
         )
-        guard let methodRange = source.range(of: "private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, plan: TrainingPlan) -> some View") else {
+        guard let methodRange = source.range(of: "private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, nextDayName: String) -> some View") else {
             XCTFail("laufcoachingAdjustmentCard nicht gefunden")
             return
         }
@@ -102,7 +102,7 @@ final class DashboardCardioCardPriorityTests: XCTestCase {
     /// mehr nur den pending-Fall durchlaesst.
     func testLaufcoachingAdjustmentCardHandlesBothPendingAndAppliedCopy() throws {
         let source = try contents(of: "DashboardView.swift")
-        guard let methodRange = source.range(of: "private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, plan: TrainingPlan) -> some View") else {
+        guard let methodRange = source.range(of: "private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, nextDayName: String) -> some View") else {
             XCTFail("laufcoachingAdjustmentCard nicht gefunden"); return
         }
         let methodBody = source[methodRange.upperBound...].prefix(2000)
