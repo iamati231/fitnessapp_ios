@@ -26,10 +26,18 @@ public enum CardioBaselineCalculator {
     public struct Result: Equatable {
         public let weeklyVolumeKm: Double?
         public let referenceSeconds: Int?
+        /// Phase F: Median aus tatsaechlich absolvierten ~5-km-Laeufen (90-Tage-
+        /// Fenster). `nil` wenn < `minimumFiveKmSamples` gueltige Laeufe
+        /// vorliegen. Wird in `applyCardioBaseline` dem extrapolierten
+        /// `referenceSeconds` vorgezogen — echte 5-km-Median-Daten sind
+        /// repraesentativer als ein aus dem schnellsten >3-km-Lauf
+        /// hochgerechneter Wert.
+        public let median5kSeconds: Int?
 
-        public init(weeklyVolumeKm: Double?, referenceSeconds: Int?) {
+        public init(weeklyVolumeKm: Double?, referenceSeconds: Int?, median5kSeconds: Int? = nil) {
             self.weeklyVolumeKm = weeklyVolumeKm
             self.referenceSeconds = referenceSeconds
+            self.median5kSeconds = median5kSeconds
         }
 
         /// Kein einziger Wert konnte ermittelt werden — der Aufrufer sollte

@@ -400,9 +400,15 @@ struct CardioGoalEditorView: View {
                 guard let distanceKm = log.distanceKm, let durationSeconds = log.durationSeconds else { return nil }
                 return CardioBaselineCalculator.RunSample(distanceKm: distanceKm, durationSeconds: durationSeconds)
             }
+        let fiveKmRuns = cardioLogs(sinceDaysAgo: CardioBaselineCalculator.fiveKmMedianWindowDays)
+            .compactMap { log -> CardioBaselineCalculator.RunSample? in
+                guard let distanceKm = log.distanceKm, let durationSeconds = log.durationSeconds else { return nil }
+                return CardioBaselineCalculator.RunSample(distanceKm: distanceKm, durationSeconds: durationSeconds)
+            }
         return CardioBaselineCalculator.Result(
             weeklyVolumeKm: CardioBaselineCalculator.weeklyVolumeKm(distancesKm: volumeDistancesKm),
-            referenceSeconds: CardioBaselineCalculator.fastestReferenceSeconds(from: referenceRuns)
+            referenceSeconds: CardioBaselineCalculator.fastestReferenceSeconds(from: referenceRuns),
+            median5kSeconds: CardioBaselineCalculator.medianFiveKmSeconds(from: fiveKmRuns)
         )
     }
 
@@ -412,7 +418,7 @@ struct CardioGoalEditorView: View {
         if let weeklyVolumeKm = result.weeklyVolumeKm {
             weeklyBaseVolumeKm = weeklyVolumeKm
         }
-        if let referenceSeconds = result.referenceSeconds {
+        if let referenceSeconds = result.median5kSeconds ?? result.referenceSeconds {
             fiveKReferenceText = PaceCalculator.formatDuration(referenceSeconds)
         }
         cardioSetupDraft = CardioCoachSetupDraft(
@@ -424,7 +430,7 @@ struct CardioGoalEditorView: View {
 
     private func cardioBaselineMessage(_ result: CardioBaselineCalculator.Result) -> String {
         let volumeText = result.weeklyVolumeKm.map(\.formattedOneDecimal)
-        let paceText = result.referenceSeconds
+        let paceText = (result.median5kSeconds ?? result.referenceSeconds)
             .flatMap(PaceZoneCalculator.racePaceMinutesPerKm)
             .map(PaceCalculator.formatPace)
         switch (volumeText, paceText) {
