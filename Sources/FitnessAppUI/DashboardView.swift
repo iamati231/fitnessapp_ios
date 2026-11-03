@@ -278,9 +278,7 @@ public struct DashboardView: View {
                     // Doku).
                     if let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans),
                        let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
-                        if profile.cardioAdjustmentCardDismissedFingerprint != adjustment.fingerprint {
-                            laufcoachingAdjustmentCard(adjustment, plan: activePlan, profile: profile)
-                        }
+                        laufcoachingAdjustmentCard(adjustment, plan: activePlan)
                     } else if let model = cardioFeasibilityModel {
                         cardioFeasibilityDashboardCard(model)
                     }
@@ -2714,92 +2712,97 @@ public struct DashboardView: View {
     /// Renntag (wenn gesetzt), anpassbare Lauftage im Plan, 5-km-Referenz
     /// (wenn vorhanden). `plan` und `profile` sind Pflicht fuer die Detail-
     /// Zeilen; das CTA-Sheet liest Profil/Plan selbst frisch aus der Query.
-    private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, plan: TrainingPlan, profile: UserBodyProfile) -> some View {
-        DeltiqCard {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(Color.deltiqOrange)
-                    .font(.title3)
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(adjustment.isAlreadyApplied
-                         ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
-                         : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        // Vorgeschlagenes Ziel
-                        if let goal = adjustment.proposedGoal {
-                            Text(String(
-                                format: String(localized: "dashboard.coachAdjustment.proposedGoal", bundle: .module),
-                                String(localized: goal.localizedName)
-                            ))
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                        // Naechste Trainingseinheit
-                        let nextDay = nextScheduledDay(in: plan)
-                        Text(String(
-                            format: String(localized: "dashboard.coachAdjustment.nextUnit", bundle: .module),
-                            nextDay.displayName
-                        ))
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                        // Tage bis Renntag (nur wenn gesetzt und in der Zukunft)
-                        if let raceDate = profile.cardioRaceDate, raceDate > Date() {
-                            let days = Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day ?? 0
-                            Text(String(
-                                format: String(localized: "dashboard.coachAdjustment.daysToRace", bundle: .module),
-                                days
-                            ))
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                        // Anpassbare Lauftage im Plan
-                        if case .ready(let ids) = adjustment.analysis.cardioAvailability, !ids.isEmpty {
-                            Text(String(
-                                format: String(localized: "dashboard.coachAdjustment.cardioDays", bundle: .module),
-                                ids.count
-                            ))
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                        // 5-km-Referenzzeit
-                        if let secs = profile.current5kReferenceSeconds {
-                            Text(String(
-                                format: String(localized: "dashboard.coachAdjustment.fiveKRef", bundle: .module),
-                                String(format: "%d:%02d", secs / 60, secs % 60)
-                            ))
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-
-                    HStack(spacing: 16) {
-                        Button {
-                            showingMissedRunAdjustmentPreview = true
-                        } label: {
-                            Text("dashboard.missedRunDays.reviewButton", bundle: .module)
+    private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, plan: TrainingPlan) -> some View {
+        Group {
+            if let profile = profiles.first,
+               profile.cardioAdjustmentCardDismissedFingerprint != adjustment.fingerprint {
+                DeltiqCard {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(Color.deltiqOrange)
+                            .font(.title3)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(adjustment.isAlreadyApplied
+                                 ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
+                                 : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
                                 .font(.subheadline.weight(.semibold))
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(Color.deltiqOrange)
-                        // Nicht-jetzt nur anbieten, wenn noch nicht uebernommen
-                        if !adjustment.isAlreadyApplied {
-                            Button {
-                                withAnimation { adjustment.dismiss(profile: profile) }
-                            } label: {
-                                Text("dashboard.missedRunDays.dismissButton", bundle: .module)
-                                    .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+
+                            VStack(alignment: .leading, spacing: 3) {
+                                // Vorgeschlagenes Ziel
+                                if let goal = adjustment.proposedGoal {
+                                    Text(String(
+                                        format: String(localized: "dashboard.coachAdjustment.proposedGoal", bundle: .module),
+                                        String(localized: goal.localizedName)
+                                    ))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                                // Naechste Trainingseinheit
+                                let nextDay = nextScheduledDay(in: plan)
+                                Text(String(
+                                    format: String(localized: "dashboard.coachAdjustment.nextUnit", bundle: .module),
+                                    nextDay.displayName
+                                ))
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                                // Tage bis Renntag (nur wenn gesetzt und in der Zukunft)
+                                if let raceDate = profile.cardioRaceDate, raceDate > Date() {
+                                    let days = Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day ?? 0
+                                    Text(String(
+                                        format: String(localized: "dashboard.coachAdjustment.daysToRace", bundle: .module),
+                                        days
+                                    ))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                                // Anpassbare Lauftage im Plan
+                                if case .ready(let ids) = adjustment.analysis.cardioAvailability, !ids.isEmpty {
+                                    Text(String(
+                                        format: String(localized: "dashboard.coachAdjustment.cardioDays", bundle: .module),
+                                        ids.count
+                                    ))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                                // 5-km-Referenzzeit
+                                if let secs = profile.current5kReferenceSeconds {
+                                    Text(String(
+                                        format: String(localized: "dashboard.coachAdjustment.fiveKRef", bundle: .module),
+                                        String(format: "%d:%02d", secs / 60, secs % 60)
+                                    ))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
                             }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                            HStack(spacing: 16) {
+                                Button {
+                                    showingMissedRunAdjustmentPreview = true
+                                } label: {
+                                    Text("dashboard.missedRunDays.reviewButton", bundle: .module)
+                                        .font(.subheadline.weight(.semibold))
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundStyle(Color.deltiqOrange)
+                                // Nicht-jetzt nur anbieten, wenn noch nicht uebernommen
+                                if !adjustment.isAlreadyApplied {
+                                    Button {
+                                        withAnimation { adjustment.dismiss(profile: profile) }
+                                    } label: {
+                                        Text("dashboard.missedRunDays.dismissButton", bundle: .module)
+                                            .font(.subheadline.weight(.semibold))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                            }
                         }
+                        Spacer(minLength: 0)
                     }
                 }
-                Spacer(minLength: 0)
             }
         }
     }
