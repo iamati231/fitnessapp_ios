@@ -183,7 +183,7 @@ public struct CardioCoachSetupFields: View {
 
     @ViewBuilder
     private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String) -> some View {
-        TextField(label, value: value, format: .number, prompt: Text(placeholder))
+        TextField(label, value: value, format: .number.precision(.fractionLength(0...2)), prompt: Text(placeholder))
             .decimalKeyboard()
             .multilineTextAlignment(.trailing)
             .font(.system(size: 15))
