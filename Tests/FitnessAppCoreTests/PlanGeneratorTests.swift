@@ -235,7 +235,7 @@ final class PlanGeneratorTests: XCTestCase {
     func testRunningThreeDaysCoversAllThreeZones() {
         let result = PlanGenerator.generate(from: input([selection(.running, days: 3)]))
         let exerciseNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
-        XCTAssertEqual(exerciseNames, ["Easy Run", "Long Run", "Intervalle"])
+        XCTAssertEqual(exerciseNames, ["Easy Run", "Tempo Run", "Intervalle"])
         // Paket 2 (Sportart-Unterscheidung): muss am Entstehungsort gesetzt
         // werden, nicht erst spaeter aus dem Namen zurueckgeraten.
         XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .running } })
@@ -275,7 +275,7 @@ final class PlanGeneratorTests: XCTestCase {
         // pass CI, because only the easy-zone day's pace was asserted here.
         // Same name-based lookup as above (never index-based, see the
         // `spreadByHardness`-reordering comment) - `RunZone.tempo.exerciseName`
-        // is "Long Run" (distinct from "Easy Run"). Fix M-2 (Final-Review,
+        // is "Tempo Run" (distinct from "Easy Run"). Fix M-2 (Final-Review,
         // Round 2): this 10K-profile 3-day selection is Task 3's
         // GOAL-DRIVEN mix (`runTypeMix(for: .tenK) == [.easy, .quality]`),
         // which here resolves to easy/tempo/easy - it does NOT produce an
@@ -283,7 +283,7 @@ final class PlanGeneratorTests: XCTestCase {
         // easy/interval/tempo cycle, or on a LATER `.quality` occurrence
         // across more days/weeks - see `cardioCandidates`'s doc comment).
 
-        let tempoDay = result.days.first { $0.spec.exercises.first?.name == "Long Run" }!.spec.exercises[0]
+        let tempoDay = result.days.first { $0.spec.exercises.first?.name == "Tempo Run" }!.spec.exercises[0]
         XCTAssertEqual(tempoDay.targetPaceMinutesPerKm, PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: 1500))
     }
 
@@ -303,7 +303,7 @@ final class PlanGeneratorTests: XCTestCase {
     func testCardioCandidatesWithoutProfileMatchesPreviousOutputExactly() {
         let result = PlanGenerator.generate(from: input([selection(.running, days: 3)]))
         let exerciseNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
-        XCTAssertEqual(exerciseNames, ["Easy Run", "Long Run", "Intervalle"])
+        XCTAssertEqual(exerciseNames, ["Easy Run", "Tempo Run", "Intervalle"])
         XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .running } })
 
         // Task 3 (Review Focus 1): no `cardioRunProfile` at all must leave
@@ -312,7 +312,7 @@ final class PlanGeneratorTests: XCTestCase {
         // volume-aware scaling, `.interval` still fixed at 0.4 km.
         let easyDay = result.days.first { $0.spec.exercises.first?.name == "Easy Run" }!.spec.exercises[0]
         XCTAssertEqual(easyDay.targetDurationMinutes, 45)
-        let tempoDay = result.days.first { $0.spec.exercises.first?.name == "Long Run" }!.spec.exercises[0]
+        let tempoDay = result.days.first { $0.spec.exercises.first?.name == "Tempo Run" }!.spec.exercises[0]
         XCTAssertEqual(tempoDay.targetDurationMinutes, 45)
         let intervalDay = result.days.first { $0.spec.exercises.first?.name == "Intervalle" }!.spec.exercises[0]
         XCTAssertEqual(intervalDay.targetDistanceKm, 0.4)
@@ -356,7 +356,7 @@ final class PlanGeneratorTests: XCTestCase {
         XCTAssertEqual(generalNames, ["Easy Run"], "generalFitness -> runTypeMix ist rein .easy (Task 2)")
 
         let tenKNames = Set(tenKResult.days.flatMap { $0.spec.exercises.map(\.name) })
-        XCTAssertTrue(tenKNames.contains("Long Run"), "tenK's Mix enthaelt einen .quality-Slot, anders als generalFitness")
+        XCTAssertTrue(tenKNames.contains("Tempo Run"), "tenK's Mix enthaelt einen .quality-Slot, anders als generalFitness")
     }
 
     /// Fix round 1 (Review-Fund + User-Entscheidung): `.quality` deckt laut
@@ -365,7 +365,7 @@ final class PlanGeneratorTests: XCTestCase {
     /// sobald ein Profil vorliegt. Halbmarathon/Marathons Mix
     /// `[.easy, .easy, .quality]` wiederholt sich bei 6 Tagen/Woche zweimal
     /// und enthaelt damit zwei `.quality`-Vorkommen - diese muessen
-    /// zwischen `.tempo` ("Long Run") und `.interval` ("Intervalle")
+    /// zwischen `.tempo` ("Tempo Run") und `.interval` ("Intervalle")
     /// wechseln, nicht immer denselben Wert liefern.
     func testCardioCandidatesAlternatesQualitySlotsBetweenTempoAndInterval() {
         let selection = PlanGeneratorTypeSelection(
@@ -374,7 +374,7 @@ final class PlanGeneratorTests: XCTestCase {
         )
         let result = PlanGenerator.generate(from: PlanGeneratorInput(selections: [selection], equipmentPreferences: [], usesFixedWeekdays: false))
         let names = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
-        XCTAssertTrue(names.contains("Long Run"), "erstes .quality-Vorkommen muss Tempo sein")
+        XCTAssertTrue(names.contains("Tempo Run"), "erstes .quality-Vorkommen muss Tempo sein")
         XCTAssertTrue(names.contains("Intervalle"), "zweites .quality-Vorkommen muss Intervall sein - Fix round 1")
         // `.interval`s eigene Groessen-/Pace-Logik bleibt unberuehrt (Global
         // Constraint) - auch wenn die Zone jetzt bei Profilen vorkommen kann.

@@ -232,4 +232,35 @@ final class CardioCoachingAdvisorTests: XCTestCase {
         let b = CardioCoachingAdvisor.missedRunHintFingerprint(planActivatedAt: anchor, summary: summary(missedCount: 2), concludedOpportunityCount: 8)
         XCTAssertEqual(a, b)
     }
+
+    // MARK: - isRunReEntry
+
+    func testRunReEntryJustBelowDayThresholdDoesNotTrigger() {
+        XCTAssertFalse(CardioCoachingAdvisor.isRunReEntry(daysSinceLastRun: 13, priorRunSessionCount: 5))
+    }
+
+    func testRunReEntryAtExactThresholdTriggers() {
+        XCTAssertTrue(CardioCoachingAdvisor.isRunReEntry(daysSinceLastRun: 14, priorRunSessionCount: 3))
+    }
+
+    func testRunReEntryWellAboveBothThresholdsTriggers() {
+        XCTAssertTrue(CardioCoachingAdvisor.isRunReEntry(daysSinceLastRun: 30, priorRunSessionCount: 10))
+    }
+
+    func testRunReEntryBeginnerGuardPreventsTriggering() {
+        // Nutzerin mit < minimumPriorRunSessions ist noch kein Rueckkehrer.
+        XCTAssertFalse(CardioCoachingAdvisor.isRunReEntry(daysSinceLastRun: 20, priorRunSessionCount: 2))
+    }
+
+    func testRunReEntryAtExactSessionMinimumTriggers() {
+        XCTAssertTrue(CardioCoachingAdvisor.isRunReEntry(daysSinceLastRun: 20, priorRunSessionCount: 3))
+    }
+
+    func testRunReEntryNoHistoryDoesNotCrashOrTrigger() {
+        XCTAssertFalse(CardioCoachingAdvisor.isRunReEntry(daysSinceLastRun: 0, priorRunSessionCount: 0))
+    }
+
+    // Boundary-Hinweis: das Filtern nicht-cardio-Sessions und unvollstaendiger
+    // Sessions liegt in DashboardView (daysSinceLastRunSession / priorRunSessionCount),
+    // nicht in dieser Pure Function - daher hier nicht Unit-testbar.
 }
