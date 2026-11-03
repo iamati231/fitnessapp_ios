@@ -1049,99 +1049,58 @@ public struct DeltiqRow: View {
 ///
 /// Hostet einen unsichtbaren `UIViewController`, der sobald er im
 /// Navigation-Stack sitzt den Pop-Gesture-Recognizer des umschliessenden
-/// `UINavigationController` wieder aktiviert und sich selbst als Delegate
-/// setzt (das Verfahren ist der etablierte Community-Standard fuer dieses
-/// Problem).
+/// `UINavigationController` steuert.
 ///
-/// UI-Refactor (Korrektur V7, Mehrebenen-Bug): die urspruengliche Fassung
-/// hostete einen BLOSSEN `UIViewController()` und aktivierte die Geste
-/// einmalig in `makeUIViewController` — das feuert genau EINMAL pro Push.
-/// `.navigationBarBackButtonHidden(true)`s Nebenwirkung (deaktiviert
-/// `interactivePopGestureRecognizer`) feuert dagegen bei JEDEM erneuten
-/// Sichtbarwerden eines Screens neu — auch wenn ein darueber gepushter
-/// Screen wieder weggepoppt wird und dieser Screen dadurch (ohne selbst neu
-/// gepusht zu werden) wieder ganz oben im Stack steht. Konkreter Bug: bei
-/// drei Ebenen A→B→C funktionierte Swipe-Back C→B (B's Re-Enable war gerade
-/// erst gelaufen), aber B→A nicht mehr (A's Re-Enable lag bereits laenger
-/// zurueck und wurde durch B's neuerliches Erscheinen erneut kassiert, ohne
-/// dass A je wieder reaktiviert wurde — `makeUIViewController` feuert fuer
-/// A nicht noch einmal). Fix: eine echte `UIViewController`-Subklasse statt
-/// eines bloss gehosteten Controllers — NUR eine Subklasse bekommt echte
-/// Lifecycle-Callbacks. Das Re-Enable laeuft jetzt in `viewWillAppear(_:)`,
-/// der bei JEDEM Sichtbarwerden feuert (verifiziert gegen UIKit-
-/// Referenzdokumentation + mehrere Apple-Developer-Forum-Threads zu genau
-/// diesem Pop-Reappear-Fall) — nicht nur beim allerersten Push. Die
-/// Subklasse ist direkt ihr eigener `UIGestureRecognizerDelegate` (keine
-/// separate `Coordinator`-Instanz mehr noetig: `self.navigationController`
-/// loest UIKits eigene Eltern-Traversierung bei JEDEM Aufruf frisch auf,
-/// keine gecachte/schwache Referenz mehr, die veralten koennte).
-private struct SwipeBackEnabler: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> SwipeBackHostController {
-        SwipeBackHostController()
-    }
+/// Korrektur V7 (Mehrebenen-Bug): `viewWillAppear` statt einmaligem
+/// `makeUIViewController` — feuert bei JEDEM Sichtbarwerden, auch nach
+/// Pop eines darueber gestapelten Screens.
+///
+/// Korrektur V8 (isDirty-Wechsel-Bug): ein einziger Typ mit `enabled`-
+/// Parameter statt zwei getrennter Typen (SwipeBackEnabler/Disabler).
+/// Bei zwei Typen baut SwiftUI bei jedem `enabled`-Wechsel den alten Typ
+/// ab und den neuen auf — `navigationController` ist beim ersten
+/// `updateUIViewController`-Aufruf noch nil, das Disable greift nicht.
+/// Mit einem Typ wird nur `updateUIViewController` auf derselben Instanz
+/// aufgerufen; `navigationController` ist dann bereits valid.
+private struct SwipeBackController: UIViewControllerRepresentable {
+    let enabled: Bool
 
-    func updateUIViewController(_ uiViewController: SwipeBackHostController, context: Context) {}
+    func makeUIViewController(context: Context) -> HostController { HostController() }
+    func updateUIViewController(_ c: HostController, context: Context) { c.apply(enabled: enabled) }
 
-    final class SwipeBackHostController: UIViewController, UIGestureRecognizerDelegate {
+    final class HostController: UIViewController, UIGestureRecognizerDelegate {
+        private var pendingEnabled: Bool = true
+
         override func viewDidLoad() {
             super.viewDidLoad()
             view.backgroundColor = .clear
-            // Absicherung fuer den allerersten Push: `parent`/`navigationController`
-            // sind bei `viewDidLoad` oft noch nicht aufgeloest (SwiftUI haengt
-            // diesen Controller asynchron in die Hierarchie ein). Der
-            // eigentliche Fix lebt in `viewWillAppear` unten - dieser Block
-            // ist nur ein zusaetzliches Sicherheitsnetz, falls `viewWillAppear`
-            // in einem noch unbekannten Einbettungsfall einmal ausbleiben sollte.
+            // Sicherheitsnetz: navigationController ist bei viewDidLoad oft
+            // noch nil (async Einbettung durch SwiftUI).
             DispatchQueue.main.async { [weak self] in
-                self?.enableSwipeBack()
+                guard let self else { return }
+                self.apply(enabled: self.pendingEnabled)
             }
         }
 
         override func viewWillAppear(_ animated: Bool) {
             super.viewWillAppear(animated)
-            // Korrektur V7: der eigentliche Fix - feuert bei JEDEM
-            // Sichtbarwerden dieses Screens, auch nach dem Pop eines darueber
-            // gepushten Screens, nicht nur beim allerersten Push.
-            enableSwipeBack()
+            // Hauptpfad: feuert bei JEDEM Sichtbarwerden (auch Re-Appear
+            // nach Pop eines darueber gestapelten Screens).
+            apply(enabled: pendingEnabled)
         }
 
-        private func enableSwipeBack() {
-            guard let navigationController else { return }
-            navigationController.interactivePopGestureRecognizer?.delegate = self
-            navigationController.interactivePopGestureRecognizer?.isEnabled = true
+        func apply(enabled: Bool) {
+            pendingEnabled = enabled
+            guard let navController = navigationController else { return }
+            if enabled {
+                navController.interactivePopGestureRecognizer?.delegate = self
+            }
+            navController.interactivePopGestureRecognizer?.isEnabled = enabled
         }
 
-        // README 2.19: reicht beim Pop bis zur Stack-Wurzel (wo nichts mehr
-        // zu poppen waere) automatisch "false" zurueck, weil
-        // `viewControllers.count` dann wieder 1 ist — unabhaengig davon,
-        // welcher Screen zuletzt die Geste aktiviert hat.
+        // Verhindert Pop an der Stack-Wurzel (viewControllers.count == 1).
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             (navigationController?.viewControllers.count ?? 0) > 1
-        }
-    }
-}
-
-// Gegenstueck zu SwipeBackEnabler: setzt isEnabled=false, wenn die Geste
-// bewusst gesperrt werden soll (z.B. isDirty-State in ProfileEditorView).
-// Ohne diesen Disabler bleibt isEnabled=true nachdem SwipeBackEnabler
-// entfernt wurde, weil der Gesture-Recognizer den Zustand nicht selbst
-// zuruecksetzt.
-private struct SwipeBackDisabler: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> DisablerController { DisablerController() }
-    func updateUIViewController(_ c: DisablerController, context: Context) { c.disableSwipeBack() }
-
-    final class DisablerController: UIViewController {
-        override func viewDidLoad() {
-            super.viewDidLoad()
-            view.backgroundColor = .clear
-            DispatchQueue.main.async { [weak self] in self?.disableSwipeBack() }
-        }
-        override func viewWillAppear(_ animated: Bool) {
-            super.viewWillAppear(animated)
-            disableSwipeBack()
-        }
-        func disableSwipeBack() {
-            navigationController?.interactivePopGestureRecognizer?.isEnabled = false
         }
     }
 }
@@ -1158,11 +1117,7 @@ public extension View {
     func deltiqSwipeBackEnabled(_ enabled: Bool = true) -> some View {
         #if canImport(UIKit)
         background {
-            if enabled {
-                SwipeBackEnabler()
-            } else {
-                SwipeBackDisabler()
-            }
+            SwipeBackController(enabled: enabled)
         }
         #else
         self
