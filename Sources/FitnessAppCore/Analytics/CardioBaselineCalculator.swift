@@ -98,4 +98,72 @@ public enum CardioBaselineCalculator {
         guard let fastestPace = paces.min() else { return nil }
         return Int((fastestPace * 5.0 * 60.0).rounded())
     }
+
+    // MARK: - Phase F: Median-5-km-Baseline
+
+    /// Distanz-Toleranz fuer "echte 5-km-Laeufe" — GPS-Abweichung und
+    /// geplante 5-km-Runden fallen typisch auf 4,5–5,5 km. Ausserhalb davon
+    /// ist die Einheit kein 5-km-Lauf und darf nicht einfliesssen.
+    public static let fiveKmDistanceRangeLow: Double = 4.5
+    public static let fiveKmDistanceRangeHigh: Double = 5.5
+
+    /// Mindestanzahl gueltiger 5-km-Laeufe fuer eine stabile Median-Baseline.
+    /// Unter diesem Wert haengt der Median zu stark an einer einzigen Messung.
+    public static let minimumFiveKmSamples: Int = 3
+
+    /// Beobachtungsfenster in Tagen. Laenger als `referenceWindowDays` (60 d),
+    /// weil echte 5-km-Laeufe im Trainingsalltag seltener vorkommen als
+    /// beliebige Referenzlaeufe (> 3 km) — ein engeres Fenster liefert sonst
+    /// zu selten genueg Daten. Der Aufrufer filtert nach diesem Wert,
+    /// identisches Muster wie bei `weeklyVolumeKm`/`fastestReferenceSeconds`.
+    public static let fiveKmMedianWindowDays: Int = 90
+
+    // Plausibilitaetsgrenzen fuer die berechnete 5-km-Aequivalent-Zeit —
+    // identisch mit `PaceCalculator.parseFiveKReferenceSeconds` (600 s = 10:00,
+    // 5400 s = 90:00), damit manuelle Eingabe und abgeleiteter Wert dieselbe
+    // Pruefung durchlaufen.
+    private static let fiveKmPlausibleMinSeconds: Int = 600
+    private static let fiveKmPlausibleMaxSeconds: Int = 5400
+
+    /// Berechnet eine 5-km-Median-Baseline aus tatsaechlich absolvierten
+    /// ~5-km-Laeufen. Verwendet ausschliesslich echte Distanz-/Zeitdaten,
+    /// schaetzt keine 5-km-Zeit aus laengeren oder kuerzeren Laeufen.
+    ///
+    /// Filter (alle muessen erfuellt sein):
+    ///   1. Distanz in [`fiveKmDistanceRangeLow`, `fiveKmDistanceRangeHigh`]
+    ///   2. Dauer >= `minimumQualifyingDurationSeconds` (fehlgestartete Uhren)
+    ///   3. Berechnetes 5-km-Aequivalent im Bereich [`fiveKmPlausibleMinSeconds`,
+    ///      `fiveKmPlausibleMaxSeconds`] (implausible Ausreisser)
+    ///
+    /// Median-Definition: bei gerader Anzahl Mittelwert der zwei Mittelwerte.
+    /// Pace wird aus den Rohdaten berechnet (kein Vorrunden), auf 5 km
+    /// skaliert und abschliessend gerundet.
+    ///
+    /// Liefert `nil` wenn < `minimumFiveKmSamples` gueltige Laeufe vorliegen.
+    /// Der Aufrufer ist verantwortlich, `runs` auf `fiveKmMedianWindowDays`
+    /// vorzufiltern (gleiche Konvention wie `weeklyVolumeKm`).
+    public static func medianFiveKmSeconds(from runs: [RunSample]) -> Int? {
+        let paces: [Double] = runs.compactMap { sample in
+            guard sample.distanceKm >= fiveKmDistanceRangeLow,
+                  sample.distanceKm <= fiveKmDistanceRangeHigh,
+                  sample.durationSeconds >= minimumQualifyingDurationSeconds,
+                  let pace = PaceCalculator.minutesPerKm(
+                      distanceKm: sample.distanceKm,
+                      durationSeconds: sample.durationSeconds
+                  )
+            else { return nil }
+            let fiveKmEquivalent = Int((pace * 5.0 * 60.0).rounded())
+            guard fiveKmEquivalent >= fiveKmPlausibleMinSeconds,
+                  fiveKmEquivalent <= fiveKmPlausibleMaxSeconds
+            else { return nil }
+            return pace
+        }
+        guard paces.count >= minimumFiveKmSamples else { return nil }
+        let sorted = paces.sorted()
+        let mid = sorted.count / 2
+        let medianPace = sorted.count.isMultiple(of: 2)
+            ? (sorted[mid - 1] + sorted[mid]) / 2.0
+            : sorted[mid]
+        return Int((medianPace * 5.0 * 60.0).rounded())
+    }
 }
