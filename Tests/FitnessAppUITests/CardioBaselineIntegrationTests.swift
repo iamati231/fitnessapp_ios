@@ -119,6 +119,20 @@ final class CardioBaselineIntegrationTests: XCTestCase {
         )
     }
 
+    // MARK: - applyCardioBaseline Ziel-Minimum-Regression (DEL-251-v2)
+
+    func testApplyDoesNotClampToGoalMinimum() throws {
+        let src = try source
+        guard let body = body(of: "applyCardioBaseline", in: src) else {
+            XCTFail("applyCardioBaseline nicht in CardioGoalEditorView gefunden")
+            return
+        }
+        XCTAssertFalse(
+            body.contains("minimumWeeklyVolumeKm"),
+            "applyCardioBaseline darf minimumWeeklyVolumeKm NICHT verwenden — Retro-Sync-Wert darf nicht auf Ziel-Minimum angehoben werden (DEL-251-v2)"
+        )
+    }
+
     // MARK: - isEmpty-Guard (kein Dialog bei leerer Baseline)
 
     func testEmptyGuardPresent() throws {

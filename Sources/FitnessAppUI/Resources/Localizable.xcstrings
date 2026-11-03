@@ -41586,6 +41586,98 @@
         }
       }
     },
+    "profile.cardio.retroSync.sourceActiveRunner": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus deinen letzten Trainingswochen abgeleitet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Derived from your recent training weeks."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son antrenman haftalarından hesaplandı."
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.sourceReturning": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiedereinstieg nach %d Wochen Pause."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comeback after %d weeks off."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d haftalık aradan sonra geri dönüş."
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.sourceBeginner": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Laufverlauf gefunden – konservativer Einstieg."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No running history found – conservative starting point."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu geçmişi bulunamadı – muhafazakâr başlangıç."
+          }
+        }
+      }
+    },
+    "profile.cardio.retroSync.sourceInsufficient": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu wenige Daten – konservativer Einstieg."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough data – conservative starting point."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeterli veri yok – muhafazakâr başlangıç."
+          }
+        }
+      }
+    },
     "rest.notification.title": {
       "extractionState": "manual",
       "localizations": {

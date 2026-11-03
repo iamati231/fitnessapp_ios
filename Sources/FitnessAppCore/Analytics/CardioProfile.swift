@@ -32,9 +32,10 @@ public enum CardioGoal: String, Codable, Sendable, CaseIterable {
         }
     }
 
-    /// Minimales sinnvolles Startvolumen pro Ziel (km/Woche). Untergrenze fuer
-    /// Retro-Sync-Ergebnisse und Stepper-Bereich — grobe Naeherung an gaengige
-    /// Einsteiger-Trainingplaene, kein individueller Coaching-Wert.
+    /// Langfristiges Ziel-Mindestvolumen pro Laufziel (km/Woche) —
+    /// Orientierungswert fuer Planprogressionen, NICHT als kuenstlicher
+    /// Startwert fuer Retro-Sync oder Stepper-Untergrenze verwenden
+    /// (siehe DEL-251-v2: `CardioBaselineCalculator.classifyWeeklyVolume`).
     public var minimumWeeklyVolumeKm: Double {
         switch self {
         case .generalFitness: return 5.0

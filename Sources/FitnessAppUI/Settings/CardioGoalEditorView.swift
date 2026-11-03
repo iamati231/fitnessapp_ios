@@ -392,9 +392,23 @@ struct CardioGoalEditorView: View {
             .filter(\.resolvedIsCardio)
     }
 
+    private func cardioTimestampedEntries(sinceDaysAgo days: Int) -> [CardioBaselineCalculator.TimestampedEntry] {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? .distantPast
+        return completedSessions
+            .filter { $0.isRealWorkout && $0.startTime >= cutoff }
+            .flatMap { session in
+                session.logs
+                    .filter(\.resolvedIsCardio)
+                    .compactMap { log -> CardioBaselineCalculator.TimestampedEntry? in
+                        guard let km = log.distanceKm else { return nil }
+                        return CardioBaselineCalculator.TimestampedEntry(date: session.startTime, distanceKm: km)
+                    }
+            }
+    }
+
     private func computeCardioBaseline() -> CardioBaselineCalculator.Result {
-        let volumeDistancesKm = cardioLogs(sinceDaysAgo: CardioBaselineCalculator.weeklyVolumeWindowDays)
-            .compactMap(\.distanceKm)
+        let volumeEntries = cardioTimestampedEntries(sinceDaysAgo: CardioBaselineCalculator.classificationWindowDays)
+        let (volumeCategory, suggestedKm) = CardioBaselineCalculator.classifyWeeklyVolume(entries: volumeEntries)
         let referenceRuns = cardioLogs(sinceDaysAgo: CardioBaselineCalculator.referenceWindowDays)
             .compactMap { log -> CardioBaselineCalculator.RunSample? in
                 guard let distanceKm = log.distanceKm, let durationSeconds = log.durationSeconds else { return nil }
@@ -406,7 +420,8 @@ struct CardioGoalEditorView: View {
                 return CardioBaselineCalculator.RunSample(distanceKm: distanceKm, durationSeconds: durationSeconds)
             }
         return CardioBaselineCalculator.Result(
-            weeklyVolumeKm: CardioBaselineCalculator.weeklyVolumeKm(distancesKm: volumeDistancesKm),
+            weeklyVolumeKm: suggestedKm,
+            volumeCategory: volumeCategory,
             referenceSeconds: CardioBaselineCalculator.fastestReferenceSeconds(from: referenceRuns),
             median5kSeconds: CardioBaselineCalculator.medianFiveKmSeconds(from: fiveKmRuns)
         )
@@ -416,9 +431,8 @@ struct CardioGoalEditorView: View {
         var weeklyBaseVolumeKm = cardioSetupDraft.weeklyBaseVolumeKm
         var fiveKReferenceText = cardioSetupDraft.fiveKReferenceText
         if let weeklyVolumeKm = result.weeklyVolumeKm {
-            // Auf 0,5-km-Schritt runden und Mindest-Reiz pro Ziel einhalten.
-            let snapped = (weeklyVolumeKm * 2).rounded() / 2
-            weeklyBaseVolumeKm = max(snapped, cardioSetupDraft.goal.minimumWeeklyVolumeKm)
+            // Auf 0,5-km-Schritt runden; kein kuenstliches Ziel-Minimum (spec: DEL-251-v2).
+            weeklyBaseVolumeKm = (weeklyVolumeKm * 2).rounded() / 2
         }
         if let referenceSeconds = result.median5kSeconds ?? result.referenceSeconds {
             fiveKReferenceText = PaceCalculator.formatDuration(referenceSeconds)
@@ -431,20 +445,37 @@ struct CardioGoalEditorView: View {
     }
 
     private func cardioBaselineMessage(_ result: CardioBaselineCalculator.Result) -> String {
+        let prefix: String
+        if let category = result.volumeCategory {
+            switch category {
+            case .activeRunner:
+                prefix = String(localized: "profile.cardio.retroSync.sourceActiveRunner", bundle: .module)
+            case .returningRunner(let weeks):
+                prefix = String(format: String(localized: "profile.cardio.retroSync.sourceReturning", bundle: .module), weeks)
+            case .insufficientData:
+                prefix = String(localized: "profile.cardio.retroSync.sourceInsufficient", bundle: .module)
+            case .beginner:
+                prefix = String(localized: "profile.cardio.retroSync.sourceBeginner", bundle: .module)
+            }
+        } else {
+            prefix = String(localized: "profile.cardio.retroSync.sourceBeginner", bundle: .module)
+        }
         let volumeText = result.weeklyVolumeKm.map(\.formattedOneDecimal)
         let paceText = (result.median5kSeconds ?? result.referenceSeconds)
             .flatMap(PaceZoneCalculator.racePaceMinutesPerKm)
             .map(PaceCalculator.formatPace)
+        let detail: String
         switch (volumeText, paceText) {
         case let (.some(v), .some(p)):
-            return String(format: String(localized: "profile.cardio.retroSync.messageBoth", bundle: .module), v, p)
+            detail = String(format: String(localized: "profile.cardio.retroSync.messageBoth", bundle: .module), v, p)
         case let (.some(v), nil):
-            return String(format: String(localized: "profile.cardio.retroSync.messageVolumeOnly", bundle: .module), v)
+            detail = String(format: String(localized: "profile.cardio.retroSync.messageVolumeOnly", bundle: .module), v)
         case let (nil, .some(p)):
-            return String(format: String(localized: "profile.cardio.retroSync.messagePaceOnly", bundle: .module), p)
+            detail = String(format: String(localized: "profile.cardio.retroSync.messagePaceOnly", bundle: .module), p)
         case (nil, nil):
-            return ""
+            return prefix
         }
+        return prefix + "\n" + detail
     }
 
     // MARK: - Fields (identisch zu ProfileEditorView, DEL-250-Muster)

@@ -20,11 +20,12 @@ import Foundation
 public enum CardioBaselineCalculator {
 
     /// Ergebnis eines Retro-Sync-Laufs. `nil`-Felder bedeuten "zu wenig
-    /// Daten fuer diese Metrik", nicht "Wert ist Null" - ein User ohne
-    /// geloggte Laeufe soll nicht faelschlich `weeklyVolumeKm == 0`
-    /// bekommen (das waere ein falscher Befund, kein fehlender).
+    /// Daten fuer diese Metrik", nicht "Wert ist Null".
     public struct Result: Equatable {
         public let weeklyVolumeKm: Double?
+        /// Herkunft des `weeklyVolumeKm`-Werts — fuer nutzerseitige Erklaerung
+        /// im Bestaetigungs-Dialog. `nil` wenn `weeklyVolumeKm == nil`.
+        public let volumeCategory: VolumeCategory?
         public let referenceSeconds: Int?
         /// Phase F: Median aus tatsaechlich absolvierten ~5-km-Laeufen (90-Tage-
         /// Fenster). `nil` wenn < `minimumFiveKmSamples` gueltige Laeufe
@@ -34,8 +35,9 @@ public enum CardioBaselineCalculator {
         /// hochgerechneter Wert.
         public let median5kSeconds: Int?
 
-        public init(weeklyVolumeKm: Double?, referenceSeconds: Int?, median5kSeconds: Int? = nil) {
+        public init(weeklyVolumeKm: Double?, volumeCategory: VolumeCategory? = nil, referenceSeconds: Int?, median5kSeconds: Int? = nil) {
             self.weeklyVolumeKm = weeklyVolumeKm
+            self.volumeCategory = volumeCategory
             self.referenceSeconds = referenceSeconds
             self.median5kSeconds = median5kSeconds
         }
@@ -43,6 +45,30 @@ public enum CardioBaselineCalculator {
         /// Kein einziger Wert konnte ermittelt werden — der Aufrufer sollte
         /// in diesem Fall gar keinen Bestaetigungs-Dialog zeigen.
         public var isEmpty: Bool { weeklyVolumeKm == nil && referenceSeconds == nil }
+    }
+
+    /// Klassifizierung des Trainingsstatus — bestimmt Herkunft und Berechnung
+    /// des vorgeschlagenen Startvolumens.
+    public enum VolumeCategory: Equatable, Sendable {
+        /// Regelmaessig laufend innerhalb der letzten `pauseThresholdDays` Tage.
+        case activeRunner
+        /// Laufhistorie vorhanden, aber laengere Pause erkannt.
+        /// `pauseWeeks`: Anzahl Wochen seit dem letzten Lauf.
+        case returningRunner(pauseWeeks: Int)
+        /// Keine verwertbare Laufhistorie — Anfaenger-Einstieg.
+        case beginner
+        /// Zu wenige Daten fuer eine belastbare Klassifizierung.
+        case insufficientData
+    }
+
+    /// Einzelner Laufeintrag mit Zeitstempel — Eingabe fuer `classifyWeeklyVolume`.
+    public struct TimestampedEntry: Sendable {
+        public let date: Date
+        public let distanceKm: Double
+        public init(date: Date, distanceKm: Double) {
+            self.date = date
+            self.distanceKm = distanceKm
+        }
     }
 
     /// Ein einzelner geloggter Lauf (Distanz + Dauer) — Eingabe fuer die
@@ -56,6 +82,19 @@ public enum CardioBaselineCalculator {
             self.durationSeconds = durationSeconds
         }
     }
+
+    /// Zeitfenster fuer die Volumen-Klassifizierung (8–13 Wochen Horizont,
+    /// gleich `fiveKmMedianWindowDays`): lang genug, um eine Trainingspause
+    /// sicher zu erkennen und historisches Volumen abzuschaetzen.
+    public static let classificationWindowDays: Int = 90
+
+    /// Ab dieser Pausenlaenge (Tage ohne Lauf) gilt ein User als Wiedereinstieg.
+    /// 6 Wochen ohne Training reduzieren die Laufbelastbarkeit sichtbar.
+    public static let pauseThresholdDays: Int = 42
+
+    /// Konservativer Anfaenger-Einstieg (km/Woche) wenn keine Laufhistorie
+    /// vorliegt: ~3 Einheiten × 10–15 Min ≈ 3 km — kein Bezug zum Laufziel.
+    public static let beginnerDefaultKm: Double = 3.0
 
     /// Zeitfenster fuer die Wochenvolumen-Berechnung (Ticket-Vorgabe: "die
     /// letzten 4 Wochen").
@@ -87,6 +126,81 @@ public enum CardioBaselineCalculator {
     public static func weeklyVolumeKm(distancesKm: [Double]) -> Double? {
         guard !distancesKm.isEmpty else { return nil }
         return distancesKm.reduce(0, +) / Double(weeklyVolumeWeeks)
+    }
+
+    /// Klassifiziert das Wochenvolumen anhand zeitgestempelter Laufeintraege.
+    ///
+    /// Klassifizierungslogik:
+    ///   A. Aktiver Laeuer (letzter Lauf ≤ `pauseThresholdDays`, ≥ 2 aktive
+    ///      Wochen der letzten 4): Median der 4 letzten Wochenvolumen.
+    ///   B. Wiedereinstieg (letzter Lauf > `pauseThresholdDays`): Median der
+    ///      4 Wochen vor der Pause × Reduktionsfaktor nach Pausenlaenge.
+    ///   C. Kein Eintraege im Fenster → Anfaenger, `beginnerDefaultKm`.
+    ///   D. Nur 1 aktive Woche der letzten 4 → `insufficientData`.
+    ///
+    /// Der `referenceDate`-Parameter dient als Test-Injection-Punkt (Default: heute).
+    public static func classifyWeeklyVolume(
+        entries: [TimestampedEntry],
+        referenceDate: Date = Date()
+    ) -> (category: VolumeCategory, suggestedKm: Double) {
+        let cal = Calendar.current
+        let windowStart = cal.date(byAdding: .day, value: -classificationWindowDays, to: referenceDate) ?? .distantPast
+        let windowEntries = entries.filter { $0.date >= windowStart }
+
+        guard let lastRunDate = windowEntries.map(\.date).max() else {
+            return (.beginner, beginnerDefaultKm)
+        }
+
+        let daysSinceLast = cal.dateComponents([.day], from: lastRunDate, to: referenceDate).day ?? 0
+
+        if daysSinceLast > pauseThresholdDays {
+            let pauseWeeks = max(1, daysSinceLast / 7)
+
+            // Median der 4 Wochen direkt vor der Pause als historisches Volumen
+            var preWeeklyKm = [Double](repeating: 0.0, count: 4)
+            for entry in windowEntries {
+                let daysFromLast = max(0, cal.dateComponents([.day], from: entry.date, to: lastRunDate).day ?? 0)
+                guard daysFromLast < 28 else { continue }
+                let bucket = min(daysFromLast / 7, 3)
+                preWeeklyKm[bucket] += entry.distanceKm
+            }
+            let preSorted = preWeeklyKm.sorted()
+            // Bei ≥ 2 aktiven Wochen: Median; sonst Mittelwert aller Eintraege / 4
+            let preActive = preWeeklyKm.filter { $0 > 0 }.count
+            let historicalKm: Double
+            if preActive >= 2 {
+                historicalKm = (preSorted[1] + preSorted[2]) / 2.0
+            } else {
+                historicalKm = windowEntries.reduce(0.0) { $0 + $1.distanceKm } / 4.0
+            }
+
+            let factor: Double
+            if pauseWeeks <= 4 { factor = 0.80 }
+            else if pauseWeeks <= 8 { factor = 0.60 }
+            else { factor = 0.40 }
+
+            return (.returningRunner(pauseWeeks: pauseWeeks), max(historicalKm * factor, beginnerDefaultKm))
+        }
+
+        // Aktiver Laeuer: 4 Wochenbuckets der letzten 28 Tage
+        let fourWeekStart = cal.date(byAdding: .day, value: -28, to: referenceDate) ?? .distantPast
+        var weeklyKm = [Double](repeating: 0.0, count: 4)
+        for entry in windowEntries where entry.date >= fourWeekStart {
+            let daysAgo = max(0, cal.dateComponents([.day], from: entry.date, to: referenceDate).day ?? 0)
+            let bucket = min(daysAgo / 7, 3)
+            weeklyKm[bucket] += entry.distanceKm
+        }
+
+        let activeWeeks = weeklyKm.filter { $0 > 0 }.count
+        if activeWeeks < 2 {
+            let mean = weeklyKm.reduce(0.0, +) / 4.0
+            return (.insufficientData, max(mean, beginnerDefaultKm))
+        }
+
+        // Median aus 4 Wochenvolumen (robust gegen Ausreisser-Wochen)
+        let sorted = weeklyKm.sorted()
+        let median = (sorted[1] + sorted[2]) / 2.0
+        return (.activeRunner, max(median, beginnerDefaultKm))
     }
 
     /// Leitet eine 5-km-Referenzzeit aus dem schnellsten qualifizierenden

@@ -95,9 +95,9 @@ public struct CardioCoachSetupFields: View {
                             .font(.system(size: 15))
                     }
                     Stepper("", value: Binding<Double>(
-                        get: { draft.weeklyBaseVolumeKm ?? draft.goal.minimumWeeklyVolumeKm },
+                        get: { draft.weeklyBaseVolumeKm ?? CardioBaselineCalculator.beginnerDefaultKm },
                         set: { newValue in draft = with(draft) { $0.weeklyBaseVolumeKm = newValue } }
-                    ), in: draft.goal.minimumWeeklyVolumeKm...200, step: 0.5)
+                    ), in: 0.5...200, step: 0.5)
                     .labelsHidden()
                 }
             }

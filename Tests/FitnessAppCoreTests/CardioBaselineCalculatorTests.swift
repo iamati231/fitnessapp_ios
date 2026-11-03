@@ -82,4 +82,76 @@ final class CardioBaselineCalculatorTests: XCTestCase {
             1500
         )
     }
+
+    // MARK: - classifyWeeklyVolume
+
+    func testClassifyNoEntriesYieldsBeginner() {
+        let (cat, km) = CardioBaselineCalculator.classifyWeeklyVolume(entries: [])
+        XCTAssertEqual(cat, .beginner)
+        XCTAssertEqual(km, CardioBaselineCalculator.beginnerDefaultKm, accuracy: 0.001)
+    }
+
+    func testClassifyActiveRunnerMedianOfFourWeeks() {
+        let ref = Date()
+        let cal = Calendar.current
+        let daysAgo = { (n: Int) in cal.date(byAdding: .day, value: -n, to: ref)! }
+        // Week 0: 10, Woche 1: 15, Woche 2: 12, Woche 3: 8 → sorted [8,10,12,15] → median 11
+        let entries = [
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(3),  distanceKm: 10),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(10), distanceKm: 15),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(17), distanceKm: 12),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(24), distanceKm: 8),
+        ]
+        let (cat, km) = CardioBaselineCalculator.classifyWeeklyVolume(entries: entries, referenceDate: ref)
+        XCTAssertEqual(cat, .activeRunner)
+        XCTAssertEqual(km, 11.0, accuracy: 0.001)
+    }
+
+    func testClassifyActiveRunnerMedianIgnoresOutlier() {
+        let ref = Date()
+        let cal = Calendar.current
+        let daysAgo = { (n: Int) in cal.date(byAdding: .day, value: -n, to: ref)! }
+        // Renneinsatz-Woche (50 km) darf Baseline nicht aufblasen:
+        // sorted [20,20,20,50] → median 20, nicht Mittelwert 27.5
+        let entries = [
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(2),  distanceKm: 50),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(10), distanceKm: 20),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(17), distanceKm: 20),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(24), distanceKm: 20),
+        ]
+        let (cat, km) = CardioBaselineCalculator.classifyWeeklyVolume(entries: entries, referenceDate: ref)
+        XCTAssertEqual(cat, .activeRunner)
+        XCTAssertEqual(km, 20.0, accuracy: 0.001)
+    }
+
+    func testClassifyReturningRunnerPauseDetected() {
+        let ref = Date()
+        let cal = Calendar.current
+        let daysAgo = { (n: Int) in cal.date(byAdding: .day, value: -n, to: ref)! }
+        // Letzter Lauf vor 50 Tagen → pauseWeeks=7, factor=0.60
+        // Historical buckets vor der Pause: [10,20,15,8] → sorted [8,10,15,20] → hist=12.5
+        // suggested = max(12.5*0.60, 3.0) = 7.5
+        let entries = [
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(50), distanceKm: 10),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(57), distanceKm: 20),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(64), distanceKm: 15),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(71), distanceKm: 8),
+        ]
+        let (cat, km) = CardioBaselineCalculator.classifyWeeklyVolume(entries: entries, referenceDate: ref)
+        XCTAssertEqual(cat, .returningRunner(pauseWeeks: 7))
+        XCTAssertEqual(km, 7.5, accuracy: 0.001)
+    }
+
+    func testClassifyInsufficientDataOneActiveWeek() {
+        let ref = Date()
+        let cal = Calendar.current
+        let daysAgo = { (n: Int) in cal.date(byAdding: .day, value: -n, to: ref)! }
+        // Nur 1 aktive Woche → insufficientData; mean=2.5 → max(2.5, beginnerDefault=3.0)
+        let entries = [
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(10), distanceKm: 10),
+        ]
+        let (cat, km) = CardioBaselineCalculator.classifyWeeklyVolume(entries: entries, referenceDate: ref)
+        XCTAssertEqual(cat, .insufficientData)
+        XCTAssertEqual(km, CardioBaselineCalculator.beginnerDefaultKm, accuracy: 0.001)
+    }
 }
