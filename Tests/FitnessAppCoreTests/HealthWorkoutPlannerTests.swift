@@ -792,6 +792,7 @@ final class HealthWorkoutPlannerTests: XCTestCase {
             "exercise.name.run":             (.running, false),
             "exercise.name.easyRun":         (.running, false),
             "exercise.name.longRun":         (.running, false),
+            "exercise.name.tempoRun":        (.running, false),
             "exercise.name.intervals":       (.running, nil),
             "exercise.name.runInterval":     (.running, nil),
             "exercise.name.treadmill":       (.running, true),
