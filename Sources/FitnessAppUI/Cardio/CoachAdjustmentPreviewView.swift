@@ -178,9 +178,15 @@ struct CoachAdjustmentPreviewView: View {
             // anbieten, das JEDEN Versuch mit der irrefuehrenden "Plan hat
             // sich geaendert"-Meldung abbricht, ohne je "Neuen Plan erstellen"
             // erreichbar zu machen.
-            if model.analysis.insertableRestDays.count >= newCardioDays(for: model).count {
+            let desired = newCardioDays(for: model)
+            // Zwei Pfade: isAutoFilledPlaceholder-Ruhetage ersetzen ODER neue
+            // Tage auf freien Wochentagen erzeugen (Fallback, wenn Ruhetage
+            // manuell geloescht wurden). Beide Pfade laufen in accept().
+            let enoughInsertable = model.analysis.insertableRestDays.count >= newCardioDays(for: model).count
+            let enoughFree = model.analysis.freeWeekdaysForNewDays.count >= desired.count
+            if enoughInsertable || enoughFree {
                 Section {
-                    ForEach(Array(newCardioDays(for: model).enumerated()), id: \.offset) { _, spec in
+                    ForEach(Array(desired.enumerated()), id: \.offset) { _, spec in
                         Text("— → \(spec.name)")
                     }
                 } header: {
