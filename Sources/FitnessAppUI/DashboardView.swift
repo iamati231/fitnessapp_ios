@@ -277,8 +277,16 @@ public struct DashboardView: View {
                     // deckt jetzt selbst beide Zustaende ab (siehe deren
                     // Doku).
                     if let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans),
+                       !activePlan.days.isEmpty,
                        let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
-                        laufcoachingAdjustmentCard(adjustment, plan: activePlan)
+                        // Snapshot-Muster (identisch zu planDayCard/PlanDayExerciseItem): nextDayName
+                        // als reinen String an die Funktion uebergeben, damit deren verschachtelte
+                        // ViewBuilder-Closures keinen live-Verweis auf plan.days halten — sonst kann
+                        // SwiftUI/Observation sie unabhaengig neu aufrufen, nachdem die Tage des
+                        // geloeschten Plans ihre eigene Aenderungs-Benachrichtigung gefeuert haben,
+                        // und nextScheduledDay's sortedDays[0] crasht auf dem leeren Array.
+                        let nextDayName = nextScheduledDay(in: activePlan).displayName
+                        laufcoachingAdjustmentCard(adjustment, nextDayName: nextDayName)
                     } else if let model = cardioFeasibilityModel {
                         cardioFeasibilityDashboardCard(model)
                     }
@@ -2712,7 +2720,7 @@ public struct DashboardView: View {
     /// Renntag (wenn gesetzt), anpassbare Lauftage im Plan, 5-km-Referenz
     /// (wenn vorhanden). `plan` und `profile` sind Pflicht fuer die Detail-
     /// Zeilen; das CTA-Sheet liest Profil/Plan selbst frisch aus der Query.
-    private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, plan: TrainingPlan) -> some View {
+    private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, nextDayName: String) -> some View {
         Group {
             if let profile = profiles.first,
                profile.cardioAdjustmentCardDismissedFingerprint != adjustment.fingerprint {
@@ -2760,10 +2768,9 @@ public struct DashboardView: View {
                                     .font(.caption)
                                     .foregroundStyle(Color.Deltiq.textSecondary)
                                 }
-                                let nextDay = nextScheduledDay(in: plan)
                                 Text(String(
                                     format: String(localized: "dashboard.coachAdjustment.nextUnit", bundle: .module),
-                                    nextDay.displayName
+                                    nextDayName
                                 ))
                                 .font(.caption)
                                 .foregroundStyle(Color.Deltiq.textSecondary)
