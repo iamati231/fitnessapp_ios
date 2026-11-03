@@ -45,7 +45,7 @@ final class CardioBaselineIntegrationTests: XCTestCase {
 
     func testComputeCallsMedianFiveKmSeconds() throws {
         let src = try source
-        guard let body = body(of: "computeCardioBaseline", in: src) else {
+        guard let body = body(of: "computeCardioBaseline", in: src, maxLength: 1500) else {
             XCTFail("computeCardioBaseline nicht in CardioGoalEditorView gefunden")
             return
         }
@@ -57,7 +57,7 @@ final class CardioBaselineIntegrationTests: XCTestCase {
 
     func testComputePassesMedianToResult() throws {
         let src = try source
-        guard let body = body(of: "computeCardioBaseline", in: src) else {
+        guard let body = body(of: "computeCardioBaseline", in: src, maxLength: 1500) else {
             XCTFail("computeCardioBaseline nicht in CardioGoalEditorView gefunden")
             return
         }
