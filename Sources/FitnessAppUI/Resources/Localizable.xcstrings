@@ -5131,6 +5131,75 @@
         }
       }
     },
+    "coaching.soft.cardioReEntry.analytical": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast 14 Tage nicht gelaufen. Detraining-Effekte sind noch gering — starte mit ~80 % der gewohnten Distanz. Das erste Training zurück fühlt sich anstrengender an, als es ist."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You haven't run in 14 days. Detraining effects are still minor — start at ~80% of your usual distance. The first run back will feel harder than it actually is."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "14 gündür koşmadın. Detraining etkileri henüz küçük — olağan mesafenin ~%80'iyle başla. Geri dönüşteki ilk koşu olduğundan daha zor hissettirecek."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioReEntry.motivating": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Willkommen zurück auf der Strecke! Leg heute locker los und lass das Tempo außen vor — dein Körper braucht einen Lauf, keinen Rekordversuch."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome back to the road! Take it easy today, skip the pace watch — your body needs a run, not a record attempt."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pistlere hoş geldin! Bugün hafifçe başla, tempoya takılma — vücudun bir koşuya ihtiyaç duyuyor, rekora değil."
+          }
+        }
+      }
+    },
+    "coaching.soft.cardioReEntry.strict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "14 Tage Laufpause. Kein Rückschritt — aber kein Vollgas. Distanz halbieren, Tempo ignorieren. Ankommen zählt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "14-day running break. No setback — but don't go full throttle. Cut the distance, ignore pace. Finishing counts."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "14 günlük koşu molası. Gerileme değil — ama tam gaz başlama. Mesafeyi yarıya indir, tempoyu umursa. Tamamlamak önemli."
+          }
+        }
+      }
+    },
     "coaching.edu.analytical.1": {
       "extractionState": "manual",
       "localizations": {
@@ -39903,6 +39972,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "5 km sürenizi MM:SS biçiminde girin, örn. 25:00."
+          }
+        }
+      }
+    },
+    "profile.cardio.fiveKReference.missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne 5-km-Referenzzeit werden Trainingstempos als Bereiche statt exakter Werte angezeigt. Gib deine beste 5-km-Zeit im Format MM:SS ein."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without a 5K reference time, training paces are shown as ranges instead of exact values. Enter your best 5K time in MM:SS format."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 km referans süresi olmadan antrenman tempoları kesin değerler yerine aralıklar olarak gösterilir. En iyi 5 km sürenizi MM:SS formatında girin."
           }
         }
       }

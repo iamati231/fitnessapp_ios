@@ -1872,6 +1872,12 @@ public struct DashboardView: View {
         // Praktisch nie gleichzeitig mit reEntry (Deload braucht hohe
         // RECENT-Aktivität, reEntry Inaktivität).
         if shouldRecommendDeload { return .deloadRecommended }
+        // Phase E: Lauf-spezifischer Wiedereinstieg gewinnt vor dem generischen
+        // reEntry-Case — running-spezifischer Text > allgemeiner Kraft-Text.
+        if let runDays = daysSinceLastRunSession,
+           CardioCoachingAdvisor.isRunReEntry(daysSinceLastRun: runDays, priorRunSessionCount: priorRunSessionCount) {
+            return .cardioReEntry
+        }
         if let days = daysSinceLastRealSession, days >= 5 { return .reEntry }
         // DEL-198: Volumen-Rekord schlägt die generischen Post-Workout-
         // Komplimente — "beste Woche ever" ist die stärkere Nachricht.
@@ -2153,6 +2159,21 @@ public struct DashboardView: View {
         let start = cal.startOfDay(for: latest)
         let today = cal.startOfDay(for: Date())
         return cal.dateComponents([.day], from: start, to: today).day
+    }
+
+    /// Phase E: Tage seit der letzten realen Lauf-/Cardio-Session.
+    /// nil wenn noch keine Cardio-Session geloggt wurde.
+    private var daysSinceLastRunSession: Int? {
+        let runSessions = completedSessions.filter { $0.isRealWorkout && $0.logs.contains { $0.resolvedIsCardio } }
+        guard let latest = runSessions.map(\.endTime).max() else { return nil }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: latest)
+        let today = cal.startOfDay(for: Date())
+        return cal.dateComponents([.day], from: start, to: today).day
+    }
+
+    private var priorRunSessionCount: Int {
+        completedSessions.filter { $0.isRealWorkout && $0.logs.contains { $0.resolvedIsCardio } }.count
     }
 
     /// True wenn der heutige Plan-Eintrag ein Trainings-Tag ist (kein Rest).

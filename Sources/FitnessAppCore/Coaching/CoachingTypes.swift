@@ -304,6 +304,14 @@ public enum CoachingContext: String, Sendable {
     /// Core/Data-Projektionslayer `MissedRunDayEvaluator`.
     case cardioMissedRunDays
 
+    /// Phase E: Laufpause >= 14 Tage bei Laeufer mit vorhandener Lauf-
+    /// Historie (>= 3 Sessions). Konservativer Wiedereinstiegs-Hinweis:
+    /// Distanz reduzieren (nicht Tempo), harten Effort akzeptieren. Rangiert
+    /// VOR dem generischen `reEntry` (running-spezifisch > allgemein) und
+    /// VOR `cardioMissedRunDays` (allgemeiner Wiedereinstieg > einzelne
+    /// verfehlte Tage). Entscheidung via `CardioCoachingAdvisor.isRunReEntry`.
+    case cardioReEntry
+
     /// Letzte Körpermessung > 14 Tage her, obwohl der User das Feature
     /// aktiv nutzt (>= 2 Messungen vorhanden). Sanfter Mess-Reminder.
     case measurementOverdue

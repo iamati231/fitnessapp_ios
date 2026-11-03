@@ -169,6 +169,23 @@ public enum CardioCoachingAdvisor {
     ///     Gelegenheit bei gedeckeltem `missedCount` von echtem Stillstand
     ///     (seit der letzten Unterdrueckung ist NICHTS verstrichen)
     ///     unterscheidet.
+    // MARK: - Phase E: Lauf-Wiedereinstieg
+
+    /// Mindestpause in Tagen, ab der ein Laeufer als "wiedereinsteigernd" gilt.
+    /// 14 Tage analog zu `ComebackAdvisor.minimumGapDays` (dort fuer Kraft).
+    public static let runReEntryThresholdDays: Int = 14
+
+    /// Mindestanzahl vorangegangener Lauf-Sessions — schuetzt neue Nutzer
+    /// davor, faelschlich als Rueckkehrer eingestuft zu werden. Identisches
+    /// Prinzip wie `ComebackAdvisor.minimumPriorStrengthSessions`.
+    public static let minimumPriorRunSessions: Int = 3
+
+    /// `false` fuer neue Laeufer (< minimumPriorRunSessions) — fuer sie ist
+    /// eine Pause kein Rueckfall, sondern Normalzustand.
+    public static func isRunReEntry(daysSinceLastRun: Int, priorRunSessionCount: Int) -> Bool {
+        priorRunSessionCount >= minimumPriorRunSessions && daysSinceLastRun >= runReEntryThresholdDays
+    }
+
     public static func missedRunHintFingerprint(
         planActivatedAt: Date,
         summary: PlanParticipationEvaluator.Summary,
