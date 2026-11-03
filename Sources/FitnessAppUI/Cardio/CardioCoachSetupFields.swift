@@ -84,11 +84,22 @@ public struct CardioCoachSetupFields: View {
                 }
             }
             DeltiqControlRow(label: String(localized: "profile.cardio.weeklyVolume", bundle: .module)) {
-                decimalField(
-                    String(localized: "profile.cardio.weeklyVolume", bundle: .module),
-                    value: weeklyBaseVolumeKmBinding,
-                    placeholder: String(localized: "profile.cardio.weeklyVolumePlaceholder", bundle: .module)
-                )
+                HStack(spacing: 4) {
+                    if let vol = draft.weeklyBaseVolumeKm {
+                        Text(String(format: "%.1f km", vol))
+                            .font(.system(size: 15))
+                            .fitnessNumberStyle()
+                    } else {
+                        Text(String(localized: "profile.cardio.weeklyVolumePlaceholder", bundle: .module))
+                            .foregroundStyle(.secondary)
+                            .font(.system(size: 15))
+                    }
+                    Stepper("", value: Binding<Double>(
+                        get: { draft.weeklyBaseVolumeKm ?? draft.goal.minimumWeeklyVolumeKm },
+                        set: { newValue in draft = with(draft) { $0.weeklyBaseVolumeKm = newValue } }
+                    ), in: draft.goal.minimumWeeklyVolumeKm...200, step: 0.5)
+                    .labelsHidden()
+                }
             }
             DeltiqControlRow(label: String(localized: "profile.cardio.maxHeartRate", bundle: .module), showsDivider: false) {
                 intField(
@@ -110,10 +121,6 @@ public struct CardioCoachSetupFields: View {
 
     private var fiveKReferenceTextBinding: Binding<String> {
         Binding(get: { draft.fiveKReferenceText }, set: { newValue in draft = with(draft) { $0.fiveKReferenceText = newValue } })
-    }
-
-    private var weeklyBaseVolumeKmBinding: Binding<Double?> {
-        Binding(get: { draft.weeklyBaseVolumeKm }, set: { newValue in draft = with(draft) { $0.weeklyBaseVolumeKm = newValue } })
     }
 
     private var maxHeartRateBpmBinding: Binding<Int?> {
@@ -180,16 +187,6 @@ public struct CardioCoachSetupFields: View {
     }
 
     // MARK: - Fields (identisch zu `CardioGoalEditorView`)
-
-    @ViewBuilder
-    private func decimalField(_ label: String, value: Binding<Double?>, placeholder: String) -> some View {
-        TextField(label, value: value, format: .number.precision(.fractionLength(0...2)), prompt: Text(placeholder))
-            .decimalKeyboard()
-            .multilineTextAlignment(.trailing)
-            .font(.system(size: 15))
-            .fitnessNumberStyle()
-            .frame(maxWidth: 140)
-    }
 
     @ViewBuilder
     private func intField(_ label: String, value: Binding<Int?>, placeholder: String) -> some View {

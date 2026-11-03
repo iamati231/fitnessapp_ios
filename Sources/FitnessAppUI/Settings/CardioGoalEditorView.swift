@@ -416,7 +416,9 @@ struct CardioGoalEditorView: View {
         var weeklyBaseVolumeKm = cardioSetupDraft.weeklyBaseVolumeKm
         var fiveKReferenceText = cardioSetupDraft.fiveKReferenceText
         if let weeklyVolumeKm = result.weeklyVolumeKm {
-            weeklyBaseVolumeKm = weeklyVolumeKm
+            // Auf 0,5-km-Schritt runden und Mindest-Reiz pro Ziel einhalten.
+            let snapped = (weeklyVolumeKm * 2).rounded() / 2
+            weeklyBaseVolumeKm = max(snapped, cardioSetupDraft.goal.minimumWeeklyVolumeKm)
         }
         if let referenceSeconds = result.median5kSeconds ?? result.referenceSeconds {
             fiveKReferenceText = PaceCalculator.formatDuration(referenceSeconds)

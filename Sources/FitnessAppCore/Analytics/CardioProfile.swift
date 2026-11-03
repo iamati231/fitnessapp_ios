@@ -31,6 +31,19 @@ public enum CardioGoal: String, Codable, Sendable, CaseIterable {
         case .halfMarathon, .marathon:   return "medal.fill"
         }
     }
+
+    /// Minimales sinnvolles Startvolumen pro Ziel (km/Woche). Untergrenze fuer
+    /// Retro-Sync-Ergebnisse und Stepper-Bereich — grobe Naeherung an gaengige
+    /// Einsteiger-Trainingplaene, kein individueller Coaching-Wert.
+    public var minimumWeeklyVolumeKm: Double {
+        switch self {
+        case .generalFitness: return 5.0
+        case .fiveK:          return 5.0
+        case .tenK:           return 8.0
+        case .halfMarathon:   return 12.0
+        case .marathon:       return 20.0
+        }
+    }
 }
 
 /// DEL-250: leitet grobe Trainings-Paces aus einer 5-km-Referenzzeit ab
