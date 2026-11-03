@@ -232,6 +232,11 @@ public final class UserBodyProfile {
     /// den tatsaechlichen Nachweis (nicht nur diese Behauptung).
     public var missedRunHintDismissedFingerprint: String? = nil
 
+    /// Dashboard-CoachAdjustmentCard: "Nicht jetzt" — dieselbe
+    /// Fingerprint-Logik wie `missedRunHintDismissedFingerprint` (bewusst
+    /// NICHT im CSV-Export/Import, identische Begruendung).
+    public var cardioAdjustmentCardDismissedFingerprint: String? = nil
+
     /// Smart-Onboarding-Epic: verhaltens-/pausenbasierte Track-Einstufung
     /// (Einstieg/Wiedereinstieg/volle Automatik) — separat von
     /// `coachingTone`/`trainingGoal`. Nil = noch nicht hergeleitet (z. B.

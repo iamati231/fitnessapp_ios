@@ -154,6 +154,12 @@ public struct CoachAdjustmentCardModel: Equatable {
     /// identisches Muster wie `MissedRunDaysCardModel.make`) — nur fuer
     /// deterministische Tests der Unterdrueckung unten gebraucht, das
     /// Produktivverhalten bleibt unveraendert (echte Zeit).
+    /// "Nicht jetzt" fuer die Dashboard-Karte — setzt den Dismiss-Fingerprint,
+    /// ohne Plan oder Profil-Ziel anzutasten.
+    public func dismiss(profile: UserBodyProfile) {
+        profile.cardioAdjustmentCardDismissedFingerprint = fingerprint
+    }
+
     @discardableResult
     @MainActor
     public func accept(
