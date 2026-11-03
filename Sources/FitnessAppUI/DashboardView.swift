@@ -2729,55 +2729,6 @@ public struct DashboardView: View {
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(.primary)
 
-                            VStack(alignment: .leading, spacing: 3) {
-                                // Vorgeschlagenes Ziel
-                                if let goal = adjustment.proposedGoal {
-                                    Text(String(
-                                        format: String(localized: "dashboard.coachAdjustment.proposedGoal", bundle: .module),
-                                        String(localized: goal.localizedName)
-                                    ))
-                                    .font(.caption)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                                }
-                                // Naechste Trainingseinheit
-                                let nextDay = nextScheduledDay(in: plan)
-                                Text(String(
-                                    format: String(localized: "dashboard.coachAdjustment.nextUnit", bundle: .module),
-                                    nextDay.displayName
-                                ))
-                                .font(.caption)
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                                // Tage bis Renntag (nur wenn gesetzt und in der Zukunft)
-                                if let raceDate = profile.cardioRaceDate, raceDate > Date() {
-                                    let days = Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day ?? 0
-                                    Text(String(
-                                        format: String(localized: "dashboard.coachAdjustment.daysToRace", bundle: .module),
-                                        days
-                                    ))
-                                    .font(.caption)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                                }
-                                // Anpassbare Lauftage im Plan
-                                if case .ready(let ids) = adjustment.analysis.cardioAvailability, !ids.isEmpty {
-                                    Text(String(
-                                        format: String(localized: "dashboard.coachAdjustment.cardioDays", bundle: .module),
-                                        ids.count
-                                    ))
-                                    .font(.caption)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                                }
-                                // 5-km-Referenzzeit
-                                if let secs = profile.current5kReferenceSeconds {
-                                    Text(String(
-                                        format: String(localized: "dashboard.coachAdjustment.fiveKRef", bundle: .module),
-                                        String(format: "%d:%02d", secs / 60, secs % 60)
-                                    ))
-                                    .font(.caption)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                                }
-                            }
-                            .fixedSize(horizontal: false, vertical: true)
-
                             HStack(spacing: 16) {
                                 Button {
                                     showingMissedRunAdjustmentPreview = true
@@ -2799,6 +2750,50 @@ public struct DashboardView: View {
                                     .foregroundStyle(Color.Deltiq.textSecondary)
                                 }
                             }
+
+                            VStack(alignment: .leading, spacing: 3) {
+                                if let goal = adjustment.proposedGoal {
+                                    Text(String(
+                                        format: String(localized: "dashboard.coachAdjustment.proposedGoal", bundle: .module),
+                                        String(localized: goal.localizedName)
+                                    ))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                                let nextDay = nextScheduledDay(in: plan)
+                                Text(String(
+                                    format: String(localized: "dashboard.coachAdjustment.nextUnit", bundle: .module),
+                                    nextDay.displayName
+                                ))
+                                .font(.caption)
+                                .foregroundStyle(Color.Deltiq.textSecondary)
+                                if let raceDate = profile.cardioRaceDate, raceDate > Date() {
+                                    let days = Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day ?? 0
+                                    Text(String(
+                                        format: String(localized: "dashboard.coachAdjustment.daysToRace", bundle: .module),
+                                        days
+                                    ))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                                if case .ready(let ids) = adjustment.analysis.cardioAvailability, !ids.isEmpty {
+                                    Text(String(
+                                        format: String(localized: "dashboard.coachAdjustment.cardioDays", bundle: .module),
+                                        ids.count
+                                    ))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                                if let secs = profile.current5kReferenceSeconds {
+                                    Text(String(
+                                        format: String(localized: "dashboard.coachAdjustment.fiveKRef", bundle: .module),
+                                        String(format: "%d:%02d", secs / 60, secs % 60)
+                                    ))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Deltiq.textSecondary)
+                                }
+                            }
+                            .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer(minLength: 0)
                     }

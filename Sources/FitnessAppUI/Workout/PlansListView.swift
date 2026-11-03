@@ -97,6 +97,7 @@ public struct PlansListView: View {
     /// wiederverwenden - der haengt am Plus-Menue mit leerem Wizard-Start,
     /// hier soll er mit dem Machbarkeits-Vorschlag vorbefuellt oeffnen.
     @State private var showingPlanAdjustSheet = false
+    @State private var showingCoachAdjustmentPreview = false
 
     public init() {}
 
@@ -151,8 +152,9 @@ public struct PlansListView: View {
                     activeSessionSection(active)
                 }
 
-                if let profile = profiles.first, let model = CardioFeasibilityCardModel.make(for: profile),
-                   CoachAdjustmentCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\.isActive))) == nil {
+                if let adjustmentModel = coachAdjustmentModel {
+                    coachAdjustmentSection(adjustmentModel)
+                } else if let profile = profiles.first, let model = CardioFeasibilityCardModel.make(for: profile) {
                     cardioFeasibilitySection(model, profile: profile)
                 }
 
@@ -188,6 +190,12 @@ public struct PlansListView: View {
         .sheet(isPresented: $showingPlanBuilder) {
             PlanBuilderView()
         }
+        .sheet(isPresented: $showingCoachAdjustmentPreview) {
+            if let profile = profiles.first,
+               let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\.isActive)) {
+                CoachAdjustmentPreviewView(profile: profile, activePlan: activePlan)
+            }
+        }
         // Nachbesserung (Task #197, zweite Runde): sichtbarer Fehler statt
         // stillem nil-Pfad, siehe `cardioAcceptErrorMessage`-Doku.
         // Nachbesserung (zweite Korrekturrunde, Punkt B): Titel haengt vom Fehlerfall ab, siehe
@@ -216,6 +224,44 @@ public struct PlansListView: View {
         } message: {
             Text(deletePlanErrorMessage ?? "")
         }
+    }
+
+    // MARK: - Lauf-Coaching Anpassung
+
+    private var coachAdjustmentModel: CoachAdjustmentCardModel? {
+        guard let profile = profiles.first,
+              let activePlan = ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\.isActive)) else { return nil }
+        return CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
+    }
+
+    private func coachAdjustmentSection(_ model: CoachAdjustmentCardModel) -> some View {
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(model.isAlreadyApplied
+                         ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
+                         : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Button {
+                        showingCoachAdjustmentPreview = true
+                    } label: {
+                        Text("plans.cardioFeasibility.adjustPlan", bundle: .module)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
     }
 
     // MARK: - Kontextzeile
