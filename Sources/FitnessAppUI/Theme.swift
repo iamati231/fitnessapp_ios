@@ -1120,6 +1120,31 @@ private struct SwipeBackEnabler: UIViewControllerRepresentable {
         }
     }
 }
+
+// Gegenstueck zu SwipeBackEnabler: setzt isEnabled=false, wenn die Geste
+// bewusst gesperrt werden soll (z.B. isDirty-State in ProfileEditorView).
+// Ohne diesen Disabler bleibt isEnabled=true nachdem SwipeBackEnabler
+// entfernt wurde, weil der Gesture-Recognizer den Zustand nicht selbst
+// zuruecksetzt.
+private struct SwipeBackDisabler: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> DisablerController { DisablerController() }
+    func updateUIViewController(_ c: DisablerController, context: Context) { c.disableSwipeBack() }
+
+    final class DisablerController: UIViewController {
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            view.backgroundColor = .clear
+            DispatchQueue.main.async { [weak self] in self?.disableSwipeBack() }
+        }
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            disableSwipeBack()
+        }
+        func disableSwipeBack() {
+            navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+        }
+    }
+}
 #endif
 
 public extension View {
@@ -1135,6 +1160,8 @@ public extension View {
         background {
             if enabled {
                 SwipeBackEnabler()
+            } else {
+                SwipeBackDisabler()
             }
         }
         #else
