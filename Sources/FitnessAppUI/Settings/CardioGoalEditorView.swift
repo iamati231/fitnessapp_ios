@@ -399,6 +399,7 @@ struct CardioGoalEditorView: View {
             .flatMap { session in
                 session.logs
                     .filter(\.resolvedIsCardio)
+                    .filter { CardioBaselineCalculator.isRunningEquipment($0.resolvedCardioEquipment) }
                     .compactMap { log -> CardioBaselineCalculator.TimestampedEntry? in
                         guard let km = log.distanceKm else { return nil }
                         return CardioBaselineCalculator.TimestampedEntry(date: session.startTime, distanceKm: km)

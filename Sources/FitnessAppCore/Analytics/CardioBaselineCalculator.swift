@@ -96,6 +96,17 @@ public enum CardioBaselineCalculator {
     /// vorliegt: ~3 Einheiten × 10–15 Min ≈ 3 km — kein Bezug zum Laufziel.
     public static let beginnerDefaultKm: Double = 3.0
 
+    /// Gibt an, ob ein Cardio-Equipment-Wert als Lauf-Einheit gilt.
+    /// `.none` = Outdoor-Lauf; `.treadmill` = Laufband.
+    /// Alle anderen Werte (Fahrrad, Ergometer, Rudern) werden ausgeschlossen.
+    /// Switch statt Set — der Compiler erkennt fehlende Cases wenn CardioEquipment erweitert wird.
+    public static func isRunningEquipment(_ equipment: CardioEquipment) -> Bool {
+        switch equipment {
+        case .none, .treadmill:                    return true
+        case .bikeOutdoor, .ergometer, .rowingMachine: return false
+        }
+    }
+
     /// Zeitfenster fuer die Wochenvolumen-Berechnung (Ticket-Vorgabe: "die
     /// letzten 4 Wochen").
     public static let weeklyVolumeWindowDays: Int = 28
@@ -132,9 +143,10 @@ public enum CardioBaselineCalculator {
     ///
     /// Klassifizierungslogik:
     ///   A. Aktiver Laeuer (letzter Lauf ≤ `pauseThresholdDays`, ≥ 2 aktive
-    ///      Wochen der letzten 4): Median der 4 letzten Wochenvolumen.
+    ///      Wochen der letzten 4): Median der aktiven Wochenvolumen (leere
+    ///      Wochen nicht eingerechnet — zaehlen nicht als Training).
     ///   B. Wiedereinstieg (letzter Lauf > `pauseThresholdDays`): Median der
-    ///      4 Wochen vor der Pause × Reduktionsfaktor nach Pausenlaenge.
+    ///      aktiven Wochen vor der Pause × Reduktionsfaktor nach Pausenlaenge.
     ///   C. Kein Eintraege im Fenster → Anfaenger, `beginnerDefaultKm`.
     ///   D. Nur 1 aktive Woche der letzten 4 → `insufficientData`.
     ///
@@ -164,12 +176,15 @@ public enum CardioBaselineCalculator {
                 let bucket = min(daysFromLast / 7, 3)
                 preWeeklyKm[bucket] += entry.distanceKm
             }
-            let preSorted = preWeeklyKm.sorted()
-            // Bei ≥ 2 aktiven Wochen: Median; sonst Mittelwert aller Eintraege / 4
+            // Bei ≥ 2 aktiven Wochen: Median nur ueber aktive Wochen (leere ignorieren)
             let preActive = preWeeklyKm.filter { $0 > 0 }.count
             let historicalKm: Double
             if preActive >= 2 {
-                historicalKm = (preSorted[1] + preSorted[2]) / 2.0
+                let preActiveKm = preWeeklyKm.filter { $0 > 0 }.sorted()
+                let preMid = preActiveKm.count / 2
+                historicalKm = preActiveKm.count.isMultiple(of: 2)
+                    ? (preActiveKm[preMid - 1] + preActiveKm[preMid]) / 2.0
+                    : preActiveKm[preMid]
             } else {
                 historicalKm = windowEntries.reduce(0.0) { $0 + $1.distanceKm } / 4.0
             }
@@ -197,9 +212,12 @@ public enum CardioBaselineCalculator {
             return (.insufficientData, max(mean, beginnerDefaultKm))
         }
 
-        // Median aus 4 Wochenvolumen (robust gegen Ausreisser-Wochen)
-        let sorted = weeklyKm.sorted()
-        let median = (sorted[1] + sorted[2]) / 2.0
+        // Median nur ueber aktive Wochen — leere Wochen nicht einrechnen
+        let activeKm = weeklyKm.filter { $0 > 0 }.sorted()
+        let mid = activeKm.count / 2
+        let median = activeKm.count.isMultiple(of: 2)
+            ? (activeKm[mid - 1] + activeKm[mid]) / 2.0
+            : activeKm[mid]
         return (.activeRunner, max(median, beginnerDefaultKm))
     }
 
