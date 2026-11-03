@@ -215,19 +215,26 @@ public struct CoachAdjustmentCardModel: Equatable {
             // demselben `PlanGenerator.generate`-Ergebnis) ist die tatsaechliche Anzahl neu zu
             // erzeugender Cardio-Tage fuer dieses Ziel.
             let eligibleRestDays = RunCoachPlanAdjustment.eligibleRestDaysForInsertion(in: plan)
-            guard !eligibleRestDays.isEmpty else { return 0 }
-            let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
-                eligible: eligibleRestDays, count: newCardioDays.count, otherDays: plan.days
-            )
-            // `insertCoachCardioDays` wirft (statt stillschweigend 0
-            // zurueckzugeben), wenn `selectedRestDays` zu wenige Tage enthaelt
-            // oder ein ausgewaehlter Tag zwischen Vorschau und diesem Aufruf
-            // nicht mehr eignungsfaehig ist - bewusst NICHT hier abgefangen,
-            // der Aufrufer (`CoachAdjustmentPreviewView`) zeigt das als eigene,
-            // unterscheidbare Fehlermeldung an.
-            count = try PlanGeneratorInstantiator.insertCoachCardioDays(
-                plan: plan, restDays: selectedRestDays, newCardioDays: newCardioDays, in: context
-            )
+            if eligibleRestDays.isEmpty {
+                // Kein isAutoFilledPlaceholder-Ruhetag mehr vorhanden (z.B.
+                // nach manuellem Loeschen) - Fallback: neue Tage auf freien
+                // Wochentagen erzeugen statt silent 0 zurueckzugeben.
+                let freeWds = RunCoachPlanAdjustment.freeWeekdays(in: plan)
+                let selectedWds = RunCoachPlanAdjustment.selectWeekdaysForNewDays(
+                    free: freeWds, count: newCardioDays.count, otherDays: plan.days
+                )
+                guard selectedWds.count >= newCardioDays.count else { return 0 }
+                count = try PlanGeneratorInstantiator.insertCoachCardioDaysOnFreeWeekdays(
+                    plan: plan, weekdays: selectedWds, newCardioDays: newCardioDays, in: context
+                )
+            } else {
+                let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
+                    eligible: eligibleRestDays, count: newCardioDays.count, otherDays: plan.days
+                )
+                count = try PlanGeneratorInstantiator.insertCoachCardioDays(
+                    plan: plan, restDays: selectedRestDays, newCardioDays: newCardioDays, in: context
+                )
+            }
         } else if newCardioDays.count > eligibleDays.count {
             // Finding 1 (Lauf-Coaching-Audit): neues Ziel braucht MEHR Lauftage als
             // vorhandene anfassbare Cardio-Tage - ALLE eligibleDays ersetzen UND den

@@ -58,6 +58,12 @@ public enum RunCoachPlanAdjustment {
         /// das eine schliesst das andere nicht aus. Siehe
         /// `eligibleRestDaysForInsertion`.
         public let insertableRestDays: [PersistentIdentifier]
+        /// Wochentage (1-7), die im Plan noch voellig leer sind (kein
+        /// `TrainingDay` mit diesem `weekday`) - Fallback-Slots fuer den
+        /// Fall, dass weder anfassbare Cardio-Tage noch
+        /// `isAutoFilledPlaceholder`-Ruhetage verfuegbar sind (z.B. nach
+        /// manuellem Loeschen aller Ruhetage).
+        public let freeWeekdaysForNewDays: [Int]
     }
 
     /// Bein-Muskelgruppen laut bestehender `MuscleGroup`-Taxonomie
@@ -146,6 +152,34 @@ public enum RunCoachPlanAdjustment {
         plan.days.filter(isEligibleRestDayForInsertion)
     }
 
+    /// Wochentage 1-7, die im Plan noch GAR NICHT belegt sind (kein Tag mit
+    /// diesem `weekday`). Sortiert aufsteigend. Gebraucht als Fallback, wenn
+    /// weder anfassbare Cardio-Tage noch `isAutoFilledPlaceholder`-Ruhetage
+    /// verfuegbar sind - z.B. nach manuellem Loeschen aller Ruhetage.
+    public static func freeWeekdays(in plan: TrainingPlan) -> [Int] {
+        let used = Set(plan.days.map(\.weekday))
+        return (1...7).filter { !used.contains($0) }
+    }
+
+    /// Waehlt aus den freien Wochentagen `count` aus - gleiche Adjazenz-
+    /// Heuristik wie `selectRestDaysForInsertion` (bevorzugt Tage NICHT
+    /// direkt neben einem harten Kraft-Tag, best-effort).
+    public static func selectWeekdaysForNewDays(
+        free: [Int], count: Int, otherDays: [TrainingDay]
+    ) -> [Int] {
+        guard count > 0 else { return [] }
+        let hardStrengthWeekdays = Set(
+            otherDays.filter { $0.type != .rest && !isCardioDay($0) }.map(\.weekday)
+        )
+        let preferred = free.filter { wd in
+            !hardStrengthWeekdays.contains(wd - 1) && !hardStrengthWeekdays.contains(wd + 1)
+        }
+        let fallback = free.filter { wd in
+            hardStrengthWeekdays.contains(wd - 1) || hardStrengthWeekdays.contains(wd + 1)
+        }
+        return Array((preferred + fallback).prefix(count))
+    }
+
     /// Waehlt aus den eignungsfaehigen Rest-Tagen genau `count` aus (bevorzugt
     /// Tage NICHT direkt neben einem bereits existierenden harten Krafttag,
     /// best-effort - Platzkonflikt mit einem Nicht-Rest-Tag ist nie erlaubt,
@@ -175,7 +209,7 @@ public enum RunCoachPlanAdjustment {
 
     public static func analyze(plan: TrainingPlan?) -> Analysis {
         guard let plan else {
-            return Analysis(cardioAvailability: .noActivePlan, legWork: .conflict, insertableRestDays: [])
+            return Analysis(cardioAvailability: .noActivePlan, legWork: .conflict, insertableRestDays: [], freeWeekdaysForNewDays: [])
         }
 
         let eligibleCardio = eligibleCardioDays(in: plan)
@@ -188,8 +222,9 @@ public enum RunCoachPlanAdjustment {
         }
         let legWork = legWorkRecommendation(eligibleStrengthDays: eligibleStrengthDays)
         let insertableRestDays = eligibleRestDaysForInsertion(in: plan).map(\.persistentModelID)
+        let freeWds = freeWeekdays(in: plan)
 
-        return Analysis(cardioAvailability: cardioAvailability, legWork: legWork, insertableRestDays: insertableRestDays)
+        return Analysis(cardioAvailability: cardioAvailability, legWork: legWork, insertableRestDays: insertableRestDays, freeWeekdaysForNewDays: freeWds)
     }
 
     private static func legWorkRecommendation(eligibleStrengthDays: [TrainingDay]) -> LegWorkRecommendation {

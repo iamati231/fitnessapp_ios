@@ -1108,6 +1108,51 @@ public enum PlanGeneratorInstantiator {
         return try applySpecs(assignments, in: context)
     }
 
+    /// Erzeugt neue Cardio-Tage auf bislang ungenutzten Wochentagen. Fallback-
+    /// Pfad wenn weder anfassbare Cardio-Tage noch `isAutoFilledPlaceholder`-
+    /// Ruhetage verfuegbar sind (z.B. nach manuellem Loeschen aller Ruhetage).
+    /// Derselbe Transaktions-Vertrag wie `insertCoachCardioDays`: alle
+    /// Mutationen in-memory, ein Save; schlaegt der Save fehl, werden die neu
+    /// erzeugten Tage vor dem Re-throw aus dem Context entfernt.
+    @discardableResult
+    public static func insertCoachCardioDaysOnFreeWeekdays(
+        plan: TrainingPlan, weekdays: [Int], newCardioDays: [DaySpec], in context: ModelContext
+    ) throws -> Int {
+        guard !newCardioDays.isEmpty else { return 0 }
+        guard weekdays.count >= newCardioDays.count else {
+            throw CardioInsertionError.insufficientRestDays
+        }
+        let (timeBasedNames, compoundNames) = ProgramInstantiator.libraryLookupNames()
+        let specByName = ProgramInstantiator.libraryLookupSpecs()
+        var createdDays: [TrainingDay] = []
+        var snapshots: [DayMutationSnapshot] = []
+        for (weekday, spec) in zip(weekdays, newCardioDays) {
+            let day = TrainingDay(
+                name: "Ruhetag", weekday: weekday, type: .rest,
+                plan: plan, localizationKey: "day.restDay.title",
+                isAutoFilledPlaceholder: true
+            )
+            context.insert(day)
+            createdDays.append(day)
+            snapshots.append(apply(
+                spec, to: day, timeBasedNames: timeBasedNames,
+                compoundNames: compoundNames, specByName: specByName,
+                in: context, targetType: .cardio
+            ))
+        }
+        do {
+            try save(context)
+        } catch {
+            revert(snapshots, in: context)
+            for day in createdDays {
+                plan.days.removeAll { $0.persistentModelID == day.persistentModelID }
+                context.delete(day)
+            }
+            throw error
+        }
+        return newCardioDays.count
+    }
+
     /// Nachbesserung (Review nach Task #197): macht `apply(...)` fuer genau die Tage rueckgaengig,
     /// die diese `recalculate`-Ausfuehrung selbst veraendert hat - siehe Typ-Doku
     /// "Operations-/Fehlervertrag" Punkt 3. Reine Zuweisungen/Deletes frisch eingefuegter,
