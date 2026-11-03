@@ -56,6 +56,8 @@ public struct CardioCoachSetupFields: View {
                 errorRow(fiveKReferenceErrorMessage)
             } else if let zonesSummary {
                 hintRow(zonesSummary)
+            } else if draft.fiveKReferenceText.isEmpty {
+                hintRow(String(localized: "profile.cardio.fiveKReference.missing", bundle: .module))
             }
             DeltiqControlRow(
                 label: String(localized: "profile.cardio.raceDateToggle", bundle: .module),
