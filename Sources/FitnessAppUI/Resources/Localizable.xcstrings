@@ -46123,19 +46123,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workouts übernehmen (Adidas Running, Strava, …)"
+            "value": "Workouts aus Apple Health übernehmen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Import workouts (Adidas Running, Strava, …)"
+            "value": "Import workouts from Apple Health"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Antrenmanları içe aktar (Adidas Running, Strava, …)"
+            "value": "Apple Health'ten antrenman al"
           }
         }
       }
@@ -46146,19 +46146,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Läufe und Radfahrten aus anderen Apps (z.B. Adidas Running, Strava) werden automatisch als Trainingseinheiten übernommen, sobald sie in Apple Health erscheinen."
+            "value": "Deltiq liest Trainings aus Apple Health – Läufe und Radfahrten aus anderen Apps (z.B. Adidas Running, Strava) werden automatisch erkannt, sobald sie dort erscheinen. Eine direkte Verbindung zu diesen Apps gibt es nicht."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Runs and rides from other apps (e.g. Adidas Running, Strava) are automatically added as workouts once they appear in Apple Health."
+            "value": "Deltiq reads workouts from Apple Health – runs and rides from other apps (e.g. Adidas Running, Strava) are automatically picked up once they appear there. Deltiq does not connect to those apps directly."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diğer uygulamalardan (örn. Adidas Running, Strava) koşular ve bisiklet turları, Apple Health'te göründükten sonra otomatik olarak antrenman olarak eklenir."
+            "value": "Deltiq, antrenmanları Apple Health'ten okur – diğer uygulamalardan (örn. Adidas Running, Strava) koşu ve bisiklet verileri, orada göründükten sonra otomatik olarak alınır. Deltiq bu uygulamalarla doğrudan bağlantı kurmaz."
           }
         }
       }
