@@ -331,6 +331,21 @@ public struct MeasurementView: View {
         )
     }
 
+    // shortcut: depends on xcstrings values containing literal "(cm)"; update if key values change
+    private func cmBinding(_ b: Binding<Double?>) -> Binding<Double?> {
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        return Binding(
+            get: { b.wrappedValue.map(unit.fromCm) },
+            set: { b.wrappedValue = $0.map { unit.toCm($0).rounded(toDecimals: 2) } }
+        )
+    }
+
+    private func circumferenceLabel(_ key: String) -> String {
+        weightUnitRaw == "lbs"
+            ? loc(key).replacingOccurrences(of: "(cm)", with: "(in)")
+            : loc(key)
+    }
+
     /// Lokalisierte Namen der noch fehlenden Pflichtfelder, in Formular-
     /// Reihenfolge. Treibt die Kontextzeilen-Marke (New-Mode) sowie die
     /// per-Feld "erforderlich"-Markierungen (`requirementHint`).
@@ -476,12 +491,12 @@ public struct MeasurementView: View {
             }
 
             // Hals (Pflicht ausser bei einer urspruenglich umfangslosen Zeile)
-            measurementRow(label: loc("measurement.field.neck"), value: $neckCm, field: .neck)
+            measurementRow(label: circumferenceLabel("measurement.field.neck"), value: cmBinding($neckCm), field: .neck)
             requirementHint(isRequired: !isEditingWeightOnlyEntry, isMissing: !isEditingWeightOnlyEntry && (neckCm ?? 0) <= 0)
             fieldHint(loc("measurement.hint.neck"))
 
             // Taille (Pflicht ausser bei einer urspruenglich umfangslosen Zeile, sex-spezifischer Hint)
-            measurementRow(label: loc("measurement.field.waist"), value: $waistCm, field: .waist)
+            measurementRow(label: circumferenceLabel("measurement.field.waist"), value: cmBinding($waistCm), field: .waist)
             requirementHint(isRequired: !isEditingWeightOnlyEntry, isMissing: !isEditingWeightOnlyEntry && (waistCm ?? 0) <= 0)
             fieldHint(profile.profile == .male
                       ? loc("measurement.hint.waist.male")
@@ -489,7 +504,7 @@ public struct MeasurementView: View {
 
             // Hüfte: Pflicht bei Frauen (ausser bei umfangsloser Zeile), optional/anders gruppiert bei Maennern
             if profile.profile == .female {
-                measurementRow(label: loc("measurement.field.hip"), value: $hipCm, field: .hip, showsDivider: false)
+                measurementRow(label: circumferenceLabel("measurement.field.hip"), value: cmBinding($hipCm), field: .hip, showsDivider: false)
                 requirementHint(isRequired: !isEditingWeightOnlyEntry, isMissing: !isEditingWeightOnlyEntry && (hipCm ?? 0) <= 0)
                 fieldHint(loc("measurement.hint.broadest"))
             } else {
@@ -498,7 +513,7 @@ public struct MeasurementView: View {
                 // der Pflicht-Section, zaehlte aber nie zu canSave/
                 // missingRequiredFieldNames - "optional" macht das jetzt
                 // direkt an der Zeile sichtbar statt es zu erraten.
-                measurementRow(label: loc("measurement.field.shoulder.full"), value: $shoulderCm, field: .shoulder, showsDivider: false)
+                measurementRow(label: circumferenceLabel("measurement.field.shoulder.full"), value: cmBinding($shoulderCm), field: .shoulder, showsDivider: false)
                 requirementHint(isRequired: false, isMissing: false)
                 fieldHint(loc("measurement.hint.broadest"))
             }
@@ -551,22 +566,22 @@ public struct MeasurementView: View {
             if profile.profile == .male {
                 // Maenner: Brust, Bizeps, Hüfte, Oberschenkel, Wade
                 // (Schulter ist schon oben als Pflicht-optional)
-                measurementRow(label: loc("measurement.field.chest"),  value: $chestCm,  field: .chest)
-                measurementRow(label: loc("measurement.field.biceps"), value: $bicepsCm, field: .biceps)
-                measurementRow(label: loc("measurement.field.hip"),    value: $hipCm,    field: .hip)
-                measurementRow(label: loc("measurement.field.thigh"),  value: $thighCm,  field: .thigh)
-                measurementRow(label: loc("measurement.field.calf"),   value: $calfCm,   field: .calf, showsDivider: false)
+                measurementRow(label: circumferenceLabel("measurement.field.chest"),  value: cmBinding($chestCm),  field: .chest)
+                measurementRow(label: circumferenceLabel("measurement.field.biceps"), value: cmBinding($bicepsCm), field: .biceps)
+                measurementRow(label: circumferenceLabel("measurement.field.hip"),    value: cmBinding($hipCm),    field: .hip)
+                measurementRow(label: circumferenceLabel("measurement.field.thigh"),  value: cmBinding($thighCm),  field: .thigh)
+                measurementRow(label: circumferenceLabel("measurement.field.calf"),   value: cmBinding($calfCm),   field: .calf, showsDivider: false)
             } else {
                 // Frauen: Schulter, Brust, Bizeps, Oberschenkel, Wade
                 // (Hüfte ist schon oben als Pflicht)
-                measurementRow(label: loc("measurement.field.shoulder.label"), value: $shoulderCm, field: .shoulder)
+                measurementRow(label: circumferenceLabel("measurement.field.shoulder.label"), value: cmBinding($shoulderCm), field: .shoulder)
                 if shoulderCm != nil {
                     fieldHint(loc("measurement.hint.broadest"))
                 }
-                measurementRow(label: loc("measurement.field.chest"),  value: $chestCm,  field: .chest)
-                measurementRow(label: loc("measurement.field.biceps"), value: $bicepsCm, field: .biceps)
-                measurementRow(label: loc("measurement.field.thigh"),  value: $thighCm,  field: .thigh)
-                measurementRow(label: loc("measurement.field.calf"),   value: $calfCm,   field: .calf, showsDivider: false)
+                measurementRow(label: circumferenceLabel("measurement.field.chest"),  value: cmBinding($chestCm),  field: .chest)
+                measurementRow(label: circumferenceLabel("measurement.field.biceps"), value: cmBinding($bicepsCm), field: .biceps)
+                measurementRow(label: circumferenceLabel("measurement.field.thigh"),  value: cmBinding($thighCm),  field: .thigh)
+                measurementRow(label: circumferenceLabel("measurement.field.calf"),   value: cmBinding($calfCm),   field: .calf, showsDivider: false)
             }
             hintRow(loc("measurement.section.additional.footer"))
         }
