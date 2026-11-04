@@ -50,33 +50,22 @@ struct CoachAdjustmentPreviewView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                title: String(localized: "profile.cardio.adjustment.title", bundle: .module),
+                // "Bestehenden Plan beibehalten": reines Schliessen,
+                // keinerlei Zustandsaenderung (Leitplanke 2 - weder
+                // cardioCoachingEnabled noch der Plan werden hier
+                // angefasst). cardioCoachingEnabled bleibt an, die
+                // Vorschau zeigt das bereits ehrlich ueber `statusSection`.
+                onBack: { dismiss() }
+            )
             List {
                 if let model {
                     statusSection(model)
                     beforeAfterSection(model)
                 }
-            }
-            .navigationTitle(Text("profile.cardio.adjustment.title", bundle: .module))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                #if os(iOS)
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        // "Bestehenden Plan beibehalten": reines Schliessen,
-                        // keinerlei Zustandsaenderung (Leitplanke 2 - weder
-                        // cardioCoachingEnabled noch der Plan werden hier
-                        // angefasst). cardioCoachingEnabled bleibt an, die
-                        // Vorschau zeigt das bereits ehrlich ueber
-                        // `statusSection`.
-                        dismiss()
-                    } label: {
-                        Text("profile.cardio.adjustment.keep", bundle: .module)
-                    }
-                }
-                #endif
             }
             .alert(
                 Text("profile.cardio.adjustment.applyError.title", bundle: .module),
@@ -87,6 +76,7 @@ struct CoachAdjustmentPreviewView: View {
                 Text(errorMessage ?? "")
             }
         }
+        .background(Color.Deltiq.background.ignoresSafeArea())
     }
 
     @ViewBuilder

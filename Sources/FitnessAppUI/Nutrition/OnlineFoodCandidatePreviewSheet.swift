@@ -96,7 +96,17 @@ struct OnlineFoodCandidatePreviewSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
+                title: String(localized: "nutrition.onlineImport.title", bundle: .module),
+                onBack: { onCancel() },
+                // OFF-01: nicht mehr „alle vier Pflicht", sondern „Name
+                // gesetzt, kein negativer Wert, mindestens ein Wert
+                // bekannt" — der Grund fuer eine Sperre steht als Footer
+                // direkt darueber.
+                actions: [DeltiqHeaderAction(systemImage: "checkmark", isDisabled: pendingValues == nil) { confirm() }]
+            )
             Form {
                 Section {
                     TextField(String(localized: "nutrition.onlineImport.nameLabel", bundle: .module), text: $name)
@@ -141,32 +151,10 @@ struct OnlineFoodCandidatePreviewSheet: View {
                     .foregroundStyle(Color.deltiqOrange)
                 }
             }
-            .navigationTitle(Text("nutrition.onlineImport.title", bundle: .module))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        onCancel()
-                    } label: {
-                        Text("common.cancel", bundle: .module)
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        confirm()
-                    } label: {
-                        Text("common.add", bundle: .module)
-                    }
-                    // OFF-01: nicht mehr „alle vier Pflicht", sondern „Name
-                    // gesetzt, kein negativer Wert, mindestens ein Wert
-                    // bekannt" — der Grund fuer eine Sperre steht als Footer
-                    // direkt darueber.
-                    .disabled(pendingValues == nil)
-                }
-            }
+            .scrollContentBackground(.hidden)
+            .background(Color.Deltiq.background.ignoresSafeArea())
         }
+        .background(Color.Deltiq.background.ignoresSafeArea())
     }
 
     /// „70" bzw. „unbekannt" — nie „0", wenn nichts geliefert wurde.

@@ -119,7 +119,13 @@ struct CustomFoodEntrySheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
+                title: String(localized: "nutrition.customFood.title", bundle: .module),
+                onBack: { onCancel() },
+                actions: [DeltiqHeaderAction(systemImage: "checkmark", isDisabled: !draft.isValid || isSaving) { save() }]
+            )
             Form {
                 Section {
                     TextField(String(localized: "nutrition.customFood.nameLabel", bundle: .module), text: $draft.name)
@@ -150,29 +156,9 @@ struct CustomFoodEntrySheet: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.Deltiq.background.ignoresSafeArea())
-            .navigationTitle(Text("nutrition.customFood.title", bundle: .module))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
             .keyboardDismissToolbar()
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        onCancel()
-                    } label: {
-                        Text("common.cancel", bundle: .module)
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        save()
-                    } label: {
-                        Text("common.add", bundle: .module)
-                    }
-                    .disabled(!draft.isValid || isSaving)
-                }
-            }
         }
+        .background(Color.Deltiq.background.ignoresSafeArea())
     }
 
     private func macroRow(_ labelKey: String, value: Binding<Double?>) -> some View {

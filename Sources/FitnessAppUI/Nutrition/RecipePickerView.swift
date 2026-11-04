@@ -27,7 +27,12 @@ struct RecipePickerView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
+                title: String(localized: "mealPlanner.picker.title", bundle: .module),
+                onBack: { dismiss() }
+            )
             Group {
                 if alternatives.isEmpty {
                     emptyState
@@ -35,16 +40,8 @@ struct RecipePickerView: View {
                     recipeList
                 }
             }
-            .navigationTitle(String(localized: "mealPlanner.picker.title", bundle: .module))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "common.cancel", bundle: .module)) { dismiss() }
-                }
-            }
         }
+        .background(Color.Deltiq.background.ignoresSafeArea())
     }
 
     private var recipeList: some View {
