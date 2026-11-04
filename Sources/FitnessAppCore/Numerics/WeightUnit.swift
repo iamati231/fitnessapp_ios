@@ -13,6 +13,7 @@ public enum WeightUnit: String, Sendable {
 
     /// Same constant every existing conversion already used.
     static let kgPerLb = 0.453592
+    static let cmPerInch = 2.54
 
     public init(rawSetting: String) {
         self = rawSetting == "lbs" ? .lbs : .kg
@@ -27,4 +28,17 @@ public enum WeightUnit: String, Sendable {
     public func toKg(_ value: Double) -> Double {
         self == .kg ? value : value * Self.kgPerLb
     }
+
+    /// Canonical cm value -> this unit, for display.
+    public func fromCm(_ cm: Double) -> Double {
+        self == .kg ? cm : cm / Self.cmPerInch
+    }
+
+    /// A value entered in this unit -> canonical cm, for storage.
+    public func toCm(_ value: Double) -> Double {
+        self == .kg ? value : value * Self.cmPerInch
+    }
+
+    public var heightLabel: String { self == .kg ? "cm" : "in" }
+    public var weightLabel: String { self == .kg ? "kg" : "lbs" }
 }

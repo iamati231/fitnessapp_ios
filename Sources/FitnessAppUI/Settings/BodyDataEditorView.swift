@@ -128,12 +128,26 @@ struct BodyDataEditorView: View {
             || (weightTouched && (draftWeightKg ?? 0) > 0)
     }
 
+    private var heightDisplayBinding: Binding<Double> {
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        return Binding(
+            get: { unit.fromCm(draftHeightCm) },
+            set: { draftHeightCm = unit.toCm($0).rounded(toDecimals: 2) }
+        )
+    }
+
+    private var heightFieldLabel: String {
+        weightUnitRaw == "lbs"
+            ? String(localized: "onboarding.field.heightIn", bundle: .module)
+            : String(localized: "onboarding.field.heightCm", bundle: .module)
+    }
+
     private var heightSection: some View {
         DeltiqSection(String(localized: "profile.section.body", bundle: .module).uppercased()) {
-            DeltiqControlRow(label: String(localized: "onboarding.field.heightCm", bundle: .module), showsDivider: false) {
+            DeltiqControlRow(label: heightFieldLabel, showsDivider: false) {
                 TextField(
-                    String(localized: "onboarding.field.heightCm", bundle: .module),
-                    value: $draftHeightCm, format: .number,
+                    heightFieldLabel,
+                    value: heightDisplayBinding, format: .number,
                     prompt: Text(String(localized: "profile.body.heightPlaceholder", bundle: .module))
                 )
                 .decimalKeyboard()

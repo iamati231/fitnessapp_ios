@@ -646,7 +646,7 @@ public struct ProfileEditorView: View {
     private var bodyDataSummaryText: String {
         let unit = WeightUnit(rawSetting: weightUnitRaw)
         let unitLabel = weightUnitRaw == "lbs" ? "lbs" : "kg"
-        var parts = [profile.heightCm.formattedTwoDecimals + " cm"]
+        var parts = [unit.fromCm(profile.heightCm).formattedTwoDecimals + " \(unit.heightLabel)"]
         if let latest = bodyMeasurements.first {
             parts.append(unit.fromKg(latest.weightKg).formattedWeightInput() + " \(unitLabel)")
         }

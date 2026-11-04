@@ -19,6 +19,8 @@ public struct TDEEView: View {
     @Query(sort: \BodyMeasurement.date, order: .reverse)
     private var measurements: [BodyMeasurement]
 
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+
     @State private var weightKg: Double?
     @State private var activity: ActivityLevel = .moderate
 
@@ -84,7 +86,7 @@ public struct TDEEView: View {
             )
             DeltiqRow(
                 label: String(localized: "calc.tdee.height", bundle: .module),
-                value: "\(profile.heightCm.truncated(to: 2).formattedTwoDecimals) cm",
+                value: "\(WeightUnit(rawSetting: weightUnitRaw).fromCm(profile.heightCm).formattedTwoDecimals) \(WeightUnit(rawSetting: weightUnitRaw).heightLabel)",
                 showsDivider: false
             )
         }

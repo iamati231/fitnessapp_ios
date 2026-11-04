@@ -69,6 +69,8 @@ public struct MeasurementView: View {
     /// DEL-106: Zentraler FocusState fuer alle Decimal-Felder. Treibt sowohl
     /// die Keyboard-Toolbar (Previous/Next/Done) als auch das Auto-Scroll
     /// im ScrollViewReader.
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+
     @FocusState private var focusedField: MeasurementField?
 
     @Query(sort: \BodyMeasurement.date, order: .reverse)
@@ -321,6 +323,14 @@ public struct MeasurementView: View {
         }
     }
 
+    private var weightDisplayBinding: Binding<Double?> {
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        return Binding(
+            get: { weightKg.map(unit.fromKg) },
+            set: { weightKg = $0.map { unit.toKg($0).rounded(toDecimals: 2) } }
+        )
+    }
+
     /// Lokalisierte Namen der noch fehlenden Pflichtfelder, in Formular-
     /// Reihenfolge. Treibt die Kontextzeilen-Marke (New-Mode) sowie die
     /// per-Feld "erforderlich"-Markierungen (`requirementHint`).
@@ -391,7 +401,7 @@ public struct MeasurementView: View {
         // Catalog. String-Interpolation klebt Wert + Unit zusammen.
         DeltiqSection(loc("measurement.section.profile").uppercased()) {
             DeltiqControlRow(label: loc("measurement.profile.height")) {
-                valueText(profile.heightCm.formattedTwoDecimals + " cm")
+                valueText(WeightUnit(rawSetting: weightUnitRaw).fromCm(profile.heightCm).formattedTwoDecimals + " \(WeightUnit(rawSetting: weightUnitRaw).heightLabel)")
             }
             DeltiqControlRow(label: loc("measurement.profile.age.label")) {
                 valueText("\(profile.ageYears) \(loc("measurement.profile.age.unit"))")
@@ -406,7 +416,7 @@ public struct MeasurementView: View {
             }
             if let goal = profile.goalWeightKg {
                 DeltiqControlRow(label: loc("measurement.profile.goalWeight"), showsDivider: false) {
-                    valueText(goal.formattedTwoDecimals + " kg")
+                    valueText(WeightUnit(rawSetting: weightUnitRaw).fromKg(goal).formattedWeightInput() + " \(WeightUnit(rawSetting: weightUnitRaw).weightLabel)")
                 }
             }
         }
@@ -436,7 +446,7 @@ public struct MeasurementView: View {
         // Hauptaussage des Screens - die eine erlaubte Orange-Kante.
         DeltiqSection(loc("measurement.section.core.title").uppercased(), accentEdge: true) {
             // Gewicht (immer Pflicht)
-            measurementRow(label: loc("measurement.field.weight"), value: $weightKg, field: .weight, roundsToWeightPrecision: true)
+            measurementRow(label: loc(weightUnitRaw == "lbs" ? "measurement.field.weight.lbs" : "measurement.field.weight"), value: weightDisplayBinding, field: .weight, roundsToWeightPrecision: true)
                 .onChange(of: weightKg) { _, newValue in
                     if weightCameFromHealth, newValue != lastHealthFilledWeight {
                         weightCameFromHealth = false

@@ -7155,6 +7155,29 @@
         }
       }
     },
+    "measurement.field.weight.lbs": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gewicht (lbs)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight (lbs)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ağırlık (lbs)"
+          }
+        }
+      }
+    },
     "measurement.field.required": {
       "extractionState": "manual",
       "localizations": {
@@ -19732,6 +19755,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Boy (cm)"
+          }
+        }
+      }
+    },
+    "onboarding.field.heightIn": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Größe (in)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Height (in)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boy (in)"
           }
         }
       }
