@@ -340,7 +340,7 @@ public struct MeasurementView: View {
         )
     }
 
-    private func circumferenceLabel(_ key: String) -> String {
+    private func circumferenceLabel(_ key: String.LocalizationValue) -> String {
         weightUnitRaw == "lbs"
             ? loc(key).replacingOccurrences(of: "(cm)", with: "(in)")
             : loc(key)
