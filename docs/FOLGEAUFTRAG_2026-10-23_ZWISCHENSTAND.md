@@ -9,7 +9,7 @@
 ## 1. NUT-01 – sicheres Rollback beim Speichern
 
 ### Ursache (belegt)
-`Sources/FitnessAppUI/Nutrition/MealDraft.swift`, Edit-Pfad von `save(into:persist:)`:
+`Sources/DeltiqUI/Nutrition/MealDraft.swift`, Edit-Pfad von `save(into:persist:)`:
 1. alte `MealItem`s wurden **vor** dem Save `context.delete(...)`,
 2. im Fehlerfall wurden **Kopien** der alten Werte neu eingefügt und **nirgends gespeichert**.
 
@@ -25,9 +25,9 @@ Der Store behielt damit die alten Zeilen (Löschungen ungespeichert), während `
 ### Geänderte Dateien
 | Datei | Änderung |
 |---|---|
-| `Sources/FitnessAppUI/Nutrition/MealDraft.swift` | neuer Ablauf, `MealDraftItemCleanupError`, `rollbackToOriginalItems`, Doku |
-| `Sources/FitnessAppUI/Nutrition/AddMealView.swift` | Fehlertext unterscheidet Cleanup-Fehler (`nutrition.addMeal.saveFailed.cleanupMessage`) |
-| `Tests/FitnessAppUITests/MealDraftEditTests.swift` | 4 neue Tests |
+| `Sources/DeltiqUI/Nutrition/MealDraft.swift` | neuer Ablauf, `MealDraftItemCleanupError`, `rollbackToOriginalItems`, Doku |
+| `Sources/DeltiqUI/Nutrition/AddMealView.swift` | Fehlertext unterscheidet Cleanup-Fehler (`nutrition.addMeal.saveFailed.cleanupMessage`) |
+| `Tests/DeltiqUITests/MealDraftEditTests.swift` | 4 neue Tests |
 
 ### Neue Tests (nicht ausgeführt)
 - `testEditSaveFailureLeavesNothingBehindForAnUnrelatedLaterSave` – nach Fehler + fremdem `context.save()` steht im Store nur das Original (gleiche `persistentModelID`, keine Kopie).

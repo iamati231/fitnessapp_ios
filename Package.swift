@@ -2,23 +2,23 @@
 import PackageDescription
 
 let package = Package(
-    name: "FitnessApp",
+    name: "Deltiq",
     defaultLocalization: "en",
     platforms: [
         .iOS(.v17),
         .macOS(.v14)
     ],
     products: [
-        .library(name: "FitnessAppCore",       targets: ["FitnessAppCore"]),
-        .library(name: "FitnessAppData",       targets: ["FitnessAppData"]),
-        .library(name: "FitnessAppHealth",     targets: ["FitnessAppHealth"]),
-        .library(name: "FitnessAppActivities", targets: ["FitnessAppActivities"]),
-        .library(name: "FitnessAppUI",         targets: ["FitnessAppUI"]),
-        .library(name: "FitnessAppAI",         targets: ["FitnessAppAI"]),
-        .library(name: "FitnessAppFoodLookup", targets: ["FitnessAppFoodLookup"])
+        .library(name: "DeltiqCore",       targets: ["DeltiqCore"]),
+        .library(name: "DeltiqData",       targets: ["DeltiqData"]),
+        .library(name: "DeltiqHealth",     targets: ["DeltiqHealth"]),
+        .library(name: "DeltiqActivities", targets: ["DeltiqActivities"]),
+        .library(name: "DeltiqUI",         targets: ["DeltiqUI"]),
+        .library(name: "DeltiqAI",         targets: ["DeltiqAI"]),
+        .library(name: "DeltiqFoodLookup", targets: ["DeltiqFoodLookup"])
     ],
     // DEL-173: ZIPFoundation für on-device ZIP-Erstellung beim CSV-Export.
-    // Pure-Swift, MIT-Lizenz, weit verbreitet — wird nur von FitnessAppData
+    // Pure-Swift, MIT-Lizenz, weit verbreitet — wird nur von DeltiqData
     // referenziert (kein UI-Layer-Bloat). Version-Range hält uns auf 0.9.x
     // (aktuell stabile Linie), 1.0 kann später als bewusster Bump folgen.
     dependencies: [
@@ -26,45 +26,45 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "FitnessAppCore",
-            path: "Sources/FitnessAppCore",
+            name: "DeltiqCore",
+            path: "Sources/DeltiqCore",
             resources: [.process("Resources")]
         ),
         .target(
-            name: "FitnessAppData",
+            name: "DeltiqData",
             dependencies: [
-                "FitnessAppCore",
+                "DeltiqCore",
                 .product(name: "ZIPFoundation", package: "ZIPFoundation")
             ],
-            path: "Sources/FitnessAppData"
+            path: "Sources/DeltiqData"
         ),
         .target(
             // Haengt von Core ab wegen Double.rounded(toDecimals:) (Fix
             // "70,050003"-Bug: WeightReading rundet Health-Gewichtswerte an
             // der Quelle statt den Fehler bis zur UI durchzureichen).
-            name: "FitnessAppHealth",
-            dependencies: ["FitnessAppCore"],
-            path: "Sources/FitnessAppHealth"
+            name: "DeltiqHealth",
+            dependencies: ["DeltiqCore"],
+            path: "Sources/DeltiqHealth"
         ),
         .target(
             // Haengt von Core ab, weil die Live Activity der Zeitformate
             // `TimedLiveContent` (reine Logik, auf Linux testbar) als Inhalt traegt.
-            name: "FitnessAppActivities",
-            dependencies: ["FitnessAppCore"],
-            path: "Sources/FitnessAppActivities"
+            name: "DeltiqActivities",
+            dependencies: ["DeltiqCore"],
+            path: "Sources/DeltiqActivities"
         ),
         .target(
-            name: "FitnessAppUI",
-            dependencies: ["FitnessAppCore", "FitnessAppData",
-                           "FitnessAppHealth", "FitnessAppActivities",
+            name: "DeltiqUI",
+            dependencies: ["DeltiqCore", "DeltiqData",
+                           "DeltiqHealth", "DeltiqActivities",
                            // Task E: AddMealView calls NutritionAIService/MealTextExtractor
-                           // directly. Still a one-way dependency — FitnessAppAI itself
+                           // directly. Still a one-way dependency — DeltiqAI itself
                            // depends on nothing, so a broken AI layer can't break Core/Data.
-                           "FitnessAppAI",
+                           "DeltiqAI",
                            // Task 4: AddMealView's online food search talks to
                            // OnlineFoodSearching/OpenFoodFactsSearchClient directly.
-                           "FitnessAppFoodLookup"],
-            path: "Sources/FitnessAppUI",
+                           "DeltiqFoodLookup"],
+            path: "Sources/DeltiqUI",
             // ExerciseGifs liegt bewusst NICHT unter Resources/: `.process()`
             // flacht verschachtelte Ordner ab (alle Dateien landen direkt im
             // Bundle-Root, ohne Unterordner) — `Bundle.module.url(…,
@@ -84,59 +84,59 @@ let package = Package(
             // Optional on-device AI (Foundation Models, iOS/macOS 26+). No
             // dependencies on purpose: Core/Data/manual entry must never need it.
             // FoundationModels is imported only here, behind canImport/#available.
-            name: "FitnessAppAI",
-            path: "Sources/FitnessAppAI"
+            name: "DeltiqAI",
+            path: "Sources/DeltiqAI"
         ),
         .target(
             // Only network-capable module in the app (Open Food Facts search).
-            // Depends on Core only, never on FitnessAppAI and vice versa — a
+            // Depends on Core only, never on DeltiqAI and vice versa — a
             // reviewer should be able to tell from the module graph alone that
             // exactly this target makes network calls.
-            name: "FitnessAppFoodLookup",
-            dependencies: ["FitnessAppCore"],
-            path: "Sources/FitnessAppFoodLookup"
+            name: "DeltiqFoodLookup",
+            dependencies: ["DeltiqCore"],
+            path: "Sources/DeltiqFoodLookup"
         ),
         .testTarget(
-            name: "FitnessAppAITests",
-            dependencies: ["FitnessAppAI"],
-            path: "Tests/FitnessAppAITests"
+            name: "DeltiqAITests",
+            dependencies: ["DeltiqAI"],
+            path: "Tests/DeltiqAITests"
         ),
         .testTarget(
-            name: "FitnessAppCoreTests",
-            dependencies: ["FitnessAppCore"],
-            path: "Tests/FitnessAppCoreTests"
+            name: "DeltiqCoreTests",
+            dependencies: ["DeltiqCore"],
+            path: "Tests/DeltiqCoreTests"
         ),
         .testTarget(
             // Zustandslogik der Health-Berechtigungen (plattformneutrale Typen). Der
             // HealthKit-Teil selbst laesst sich nur auf dem Geraet pruefen.
-            name: "FitnessAppHealthTests",
-            dependencies: ["FitnessAppHealth"],
-            path: "Tests/FitnessAppHealthTests"
+            name: "DeltiqHealthTests",
+            dependencies: ["DeltiqHealth"],
+            path: "Tests/DeltiqHealthTests"
         ),
         .testTarget(
             // Integration tests for SwiftData-backed sync logic (PersonalRecordSync etc).
             // All test bodies are #if canImport(SwiftData)-gated so the file compiles
             // empty on Windows where SwiftData isn't available; on Codemagic-Mac the
             // tests actually run against an in-memory ModelContainer.
-            name: "FitnessAppDataTests",
-            dependencies: ["FitnessAppData", "FitnessAppCore"],
-            path: "Tests/FitnessAppDataTests"
+            name: "DeltiqDataTests",
+            dependencies: ["DeltiqData", "DeltiqCore"],
+            path: "Tests/DeltiqDataTests"
         ),
         .testTarget(
-            // Bundle-Resource-Checks fuer FitnessAppUI (z.B. Uebungs-GIFs
+            // Bundle-Resource-Checks fuer DeltiqUI (z.B. Uebungs-GIFs
             // tatsaechlich ueber Bundle.module erreichbar) — auf Windows/Linux
-            // compiliert das SwiftUI-abhaengige FitnessAppUI leer, diese Tests
+            // compiliert das SwiftUI-abhaengige DeltiqUI leer, diese Tests
             // beruehren nur Foundation und laufen echt auf Codemagic-Mac.
-            name: "FitnessAppUITests",
-            dependencies: ["FitnessAppUI", "FitnessAppCore", "FitnessAppData", "FitnessAppAI", "FitnessAppFoodLookup"],
-            path: "Tests/FitnessAppUITests"
+            name: "DeltiqUITests",
+            dependencies: ["DeltiqUI", "DeltiqCore", "DeltiqData", "DeltiqAI", "DeltiqFoodLookup"],
+            path: "Tests/DeltiqUITests"
         ),
         .testTarget(
             // Pure URLSession+Foundation, no SwiftData/UIKit — runs locally on
             // Windows too, unlike most of the other test targets here.
-            name: "FitnessAppFoodLookupTests",
-            dependencies: ["FitnessAppFoodLookup"],
-            path: "Tests/FitnessAppFoodLookupTests"
+            name: "DeltiqFoodLookupTests",
+            dependencies: ["DeltiqFoodLookup"],
+            path: "Tests/DeltiqFoodLookupTests"
         )
     ]
 )

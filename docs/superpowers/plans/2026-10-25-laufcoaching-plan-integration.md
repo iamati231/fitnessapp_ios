@@ -6,13 +6,13 @@
 
 **Architecture:** Thread an optional `CardioRunProfile` (goal + baseline) from `UserBodyProfile` through `GoalDrivenPlanSelectionBuilder`/`PlanGenerator.cardioCandidates` so endurance/hybrid-goal running days get baseline-aware pace labeling instead of generic placeholders; redirect `CardioFeasibilityCardModel.accept()` to the existing `CoachAdjustmentCardModel`/`RunCoachPlanAdjustment` in-place-adjustment path whenever an eligible active plan exists, so repeated goal changes stop creating new standalone plans; merge the Dashboard's fixed cardio card slot so `CoachAdjustmentCardModel` (active-plan case) takes priority over `CardioFeasibilityCardModel` (no-plan case), matching the already-documented "Leitplanke 6" precedence; wire the already-computed `PaceZoneCalculator`/`PaceCalculator.formatPace` into the day/exercise detail display.
 
-**Tech Stack:** Swift 6, SwiftUI, SwiftData, XCTest. `FitnessAppCore` (pure, Linux-testable) / `FitnessAppData` (SwiftData) / `FitnessAppUI` (SwiftUI) module split, unchanged.
+**Tech Stack:** Swift 6, SwiftUI, SwiftData, XCTest. `DeltiqCore` (pure, Linux-testable) / `DeltiqData` (SwiftData) / `DeltiqUI` (SwiftUI) module split, unchanged.
 
 **Spec:** `docs/specs/claude-laufcoaching-integration.md` (ticket), `docs/PLANUNG_BEGLEITUNG_AUDIT.md` §Phasenplan P3.1/P3.4/P4.3 (this plan is their continuation, per explicit user decision 2026-10-25), `docs/DELTIQ_DEVICE_ACCEPTANCE.md` Pakete 1–3a (components being reused, not rebuilt). Phase-1 audit already delivered to the user as `Laufcoaching_Audit_Phase1.md`.
 
 ## Correction vs. the Phase-1 audit
 
-The audit's Risiko 2 ("A12 distributionConflict-Banner-UI fehlt noch") was based on a stale note in `docs/DELTIQ_DEVICE_ACCEPTANCE.md`. Live code check (`Sources/FitnessAppUI/Workout/PlanBuilderView.swift:1549-1582`) shows the banner **and** the disabled-adopt-button guard are already fully wired. **No task in this plan touches A12 — it is already closed.**
+The audit's Risiko 2 ("A12 distributionConflict-Banner-UI fehlt noch") was based on a stale note in `docs/DELTIQ_DEVICE_ACCEPTANCE.md`. Live code check (`Sources/DeltiqUI/Workout/PlanBuilderView.swift:1549-1582`) shows the banner **and** the disabled-adopt-button guard are already fully wired. **No task in this plan touches A12 — it is already closed.**
 
 ## Global Constraints
 
@@ -55,8 +55,8 @@ git commit -m "docs: record laufcoaching ticket as continuation of P3.4/P4.3"
 ## Task 2: `CardioRunProfile` Core type
 
 **Files:**
-- Create: `Sources/FitnessAppCore/Analytics/CardioRunProfile.swift`
-- Test: `Tests/FitnessAppCoreTests/CardioRunProfileTests.swift`
+- Create: `Sources/DeltiqCore/Analytics/CardioRunProfile.swift`
+- Test: `Tests/DeltiqCoreTests/CardioRunProfileTests.swift`
 
 **Interfaces:**
 - Produces: `public struct CardioRunProfile: Sendable, Hashable, Codable { public let goal: CardioGoal; public let current5kReferenceSeconds: Int?; public let weeklyBaseVolumeKm: Double? }` with a `public init(goal:current5kReferenceSeconds:weeklyBaseVolumeKm:)`.
@@ -85,7 +85,7 @@ func testCardioRunProfileDecodesWithMissingOptionalFieldsFromOlderJSON() throws 
 Run: `swift test --filter CardioRunProfileTests` (or the project's Apple-CI if local `swift test` is blocked, per `local_swift_verification` memory)
 Expected: FAIL with "cannot find 'CardioRunProfile' in scope"
 
-- [ ] **Step 3: Implement `CardioRunProfile` in `Sources/FitnessAppCore/Analytics/CardioRunProfile.swift`**
+- [ ] **Step 3: Implement `CardioRunProfile` in `Sources/DeltiqCore/Analytics/CardioRunProfile.swift`**
 
 Same shape/doc-comment style as `CardioGoal`/`PaceZoneCalculator` in `CardioProfile.swift` (pure value type, no SwiftData). One short doc comment: this is the plan-generation-facing projection of a user's cardio baseline, assembled by the caller from `UserBodyProfile`.
 
@@ -93,7 +93,7 @@ Same shape/doc-comment style as `CardioGoal`/`PaceZoneCalculator` in `CardioProf
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Analytics/CardioRunProfile.swift Tests/FitnessAppCoreTests/CardioRunProfileTests.swift
+git add Sources/DeltiqCore/Analytics/CardioRunProfile.swift Tests/DeltiqCoreTests/CardioRunProfileTests.swift
 git commit -m "feat: add CardioRunProfile plan-generation input type"
 ```
 
@@ -102,9 +102,9 @@ git commit -m "feat: add CardioRunProfile plan-generation input type"
 ## Task 3: Baseline-aware pace labeling in `PlanGenerator.cardioCandidates`
 
 **Files:**
-- Modify: `Sources/FitnessAppCore/Programs/PlanGenerator.swift:656-738` (`cardioCandidates`)
-- Modify: `Sources/FitnessAppCore/Programs/PlanGeneratorInput.swift` (add field to `PlanGeneratorTypeSelection`)
-- Test: `Tests/FitnessAppCoreTests/PlanGeneratorTests.swift`
+- Modify: `Sources/DeltiqCore/Programs/PlanGenerator.swift:656-738` (`cardioCandidates`)
+- Modify: `Sources/DeltiqCore/Programs/PlanGeneratorInput.swift` (add field to `PlanGeneratorTypeSelection`)
+- Test: `Tests/DeltiqCoreTests/PlanGeneratorTests.swift`
 
 **Interfaces:**
 - Consumes: `CardioRunProfile` (Task 2), `PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds:)` / `.tempoPaceMinutesPerKm(fiveKReferenceSeconds:)` (existing, `CardioProfile.swift:70-76`).
@@ -154,7 +154,7 @@ Expected: FAIL — `targetPaceMinutesPerKm` not defined on `ExerciseSpec`, `card
 - [ ] **Step 7: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Programs/PlanGenerator.swift Sources/FitnessAppCore/Programs/PlanGeneratorInput.swift Sources/FitnessAppCore/Programs/ExerciseSpec.swift Tests/FitnessAppCoreTests/PlanGeneratorTests.swift
+git add Sources/DeltiqCore/Programs/PlanGenerator.swift Sources/DeltiqCore/Programs/PlanGeneratorInput.swift Sources/DeltiqCore/Programs/ExerciseSpec.swift Tests/DeltiqCoreTests/PlanGeneratorTests.swift
 git commit -m "feat: baseline-aware pace on generated easy/tempo running days"
 ```
 
@@ -163,8 +163,8 @@ git commit -m "feat: baseline-aware pace on generated easy/tempo running days"
 ## Task 4: `GoalDrivenPlanSelectionBuilder` forwards the cardio profile for endurance/hybrid goals
 
 **Files:**
-- Modify: `Sources/FitnessAppCore/Programs/GoalDrivenPlanSelectionBuilder.swift` (`makeSelections`, `enduranceSelections`)
-- Test: `Tests/FitnessAppCoreTests/GoalDrivenPlanSelectionBuilderTests.swift`
+- Modify: `Sources/DeltiqCore/Programs/GoalDrivenPlanSelectionBuilder.swift` (`makeSelections`, `enduranceSelections`)
+- Test: `Tests/DeltiqCoreTests/GoalDrivenPlanSelectionBuilderTests.swift`
 
 **Interfaces:**
 - Consumes: `CardioRunProfile` (Task 2).
@@ -208,7 +208,7 @@ func testOmittingCardioRunProfileReproducesExistingEnduranceOutputExactly() {
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Programs/GoalDrivenPlanSelectionBuilder.swift Tests/FitnessAppCoreTests/GoalDrivenPlanSelectionBuilderTests.swift
+git add Sources/DeltiqCore/Programs/GoalDrivenPlanSelectionBuilder.swift Tests/DeltiqCoreTests/GoalDrivenPlanSelectionBuilderTests.swift
 git commit -m "feat: thread cardio baseline into endurance/hybrid plan selections"
 ```
 
@@ -217,9 +217,9 @@ git commit -m "feat: thread cardio baseline into endurance/hybrid plan selection
 ## Task 5: Onboarding asks the cardio goal when the coach is wanted
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/OnboardingView.swift` (`enduranceModalityStep` around line 957-982, `finishOnboarding()` around line 2156-2160)
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings` (new keys, DE/EN/TR)
-- Test: `Tests/FitnessAppUITests/OnboardingRunCoachGoalTests.swift` (new, source-introspection style — same pattern as `MehrInformationArchitectureTests`/`PlanBuilderResultDayRowTemplateAlignmentTests`: read the `.swift` source, assert on literal content, no SwiftUI render harness in this repo)
+- Modify: `Sources/DeltiqUI/OnboardingView.swift` (`enduranceModalityStep` around line 957-982, `finishOnboarding()` around line 2156-2160)
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings` (new keys, DE/EN/TR)
+- Test: `Tests/DeltiqUITests/OnboardingRunCoachGoalTests.swift` (new, source-introspection style — same pattern as `MehrInformationArchitectureTests`/`PlanBuilderResultDayRowTemplateAlignmentTests`: read the `.swift` source, assert on literal content, no SwiftUI render harness in this repo)
 
 **Interfaces:**
 - Consumes: `CardioGoal` (existing, `CardioProfile.swift`).
@@ -258,7 +258,7 @@ func testFinishOnboardingPersistsCardioGoalOnlyWhenCoachEndsUpEnabled() throws {
 - [ ] **Step 7: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/OnboardingView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests/FitnessAppUITests/OnboardingRunCoachGoalTests.swift
+git add Sources/DeltiqUI/OnboardingView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests/DeltiqUITests/OnboardingRunCoachGoalTests.swift
 git commit -m "feat: onboarding asks the cardio goal when the run coach is enabled"
 ```
 
@@ -267,8 +267,8 @@ git commit -m "feat: onboarding asks the cardio goal when the run coach is enabl
 ## Task 6: `PlanBuilderView` passes the real cardio profile into plan generation
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Workout/PlanBuilderView.swift:1402-1427` (`currentInput`)
-- Test: `Tests/FitnessAppUITests/PlanBuilderCardioProfileWiringTests.swift` (new, source-introspection style)
+- Modify: `Sources/DeltiqUI/Workout/PlanBuilderView.swift:1402-1427` (`currentInput`)
+- Test: `Tests/DeltiqUITests/PlanBuilderCardioProfileWiringTests.swift` (new, source-introspection style)
 
 **Interfaces:**
 - Consumes: `GoalDrivenPlanSelectionBuilder.makeSelections(..., cardioRunProfile:)` (Task 4), `profiles.first: UserBodyProfile?` (existing `@Query`, already used at lines 640/1479/2344).
@@ -294,7 +294,7 @@ func testCurrentInputPassesCardioRunProfileWhenCoachIsEnabled() throws {
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Workout/PlanBuilderView.swift Tests/FitnessAppUITests/PlanBuilderCardioProfileWiringTests.swift
+git add Sources/DeltiqUI/Workout/PlanBuilderView.swift Tests/DeltiqUITests/PlanBuilderCardioProfileWiringTests.swift
 git commit -m "feat: PlanBuilderView feeds the real cardio baseline into plan generation"
 ```
 
@@ -303,13 +303,13 @@ git commit -m "feat: PlanBuilderView feeds the real cardio baseline into plan ge
 ## Task 7: Stop creating duplicate plans — route `CardioFeasibilityCardModel.accept()` through the existing adjustment path
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift:130-173` (`accept(profile:in:using:)`) — add a new parameter, see Interfaces.
-- Modify the 3 call sites to pass it: `Sources/FitnessAppUI/Cardio/CoachAdjustmentPreviewView.swift:154` (already holds the exact plan as its own `activePlan` init parameter — pass it straight through), `Sources/FitnessAppUI/Workout/PlansListView.swift:345`, `Sources/FitnessAppUI/Settings/ProfileEditorView.swift:845` (both already query/hold the active plan for other purposes in the same file — reuse, don't re-fetch).
-- Test: `Tests/FitnessAppUITests/CardioFeasibilityCardModelTests.swift` (existing file, extend) or `Tests/FitnessAppDataTests/` equivalent if the existing suite for this type lives there — confirm with `grep -rl CardioFeasibilityCardModel Tests/` before adding.
+- Modify: `Sources/DeltiqUI/Cardio/CardioFeasibilityCardModel.swift:130-173` (`accept(profile:in:using:)`) — add a new parameter, see Interfaces.
+- Modify the 3 call sites to pass it: `Sources/DeltiqUI/Cardio/CoachAdjustmentPreviewView.swift:154` (already holds the exact plan as its own `activePlan` init parameter — pass it straight through), `Sources/DeltiqUI/Workout/PlansListView.swift:345`, `Sources/DeltiqUI/Settings/ProfileEditorView.swift:845` (both already query/hold the active plan for other purposes in the same file — reuse, don't re-fetch).
+- Test: `Tests/DeltiqUITests/CardioFeasibilityCardModelTests.swift` (existing file, extend) or `Tests/DeltiqDataTests/` equivalent if the existing suite for this type lives there — confirm with `grep -rl CardioFeasibilityCardModel Tests/` before adding.
 
 **Interfaces:**
 - Consumes: `RunCoachPlanAdjustment.analyze(plan:)` → `.cardioAvailability` (existing, `RunCoachPlanAdjustment.swift:114-130`), `CoachAdjustmentCardModel.make(for:activePlan:)` / `.accept(plan:profile:in:now:calendar:) throws -> Int` (existing, `CoachAdjustmentCardModel.swift:34-137`).
-- Produces: `accept(profile: UserBodyProfile, in: ModelContext, using: PlanCreationOperation, activePlan: TrainingPlan?)` — one new, trailing, defaulted (`= nil`) parameter, so no caller is forced to change if it genuinely has none. Return type stays `PlanCreationOperation.Outcome?`. **Corrected case list** (verified against `Sources/FitnessAppData/PlanCreationOperation.swift:49-61` — the plan's earlier draft had this wrong): `case success(TrainingPlan)`, `case nothingToCreate`, `case failedBeforeCommit`, `case committedButUnresolved`. Map `CoachAdjustmentCardModel.accept`'s `Int` result: `>= 0` (no throw) → `.success(activePlan)` (the adjustment happened in place on the SAME plan — including the `count == 0`/`isAlreadyApplied` no-op case, which is a successful terminal state, not an error: nothing more needed to happen); a caught thrown error → `.failedBeforeCommit`, NOT `.committedButUnresolved` — `CoachAdjustmentCardModel.accept`'s own doc comment confirms `applyCoachCardioAdjustment` fully rolls back via `revert` before the fingerprint is set on any failure, so nothing is left half-persisted the way `.committedButUnresolved`/`createdButRebindFailed` describes for the create-a-new-plan path.
+- Produces: `accept(profile: UserBodyProfile, in: ModelContext, using: PlanCreationOperation, activePlan: TrainingPlan?)` — one new, trailing, defaulted (`= nil`) parameter, so no caller is forced to change if it genuinely has none. Return type stays `PlanCreationOperation.Outcome?`. **Corrected case list** (verified against `Sources/DeltiqData/PlanCreationOperation.swift:49-61` — the plan's earlier draft had this wrong): `case success(TrainingPlan)`, `case nothingToCreate`, `case failedBeforeCommit`, `case committedButUnresolved`. Map `CoachAdjustmentCardModel.accept`'s `Int` result: `>= 0` (no throw) → `.success(activePlan)` (the adjustment happened in place on the SAME plan — including the `count == 0`/`isAlreadyApplied` no-op case, which is a successful terminal state, not an error: nothing more needed to happen); a caught thrown error → `.failedBeforeCommit`, NOT `.committedButUnresolved` — `CoachAdjustmentCardModel.accept`'s own doc comment confirms `applyCoachCardioAdjustment` fully rolls back via `revert` before the fingerprint is set on any failure, so nothing is left half-persisted the way `.committedButUnresolved`/`createdButRebindFailed` describes for the create-a-new-plan path.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -346,7 +346,7 @@ func testAcceptStillCreatesANewPlanWhenTheActivePlanHasNoEligibleCardioDay() {
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift Tests/FitnessAppUITests/CardioFeasibilityCardModelTests.swift
+git add Sources/DeltiqUI/Cardio/CardioFeasibilityCardModel.swift Tests/DeltiqUITests/CardioFeasibilityCardModelTests.swift
 git commit -m "fix: adjust the existing active plan instead of creating a duplicate on repeated cardio goal changes"
 ```
 
@@ -355,8 +355,8 @@ git commit -m "fix: adjust the existing active plan instead of creating a duplic
 ## Task 8: Consolidate the Dashboard's fixed cardio card
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/DashboardView.swift:232-239` (fixed-card slot), `:2461-2505` (`cardioFeasibilityModel`/`cardioFeasibilityDashboardCard`)
-- Test: `Tests/FitnessAppUITests/DashboardCardioCardPriorityTests.swift` (new, source-introspection style)
+- Modify: `Sources/DeltiqUI/DashboardView.swift:232-239` (fixed-card slot), `:2461-2505` (`cardioFeasibilityModel`/`cardioFeasibilityDashboardCard`)
+- Test: `Tests/DeltiqUITests/DashboardCardioCardPriorityTests.swift` (new, source-introspection style)
 
 **Interfaces:**
 - Consumes: `CoachAdjustmentCardModel.make(for:activePlan:)` (existing — currently never called from `DashboardView`), `CardioFeasibilityCardModel.make(for:)` (existing, already called here).
@@ -382,7 +382,7 @@ func testDashboardChecksCoachAdjustmentBeforeCardioFeasibilityInTheFixedCardSlot
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/DashboardView.swift Tests/FitnessAppUITests/DashboardCardioCardPriorityTests.swift
+git add Sources/DeltiqUI/DashboardView.swift Tests/DeltiqUITests/DashboardCardioCardPriorityTests.swift
 git commit -m "feat: surface the coach-adjustment card ahead of the feasibility card on the Dashboard"
 ```
 
@@ -391,7 +391,7 @@ git commit -m "feat: surface the coach-adjustment card ahead of the feasibility 
 ## Task 9: Pace/intensity display in the plan day and training-day detail
 
 **Files:**
-- Modify: wherever a cardio `ExerciseSpec`/`Exercise`'s distance/duration is currently rendered for a plan preview and a live training day — locate with `grep -rn "targetDistanceKm\|targetDurationMinutes" Sources/FitnessAppUI/` before editing (candidates seen in the audit: `CardioFeasibilityDayRow.swift`, `CardioSetRow` referenced from `PaceCalculator.swift`'s own doc comment, `PlanEditorView.swift`'s day detail).
+- Modify: wherever a cardio `ExerciseSpec`/`Exercise`'s distance/duration is currently rendered for a plan preview and a live training day — locate with `grep -rn "targetDistanceKm\|targetDurationMinutes" Sources/DeltiqUI/` before editing (candidates seen in the audit: `CardioFeasibilityDayRow.swift`, `CardioSetRow` referenced from `PaceCalculator.swift`'s own doc comment, `PlanEditorView.swift`'s day detail).
 - Test: for each modified view, a source-introspection test asserting `PaceCalculator.formatPace`/qualitative-fallback text appears, following the existing per-file pattern.
 
 **Interfaces:**
@@ -406,7 +406,7 @@ git commit -m "feat: surface the coach-adjustment card ahead of the feasibility 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add <modified views> <new/modified tests> Sources/FitnessAppUI/Resources/Localizable.xcstrings
+git add <modified views> <new/modified tests> Sources/DeltiqUI/Resources/Localizable.xcstrings
 git commit -m "feat: show baseline-derived pace or a qualitative fallback on cardio plan days"
 ```
 

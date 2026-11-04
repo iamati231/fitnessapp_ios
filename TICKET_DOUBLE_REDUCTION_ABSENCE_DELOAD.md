@@ -102,10 +102,10 @@ Belastungstoleranz, nicht Maximalkraft).
 
 ## Referenzen
 
-- `Sources/FitnessAppData/AbsenceDeload.swift` — `apply`, `assess`
-- `Sources/FitnessAppData/ProgressionApplicator.swift` — `apply`, `evaluateOnly`
-- `Sources/FitnessAppCore/Progression/ComebackAdvisor.swift` — `prescription`
+- `Sources/DeltiqData/AbsenceDeload.swift` — `apply`, `assess`
+- `Sources/DeltiqData/ProgressionApplicator.swift` — `apply`, `evaluateOnly`
+- `Sources/DeltiqCore/Progression/ComebackAdvisor.swift` — `prescription`
 - DEL-239 (Absence-Deload-Design), DEL-242 (bekannte Lücke dokumentiert in
   `ComebackAdvisor.swift:127-136`)
-- `Tests/FitnessAppDataTests/ProgressionApplicatorDeloadConflictTests.swift` —
+- `Tests/DeltiqDataTests/ProgressionApplicatorDeloadConflictTests.swift` —
   bestehende Veto-Tests für den Overreaching-Pfad

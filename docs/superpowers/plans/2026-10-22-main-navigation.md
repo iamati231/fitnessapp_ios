@@ -32,10 +32,10 @@
 ### Task 1: `AppTab` erweitern, neuer Ernährungs-Tab, Tab-Labels umbenennen
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/AppNavigation.swift:57-63` (`AppTab`-Enum)
-- Modify: `Sources/FitnessAppUI/RootView.swift:266-360` (`MainTabView`)
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings` (neue/geänderte Tab-Label-Keys)
-- Test: `Tests/FitnessAppUITests/` (Erweiterung, Dateiname nach Konvention, z.B. `MainTabViewStructureTests.swift` falls ein Pattern für Tab-Struktur-Tests existiert, sonst neue Datei)
+- Modify: `Sources/DeltiqUI/AppNavigation.swift:57-63` (`AppTab`-Enum)
+- Modify: `Sources/DeltiqUI/RootView.swift:266-360` (`MainTabView`)
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings` (neue/geänderte Tab-Label-Keys)
+- Test: `Tests/DeltiqUITests/` (Erweiterung, Dateiname nach Konvention, z.B. `MainTabViewStructureTests.swift` falls ein Pattern für Tab-Struktur-Tests existiert, sonst neue Datei)
 
 **Interfaces:**
 - Produziert (für Task 2/3): `AppTab.nutrition`-Fall, den Task 2 (Dashboard-Kachel) und Task 3 (Wassertracker-Link) konsumieren.
@@ -60,7 +60,7 @@ Run: CI-Lauf, Expected: PASS. Dead-Key-Audit: `python .scripts/dead_catalog_v3.p
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/AppNavigation.swift Sources/FitnessAppUI/RootView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests
+git add Sources/DeltiqUI/AppNavigation.swift Sources/DeltiqUI/RootView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests
 git commit -m "feat: restructure main tabs to Heute/Training/Ernährung/Fortschritt/Mehr"
 ```
 
@@ -71,8 +71,8 @@ git commit -m "feat: restructure main tabs to Heute/Training/Ernährung/Fortschr
 **Voraussetzung:** Task 1 abgeschlossen (braucht `AppTab.nutrition`).
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/DashboardView.swift:548-588` (`nutritionCard`, exakte Zeilen nach Task 1's Stand prüfen)
-- Test: Erweiterung bestehender Dashboard-Tests, falls vorhanden, sonst neue Testdatei in `Tests/FitnessAppUITests/`
+- Modify: `Sources/DeltiqUI/DashboardView.swift:548-588` (`nutritionCard`, exakte Zeilen nach Task 1's Stand prüfen)
+- Test: Erweiterung bestehender Dashboard-Tests, falls vorhanden, sonst neue Testdatei in `Tests/DeltiqUITests/`
 
 **Interfaces:**
 - Konsumiert: `AppTab.nutrition` aus Task 1, `AppNavigation.selectedTab` (bestehend).
@@ -96,7 +96,7 @@ Run: CI-Lauf, Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/DashboardView.swift Tests
+git add Sources/DeltiqUI/DashboardView.swift Tests
 git commit -m "fix: nutrition dashboard card switches tabs instead of pushing a duplicate stack"
 ```
 
@@ -107,10 +107,10 @@ git commit -m "fix: nutrition dashboard card switches tabs instead of pushing a 
 **Voraussetzung:** Task 1 abgeschlossen (braucht entferntes `.tools`).
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Settings/SettingsView.swift:155-195` (`groupNavigationSection`)
-- Modify: `Sources/FitnessAppUI/RootView.swift` (`applyPendingRouteIfAny()`, Wassertracker-Deep-Link — exakte Zeilen beim Implementieren nachschlagen, Stand nach Task 1 abweichend von aktuell ~362-370)
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-- Test: Erweiterung von `Tests/FitnessAppUITests/`
+- Modify: `Sources/DeltiqUI/Settings/SettingsView.swift:155-195` (`groupNavigationSection`)
+- Modify: `Sources/DeltiqUI/RootView.swift` (`applyPendingRouteIfAny()`, Wassertracker-Deep-Link — exakte Zeilen beim Implementieren nachschlagen, Stand nach Task 1 abweichend von aktuell ~362-370)
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
+- Test: Erweiterung von `Tests/DeltiqUITests/`
 
 **Interfaces:**
 - Konsumiert: `AppTab.settings` (bestehend), `CalculatorsRoute`/`CalculatorsView` (bestehend, unverändert).
@@ -134,7 +134,7 @@ Run: CI-Lauf, Expected: PASS. Dead-Key-Audit erneut: `UNUSED: 0`.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Settings/SettingsView.swift Sources/FitnessAppUI/RootView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests
+git add Sources/DeltiqUI/Settings/SettingsView.swift Sources/DeltiqUI/RootView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests
 git commit -m "feat: move Werkzeuge under Mehr, update water tracker deep link"
 ```
 

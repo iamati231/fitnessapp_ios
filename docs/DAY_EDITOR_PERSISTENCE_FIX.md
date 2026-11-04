@@ -100,7 +100,7 @@ vorgesehenen Fall) — unabhängig davon, ob/wann der Day-Editor seinerseits
 speichert. Dieser Fix ändert daran nichts; er macht nur die Löschung/
 Feldänderung selbst dauerhaft.
 
-## Tests (neu, `Tests/FitnessAppUITests/DayEditorPersistenceTests.swift`)
+## Tests (neu, `Tests/DeltiqUITests/DayEditorPersistenceTests.swift`)
 
 `deleteExercises`/`saveAndDismiss` bleiben bewusst `private` und lesen
 `self.modelContext` aus `@Environment` — eine ohne lebenden SwiftUI-/

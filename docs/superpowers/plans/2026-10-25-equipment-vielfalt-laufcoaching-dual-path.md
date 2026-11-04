@@ -22,10 +22,10 @@ Der Auftraggeber hat die erste Planfassung geprüft und sieben konkrete Korrektu
 
 Fünf weitere, konkrete Punkte wurden geprüft und eingearbeitet — zwei davon (Punkt 1, Punkt 2) durch Lesen des tatsächlichen Codes gelöst statt nur im Text präzisiert:
 
-1. **„Unresolved" bis zur Instanziierung eindeutig (Task 1/3/4):** gelöst durch Wiederverwendung des bereits bestehenden, bewährten Mechanismus statt eines neuen. `ResolvedPlanSelection`/`PlanSelectionResolver.resolve` (`Sources/FitnessAppCore/Programs/ResolvedPlanSelection.swift`) transportiert diesen Zustand bereits heute für alle 17 unveränderten Templates — `equipmentStatus: PlanEquipmentStatus` (`.available`/`.unknown`/`.unavailable(gaps:)`), `days` zeigt bei einer Lücke transparent die unveränderte Variante, niemals eine stillschweigend "gelöste" Fälschung. `ProgramTemplatePickerView.equipmentStatusBanner` (Zeilen 359-389) zeigt diesen Zustand bereits heute sichtbar an — ohne den Adopt-Button zu sperren (etablierte, bereits reviewte UX: Transparenz statt Blockade). Die 3 Hybrid-Templates produzieren künftig ebenfalls ein `ResolvedPlanSelection` über denselben Resolver, mit demselben Status-Vokabular — keine neue Datenstruktur, kein neuer UI-Pfad. Siehe überarbeitete Tasks 3/4.
+1. **„Unresolved" bis zur Instanziierung eindeutig (Task 1/3/4):** gelöst durch Wiederverwendung des bereits bestehenden, bewährten Mechanismus statt eines neuen. `ResolvedPlanSelection`/`PlanSelectionResolver.resolve` (`Sources/DeltiqCore/Programs/ResolvedPlanSelection.swift`) transportiert diesen Zustand bereits heute für alle 17 unveränderten Templates — `equipmentStatus: PlanEquipmentStatus` (`.available`/`.unknown`/`.unavailable(gaps:)`), `days` zeigt bei einer Lücke transparent die unveränderte Variante, niemals eine stillschweigend "gelöste" Fälschung. `ProgramTemplatePickerView.equipmentStatusBanner` (Zeilen 359-389) zeigt diesen Zustand bereits heute sichtbar an — ohne den Adopt-Button zu sperren (etablierte, bereits reviewte UX: Transparenz statt Blockade). Die 3 Hybrid-Templates produzieren künftig ebenfalls ein `ResolvedPlanSelection` über denselben Resolver, mit demselben Status-Vokabular — keine neue Datenstruktur, kein neuer UI-Pfad. Siehe überarbeitete Tasks 3/4.
 2. **Schutz manuell bearbeiteter Ruhetage (Task 5):** `generationFingerprint` hilft hier nicht — automatisch erzeugte Ruhetage bekommen laut `ProgramInstantiator.swift:191-198` NIE einen Fingerprint, genau wie ein manuell bearbeiteter Tag. Tatsächlich gefundenes, bereits im Code verwendetes Unterscheidungsmerkmal: `TrainingDay.name == "Ruhetag"` — automatisch erzeugte Ruhetage tragen exakt diesen Namen (`ProgramInstantiator.swift:192`), und `DayEditorView`s Typ-Wechsel (`TrainingDaySnapshot.apply`, Zeile 1703) ändert `day.type`, NIE `day.name`. Ein Nutzer, der einen Trainingstag ("Push A") zu einem Ruhetag umwidmet, behält also den alten `name`. Dieselbe `type == .rest && name == "Ruhetag"`-Kombination verwendet der bestehende Code bereits an zwei Stellen zum selben Zweck (`LibrarySeeder.swift:300`, `:386`) — kein neuer Mechanismus, sondern ein bestehendes, bereits genutztes Muster. Die Eignungsprüfung wird um `customName == nil` ergänzt (zusätzliche, günstige Absicherung gegen einen vom Nutzer umbenannten Ruhetag).
 3. **ActivePlanResolver-Gleichstand (Task 9):** `TrainingPlan` hat kein eigenes, stabiles `id`-Feld (nur `activatedAt: Date?`, sonst ausschließlich SwiftDatas interne, nicht dafür vorgesehene `PersistentIdentifier`) — ein erfundener zweiter Sortierschlüssel wäre eine stille, bedeutungslose Pseudo-Ordnung. Bei echtem Gleichstand (identischer `activatedAt`-Wert ODER beide `nil`) unter mehreren `.cardioCoach`-Plänen liefert der Resolver jetzt `nil` statt zu raten (Review-Vorschlag, direkt übernommen). Ein zusätzliches, stabiles `id: UUID`-Feld auf `TrainingPlan` wäre eine Datenmodell-Änderung und bleibt eine offene, separate Entscheidung, falls dieser seltene Fall (zwei Laufcoaching-Vorgänge in sehr kurzer Folge) später doch aufgelöst werden soll.
-4. **Task 2, `UserEquipmentProfile.gymDefault` (Korrektur, keine Architekturfrage):** existiert tatsächlich — nur nicht in `EquipmentRequirement.swift`, sondern in `Sources/FitnessAppCore/Programs/EquipmentPlanningContext.swift:98-108`. Dort auch dokumentiert: Kettlebell/Widerstandsband bleiben in diesem Profil bewusst `.unknown`, nicht `.unavailable`. Task 2 definiert jetzt alle vier Testprofile explizit und wertet `PlanEquipmentChecker.fullReport`s `missing`/`uncertain`-Listen GETRENNT aus, statt sie zu einer undifferenzierten "Lücke" zusammenzufassen.
+4. **Task 2, `UserEquipmentProfile.gymDefault` (Korrektur, keine Architekturfrage):** existiert tatsächlich — nur nicht in `EquipmentRequirement.swift`, sondern in `Sources/DeltiqCore/Programs/EquipmentPlanningContext.swift:98-108`. Dort auch dokumentiert: Kettlebell/Widerstandsband bleiben in diesem Profil bewusst `.unknown`, nicht `.unavailable`. Task 2 definiert jetzt alle vier Testprofile explizit und wertet `PlanEquipmentChecker.fullReport`s `missing`/`uncertain`-Listen GETRENNT aus, statt sie zu einer undifferenzierten "Lücke" zusammenzufassen.
 5. **Eigenständige Re-Validierung in `insertCoachCardioDays` (Task 6):** die Funktion verlässt sich jetzt nicht mehr auf korrekte Verwendung durch den Aufrufer, sondern prüft jeden Zieltag unmittelbar vor der Mutation selbst erneut (neue, wiederverwendbare Einzeltag-Prüfung, siehe Task 5). Zur Transaktions-/Wiederherstellungsstrategie: `PlanGeneratorInstantiator.apply`/`revert`/`save` (Zeilen 508-514, 811-896, 943ff.) belegen bereits den heute produktiv laufenden, bereits reviewten Vertrag — `save` ist zwar ein echtes `context.save()` (sichert den gesamten Context, eine bestehende, nicht von diesem Plan eingeführte SwiftData-Eigenschaft), aber `revert` ist KEIN Context-Rollback, sondern eine manuelle, feldgenaue Rücknahme ausschließlich der selbst vorgenommenen Änderungen (`DayMutationSnapshot`). `insertCoachCardioDays` nutzt exakt dieselben `apply`/`revert`/`DayMutationSnapshot`-Bausteine unverändert — keine neue, ungetestete Transaktionsstrategie.
 
 ## Vierte Review-Runde: zwei letzte Entscheidungen vor der Freigabe (2026-10-25)
@@ -41,7 +41,7 @@ Das loest den scheinbaren Widerspruch zu Task 11 auf: fuer die 3 Hybrid-Template
 
 ### Korrektur 1: `ActivePlanResolver` verletzte die Modulgrenze
 
-Zu Recht gefunden: `FitnessAppCore/Programs/ActivePlanResolver.swift` als "pure logic, no SwiftData" war falsch angegeben — die Signatur nimmt `[TrainingPlan]` entgegen, ein SwiftData-Modell aus `FitnessAppData`; `FitnessAppCore` kann davon nicht abhängen. Korrigiert: Datei und Test verschoben nach `FitnessAppData`, neben `RunCoachPlanAdjustment`/`ProgramInstantiator`, die bereits genauso mit `TrainingPlan` arbeiten. Der Resolver bleibt in dem engeren, weiterhin relevanten Sinn "rein" — er holt nichts selbst, schreibt nichts, ist eine deterministische Funktion über seine Eingabe.
+Zu Recht gefunden: `DeltiqCore/Programs/ActivePlanResolver.swift` als "pure logic, no SwiftData" war falsch angegeben — die Signatur nimmt `[TrainingPlan]` entgegen, ein SwiftData-Modell aus `DeltiqData`; `DeltiqCore` kann davon nicht abhängen. Korrigiert: Datei und Test verschoben nach `DeltiqData`, neben `RunCoachPlanAdjustment`/`ProgramInstantiator`, die bereits genauso mit `TrainingPlan` arbeiten. Der Resolver bleibt in dem engeren, weiterhin relevanten Sinn "rein" — er holt nichts selbst, schreibt nichts, ist eine deterministische Funktion über seine Eingabe.
 
 ### Korrektur 2: Task 11 verwechselte "Option A insgesamt" mit "die neue Einfüge-Fähigkeit"
 
@@ -93,11 +93,11 @@ Dieselbe, bereits im TestingBot-Auftrag etablierte Regel gilt explizit auch hier
 ### Präzisierung 1: Equipment-Lücke muss auch NACH der Übernahme nachweisbar sein — fehlender Mechanismus gefunden und ergänzt
 
 Nachgeprüft: es gibt HEUTE keinerlei Stelle, die den Equipment-Status eines bereits gespeicherten Plans gegen das aktuelle `UserEquipmentProfile` neu berechnet und anzeigt (`PlanEditorView`/`DashboardView`/`ExerciseDetailView` — keine Treffer für `PlanEquipmentChecker`/`PlanEquipmentStatus`). `ResolvedPlanSelection.equipmentStatus` ist ein reiner Vorschau-Wert, der nach `ProgramInstantiator.instantiate` nirgends weiterlebt — die Lücke "verschwindet" nach der Übernahme tatsächlich aus der Sicht des Nutzers. Das war eine echte Lücke im Plan, keine bereits vorhandene Eigenschaft.
-**Ergänzung (keine neue Persistenz, wie vom Auftraggeber verlangt):** Task 4 bekommt einen zusätzlichen Baustein — eine kleine, zustandslose Funktion in `FitnessAppData` (wo `TrainingDay`/`Exercise` als SwiftData-Typen existieren), die aus den AKTUELLEN `activeExercises` eines gespeicherten Plans eine minimale `[DaySpec]`-Repräsentation baut und damit das bestehende, unveränderte `PlanEquipmentChecker.fullReport(days:against:)` aufruft — reine Neuberechnung bei jedem Rendern, kein gespeicherter Status. `PlanEditorView` zeigt das Ergebnis über eine neue, einfache Banner-Zeile (gleiche visuelle Sprache wie `ProgramTemplatePickerView.equipmentStatusRow`, aber kein neuer Typ) an, wenn mindestens eine Lücke besteht. Details siehe Task 4 unten.
+**Ergänzung (keine neue Persistenz, wie vom Auftraggeber verlangt):** Task 4 bekommt einen zusätzlichen Baustein — eine kleine, zustandslose Funktion in `DeltiqData` (wo `TrainingDay`/`Exercise` als SwiftData-Typen existieren), die aus den AKTUELLEN `activeExercises` eines gespeicherten Plans eine minimale `[DaySpec]`-Repräsentation baut und damit das bestehende, unveränderte `PlanEquipmentChecker.fullReport(days:against:)` aufruft — reine Neuberechnung bei jedem Rendern, kein gespeicherter Status. `PlanEditorView` zeigt das Ergebnis über eine neue, einfache Banner-Zeile (gleiche visuelle Sprache wie `ProgramTemplatePickerView.equipmentStatusRow`, aber kein neuer Typ) an, wenn mindestens eine Lücke besteht. Details siehe Task 4 unten.
 
 ### Präzisierung 2: der Migrationstest braucht kein neues, bisher unbenutztes Test-Muster
 
-Nachgeprüft, wie dieses Repository SwiftData-Schema-Versionen handhabt (`Sources/FitnessAppData/AppSchema.swift`, `Tests/FitnessAppDataTests/ExperienceTrackBackfillTests.swift` als Referenz-Beispiel fuer ein vergleichbares additives, defaultwertiges Feld): **es gibt kein `VersionedSchema`/`SchemaMigrationPlan` in diesem Projekt — `AppSchema.types` ist eine flache Typenliste, jede Migration eines additiven, defaultwertigen Feldes (`localizationKey`, `generatorSequenceIndex`, `activatedAt` u.a.) läuft ausschließlich über SwiftDatas automatische Lightweight-Migration, OHNE eigenen Test dafür irgendwo in diesem Projekt.** Jeder bestehende Persistenz-Test (z.B. `ExperienceTrackBackfillTests`) baut einen FRISCHEN, In-Memory-`ModelContainer` aus dem AKTUELLEN Modell — es existiert kein Fixture mit einem echten, vor der Änderung gespeicherten `.sqlite`-Store irgendwo im Projekt, und keine Infrastruktur, einen solchen zu erzeugen.
+Nachgeprüft, wie dieses Repository SwiftData-Schema-Versionen handhabt (`Sources/DeltiqData/AppSchema.swift`, `Tests/DeltiqDataTests/ExperienceTrackBackfillTests.swift` als Referenz-Beispiel fuer ein vergleichbares additives, defaultwertiges Feld): **es gibt kein `VersionedSchema`/`SchemaMigrationPlan` in diesem Projekt — `AppSchema.types` ist eine flache Typenliste, jede Migration eines additiven, defaultwertigen Feldes (`localizationKey`, `generatorSequenceIndex`, `activatedAt` u.a.) läuft ausschließlich über SwiftDatas automatische Lightweight-Migration, OHNE eigenen Test dafür irgendwo in diesem Projekt.** Jeder bestehende Persistenz-Test (z.B. `ExperienceTrackBackfillTests`) baut einen FRISCHEN, In-Memory-`ModelContainer` aus dem AKTUELLEN Modell — es existiert kein Fixture mit einem echten, vor der Änderung gespeicherten `.sqlite`-Store irgendwo im Projekt, und keine Infrastruktur, einen solchen zu erzeugen.
 **Entscheidung: kein neues Test-Muster einführen.** Der zuvor vorgeschlagene "Apple-CI-only"-Test mit einem echten alten Schema wird gestrichen — er hätte eine für dieses Feld unverhältnismäßige, im gesamten Projekt präzedenzlose Test-Infrastruktur gebraucht, für ein Risiko, das identisch zu einem Dutzend bereits ausgelieferter additiver Felder ist, die alle ohne einen solchen Test auskamen. Stattdessen: derselbe In-Memory-`ModelContainer`-Test wie bei `ExperienceTrackBackfillTests` (Task 5, unten) — das ist die tatsächlich etablierte, von diesem Projekt als ausreichend behandelte Sorgfaltsstufe für genau diese Art Änderung, nicht eine Abkürzung.
 
 ### Präzisierung 3: Eignungsfunktion vs. Einfügefunktion — getrennt gezählt
@@ -123,7 +123,7 @@ Auf ausdrücklichen Wunsch des Auftraggebers wurde die `name == "Ruhetag"`-Erken
 
 ### Offener Befund: `name == "Ruhetag"` ist kein Herkunftsnachweis — echter Gleichstand gefunden
 
-`PlanEditorView.createNewDay(type: .rest)` (`Sources/FitnessAppUI/Workout/PlanEditorView.swift:973-1003`) — die reguläre "Tag hinzufügen"-Funktion im Plan-Editor — erzeugt bei Wahl von "Ruhetag" exakt:
+`PlanEditorView.createNewDay(type: .rest)` (`Sources/DeltiqUI/Workout/PlanEditorView.swift:973-1003`) — die reguläre "Tag hinzufügen"-Funktion im Plan-Editor — erzeugt bei Wahl von "Ruhetag" exakt:
 ```swift
 TrainingDay(name: "Ruhetag", weekday: nextWeekday, type: .rest, plan: plan)
 ```
@@ -146,7 +146,7 @@ Kein `customName`, kein `generationFingerprint`, keine Übungen, keine Sessions 
 1. **Plan-Zugehörigkeit nicht geprüft:** `insertCoachCardioDays(restDays:newCardioDays:in:)` hatte keinen `plan`-Parameter und konnte deshalb nie prüfen, ob jeder Zieltag tatsächlich noch zu DEM Plan gehört, für den die Einfügung gedacht ist. Behoben in Task 6 (Signatur um `plan: TrainingPlan` ergänzt, Prüfung `day.plan?.persistentModelID == plan.persistentModelID` vor jeder Mutation).
 2. **`day.type` bleibt nach dem Einfügen fälschlich `.rest`:** `PlanGeneratorInstantiator.apply(_:to:...)` setzt `day.type` nirgends (verifiziert durch Lesen der vollständigen Funktion) — beim bestehenden Ersetzungspfad unproblematisch, weil ein Cardio-Tag dort immer schon vorher den richtigen Typ hatte. Bei einer Einfügung in einen vormaligen `.rest`-Tag bliebe `type == .rest`, obwohl der Tag jetzt Cardio-Inhalt hat — `RunCoachPlanAdjustment.isCardioDay` selbst kommt damit zurecht (prüft Übungen, nicht nur `type`), aber jeder andere Code, der direkt auf `day.type == .rest` prüft (z.B. `DashboardView.swift:2135`), würde den Tag weiterhin als Ruhetag anzeigen. Behoben in Task 6: `apply` bekommt einen neuen, optionalen `targetType: DayType? = nil`-Parameter (bei `nil` exakt das heutige Verhalten, kein bestehender Aufrufer ändert sich), `insertCoachCardioDays` übergibt `targetType: .cardio` (der dafür vorgesehene, dedizierte Typ laut `DomainEnums.swift:106-109`); `DayMutationSnapshot`/`revert` werden um `oldType` ergänzt, damit ein fehlgeschlagener Einfüge-Versuch auch den Typ zuverlässig zurücksetzt.
 
-**Tech Stack:** Swift 6 / SwiftUI / SwiftData, multi-module Swift Package (`FitnessAppCore`, `FitnessAppData`, `FitnessAppUI`), XCTest.
+**Tech Stack:** Swift 6 / SwiftUI / SwiftData, multi-module Swift Package (`DeltiqCore`, `DeltiqData`, `DeltiqUI`), XCTest.
 
 **Spec:** `docs/PLANUNG_BEGLEITUNG_AUDIT.md`, section "Manueller Gerätetest nach PR #2: zwei neue, vorbestehende Architekturbefunde (2026-10-25)" — contains both root-cause findings and the user's binding product decisions this plan implements.
 
@@ -158,7 +158,7 @@ Kein `customName`, kein `generationFingerprint`, keine Übungen, keine Sessions 
 - `PaceCalculator.parseDurationToSeconds`, `PaceCalculator.parseFiveKReferenceSeconds`, `CardioExerciseZone`, `CoachAdjustmentCardModel.proposedGoal`/fingerprint logic, and every other Round-2/Finding-B deliverable are out of scope and must not be modified.
 - `ExerciseSubstitutionEngine`, `ReviewedSubstitutionRule`, `ReviewedSubstitutionCatalog`, and `PlanEquipmentChecker`/`PlanEquipmentGap`/`PlanEquipmentReport` are out of scope and must not be modified, duplicated, or bypassed. No new `ReviewedSubstitutionRule` entries are an automatic part of this plan — if a task's own research finds a slot with no viable alternative, the gap is surfaced (ledger ruling + Review Focus note), never silently filled with an unreviewed substitute.
 - `python .scripts/dead_catalog_v3.py` must report `UNUSED: 0` after every task that touches `Localizable.xcstrings`.
-- New/changed pure logic that does NOT need a SwiftData model type (e.g. `UserEquipmentProfile`/`DaySpec`-based logic) lives in `FitnessAppCore`, matching `PlanEquipmentChecker`/`ExerciseSubstitutionEngine`, for Windows-CI testability. Logic that necessarily takes a SwiftData model type as a parameter (`TrainingPlan`/`TrainingDay`) lives in `FitnessAppData` even when otherwise side-effect-free, matching `RunCoachPlanAdjustment` (its ENTIRE file is `FitnessAppData`, not split — corrected per the seventh review round's P1 finding, which first surfaced this exact class of mistake for `ActivePlanResolver`) and `ProgramInstantiator`.
+- New/changed pure logic that does NOT need a SwiftData model type (e.g. `UserEquipmentProfile`/`DaySpec`-based logic) lives in `DeltiqCore`, matching `PlanEquipmentChecker`/`ExerciseSubstitutionEngine`, for Windows-CI testability. Logic that necessarily takes a SwiftData model type as a parameter (`TrainingPlan`/`TrainingDay`) lives in `DeltiqData` even when otherwise side-effect-free, matching `RunCoachPlanAdjustment` (its ENTIRE file is `DeltiqData`, not split — corrected per the seventh review round's P1 finding, which first surfaced this exact class of mistake for `ActivePlanResolver`) and `ProgramInstantiator`.
 - Any SwiftUI-layer test that cannot be compiled on Windows follows the established pattern in this codebase: source-introspection tests (grep-style assertions on the file contents), verified by both the implementer and the task reviewer via direct reading.
 
 ## Offene Architekturfragen & Empfehlungen
@@ -206,8 +206,8 @@ Empfehlung: Datenmodell reicht (mehrere aktive Pläne sind bereits bewusst unter
 ### Task 1: `TemplateSlot` + bounded three-state resolver (no open catalog search)
 
 **Files:**
-- Create: `Sources/FitnessAppCore/Programs/TemplateSlotResolver.swift`
-- Test: `Tests/FitnessAppCoreTests/TemplateSlotResolverTests.swift`
+- Create: `Sources/DeltiqCore/Programs/TemplateSlotResolver.swift`
+- Test: `Tests/DeltiqCoreTests/TemplateSlotResolverTests.swift`
 
 **Interfaces:**
 - Produces:
@@ -258,7 +258,7 @@ Empfehlung: Datenmodell reicht (mehrere aktive Pläne sind bereits bewusst unter
   ```
 - Consumes: `EquipmentRequirement.evaluate(against:)` and `ExerciseLibraryData.byName` (existing, unchanged — only used to look up the already-named candidates' own `ExerciseSpec`/requirement, never to search), `PlanEquipmentGapReason` (existing, reused for the `.unresolved` case so gap reporting stays consistent with `PlanEquipmentChecker`'s established vocabulary).
 
-- [ ] **Step 1: Read `Sources/FitnessAppCore/Programs/EquipmentRequirement.swift` and `Sources/FitnessAppCore/Programs/ExerciseLibraryData.swift` in full** to confirm `equipmentRequirement`'s exact type/field name and `ExerciseLibraryData.byName`'s exact signature. Record any naming mismatch before writing Step 2's tests.
+- [ ] **Step 1: Read `Sources/DeltiqCore/Programs/EquipmentRequirement.swift` and `Sources/DeltiqCore/Programs/ExerciseLibraryData.swift` in full** to confirm `equipmentRequirement`'s exact type/field name and `ExerciseLibraryData.byName`'s exact signature. Record any naming mismatch before writing Step 2's tests.
 
 - [ ] **Step 2: Write failing tests**
   ```swift
@@ -306,10 +306,10 @@ Empfehlung: Datenmodell reicht (mehrere aktive Pläne sind bereits bewusst unter
 Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`broSplit`/`footballAthletic` get **no new `reviewedAlternatives` in this plan** — inventing them would be exactly the unauthorized substitution the review flagged. This task only produces the evidence the user needs to decide whether a follow-up content-review is worth commissioning.
 
 - [ ] **Step 1: Define exactly four test profiles explicitly** (do not assume unnamed ones):
-  1. `UserEquipmentProfile.gymDefault` (`Sources/FitnessAppCore/Programs/EquipmentPlanningContext.swift:98-108` — NOT `EquipmentRequirement.swift`, correcting the first plan draft's wrong file reference). Note its documented quirk: kettlebell and resistance band are deliberately `.unknown` here, not `.unavailable` — carry this distinction through to Step 2, do not treat `.unknown` as `.unavailable`.
+  1. `UserEquipmentProfile.gymDefault` (`Sources/DeltiqCore/Programs/EquipmentPlanningContext.swift:98-108` — NOT `EquipmentRequirement.swift`, correcting the first plan draft's wrong file reference). Note its documented quirk: kettlebell and resistance band are deliberately `.unknown` here, not `.unavailable` — carry this distinction through to Step 2, do not treat `.unknown` as `.unavailable`.
   2. A `dumbbellOnly` profile: `.dumbbell` explicitly `.available`, every other item explicitly `.unavailable` (not left `.unknown` — this profile must represent "confirmed, nothing else owned", matching `confirmedComplete == true` semantics).
   3. A `bodyweightOnly` profile: every item explicitly `.unavailable`.
-  4. A `machineOnly` profile: `.machine`/`.cableStation`/`.machineStation` (confirm exact `EquipmentItem` case names against `Sources/FitnessAppCore/Domain/DomainEnums.swift` or wherever `EquipmentItem` is defined before writing this) explicitly `.available`, every other item explicitly `.unavailable`.
+  4. A `machineOnly` profile: `.machine`/`.cableStation`/`.machineStation` (confirm exact `EquipmentItem` case names against `Sources/DeltiqCore/Domain/DomainEnums.swift` or wherever `EquipmentItem` is defined before writing this) explicitly `.available`, every other item explicitly `.unavailable`.
 
 - [ ] **Step 2: For each of the 7 templates × each of the 4 profiles, run the EXISTING, unmodified `PlanEquipmentChecker.fullReport(days:against:)`** against the template's current `days`. Record `missing` and `uncertain` as TWO SEPARATE lists per (template, profile) in the analysis file — never merge them into one undifferentiated "gap" count. A `.unknown`-availability item (like kettlebell in `gymDefault`) producing an `uncertain` finding means "not confirmed either way", which is a materially different, less urgent signal than a `missing` finding ("confirmed absent") — conflating them would misrepresent which gaps are real blockers versus simply unconfirmed inventory.
 
@@ -320,10 +320,10 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 ### Task 3: Convert the 3 hybrid templates, delete redundant `equipmentVariants`
 
 **Files:**
-- Modify: `Sources/FitnessAppCore/Programs/ProgramTemplates.swift` — convert `hybridBeginner`/`hybridBalanced`/`hybridPerformance` strength days to `slots:` (cardio days inside these templates stay untouched — they are not equipment-dependent), delete their `equipmentVariants:` arrays entirely (~250 lines per prior research) ONLY after Step 1's parity matrix passes
-- Modify: `Sources/FitnessAppCore/Programs/ProgramTemplate.swift` — add `slots: [[TemplateSlot]]?` per day, additive and optional, parallel to `days: [DaySpec]` (every other template's `days` field is untouched)
-- Modify: `Sources/FitnessAppCore/Programs/EquipmentVariant.swift` — remove `EquipmentVariant.bestMatch` only if Task 4 confirms no remaining caller needs it; keep `EquipmentProfile`/`.priority` (still used by the 17 untouched templates per A3)
-- Test: `Tests/FitnessAppCoreTests/HybridTemplateSlotParityTests.swift`
+- Modify: `Sources/DeltiqCore/Programs/ProgramTemplates.swift` — convert `hybridBeginner`/`hybridBalanced`/`hybridPerformance` strength days to `slots:` (cardio days inside these templates stay untouched — they are not equipment-dependent), delete their `equipmentVariants:` arrays entirely (~250 lines per prior research) ONLY after Step 1's parity matrix passes
+- Modify: `Sources/DeltiqCore/Programs/ProgramTemplate.swift` — add `slots: [[TemplateSlot]]?` per day, additive and optional, parallel to `days: [DaySpec]` (every other template's `days` field is untouched)
+- Modify: `Sources/DeltiqCore/Programs/EquipmentVariant.swift` — remove `EquipmentVariant.bestMatch` only if Task 4 confirms no remaining caller needs it; keep `EquipmentProfile`/`.priority` (still used by the 17 untouched templates per A3)
+- Test: `Tests/DeltiqCoreTests/HybridTemplateSlotParityTests.swift`
 
 **Interfaces:**
 - Consumes: `TemplateSlotResolver.resolve`/`SlotResolution` (Task 1).
@@ -352,15 +352,15 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 
 - [ ] **Step 4: Run the matrix test, verify it passes for every cell.** If any cell cannot be made to match (the old variant's choice genuinely isn't reconstructable as a simple default/alternative, e.g. it depends on something beyond equipment), STOP and report it as a ledger ruling rather than approximating — this is exactly the case the review warned about.
 
-- [ ] **Step 5: Only once Step 4 is fully green, delete the 3 templates' old `equipmentVariants` arrays** and re-run the full `FitnessAppCoreTests` suite.
+- [ ] **Step 5: Only once Step 4 is fully green, delete the 3 templates' old `equipmentVariants` arrays** and re-run the full `DeltiqCoreTests` suite.
 
 - [ ] **Step 6: Commit** (`refactor: replace hybrid templates' duplicated equipmentVariants with slot resolution`).
 
 ### Task 4: Wire slot resolution into `PlanSelectionResolver` (reusing the existing `ResolvedPlanSelection`/`PlanEquipmentStatus` vocabulary) + make equipment gaps visible on an ALREADY-SAVED plan
 
 **Files:**
-- Modify: `Sources/FitnessAppCore/Programs/ResolvedPlanSelection.swift` — `PlanSelectionResolver.resolve` gains an early branch: `if let slotResult = template.resolvedSlots(against: profile) { ... }`, returning a `ResolvedPlanSelection` built from it (see Interfaces), BEFORE the existing `bestEquipmentCheckedVariant`/`ExerciseSubstitutionEngine` logic runs. All 17 `slots == nil` templates fall through to today's exact, untouched code path.
-- Create: `Sources/FitnessAppData/SavedPlanEquipmentCheck.swift` — fünfte Review-Runde, Präzisierung 1: a saved `TrainingPlan`'s equipment status is NOT re-derivable anywhere today (confirmed: no reference to `PlanEquipmentChecker`/`PlanEquipmentStatus` in `PlanEditorView.swift`/`DashboardView.swift`/`ExerciseDetailView.swift`). Pure, stateless re-check — no new persisted field:
+- Modify: `Sources/DeltiqCore/Programs/ResolvedPlanSelection.swift` — `PlanSelectionResolver.resolve` gains an early branch: `if let slotResult = template.resolvedSlots(against: profile) { ... }`, returning a `ResolvedPlanSelection` built from it (see Interfaces), BEFORE the existing `bestEquipmentCheckedVariant`/`ExerciseSubstitutionEngine` logic runs. All 17 `slots == nil` templates fall through to today's exact, untouched code path.
+- Create: `Sources/DeltiqData/SavedPlanEquipmentCheck.swift` — fünfte Review-Runde, Präzisierung 1: a saved `TrainingPlan`'s equipment status is NOT re-derivable anywhere today (confirmed: no reference to `PlanEquipmentChecker`/`PlanEquipmentStatus` in `PlanEditorView.swift`/`DashboardView.swift`/`ExerciseDetailView.swift`). Pure, stateless re-check — no new persisted field:
   ```swift
   /// Baut aus den AKTUELLEN `activeExercises` eines gespeicherten Plans die
   /// minimale `[DaySpec]`-Repraesentation, die das bestehende, unveraenderte
@@ -372,8 +372,8 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
       public static func report(for plan: TrainingPlan, against profile: UserEquipmentProfile) -> PlanEquipmentReport
   }
   ```
-- Modify: `Sources/FitnessAppUI/Workout/PlanEditorView.swift` — add a simple banner row (reuse the visual pattern of `ProgramTemplatePickerView.equipmentStatusRow`, not a new component type) shown whenever `SavedPlanEquipmentCheck.report(for:against:).isFullyAvailable == false`, naming the affected exercises (same `missingItems`-style formatting `ProgramTemplatePickerView` already has). MUST be a `private var`/computed property read fresh in `body` (same pattern `ProgramTemplatePickerView.resolvedSelection`/`equipmentStatusBanner` already use), never cached into `@State`. Seventh review round, P2b — this view ALREADY has `@Query private var userProfiles: [UserBodyProfile]` (`PlanEditorView.swift:37`), so it already re-renders on any profile change elsewhere in the app; the new banner MUST derive its `UserEquipmentProfile` from THIS SAME existing `userProfiles` query (whatever accessor this view already uses to read the current profile from it), not from a separately-fetched or newly-added observation — reactivity then falls out of the view's existing structure, nothing new to wire up.
-- Test: `Tests/FitnessAppCoreTests/PlanSelectionResolverSlotWiringTests.swift`, `Tests/FitnessAppDataTests/SavedPlanEquipmentCheckTests.swift`, `Tests/FitnessAppUITests/PlanEditorEquipmentGapBannerTests.swift` (source-introspection)
+- Modify: `Sources/DeltiqUI/Workout/PlanEditorView.swift` — add a simple banner row (reuse the visual pattern of `ProgramTemplatePickerView.equipmentStatusRow`, not a new component type) shown whenever `SavedPlanEquipmentCheck.report(for:against:).isFullyAvailable == false`, naming the affected exercises (same `missingItems`-style formatting `ProgramTemplatePickerView` already has). MUST be a `private var`/computed property read fresh in `body` (same pattern `ProgramTemplatePickerView.resolvedSelection`/`equipmentStatusBanner` already use), never cached into `@State`. Seventh review round, P2b — this view ALREADY has `@Query private var userProfiles: [UserBodyProfile]` (`PlanEditorView.swift:37`), so it already re-renders on any profile change elsewhere in the app; the new banner MUST derive its `UserEquipmentProfile` from THIS SAME existing `userProfiles` query (whatever accessor this view already uses to read the current profile from it), not from a separately-fetched or newly-added observation — reactivity then falls out of the view's existing structure, nothing new to wire up.
+- Test: `Tests/DeltiqCoreTests/PlanSelectionResolverSlotWiringTests.swift`, `Tests/DeltiqDataTests/SavedPlanEquipmentCheckTests.swift`, `Tests/DeltiqUITests/PlanEditorEquipmentGapBannerTests.swift` (source-introspection)
 
 **Interfaces:**
 - Consumes: `ProgramTemplate.resolvedSlots(against:)` / `SlotResolutionResult` (Task 3).
@@ -394,7 +394,7 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 
 - [ ] **Step 4a: Confirm whether `EquipmentVariant.bestMatch` still has a real caller.** It was only ever used for templates with a populated `equipmentVariants` array; after Task 3 deleted the only 3 templates that had one, grep the whole codebase for callers. If none remain (expected outcome), delete `EquipmentVariant.bestMatch` and re-run `python .scripts/dead_catalog_v3.py` — this is the conditional cleanup Task 3's Files section deferred to this task, not an open item to silently drop.
 
-- [ ] **Step 4b: Run the full `FitnessAppCoreTests`/`FitnessAppDataTests` suites, verify everything passes, no existing test for the 17 untouched templates changed its expected output.**
+- [ ] **Step 4b: Run the full `DeltiqCoreTests`/`DeltiqDataTests` suites, verify everything passes, no existing test for the 17 untouched templates changed its expected output.**
 
 - [ ] **Step 5: Commit** (`feat: wire slot-based equipment resolution into PlanSelectionResolver`).
 
@@ -437,7 +437,7 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 ### Task 5: Rest-day insertion eligibility
 
 **Files:**
-- Modify: `Sources/FitnessAppData/RunCoachPlanAdjustment.swift` — add:
+- Modify: `Sources/DeltiqData/RunCoachPlanAdjustment.swift` — add:
   ```swift
   /// Rest-Tage, in die ein neuer Cardio-Tag eingefuegt werden darf.
   /// Herkunft wird durch `TrainingDay.isAutoFilledPlaceholder` bewiesen
@@ -463,18 +463,18 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
   }
   ```
   `CardioAvailability` itself is **unchanged** (no new case) — it keeps describing only the replace-path (`.ready`/`.noEligibleCardioDay`/`.noActivePlan`) exactly as today, per the review's point 4. `Analysis` gains one new, independent field: `public let insertableRestDays: [PersistentIdentifier]` (empty array, never optional, when none exist). A plan can have a non-empty `cardioAvailability == .ready` AND a non-empty `insertableRestDays` at the same time (replaceable cardio days and convertible rest days are not mutually exclusive) — exactly why this is a second field, not a richer enum case.
-- Modify: `Sources/FitnessAppData/TrainingDay.swift` — add `public var isAutoFilledPlaceholder: Bool = false` (new, additive, lightweight-migration field, same pattern as `localizationKey`/`generatorSequenceIndex`) and the matching `init` parameter, defaulted to `false` so every EXISTING call site compiles and behaves unchanged without being touched.
-- Modify: `Sources/FitnessAppData/ProgramInstantiator.swift:191-198` — the auto-rest-day-fill call site, and ONLY this one, passes `isAutoFilledPlaceholder: true`.
+- Modify: `Sources/DeltiqData/TrainingDay.swift` — add `public var isAutoFilledPlaceholder: Bool = false` (new, additive, lightweight-migration field, same pattern as `localizationKey`/`generatorSequenceIndex`) and the matching `init` parameter, defaulted to `false` so every EXISTING call site compiles and behaves unchanged without being touched.
+- Modify: `Sources/DeltiqData/ProgramInstantiator.swift:191-198` — the auto-rest-day-fill call site, and ONLY this one, passes `isAutoFilledPlaceholder: true`.
 - Audit every OTHER `TrainingDay(...)` call site (Condition 2 from the user's decision — confirmed exhaustive list as of this research pass, re-grep before implementing since line numbers may have shifted):
-  - `Sources/FitnessAppUI/Workout/PlanEditorView.swift:990` (`createNewDay`, manual "add day" incl. "add rest day") — MUST NOT set it (stays `false` by omission). This is the exact call site that falsified the old `name == "Ruhetag"` heuristic; confirming it stays `false` is the whole point of this fix.
-  - `Sources/FitnessAppUI/Workout/PlansListView.swift:844` (`dayCopy`, "duplicate plan") — MUST explicitly PRESERVE the source day's value: `isAutoFilledPlaceholder: day.isAutoFilledPlaceholder`. This is a real exception to "every other call site stays false": duplicating a plan that already had a genuine, untouched auto-rest-day should duplicate that TRUTH, not silently clear it to `false` (which would make a freshly-duplicated plan's legitimately-eligible rest days disappear) or silently set `true` unconditionally (which would wrongly mark a duplicated, already-customized day as eligible).
-  - `Sources/FitnessAppData/ProgramInstantiator.swift:147` (actual workout-day creation, from a `DaySpec` with real exercises) — confirmed safe, no change: a day with content is never a placeholder by definition.
-  - `Sources/FitnessAppUI/DashboardView.swift:2717`/`:2769` (ad-hoc workout days, `plan: nil`) — confirmed safe, no change: never attached to any `TrainingPlan.days`, irrelevant to this predicate.
-  - `Sources/FitnessAppUI/PreviewSupport.swift` — SwiftUI preview fixtures only, no change needed.
-  - `Sources/FitnessAppUI/DeviceAcceptanceFixturePaket3a.swift:106` — test/device-acceptance fixture; update if it specifically exercises the "auto rest day" scenario, otherwise leave as `false`.
-  - `Sources/FitnessAppData/Export/DataImportService.swift:1436` (backup import) — extend per the file's own established, repeatedly-used pattern (identical to `generation_fingerprint`/`generator_sequence_index` immediately above it in the same function): read a new `is_auto_filled_placeholder` CSV column, `row.bool(...) ?? false` — an older backup without the column defaults to `false` (Condition 1: "don't guess", applied consistently to the backup round-trip, not only to the live SwiftData migration).
-  - `Sources/FitnessAppData/Export/DataExportService.swift` (`buildDays`, the writer side of the same round-trip) — add the matching `is_auto_filled_placeholder` column so a plan exported AFTER this change and re-imported preserves the flag faithfully (without this, export→import would silently reset every genuinely-eligible day back to `false`).
-- Test: `Tests/FitnessAppDataTests/RunCoachPlanAdjustmentInsertionTests.swift`, `Tests/FitnessAppDataTests/TrainingDayIsAutoFilledPlaceholderDefaultTests.swift` (fünfte→sechste Review-Runde: NICHT "...MigrationTests" benannt — siehe Präzisierung 2 unten, dieser Name würde einen Nachweis behaupten, den die Datei nicht erbringt)
+  - `Sources/DeltiqUI/Workout/PlanEditorView.swift:990` (`createNewDay`, manual "add day" incl. "add rest day") — MUST NOT set it (stays `false` by omission). This is the exact call site that falsified the old `name == "Ruhetag"` heuristic; confirming it stays `false` is the whole point of this fix.
+  - `Sources/DeltiqUI/Workout/PlansListView.swift:844` (`dayCopy`, "duplicate plan") — MUST explicitly PRESERVE the source day's value: `isAutoFilledPlaceholder: day.isAutoFilledPlaceholder`. This is a real exception to "every other call site stays false": duplicating a plan that already had a genuine, untouched auto-rest-day should duplicate that TRUTH, not silently clear it to `false` (which would make a freshly-duplicated plan's legitimately-eligible rest days disappear) or silently set `true` unconditionally (which would wrongly mark a duplicated, already-customized day as eligible).
+  - `Sources/DeltiqData/ProgramInstantiator.swift:147` (actual workout-day creation, from a `DaySpec` with real exercises) — confirmed safe, no change: a day with content is never a placeholder by definition.
+  - `Sources/DeltiqUI/DashboardView.swift:2717`/`:2769` (ad-hoc workout days, `plan: nil`) — confirmed safe, no change: never attached to any `TrainingPlan.days`, irrelevant to this predicate.
+  - `Sources/DeltiqUI/PreviewSupport.swift` — SwiftUI preview fixtures only, no change needed.
+  - `Sources/DeltiqUI/DeviceAcceptanceFixturePaket3a.swift:106` — test/device-acceptance fixture; update if it specifically exercises the "auto rest day" scenario, otherwise leave as `false`.
+  - `Sources/DeltiqData/Export/DataImportService.swift:1436` (backup import) — extend per the file's own established, repeatedly-used pattern (identical to `generation_fingerprint`/`generator_sequence_index` immediately above it in the same function): read a new `is_auto_filled_placeholder` CSV column, `row.bool(...) ?? false` — an older backup without the column defaults to `false` (Condition 1: "don't guess", applied consistently to the backup round-trip, not only to the live SwiftData migration).
+  - `Sources/DeltiqData/Export/DataExportService.swift` (`buildDays`, the writer side of the same round-trip) — add the matching `is_auto_filled_placeholder` column so a plan exported AFTER this change and re-imported preserves the flag faithfully (without this, export→import would silently reset every genuinely-eligible day back to `false`).
+- Test: `Tests/DeltiqDataTests/RunCoachPlanAdjustmentInsertionTests.swift`, `Tests/DeltiqDataTests/TrainingDayIsAutoFilledPlaceholderDefaultTests.swift` (fünfte→sechste Review-Runde: NICHT "...MigrationTests" benannt — siehe Präzisierung 2 unten, dieser Name würde einen Nachweis behaupten, den die Datei nicht erbringt)
 
 - [ ] **Step 1: Write failing tests**
   ```swift
@@ -508,7 +508,7 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
       // test infrastructure with no precedent in this codebase, for a risk
       // identical to a dozen already-shipped fields that never needed it.
       // The test below - a real in-memory ModelContainer built from
-      // AppSchema.types, matching Tests/FitnessAppDataTests/
+      // AppSchema.types, matching Tests/DeltiqDataTests/
       // ExperienceTrackBackfillTests.swift's established pattern exactly -
       // IS this project's established, accepted rigor level for this kind
       // of change. It still exercises real SwiftData model creation, just
@@ -570,7 +570,7 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 ### Task 6: Weekday selection + insertion apply
 
 **Files:**
-- Modify: `Sources/FitnessAppData/PlanGeneratorInstantiator.swift`:
+- Modify: `Sources/DeltiqData/PlanGeneratorInstantiator.swift`:
   - Extend `apply(_:to:...)` (unchanged for every existing caller) with a new, defaulted parameter: `targetType: DayType? = nil` — when non-`nil`, snapshots the day's current `type` into a new `DayMutationSnapshot.oldType` field and sets `day.type = targetType`; when `nil` (the default, used by every existing call site), behaves EXACTLY as today (confirmed: `apply` currently never touches `type` at all).
   - Extend `revert(_:in:)` (unchanged for every existing caller) to also restore `day.type = snapshot.oldType` when `oldType` is non-`nil` (it is `nil`, a no-op, for every existing replace-path call, since those never pass `targetType`).
   - Add a sibling to `applyCoachCardioAdjustment`:
@@ -598,7 +598,7 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
       plan: TrainingPlan, restDays: [TrainingDay], newCardioDays: [DaySpec], in context: ModelContext
   ) throws -> Int
   ```
-- Modify: `Sources/FitnessAppData/RunCoachPlanAdjustment.swift` — add a pure selection helper:
+- Modify: `Sources/DeltiqData/RunCoachPlanAdjustment.swift` — add a pure selection helper:
   ```swift
   /// Waehlt aus den eignungsfaehigen Rest-Tagen genau `count` aus (bevorzugt
   /// Tage NICHT direkt neben einem bereits existierenden harten Krafttag,
@@ -609,7 +609,7 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
       eligible: [TrainingDay], count: Int, otherDays: [TrainingDay]
   ) -> [TrainingDay]
   ```
-- Test: `Tests/FitnessAppDataTests/CoachCardioInsertionTests.swift`
+- Test: `Tests/DeltiqDataTests/CoachCardioInsertionTests.swift`
 
 **Interfaces:**
 - Consumes: `RunCoachPlanAdjustment.eligibleRestDaysForInsertion` (Task 5), `CardioFeasibilityCalculator.runTypeMix(for:)`/`planGeneratorInput(for:cardioRunProfile:)` (existing, unchanged), `PlanGeneratorInstantiator.apply` (existing, unchanged).
@@ -684,9 +684,9 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 ### Task 7: `CoachAdjustmentCardModel` insertion support + preview UI
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Cardio/CoachAdjustmentCardModel.swift` — `make` must no longer return `nil`-equivalent-behavior when `cardioAvailability == .noEligibleCardioDay` but `insertableRestDays` is non-empty; `accept` gains an insertion branch using Task 6's functions. Per the re-validation contract: `accept` calls `RunCoachPlanAdjustment.eligibleRestDaysForInsertion(in: plan)` FRESH at call time (never reuses `self`'s `analysis.insertableRestDays` snapshot from `make`, same principle `eligibleDays`/`isAlreadyApplied` already follow in this type), selects `count` from `CardioFeasibilityCalculator.runTypeMix(for: effectiveProposedGoal)`'s run-day count, and surfaces `insertCoachCardioDays`'s thrown "insufficient rest days" error as a distinct, user-readable failure (not swallowed into a generic 0-count return) so the caller can show "plan changed since preview, please re-check" rather than silently doing nothing
-- Modify: `Sources/FitnessAppUI/Cardio/CoachAdjustmentPreviewView.swift` — the `.noEligibleCardioDay` case (lines ~135-140 per prior research) must show the "Apply to current plan" button whenever `insertableRestDays` is non-empty; before/after list renders an inserted slot as `"— → <new day name>"` (no struck-through old name) instead of today's replace-only rendering
-- Test: `Tests/FitnessAppUITests/CoachAdjustmentInsertionUITests.swift` (source-introspection style, matching Round-2's established pattern for FitnessAppUI tests that can't compile on Windows)
+- Modify: `Sources/DeltiqUI/Cardio/CoachAdjustmentCardModel.swift` — `make` must no longer return `nil`-equivalent-behavior when `cardioAvailability == .noEligibleCardioDay` but `insertableRestDays` is non-empty; `accept` gains an insertion branch using Task 6's functions. Per the re-validation contract: `accept` calls `RunCoachPlanAdjustment.eligibleRestDaysForInsertion(in: plan)` FRESH at call time (never reuses `self`'s `analysis.insertableRestDays` snapshot from `make`, same principle `eligibleDays`/`isAlreadyApplied` already follow in this type), selects `count` from `CardioFeasibilityCalculator.runTypeMix(for: effectiveProposedGoal)`'s run-day count, and surfaces `insertCoachCardioDays`'s thrown "insufficient rest days" error as a distinct, user-readable failure (not swallowed into a generic 0-count return) so the caller can show "plan changed since preview, please re-check" rather than silently doing nothing
+- Modify: `Sources/DeltiqUI/Cardio/CoachAdjustmentPreviewView.swift` — the `.noEligibleCardioDay` case (lines ~135-140 per prior research) must show the "Apply to current plan" button whenever `insertableRestDays` is non-empty; before/after list renders an inserted slot as `"— → <new day name>"` (no struck-through old name) instead of today's replace-only rendering
+- Test: `Tests/DeltiqUITests/CoachAdjustmentInsertionUITests.swift` (source-introspection style, matching Round-2's established pattern for DeltiqUI tests that can't compile on Windows)
 
 - [ ] **Step 1: Write failing tests** — source-introspection assertions confirming: `CoachAdjustmentCardModel.accept` calls `insertCoachCardioDays` when `cardioAvailability == .noEligibleCardioDay && !insertableRestDays.isEmpty`; `CoachAdjustmentPreviewView`'s `.noEligibleCardioDay` branch references the "Apply to current plan" action; the before/after rendering branches on inserted vs. replaced.
 
@@ -701,9 +701,9 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 ### Task 8: Explicit Option A/B choice, replacing the silent fallback
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift` — `accept(profile:in:using:activePlan:)` (lines ~146-268 per prior research) currently silently branches between in-place adjustment and `createPlan`; this must instead present a choice (reusing `CoachAdjustmentPreviewView`'s now-dual-option UI from Task 7, OR routing through `CoachAdjustmentCardModel`'s model directly) whenever an active plan exists at all (regardless of whether it already has a cardio day) — i.e. the "Option B always available, Option A silently preferred when possible" behavior becomes "both visible, user picks."
+- Modify: `Sources/DeltiqUI/Cardio/CardioFeasibilityCardModel.swift` — `accept(profile:in:using:activePlan:)` (lines ~146-268 per prior research) currently silently branches between in-place adjustment and `createPlan`; this must instead present a choice (reusing `CoachAdjustmentPreviewView`'s now-dual-option UI from Task 7, OR routing through `CoachAdjustmentCardModel`'s model directly) whenever an active plan exists at all (regardless of whether it already has a cardio day) — i.e. the "Option B always available, Option A silently preferred when possible" behavior becomes "both visible, user picks."
 - Create (if `CoachAdjustmentPreviewView` cannot represent the zero-active-plan-at-all case): no new file expected — confirm during Step 1 whether `CardioFeasibilityCardModel`'s only remaining job after this change is the "no active plan exists yet" case (straight to `createPlan`, no choice needed — nothing to choose between).
-- Test: `Tests/FitnessAppUITests/CardioFeasibilityChoiceTests.swift`
+- Test: `Tests/DeltiqUITests/CardioFeasibilityChoiceTests.swift`
 
 - [ ] **Step 1: Re-read `CardioFeasibilityCardModel.swift` in full** to confirm exactly which call sites currently invoke its silent-fallback `accept`, and whether `CoachAdjustmentCardModel`'s card already supersedes it whenever an active plan exists (per `CoachAdjustmentCardModel`'s own doc comment: "neue Karte hat Vorrang, sobald ein aktiver Plan existiert"). If `CoachAdjustmentCardModel` already fully supersedes `CardioFeasibilityCardModel` whenever a plan is active, this task may reduce to: confirm `CardioFeasibilityCardModel`'s silent branch is genuinely unreachable once Task 7 ships (dead code to delete) rather than a second code path to fix. Record the finding as a ledger ruling either way before writing Step 2.
 
@@ -720,9 +720,9 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 ### Task 9: `ActivePlanResolver` — one documented, deterministic resolver for cardio cards
 
 **Files:**
-- Create: `Sources/FitnessAppData/ActivePlanResolver.swift` — **seventh review round, P1 correction:** the original draft placed this in `FitnessAppCore` as "pure logic, no SwiftData," but its interface takes `[TrainingPlan]` directly, and `TrainingPlan` is a `FitnessAppData` SwiftData model — `FitnessAppCore` cannot depend on it (layering violation, would not compile). Correct placement is `FitnessAppData`, alongside `RunCoachPlanAdjustment`/`ProgramInstantiator`, which already operate on `TrainingPlan` the same way. It is still "pure" in the narrower, still-meaningful sense that matters here: it takes an already-fetched `[TrainingPlan]` array, performs no new fetch and no mutation/save — a deterministic function over its input, just one that necessarily imports SwiftData for the parameter type.
-- Modify: `Sources/FitnessAppUI/DashboardView.swift` — the coach-adjustment/missed-run-days card call sites (2 of the 13, per prior research — confirm exact line numbers before editing) call the new resolver instead of `activePlans.first`
-- Test: `Tests/FitnessAppDataTests/ActivePlanResolverTests.swift` (uses the same in-memory `ModelContainer`/`AppSchema.types` pattern as `ExperienceTrackBackfillTests`, per the sixth review round's established-pattern finding — not a `FitnessAppCoreTests` file, since the type under test now lives in `FitnessAppData`), `Tests/FitnessAppUITests/DashboardActivePlanDeterminismTests.swift` (source-introspection)
+- Create: `Sources/DeltiqData/ActivePlanResolver.swift` — **seventh review round, P1 correction:** the original draft placed this in `DeltiqCore` as "pure logic, no SwiftData," but its interface takes `[TrainingPlan]` directly, and `TrainingPlan` is a `DeltiqData` SwiftData model — `DeltiqCore` cannot depend on it (layering violation, would not compile). Correct placement is `DeltiqData`, alongside `RunCoachPlanAdjustment`/`ProgramInstantiator`, which already operate on `TrainingPlan` the same way. It is still "pure" in the narrower, still-meaningful sense that matters here: it takes an already-fetched `[TrainingPlan]` array, performs no new fetch and no mutation/save — a deterministic function over its input, just one that necessarily imports SwiftData for the parameter type.
+- Modify: `Sources/DeltiqUI/DashboardView.swift` — the coach-adjustment/missed-run-days card call sites (2 of the 13, per prior research — confirm exact line numbers before editing) call the new resolver instead of `activePlans.first`
+- Test: `Tests/DeltiqDataTests/ActivePlanResolverTests.swift` (uses the same in-memory `ModelContainer`/`AppSchema.types` pattern as `ExperienceTrackBackfillTests`, per the sixth review round's established-pattern finding — not a `DeltiqCoreTests` file, since the type under test now lives in `DeltiqData`), `Tests/DeltiqUITests/DashboardActivePlanDeterminismTests.swift` (source-introspection)
 
 **Interfaces:**
 - Produces:
@@ -790,7 +790,7 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 ### Task 10: Protection regression suite
 
 **Files:**
-- Create: `Tests/FitnessAppDataTests/LaufcoachingDualPathProtectionTests.swift`
+- Create: `Tests/DeltiqDataTests/LaufcoachingDualPathProtectionTests.swift`
 
 **Interfaces:**
 - Consumes: everything from Tasks 5-9.
@@ -827,7 +827,7 @@ Per A4, `fullBody`/`fatLossFullBody`/`pushPullLegs`/`upperLower`/`arnoldSplit`/`
 
 - [ ] **Step 3: Fix any gap the tests reveal in Tasks 5-9's implementation.**
 
-- [ ] **Step 4: Run full `FitnessAppDataTests`/`FitnessAppCoreTests` suites, verify all green.**
+- [ ] **Step 4: Run full `DeltiqDataTests`/`DeltiqCoreTests` suites, verify all green.**
 
 - [ ] **Step 5: Commit** (`test: add Laufcoaching dual-path protection regression suite`).
 

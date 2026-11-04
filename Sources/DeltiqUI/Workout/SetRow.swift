@@ -1,0 +1,1853 @@
+#if canImport(SwiftUI) && canImport(SwiftData)
+import SwiftUI
+import DeltiqCore
+import DeltiqData
+#if canImport(UIKit)
+import UIKit
+#endif
+
+/// Single row inside an `ExerciseCard` — represents one planned set of an exercise.
+///
+/// **DEL-045 redesign, Signature-Geruest 2.16 aktualisiert:**
+///   - Strength + Cardio: kompaktes Single-Line-Layout
+///     `[Satz #] [kg-Input] [Wdh-Input] [Spacer] [RIR-Kapsel] [Checkmark-Icon]`
+///     plus optional ausklappbarem RIR-Regler darunter (nur bei Bedarf, kein
+///     fester Platzverbrauch mehr fuer ruhende Saetze).
+///   - Tap auf einen completed-Set → ExerciseLog wird geloescht, Row wechselt
+///     zurueck in den editierbaren Status (Tippfehler-Korrektur).
+///   - Time-based (Plank, Wall Sit, etc.): eigener Flow mit Countdown-Overlay
+///     + Live-Hold-Timer (DEL-040). Per-Sekunde-Beeps bei 3/2/1, GO-Sound
+///     bei Erreichung der Ziel-Zeit (DEL-045 Schritt 4).
+@available(iOS 17.0, macOS 14.0, *)
+struct SetRow: View {
+    let setIndex: Int
+    let exercise: Exercise
+    /// P8 Stufe-2 (Session-Inhaltsvertrag, Wiederaufnahme-Isolation): der
+    /// zum Session-Start (bzw. durch In-Session-Edits) eingefrorene Stand
+    /// dieser Übung. Steuert ALLE "Satzvorgaben" (Cardio-/Time-Based-
+    /// Klassifikation, Ziel-Reps/-RIR/-Distanz/-Dauer, Hold-Sekunden) —
+    /// NIE die jeweils aktuellen Live-Felder von `exercise`, die durch eine
+    /// externe Bearbeitung während die Session offen ist abweichen könnten.
+    /// `exercise` bleibt ausschließlich für Logging-Identität, Lock-Keys
+    /// und Felder außerhalb des Snapshot-Vertrags (Equipment/Barbell-
+    /// Erkennung, `suggestedWeight`) maßgeblich.
+    let content: TrainingDayContentSnapshot.ExerciseEntry
+    let session: WorkoutSession
+    let existingLog: ExerciseLog?
+    let previousLog: ExerciseLog?
+    /// Task 8 (laufcoaching-remediation-round-2, Decision 1): Laufcoach
+    /// an/aus, live aus `ActiveWorkoutView`s `@Query private var profiles`
+    /// durchgereicht (ueber `ExerciseCard`) - NIE auf `content` (dem
+    /// eingefrorenen Session-Inhalt) oder in eigenem State zwischengespeichert,
+    /// damit eine Profil-Aenderung waehrend der offenen Session sofort
+    /// greift. Gleiche Gating-Rolle wie `PlanBuilderView.scopeLine`s
+    /// `cardioCoachingEnabled`-Check (Review Focus 1: Coach aus -> keine
+    /// Verhaltensaenderung).
+    let cardioCoachingEnabled: Bool
+    /// Task 8: 5-km-Referenzzeit, ebenfalls live aus `profiles.first?.
+    /// current5kReferenceSeconds` durchgereicht - siehe `cardioCoachingEnabled`
+    /// oben fuer die "live, nicht eingefroren"-Begruendung.
+    let current5kReferenceSeconds: Int?
+    /// Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2: `true`
+    /// fuer `session.day?.plan?.generationSource != .manual` (ODER
+    /// `.planBuilder` ODER `.cardioCoach`), `false` fuer `.manual`
+    /// (Template-instanziiert) ODER unbekannte Quelle (`nil`). Reine
+    /// `== .cardioCoach`-Gate (erste Fassung) war zu eng: die beiden echten
+    /// Coach-Pfade (Onboarding, `PlanBuilderView`-Assistent) stempeln
+    /// `generationSource == .planBuilder`, nicht `.cardioCoach` (das steht
+    /// nur auf den "separaten neuen Plan erzeugen"-Fallback-Pfaden in
+    /// `CardioFeasibilityCardModel`) - mit der zu engen Gate haette die
+    /// Ziel-Pace fuer fast alle echten Nutzer nie angezeigt. `.manual`
+    /// (Template-Plaene, `ProgramTemplates.swift`) bleibt ausgeschlossen,
+    /// weil dort Uebungen namens "Long Run" eine komplett andere,
+    /// nicht-Tempo-Bedeutung tragen.
+    let isGeneratorPlan: Bool
+    /// DEL-157: Log des Satzes DIREKT DARUEBER in DIESER Session. Dient als
+    /// Seed-Quelle fuer dynamisch hinzugefuegte Saetze ("+ Satz") — der neue
+    /// Satz erbt Gewicht/Reps/RIR vom darueberliegenden. `nil` fuer den
+    /// ersten Satz oder wenn der Satz darueber noch nicht geloggt ist.
+    var seedLog: ExerciseLog? = nil
+    /// DEL-157: Optionaler Delete-Hook. Non-nil → Long-Press-ContextMenu mit
+    /// "Satz entfernen". Der Parent (ExerciseCard) loescht den Log, reindext
+    /// die verbleibenden Saetze und dekrementiert `exercise.sets`.
+    var onRequestDelete: (() -> Void)? = nil
+    /// DEL-097 + DEL-108: Session-Lock fuer time-based Halte-Timer auf
+    /// **Set-Ebene** (Exercise × setIndex). Nil = Slot frei. Die SetRow
+    /// setzt diesen Slot in `startCountdown()`, raeumt ihn in
+    /// `stopHoldAndLog()` wieder ab. Andere Rows (same exercise different
+    /// set, ODER cross-exercise) lesen den Slot fuer ihren Disabled-Hint.
+    @Binding var activeTimedSet: ActiveTimedSetID?
+    /// UX-203: Markiert die "naechste anstehende" Set-Row in der Card.
+    /// Genau ein Set in jeder ExerciseCard ist aktiv (der erste mit
+    /// `existingLog == nil`). Wenn alle Sets completed sind oder dieser
+    /// Set später kommt, bleibt das false — die Row rendert dann im
+    /// neutralen "upcoming"-Style.
+    let isActiveSet: Bool
+    /// Called when the user taps the checkmark on an editable row.
+    /// DEL-058: `LoggedSetValues` bundle ersetzt das frueher dreistellige
+    /// (weight, reps, rir)-Tuple, damit Cardio-Felder (distance, duration)
+    /// mitwandern koennen ohne dass jede Callsite umgeschrieben wird.
+    let onLogged: (LoggedSetValues) -> Void
+    /// Called when the user taps a completed row to revert it back to editable.
+    /// Parent (ExerciseCard) is responsible for deleting the corresponding
+    /// `ExerciseLog` from the model context.
+    let onUnlog: () -> Void
+
+    @State private var weight: Double?
+    @State private var reps: Int = 0
+    @State private var rir: Float = 2.0
+    @State private var didInit = false
+    /// Signature-Geruest 2.16: der RIR-Regler ist nur noch bei Bedarf
+    /// eingeblendet (Tap auf `rirCapsule`), statt permanent eine feste
+    /// Statuszone zu belegen.
+    @State private var rirExpanded = false
+
+    /// DEL-058 Cardio-State. Wird nur initialisiert + befuellt wenn die
+    /// Uebung `.isCardio == true` ist; ansonsten bleiben die Felder leer.
+    @State private var cardioDistanceText: String = ""
+    @State private var cardioDurationText: String = ""
+
+    /// DEL-040: Zustands-Maschine fuer den Halte-Timer bei isTimeBased-Uebungen.
+    @State private var holdState: HoldState = .idle
+    @State private var holdTimer: Timer?
+
+    @AppStorage("pref_timer_sound") private var timerSoundEnabled: Bool = true
+    @AppStorage("pref_timer_haptics") private var timerHapticsEnabled: Bool = true
+
+    /// DEL-072: Accessibility — respektiere die System-Praeferenz "Reduce
+    /// Motion". Wenn true, ersetzen wir Spring-Animationen durch ruhige
+    /// `easeInOut`-Variante.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// DEL-072: Dynamic-Type-skalierter Checkmark-Icon-Size. Default 28pt
+    /// fuer system-default-Schriftgroesse; skaliert proportional bei
+    /// groesseren Stufen.
+    @ScaledMetric(relativeTo: .title2) private var checkmarkIconSize: CGFloat = 28
+
+    /// DEL-085: Popover-State fuer den Plate-Calculator. UI ist nur fuer
+    /// Strength-Lifts mit Gewicht > 0 sinnvoll — Bodyweight / Cardio /
+    /// TimeBased blenden den Button aus.
+    @State private var showingPlatePopover = false
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+    @AppStorage("pref_bar_weight_kg") private var barWeightKgRaw: Double = 20
+    /// Runde 10 (Settings → Training): "column" (Default, bisheriges
+    @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
+
+    enum HoldState: Equatable {
+        case idle
+        case countingDown(secondsLeft: Int)
+        case holding(elapsedSeconds: Int)
+    }
+
+    /// Korrektur post-Review (RIR strukturell statt komprimiert): EINE
+    /// gemeinsame Quelle fuer die Spaltenbreiten der Satz-Zeile UND der
+    /// Header-Zeile in `ExerciseCard` — verhindert, dass beide unabhaengig
+    /// gepflegte Zahlenpaare auseinanderdriften.
+    ///
+    /// Korrektur post-Review (Nachbesserung): `weightWidth`/`repsWidth`
+    /// bezeichnen jetzt explizit die TATSAECHLICHE AEUSSERE Breite der
+    /// sichtbaren Box (Feld-Innenbreite + beidseitiges Padding), nicht nur
+    /// die Feld-Innenbreite. `weightInput`/`repsInput` wenden NACH ihrem
+    /// `.frame(width:)` noch `.padding(.horizontal: fieldHorizontalPadding)`
+    /// an — die vorherige Fassung reservierte im Header nur die
+    /// Feld-Innenbreite (56/48pt) fuer eine tatsaechlich 72/64pt breite Box,
+    /// wodurch Header- und Satzzeilen-Spalten nicht deckungsgleich waren.
+    /// `weightFieldWidth`/`repsFieldWidth` bleiben als interne Werte fuer
+    /// `weightInput`/`repsInput` selbst erhalten; fuer JEDE
+    /// Spalten-Ausrichtung (Header, `ViewThatFits`-Breitenvergleich) gilt
+    /// ausschliesslich `weightWidth`/`repsWidth`.
+    internal enum SetRowColumns {
+        static let setNumberWidth: CGFloat = 24
+        static let weightFieldWidth: CGFloat = 56
+        static let repsFieldWidth: CGFloat = 48
+        /// Zusaetzliches horizontales Padding, das `weightInput`/
+        /// `repsInput` NACH ihrem `.frame(width:)` noch anwenden.
+        static let fieldHorizontalPadding: CGFloat = 8
+        static let weightWidth: CGFloat = weightFieldWidth + 2 * fieldHorizontalPadding
+        static let repsWidth: CGFloat = repsFieldWidth + 2 * fieldHorizontalPadding
+        static let plateWidth: CGFloat = 22
+        /// Mindestbreite des RIR-Werts (Text + Padding) — ueber
+        /// `RIRValueTextStyle` von Kapsel UND Header-Label GEMEINSAM
+        /// genutzt (gleicher Code statt zwei unabhaengig gepflegter
+        /// Stylings), damit beide bei JEDER Dynamic-Type-Stufe exakt
+        /// gleich breit bleiben. Anhand der `.caption`-monospacedDigit-
+        /// Schriftmetrik fuer den laengsten gueltigen Wert ("4,5", 3
+        /// Zeichen) plus 14pt Padding GERECHNET, nicht an einem echten
+        /// Geraet GEMESSEN (Geraetepruefung bleibt offen).
+        static let rirWidth: CGFloat = 44
+        /// Bewusst KEIN statischer Wert fuer die Checkmark-Spalte hier —
+        /// das echte Icon skaliert via `@ScaledMetric` mit Dynamic Type,
+        /// ein `enum` kann keine Environment-abhaengigen Werte halten.
+        /// `ExerciseCard` deklariert stattdessen dieselbe `@ScaledMetric`
+        /// (gleiche Basis, gleiches `relativeTo`) wie `SetRow.
+        /// checkmarkIconSize`, siehe dort.
+        static let spacing: CGFloat = 6
+        /// Einzug fuer RIR-Regler/„letztes Mal"-Zeile unter der Eingabezeile
+        /// — Satznummer-Spalte + ein Spacing, damit sie unter dem
+        /// Dateninhalt (nicht der Satznummer) beginnen.
+        static let secondaryLineIndent: CGFloat = setNumberWidth + spacing
+        /// Runde 10 (Spaltenuebersicht-Layout): moderater Einzug zwischen
+        /// Satznummer- und Gewicht-Spalte, damit Gewicht+Wdh als Gruppe
+        /// erkennbar von der Satznummer abgesetzt sind. Wirkt als fixer
+        /// `Color.clear`-Spacer VOR `weightInput`/dem Gewicht-Spaltenkopf —
+        /// RIR-Spalte (`rirWidth`) bleibt davon unberuehrt, der zusaetzliche
+        /// Platz wird vom `Spacer` vor der RIR-Kapsel aufgefangen.
+        static let weightGroupLeadingInset: CGFloat = 10
+    }
+
+    /// Geteilte Schrift-/Breitenvorgabe fuer den reinen RIR-Wert-Text. Von
+    /// `rirCapsule` UND `ExerciseCard.fullSetRowColumnHeader`s "RIR"-Label
+    /// genutzt — EIN Code-Pfad statt zwei unabhaengig gepflegter Stylings,
+    /// die bei Dynamic-Type-Aenderungen sonst hätten auseinanderlaufen
+    /// können. Enthaelt bewusst KEINE Farbe/kein Background (unterscheiden
+    /// sich je Call-Site).
+    internal struct RIRValueTextStyle: ViewModifier {
+        func body(content: Content) -> some View {
+            content
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .fixedSize()
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+                .frame(minWidth: SetRowColumns.rirWidth)
+        }
+    }
+
+    private var isCompleted: Bool { existingLog != nil }
+
+    /// DEL-060: explizite Drei-Wege-Verzweigung der UI nach Uebungs-
+    /// Kategorie. Cardio gewinnt VOR TimeBased — falls jemals jemand
+    /// versehentlich beide Flags setzt, soll lieber Cardio-Eingabe
+    /// erscheinen (sonst sucht der User vergeblich nach Distanz-Feld).
+    ///
+    /// Vier konzeptionelle Modi nach Ticket:
+    ///   1. Cardio (Run/Bike) → CardioSetRow (Distanz/Dauer/Pace)
+    ///   2. TimeBased (Plank/Wall-Sit) → Hold-Timer-Card mit Countdown
+    ///   3. Bodyweight → Strength-UI mit BW-Placeholder (DEL-045-Update,
+    ///      kein eigener Branch — der "kg"-Input ist optional und nimmt
+    ///      `nil` als "Bodyweight" entgegen)
+    ///   4. Strength (Standard) → compactSetRow mit kg + Wdh
+    var body: some View {
+        // DEL-157: Long-Press-ContextMenu zum Entfernen des Satzes, wenn der
+        // Parent einen Delete-Hook liefert (Active-Workout mit >1 Satz).
+        if let onRequestDelete {
+            rowBody.contextMenu {
+                Button(role: .destructive, action: onRequestDelete) {
+                    Label {
+                        Text("active.set.remove", bundle: .module)
+                    } icon: {
+                        Image(systemName: "trash")
+                    }
+                }
+            }
+        } else {
+            rowBody
+        }
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
+        if content.isCardio {
+            // DEL-058: dedizierte CardioSetRow mit Distanz / Dauer / Pace.
+            cardioSetRow
+                .onAppear { initializeOnce() }
+        } else if content.isTimeBased {
+            // Time-based: Hold-Timer-Card mit 3-2-1 Countdown +
+            // automatischem Speichern (DEL-040 + DEL-045 Schritt 4).
+            timeBasedSetView
+                .onAppear { initializeOnce() }
+                .onDisappear {
+                    invalidateHoldTimer()
+                    // Bugfix (Audit): ohne dies bleibt `activeTimedSet` fuer
+                    // den Rest der Session auf dieser Zeile stehen, wenn sie
+                    // waehrend eines laufenden Holds verschwindet (z.B. die
+                    // Uebung wird im Ad-Hoc-Workout geloescht) - danach kann
+                    // KEINE zeitbasierte Uebung mehr starten
+                    // (`isBlockedByOtherTimedExercise` bleibt dauerhaft
+                    // `true`). Identity-checked, daher gefahrlos auch beim
+                    // gewoehnlichen Wegblaettern aufzurufen.
+                    releaseTimedExerciseLockIfHeld()
+                }
+        } else {
+            // Strength (inkl. Bodyweight per BW-Placeholder): kompaktes
+            // Layout (DEL-045 Schritt 1+2).
+            compactSetRow
+                .onAppear { initializeOnce() }
+        }
+    }
+
+    // MARK: - DEL-045 Compact Set Row (Strength + Cardio)
+
+    /// Korrektur post-Review (RIR strukturell statt komprimiert): Spalten-
+    /// Layout statt Text-Kompression. `ViewThatFits` waehlt `singleLineInput
+    /// Row`, wenn sie in die verfuegbare Breite passt, sonst automatisch den
+    /// zweizeiligen Fallback `twoLineInputRow` (schmale Displays/grosse
+    /// Schrift) — ohne manuelle Size-Class-/GeometryReader-Verdrahtung.
+    /// Die Spaltenbreiten (`SetRowColumns`) sind dieselben, die `ExerciseCard`
+    /// fuer die einmalige Header-Zeile nutzt.
+    ///
+    /// UX-203 Layering der Visual-States:
+    ///   * completed → ganze Row Opacity 0.55, kein Background
+    ///   * active    → leichter DeltiqOrange-Tint (8% Fill) + 3pt Brand-
+    ///                 Akzent am linken Rand. Der User sieht sofort,
+    ///                 welche Row als naechstes dran ist.
+    ///   * upcoming  → neutral, kein Background, kein Akzent
+    private var compactSetRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            inputRow
+
+            // Die Kapsel bleibt beim Aufklappen an ihrer festen Spalten-
+            // Position stehen (siehe `rirCapsule`) — der Regler erscheint
+            // nur als zusaetzliche Zeile darunter, kein Zeilensprung mehr.
+            if rirExpanded, !isCompleted {
+                rirSliderRow
+                    .padding(.leading, SetRowColumns.secondaryLineIndent)
+                    .transition(.opacity)
+            }
+
+            // Signature-Geruest 2.16: der "letztes Mal"-Vergleich gilt nur
+            // noch fuer den AKTIVEN Satz, in voller Laenge auf eigener Zeile.
+            if isActiveSet, let prev = previousLog {
+                previousHintLine(prev)
+                    .padding(.leading, SetRowColumns.secondaryLineIndent)
+            }
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 8)
+        .background(
+            // Signature-Geruest 2.2: die aktive Zeile bekommt Radius 12
+            // statt 10 (nur sie - abgeschlossene/kommende Zeilen bleiben
+            // bei 10, das Handoff nennt explizit nur die aktive Zeile).
+            RoundedRectangle(cornerRadius: isActiveSet ? 12 : 10)
+                .fill(rowStateBackground)
+        )
+        .overlay(alignment: .leading) {
+            // UX-203, angepasst: 2pt statt 3pt Brand-Akzent links bei der
+            // aktiven Row. Wirkt wie ein "du-bist-hier"-Marker und ist im
+            // Dark-Mode auch ohne Background-Tint sichtbar.
+            if isActiveSet {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.deltiqOrange)
+                    .frame(width: 2)
+                    .padding(.vertical, 6)
+            }
+        }
+        .opacity(isCompleted ? 0.55 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isCompleted)
+        .animation(.easeInOut(duration: 0.2), value: isActiveSet)
+        .contentShape(Rectangle())
+        // DEL-045 Schritt 2: Tap auf completed-Row revert zurueck zu editable.
+        .onTapGesture {
+            if isCompleted {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    // Verifikation (Review): `rirExpanded` ueberlebt sonst
+                    // einen Log→Unlog-Zyklus (die View-Identitaet bleibt
+                    // ueber `structureToken` stabil) - ohne Reset klappt der
+                    // Regler nach dem Un-Loggen ungefragt wieder auf, obwohl
+                    // der User die Kapsel gar nicht erneut angetippt hat.
+                    rirExpanded = false
+                    onUnlog()
+                }
+            }
+        }
+    }
+
+    /// UX-203: 3-State-Background.
+    /// - completed → clear (Opacity macht das Dimming)
+    /// - active    → 8% DeltiqOrange-Fill
+    /// - upcoming  → clear
+    private var rowStateBackground: Color {
+        if isCompleted { return .clear }
+        if isActiveSet { return Color.deltiqOrange.opacity(0.08) }
+        return .clear
+    }
+
+    /// UX-203: Set-Nummer-Farbe je nach State.
+    /// - completed → secondary (dim)
+    /// - active    → DeltiqOrange (Brand-Akzent matched left border)
+    /// - upcoming  → primary (neutral, voll sichtbar)
+    private var setNumberColor: Color {
+        if isCompleted { return .secondary }
+        if isActiveSet { return Color.deltiqOrange }
+        return .primary
+    }
+
+    private var setNumberLabel: some View {
+        // DEL-059 + UX-203: Rounded-Design + monospacedDigit fuer
+        // konsistente Zahlen-Ausrichtung (sonst springt der Slot zwischen
+        // 1-stellig und 2-stellig). Active-Set bekommt Brand-Color,
+        // completed bleibt secondary, upcoming primary.
+        Text("\(setIndex + 1)")
+            .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+            .foregroundStyle(setNumberColor)
+            .frame(width: SetRowColumns.setNumberWidth, alignment: .leading)
+    }
+
+    /// Runde 10 (Settings → Training, "bisherige Darstellung" vs.
+    /// "Spaltenuebersicht"): waehlt zwischen dem Spalten-Layout (Header-Zeile
+    /// lebt in `ExerciseCard.setRowColumnHeader`, siehe dort) und der
+    /// klassischen, selbst-beschrifteten Darstellung (`classicInputRow`),
+    /// in der jedes Feld seine Beschriftung direkt ueber sich traegt statt
+    /// sich auf einen gemeinsamen Spaltenkopf zu verlassen. BEIDE Varianten
+    /// nutzen exakt dieselben `@State`-Werte (`weight`/`reps`/`rir`) und
+    /// Callbacks (`onLogged`/`onUnlog`) — reines Umschalten der Darstellung,
+    /// kein zweites Logging-Modell, kein Datenwechsel.
+    @ViewBuilder
+    private var inputRow: some View {
+        ViewThatFits(in: .horizontal) {
+            classicSingleLineRow
+            classicTwoLineRow
+        }
+    }
+
+    /// Geteilte zweite Zeile der schmalen Fallbacks (`twoLineInputRow` UND
+    /// `classicTwoLineRow`) — Plate-Button/RIR-Kapsel/Haekchen sind in BEIDEN
+    /// Darstellungen identisch, nur Zeile 1 (Gewicht/Wdh) unterscheidet sich.
+    private var inputRowSecondaryLine: some View {
+        HStack(spacing: SetRowColumns.spacing) {
+            Color.clear.frame(width: SetRowColumns.setNumberWidth, height: 1)
+                .accessibilityHidden(true)
+            plateColumn
+            Spacer(minLength: 6)
+            // Korrektur post-Review: in diesem Fallback zeigt der Header
+            // darueber NUR noch Satz/kg/Wdh (siehe ExerciseCard.
+            // reducedSetRowColumnHeader) - "RIR" steht hier deshalb als
+            // eigenes, unmittelbar angrenzendes Inline-Label, damit die
+            // Kapsel-Bedeutung ohne den (jetzt nicht mehr passenden)
+            // Header-Platz eindeutig bleibt.
+            if showRirTooltips {
+                Text("set.column.rirLabel", bundle: .module)
+                    .deltiqLabel()
+                rirCapsule
+            }
+            checkmarkButton
+        }
+    }
+
+    /// Bevorzugtes Layout: alle Eingaben in einer Zeile. `ViewThatFits`
+    /// (siehe `compactSetRow`) faellt automatisch auf `twoLineInputRow`
+    /// zurueck, wenn das bei der aktuellen Breite/Schriftgroesse nicht
+    /// passt — Kapsel und Plate-Button bleiben in BEIDEN Layouts an
+    /// derselben relativen Spalten-Position, keine Springerei beim
+    /// Umschalten.
+    private var singleLineInputRow: some View {
+        HStack(spacing: SetRowColumns.spacing) {
+            setNumberLabel
+            Color.clear.frame(width: SetRowColumns.weightGroupLeadingInset, height: 1)
+                .accessibilityHidden(true)
+            weightInput
+            repsInput
+            plateColumn
+            Spacer(minLength: 6)
+            rirCapsule
+            checkmarkButton
+        }
+        .frame(minHeight: 44)
+    }
+
+    /// Fallback fuer schmale Displays/grosse Dynamic-Type-Stufen: Zahlen-
+    /// Eingaben auf Zeile 1, Aufladung/RIR/Haekchen auf Zeile 2 — dieselbe
+    /// Spaltenreihenfolge wie `singleLineInputRow`, nur umgebrochen, damit
+    /// kein Element abgeschnitten wird oder Auslassungspunkte zeigt.
+    private var twoLineInputRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: SetRowColumns.spacing) {
+                setNumberLabel
+                Color.clear.frame(width: SetRowColumns.weightGroupLeadingInset, height: 1)
+                    .accessibilityHidden(true)
+                weightInput
+                repsInput
+                Spacer(minLength: 0)
+            }
+            inputRowSecondaryLine
+        }
+    }
+
+    // MARK: - Runde 10 Klassische Darstellung (Settings → Training)
+
+    /// Selbst-beschriftete Variante von `singleLineInputRow`: jedes Feld
+    /// traegt seine Einheit/Bezeichnung direkt ueber sich (siehe
+    /// `labeledField`), statt sich auf `ExerciseCard.setRowColumnHeader`
+    /// zu verlassen — die "bisherige Darstellung" zeigt deshalb bewusst
+    /// KEINEN gemeinsamen Spaltenkopf (`ExerciseCard` blendet ihn in diesem
+    /// Modus aus). Identischer `weightInput`/`repsInput`/`plateColumn`/
+    /// `rirCapsule`/`checkmarkButton` wie im Spalten-Layout — keine zweite
+    /// Eingabe-Implementierung.
+    private var classicSingleLineRow: some View {
+        HStack(spacing: SetRowColumns.spacing) {
+            setNumberLabel
+            labeledField(weightCaptionText) { weightInput }
+            labeledField(repsCaptionText) { repsInput }
+            plateColumn
+            Spacer(minLength: 6)
+            if showRirTooltips { rirCapsule }
+            checkmarkButton
+        }
+        .frame(minHeight: 44)
+    }
+
+    /// Schmaler Fallback der klassischen Darstellung — gleiche zweite Zeile
+    /// wie `twoLineInputRow` (`inputRowSecondaryLine`), nur Zeile 1 traegt
+    /// zusaetzlich die Feld-Beschriftungen.
+    private var classicTwoLineRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: SetRowColumns.spacing) {
+                setNumberLabel
+                labeledField(weightCaptionText) { weightInput }
+                labeledField(repsCaptionText) { repsInput }
+                Spacer(minLength: 0)
+            }
+            inputRowSecondaryLine
+        }
+    }
+
+    /// Kleine Caption direkt ueber einem Eingabefeld — das namensgebende
+    /// Merkmal der "bisherigen Darstellung" gegenueber dem gemeinsamen
+    /// Spaltenkopf der Spaltenuebersicht. Nutzt `.deltiqLabel()` statt
+    /// einer eigenen statischen Schriftgroesse — derselbe bereits
+    /// AX5-gehaertete Stil (Runde 8, E04: `.lineLimit(1)` +
+    /// `.minimumScaleFactor(0.5)`), den auch `ExerciseCard`s Spaltenkopf
+    /// nutzt, statt hier erneut eine Dynamic-Type-Regression zu riskieren.
+    @ViewBuilder
+    private func labeledField<Content: View>(_ caption: Text, @ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 2) {
+            caption.deltiqLabel()
+            content()
+        }
+    }
+
+    private var weightCaptionText: Text {
+        Text(weightUnitRaw == "lbs" ? "unit.lbs.upper" : "unit.kg.upper", bundle: .module)
+    }
+
+    private var repsCaptionText: Text {
+        Text(String(localized: "unit.reps.short", bundle: .module).uppercased())
+    }
+
+    /// Eigene schmale Spalte statt Overlay auf `weightInput` (Korrektur
+    /// post-Review: das Overlay ueberdeckte die Gewichtszahl). Die Breite
+    /// wird FUER JEDES Equipment reserviert (auch wenn der Button bei
+    /// Nicht-Hantelübungen unsichtbar bleibt) — erhaelt die mit 130f2e8
+    /// eingefuehrte Eigenschaft, dass die Zeile fuer jedes Equipment gleich
+    /// breit ist.
+    @ViewBuilder
+    private var plateColumn: some View {
+        if exercise.isBarbellExercise {
+            let plateShown = (weight ?? 0) > 0
+            plateCalculatorButton(weight: weight ?? 0)
+                .opacity(plateShown ? 1 : 0)
+                .allowsHitTesting(plateShown)
+        } else {
+            Color.clear.frame(width: SetRowColumns.plateWidth, height: 1)
+                .accessibilityHidden(true)
+        }
+    }
+
+/// DEL-085: Quick-Access-Button fuer den Plate-Calculator. Korrektur
+    /// post-Review: eigene Spalte (`plateColumn`) statt Overlay auf
+    /// `weightInput` — das Overlay ueberdeckte dort die Gewichtszahl.
+    /// Sichtbar (Opacity/HitTesting, Spaltenbreite bleibt reserviert) wenn
+    /// ein konkretes Gewicht > 0 eingetragen ist UND die Uebung mit einer
+    /// Hantelstange ausgefuehrt wird. Tap oeffnet ein Popover mit der
+    /// Aufladungs-Visualisierung — der eigentliche Content lebt in
+    /// `PlatePopoverContent` weiter unten.
+    @ViewBuilder
+    private func plateCalculatorButton(weight: Double) -> some View {
+        Button {
+            showingPlatePopover = true
+        } label: {
+            Image(systemName: "scalemass.fill")
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(Color.deltiqOrange)
+                .font(.caption)
+                .frame(width: SetRowColumns.plateWidth, height: SetRowColumns.plateWidth)
+                .background(Color.deltiqOrange.opacity(0.16))
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        // Bugfix: war hartcodiert deutsch ("Hantel-Aufladung anzeigen"),
+        // nie uebersetzt.
+        .accessibilityLabel(Text("activeSet.plateCalculator.accessibilityLabel", bundle: .module))
+        .popover(isPresented: $showingPlatePopover) {
+            PlatePopoverContent(
+                targetWeight: weight,
+                barWeight: barWeightKgRaw,
+                unitRaw: weightUnitRaw,
+                exerciseName: exercise.name
+            )
+            .padding(16)
+            .frame(minWidth: 260, idealWidth: 280)
+            .presentationCompactAdaptation(.popover)
+        }
+    }
+
+    private var weightInput: some View {
+        // DEL-045-Update: Bodyweight-Fix. Placeholder ist "BW" — wenn der User
+        // das Feld leer laesst, wird der Satz als 0.0 kg geloggt (Liegestuetze,
+        // Pull-ups, etc.). Kein Validierungs-Blocker mehr auf weight.
+        // DEL-091: Bei einer eben gewappten Uebung (`swappedFromOriginal != nil`)
+        // hat der Migrator `suggestedWeight = nil` gesetzt — die alte Last
+        // passt selten zum neuen Bewegungsablauf. Statt eines nackten "-"-
+        // oder "BW"-Placeholders zeigen wir einen klaren Hint, dass das
+        // Gewicht hier neu kalibriert werden muss.
+        TextField(weightPlaceholder, value: displayWeightBinding, format: .number, prompt: Text(weightPlaceholder))
+            .decimalKeyboard()
+            .monospacedDigit()
+            .frame(width: SetRowColumns.weightFieldWidth)
+            .padding(.horizontal, SetRowColumns.fieldHorizontalPadding)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .innerLightStroke(cornerRadius: 8)
+            .multilineTextAlignment(.center)
+            .disabled(isCompleted)
+            .opacity(isCompleted ? 0.6 : 1.0)
+            // Bug-Fix (Deltiq-Geraeteabnahme E04): bei groesster Dynamic-Type-
+            // Einstellung (Accessibility XXXL) schnitt ein Dezimalgewicht wie
+            // "72,5" in diesem festbreiten Feld zu "7..." ab, da SwiftUI ohne
+            // Skalierungs-Erlaubnis lieber abschneidet als schrumpft.
+            // minimumScaleFactor laesst den Text bei Bedarf kleiner rendern,
+            // statt ihn zu kappen; bei normaler Textgroesse keine sichtbare
+            // Aenderung, da der Platz dort ohnehin ausreicht.
+            .minimumScaleFactor(0.5)
+            .lineLimit(1)
+            // Cap 2026-05-21: hartes 500-kg-Maximum auf der Gewichts-
+            // Eingabe — verhindert utopische Werte (User-Vertipper,
+            // versehentlich angetippter Zahlenpad) die dann sinnlos in
+            // den Plate-Calculator + History fliessen.
+            // `PlateCalculator.maxTargetKg = 500.0` ist die kanonische
+            // Konstante; wenn die jemals erhoeht wird, propagiert der
+            // Cap automatisch.
+            .onChange(of: weight) { _, newValue in
+                if let w = newValue, w > PlateCalculator.maxTargetKg {
+                    weight = PlateCalculator.maxTargetKg
+                }
+            }
+    }
+
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// `weight` bleibt die kanonische kg-Groesse (Cap/History/Logging oben
+    /// rechnen weiterhin in kg) - diese Binding konvertiert NUR fuer
+    /// Anzeige/Eingabe in die aktuell gewaehlte Einheit, immer ausgehend vom
+    /// kanonischen kg-Wert (nie verkettet: jedes `get` liest `weight` neu).
+    private var displayWeightBinding: Binding<Double?> {
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        return Binding(
+            get: { weight.map(unit.fromKg) },
+            set: { weight = $0.map(unit.toKg) }
+        )
+    }
+
+    /// DEL-091: dynamisches Placeholder-Wording.
+    ///   * Fresh-swap (Original archived) → "→ KG"/"→ LBS" (Pfeil signalisiert
+    ///     "neuer Wert noetig", Einheit seit Runde 9 an `weightUnitRaw` gekoppelt)
+    ///   * Bodyweight (kein Suggested + nichts gemerkt) → "BW"
+    ///   * Standard → "—"
+    private var weightPlaceholder: String {
+        if exercise.swappedFromOriginal != nil, weight == nil {
+            return "→ \(weightUnitRaw.uppercased())"
+        }
+        return "BW"
+    }
+
+    private var repsInput: some View {
+        TextField("-", value: $reps, format: .number, prompt: Text("-"))
+            #if os(iOS)
+            .keyboardType(.numberPad)
+            #endif
+            .monospacedDigit()
+            .frame(width: SetRowColumns.repsFieldWidth)
+            .padding(.horizontal, SetRowColumns.fieldHorizontalPadding)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .innerLightStroke(cornerRadius: 8)
+            .multilineTextAlignment(.center)
+            .disabled(isCompleted)
+            .opacity(isCompleted ? 0.6 : 1.0)
+    }
+
+    private var checkmarkButton: some View {
+        Button {
+            if !isCompleted {
+                // UX-204: Light-Impact-Haptik beim Satz-Check — der haptische
+                // "Klick" macht das Speichern spuerbar ohne aufdringlich zu
+                // werden. Wird VOR der State-Mutation getriggert, damit der
+                // Impuls und die Spring-Anim synchron starten.
+                DeltiqHaptics.impact(.light)
+                // DEL-059 + DEL-072: Snappy Spring fuer wuchtigen Save-Tap.
+                // Reduce-Motion-Pfad ersetzt den Spring durch ein ruhiges
+                // easeInOut — Apple-HIG-Konform.
+                withAnimation(checkmarkAnimation) {
+                    // README 2.25 (Review-Befund): ohne Reset bleibt der
+                    // Regler aufgeklappt, wenn der User bei offener RIR-Zone
+                    // direkt das Haekchen tippt statt vorher die Kapsel
+                    // erneut anzutippen - `rirCapsule` wuerde dann NIRGENDS
+                    // mehr gerendert (weder in der Eingabezeile, `!rirExpanded`
+                    // greift nicht mehr, noch in `rirSliderRow`, `!isCompleted`
+                    // greift nicht mehr), der RIR-Wert verschwindet komplett
+                    // aus der Zeile bis zum naechsten Un-/Relog. Gleiches
+                    // Reset-Muster wie beim Unlog-Pfad unten (`onTapGesture`).
+                    rirExpanded = false
+                    logCurrentValues()
+                }
+            }
+            // Bei isCompleted handled der Row-onTapGesture das Revert.
+        } label: {
+            Image(systemName: isCompleted ? "checkmark.circle.fill" : "checkmark.circle")
+                // DEL-072: ScaledMetric-Wert statt hard-coded 28pt —
+                // skaliert mit Dynamic-Type bei groesseren Schriftgroessen.
+                .font(.system(size: checkmarkIconSize))
+                // DEL-059: hierarchical-rendering gibt dem Symbol Tiefe
+                // (innerer Ring leicht dunkler als Fuellung).
+                .symbolRenderingMode(.hierarchical)
+                // DEL-087: Warmup/Cooldown-Saetze bekommen graue Checkmark
+                // statt der orange Brand-Color — visuell klar abgegrenzt
+                // von den Working-Sets.
+                .foregroundStyle(checkmarkColor)
+                // DEL-059: Bounce — kurz auf 1.06 wenn completed.
+                // DEL-072: bei Reduce-Motion KEIN Bounce.
+                .scaleEffect((isCompleted && !reduceMotion) ? 1.06 : 1.0)
+                .accessibilityLabel(isCompleted ? "Satz fertig" : "Satz speichern")
+                .accessibilityHint(isCompleted
+                    ? "Doppeltippe, um den Satz zur Bearbeitung zurueckzuholen"
+                    : "Doppeltippe, um den Satz zu speichern")
+        }
+        .buttonStyle(.plain)
+        .disabled(!canLog && !isCompleted)
+        .opacity((!canLog && !isCompleted) ? 0.4 : 1.0)
+    }
+
+    /// DEL-072: Animation-Variante je nach Reduce-Motion-Praeferenz.
+    private var checkmarkAnimation: Animation {
+        reduceMotion
+            ? .easeInOut(duration: 0.2)
+            : .spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0)
+    }
+
+    /// DEL-087: Checkmark-Farbe je nach Exercise-Rolle und Completed-State.
+    /// Signature-Geruest 1.7: Orange bedeutet jetzt ausschliesslich "aktiv",
+    /// nicht mehr "fertig" — ein abgehaktes Working-Set bekommt daher Gruen
+    /// statt der Brand-Farbe. Warmup/Cooldown bleiben auf Grau, unveraendert.
+    private var checkmarkColor: Color {
+        if isCompleted {
+            return content.role.skipsProgression
+                ? Color.secondary
+                : Color.Deltiq.success
+        }
+        return Color.secondary.opacity(0.5)
+    }
+
+    /// Korrektur post-Review (RIR strukturell statt komprimiert): Kapsel
+    /// bleibt JETZT IMMER an ihrer festen Spalten-Position in der
+    /// Eingabezeile sichtbar — auch waehrend der Regler aufgeklappt ist
+    /// (vorher wechselte sie in `rirSliderRow` auf eine neue Zeile, das
+    /// liess die Reglerposition beim Oeffnen "springen"). Tap klappt
+    /// `rirSliderRow` auf/zu. Gesperrt bei abgeschlossenen Saetzen (zeigt
+    /// dann nur noch den geloggten Wert), gleiches Sperr-Muster wie
+    /// `weightInput`/`repsInput`.
+    ///
+    /// Kein "R"-Praefix mehr (reiner Wert, wie bei `weightInput`/
+    /// `repsInput`) — `.fixedSize()` statt `.lineLimit(1)` +
+    /// `.minimumScaleFactor(0.85)` stellt sicher, dass kein gueltiger Wert
+    /// (auch "4,5", der laengste) jemals abgeschnitten oder verkleinert
+    /// dargestellt wird. `SetRowColumns.rirWidth` reserviert dafuer genug
+    /// Platz (siehe dortiger Kommentar zur Berechnungsgrundlage).
+    private var rirCapsule: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { rirExpanded.toggle() }
+        } label: {
+            Text(rir.formattedRIR)
+                .modifier(RIRValueTextStyle())
+                .foregroundStyle(rirExpanded ? .white : Color.deltiqOrange)
+                .background(rirExpanded ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.12))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(isCompleted)
+        .opacity(isCompleted ? 0.6 : 1.0)
+        .accessibilityLabel(
+            Text(String(format: String(localized: "activeSet.rirCapsule.accessibilityLabel", bundle: .module), rir.formattedRIR))
+        )
+        .accessibilityHint(Text("activeSet.rirCapsule.accessibilityHint", bundle: .module))
+    }
+
+    /// UX-203: HStack-Spacing 10 → 14, plus dedizierte Slider-min-Höhe via
+    /// .frame(height: 24), damit der Touch-Bereich nicht mehr aus einem zu
+    /// engen Container gedrückt wird.
+    ///
+    /// README 2.24 (Nutzer-Feedback, zwei Simulator-Screenshots): der
+    /// Erklaerungstext war ein `.overlay` mit fester `.offset(y: -38)`
+    /// UEBER dem Regler - bei laengeren Texten (1-3 Zeilen je Halbschritt,
+    /// neun Katalog-Eintraege `rir.tooltip.0`...`.4plus`) legte er sich
+    /// damit auf `weightInput`/`repsInput`, also genau die Felder, in die
+    /// man gerade tippt. Jetzt eine normale Zeile UNTER dem Regler mit
+    /// reservierter Mindesthoehe statt eines Timer-gesteuerten Overlays -
+    /// `RIRTooltipController`/`RIRTooltipBloop.isVisible`/`showRirTooltips`
+    /// werden hier nicht mehr gebraucht. Bleiben unveraendert im Einsatz
+    /// fuer `ExerciseEditorView.targetRIRSliderRow` (eigene Instanz dort) -
+    /// der Regler steht dort allein in einer Section und verdeckt nichts,
+    /// eine bewusst eigene Entscheidung.
+    ///
+    /// Dazu eine sichtbare Skala, weil der Regler vorher nicht sagte, was
+    /// er misst (Label "RIR" ohne Erklaerung, keine Enden-Beschriftung,
+    /// Wert doppelt). Die 11 Rasterstriche sind rein dekorativ (`.background`
+    /// HINTER dem Slider, `allowsHitTesting(false)` + `accessibilityHidden`)
+    /// - Drag-Gesture, Werte-Fuellung und VoiceOver-Adjustable-Action bleiben
+    /// beim nativen `Slider`, absichtlich NICHT durch einen selbstgebauten
+    /// Regler ersetzt (Touch-Handling + Accessibility eines Custom-Reglers
+    /// liessen sich hier nicht verifizieren).
+    private var rirSliderRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            // Korrektur post-Review: die Kapsel bleibt oben in der
+            // Eingabezeile (siehe `rirCapsule`-Doc) — hier nur noch der
+            // erklaerende Untertitel.
+            Text("active.set.rir.subtitle", bundle: .module)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            Slider(
+                value: Binding(
+                    get: { Double(rir) },
+                    set: { rir = Float($0) }
+                ),
+                in: 0...5,
+                step: 0.5
+            )
+            .tint(Color.deltiqOrange)
+            .frame(minHeight: 24)
+            .background(alignment: .center) {
+                HStack(spacing: 0) {
+                    ForEach(0..<11) { index in
+                        Rectangle()
+                            .fill(Color.secondary.opacity(index.isMultiple(of: 2) ? 0.35 : 0.2))
+                            .frame(width: 1, height: index.isMultiple(of: 2) ? 8 : 5)
+                        if index < 10 { Spacer(minLength: 0) }
+                    }
+                }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+            }
+            HStack {
+                Text("active.set.rir.scaleMin", bundle: .module)
+                Spacer()
+                Text("active.set.rir.scaleMax", bundle: .module)
+            }
+            .font(.system(size: 10))
+            .foregroundStyle(.tertiary)
+            Text(LocalizedStringKey(RIRTooltipBloop.tooltipKey(for: rir)), bundle: .module)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: 32, alignment: .topLeading)
+        }
+    }
+
+    /// Signature-Geruest 2.16: eigene, volle Zeile statt Inline-Anhaengsel
+    /// hinter dem RIR-Regler — vorher wurde der Hinweis auf schmalen
+    /// Bildschirmen (`.lineLimit(1)` + `.minimumScaleFactor(0.8)`)
+    /// abgeschnitten bzw. verkleinert. Nur der aktive Satz zeigt sie
+    /// (siehe Aufrufstelle), daher kein zusaetzliches Gate hier noetig.
+    private func previousHintLine(_ log: ExerciseLog) -> some View {
+        // Bug-Fix 2026-05-22: "letztes:" war hardcoded DE. Jetzt via
+        // `active.set.previousFormat`-Catalog-Key mit %@-Placeholder →
+        // DE/EN/TR sauber.
+        Text(String(format:
+            String(localized: "active.set.previousFormat", bundle: .module),
+            previousLogHint(log)))
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - DEL-040 + DEL-045 Schritt 4: Hold-Timer (isTimeBased)
+
+    @ViewBuilder
+    private var timeBasedSetView: some View {
+        switch holdState {
+        case .idle:
+            holdIdleView
+        case .countingDown(let secondsLeft):
+            holdCountdownView(secondsLeft: secondsLeft)
+        case .holding(let elapsed):
+            holdRunningView(elapsedSeconds: elapsed)
+        }
+    }
+
+    private var holdIdleView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(String(format: String(localized: "set.numberLabel", bundle: .module), setIndex + 1))
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if isCompleted, let log = existingLog {
+                    // DEL-128: Sek-Unit aus xcstrings.
+                    let secUnit = String(localized: "unit.seconds.short", bundle: .module)
+                    Text("\(log.reps) \(secUnit) · \(log.date.formatted(.relative(presentation: .named)))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if !isCompleted {
+                // DEL-128: "Ziel: X Sek halten" via xcstrings-Format.
+                Text(String(format: String(localized: "holdTimer.target.format", bundle: .module),
+                            targetHoldSeconds))
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                // DEL-097: Wenn eine ANDERE Time-Exercise schon laeuft,
+                // zeigen wir statt des Start-Buttons einen disabled-Hinweis
+                // mit Bezug auf die blockierende Uebung.
+                if isBlockedByOtherTimedExercise {
+                    blockedByOtherTimerHint
+                } else {
+                    Button {
+                        startCountdown()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "play.fill")
+                            Text("baseline.timer.start", bundle: .module)
+                                .font(.headline)
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .background(Color.deltiqOrange.gradient)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                Button {
+                    withAnimation { onUnlog() }
+                } label: {
+                    Label("Korrigieren", systemImage: "arrow.uturn.backward.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    /// DEL-097: Disabled-Pseudo-Button, der anstelle des "Start"-CTAs
+    /// erscheint, wenn eine andere zeitbasierte Uebung gerade laeuft.
+    /// Tippbar bleibt nichts — wir wollen den User explizit zwingen, zur
+    /// laufenden Uebung zurueckzunavigieren und sie abzuschliessen.
+    private var blockedByOtherTimerHint: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "lock.fill")
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(blockingMessage)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text("set.lockedHint", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(Color.secondary.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .opacity(0.85)
+        .accessibilityLabel(blockingMessage + ". Beende die laufende Übung zuerst.")
+    }
+
+    /// DEL-097 + DEL-108: True wenn der Session-weite Time-Set-Lock von
+    /// einem ANDEREN Satz gehalten wird (gleiche oder fremde Uebung —
+    /// egal, jeder andere Satz blockt). Delegiert an `TimedExerciseGuard.
+    /// isBlockedByOther` (Core) mit dem zusammengesetzten Set-Identifier.
+    private var isBlockedByOtherTimedExercise: Bool {
+        TimedExerciseGuard.isBlockedByOther(
+            candidateID: myTimedSetID,
+            candidateIsTimeBased: content.isTimeBased,
+            activeTimedExerciseID: activeTimedSet
+        )
+    }
+
+    /// Compound-Key fuer den Lock. exerciseName wird denormalisiert
+    /// mitgespeichert, damit blockierte Rows den Namen ohne weiteren
+    /// Lookup ins UI bringen koennen.
+    private var myTimedSetID: ActiveTimedSetID {
+        // DEL-149: `exercise.displayName` statt rohem `exercise.name`. Der
+        // gespeicherte DE-Base wird hier in den User-sichtbaren Hint-String
+        // weitergereicht — wir lokalisieren am Source, sodass der gesamte
+        // blocking-Pfad (auch cross-row) sprachfest bleibt.
+        ActiveTimedSetID(
+            exerciseID: exercise.persistentModelID,
+            setIndex: setIndex,
+            exerciseName: exercise.displayName
+        )
+    }
+
+    /// Anzeige-String fuer den Blocked-Hint. Same-exercise different-set
+    /// (z.B. "Plank Satz 1 läuft, du bist auf Satz 2") und cross-exercise
+    /// (z.B. "Plank läuft, du bist auf Wall Sit") werden mit der gleichen
+    /// Formulierung abgedeckt — der User sieht eh nur die Row, in der er
+    /// gerade ist, und weiss, was er als naechstes machen muss.
+    private var blockingMessage: String {
+        if let name = activeTimedSet?.exerciseName, !name.isEmpty {
+            return "„\(name)“ läuft bereits"
+        }
+        return "Eine andere zeitbasierte Übung läuft bereits"
+    }
+
+    private func holdCountdownView(secondsLeft: Int) -> some View {
+        VStack(spacing: 6) {
+            // UX-203: Mono-Digits, damit der 3/2/1-Countdown visuell stabil
+            // bleibt (Proportional-Glyphen liessen die Zahl pro Sekunde
+            // leicht "wackeln", weil die Glyph-Breite je Ziffer variiert).
+            Text(secondsLeft == 0 ? "GO!" : "\(secondsLeft)")
+                .font(.system(size: 80, weight: .black, design: .rounded).monospacedDigit())
+                .foregroundStyle(Color.deltiqOrange)
+                .frame(maxWidth: .infinity)
+                .contentTransition(.numericText())
+                .animation(.easeOut(duration: 0.2), value: secondsLeft)
+            Text(secondsLeft == 0 ? "Los geht's!" : "Mach dich bereit ...")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 12)
+    }
+
+    private func holdRunningView(elapsedSeconds elapsed: Int) -> some View {
+        let target = targetHoldSeconds
+        let progress = min(1.0, Double(elapsed) / Double(max(target, 1)))
+        let reached = elapsed >= target
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("\(elapsed)")
+                    .font(.system(size: 48, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(reached ? Color.deltiqOrange : .primary)
+                    .contentTransition(.numericText())
+                // DEL-128: SEK/SEC/SN reuse `unit.seconds.short` + uppercase.
+                Text("/ \(target) \(String(localized: "unit.seconds.short", bundle: .module).uppercased())")
+                    .deltiqLabel()
+                Spacer()
+                if reached {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.title2)
+                        .symbolRenderingMode(.hierarchical)   // DEL-059
+                        .foregroundStyle(Color.deltiqOrange)
+                        .scaleEffect(1.05)
+                }
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                    Rectangle()
+                        .fill(reached ? Color.deltiqOrange : Color.deltiqOrange.opacity(0.6))
+                        .frame(width: geo.size.width * progress)
+                        .animation(.linear(duration: 0.5), value: progress)
+                }
+            }
+            .frame(height: 4)
+            .clipShape(Capsule())
+
+            Button {
+                stopHoldAndLog()
+            } label: {
+                HStack {
+                    Spacer()
+                    Image(systemName: "stop.fill")
+                    Text(reached ? "Satz speichern" : "Stoppen & speichern")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                }
+                .padding(.vertical, 8)
+                .background(Color.deltiqOrange.opacity(reached ? 0.30 : 0.18))
+                .foregroundStyle(Color.deltiqOrange)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 6)
+    }
+
+    private var targetHoldSeconds: Int {
+        content.repsMin > 0 ? content.repsMin : 30
+    }
+
+    /// 3-Sekunden-Countdown mit Per-Sekunde-Beeps. Bei 3/2/1 ertoent ein
+    /// kurzer System-Beep, bei 0 (= "GO!") ein laengerer, tieferer Ton.
+    /// Erfuellt DEL-045 Schritt 3-Audio.
+    /// DEL-097 + DEL-108: Lock-Claim direkt beim Countdown-Start. Slot-
+    /// Identifier ist jetzt set-level (Exercise × setIndex), nicht mehr
+    /// exercise-only. Damit blockt der naechste Plank-Satz, solange der
+    /// vorige noch laeuft — Regression von DEL-097 geschlossen.
+    private func startCountdown() {
+        // Defensive — UI rendert den Button schon disabled, aber wenn
+        // jemand die View aus einem anderen Pfad fired (Voice Control,
+        // Tests), wollen wir den Lock-Check trotzdem haben.
+        guard !isBlockedByOtherTimedExercise else { return }
+        activeTimedSet = myTimedSetID
+        holdState = .countingDown(secondsLeft: 3)
+        playCountdownBeep()   // initial Beep fuer "3"
+        holdTimer?.invalidate()
+        holdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            Task { @MainActor in
+                guard case .countingDown(let left) = holdState else {
+                    timer.invalidate()
+                    return
+                }
+                if left > 1 {
+                    holdState = .countingDown(secondsLeft: left - 1)
+                    playCountdownBeep()
+                } else if left == 1 {
+                    holdState = .countingDown(secondsLeft: 0)
+                    playGoSound()
+                } else {
+                    timer.invalidate()
+                    startHolding()
+                }
+            }
+        }
+    }
+
+    private func startHolding() {
+        holdState = .holding(elapsedSeconds: 0)
+        let target = targetHoldSeconds
+        var didFireFinishedFeedback = false
+        holdTimer?.invalidate()
+        holdTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            Task { @MainActor in
+                guard case .holding(let elapsed) = holdState else {
+                    timer.invalidate()
+                    return
+                }
+                let next = elapsed + 1
+                holdState = .holding(elapsedSeconds: next)
+                if next == target && !didFireFinishedFeedback {
+                    didFireFinishedFeedback = true
+                    triggerHoldCompleteFeedback()
+                }
+            }
+        }
+    }
+
+    private func stopHoldAndLog() {
+        invalidateHoldTimer()
+        guard case .holding(let elapsed) = holdState else { return }
+        // DEL-040: TimeBased speichert die Hold-Sekunden in `reps` —
+        // historische Convention, bleibt fuer Backward-Compat erhalten.
+        // DEL-060: ZUSAETZLICH `durationSeconds` setzen, sodass spaetere
+        // Analytik einheitlich auf das Duration-Feld zugreifen kann (statt
+        // Sonderfall fuer TimeBased zu pflegen). `distanceKm` bleibt nil —
+        // Plank/Wall-Sit haben keine Distanz.
+        onLogged(LoggedSetValues(
+            weight: 0,
+            reps: elapsed,
+            rir: 0,
+            distanceKm: nil,
+            durationSeconds: elapsed
+        ))
+        holdState = .idle
+        // DEL-097: Lock freigeben — nur wenn WIR ihn gehalten haben.
+        // Defensive Identity-Check, falls zwei Threads parallel den Slot
+        // beruehren (sollte nicht passieren, schadet aber nichts).
+        releaseTimedExerciseLockIfHeld()
+    }
+
+    /// DEL-097 + DEL-108: Identity-checked Lock-Release. Wird auch vom
+    /// Countdown-Abbruch (Tap waehrend "GO!") und vom `unlog`-Pfad genutzt,
+    /// damit der Slot nicht verwaist haengen bleibt.
+    /// Equality auf `ActiveTimedSetID` ist `(exerciseID, setIndex)` —
+    /// exerciseName ist nur Display.
+    private func releaseTimedExerciseLockIfHeld() {
+        if activeTimedSet == myTimedSetID {
+            activeTimedSet = nil
+        }
+    }
+
+    private func invalidateHoldTimer() {
+        holdTimer?.invalidate()
+        holdTimer = nil
+    }
+
+    // MARK: - Audio + Haptic Helpers
+
+    /// Kurzer hoher Beep bei jedem Countdown-Tick (3, 2, 1). DEL-045-Update
+    /// Punkt 4: AVAudioPlayer + `beep_short.wav` statt System-Sound.
+    private func playCountdownBeep() {
+        if timerSoundEnabled {
+            TimerSoundPlayer.shared.playShort()
+        }
+        #if canImport(UIKit) && !os(watchOS)
+        if timerHapticsEnabled {
+            UISelectionFeedbackGenerator().selectionChanged()
+        }
+        #endif
+    }
+
+    /// Laengerer, deutlich anderer Ton fuer "GO" (Start-Signal). DEL-045-
+    /// Update Punkt 4: AVAudioPlayer + `beep_long.wav` statt System-Sound.
+    private func playGoSound() {
+        if timerSoundEnabled {
+            TimerSoundPlayer.shared.playLong()
+        }
+        #if canImport(UIKit) && !os(watchOS)
+        if timerHapticsEnabled {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        #endif
+    }
+
+    /// Sound + Haptic beim Erreichen der Ziel-Hold-Zeit.
+    private func triggerHoldCompleteFeedback() {
+        #if canImport(UIKit) && !os(watchOS)
+        if timerHapticsEnabled {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        #endif
+        if timerSoundEnabled {
+            // Auch hier der laengere Ton — gleicher GO-Klang als "Du hast es
+            // geschafft"-Signal.
+            TimerSoundPlayer.shared.playLong()
+        }
+    }
+
+    // MARK: - State init / formatting / logging
+
+    /// Kompakte Zusammenfassung des letzten Satzes dieser Uebung + Satz-Nummer.
+    ///
+    /// DEL-220: drei Baustellen behoben.
+    ///   * **Cardio zeigte Unsinn.** Der Cardio-Zweig der Row rendert diesen
+    ///     Hint (siehe `editableTrailing`), die Funktion kannte aber nur
+    ///     TimeBased und Strength — ein Lauf-Log landete im Gewicht/Reps-Pfad
+    ///     und erschien als "letztes: 0 kg × 0", weil Cardio-Logs weight und
+    ///     reps auf 0 haben. Jetzt Distanz + Dauer aus `distanceKm`/
+    ///     `durationSeconds`.
+    ///   * **RIR fehlte.** Der wichtigste Teil der Progressions-Entscheidung
+    ///     ("8 Wdh bei RIR 0" vs. "8 Wdh bei RIR 3") war nicht sichtbar,
+    ///     obwohl er geloggt wird. Nur angehaengt, wenn die Uebung ueberhaupt
+    ///     RIR fuehrt (nicht bei Cardio).
+    ///   * **" kg" war hartkodiert** → `unit.kg.lower`.
+    ///
+    /// Geraete-Abnahme (Runde 9, docs/DELTIQ_DEVICE_ACCEPTANCE.md, kg/lbs):
+    /// damals bewusst NICHT geaendert, weil das direkt daneben liegende
+    /// Eingabefeld (`weightInput`) ebenfalls hart auf kg stand — jetzt, wo
+    /// `weightInput` die gewaehlte Einheit respektiert, wuerde ein weiterhin
+    /// kg-fester Hint direkt daneben einen neuen, selbst verursachten
+    /// Einheiten-Mix erzeugen. Deshalb hier mit demselben `WeightUnit`
+    /// konvertiert. Bleibt WEITERHIN bewusst NICHT abgedeckt (eigenes,
+    /// querschnittliches Thema): Trainingsvolumen-Aggregation, PR-Erkennung/
+    /// -Banner, Uebungs-Gewichtsverlauf-Charts, CSV-Export/-Import — siehe
+    /// "Fachliche Widersprueche", Punkt 6.
+    private func previousLogHint(_ log: ExerciseLog) -> String {
+        // DEL-128: Sek-Unit aus xcstrings.
+        if content.isTimeBased {
+            let secUnit = String(localized: "unit.seconds.short", bundle: .module)
+            return "\(log.reps) \(secUnit)"
+        }
+
+        if content.isCardio {
+            let kmUnit = String(localized: "unit.km.lower", bundle: .module)
+            let distance = log.distanceKm ?? 0
+            let seconds = log.durationSeconds ?? 0
+            // Nur eine der beiden Groessen geloggt → die andere weglassen,
+            // statt "0 km" bzw. "in 00:00" zu behaupten.
+            switch (distance > 0, seconds > 0) {
+            case (true, true):
+                return String(
+                    format: String(localized: "active.set.previousCardio", bundle: .module),
+                    "\(formatWeight(distance)) \(kmUnit)",
+                    PaceCalculator.formatDuration(seconds)
+                )
+            case (true, false):
+                return "\(formatWeight(distance)) \(kmUnit)"
+            case (false, true):
+                return PaceCalculator.formatDuration(seconds)
+            case (false, false):
+                return "—"
+            }
+        }
+
+        let unit = WeightUnit(rawSetting: weightUnitRaw)
+        let unitLabel = String(localized: unit == .kg ? "unit.kg.lower" : "unit.lbs.lower", bundle: .module)
+        let base = "\(formatWeight(unit.fromKg(log.weight), decimals: 1)) \(unitLabel) × \(log.reps)"
+        let rirPart = String(
+            format: String(localized: "active.set.previousRIR", bundle: .module),
+            log.rir.formattedRIR
+        )
+        return "\(base) · \(rirPart)"
+    }
+
+    private func initializeOnce() {
+        guard !didInit else { return }
+        didInit = true
+
+        // Wenn die Row als bereits-geloggt erscheint (z.B. nach Re-Render),
+        // dann nehme die Werte aus dem existingLog statt vom previousLog.
+        // Damit zeigen die TextFields nach Tap auf "Unlog" die richtigen
+        // Werte des gerade entfernten Logs an.
+        if let log = existingLog {
+            weight = log.weight > 0 ? log.weight : exercise.suggestedWeight
+            reps = log.reps
+            rir = log.rir
+            // DEL-058 Cardio init aus existing log.
+            if let d = log.distanceKm, d > 0 {
+                cardioDistanceText = d == d.rounded()
+                    ? "\(Int(d))" : d.truncated(to: 2).formattedTwoDecimals
+            }
+            if let s = log.durationSeconds, s > 0 {
+                cardioDurationText = PaceCalculator.formatDuration(s)
+            }
+        } else if let previousLog {
+            // DEL-239: Das GEPLANTE Gewicht gewinnt, wenn es NIEDRIGER ist als
+            // das letzte geloggte.
+            //
+            // Vorher stand hier `previousLog.weight > 0 ? previousLog.weight :
+            // exercise.suggestedWeight` — der letzte geloggte Wert gewann immer,
+            // `suggestedWeight` war nur Fallback fuer Bodyweight-Saetze. Damit
+            // war jede geplante Reduktion im Training UNSICHTBAR: das Feld
+            // zeigte die alte Last, waehrend die Warmup-Rampe (ExerciseCard)
+            // schon mit dem reduzierten Wert rechnete — reduzierte Aufwaerm-
+            // stufen ueber un-reduziertem Arbeitsgewicht, auf einem Screen. Die
+            // Saetze landeten mit der alten Last im Log, also sah auch die
+            // Historie keine Reduktion.
+            //
+            // Bewusst NUR nach unten: `suggestedWeight` liegt im Normalfall
+            // durch die Progression HOEHER als der letzte Log, und dort soll
+            // weiterhin der zuletzt tatsaechlich gehobene Wert vorstehen (der
+            // Nutzer entscheidet selbst, ob er heute zulegt). Ein niedrigerer
+            // Plan-Wert ist dagegen immer eine Absicht — Absenz-Deload,
+            // Overreaching-Deload oder eine manuelle Korrektur nach unten.
+            let planned = exercise.suggestedWeight
+            if previousLog.weight > 0 {
+                weight = (planned.map { $0 < previousLog.weight } ?? false)
+                    ? planned
+                    : previousLog.weight
+            } else {
+                weight = planned
+            }
+            reps = previousLog.reps
+            rir = previousLog.rir
+            // DEL-058 Cardio init aus previousLog — Felder bleiben leer, der
+            // Placeholder zeigt die letzten Werte als Hint. Kein Pre-Fill
+            // wuerde den User zwingen, das Feld zu loeschen, BEVOR er heute
+            // tippt — bei Lauf-Logs nicht erwuenscht.
+        } else if let seedLog {
+            // DEL-157: dynamisch hinzugefuegter Satz ohne eigene Historie —
+            // erbt Gewicht/Reps/RIR vom Satz direkt darueber in DIESER
+            // Session, sodass der User nicht von 0 anfangen muss.
+            weight = seedLog.weight > 0 ? seedLog.weight : exercise.suggestedWeight
+            reps = seedLog.reps
+            rir = seedLog.rir
+        } else {
+            weight = exercise.suggestedWeight
+            reps = midpoint(content.repsMin, content.repsMax)
+            rir = content.targetRir
+        }
+    }
+
+    private func midpoint(_ a: Int, _ b: Int) -> Int { (a + b) / 2 }
+
+    /// DEL-045-Update: Bodyweight-Fix. Strength: speicherbar sobald reps > 0
+    /// (Gewicht optional, leer = 0).
+    /// DEL-058: Cardio: speicherbar sobald Distanz ODER Dauer geparsed werden
+    /// kann — User soll z.B. nur eine Dauer eintragen koennen ohne Distanz
+    /// (Pace bleibt dann undefined, aber das Workout zaehlt).
+    private var canLog: Bool {
+        if content.isCardio {
+            let hasDistance = PaceCalculator.parseDistanceToKm(cardioDistanceText) != nil
+            let hasDuration = PaceCalculator.parseDurationToSeconds(cardioDurationText) != nil
+            return hasDistance || hasDuration
+        }
+        return reps > 0
+    }
+
+    private func logCurrentValues() {
+        guard canLog else { return }
+        // Tastatur sofort dismissen — keyboardDismissToolbar liefert auf iOS
+        // keinen "Fertig"-Button mehr, daher hier explizit resignen (DEL-045-
+        // Update Punkt 3).
+        dismissKeyboard()
+        let values: LoggedSetValues
+        if content.isCardio {
+            // DEL-058: Cardio → Distanz/Dauer parsen, reps/weight/rir bleiben 0.
+            values = LoggedSetValues(
+                weight: 0,
+                reps: 0,
+                rir: 0,
+                distanceKm: PaceCalculator.parseDistanceToKm(cardioDistanceText),
+                durationSeconds: PaceCalculator.parseDurationToSeconds(cardioDurationText)
+            )
+        } else {
+            // Strength (oder Time-Based hold, das ueber stopHoldAndLog laeuft).
+            let w = content.isTimeBased ? 0.0 : (weight ?? 0)
+            values = LoggedSetValues(weight: w, reps: reps, rir: rir)
+        }
+        onLogged(values)
+    }
+
+    /// Resigne der gerade-fokussierten responder-Kette. iOS-only; auf macOS
+    /// ein No-Op (es gibt dort keine On-Screen-Tastatur).
+    private func dismissKeyboard() {
+        #if os(iOS)
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil, from: nil, for: nil
+        )
+        #endif
+    }
+
+    private func formatWeight(_ w: Double, decimals: Int = 2) -> String {
+        w == w.rounded() ? "\(Int(w))" : w.truncated(to: decimals).formatted(decimals: decimals)
+    }
+
+    // MARK: - DEL-058 Cardio Set Row
+
+    /// Cardio-Eingabe: Distanz (km) + Dauer (MM:SS) + Live-Pace + Checkmark.
+    /// DEL-061: Tighter spacing + feste Label-Breiten, damit auf iPhone-SE
+    /// (375pt) nichts mehr abgeschnitten wird. KM-Label sitzt in eigener
+    /// 24pt-Box, ZEIT/min-Label entfaellt komplett zugunsten von Pace
+    /// rechtsbuendig.
+    @ViewBuilder
+    private var cardioSetRow: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                // UX-203: Mono-Digits + state-aware Color (siehe compactSetRow).
+                Text("\(setIndex + 1)")
+                    .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(setNumberColor)
+                    .frame(width: 20, alignment: .leading)
+
+                cardioDistanceInput
+                cardioDurationInput
+
+                Spacer(minLength: 4)
+
+                // DEL-061: Pace-Anzeige rechtsbuendig, eigene fixe Box,
+                // schrumpft notfalls mit minimumScaleFactor statt umzubrechen.
+                cardioPaceLabel
+
+                checkmarkButton
+            }
+
+            // UX-203: 28 → 36, gleicher Breathing-Room-Step wie statusZone
+            // im Strength-Pfad.
+            cardioStatusZone
+                .frame(height: 36)
+                .padding(.leading, 28)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 8)
+        .background(
+            // Signature-Geruest 2.2: gleiche Radius-Anpassung wie
+            // compactSetRow - beide Zeilentypen teilen dieses Snippet.
+            RoundedRectangle(cornerRadius: isActiveSet ? 12 : 10)
+                .fill(rowStateBackground)
+        )
+        .overlay(alignment: .leading) {
+            if isActiveSet {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.deltiqOrange)
+                    .frame(width: 2)
+                    .padding(.vertical, 6)
+            }
+        }
+        .opacity(isCompleted ? 0.55 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isCompleted)
+        .animation(.easeInOut(duration: 0.2), value: isActiveSet)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if isCompleted {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    onUnlog()
+                }
+            }
+        }
+    }
+
+    /// DEL-061: feste TextField-Breite + fest verankertes KM-Label, damit
+    /// auf iPhone-SE-Breite nichts ueberlappt oder abgeschnitten wird.
+    private var cardioDistanceInput: some View {
+        HStack(spacing: 4) {
+            TextField("0.0", text: $cardioDistanceText, prompt: Text(cardioDistancePlaceholder))
+                .decimalKeyboard()
+                .monospacedDigit()
+                .frame(width: 55)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 6)
+                .background(Color.secondary.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .innerLightStroke(cornerRadius: 8)
+                .multilineTextAlignment(.center)
+                .disabled(isCompleted)
+                .opacity(isCompleted ? 0.6 : 1.0)
+            Text("KM")
+                .deltiqLabel()
+                .frame(width: 22, alignment: .leading)   // fix → kein Cut
+        }
+    }
+
+    /// DEL-061: das frueher hinten dranhaengende "min"-Label entfaellt — die
+    /// MM:SS-Convention reicht visuell. Kein Label = mehr Platz fuer das
+    /// breitere Pace-Display rechts.
+    private var cardioDurationInput: some View {
+        TextField("MM:SS", text: $cardioDurationText, prompt: Text(cardioDurationPlaceholder))
+            #if os(iOS)
+            .keyboardType(.numbersAndPunctuation)
+            #endif
+            .monospacedDigit()
+            .frame(width: 65)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .innerLightStroke(cornerRadius: 8)
+            .multilineTextAlignment(.center)
+            .disabled(isCompleted)
+            .opacity(isCompleted ? 0.6 : 1.0)
+    }
+
+    /// Live-Pace-Anzeige in Neon-Orange. Recomputed pro Tastenanschlag
+    /// dank `@State`-Bindings auf den Text-Feldern.
+    /// DEL-061: rechtsbuendig, fixe Box, `.lineLimit(1)` +
+    /// `.minimumScaleFactor(0.8)` als Fallback bei langen Pace-Werten
+    /// (z.B. "12:45 /km" Walk-Pace).
+    private var cardioPaceLabel: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Text("cardio.paceLabel", bundle: .module).deltiqLabel()
+            Text(currentPace)
+                .font(.system(size: 14, weight: .bold, design: .rounded).monospacedDigit())
+                .foregroundStyle(Color.deltiqOrange)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(width: 72, alignment: .trailing)
+    }
+
+    private var currentPace: String {
+        let km = PaceCalculator.parseDistanceToKm(cardioDistanceText)
+        let secs = PaceCalculator.parseDurationToSeconds(cardioDurationText)
+        return PaceCalculator.pace(distanceKm: km, durationSeconds: secs)
+    }
+
+    /// Placeholder im Distanz-Feld: target aus dem Plan, sonst leer.
+    private var cardioDistancePlaceholder: String {
+        guard let target = content.targetDistanceKm else { return "km" }
+        return target == target.rounded()
+            ? "\(Int(target))"
+            : target.truncated(to: 2).formattedTwoDecimals
+    }
+
+    /// Placeholder im Dauer-Feld: target aus dem Plan in MM:SS, sonst leer.
+    private var cardioDurationPlaceholder: String {
+        guard let mins = content.targetDurationMinutes else { return "MM:SS" }
+        return "\(mins):00"
+    }
+
+    /// Statuszeile unter den Inputs — abgeschlossener Set zeigt geloggtes
+    /// Resultat, editable State zeigt previous-Run-Hint (falls vorhanden),
+    /// Task 8: sonst (noch nichts eingeloggt, kein vorheriger Lauf) die
+    /// Ziel-Pace des Tages, falls bestimmbar.
+    @ViewBuilder
+    private var cardioStatusZone: some View {
+        if isCompleted, let log = existingLog {
+            Text(cardioCompletedSummary(log))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else if let prev = previousLog,
+                  prev.distanceKm != nil || prev.durationSeconds != nil {
+            // Bug-Fix 2026-05-22: lokalisiert via active.set.previousFormat.
+            let previousText = String(format:
+                String(localized: "active.set.previousFormat", bundle: .module),
+                cardioPreviousHint(prev))
+            // Fix I-3 (Final-Review, Round 2): die Ziel-Pace muss NEBEN dem
+            // "letztes Mal"-Hinweis sichtbar bleiben, nicht nur in dessen
+            // Abwesenheit - sonst verschwindet sie dauerhaft, sobald die
+            // Uebung einmal geloggt wurde (jede folgende, noch nicht
+            // geloggte Session traefe sonst immer zuerst diesen Zweig).
+            if let targetPaceHint {
+                let targetText = String(format:
+                    String(localized: "active.set.targetPaceFormat", bundle: .module),
+                    targetPaceHint)
+                Text("\(targetText) · \(previousText)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text(previousText)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else if let targetPaceHint {
+            Text(String(format:
+                String(localized: "active.set.targetPaceFormat", bundle: .module),
+                targetPaceHint))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            Color.clear
+        }
+    }
+
+    /// Task 8 (Decision 1 - "Pace muss zum tatsaechlich uebernommenen
+    /// Trainingsinhalt passen"): dieselbe Gating-/Berechnungs-Logik wie
+    /// `PlanBuilderView.scopeLine`/`CardioFeasibilityDayRow.subtitle`
+    /// (Runde 1) - nur bei aktivem Coach, einer der beiden pace-tragenden
+    /// Lauf-Zonen (Easy/Tempo) UND einem Dauer-Ziel (der distanzbasierte
+    /// Intervall-Zweig traegt laut Task 3 nie eine Pace). Klassifiziert
+    /// ZWINGEND ueber `content.nameSnapshot` (stabiler Anker), NIE ueber
+    /// `content.customNameSnapshot` (user-umbenennbar) - Task 1s
+    /// Reviewer-Hinweis fuer genau diese Stelle.
+    ///
+    /// Fix round 1 (Review): der Fallback auf `cardioFeasibility.day.
+    /// paceUnknown` haengt am Ergebnis von `PaceZoneCalculator`, nicht nur
+    /// daran, ob `current5kReferenceSeconds` `nil` war - eine nicht-positive
+    /// Referenzzeit (`0`, oder kaputte/importierte Daten, siehe
+    /// `DataImportService.swift:746`) liess `PaceZoneCalculator.
+    /// easyPaceMinutesPerKm`/`.tempoPaceMinutesPerKm` ebenfalls `nil`
+    /// liefern (Divisions-Sicherheit, `CardioProfile.swift`), wodurch vorher
+    /// `PaceCalculator.formatPace(nil)` den rohen "—:—— /km"-Platzhalter
+    /// zurückgab statt des qualitativen Fallbacks - "keine falsch-praezise
+    /// Pace ohne Referenzzeit" gilt auch fuer eine UNBRAUCHBARE Referenzzeit.
+    /// Gleiches Muster wie `CardioFeasibilityDayRow.subtitle`, die ebenfalls
+    /// das BERECHNETE Pace-Ergebnis prueft, nicht nur die Eingabe.
+    private var targetPaceHint: String? {
+        guard content.isCardio, content.targetDurationMinutes != nil, cardioCoachingEnabled,
+              isGeneratorPlan else { return nil }
+        let zone = CardioExerciseZone.forExerciseName(content.nameSnapshot)
+        guard zone == .easy || zone == .tempo else { return nil }
+        let paceMinutesPerKm = current5kReferenceSeconds.flatMap { referenceSeconds in
+            zone == .easy
+                ? PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+                : PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
+        }
+        guard let paceMinutesPerKm else {
+            return String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module)
+        }
+        return PaceCalculator.formatPace(paceMinutesPerKm)
+    }
+
+    private func cardioCompletedSummary(_ log: ExerciseLog) -> String {
+        let rel = log.date.formatted(.relative(presentation: .named))
+        let bits = cardioBitsString(distance: log.distanceKm, duration: log.durationSeconds)
+        return "\(bits) · \(rel)"
+    }
+
+    private func cardioPreviousHint(_ log: ExerciseLog) -> String {
+        cardioBitsString(distance: log.distanceKm, duration: log.durationSeconds)
+    }
+
+    /// Format: "5,20 km · 28:30 · 5:29 /km" — leere Felder werden ausgelassen.
+    private func cardioBitsString(distance: Double?, duration: Int?) -> String {
+        var parts: [String] = []
+        if let distance, distance > 0 {
+            let dStr = distance == distance.rounded()
+                ? "\(Int(distance))"
+                : distance.truncated(to: 2).formattedTwoDecimals
+            parts.append("\(dStr) km")
+        }
+        if let duration, duration > 0 {
+            parts.append(PaceCalculator.formatDuration(duration))
+        }
+        if let distance, let duration, distance > 0, duration > 0,
+           let pace = PaceCalculator.minutesPerKm(distanceKm: distance, durationSeconds: duration) {
+            parts.append(PaceCalculator.formatPace(pace))
+        }
+        return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - DEL-085 PlatePopoverContent
+
+/// Kompakte Plate-Calculator-Ansicht fuer das Popover in SetRow. Reusable
+/// auch von anderen Quick-Access-Punkten.
+@available(iOS 17.0, macOS 14.0, *)
+private struct PlatePopoverContent: View {
+    let targetWeight: Double
+    /// Bevorzugtes Standard-Langhantel-Gewicht (`pref_bar_weight_kg`).
+    let barWeight: Double
+    let unitRaw: String
+    let exerciseName: String
+
+    /// Signature-Geruest 2.17 Nachtrag: SZ-Stange (~10 kg) und Trap-Bar
+    /// (~25 kg) sind ebenfalls `.barbell`, teilen sich bisher aber die eine
+    /// Standard-Einstellung — die Aufladung rechnet fuer sie mit der
+    /// falschen Stange.
+    private enum BarType: String, Hashable {
+        case standard, ezBar, trapBar
+    }
+
+    @State private var barType: BarType
+
+    /// README 2.17 (28c): Skull Crusher ist immer SZ, Trap-Bar-Kreuzheben
+    /// immer Trap - bei jedem Oeffnen auf Standard zurueckzufallen zeigt
+    /// dort jedes Mal zuerst die falsche Zahl. Gemerkt wird Name -> Stange,
+    /// dasselbe Muster wie der Bibliotheks-Rueckfall fuer `equipment` -
+    /// kein Feld am Datenmodell, keine Migration.
+    private static let barTypeByExerciseKey = "pref_bar_type_by_exercise"
+
+    private static func rememberedBarType(for exerciseName: String) -> BarType {
+        let stored = UserDefaults.standard.dictionary(forKey: barTypeByExerciseKey) as? [String: String]
+        guard let raw = stored?[exerciseName], let matched = BarType(rawValue: raw) else { return .standard }
+        return matched
+    }
+
+    private static func rememberBarType(_ type: BarType, for exerciseName: String) {
+        var stored = (UserDefaults.standard.dictionary(forKey: barTypeByExerciseKey) as? [String: String]) ?? [:]
+        stored[exerciseName] = type.rawValue
+        UserDefaults.standard.set(stored, forKey: barTypeByExerciseKey)
+    }
+
+    init(targetWeight: Double, barWeight: Double, unitRaw: String, exerciseName: String) {
+        self.targetWeight = targetWeight
+        self.barWeight = barWeight
+        self.unitRaw = unitRaw
+        self.exerciseName = exerciseName
+        _barType = State(initialValue: Self.rememberedBarType(for: exerciseName))
+    }
+
+    private var unit: PlateCalculator.Unit {
+        PlateCalculator.Unit(rawValue: unitRaw) ?? .kg
+    }
+
+    private var effectiveBarWeight: Double {
+        switch barType {
+        case .standard: return barWeight
+        case .ezBar: return 10
+        case .trapBar: return 25
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label {
+                    Text("barbell.loading.title", bundle: .module)
+                } icon: {
+                    Image(systemName: "scalemass.fill")
+                }
+                    .font(.headline)
+                    .symbolRenderingMode(.hierarchical)
+                Spacer()
+                Text("\(targetWeight.formattedWholeOrTwoDecimals) \(unit.rawValue)")
+                    .font(.title3.bold().monospacedDigit())
+                    .foregroundStyle(Color.deltiqOrange)
+            }
+
+            // Signature-Geruest: DeltiqSegmentedPicker statt System-Picker,
+            // gleiches Muster wie die Einheiten-Auswahl in PlateCalculatorView.
+            DeltiqSegmentedPicker(
+                options: [
+                    DeltiqSegmentedOption(
+                        BarType.standard,
+                        label: String(localized: "barbell.loading.type.standard", bundle: .module)
+                    ),
+                    DeltiqSegmentedOption(
+                        BarType.ezBar,
+                        label: String(localized: "barbell.loading.type.ezBar", bundle: .module)
+                    ),
+                    DeltiqSegmentedOption(
+                        BarType.trapBar,
+                        label: String(localized: "barbell.loading.type.trapBar", bundle: .module)
+                    )
+                ],
+                selection: $barType
+            )
+            .onChange(of: barType) { _, newValue in
+                Self.rememberBarType(newValue, for: exerciseName)
+            }
+
+            Text(String(
+                format: String(localized: "barbell.loading.barWeight", bundle: .module),
+                effectiveBarWeight.formattedWholeOrTwoDecimals, unit.rawValue
+            ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            // DEL-085 / DEL-092-Fix: PlateCalculator.calculate liefert ein
+            // flaches `[PlateConfig]`, KEIN Wrapper-Struct mit `.plates` /
+            // `.actualWeight`. `actualWeight` rechnen wir manuell (Stange +
+            // 2× pro-Seite-Summe) — selbe Formel wie in PlateCalculatorView.
+            let plates = PlateCalculator.calculate(target: targetWeight, bar: effectiveBarWeight, unit: unit)
+            let perSideLoaded = plates.reduce(0.0) { $0 + Double($1.count) * $1.weight }
+            let actualWeight = effectiveBarWeight + 2 * perSideLoaded
+
+            if plates.isEmpty {
+                Label {
+                    Text("barbell.loading.empty", bundle: .module)
+                } icon: {
+                    Image(systemName: "minus")
+                }
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                // Reuse der existing Visualization, kompakte Hoehe.
+                PlateBarVisualization(plates: plates, unit: unit)
+                    .frame(height: 84)
+                Text(perSideText(plates, unit: unit))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            if abs(actualWeight - targetWeight) > 0.01 {
+                Text(String(
+                    format: String(localized: "barbell.loading.reachable", bundle: .module),
+                    actualWeight.formattedWholeOrTwoDecimals, unit.rawValue,
+                    (actualWeight - targetWeight).formattedWholeOrTwoDecimals, unit.rawValue
+                ))
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+
+    /// "Pro Seite: 2× 20 · 1× 10 · 1× 2,5" — kompakter Text-Output der
+    /// Aufladungs-Liste, ergaenzt die visuelle Bar.
+    ///
+    /// Bug-Fix 2026-05-21: vorher las der Code `grouped[w]?.count` —
+    /// das ist aber die LAENGE des PlateConfig-Arrays (immer 1, weil
+    /// PlateCalculator pro Gewichtsklasse genau einen Eintrag emittiert),
+    /// NICHT die Anzahl der Scheiben pro Seite (`PlateConfig.count`).
+    /// Resultat: "1× 25 · 1× 2,5" statt korrektem "2× 25 · 1× 2,5"
+    /// fuer 125 kg @ 20 kg-Bar. Die visuelle Bar war richtig, der Text
+    /// nicht.
+    ///
+    /// Da PlateCalculator OHNEHIN pro weight nur einen Eintrag liefert
+    /// (siehe `calculate()`-Implementation), ist das Dictionary-Grouping
+    /// hier auch unnoetig — direkt iterieren ist klarer + bug-frei.
+    private func perSideText(_ plates: [PlateConfig], unit: PlateCalculator.Unit) -> String {
+        let parts = plates
+            .sorted { $0.weight > $1.weight }
+            .map { p in "\(p.count)× \(p.weight.formattedWholeOrTwoDecimals)" }
+        return "Pro Seite: " + parts.joined(separator: " · ") + " \(unit.rawValue)"
+    }
+}
+
+// MARK: - DEL-058 LoggedSetValues
+
+/// Bundle, das alle Felder eines geloggten Satzes durch den `onLogged`-
+/// Callback wandern laesst. Vorher war's ein dreistelliges Tuple — DEL-058
+/// hat Cardio-Felder (`distanceKm` / `durationSeconds`) dazugeholt; statt
+/// jede Callsite umzuschreiben, packen wir alles in eine Wertestruktur.
+public struct LoggedSetValues: Sendable, Hashable {
+    public let weight: Double
+    public let reps: Int
+    public let rir: Float
+    public let distanceKm: Double?
+    public let durationSeconds: Int?
+
+    public init(
+        weight: Double,
+        reps: Int,
+        rir: Float,
+        distanceKm: Double? = nil,
+        durationSeconds: Int? = nil
+    ) {
+        self.weight = weight
+        self.reps = reps
+        self.rir = rir
+        self.distanceKm = distanceKm
+        self.durationSeconds = durationSeconds
+    }
+}
+#endif

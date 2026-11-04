@@ -56,11 +56,11 @@ permissions:
   contents: read
 
 env:
-  XCODE_PROJECT: 'FitnessApp.xcodeproj'
-  XCODE_SCHEME: 'FitnessApp'
+  XCODE_PROJECT: 'Deltiq.xcodeproj'
+  XCODE_SCHEME: 'Deltiq'
   APP_STORE_APP_ID: '6768627358'
-  BUNDLE_ID: 'com.atamya.FitnessApp'
-  WIDGET_BUNDLE_ID: 'com.atamya.FitnessApp.widgets'
+  BUNDLE_ID: 'com.deltiq.Deltiq'
+  WIDGET_BUNDLE_ID: 'com.deltiq.Deltiq.widgets'
 
 jobs:
   test-gate:

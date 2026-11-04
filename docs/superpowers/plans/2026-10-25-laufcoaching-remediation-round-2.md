@@ -6,7 +6,7 @@
 
 **Architecture:** Extend the already-established, reviewed `CardioRunProfile`-threading pattern (name-based zone detection, live re-derivation from the current profile, never a stored "truth") to a third display site (`SetRow`, the live/adopted training-day view). Give `PlanGenerator.cardioCandidates` two new, separately-testable pure decisions — run-type mix by `CardioGoal`, distance/duration scaling by `weeklyBaseVolumeKm` — alongside the existing pace-by-reference-time decision, reusing `CardioFeasibilityCalculator`'s existing per-goal volume table instead of inventing a second one. Fold feasibility evaluation into `CoachAdjustmentCardModel` itself so it carries a `suggestedGoal` the same way `CardioFeasibilityCardModel` already does, and make `CoachAdjustmentPreviewView`/`accept()` use and apply that suggested goal — closing the dead-end the first plan's final review found, without adding a second UI flow.
 
-**Tech Stack:** Swift 6, SwiftUI, SwiftData, XCTest — unchanged from the first plan. Same module split (`FitnessAppCore` pure / `FitnessAppData` SwiftData / `FitnessAppUI` SwiftUI).
+**Tech Stack:** Swift 6, SwiftUI, SwiftData, XCTest — unchanged from the first plan. Same module split (`DeltiqCore` pure / `DeltiqData` SwiftData / `DeltiqUI` SwiftUI).
 
 **Spec:** `docs/specs/claude-laufcoaching-integration.md` (original ticket), `docs/superpowers/plans/2026-10-25-laufcoaching-plan-integration.md` (first plan — this one builds directly on its `CardioRunProfile`/`CoachAdjustmentCardModel`/`PaceZoneCalculator` work, do not duplicate it), and the user's three written decisions below, which are now binding requirements, not suggestions.
 
@@ -42,11 +42,11 @@ An end-to-end pass (activate coach → pick a goal → generate a plan → open 
 
 **Corrected after investigation (see the SDD ledger for this plan — the controller escalated this to the user before proceeding):** the original version of this task assumed `CardioFeasibilityDayRow.subtitle` and `PlanBuilderView.scopeLine` already do name-based zone matching and that this task would extract it. That premise was FALSE — verified directly: both functions only ever forward `exercise.targetPaceMinutesPerKm`, a value `PlanGenerator` already computed once at generation time; neither needs to know WHICH zone (easy/tempo) produced it, so neither does any name comparison. **Do not touch either file in this task.** This task creates genuinely NEW logic, needed for the first time by Task 8, which has no such pre-computed pace value to read (a saved/adopted `Exercise` never persisted `targetPaceMinutesPerKm` — by design, see the Global Constraints).
 
-**Why name-matching is the right tool here (user decided this after an explicit escalation — do not re-litigate):** `PlanGenerator.cardioCandidates`'s `.easy` and `.tempo` branches build structurally IDENTICAL `ExerciseSpec`s (same `targetDurationMinutes` from `selection.sessionDurationMinutes`) — the exercise's `name` ("Easy Run" vs. "Long Run") is the ONLY signal that distinguishes them anywhere downstream. `Sources/FitnessAppCore/Analytics/CardioCoachingAdvisor.swift:10-15` documents this codebase's authors rejecting name-based matching for a DIFFERENT, unrelated inference ("is this day's training PURPOSE a long run" — unreliable because "Long Run" is just the tempo zone's catalog label, not evidence of actual duration/purpose). That concern does not transfer here: this task reads the exercise's stable, non-customizable anchor name (`Exercise.name`/`TrainingDayContentSnapshot.ExerciseEntry.nameSnapshot` — never `customName`/`customNameSnapshot`) to recover exactly which of `PlanGenerator`'s own two fixed zone labels produced it, for exactly the purpose `PlanGenerator` itself used that same name for (picking a pace factor) — a closed, fixed 2-string lookup, not an open-ended inference. The user confirmed this approach over adding a new structural zone field to `ExerciseSpec`/`Exercise`, which would be a data-model change for a distinction nothing else in the app currently needs.
+**Why name-matching is the right tool here (user decided this after an explicit escalation — do not re-litigate):** `PlanGenerator.cardioCandidates`'s `.easy` and `.tempo` branches build structurally IDENTICAL `ExerciseSpec`s (same `targetDurationMinutes` from `selection.sessionDurationMinutes`) — the exercise's `name` ("Easy Run" vs. "Long Run") is the ONLY signal that distinguishes them anywhere downstream. `Sources/DeltiqCore/Analytics/CardioCoachingAdvisor.swift:10-15` documents this codebase's authors rejecting name-based matching for a DIFFERENT, unrelated inference ("is this day's training PURPOSE a long run" — unreliable because "Long Run" is just the tempo zone's catalog label, not evidence of actual duration/purpose). That concern does not transfer here: this task reads the exercise's stable, non-customizable anchor name (`Exercise.name`/`TrainingDayContentSnapshot.ExerciseEntry.nameSnapshot` — never `customName`/`customNameSnapshot`) to recover exactly which of `PlanGenerator`'s own two fixed zone labels produced it, for exactly the purpose `PlanGenerator` itself used that same name for (picking a pace factor) — a closed, fixed 2-string lookup, not an open-ended inference. The user confirmed this approach over adding a new structural zone field to `ExerciseSpec`/`Exercise`, which would be a data-model change for a distinction nothing else in the app currently needs.
 
 **Files:**
-- Create: `Sources/FitnessAppCore/Analytics/CardioExerciseZone.swift`
-- Test: `Tests/FitnessAppCoreTests/CardioExerciseZoneTests.swift`
+- Create: `Sources/DeltiqCore/Analytics/CardioExerciseZone.swift`
+- Test: `Tests/DeltiqCoreTests/CardioExerciseZoneTests.swift`
 
 **Interfaces:**
 - Produces: `public enum CardioExerciseZone: Sendable, Equatable { case easy, tempo, other }` (NO `.interval` case — Task 8 never shows a pace for the interval/distance-based zone, per the existing, unchanged constraint that interval days carry no pace; don't model a case nothing will ever read) and `public static func CardioExerciseZone.forExerciseName(_ name: String) -> CardioExerciseZone`, matching on the exact strings from `PlanGenerator.swift`'s private `RunZone.exerciseName` (confirmed current values as of this plan's writing: `"Easy Run"` → `.easy`, `"Long Run"` → `.tempo`, anything else → `.other` — read the enum yourself before writing to confirm these haven't changed, don't hardcode purely from this description).
@@ -55,7 +55,7 @@ An end-to-end pass (activate coach → pick a goal → generate a plan → open 
 - [ ] **Step 1: Write failing tests** — `CardioExerciseZone.forExerciseName("Easy Run") == .easy`, `.forExerciseName("Long Run") == .tempo`, and at least two `.other` cases: an unrelated exercise name (e.g. "Bank Press") AND the interval exercise's own name (confirm its exact string in `RunZone.exerciseName` first) — the interval zone must map to `.other`, not get its own case.
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `swift build --target FitnessAppCoreTests` (pure Core, compiles and the probe/build approach works on this Windows machine per `local-swift-verification` memory)
+Run: `swift build --target DeltiqCoreTests` (pure Core, compiles and the probe/build approach works on this Windows machine per `local-swift-verification` memory)
 Expected: FAIL — `CardioExerciseZone` not found.
 
 - [ ] **Step 3: Implement `CardioExerciseZone`** in the new file.
@@ -63,7 +63,7 @@ Expected: FAIL — `CardioExerciseZone` not found.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Analytics/CardioExerciseZone.swift Tests/FitnessAppCoreTests/CardioExerciseZoneTests.swift
+git add Sources/DeltiqCore/Analytics/CardioExerciseZone.swift Tests/DeltiqCoreTests/CardioExerciseZoneTests.swift
 git commit -m "feat: add CardioExerciseZone, zone-by-name detection for the adopted-day pace display"
 ```
 
@@ -72,9 +72,9 @@ git commit -m "feat: add CardioExerciseZone, zone-by-name detection for the adop
 ## Task 2: Goal-driven run-type structure (Decision 2, part 1 — "goal shapes selection/structure")
 
 **Files:**
-- Modify: `Sources/FitnessAppCore/Analytics/CardioFeasibilityCalculator.swift` (reuse, do not duplicate, its existing `targetWeeklyVolumeKm(for:)`)
+- Modify: `Sources/DeltiqCore/Analytics/CardioFeasibilityCalculator.swift` (reuse, do not duplicate, its existing `targetWeeklyVolumeKm(for:)`)
 - Create or extend: a new pure function — your call whether this lives as a new static method on `CardioFeasibilityCalculator` (it already owns the per-goal volume table) or as a new small enum/type in the same file — e.g. `public static func runTypeMix(for goal: CardioGoal) -> [RunPurpose]` where `RunPurpose` is a small new Sendable enum (`.easy`, `.quality`, `.long` — your call on exact naming, but it must map cleanly onto the EXISTING `PlanGenerator.RunZone` cycle `[.easy, .interval, .tempo]`, not replace it — see Task 3).
-- Test: extend `Tests/FitnessAppCoreTests/CardioFeasibilityCalculatorTests.swift`
+- Test: extend `Tests/DeltiqCoreTests/CardioFeasibilityCalculatorTests.swift`
 
 **Interfaces:**
 - Consumes: `CardioGoal` (existing).
@@ -87,7 +87,7 @@ git commit -m "feat: add CardioExerciseZone, zone-by-name detection for the adop
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Analytics/CardioFeasibilityCalculator.swift Tests/FitnessAppCoreTests/CardioFeasibilityCalculatorTests.swift
+git add Sources/DeltiqCore/Analytics/CardioFeasibilityCalculator.swift Tests/DeltiqCoreTests/CardioFeasibilityCalculatorTests.swift
 git commit -m "feat: derive a goal-specific run-type mix, separate from pace and volume"
 ```
 
@@ -96,9 +96,9 @@ git commit -m "feat: derive a goal-specific run-type mix, separate from pace and
 ## Task 3: Volume-aware distance/duration scaling (Decision 2, part 2 — "known weekly volume shapes volume")
 
 **Files:**
-- Modify: `Sources/FitnessAppCore/Programs/PlanGenerator.swift` (`cardioCandidates`, the `.running` branch)
-- Modify: `Sources/FitnessAppCore/Analytics/CardioRunProfile.swift` is NOT touched — `weeklyBaseVolumeKm` already exists on it since Task 2 of the first plan; this task only makes `cardioCandidates` finally READ it (confirmed by the first plan's final review: today nothing reads `.goal`/`.weeklyBaseVolumeKm` from `CardioRunProfile`, only `.current5kReferenceSeconds`).
-- Test: extend `Tests/FitnessAppCoreTests/PlanGeneratorTests.swift`
+- Modify: `Sources/DeltiqCore/Programs/PlanGenerator.swift` (`cardioCandidates`, the `.running` branch)
+- Modify: `Sources/DeltiqCore/Analytics/CardioRunProfile.swift` is NOT touched — `weeklyBaseVolumeKm` already exists on it since Task 2 of the first plan; this task only makes `cardioCandidates` finally READ it (confirmed by the first plan's final review: today nothing reads `.goal`/`.weeklyBaseVolumeKm` from `CardioRunProfile`, only `.current5kReferenceSeconds`).
+- Test: extend `Tests/DeltiqCoreTests/PlanGeneratorTests.swift`
 
 **Interfaces:**
 - Consumes: `CardioRunProfile.goal`/`.weeklyBaseVolumeKm` (existing fields, newly read), Task 2's run-type-mix function, `CardioFeasibilityCalculator.targetWeeklyVolumeKm(for:)` (existing).
@@ -111,7 +111,7 @@ git commit -m "feat: derive a goal-specific run-type mix, separate from pace and
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Programs/PlanGenerator.swift Tests/FitnessAppCoreTests/PlanGeneratorTests.swift
+git add Sources/DeltiqCore/Programs/PlanGenerator.swift Tests/DeltiqCoreTests/PlanGeneratorTests.swift
 git commit -m "feat: let a known cardio goal and weekly volume shape generated run structure, not just pace"
 ```
 
@@ -120,8 +120,8 @@ git commit -m "feat: let a known cardio goal and weekly volume shape generated r
 ## Task 4: Onboarding copy does not overpromise
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/OnboardingView.swift` (the `runCoachCardioGoal` question added by the first plan's Task 5 — check its exact current copy/keys first)
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings` only if the existing copy needs correcting (likely NOT a new key — check first whether the existing `onboarding.runCoachGoal.subtitle` already avoids over-promising, or needs a word changed)
+- Modify: `Sources/DeltiqUI/OnboardingView.swift` (the `runCoachCardioGoal` question added by the first plan's Task 5 — check its exact current copy/keys first)
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings` only if the existing copy needs correcting (likely NOT a new key — check first whether the existing `onboarding.runCoachGoal.subtitle` already avoids over-promising, or needs a word changed)
 
 **Interfaces:** none new.
 
@@ -152,8 +152,8 @@ git commit -m "docs: record the three binding remediation decisions for laufcoac
 ## Task 6: Fold feasibility evaluation into CoachAdjustmentCardModel (Decision 3, part 1 — one model carries the suggested goal)
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Cardio/CoachAdjustmentCardModel.swift`
-- Test: extend `Tests/FitnessAppUITests/CoachAdjustmentCardModelTests.swift`
+- Modify: `Sources/DeltiqUI/Cardio/CoachAdjustmentCardModel.swift`
+- Test: extend `Tests/DeltiqUITests/CoachAdjustmentCardModelTests.swift`
 
 **Interfaces:**
 - Consumes: `CardioFeasibilityCalculator.evaluate(goal:raceDate:weeklyBaseVolumeKm:)` (existing — already used by `CardioFeasibilityCardModel.make`, now ALSO used here).
@@ -166,7 +166,7 @@ git commit -m "docs: record the three binding remediation decisions for laufcoac
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Cardio/CoachAdjustmentCardModel.swift Tests/FitnessAppUITests/CoachAdjustmentCardModelTests.swift
+git add Sources/DeltiqUI/Cardio/CoachAdjustmentCardModel.swift Tests/DeltiqUITests/CoachAdjustmentCardModelTests.swift
 git commit -m "feat: CoachAdjustmentCardModel now carries the feasibility-suggested goal"
 ```
 
@@ -175,9 +175,9 @@ git commit -m "feat: CoachAdjustmentCardModel now carries the feasibility-sugges
 ## Task 7: Preview shows and accept() applies the suggested goal (Decision 3, part 2 — close the dead end)
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Cardio/CoachAdjustmentCardModel.swift` (`accept(plan:profile:in:now:calendar:)`)
-- Modify: `Sources/FitnessAppUI/Cardio/CoachAdjustmentPreviewView.swift` (the preview copy/day generation)
-- Test: extend `Tests/FitnessAppUITests/CoachAdjustmentCardModelTests.swift` and (if the preview's own content is covered by a test file) its test file too
+- Modify: `Sources/DeltiqUI/Cardio/CoachAdjustmentCardModel.swift` (`accept(plan:profile:in:now:calendar:)`)
+- Modify: `Sources/DeltiqUI/Cardio/CoachAdjustmentPreviewView.swift` (the preview copy/day generation)
+- Test: extend `Tests/DeltiqUITests/CoachAdjustmentCardModelTests.swift` and (if the preview's own content is covered by a test file) its test file too
 
 **Interfaces:**
 - Consumes: Task 6's new `proposedGoal` property.
@@ -192,7 +192,7 @@ git commit -m "feat: CoachAdjustmentCardModel now carries the feasibility-sugges
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Cardio/CoachAdjustmentCardModel.swift Sources/FitnessAppUI/Cardio/CoachAdjustmentPreviewView.swift Tests/FitnessAppUITests/CoachAdjustmentCardModelTests.swift
+git add Sources/DeltiqUI/Cardio/CoachAdjustmentCardModel.swift Sources/DeltiqUI/Cardio/CoachAdjustmentPreviewView.swift Tests/DeltiqUITests/CoachAdjustmentCardModelTests.swift
 git commit -m "fix: CoachAdjustmentPreviewView previews and applies the suggested goal, not the stale one"
 ```
 
@@ -201,9 +201,9 @@ git commit -m "fix: CoachAdjustmentPreviewView previews and applies the suggeste
 ## Task 8: Pace persists onto the adopted training day (Decision 1)
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Workout/SetRow.swift` (the `cardioSetRow`/`cardioPaceLabel`/placeholder area)
-- Modify: `Sources/FitnessAppUI/Workout/ExerciseCard.swift` and/or `Sources/FitnessAppUI/Workout/ActiveWorkoutView.swift` — whichever is the correct place to thread `current5kReferenceSeconds: Int?` down from the existing `@Query private var profiles: [UserBodyProfile]` in `ActiveWorkoutView.swift:89` through to `SetRow` (read both files' existing parameter-threading for other per-user settings, e.g. how `weight_unit`/similar display settings already reach `SetRow`, and follow the SAME existing pattern rather than inventing a new one — this is a read-before-you-write task, the exact threading path is not fully mapped out in this plan).
-- Test: new `Tests/FitnessAppUITests/SetRowTargetPaceTests.swift` (source-introspection style, same pattern as the rest of this repo's UI tests)
+- Modify: `Sources/DeltiqUI/Workout/SetRow.swift` (the `cardioSetRow`/`cardioPaceLabel`/placeholder area)
+- Modify: `Sources/DeltiqUI/Workout/ExerciseCard.swift` and/or `Sources/DeltiqUI/Workout/ActiveWorkoutView.swift` — whichever is the correct place to thread `current5kReferenceSeconds: Int?` down from the existing `@Query private var profiles: [UserBodyProfile]` in `ActiveWorkoutView.swift:89` through to `SetRow` (read both files' existing parameter-threading for other per-user settings, e.g. how `weight_unit`/similar display settings already reach `SetRow`, and follow the SAME existing pattern rather than inventing a new one — this is a read-before-you-write task, the exact threading path is not fully mapped out in this plan).
+- Test: new `Tests/DeltiqUITests/SetRowTargetPaceTests.swift` (source-introspection style, same pattern as the rest of this repo's UI tests)
 
 **Interfaces:**
 - Consumes: Task 1's `CardioExerciseZone.forExerciseName(_:)`, the existing `PaceZoneCalculator.easyPaceMinutesPerKm`/`.tempoPaceMinutesPerKm`, `content.nameSnapshot`/`content.isCardio`/`content.targetDurationMinutes` (existing, on `TrainingDayContentSnapshot.ExerciseEntry`).
@@ -218,7 +218,7 @@ git commit -m "fix: CoachAdjustmentPreviewView previews and applies the suggeste
 - [ ] **Step 7: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Workout/SetRow.swift Sources/FitnessAppUI/Workout/ExerciseCard.swift Sources/FitnessAppUI/Workout/ActiveWorkoutView.swift Tests/FitnessAppUITests/SetRowTargetPaceTests.swift
+git add Sources/DeltiqUI/Workout/SetRow.swift Sources/DeltiqUI/Workout/ExerciseCard.swift Sources/DeltiqUI/Workout/ActiveWorkoutView.swift Tests/DeltiqUITests/SetRowTargetPaceTests.swift
 git commit -m "feat: show the live target pace on the adopted training day, not only in previews"
 ```
 
@@ -230,5 +230,5 @@ git commit -m "feat: show the live target pace on the adopted training day, not 
 
 - [ ] **Step 1: Run `python .scripts/dead_catalog_v3.py`**, confirm "UNUSED: 0".
 - [ ] **Step 2: Trigger Apple CI**, confirm green, with explicit attention to: every test file touched by Tasks 1-8, PLUS the full non-regression list from the first plan's Task 10 (same 16 suites — they must still be green), PLUS the first plan's own Review Focus 1-5 tests (must still pass unchanged).
-- [ ] **Step 3: Write and verify one new, explicit end-to-end scenario test** (or a small set of them) that exercises the literal sequence the user named: coach activation → goal selection → plan generation → opening the adjustment preview → accepting → inspecting the adopted day's content. This cannot be a single XCTest method spanning SwiftUI screens (no render harness in this repo) — compose it as a sequence of the already-existing, now-extended model-level calls that back each step (`UserBodyProfile.setEnduranceModality`/`cardioGoal`/`cardioCoachingEnabled` → `GoalDrivenPlanSelectionBuilder.makeSelections(..., cardioRunProfile:)` → `PlanGenerator.generate` → `CoachAdjustmentCardModel.make`/`.proposedGoal` → `.accept(...)` → re-read the resulting `TrainingDay`'s content and assert it matches the proposed goal's structure/pace) in ONE integration-style test in `Tests/FitnessAppDataTests/` (needs a real `ModelContainer`, follow `PlanGeneratorInstantiatorTests`'s established setup pattern) rather than a chain of mocks — this is the closest equivalent to the user's requested end-to-end check that this repo's test infrastructure can express.
+- [ ] **Step 3: Write and verify one new, explicit end-to-end scenario test** (or a small set of them) that exercises the literal sequence the user named: coach activation → goal selection → plan generation → opening the adjustment preview → accepting → inspecting the adopted day's content. This cannot be a single XCTest method spanning SwiftUI screens (no render harness in this repo) — compose it as a sequence of the already-existing, now-extended model-level calls that back each step (`UserBodyProfile.setEnduranceModality`/`cardioGoal`/`cardioCoachingEnabled` → `GoalDrivenPlanSelectionBuilder.makeSelections(..., cardioRunProfile:)` → `PlanGenerator.generate` → `CoachAdjustmentCardModel.make`/`.proposedGoal` → `.accept(...)` → re-read the resulting `TrainingDay`'s content and assert it matches the proposed goal's structure/pace) in ONE integration-style test in `Tests/DeltiqDataTests/` (needs a real `ModelContainer`, follow `PlanGeneratorInstantiatorTests`'s established setup pattern) rather than a chain of mocks — this is the closest equivalent to the user's requested end-to-end check that this repo's test infrastructure can express.
 - [ ] **Step 4: Commit** only if Steps 1-3 required a fix; otherwise this task closes the plan with no commit of its own.

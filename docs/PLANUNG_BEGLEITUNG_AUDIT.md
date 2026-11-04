@@ -51,7 +51,7 @@ läuft ausschließlich auf Core-`DaySpec`/`ExerciseSpec` (Template-Ebene) und wi
 `ProgramTemplatePickerView.swift:141–177,331–336` und `OnboardingView.swift:1900–1910` aufgerufen —
 beides reine Vorschau-/Neuerstellungs-Pfade. Gegen einen bereits persistierten `TrainingPlan`/
 `TrainingDay` (SwiftData) läuft er nie. Konkreter Beleg: `grep -rn "onChange(of: profile\." Sources/
-FitnessAppUI` liefert **genau einen** Treffer im gesamten Modul —
+DeltiqUI` liefert **genau einen** Treffer im gesamten Modul —
 `ProfileEditorView.swift:190` für `profile.environment`. Für `profile.equipmentProfile` existiert
 keinerlei Reaktion. Ändert ein Nutzer z. B. die Bank von „vorhanden" auf „nicht vorhanden", bleibt
 jeder bestehende Plan unverändert und ungeprüft, bis er manuell einen neuen Plan baut.
@@ -268,7 +268,7 @@ durchführbar, bleibt offen zu melden.
 ### P2 — Gemeinsamen Planungskontext und Wochenentwurf herstellen
 
 **P2.0 Datenvertrag für Planungskontext und Wochenentwurf (eigener Task, vor P2.1–P2.4)**
-Komponenten: neue reine Werttypen in FitnessAppCore (kein `ModelContext`-Bezug). Skizze:
+Komponenten: neue reine Werttypen in DeltiqCore (kein `ModelContext`-Bezug). Skizze:
 
 ```swift
 public struct PlanningContext {
@@ -302,7 +302,7 @@ Bezug) — dies ist der erste Core-Baustein von P2 und sollte vor jeder UI-Arbei
 Komponenten: `PlanGeneratorInstantiator.swift` (`makeTemplate`). Abhängigkeiten: keine. Abnahme: ein
 über den Builder mit Home-Gym-Equipment erzeugter Plan bekommt ein zur Equipment-Auswahl passendes
 `targetEnvironment`, `EquipmentVariant`/`ResolvedPlanSelection` greifen auch für Builder-Pläne.
-Datenmodell: keine. Testplattform: Datei liegt in FitnessAppData (SwiftData-gegated) → Apple-CI/Gerät;
+Datenmodell: keine. Testplattform: Datei liegt in DeltiqData (SwiftData-gegated) → Apple-CI/Gerät;
 reiner Auswahl-Algorithmus ließe sich als Core-Funktion extrahieren und wäre dann Linux-testbar
 (Empfehlung bei Umsetzung).
 
@@ -311,10 +311,10 @@ Komponenten: `CoachingTypes.swift`. Abhängigkeiten: keine. Abnahme: neuer Fall 
 RawValues/Profile unverändert lesbar, bestehender Test „jedes TrainingGoal hat mindestens ein
 Template" liefert für `.endurance` ein Ergebnis statt zu crashen. Datenmodell:
 `TrainingGoal`-RawRepresentable bekommt 6. Fall, rein additiv, keine Migration. Testplattform:
-FitnessAppCore, kein SwiftUI/SwiftData-Bezug → **echter Linux-Unit-Test möglich**.
+DeltiqCore, kein SwiftUI/SwiftData-Bezug → **echter Linux-Unit-Test möglich**.
 
 **P2.3 Gemeinsamer Adopt-Pfad statt vier getrennter Commit-Implementierungen**
-Komponenten: neuer Service in FitnessAppData, ersetzt Teile von `OnboardingView.finishOnboarding`,
+Komponenten: neuer Service in DeltiqData, ersetzt Teile von `OnboardingView.finishOnboarding`,
 `CardioFeasibilityCardModel.accept`/`.acceptCustom`, `PlanBuilderView.adoptPlan()`. Abhängigkeiten:
 P2.1. Abnahme: A11 (kein doppeltes/verwaistes Anlegen), B06 (Mehrfach-Tap-Schutz), alle vier
 Call-Sites nutzen denselben Pfad. Datenmodell: keine (reine Konsolidierung). Testplattform:
@@ -380,7 +380,7 @@ für `environment`). Abhängigkeiten: P2. Abnahme: Änderung löst überhaupt er
 (Vorbedingung für C03/C05). Datenmodell: keine. Testplattform: Apple-CI/Gerät.
 
 **P4.2 Equipment-Impact-Analyse gegen Bestandspläne**
-Komponenten: neue Brücke in FitnessAppData — wendet `PlanEquipmentChecker`/`ExerciseRequirement`
+Komponenten: neue Brücke in DeltiqData — wendet `PlanEquipmentChecker`/`ExerciseRequirement`
 (bisher nur gegen Core-`DaySpec`/`ExerciseSpec`) auf echte persistierte `TrainingDay`/`Exercise` an.
 Abhängigkeiten: P4.1, Konfliktlösung 2 (präzises Modell statt `PlanEnvironmentMigrator`). Abnahme: C03
 (betroffene Übung erkannt + begründeter Ersatz), C04 (Präferenz = optionale Neugewichtung, kein
@@ -431,7 +431,7 @@ Review-Lauf auf einem `nil`-Plan meldet ausdrücklich „neue Beobachtungsphase"
 Laufzeit; CSV-Roundtrip mit und ohne das neue Feld. Datenmodell: `TrainingPlan` + `activatedAt:
 Date?` (additiv, `nil` ist ein gültiger Dauerzustand, kein Platzhalter); Export +
 `plan_activated_at`-Spalte (leer bei `nil`). Testplattform: SwiftData-Modell Apple-CI/Gerät;
-CSV-Parsing-Anteil (reine String-Logik in `CSVReader`/`CSVWriter`, FitnessAppCore) sowie die
+CSV-Parsing-Anteil (reine String-Logik in `CSVReader`/`CSVWriter`, DeltiqCore) sowie die
 „`nil` → neue Beobachtungsphase"-Entscheidungslogik selbst (reine Funktion, kein SwiftData-Bezug)
 Linux-testbar.
 
@@ -494,15 +494,15 @@ Paket: P1 — Bestehende Fehler und Regressionen absichern
 Implementiert: P1.2 RIR strukturelle Spalten-Neugestaltung vollständig umgesetzt.
 Noch nicht implementiert: nichts innerhalb P1 — P1.1 war bereits in P0 verifiziert.
 Geänderte Komponenten:
-  - Sources/FitnessAppUI/Workout/SetRow.swift: neues `SetRowColumns`-Enum (geteilte
+  - Sources/DeltiqUI/Workout/SetRow.swift: neues `SetRowColumns`-Enum (geteilte
     Spaltenmetriken), `compactSetRow` auf `ViewThatFits(singleLineInputRow, twoLineInputRow)`
     umgestellt, `rirCapsule` entkompaktiert (kein "R"-Präfix, `.fixedSize()`, feste Spaltenbreite,
     bleibt bei aufgeklapptem Regler an fester Position), `weightInput`-Overlay entfernt, neue
     `plateColumn` (eigene Spalte statt Overlay), `rirSliderRow` ohne eingebettete Kapsel.
-  - Sources/FitnessAppUI/Workout/ExerciseCard.swift: neue `setRowColumnHeader`-Zeile (Satz/kg/
+  - Sources/DeltiqUI/Workout/ExerciseCard.swift: neue `setRowColumnHeader`-Zeile (Satz/kg/
     Wdh/RIR, einmal pro Übung, nur für Strength/Bodyweight), nutzt dieselben `SetRow.
     SetRowColumns`-Breiten wie die Satzzeilen.
-  - Sources/FitnessAppUI/Resources/Localizable.xcstrings: 3 neue Keys (`set.column.setLabel`,
+  - Sources/DeltiqUI/Resources/Localizable.xcstrings: 3 neue Keys (`set.column.setLabel`,
     `set.column.rirLabel`, `set.column.header.accessibilityLabel`), DE/EN/TR vollständig, mit
     bestehendem `deltiqLabel()`-Stil (identisch zu KG/WDH/PACE) statt eigenem Styling.
 Neue/geänderte Datenfelder: keine (reines UI, kein SwiftData-Schema berührt).
@@ -609,14 +609,14 @@ Core-Werttypen, parallel zu P1 autorisiert, ausdrücklich ohne breite UI- oder
 Persistenzumstellung).
 
 **Implementiert:**
-- `Sources/FitnessAppCore/Planning/PlanningContext.swift`: `EnduranceModality` (`.running/.cycling/.both`,
+- `Sources/DeltiqCore/Planning/PlanningContext.swift`: `EnduranceModality` (`.running/.cycling/.both`,
   mit `trainingTypeKinds`-Brücke zu den bestehenden `TrainingTypeKind`-Cardio-Fällen — kein
   Parallel-Vokabular), `SchedulingMode` (`.fixedWeekdays([Int])/.flexibleOrder`, spiegelt
   `PlanGeneratorInput.usesFixedWeekdays/fixedWeekdays` 1:1), `PlanningMode`
   (`.onboarding/.builderCreate/.builderEdit/.profileAdaptation`), `PlanningContext` selbst
   sowie `PlanningContextIssue` + die berechnete `issues`/`isValid`-Validierung und
   `effectiveEquipment` (delegiert an den bestehenden `EquipmentPlanningResolver`).
-- `Sources/FitnessAppCore/Planning/PlanDraft.swift`: `DraftDayID`/`DraftExerciseID` (UUID-basierte
+- `Sources/DeltiqCore/Planning/PlanDraft.swift`: `DraftDayID`/`DraftExerciseID` (UUID-basierte
   stabile Identitäten), `DraftExercise`, `DraftDay` (mit `isContentFixed`/`isPositionFixed` je Tag),
   `PlanDraft` mit `init(generated:)`, `resolvedDaySpecs`, `moveDay`, `replaceContent`,
   `setContentFixed`/`setPositionFixed`.
@@ -627,7 +627,7 @@ Persistenzumstellung).
 - **Drei bewusste Korrekturen gegenüber der Skizze im P2.0-Abschnitt dieses Dokuments** (beim
   Umsetzen in echten Code gefunden, nicht Teil der ursprünglich gebilligten Skizze):
   1. `PlanningMode.standaloneBuilder(editing: TrainingPlan?)` hätte nicht kompiliert —
-     `TrainingPlan` ist ein SwiftData-`@Model` (FitnessAppData/FitnessAppUI), Core ist
+     `TrainingPlan` ist ein SwiftData-`@Model` (DeltiqData/DeltiqUI), Core ist
      ausdrücklich SwiftData-frei (siehe `DaySpec.swift`-Dateikommentar). `PlanningMode` trägt
      jetzt keine Plan-Referenz mehr, nur die Betriebsart; welcher Plan bearbeitet wird, hält
      ausschließlich der Aufrufer. Zugleich ergänzt um den in der Vorgabe genannten, in der
@@ -653,16 +653,16 @@ deshalb bewusst offengelassen für P3. `TrainingGoal.endurance` existiert weiter
 (P2.2, separat).
 
 **Geänderte Komponenten:** zwei neue Dateien (`PlanningContext.swift`, `PlanDraft.swift`) in
-neuem Ordner `Sources/FitnessAppCore/Planning/`. Keine bestehende Datei verändert — `DaySpec`/
+neuem Ordner `Sources/DeltiqCore/Planning/`. Keine bestehende Datei verändert — `DaySpec`/
 `ExerciseSpec`/`EquipmentPlanningContext`/`PlanGeneratorInput` bleiben exakt unangetastet.
 
 **Neue/geänderte Datenfelder:** keine SwiftData-/Persistenzänderung. Alle neuen Typen sind reine
 In-Memory-Werttypen ohne `Codable` (bewusst konsistent mit `DaySpec`/`ExerciseSpec`, die ebenfalls
 nicht `Codable` sind — nichts verlangt aktuell Serialisierung).
 
-**Tests hinzugefügt:** `Tests/FitnessAppCoreTests/PlanningContextTests.swift` (16 Tests: alle drei
+**Tests hinzugefügt:** `Tests/DeltiqCoreTests/PlanningContextTests.swift` (16 Tests: alle drei
 Invarianten je mit Positiv-/Negativ-Fall, `EnduranceModality`-Brücke, Vollständig-gültig-Fall) und
-`Tests/FitnessAppCoreTests/PlanDraftTests.swift` (12 Tests: Sortierung/ID-Vergabe bei
+`Tests/DeltiqCoreTests/PlanDraftTests.swift` (12 Tests: Sortierung/ID-Vergabe bei
 `init(generated:)`, `sequenceIndex`-Neuvergabe aus Array-Position, vollständiger Feld-Rundtrip,
 Reorder inkl. Clamping, beide Fixierungen inkl. ihrer wechselseitigen Unabhängigkeit, unbekannte ID).
 
@@ -679,7 +679,7 @@ senkt das Risiko gegenüber P1, ersetzt aber nicht die Prüfung unten.
 **Apple-Build/CI:** nicht durchgeführt — offen. Keine `canImport`-Gates bedeutet ein geringeres
 Risiko als bei P1 (kein SwiftUI/SwiftData-Code, der auf Linux syntaktisch ungeprüft bliebe), aber
 keinen Entfall der Prüfung: der Core-Code muss zusätzlich innerhalb des tatsächlichen,
-mehrteiligen Apple-App-Builds (Xcode/Codemagic, zusammen mit FitnessAppData/FitnessAppUI und den
+mehrteiligen Apple-App-Builds (Xcode/Codemagic, zusammen mit DeltiqData/DeltiqUI und den
 übrigen Targets) integriert kompilieren — das wurde aus dieser Session heraus nicht geprüft und
 bleibt bis zu einem geteilten Codemagic-Log offen.
 
@@ -730,9 +730,9 @@ sieben Tage, und dieser Vertrag kennt kein Konzept von „mehrere Einheiten an e
 außerhalb 1...7 wird als expliziter Validierungsfehler gemeldet, nie still auf 7 gekappt oder
 stillschweigend als Mehrfacheinheiten-Wunsch interpretiert.
 
-**Geänderte Komponenten:** `Sources/FitnessAppCore/Planning/PlanDraft.swift` (`reorder(to:)` neu,
+**Geänderte Komponenten:** `Sources/DeltiqCore/Planning/PlanDraft.swift` (`reorder(to:)` neu,
 `respectsPositionFixations` privat, `moveDay` auf `reorder(to:)` umgestellt, `DraftDay.
-isPositionFixed`-Dokumentation ergänzt), `Sources/FitnessAppCore/Planning/PlanningContext.swift`
+isPositionFixed`-Dokumentation ergänzt), `Sources/DeltiqCore/Planning/PlanningContext.swift`
 (`PlanningContextIssue.daysPerWeekOutOfRange` ersetzt `daysPerWeekNotPositive`, neuer Fall
 `sessionDurationMinutesNotPositive`, `issues` erweitert, Feld-Dokumentation ergänzt).
 
@@ -835,16 +835,16 @@ Lücke ist ab sofort eine eigene, verbindlich nachverfolgte Anschlussaufgabe (ni
 Fußnote): „Equipment-basierte Übungsauswahl/Substitution für generierte/Builder-Pläne real
 verbinden", siehe Task-Tracking. Sie gehört zu P3/P4, nicht zu P2.1.
 
-**Geänderte Komponenten:** `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` (`build`,
-`makeTemplate`), `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` (neue `@Query`, neue
-`equipmentPlanningContext`, Aufrufstelle), `Sources/FitnessAppUI/Cardio/
-CardioFeasibilityCardModel.swift` (beide Aufrufstellen), `Sources/FitnessAppUI/OnboardingView.swift`
+**Geänderte Komponenten:** `Sources/DeltiqData/PlanGeneratorInstantiator.swift` (`build`,
+`makeTemplate`), `Sources/DeltiqUI/Workout/PlanBuilderView.swift` (neue `@Query`, neue
+`equipmentPlanningContext`, Aufrufstelle), `Sources/DeltiqUI/Cardio/
+CardioFeasibilityCardModel.swift` (beide Aufrufstellen), `Sources/DeltiqUI/OnboardingView.swift`
 (Custom-Plan-Aufrufstelle).
 
 **Neue/geänderte Datenfelder:** keine — reine Parameter-/Verdrahtungs-Korrektur, keine
 SwiftData-Schema-Änderung.
 
-**Tests hinzugefügt:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`: neuer
+**Tests hinzugefügt:** `Tests/DeltiqDataTests/PlanGeneratorInstantiatorTests.swift`: neuer
 `buildPlan(...)`-Test-Wrapper (neutraler Testwert nur für die 8 bestehenden, von Environment/
 Equipment unabhängigen Tests — diese direkt mit-aktualisiert, da die Produktionssignatur jetzt
 Pflichtparameter verlangt) plus 6 neue Tests: die Kern-Regression (expliziter Wert ≠ `.gym`) und
@@ -974,11 +974,11 @@ der Fall unveraendert gueltig/getestet/katalog-angebunden.
    `.endurance` jetzt explizit vom `.hybrid`-Fallback aus; es faellt stattdessen auf den leeren
    String (→ UI blendet die Insight-Card aus) statt auf eine inhaltlich unpassende Empfehlung.
 
-**Geänderte Komponenten:** `Sources/FitnessAppCore/Coaching/CoachingTypes.swift`,
-`Sources/FitnessAppCore/Programs/ProgramTemplates.swift` (nur `hybrid_balanced.targetGoals`),
-`Sources/FitnessAppUI/Localization/DomainEnums+Localization.swift`,
-`Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift`,
-`Sources/FitnessAppUI/Resources/Localizable.xcstrings`.
+**Geänderte Komponenten:** `Sources/DeltiqCore/Coaching/CoachingTypes.swift`,
+`Sources/DeltiqCore/Programs/ProgramTemplates.swift` (nur `hybrid_balanced.targetGoals`),
+`Sources/DeltiqUI/Localization/DomainEnums+Localization.swift`,
+`Sources/DeltiqUI/Baseline/BaselineCheckFlowView.swift`,
+`Sources/DeltiqUI/Resources/Localizable.xcstrings`.
 
 **Neue/geänderte Datenfelder:** keine Migration — `TrainingGoal` bleibt `String`-RawRepresentable,
 `.endurance` ist rein additiv; bestehende `trainingGoalRaw`-Werte unverändert lesbar.
@@ -998,7 +998,7 @@ die Abnahme bereits ab.
 - **UI (`DomainEnums+Localization.swift`, `BaselineCheckFlowView.swift`): NUR Syntax-Ebene
   geprüft, keine echte Kompilierung.** Beide Dateien stehen hinter `#if canImport(SwiftUI)`; direkt
   verifiziert (`swift /tmp/swuicheck.swift` mit `import SwiftUI`): „no such module 'SwiftUI'" auf
-  diesem Linux-Toolchain. `swift build` meldet zwar "Compiling FitnessAppUI
+  diesem Linux-Toolchain. `swift build` meldet zwar "Compiling DeltiqUI
   DomainEnums+Localization.swift" und build-complete, das beweist aber nur, dass die Datei
   lexikalisch gültiges Swift ist (Klammerbalance etc.) — der Dateikörper selbst wird NICHT
   semantisch geprüft (keine Typ-/Exhaustiveness-Prüfung der beiden erweiterten `switch`-
@@ -1095,12 +1095,12 @@ ausdrücklich offen (jetzt als Task #194 verbindlich nachverfolgt, siehe Punkt 2
 Beide bleiben die bereits in der P2.2-Nachtrag-Liste offengelassenen Fragen — fachlicher Bedarf
 und betroffene Fälle sind nicht nachgewiesen, also nicht vorab implementiert.
 
-**Geänderte Komponenten:** `Sources/FitnessAppUI/Workout/PlanBuilderView.swift`,
-`Sources/FitnessAppCore/Coaching/CoachingTypes.swift`,
-`Sources/FitnessAppUI/Localization/DomainEnums+Localization.swift`,
-`Sources/FitnessAppUI/OnboardingView.swift`, `Sources/FitnessAppUI/Settings/ProfileEditorView.swift`,
-`Sources/FitnessAppUI/Coaching/CoachingMessageProvider.swift`,
-`Sources/FitnessAppUI/Resources/Localizable.xcstrings`, `docs/PLANUNG_BEGLEITUNG_AUDIT.md`.
+**Geänderte Komponenten:** `Sources/DeltiqUI/Workout/PlanBuilderView.swift`,
+`Sources/DeltiqCore/Coaching/CoachingTypes.swift`,
+`Sources/DeltiqUI/Localization/DomainEnums+Localization.swift`,
+`Sources/DeltiqUI/OnboardingView.swift`, `Sources/DeltiqUI/Settings/ProfileEditorView.swift`,
+`Sources/DeltiqUI/Coaching/CoachingMessageProvider.swift`,
+`Sources/DeltiqUI/Resources/Localizable.xcstrings`, `docs/PLANUNG_BEGLEITUNG_AUDIT.md`.
 
 **Neue/geänderte Datenfelder:** keine SwiftData-Schema-Änderung. Zwei neue Lokalisierungs-Keys
 (`planBuilder.error.noProfile.title`/`.message`), zwei umbenannte (`coaching.goal.endurance.label`/
@@ -1234,16 +1234,16 @@ keine neue `ExerciseSubstitutionRules`-Ausnahme. Task #194 (Equipment-Substituti
 Pläne) bleibt unverändert offen — P2.3 hat daran nichts repariert oder verschoben, die Lücke ist
 weiterhin sichtbar und nachverfolgt.
 
-**Geänderte Komponenten:** `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` (`createPlan`,
-`recalculate`-Guard, `hasActiveSession`), `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift`,
-`Sources/FitnessAppUI/Workout/PlanBuilderView.swift`, `Sources/FitnessAppUI/OnboardingView.swift`,
-`Sources/FitnessAppUI/Workout/PlansListView.swift` (Doppel-Tap-Schutz + Querverweis-Kommentare),
-`Sources/FitnessAppUI/Settings/ProfileEditorView.swift` (Doppel-Tap-Schutz).
+**Geänderte Komponenten:** `Sources/DeltiqData/PlanGeneratorInstantiator.swift` (`createPlan`,
+`recalculate`-Guard, `hasActiveSession`), `Sources/DeltiqUI/Cardio/CardioFeasibilityCardModel.swift`,
+`Sources/DeltiqUI/Workout/PlanBuilderView.swift`, `Sources/DeltiqUI/OnboardingView.swift`,
+`Sources/DeltiqUI/Workout/PlansListView.swift` (Doppel-Tap-Schutz + Querverweis-Kommentare),
+`Sources/DeltiqUI/Settings/ProfileEditorView.swift` (Doppel-Tap-Schutz).
 
 **Neue/geänderte Datenfelder:** keine — reine Verdrahtungs-/Schutz-Korrektur, keine
 SwiftData-Schema-Änderung.
 
-**Tests hinzugefügt:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`:
+**Tests hinzugefügt:** `Tests/DeltiqDataTests/PlanGeneratorInstantiatorTests.swift`:
 `testCreatePlanResolvesEnvironmentFromProfile`, `testCreatePlanReturnsNilWhenGeneratorProducesNoDays`
 (neuer Einstiegspunkt, gleiche Garantien wie die bestehenden `build`-Tests).
 **Nachtrag (P2.3-Nachbesserung):** `testRecalculateSkipsDayWithActiveSession` und
@@ -1257,7 +1257,7 @@ bewies nur "Zeile nicht gelöscht", nicht "Historie unverändert") und wurden du
 unten für die vollständige Begründung.
 
 **Tests tatsächlich ausgeführt — WICHTIG, anders als bei P2.1/P2.2: P2.3 berührt KEINE einzige
-Core-Datei.** Jede Änderung dieses Pakets liegt in `FitnessAppData`/`FitnessAppUI` — beide
+Core-Datei.** Jede Änderung dieses Pakets liegt in `DeltiqData`/`DeltiqUI` — beide
 Dateien UND beide neuen Testdateien stehen hinter `#if canImport(SwiftData)`
 (teils zusätzlich `canImport(SwiftUI)`) und werden auf diesem Linux-Toolchain NICHT geparst/
 typgeprüft (nachweislich: `swift build`/`swift build --build-tests` melden "Build complete", aber
@@ -1399,19 +1399,19 @@ Funktionalität.
 parallel, forderte es nicht). Keine neue UI-Übernahme-Funktionalität auf P2.3 aufgebaut, wie
 vorgegeben.
 
-**Geänderte Komponenten:** `Sources/FitnessAppData/PlanGeneratorInstantiator.swift`
+**Geänderte Komponenten:** `Sources/DeltiqData/PlanGeneratorInstantiator.swift`
 (`RecalculateError`, `RecalculateSummary`, `fetchAllSessions`, `recalculate` neu gefasst,
-Typ-Doku-Korrekturen), `Sources/FitnessAppUI/Workout/PlanEditorView.swift`
+Typ-Doku-Korrekturen), `Sources/DeltiqUI/Workout/PlanEditorView.swift`
 (`recalculateFromGenerator` auf `throws`/`RecalculateSummary` umgestellt, Fehler-/Skip-Toast),
-`Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift` (`accept`/`acceptCustom` guard-on-
-success), `Sources/FitnessAppUI/Workout/PlansListView.swift` + `Sources/FitnessAppUI/Settings/
+`Sources/DeltiqUI/Cardio/CardioFeasibilityCardModel.swift` (`accept`/`acceptCustom` guard-on-
+success), `Sources/DeltiqUI/Workout/PlansListView.swift` + `Sources/DeltiqUI/Settings/
 ProfileEditorView.swift` (Flag-Reset im Fehlerfall).
 
 **Neue/geänderte Datenfelder:** keine SwiftData-Schema-Änderung. Öffentliche API-Änderung:
 `recalculate(_:in:)` ist jetzt `throws` und liefert `RecalculateSummary` statt `Int` — der einzige
 bekannte Aufrufer (`PlanEditorView.swift`) wurde mitgezogen.
 
-**Tests hinzugefügt/korrigiert:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`:
+**Tests hinzugefügt/korrigiert:** `Tests/DeltiqDataTests/PlanGeneratorInstantiatorTests.swift`:
 `testRecalculateThrowsAndChangesNothingWhenSessionCheckFails` (Punkt 1: Fetch-Fehler → Wurf, keine
 Mutation, via DI-Seam erzwungen), `testRecalculateSucceedsNormallyWithoutOverride` (Gegenprobe:
 Erfolgspfad unverändert), `testRecalculateSkipsDayWithActiveSessionAndReportsIt` (laufende Session
@@ -1424,7 +1424,7 @@ Begründung: Identität übersteht Exercise-Delete, Auswertung nicht). Außerdem
 Verhaltensänderung an sich, nur Signatur-Anpassung).
 
 **Tests tatsächlich ausgeführt — unverändert zur P2.3-Einschränkung:** alle Änderungen dieser
-Runde liegen erneut in `FitnessAppData`/`FitnessAppUI`, NICHTS in Core. Jede neue/geänderte Zeile
+Runde liegen erneut in `DeltiqData`/`DeltiqUI`, NICHTS in Core. Jede neue/geänderte Zeile
 ist deshalb NUR syntaktisch via `swift build`/`swift build --build-tests` geprüft, NICHT
 typgeprüft — identische Einschränkung wie im P2.3-Bericht oben, hier nicht erneut ausführlich
 wiederholt. Insbesondere ungeprüft: ob `XCTAssertEqual(error as? PlanGeneratorInstantiator.
@@ -1434,7 +1434,7 @@ Toolchain verifizierbares Swift-Muster), ob der neue DI-Seam-Override tatsächli
 `RecalculateSummary`s automatisch generierter (nicht explizit `public` deklarierter)
 Memberwise-Initializer über `@testable import` wirklich wie erwartet nutzbar ist. Vollständiger
 Lauf `swift test` — **1023/1023 grün** (unverändert zur letzten Runde, da alle neuen Tests dieser
-Nachbesserung in der nicht-ausgeführten `FitnessAppDataTests`-Gruppe liegen) — kein Nachweis für
+Nachbesserung in der nicht-ausgeführten `DeltiqDataTests`-Gruppe liegen) — kein Nachweis für
 diese Nachbesserung selbst.
 
 **Apple-Build/CI:** nicht durchgeführt — offen, unverändert höheres Gewicht als sonst (siehe
@@ -1517,7 +1517,7 @@ Aktivierungs-Prinzip für künftige Arbeit. Keine Verhaltensänderung an `recalc
    Alles-oder-nichts-Automatik.
 
 **P2.4-Vorprüfung (wie vorgegeben, vor neuen Feldern):** `PlanDraft`/`DraftDay` (Core, P2.0,
-`Sources/FitnessAppCore/Planning/PlanDraft.swift`) wurde gezielt gelesen, bevor P2.4 beginnt.
+`Sources/DeltiqCore/Planning/PlanDraft.swift`) wurde gezielt gelesen, bevor P2.4 beginnt.
 Ergebnis: `DraftDay` hat BEREITS `isContentFixed`/`isPositionFixed` (zwei unabhängige, pro Tag
 gesetzte Bool-Flags mit eigenen Settern `setContentFixed`/`setPositionFixed`), stabile
 `DraftDayID`/`DraftExerciseID`, und `reorder(to:)`/`moveDay(_:toIndex:)` mit vollständigem Schutz
@@ -1535,10 +1535,10 @@ Keine Code-Änderung in dieser Runde, reine Prüfung.
 erlaubte den Start parallel, verlangte ihn nicht; diese Runde deckte nur die zwei explizit
 genannten Nacharbeiten plus Dokumentation ab.
 
-**Geänderte Komponenten:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`
-(Testfix), `Sources/FitnessAppUI/Workout/PlanEditorView.swift` (Lokalisierung + Helper),
-`Sources/FitnessAppUI/Resources/Localizable.xcstrings` (6 neue Keys),
-`Sources/FitnessAppData/PlanGeneratorInstantiator.swift` (Typ-Doku-Verschärfung, keine
+**Geänderte Komponenten:** `Tests/DeltiqDataTests/PlanGeneratorInstantiatorTests.swift`
+(Testfix), `Sources/DeltiqUI/Workout/PlanEditorView.swift` (Lokalisierung + Helper),
+`Sources/DeltiqUI/Resources/Localizable.xcstrings` (6 neue Keys),
+`Sources/DeltiqData/PlanGeneratorInstantiator.swift` (Typ-Doku-Verschärfung, keine
 Verhaltensänderung).
 
 **Neue/geänderte Datenfelder:** keine. Sechs neue Lokalisierungs-Keys (siehe oben).
@@ -1550,9 +1550,9 @@ Punkt 1 oben). Keine neuen Testfälle — reine Erwartungs-Korrektur.
 Werte DE/EN/TR geprüft, Katalog 2102/2102/2102/2102). `TRANSLATIONS.md` regeneriert — **0 hardcoded
 Strings in 0 Dateien**, bestätigt die Lokalisierung ist vollständig. `swift build`/
 `swift build --build-tests`: grün (Syntax-Ebene, unverändert dieselbe Einschränkung wie bei jeder
-FitnessAppData-/FitnessAppUI-Änderung dieser Session — `PlanEditorView.swift` ist SwiftUI-gated,
+DeltiqData-/DeltiqUI-Änderung dieser Session — `PlanEditorView.swift` ist SwiftUI-gated,
 auf Linux nicht typgeprüft). Vollständiger Lauf `swift test` — **1023/1023 grün**, keine Regression
-(der korrigierte Test selbst läuft NICHT auf Linux, da `FitnessAppDataTests` SwiftData-gated ist —
+(der korrigierte Test selbst läuft NICHT auf Linux, da `DeltiqDataTests` SwiftData-gated ist —
 die Korrektur ist durch Nachlesen von `recalculate`s eigener Implementierung verifiziert, nicht
 durch einen tatsächlichen Testlauf).
 
@@ -1631,7 +1631,7 @@ Positionsverdrängung, `replaceContent(of:with:)`) existierte bereits vollständ
 implementiert, nur `PlanBuilderView` an die bestehende Schicht angeschlossen. Einzige echte
 Neuerung war eine Blockade auf dem Weg dorthin: `PlanGenerator.Result`/`GeneratedDay` (Core)
 hatten nur einen `internal` Memberwise-Init (ein `public struct` mit ausschließlich
-`public let`-Feldern bekommt in Swift trotzdem keinen `public` Init synthetisiert) — `FitnessAppUI`
+`public let`-Feldern bekommt in Swift trotzdem keinen `public` Init synthetisiert) — `DeltiqUI`
 konnte diese Typen deshalb nicht konstruieren, um `currentResult` aus einem `PlanDraft`
 zurückzubauen. Behoben durch zwei zusätzliche, rein additive `public init`s in
 `PlanGenerator.swift`, mit exakt denselben Parametern/Labels wie die beiden einzigen bisherigen
@@ -1646,10 +1646,10 @@ Bedienelemente für die jetzt technisch verfügbaren Fixierungen/Reorder in dies
 als Auftrag, diese UI jetzt zu bauen.
 
 **Geänderte Komponenten:**
-- `Sources/FitnessAppCore/Programs/PlanGenerator.swift` — zwei neue `public init`s
+- `Sources/DeltiqCore/Programs/PlanGenerator.swift` — zwei neue `public init`s
   (`GeneratedDay.init(spec:loadLevel:)`, `Result.init(days:explanationKey:)`), keine
   Verhaltensänderung an `generate(from:shuffle:)`.
-- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — State-Umstellung, neue
+- `Sources/DeltiqUI/Workout/PlanBuilderView.swift` — State-Umstellung, neue
   `generatePreviewIfNeeded(shuffle:)`/`loadLevel(for:)`/`currentResult`, `resultStepView`/
   `resultDayRow` auf `DraftDay` umgestellt (`ForEach(draft.days)` statt
   `ForEach(Array(result.days.enumerated()), id: \.offset)` — `DraftDay` ist selbst `Identifiable`),
@@ -1658,7 +1658,7 @@ als Auftrag, diese UI jetzt zu bauen.
 **Neue/geänderte Datenfelder:** keine SwiftData-/Persistenz-Felder. Zwei neue `public init`s in
 Core (additiv, keine Signaturänderung bestehender Konstruktionsstellen).
 
-**Tests hinzugefügt:** `Tests/FitnessAppCoreTests/PlanGeneratorTests.swift` —
+**Tests hinzugefügt:** `Tests/DeltiqCoreTests/PlanGeneratorTests.swift` —
 `testGeneratedDayAndResultPublicInitsReconstructEquivalentResult` (ein echtes Generator-Ergebnis
 über die neuen Inits verlustfrei nachgebaut, Namen/Sequenzindizes/Ladestufen/ExplanationKey per
 Round-Trip verglichen — genau der Mechanismus, den `currentResult` in `PlanBuilderView`
@@ -1669,9 +1669,9 @@ verwendet) und `testResultInitExplanationKeyDefaultsToNil` (Default-Parameter-Ve
 Core-Tests, kein Syntax-Only-Nachweis. Das ist der einzige Teil von P2.4, der tatsächlich auf
 Linux lauffähig ist: `PlanBuilderView.swift` selbst liegt hinter
 `#if canImport(SwiftUI) && canImport(SwiftData)` und wird auf dieser Plattform NIE geparst/
-typgeprüft (beide Bedingungen sind hier `false`) — der grüne `swift build` für `FitnessAppUI`
+typgeprüft (beide Bedingungen sind hier `false`) — der grüne `swift build` für `DeltiqUI`
 belegt ausschließlich lexikalische Gültigkeit (Klammern balanciert, Token gültig), KEINE
-semantische Korrektheit (Typen, Bindings, SwiftUI-Datenfluss). Kein `FitnessAppUITests`-Lauf deckt
+semantische Korrektheit (Typen, Bindings, SwiftUI-Datenfluss). Kein `DeltiqUITests`-Lauf deckt
 diese Datei ab. Apple-Kompilierung/Gerätetest bleiben offen, siehe unten.
 
 **Apple-Build/CI:** nicht durchgeführt — offen, unverändert zur Standing-Regel dieser gesamten
@@ -1690,7 +1690,7 @@ die zuletzt angezeigte Vorschau, auch nach einem vorherigen „Neu rechnen".
   `PlanDraft.init(generated:)`s Sortierlogik müsste diese Stelle mitgeprüft werden.
 - Kein Drag&Drop, keine Fixierungs-Schalter in der UI — die vorhandene Core-Funktionalität ist
   damit noch nicht für den Nutzer sichtbar/bedienbar (bleibt P3).
-- Wie jede `FitnessAppUI`-Änderung dieser Session: ausschließlich Linux-Syntax-geprüft, nicht
+- Wie jede `DeltiqUI`-Änderung dieser Session: ausschließlich Linux-Syntax-geprüft, nicht
   Apple-kompiliert, nicht auf einem Gerät gesehen.
 
 **Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
@@ -1725,12 +1725,12 @@ siehe eigener Abschnitt danach.
 **1. Draft→Result-Adapter geschaffen und produktiv angebunden.** Vorher war die Rekonstruktion
 eines `PlanGenerator.Result` aus einem `PlanDraft` inline in `PlanBuilderView.currentResult`
 implementiert — korrekt, aber nicht für sich testbar (SwiftUI-gated, auf Linux nie typgeprüft).
-Neu: `Sources/FitnessAppCore/Planning/PlanDraftResultAdapter.swift`,
+Neu: `Sources/DeltiqCore/Planning/PlanDraftResultAdapter.swift`,
 `PlanDraftResultAdapter.makeResult(from:loadLevels:explanationKey:) throws -> PlanGenerator.Result?`
 — reine Core-Funktion (keine SwiftUI-/SwiftData-Abhängigkeit, obwohl der vorherige Code zufällig in
 einer View lag). `PlanBuilderView.currentResult` ruft jetzt ausschließlich diesen Adapter auf.
 Regressionstest `testMakeResultReflectsReorderAndContentChangeCompletely`
-(`Tests/FitnessAppCoreTests/PlanDraftResultAdapterTests.swift`): generiert einen echten
+(`Tests/DeltiqCoreTests/PlanDraftResultAdapterTests.swift`): generiert einen echten
 3-Tage-Plan, vertauscht Tag 1 und Tag 3 (`reorder(to:)`), ersetzt den Inhalt des jetzt an Position 0
 stehenden Tages komplett durch einen andersartigen generierten Tag (`replaceContent(of:with:)`),
 rekonstruiert dann über den Adapter — und vergleicht an allen drei Positionen die VOLLSTÄNDIGE
@@ -1771,8 +1771,8 @@ Umgebung, keine fehlende Konfiguration, die sich hier beheben ließe. Das Repo h
 eine echte, bereits eingerichtete Apple-CI: `codemagic.yaml`, Workflow `swift-package`, Trigger
 "push, alle Branches", läuft auf `mac_mini_m2` mit Xcode und führt neben `swift build`/
 `swift test --parallel` explizit
-`xcodebuild -scheme FitnessAppUI -destination 'generic/platform=iOS Simulator' build` aus (ebenso
-für FitnessAppCore/-Data/-Health/-Activities) — genau der reale Typcheck, den
+`xcodebuild -scheme DeltiqUI -destination 'generic/platform=iOS Simulator' build` aus (ebenso
+für DeltiqCore/-Data/-Health/-Activities) — genau der reale Typcheck, den
 `PlanBuilderView.swift` und `PlanDraftResultAdapter.swift` auf Linux nicht bekommen. Geprüft, ob
 dieser Lauf für den P2.4-Push (`fca8c01`) sichtbar ist: `mcp__github__actions_list` für den Branch
 `claude/smart-onboarding-epic` liefert **0 GitHub-Actions-Runs** (erwartet — Codemagic ist keine
@@ -1781,28 +1781,28 @@ Codemagics eigenes Dashboard/API oder auf GitHub-Check-Runs ohne bekannte Check-
 Weg von hier aus zu sehen, ob/wie der Codemagic-Lauf für diesen Push ausgefallen ist. **Es wird
 nicht behauptet, dass ein Lauf gestartet oder erfolgreich war** — nur, dass die Infrastruktur dafür
 existiert. Benötigt, um das wirklich zu schließen: Login im Codemagic-Account, der an dieses
-GitHub-Repo gebunden ist, App "FitnessApp" öffnen, Workflow "Swift Package CI" (`swift-package`),
+GitHub-Repo gebunden ist, App "Deltiq" öffnen, Workflow "Swift Package CI" (`swift-package`),
 Build-Historie für Branch `claude/smart-onboarding-epic` ansehen (ein Build sollte automatisch
 durch den Push getriggert worden sein, sofern die Codemagic-Anbindung aktiv ist) — Build-Log
-insbesondere auf den "Build library products for iOS Simulator"-Schritt für `FitnessAppUI` prüfen.
+insbesondere auf den "Build library products for iOS Simulator"-Schritt für `DeltiqUI` prüfen.
 Falls kein automatischer Build gelistet ist, ist entweder die Codemagic-GitHub-Anbindung nicht
 aktiv, oder der Trigger greift aus einem anderen Grund nicht — in dem Fall den Workflow manuell in
 der Codemagic-UI für diesen Branch/Commit starten.
 
-**Geänderte Komponenten:** `Sources/FitnessAppCore/Planning/PlanDraftResultAdapter.swift` (neu),
-`Sources/FitnessAppUI/Workout/PlanBuilderView.swift` (`currentResult` nutzt den Adapter,
+**Geänderte Komponenten:** `Sources/DeltiqCore/Planning/PlanDraftResultAdapter.swift` (neu),
+`Sources/DeltiqUI/Workout/PlanBuilderView.swift` (`currentResult` nutzt den Adapter,
 `loadLevel(for:)` optional, `resultDayRow`s "Nicht bewertet"-Zweig, Typ-Doku ergänzt),
-`Sources/FitnessAppUI/Resources/Localizable.xcstrings` (1 neuer Key).
+`Sources/DeltiqUI/Resources/Localizable.xcstrings` (1 neuer Key).
 
 **Neue/geänderte Datenfelder:** keine. Ein neuer Lokalisierungs-Key.
 
-**Tests hinzugefügt:** `Tests/FitnessAppCoreTests/PlanDraftResultAdapterTests.swift` — 4 Tests
+**Tests hinzugefügt:** `Tests/DeltiqCoreTests/PlanDraftResultAdapterTests.swift` — 4 Tests
 (siehe Punkt 1/2 oben), alle ECHTE Linux-Core-Tests.
 
 **Tests tatsächlich ausgeführt:** `swift build`/`swift build --build-tests`: grün.
 `python3 -I .scripts/generate_translations_md.py`: Katalog 2103/2103/2103, **0 hardcoded Strings**.
 `swift test`: **1029/1029 grün** (1025 + 4 neue). `PlanBuilderView.swift` bleibt wie jede
-`FitnessAppUI`-Datei SwiftUI-/SwiftData-gated und damit auf Linux nur syntaktisch, nicht
+`DeltiqUI`-Datei SwiftUI-/SwiftData-gated und damit auf Linux nur syntaktisch, nicht
 semantisch geprüft — unverändert zur Standing-Einschränkung dieser gesamten Arbeit.
 
 **Apple-Build/CI:** nicht durchgeführt und von hier aus nicht einsehbar — siehe Punkt 3 oben für
@@ -1887,26 +1887,26 @@ Context — ein `rollback()` im Fehlerfall hätte Profil UND Messung mit verworf
 fehlgeschlagenen Plan. Der gezielte Rückbau in `build` berührt `profile`/`measurement` nicht.
 
 **Geänderte Komponenten:**
-- `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` — `build`/`createPlan` werfen jetzt,
+- `Sources/DeltiqData/PlanGeneratorInstantiator.swift` — `build`/`createPlan` werfen jetzt,
   gezielter Rückbau, `RecalculateError.saveFailed`, `saveOverrideForTesting`-DI-Seam, Typ-Doku
   komplett überarbeitet (Commit-/Speicherverantwortung, Aktivierungsvertrag-Abschnitt).
-- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — `adoptPlan()` fängt den neuen Fehler,
+- `Sources/DeltiqUI/Workout/PlanBuilderView.swift` — `adoptPlan()` fängt den neuen Fehler,
   zeigt eigenen Alert (`adoptSaveErrorMessage`), setzt `isAdopting` zurück (Wiederholbarkeit aus
   UI-Sicht).
-- `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift` — `accept`/`acceptCustom` nutzen
+- `Sources/DeltiqUI/Cardio/CardioFeasibilityCardModel.swift` — `accept`/`acceptCustom` nutzen
   `try?`, behandeln einen Speicherfehler identisch zum bereits bestehenden `nil`-Pfad (bestehende
   P2.3-Nachbesserung-UI deckt Retry/Doppeltap-Reset bereits ab, keine neue UI nötig).
-- `Sources/FitnessAppUI/OnboardingView.swift` — `finishOnboarding()` fängt den Fehler bewusst OHNE
+- `Sources/DeltiqUI/OnboardingView.swift` — `finishOnboarding()` fängt den Fehler bewusst OHNE
   Alert ab (siehe Begründung dort: Profil/Messung müssen den Onboarding-Abschluss unabhängig vom
   optionalen Plan erreichen, ein neuer Alert-State könnte nach dem Profil-Insert nie mehr sichtbar
   werden).
-- `Sources/FitnessAppUI/Resources/Localizable.xcstrings` — 2 neue Keys
+- `Sources/DeltiqUI/Resources/Localizable.xcstrings` — 2 neue Keys
   (`planBuilder.error.saveFailed.title`/`.message`, DE/EN/TR, Katalog jetzt 2105 Keys, weiterhin 0
   hardcoded).
 
 **Neue/geänderte Datenfelder:** keine.
 
-**Tests hinzugefügt:** `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift` — 4 neue
+**Tests hinzugefügt:** `Tests/DeltiqDataTests/PlanGeneratorInstantiatorTests.swift` — 4 neue
 Tests (`testBuildRollsBackNewPlanAndRestoresPreviousActivePlanWhenSaveFails`,
 `testCreatePlanPropagatesSaveFailure`, `testRecalculatePropagatesSaveFailureAsThrownError`,
 `testRecalculateSkipsSaveEntirelyWhenNothingWasRewritten`) plus Anpassung zweier bestehender Tests
@@ -1917,7 +1917,7 @@ brauchen jetzt `throws`/`try`, da `build`/`createPlan` selbst werfen).
 `python3 -I .scripts/generate_translations_md.py`: Katalog 2105/2105/2105, **0 hardcoded Strings**.
 `swift test`: **1029/1029 grün — UNVERÄNDERT**. Das ist hier besonders wichtig festzuhalten: KEINER
 der neuen/geänderten Tests in `PlanGeneratorInstantiatorTests.swift` läuft auf Linux, weil die
-GESAMTE Datei (wie jede `FitnessAppDataTests`-Datei) hinter `#if canImport(SwiftData)` liegt — die
+GESAMTE Datei (wie jede `DeltiqDataTests`-Datei) hinter `#if canImport(SwiftData)` liegt — die
 vier neuen Tests sind sorgfältig konstruiert (inklusive des `saveOverrideForTesting`-DI-Seams genau
 für diesen Zweck), aber bis zu einem echten Apple-Testlauf ausschließlich durch Code-Lesen verifiziert,
 nicht durch Ausführung. Dasselbe gilt für `PlanBuilderView.swift`/`CardioFeasibilityCardModel.swift`/
@@ -2030,7 +2030,7 @@ verlangt):**
      einer Navigationsreferenz in `ProfileEditorView` wäre genau die Art zusätzlicher Architektur, die
      der User für diese Runde ausgeschlossen hat.
    - **Onboarding** (`OnboardingView.swift`): kein leerer `catch {}` mehr. Neue, reine
-     `UserDefaults`-Core-Utility `OnboardingPlanCreationNotice` (`Sources/FitnessAppCore/Domain/`,
+     `UserDefaults`-Core-Utility `OnboardingPlanCreationNotice` (`Sources/DeltiqCore/Domain/`,
      Muster identisch zu `HealthWritePreferences`/`ReminderPreferences`) markiert den Fehlschlag via
      `markFailed()`. Nach wie vor KEIN Alert direkt in `OnboardingView` (unverändert korrekte
      Begründung aus dem alten Bericht: `RootView` kann zu diesem Zeitpunkt bereits auf `MainTabView`
@@ -2053,34 +2053,34 @@ Abstraktion, kein neues Subsystem, keine über das Geforderte hinausgehende Vera
 etabliertem Muster, kein neues Notification-/Messaging-System.
 
 **Geänderte/neue Komponenten (zusätzlich zu den im alten Bericht genannten):**
-- `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` — Typ-Doku komplett um den obigen
+- `Sources/DeltiqData/PlanGeneratorInstantiator.swift` — Typ-Doku komplett um den obigen
   Operations-/Fehlervertrag ergänzt; `build` nutzt `scratchContext`; `fetchActivePlans(in:)` +
   `fetchActivePlansOverrideForTesting`; `DayMutationSnapshot` + `revert(_:in:)`; `apply(...)` gibt
   jetzt `DayMutationSnapshot` zurück und archiviert statt zu löschen.
-- `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift` — `accept`/`acceptCustom` wieder
+- `Sources/DeltiqUI/Cardio/CardioFeasibilityCardModel.swift` — `accept`/`acceptCustom` wieder
   `throws` statt `try?`.
-- `Sources/FitnessAppUI/Workout/PlansListView.swift` — neue `cardioAcceptErrorMessage` + `.alert`,
+- `Sources/DeltiqUI/Workout/PlansListView.swift` — neue `cardioAcceptErrorMessage` + `.alert`,
   beide Aufrufstellen (`accept`, `acceptCustom` im Plan-anpassen-Sheet) auf `do/catch` umgestellt.
-- `Sources/FitnessAppUI/Settings/ProfileEditorView.swift` — identisches Muster
+- `Sources/DeltiqUI/Settings/ProfileEditorView.swift` — identisches Muster
   (`cardioAcceptErrorMessage` + `.alert`), siehe Navigation-Einschränkung oben.
-- `Sources/FitnessAppCore/Domain/OnboardingPlanCreationNotice.swift` — NEU.
-- `Sources/FitnessAppUI/OnboardingView.swift` — `finishOnboarding()`s leerer `catch` ruft jetzt
+- `Sources/DeltiqCore/Domain/OnboardingPlanCreationNotice.swift` — NEU.
+- `Sources/DeltiqUI/OnboardingView.swift` — `finishOnboarding()`s leerer `catch` ruft jetzt
   `OnboardingPlanCreationNotice.markFailed()`.
-- `Sources/FitnessAppUI/DashboardView.swift` — neues `.task` konsumiert den Hinweis, neuer Alert mit
+- `Sources/DeltiqUI/DashboardView.swift` — neues `.task` konsumiert den Hinweis, neuer Alert mit
   Sprung zum Plan-Tab.
-- `Sources/FitnessAppUI/Resources/Localizable.xcstrings` — 5 neue Keys
+- `Sources/DeltiqUI/Resources/Localizable.xcstrings` — 5 neue Keys
   (`cardioFeasibility.error.saveFailed.title`/`.message`,
   `dashboard.onboardingPlanCreationFailed.title`/`.message`/`.goToPlan`, DE/EN/TR, Katalog jetzt 2110
   Keys, weiterhin 0 hardcoded).
 
 **Tests hinzugefügt:**
-- `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift` — 4 neue Tests:
+- `Tests/DeltiqDataTests/PlanGeneratorInstantiatorTests.swift` — 4 neue Tests:
   `testFailedCreationIsRepeatableWithoutOrphanedObjects`,
   `testBuildAbortsBeforeAnyMutationWhenActivePlanCheckFails`,
   `testBuildDoesNotSaveIndependentPendingChangeInCallerContext`,
   `testRecalculateSaveFailureLeavesNoStructuralChangeEvenAfterLaterSave`. Deckt alle 5 vom User
   geforderten Testfälle ab bis auf den Onboarding-Fall (der liegt, s.u., in einer eigenen Core-Datei).
-- `Tests/FitnessAppCoreTests/OnboardingPlanCreationNoticeTests.swift` — NEU, 4 Tests
+- `Tests/DeltiqCoreTests/OnboardingPlanCreationNoticeTests.swift` — NEU, 4 Tests
   (`testNothingPendingByDefault`, `testMarkFailedThenConsumeReturnsTrueOnce`,
   `testMarkFailedIsIndependentPerDefaultsInstance`, `testRepeatedMarkFailedStillConsumesOnlyOnce`) —
   deckt den 5. geforderten Testfall ("Onboarding-Fehler bleibt sichtbar und nachvollziehbar") für die
@@ -2194,21 +2194,21 @@ Onboarding-Entwurfsübergabe (`OnboardingView`, reines `@State`-Zwischenspeicher
 liefert dafür immer `nil` — sie kann strukturell nicht fehlschlagen, unverändert ohne Persistenz.
 
 **Geänderte/neue Komponenten:**
-- `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` — Typ-Doku um drei neue Punkte A/B/C
+- `Sources/DeltiqData/PlanGeneratorInstantiator.swift` — Typ-Doku um drei neue Punkte A/B/C
   ergänzt; `hasIndependentPendingChanges`, `RecalculateError.independentChangesPending`;
   `PlanCreationError.createdButRebindFailed(planID:)`, `rebind`/`rebindOverrideForTesting`,
   `resolveCreatedPlan`, `createPlan`s interner Retry.
-- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — `onGenerated`-Signatur auf `String?`
+- `Sources/DeltiqUI/Workout/PlanBuilderView.swift` — `onGenerated`-Signatur auf `String?`
   umgestellt (Typ-Doku + `init` + `adoptPlan()`); neuer `adoptSaveErrorIsCreatedButUnresolved`-Flag
   für den eigenen direkten `createPlan`-Pfad.
-- `Sources/FitnessAppUI/Workout/PlansListView.swift` / `Sources/FitnessAppUI/Settings/
+- `Sources/DeltiqUI/Workout/PlansListView.swift` / `Sources/DeltiqUI/Settings/
   ProfileEditorView.swift` — beide Cardio-Aufrufstellen (direkter Button + `onGenerated`-Closure)
   behandeln `createdButRebindFailed` jetzt eigens; neuer `cardioAcceptErrorIsCreatedButUnresolved`-
   Flag in beiden Views.
-- `Sources/FitnessAppUI/OnboardingView.swift` — `onGenerated`-Closure liefert jetzt `return nil`.
-- `Sources/FitnessAppUI/DashboardView.swift` — keine Code-Änderung, aber die Lokalisierungs-Texte
+- `Sources/DeltiqUI/OnboardingView.swift` — `onGenerated`-Closure liefert jetzt `return nil`.
+- `Sources/DeltiqUI/DashboardView.swift` — keine Code-Änderung, aber die Lokalisierungs-Texte
   unten wurden geschärft (s. u.).
-- `Sources/FitnessAppUI/Resources/Localizable.xcstrings` — 4 neue Keys
+- `Sources/DeltiqUI/Resources/Localizable.xcstrings` — 4 neue Keys
   (`planBuilder.error.createdButUnresolved.title`/`.message`,
   `cardioFeasibility.error.createdButUnresolved.title`/`.message`) plus eine Textkorrektur an
   `dashboard.onboardingPlanCreationFailed.title`/`.message` (DE/EN/TR) — die ursprüngliche
@@ -2218,7 +2218,7 @@ liefert dafür immer `nil` — sie kann strukturell nicht fehlschlagen, unverän
   neuer Text ("Hinweis zu deinem Trainingsplan" / "bitte im Plan-Tab nachsehen") ist in BEIDEN
   Fällen akkurat. Katalog jetzt 2114 Keys, weiterhin 0 hardcoded.
 
-**Tests hinzugefügt** (`Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift`, alle
+**Tests hinzugefügt** (`Tests/DeltiqDataTests/PlanGeneratorInstantiatorTests.swift`, alle
 syntax-only auf Linux verifiziert, SwiftData-gated):
 - `testRecalculateBlocksWhenAnUnrelatedIndependentChangeIsPending` — geforderter Test "Fremde
   offene Änderung überlebt recalculate ungespeichert".
@@ -2236,7 +2236,7 @@ syntax-only auf Linux verifiziert, SwiftData-gated):
 ehrlich als Lücke benannt, nicht stillschweigend übergangen:** der geforderte Test "acceptCustom
 fehlgeschlagen → derselbe bearbeitete Draft bleibt offen" prüft sichtbares SwiftUI-View-Verhalten
 (Sheet bleibt offen, `@State`-Entwurf unverändert) — dieses Repository hat kein
-`FitnessAppUITests`-Target und keinerlei UI-Test-Infrastruktur (bestätigt beim Audit für das
+`DeltiqUITests`-Target und keinerlei UI-Test-Infrastruktur (bestätigt beim Audit für das
 Übungs-GIF-Feature). Weder auf Linux noch auf einem echten Apple-Build ohne zusätzliche, hier nicht
 beauftragte Test-Infrastruktur automatisiert prüfbar. Was STATTDESSEN belegt ist: der
 `onGenerated`-Rückgabewert-Vertrag selbst (`nil`/`String?`) ist durch Code-Lesen nachvollziehbar
@@ -2290,7 +2290,7 @@ selbst EINEN internen Retry unternimmt — er bewies NICHT, dass ein wiederholte
 ist, weil dieser Vertrag gar nicht am Service, sondern erst an der UI-Verdrahtung existierte (oder
 eben nicht existierte).
 
-**Neue, UI-unabhängige Zustandsmaschine `PlanCreationOperation`** (`Sources/FitnessAppData/
+**Neue, UI-unabhängige Zustandsmaschine `PlanCreationOperation`** (`Sources/DeltiqData/
 PlanCreationOperation.swift`, `@MainActor final class`, SwiftData-abhängig aber KEIN SwiftUI-Import
 — exakt dasselbe Testmuster wie `PlanGeneratorInstantiatorTests`): hält `committedPlanID:
 PersistentIdentifier?` PERMANENT fest, sobald einmal bekannt. `attempt(in:create:)` ruft das
@@ -2299,7 +2299,7 @@ STRUKTURELL NICHT MEHR AUFGERUFEN, nur noch `PlanGeneratorInstantiator.resolveCr
 versucht. Vier Ausgänge (`Outcome`): `.success(TrainingPlan)`, `.nothingToCreate` (bestehende
 Konvention: `create()` liefert `nil`, kein Fehler), `.failedBeforeCommit` (nichts persistiert,
 voller Retry sicher) und `.committedButUnresolved` (NIE wieder `create()`, nur auflösen). Bewusst
-OHNE eigene Lokalisierung — `FitnessAppData` kennt `FitnessAppUI`s Bundle nicht, der Aufrufer leitet
+OHNE eigene Lokalisierung — `DeltiqData` kennt `DeltiqUI`s Bundle nicht, der Aufrufer leitet
 seine Nachricht aus dem typisierten `Outcome` ab, nicht umgekehrt.
 
 **`onGenerated`-Vertrag (`PlanBuilderView`) ein drittes Mal verschärft:** liefert jetzt
@@ -2324,19 +2324,19 @@ Rebind-Fehler — es gibt bewusst KEINE Reset-Funktion auf `PlanCreationOperatio
 Versuch braucht eine neue Instanz (z.B. ein frisch geöffnetes Sheet oder ein neu geladener Screen).
 
 **Geänderte/neue Komponenten:**
-- `Sources/FitnessAppData/PlanCreationOperation.swift` — NEU.
-- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — `PlanBuilderHandoffOutcome` (neuer
+- `Sources/DeltiqData/PlanCreationOperation.swift` — NEU.
+- `Sources/DeltiqUI/Workout/PlanBuilderView.swift` — `PlanBuilderHandoffOutcome` (neuer
   Top-Level-Typ), `onGenerated`-Signatur erneut geändert, `creationOperation`-State,
   `adoptPlan()` komplett auf `creationOperation.attempt(...)` umgestellt, Haupt-Button-Label
   bedingt auf `planBuilder.result.retryResolve`.
-- `Sources/FitnessAppUI/Workout/PlansListView.swift` / `Sources/FitnessAppUI/Settings/
+- `Sources/DeltiqUI/Workout/PlansListView.swift` / `Sources/DeltiqUI/Settings/
   ProfileEditorView.swift` — `acceptOperation`/`acceptCustomOperation`-State, beide
   Aufrufstellen (direkter Button + Sheet-Closure) auf `attempt(...)` umgestellt, Button-Label
   bedingt, `acceptCustomOperation` wird beim Öffnen des Sheets neu erzeugt.
-- `Sources/FitnessAppUI/Resources/Localizable.xcstrings` — 3 neue `.retryResolve`-Keys
+- `Sources/DeltiqUI/Resources/Localizable.xcstrings` — 3 neue `.retryResolve`-Keys
   (DE/EN/TR). Katalog jetzt 2117 Keys, weiterhin 0 hardcoded.
 
-**Tests hinzugefügt** (`Tests/FitnessAppDataTests/PlanCreationOperationTests.swift`, NEU — bewusst
+**Tests hinzugefügt** (`Tests/DeltiqDataTests/PlanCreationOperationTests.swift`, NEU — bewusst
 in einer eigenen Datei, nicht in `PlanGeneratorInstantiatorTests.swift`, weil ein anderer Typ
 geprüft wird):
 - `testRepeatedAttemptsAfterPermanentRebindFailureNeverCreateASecondPlan` — der geforderte
@@ -2368,7 +2368,7 @@ Sheet sichtbar offen bleibt".
 **Was weiterhin NICHT automatisiert geprüft ist, ehrlich benannt:** dass die UI tatsächlich
 "Erneut versuchen" statt "Plan übernehmen" ANZEIGT, dass ein zweiter Tap wirklich NICHTS Neues auf
 dem Bildschirm auslöst, und das Sheet-Offen-Bleiben bei `.committedButUnresolved` selbst — all das
-bleibt UI-Verhalten, für das (unverändert) kein `FitnessAppUITests`-Target in diesem Repository
+bleibt UI-Verhalten, für das (unverändert) kein `DeltiqUITests`-Target in diesem Repository
 existiert. Was die neue Zustandsmaschine beweist, ist der KORREKTE VERTRAG, den die UI-Views jetzt
 verwenden (sie rufen `attempt(...)` korrekt auf, codegelesen verifiziert) — nicht, dass SwiftUI das
 auch tatsächlich pixelgenau so rendert.
@@ -2483,25 +2483,25 @@ bereits vorher vollständig beim Aufrufer (dessen `resumeIfCommitted`-zuerst-Log
 zweites `create()` unabhängig von dieser View).
 
 **Geänderte Komponenten:**
-- `Sources/FitnessAppUI/OnboardingView.swift` — `return nil` → `return .success` (Punkt 1).
-- `Sources/FitnessAppData/PlanCreationOperation.swift` — `committedPlanID` jetzt auch im
+- `Sources/DeltiqUI/OnboardingView.swift` — `return nil` → `return .success` (Punkt 1).
+- `Sources/DeltiqData/PlanCreationOperation.swift` — `committedPlanID` jetzt auch im
   Erfolgspfad gesetzt (Punkt 2); neuer `completion`-Parameter + `pendingCompletion`-Ablage +
   `runPendingCompletionIfNeeded()` (Punkt 3).
-- `Sources/FitnessAppUI/Cardio/CardioFeasibilityCardModel.swift` — `accept`/`acceptCustom` auf
+- `Sources/DeltiqUI/Cardio/CardioFeasibilityCardModel.swift` — `accept`/`acceptCustom` auf
   `using operation: PlanCreationOperation` + `completion:`-Closure umgebaut, kein `throws` mehr,
   geben `PlanCreationOperation.Outcome?` direkt zurück, rufen `resumeIfCommitted` zuerst auf.
-- `Sources/FitnessAppUI/Workout/PlansListView.swift` / `Sources/FitnessAppUI/Settings/
+- `Sources/DeltiqUI/Workout/PlansListView.swift` / `Sources/DeltiqUI/Settings/
   ProfileEditorView.swift` — beide Aufrufstellen (Direkt-Button + Sheet-Closure) rufen jetzt
   `model.accept(...using:)`/`model.acceptCustom(...using:)` direkt auf, statt sie selbst in
   einen eigenen `operation.attempt(...)`-Aufruf zu wrappen (das übernimmt `accept`/`acceptCustom`
   jetzt intern); `switch` behandelt `nil` als eigenen Fall (Vorbedingung nicht erfüllt).
-- `Sources/FitnessAppUI/Workout/PlanBuilderView.swift` — neuer State
+- `Sources/DeltiqUI/Workout/PlanBuilderView.swift` — neuer State
   `externalHandoffIsCommittedButUnresolved`, Label-Bedingung erweitert (UI-Fix).
 - Keine neuen Lokalisierungs-Keys — alle Änderungen sind rein intern (Logik/Typen), alle
   wiederverwendeten Strings existierten bereits aus früheren Runden. Katalog unverändert bei
   2117/2117/2117.
 
-**Tests geändert/ergänzt** (`Tests/FitnessAppDataTests/PlanCreationOperationTests.swift`):
+**Tests geändert/ergänzt** (`Tests/DeltiqDataTests/PlanCreationOperationTests.swift`):
 - `testFirstAttemptSucceedsNormallyWithoutAnyRebindIssue` korrigiert: prüfte vorher
   `XCTAssertNil(operation.committedPlanID, ...)` — das war nach Punkt 2 falsch geworden und
   prüft jetzt `XCTAssertEqual(operation.committedPlanID, plan.persistentModelID, ...)`.
@@ -2551,7 +2551,7 @@ eine Randbemerkung.
   Runde.
 - Unverändert ungeprüft: dass die UI tatsächlich "Erneut versuchen" ANZEIGT, dass ein zweiter Tap
   wirklich nichts Neues auslöst, und das Sheet-Offen-Bleiben bei `.committedButUnresolved` selbst
-  — weiterhin reines UI-Verhalten ohne `FitnessAppUITests`-Target in diesem Repository.
+  — weiterhin reines UI-Verhalten ohne `DeltiqUITests`-Target in diesem Repository.
 
 **Branch/Commit:** Branch `claude/smart-onboarding-epic`. Commit folgt unmittelbar nach diesem
 Berichtseintrag.
@@ -2574,7 +2574,7 @@ Branch automatisch aus, auf echten `mac_mini_m2`-Instanzen mit echtem Xcode:
 - `swift-package` — `swift build`, `swift test --parallel` (komplette Suite, echtes Xcode/macOS,
   SwiftData/SwiftUI existieren dort wirklich — keine `#if canImport`-Leerlauf-Kompilierung mehr),
   danach `xcodebuild build` für jedes der 5 Library-Produkte einzeln fürs iOS-Simulator-SDK
-  (`FitnessAppCore/Data/Health/Activities/UI`).
+  (`DeltiqCore/Data/Health/Activities/UI`).
 - `ios-app` — generiert per XcodeGen das `.xcodeproj`, baut App + Widget-Extension komplett für
   iOS Simulator.
 Beide sollten durch den Push von `185b6cd` auf `claude/smart-onboarding-epic` bereits ausgelöst
@@ -2603,7 +2603,7 @@ die vom User verlangten:
   `testFailedCreationIsRepeatableWithoutOrphanedObjects`,
   `testCreatePlanTransparentlyRecoversFromATransientRebindFailure`,
   `testCreatePlanThrowsCreatedButRebindFailedAndLaterResolvesWithoutDuplicate`.
-- Übrige 165 Funktionen in 14 weiteren `FitnessAppDataTests`-Dateien + 2 `FitnessAppUITests`-
+- Übrige 165 Funktionen in 14 weiteren `DeltiqDataTests`-Dateien + 2 `DeltiqUITests`-
   Dateien (`EditorDiscardSnapshotTests`, `ExerciseTemplateIDBackfillTests` — Resource-/Discard-
   Checks, nicht Task-#197-relevant).
 
@@ -2615,7 +2615,7 @@ Apple bestätigt ist — über die echten Seams `rebindOverrideForTesting`/`save
 nicht durch Abwarten eines zufälligen Fehlers. Die übrigen 2 Punkte (korrekter Button-/Alert-
 Zustand bei Builder/externem Cardio-Handoff; Onboarding-Entwurf erzeugt keinen vorzeitigen Plan)
 sind rein sichtbares UI-Verhalten, für das kein automatisiertes UI-Test-Target in diesem
-Repository existiert (`FitnessAppUITests` enthält nur Resource-/Discard-Unit-Tests, keine
+Repository existiert (`DeltiqUITests` enthält nur Resource-/Discard-Unit-Tests, keine
 XCUITest-Automatisierung).
 
 **Wichtiger Befund dabei:** `rebindOverrideForTesting`/`saveOverrideForTesting` sind `internal`
@@ -2705,7 +2705,7 @@ deterministisch simuliert (Disk voll, Store-Korruption, etc.). Beide Fixes schli
 Luecken in genau dem Vertrag, den Task #197 von Anfang an herstellen sollte.
 
 **Geänderte Komponenten:**
-- `Sources/FitnessAppData/PlanGeneratorInstantiator.swift` — `hasIndependentPendingChanges`
+- `Sources/DeltiqData/PlanGeneratorInstantiator.swift` — `hasIndependentPendingChanges`
   (Fund 1) und `revert(...)` (Fund 2) korrigiert, Doku an beiden Stellen ergaenzt. Keine neuen
   Tests noetig — die bereits bestehenden, auf Apple real fehlgeschlagenen Tests sind die
   Regressionstests; dieselben vier Tests muessen nach dem Fix dort gruen sein.
@@ -2749,9 +2749,9 @@ in der vierten Korrekturrunde verlangte "getrennte, konkrete" Verifikation ab.
 **1. Zwei falsche TestingBot-App-IDs entlarvt.** Zwei vom User genannte Storage-IDs
 (`tb://ba636a4d7c3e43478373100b`, `tb://a76ddd7b6031ff7302cbc360`) wurden heruntergeladen und per
 SHA256 verglichen: beide byte-identisch mit TestingBots eigenem Demo-Projekt `xcuitest-sample-app`
-(Quell-Zip, kein kompilierter Build), obwohl ein Storage-Eintrag "FitnessApp.app.zip" hieß. Lehre:
+(Quell-Zip, kein kompilierter Build), obwohl ein Storage-Eintrag "Deltiq.app.zip" hieß. Lehre:
 Namen/Labels in TestingBots Storage nie ungeprüft übernehmen - vor Gebrauch immer den Inhalt
-verifizieren (entpacken, `Info.plist` + Mach-O-Executable `FitnessApp` in einem `*.app`-Verzeichnis
+verifizieren (entpacken, `Info.plist` + Mach-O-Executable `Deltiq` in einem `*.app`-Verzeichnis
 pruefen).
 
 **2. Echter Apple-Testlauf fuer Commit 6300fbf bestaetigt, zwei weitere echte Lebenszyklus-Bugs
@@ -2844,10 +2844,10 @@ erneutem Automatisierungsfehler den Fall als blockiert zu melden statt die App v
 
 **0. Build-Nachweis (von dieser Session selbst, nicht nur uebernommen).** Commit
 `73fa31a0fa7ebcdaac572017cc859fad4b27f066` → Codemagic `ios-app`-Build `6ad248222278e4b9b05b7c1f`
-(alle Schritte `success`) → Artefakt `FitnessApp.app.zip`, 37.570.625 Bytes, Bundle-ID
-`com.atamya.FitnessApp`, Version `0.1.0`, `MinimumOSVersion 17.0`. Frisch von Codemagic
-heruntergeladen, entpackt, Mach-O-Executable `FitnessApp.app/FitnessApp` gegen die bei TestingBot
-unter `tb://534a0efa885a30bc28e86bb1` (Storage-Dateiname `FitnessApp_73fa31a.zip`) hinterlegte
+(alle Schritte `success`) → Artefakt `Deltiq.app.zip`, 37.570.625 Bytes, Bundle-ID
+`com.atamya.Deltiq`, Version `0.1.0`, `MinimumOSVersion 17.0`. Frisch von Codemagic
+heruntergeladen, entpackt, Mach-O-Executable `Deltiq.app/Deltiq` gegen die bei TestingBot
+unter `tb://534a0efa885a30bc28e86bb1` (Storage-Dateiname `Deltiq_73fa31a.zip`) hinterlegte
 Kopie per SHA256 verglichen: **identisch**
 (`bb38efefb67aff885686aef5c270af10a1bd56ddb0274fee33c2224215dd4b0b`). Damit nachweislich derselbe,
 echte Build - nicht wieder TestingBots Demo-Projekt wie in der vorigen Runde.
@@ -2936,8 +2936,8 @@ bisher in diesem Dokument als "Apple-Testlauf"/"Codemagic-Build" zitierten Laeuf
 TestingBot-Hilfssession), nicht durch einen automatischen Webhook. Fuer kuenftige Runden: nach
 jedem Push aktiv `POST https://api.codemagic.io/builds` aufrufen, nicht auf Auto-Trigger warten.
 
-**Geaenderte Komponenten:** `Sources/FitnessAppUI/Workout/PlansListView.swift`,
-`Sources/FitnessAppUI/Settings/ProfileEditorView.swift` (je eine Zeile `isAcceptingCardioFeasibility =
+**Geaenderte Komponenten:** `Sources/DeltiqUI/Workout/PlansListView.swift`,
+`Sources/DeltiqUI/Settings/ProfileEditorView.swift` (je eine Zeile `isAcceptingCardioFeasibility =
 false` im `.success`-Fall plus Doku-Kommentar). `swift build` lokal gruen (Syntax, beide Dateien
 `#if canImport(SwiftUI)`-gated).
 
@@ -2978,9 +2978,9 @@ wegen dieser Automatisierungs-/Abrechnungsgrenze.
 - Codemagic `swift-package`-Build `6ad27962e8810c37ac26d788` fuer Commit
   `a12a4255c8126c974e03b66a19c2be353bf49fb9` (= `a12a425`): alle Schritte `success`, Unit-Tests
   lueckenlos `[1/1240]` bis `[1240/1240]` gruen, keine Regression.
-- Codemagic `ios-app`-Build `6ad27b46c1dbea563bd431e8`: `finished`, Artefakt `FitnessApp.app.zip`,
-  37.571.041 Bytes, Bundle-ID `com.atamya.FitnessApp`, Version `0.1.0`, `MinimumOSVersion 17.0` -
-  gegen den vorherigen Build per `FitnessApp.app/FitnessApp.debug.dylib`-SHA256 verglichen, Hash
+- Codemagic `ios-app`-Build `6ad27b46c1dbea563bd431e8`: `finished`, Artefakt `Deltiq.app.zip`,
+  37.571.041 Bytes, Bundle-ID `com.atamya.Deltiq`, Version `0.1.0`, `MinimumOSVersion 17.0` -
+  gegen den vorherigen Build per `Deltiq.app/Deltiq.debug.dylib`-SHA256 verglichen, Hash
   aendert sich (Fix nachweislich im Binary enthalten, siehe Methodik-Korrektur oben). Aus diesem
   Artefakt wurde `tb://e83cd69e60c1a2af906df7b5` erzeugt.
 
@@ -3136,7 +3136,7 @@ durchgefuehrt und bestanden; keine offenen Punkte mehr unter diesem Task.
 
 **Status:** Nach Abschluss von Runde 2 (inkl. finaler Review und Fix-Welle) wurde eine reale Geräteabnahme auf einem TestingBot-iPhone-15/iOS-18-Simulator durchgeführt (`docs/superpowers/plans/2026-10-25-laufcoaching-testingbot-acceptance-report.md`). Dabei bestätigten sich alle drei verbindlichen Entscheidungen aus dem Abschnitt oben direkt am Gerät. Zwei Befunde wurden anschließend auf Wunsch des Auftraggebers einzeln geklärt, bevor über den Merge entschieden wird.
 
-**Befund A — mehrere gleichzeitig aktive Pläne: geprüft, kein Fehler, keine Codeänderung.** Während der Abnahme zeigte die Plan-Liste zwei gleichzeitig als "ACTIVE" markierte Pläne, und die Dashboard-Anpassungskarte löste wiederholt gegen den ursprünglichen (nicht anpassbaren) Plan auf statt gegen den neu erzeugten. Prüfung des Codes ergab: das ist **bestehende, bereits vor dieser Runde bewusst getroffene Produktentscheidung**, nicht ein Fehler dieser Runde. `Sources/FitnessAppData/ProgramInstantiator.swift` dokumentiert explizit (Zeilen 22-35): "mehrere gleichzeitig aktive Pläne sind ein gewolltes Zielbild (z.B. Kraft- + Cardio-Plan parallel)" — eine frühere Entscheidung aus einem "P0-Audit neue Spezifikation", die einen zuvor existierenden "alle anderen Pläne automatisch deaktivieren"-Mechanismus bewusst entfernt hat, weil er Dok01 §5 widersprach ("Bestehenden aktiven Plan nicht ungefragt ersetzen"). `DashboardView` liest an allen Stellen konsistent `activePlans.first` (siehe eigener Kommentar dort: "liest defensiv activePlans.first") — dieselbe, bereits akzeptierte Vereinfachung, die Runde 2 nicht eingeführt und nicht verändert hat. Die einzige offene technische Lücke: das zugrundeliegende `@Query(filter: #Predicate<TrainingPlan> { $0.isActive == true })` hat **keine explizite Sortierung**, sodass `.first` keine dokumentierte, deterministische Regel wie "neuester Plan" oder "für Cardio relevantester Plan" ist, sondern von SwiftDatas interner (nicht garantiert stabiler) Reihenfolge abhängt. Das ist eine vorbestehende, nicht von Runde 2 verursachte Einschränkung und erzeugt keine Dateninkonsistenz (keine verlorenen/überschriebenen Daten) — nur eine für den Nutzer potenziell verwirrende Oberflächen-Auswahl bei mehreren aktiven Plänen. Liegt außerhalb des Umfangs von Runde 2 und wird hier nur dokumentiert, nicht behoben, um die abgeschlossene Arbeit nicht unnötig umzubauen.
+**Befund A — mehrere gleichzeitig aktive Pläne: geprüft, kein Fehler, keine Codeänderung.** Während der Abnahme zeigte die Plan-Liste zwei gleichzeitig als "ACTIVE" markierte Pläne, und die Dashboard-Anpassungskarte löste wiederholt gegen den ursprünglichen (nicht anpassbaren) Plan auf statt gegen den neu erzeugten. Prüfung des Codes ergab: das ist **bestehende, bereits vor dieser Runde bewusst getroffene Produktentscheidung**, nicht ein Fehler dieser Runde. `Sources/DeltiqData/ProgramInstantiator.swift` dokumentiert explizit (Zeilen 22-35): "mehrere gleichzeitig aktive Pläne sind ein gewolltes Zielbild (z.B. Kraft- + Cardio-Plan parallel)" — eine frühere Entscheidung aus einem "P0-Audit neue Spezifikation", die einen zuvor existierenden "alle anderen Pläne automatisch deaktivieren"-Mechanismus bewusst entfernt hat, weil er Dok01 §5 widersprach ("Bestehenden aktiven Plan nicht ungefragt ersetzen"). `DashboardView` liest an allen Stellen konsistent `activePlans.first` (siehe eigener Kommentar dort: "liest defensiv activePlans.first") — dieselbe, bereits akzeptierte Vereinfachung, die Runde 2 nicht eingeführt und nicht verändert hat. Die einzige offene technische Lücke: das zugrundeliegende `@Query(filter: #Predicate<TrainingPlan> { $0.isActive == true })` hat **keine explizite Sortierung**, sodass `.first` keine dokumentierte, deterministische Regel wie "neuester Plan" oder "für Cardio relevantester Plan" ist, sondern von SwiftDatas interner (nicht garantiert stabiler) Reihenfolge abhängt. Das ist eine vorbestehende, nicht von Runde 2 verursachte Einschränkung und erzeugt keine Dateninkonsistenz (keine verlorenen/überschriebenen Daten) — nur eine für den Nutzer potenziell verwirrende Oberflächen-Auswahl bei mehreren aktiven Plänen. Liegt außerhalb des Umfangs von Runde 2 und wird hier nur dokumentiert, nicht behoben, um die abgeschlossene Arbeit nicht unnötig umzubauen.
 
 **Befund B — Eingabevalidierung der 5K-Referenzzeit: echter, eng begrenzter Fehler, behoben.** Das Freitextfeld "Current 5K time" (`CardioGoalEditorView.draftFiveKReferenceText`) akzeptierte eine reine Zahl ohne Doppelpunkt (z.B. "2500") über den gemeinsam genutzten `PaceCalculator.parseDurationToSeconds`, der eine solche Eingabe absichtlich als Dezimalminuten interpretiert (richtig für andere Dauer-Felder wie die Cardio-Trainingsdauer in `SetRow`, aber hier irreführend: "2500" wurde als 2500 Minuten/41,6 Stunden gelesen und erzeugte eine absurde Pace-Vorschau "Easy ~650:00 /km"). Behoben durch eine neue, auf dieses Feld beschränkte Parser-Funktion `PaceCalculator.parseFiveKReferenceSeconds`, die ausschließlich Doppelpunkt-Formate (MM:SS/H:MM:SS) akzeptiert und das Ergebnis auf einen plausiblen 5K-Zeitbereich (10:00–90:00) begrenzt — der geteilte `parseDurationToSeconds` selbst bleibt unverändert, um die anderen Felder nicht zu beeinflussen. Zusätzlich zeigt das Feld jetzt sichtbar einen Hinweis, wenn die Eingabe nicht in diesem Format/Bereich liegt, statt die Speichern-Schaltfläche stillschweigend zu deaktivieren. Details, Tests und Commit siehe `.superpowers/sdd/2026-10-25-laufcoaching-remediation-round-2/finding-b-5k-validation-fix-report.md`.
 
@@ -3146,11 +3146,11 @@ durchgefuehrt und bestanden; keine offenen Punkte mehr unter diesem Task.
 
 **Status:** Nach PR-Erstellung und Klärung der beiden TestingBot-Befunde hat der Auftraggeber den Branch manuell auf dem Simulator getestet und zwei weitere, von PR #2 unabhängige, vorbestehende Architekturlücken gefunden. Root-Cause-Analyse (reine Code-Recherche, keine Codeänderung) bestätigt beide als echte, bereits vor Runde 2 bestehende Lücken, keine Regressionen. Für beide hat der Auftraggeber explizite Produktentscheidungen getroffen (Hard Constraint greift: Agent hält an und fragt nach, statt selbst zu entscheiden). Die Umsetzung erfolgt als eigener Plan: `docs/superpowers/plans/2026-10-25-equipment-vielfalt-laufcoaching-dual-path.md`.
 
-**Befund 1 — Equipment-Auswahl wird bei kuratierten Templates faktisch ignoriert.** Root Cause: `PlanSelectionResolver.resolve` (`Sources/FitnessAppCore/Programs/ResolvedPlanSelection.swift:73-84`) berechnet zuerst `template.bestEquipmentCheckedVariant(against: profile)` — eine Auswahl nach der fest codierten Priorität `EquipmentProfile.priority` (`barbellGym=40 > dumbbellOnly=30 > kettlebellOnly=20 > machineGym=10`, `Sources/FitnessAppCore/Programs/EquipmentVariant.swift:35-42`, Kommentar: "gewinnt das stärkste (= barbell)") — und gibt diese SOFORT zurück, sobald sie `.available` ist. Variantenwahl/Substitution wird nur versucht, wenn etwas FEHLT, nie wenn der Nutzer mehr Ausstattung hat als nötig. Zusätzlich haben nur 3 von 20 kuratierten Templates (`hybridBeginner`/`hybridBalanced`/`hybridPerformance`) überhaupt `equipmentVariants` — alle anderen 17 sind unveränderlich mit ihrem Original-Inhalt verdrahtet. Der freie Plan-Generator-Assistent ("Create new plan", `PlanGenerator.strengthCandidates`) ist NICHT betroffen — er nutzt bereits korrekt alle gewählten Gerätearten (`equipmentPool`).
+**Befund 1 — Equipment-Auswahl wird bei kuratierten Templates faktisch ignoriert.** Root Cause: `PlanSelectionResolver.resolve` (`Sources/DeltiqCore/Programs/ResolvedPlanSelection.swift:73-84`) berechnet zuerst `template.bestEquipmentCheckedVariant(against: profile)` — eine Auswahl nach der fest codierten Priorität `EquipmentProfile.priority` (`barbellGym=40 > dumbbellOnly=30 > kettlebellOnly=20 > machineGym=10`, `Sources/DeltiqCore/Programs/EquipmentVariant.swift:35-42`, Kommentar: "gewinnt das stärkste (= barbell)") — und gibt diese SOFORT zurück, sobald sie `.available` ist. Variantenwahl/Substitution wird nur versucht, wenn etwas FEHLT, nie wenn der Nutzer mehr Ausstattung hat als nötig. Zusätzlich haben nur 3 von 20 kuratierten Templates (`hybridBeginner`/`hybridBalanced`/`hybridPerformance`) überhaupt `equipmentVariants` — alle anderen 17 sind unveränderlich mit ihrem Original-Inhalt verdrahtet. Der freie Plan-Generator-Assistent ("Create new plan", `PlanGenerator.strengthCandidates`) ist NICHT betroffen — er nutzt bereits korrekt alle gewählten Gerätearten (`equipmentPool`).
 
 **Entscheidung des Auftraggebers zu Befund 1:** Die feste Priorität `barbellGym > dumbbellOnly > kettlebellOnly > machineGym` entfällt als allgemeine Regel. Ausgewählte Ausstattung bedeutet verfügbar, nicht zwingend genutzt. Der Generator soll bei mehreren verfügbaren Geräten sinnvolle Vielfalt ermöglichen, aber Trainingsqualität hat Vorrang vor künstlicher Abwechslung — eine Übung wird nicht allein deshalb ersetzt, weil ein anderes Gerät verfügbar ist. Bei eingeschränkter Ausstattung müssen alle Übungen weiterhin durchführbar bleiben. Kuratierte Templates und freier Generator sollen sich equipment-seitig konsistent verhalten, ohne eine große Zahl nahezu identischer Templates zu erzeugen.
 
-**Befund 2 — Laufcoaching kann aktiven Plänen ohne Cardio-Tage nichts hinzufügen.** Root Cause: `PlanGeneratorInstantiator.applyCoachCardioAdjustment` kann ausschließlich bereits vorhandene, anfassbare Cardio-Tage ERSETZEN (`RunCoachPlanAdjustment.eligibleCardioDays`) — "Tage zu einem lebenden Plan hinzuzufügen" ist laut eigenem Code-Kommentar (`Sources/FitnessAppData/PlanGeneratorInstantiator.swift:907-913`) ausdrücklich außerhalb des Scopes von "Paket 1" belassen worden, keine versehentliche Lücke. Für einen reinen Kraftplan ohne Cardio-Tag (z.B. "Ganzkörper 3x") bleibt deshalb nur "Create new plan" als Weg. Zusätzlich fällt `CardioFeasibilityCardModel.accept()` heute bereits STILLSCHWEIGEND zwischen Plan-Anpassung (wenn möglich) und neuem Plan zurück, ohne den Nutzer wählen zu lassen oder sichtbar zu machen, dass ein zweiter Plan entsteht — vermutlich die Ursache der bei der TestingBot-Abnahme beobachteten "zwei gleichzeitig aktive Pläne"-Verwirrung (Befund A oben).
+**Befund 2 — Laufcoaching kann aktiven Plänen ohne Cardio-Tage nichts hinzufügen.** Root Cause: `PlanGeneratorInstantiator.applyCoachCardioAdjustment` kann ausschließlich bereits vorhandene, anfassbare Cardio-Tage ERSETZEN (`RunCoachPlanAdjustment.eligibleCardioDays`) — "Tage zu einem lebenden Plan hinzuzufügen" ist laut eigenem Code-Kommentar (`Sources/DeltiqData/PlanGeneratorInstantiator.swift:907-913`) ausdrücklich außerhalb des Scopes von "Paket 1" belassen worden, keine versehentliche Lücke. Für einen reinen Kraftplan ohne Cardio-Tag (z.B. "Ganzkörper 3x") bleibt deshalb nur "Create new plan" als Weg. Zusätzlich fällt `CardioFeasibilityCardModel.accept()` heute bereits STILLSCHWEIGEND zwischen Plan-Anpassung (wenn möglich) und neuem Plan zurück, ohne den Nutzer wählen zu lassen oder sichtbar zu machen, dass ein zweiter Plan entsteht — vermutlich die Ursache der bei der TestingBot-Abnahme beobachteten "zwei gleichzeitig aktive Pläne"-Verwirrung (Befund A oben).
 
 **Entscheidung des Auftraggebers zu Befund 2:** Der Nutzer soll explizit wählen können zwischen (A) bestehenden aktiven Plan um Lauftage ergänzen (inkl. neue Cardio-Tage einfügen, nicht nur bestehende ersetzen) und (B) separaten, zeitlich abgestimmten Laufplan erstellen, bei unverändertem Kraftplan. Bereits absolvierte/protokollierte Einheiten und manuelle Anpassungen dürfen dabei nie überschrieben werden.
 

@@ -1,0 +1,92 @@
+import SwiftUI
+import SwiftData
+import DeltiqUI
+import DeltiqData
+import DeltiqActivities
+
+/// App entry point. Three responsibilities only:
+///   1. Hand SwiftData a list of @Model types via `AppSchema.types` (single source
+///      of truth in DeltiqData — adding new models doesn't require changes here).
+///   2. Render `RootView` from DeltiqUI, which handles the Onboarding/MainTabView
+///      switch internally and provides AppNavigation/HealthKit/RestTimer-Activity
+///      controllers via the environment.
+///   3. Forward incoming deep-links (e.g., taps on the Live Activity) to the app.
+@main
+struct DeltiqApp: App {
+
+    /// Adapter haengt den AppDelegate in den SwiftUI-App-Lifecycle. Wichtig
+    /// fuer den UNUserNotificationCenterDelegate-Setup, der COLD-START-safe
+    /// sein muss (siehe Kommentare in AppDelegate.swift).
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    /// DEL-216: App-Group-geteilter Store statt `.modelContainer(for:)` —
+    /// das interaktive Wasser-Widget liest + schreibt denselben Bestand.
+    /// `makeAppContainer()` migriert den alten Default-Store einmalig
+    /// (verlustfreie Kopie) und faellt ohne App-Group-Entitlement aufs
+    /// alte Verhalten zurueck. Static let = genau eine Instanz pro Prozess.
+    private static let sharedContainer: ModelContainer = SharedStore.makeAppContainer()
+
+    /// DEL-228: Treiber fuer das automatische Backup beim Wechsel in den
+    /// Hintergrund.
+    @Environment(\.scenePhase) private var scenePhase
+
+    var body: some Scene {
+        WindowGroup {
+            RootView()
+                // DEL-045-Update Punkt 2: App-weite Akzentfarbe. Alle nativen
+                // SwiftUI-Komponenten (Buttons, Toggles, Slider, NavigationLink-
+                // Chevrons, TabView-Selection, Progress-Indikatoren) erben den
+                // Tint automatisch — kein Per-View-Tinting mehr noetig.
+                .tint(Color.deltiqOrange)
+                .onOpenURL { url in
+                    handleDeepLink(url)
+                }
+                // DEL-228: Automatisches Backup, wenn die App in den
+                // Hintergrund geht und die letzte Sicherung mehr als einen Tag
+                // her ist. Dieser Moment ist bewusst gewaehlt: der Datenstand
+                // ist gerade konsistent (kein halb geloggter Satz), und ein
+                // kurzer synchroner Schreibvorgang stoert keine laufende
+                // Interaktion. Fehler werden im Service geschluckt — ein
+                // fehlgeschlagenes Backup darf den Lifecycle nie stoeren, der
+                // Zeitstempel bleibt dann ungesetzt und der naechste Wechsel
+                // versucht es erneut.
+                .onChange(of: scenePhase) { _, newPhase in
+                    guard newPhase == .background else { return }
+                    BackupService.runAutomaticBackupIfDue(
+                        context: Self.sharedContainer.mainContext
+                    )
+                }
+        }
+        .modelContainer(Self.sharedContainer)
+    }
+
+    /// DEL-076: Custom-scheme-Handler routet jetzt via NotificationCenter-
+    /// Bridge in den RootView (der `AppNavigation` haelt) — wir vermeiden
+    /// den invasiveren Refactor "AppNavigation ins App-Layer hochziehen".
+    ///
+    /// Zwei Routes:
+    ///   * `fitnessapp://workout/active` → `.deltiqOpenActiveWorkout`
+    ///     RootView swappt zum Plan-Tab UND pusht die noch laufende
+    ///     (`isCompleted == false`) Session auf den workoutPath.
+    ///   * `fitnessapp://dashboard` → `.deltiqOpenDashboard`
+    ///     RootView swappt zum Dashboard-Tab.
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme == DeltiqDeepLink.scheme else { return }
+        #if DEBUG
+        print("Deltiq deep-link received: \(url.absoluteString)")
+        #endif
+
+        // Pfad-Komponenten extrahieren. `host` traegt "workout"/"dashboard",
+        // `path` ggf. "/active".
+        let host = url.host ?? ""
+        let path = url.path
+        switch (host, path) {
+        case ("workout", "/active"):
+            NotificationCenter.default.post(name: .deltiqOpenActiveWorkout, object: nil)
+        case ("dashboard", _):
+            NotificationCenter.default.post(name: .deltiqOpenDashboard, object: nil)
+        default:
+            break
+        }
+    }
+}

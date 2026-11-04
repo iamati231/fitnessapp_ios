@@ -1,6 +1,6 @@
 # Übungs-GIFs aus externen Quellen
 
-Die animierten GIFs unter [`Sources/FitnessAppUI/ExerciseGifs/`](Sources/FitnessAppUI/ExerciseGifs/)
+Die animierten GIFs unter [`Sources/DeltiqUI/ExerciseGifs/`](Sources/DeltiqUI/ExerciseGifs/)
 sind **unveränderte Kopien** aus zwei externen Repos:
 
 - **Metadaten** (Namen, Equipment, Zielmuskel — nicht Teil der App):
@@ -48,7 +48,7 @@ python3 .scripts/build_exercise_gif_map.py --refresh
 ```
 
 Lädt Metadaten + Datei-Listing neu, matcht erneut gegen
-`Sources/FitnessAppCore/Programs/ExerciseLibraryData.swift`, aktualisiert
+`Sources/DeltiqCore/Programs/ExerciseLibraryData.swift`, aktualisiert
 `exercise_gif_map.json` / `GIF_MATCH_REPORT.md` / die generierten
 Swift-Tabellen und lädt neue/fehlende GIFs nach. Danach die Commit-Hashes
 oben nachtragen.

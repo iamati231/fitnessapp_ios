@@ -11,11 +11,11 @@
 | 🇹🇷 Türkçe (TR) | **2537 / 2537** (100%) | 0 |
 
 Wenn du EN/TR aktualisierst:
-- Per Xcode: öffne `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
+- Per Xcode: öffne `Sources/DeltiqUI/Resources/Localizable.xcstrings`, Apple's String-Catalog-Editor markiert „needs translation" automatisch.
 - Per CSV-Export aus dieser Tabelle → ChatGPT / DeepL → zurück in die xcstrings importieren.
 - Per direktem JSON-Edit (vorsichtig, JSON-Syntax muss valide bleiben).
 
-Quelle: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
+Quelle: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
 
 Tabellenformat: leere EN/TR-Spalten brauchen Übersetzung. Plural-Keys sind separat aufgelistet — die haben one/other-Varianten.
 

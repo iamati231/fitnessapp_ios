@@ -43,7 +43,7 @@ abrufbar (keine neue Build-Serie nötig).
   einsehbar — ehrlich offen ausgewiesen. Da Apple Build-Nummern pro App
   eindeutig und aufsteigend vergibt und dieser Upload erfolgreich verarbeitet
   wurde, kann aber KEIN anderer Build ebenfalls die Nummer 164 tragen.
-- Gegenprobe: `Sources/FitnessAppUI/DashboardView.swift` bei exakt diesem
+- Gegenprobe: `Sources/DeltiqUI/DashboardView.swift` bei exakt diesem
   Commit enthaelt `nextScheduledDay(in:)` an Zeile 1848 und den im
   Crash-Report zitierten Code `$0.day?.plan?.persistentModelID == ...` an
   exakt Zeile 1850/1851 — identisch zu den im Originalbericht genannten
@@ -161,7 +161,7 @@ sie urspruenglich gehoerte.
 
 ## 4. Fix
 
-`Sources/FitnessAppUI/DashboardView.swift`, `nextScheduledDay(in:)`:
+`Sources/DeltiqUI/DashboardView.swift`, `nextScheduledDay(in:)`:
 Zaehlung dreht die Traversal-Richtung um — `plan.days` (Vorwaerts, eigene
 Kinder des gerade betrachteten, garantiert lebenden Plans) ->
 `day.sessions` (deren jeweils EIGENE Ruecktrefferliste) statt der globalen
@@ -175,9 +175,9 @@ echte strukturelle Vermeidung des Zugriffspfads.
 
 `nextScheduledDay` wurde dafuer von `private` auf `internal` angehoben (wie
 bereits bei `DayEditorView.revertExerciseOrder` etabliert), um sie direkt per
-`@testable import FitnessAppUI` zu testen.
+`@testable import DeltiqUI` zu testen.
 
-## 5. Tests (neu, `Tests/FitnessAppUITests/DashboardNextScheduledDayTests.swift`)
+## 5. Tests (neu, `Tests/DeltiqUITests/DashboardNextScheduledDayTests.swift`)
 
 - `testCompletedSessionsOnlyCountForTheirOwnPlanAndAdvanceTheRotation`:
   unbeschaedigter Bestand, zwei unabhaengige Plaene, bestaetigt identisches
@@ -206,7 +206,7 @@ test` geben dafuer keinerlei reales Signal (Datei wird nur als leerer
 manueller Durchsicht (Signatur-/Typ-Abgleich gegen bestehende, bereits
 Apple-CI-verifizierte Muster in `TrainingDayContentSnapshotWriterTests.swift`
 und `EditorDiscardSnapshotTests.swift`) sowie Linux-`swift build` fuer die
-ungegateten Teile (1075/1075 `FitnessAppCoreTests` weiterhin gruen, keine
+ungegateten Teile (1075/1075 `DeltiqCoreTests` weiterhin gruen, keine
 Core-Aenderung in diesem Fix).
 
 ## 6. Was dieser Fix NICHT macht (bewusst, per Auftrag)

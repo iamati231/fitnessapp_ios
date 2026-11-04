@@ -4,7 +4,7 @@
 
 **Goal:** Die drei offenen UI-Lücken aus dem Review schließen (kompakter, unten verankerter Mengenbereich; Deltiq-Designsystem statt Standard-iOS-Controls; verifiziert locale-reaktive Katalognamen) und darauf aufbauend die optionale, rein lokale KI-Schicht ergänzen (Freitext-Erfassung, Coaching) — ohne die bereits gemergte, auf echtem Gerät verifizierte Basisfunktionalität (Katalog, Erfassung, Tagesübersicht, Dashboard-Kachel, Persistenz) zu verändern oder zu duplizieren.
 
-**Architecture:** Die UI-Lücken betreffen ausschließlich bereits existierende Dateien (`AddMealView.swift`, ggf. `MealDraft.swift`), keine neuen Module. Die KI-Schicht bekommt ein neues, eigenständiges Package-Target `FitnessAppAI`, das Apple Foundation Models kapselt und nur über ein Protokoll mit `FitnessAppUI` verbunden ist — `FitnessAppCore`/`FitnessAppData` erfahren nie etwas von Foundation Models.
+**Architecture:** Die UI-Lücken betreffen ausschließlich bereits existierende Dateien (`AddMealView.swift`, ggf. `MealDraft.swift`), keine neuen Module. Die KI-Schicht bekommt ein neues, eigenständiges Package-Target `DeltiqAI`, das Apple Foundation Models kapselt und nur über ein Protokoll mit `DeltiqUI` verbunden ist — `DeltiqCore`/`DeltiqData` erfahren nie etwas von Foundation Models.
 
 **Tech Stack:** Swift 5.9, SwiftUI, SwiftData, XCTest, Apple Foundation Models (On-Device, iOS 18.2+/kompatibles SDK — Verfügbarkeit vor Task D zwingend gegen aktuelle Apple-Dokumentation prüfen, siehe Task D).
 
@@ -15,15 +15,15 @@
 ## Global Constraints
 
 - App-Mindestziel bleibt iOS 17 / macOS 14. Jede Foundation-Models-Funktion ist strikt optional und zur Laufzeit abgesichert — ohne sie bleiben Suche, manuelle Erfassung, Tagesübersicht und Berechnungen vollständig nutzbar.
-- Sprachen: Deutsch, Englisch, Türkisch — jeder neue sichtbare Text geht über `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, nie hartkodiert.
-- Rundung/Formatierung: ausschließlich bestehende `Double`-Extensions aus `Sources/FitnessAppCore/Numerics/DoubleFormatting.swift` — keine neue Rundungslogik.
+- Sprachen: Deutsch, Englisch, Türkisch — jeder neue sichtbare Text geht über `Sources/DeltiqUI/Resources/Localizable.xcstrings`, nie hartkodiert.
+- Rundung/Formatierung: ausschließlich bestehende `Double`-Extensions aus `Sources/DeltiqCore/Numerics/DoubleFormatting.swift` — keine neue Rundungslogik.
 - SwiftData: rein additive `@Model`-Typen, kein `VersionedSchema`/`SchemaMigrationPlan`.
 - Bedienelemente für Speichern/Abbrechen/Bearbeiten/Löschen behalten immer einen sichtbaren Text-Label (kein icon-only Control ohne `Text`) — diese Regel hat die Basisfunktionalität bereits zweimal gebrochen (Toolbar-Icon-Kollaps), siehe Review Focus.
 - KI ist strikt optional und lokal: kein externer KI-Dienst, kein Cloud-Fallback, keine Netzwerkanforderung. Bei fehlender Verfügbarkeit (Modell/Gerät/OS/Sprache) bleiben manuelle Suche, Erfassung, Übersicht und Berechnungen unverändert verfügbar — keine leere oder blockierte UI.
 - KI-Ausgaben sind nie direkt persistiert: KI liefert ausschließlich einen Entwurf (`MealDraft`) zur Prüfung/Bearbeitung; gespeichert wird erst nach ausdrücklicher Bestätigung über den bereits vorhandenen `save()`-Pfad. Katalog und `NutritionCalculations` bleiben einzige Quelle der Nährwerte — die KI erfindet nie einen Nährwert.
 - Keine Ernährungsdaten (Lebensmittelnamen, Mengen, Nährwerte) und kein KI-Prompt/keine KI-Antwort in Logs oder Debug-Ausgaben — kein `print`/`debugPrint` auf diesen Werten in neuem Code.
 - Kein Merge, kein Release, kein Push als Teil dieses Plans — jede Task endet mit einem lokalen Commit.
-- Jede Task, die UI anfasst (A, B, E, F), bekommt am Ende einen echten `swift build`/`swift test`-Lauf auf macOS-CI (GitHub Actions `apple-ci-comparison.yml`, nicht nur `FitnessAppCore` auf Windows) — dieser Branch hat bereits mehrfach gezeigt, dass UI-Probleme (tote Tipp-Bereiche, icon-only Controls) nur auf echtem Gerät/Simulator sichtbar werden, nie im Code-Review.
+- Jede Task, die UI anfasst (A, B, E, F), bekommt am Ende einen echten `swift build`/`swift test`-Lauf auf macOS-CI (GitHub Actions `apple-ci-comparison.yml`, nicht nur `DeltiqCore` auf Windows) — dieser Branch hat bereits mehrfach gezeigt, dass UI-Probleme (tote Tipp-Bereiche, icon-only Controls) nur auf echtem Gerät/Simulator sichtbar werden, nie im Code-Review.
 
 ## Review Focus
 
@@ -38,8 +38,8 @@
 ### Task A: Kompakter, unten verankerter Mengenbereich
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift`
-- Test: `Tests/FitnessAppUITests/MealDraftTests.swift` (ggf. ergänzen, falls ein neuer `MealDraft`-Zustand nötig wird — siehe Step 3)
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift`
+- Test: `Tests/DeltiqUITests/MealDraftTests.swift` (ggf. ergänzen, falls ein neuer `MealDraft`-Zustand nötig wird — siehe Step 3)
 
 **Ausgangslage:** `quantitySection(for:)` ist aktuell eine normale `Section` innerhalb des scrollenden `Form` — Nutzer müssen durch die gesamte (bis zu ~130 Einträge lange) Trefferliste scrollen, um die Menge einzutragen. Im eigenen Gerätetest dieser Session musste die Suche erst auf 0 Treffer gefiltert werden, um den Mengenbereich überhaupt zu erreichen — das ist genau der im Review beschriebene Missstand.
 
@@ -81,7 +81,7 @@ Dokumentiere das Ergebnis (inkl. etwaiger neuer Funde) im Report.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/AddMealView.swift
+git add Sources/DeltiqUI/Nutrition/AddMealView.swift
 git commit -m "fix: anchor quantity entry to a bottom-pinned area, independent of search scroll"
 ```
 
@@ -90,7 +90,7 @@ git commit -m "fix: anchor quantity entry to a bottom-pinned area, independent o
 ### Task B: Deltiq-Designsystem statt Standard-iOS-Controls
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift`
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift`
 
 **Ausgangslage:** `detailsSection` (Mahlzeitentyp) und `quantitySection`/`quantityBottomBar` (Einheit) nutzen aktuell `Picker(...).pickerStyle(.segmented)` — den Standard-iOS-Segmented-Control. Das Deltiq-Designsystem hat dafür bereits einen fertigen Ersatz: `DeltiqSegmentedPicker<Value: Hashable>` (`Theme.swift:818`), bereits verwendet u.a. in `PlateCalculatorView`, `ChartTimeRange`, `OnboardingView`.
 
@@ -131,12 +131,12 @@ Prüfe `addSelectedEntry`-Button ("Hinzufügen", aktuell `HStack { Spacer(); Tex
 
 - [ ] **Step 4: Bestehende Tests + Gerätetest**
 
-`swift test --filter MealDraftTests` (lokal auf `FitnessAppCore`-Ebene nicht möglich, läuft über macOS-CI) darf nicht regressieren — reine visuelle Änderung, keine Logikänderung erwartet. Gerätetest: Mahlzeitentyp- und Einheiten-Auswahl sehen wie das Deltiq-Orange/Dunkelgrau-Segmented aus (nicht mehr Systemgrau), Verhalten (Auswahl wechselt, Vorschau aktualisiert sich) unverändert.
+`swift test --filter MealDraftTests` (lokal auf `DeltiqCore`-Ebene nicht möglich, läuft über macOS-CI) darf nicht regressieren — reine visuelle Änderung, keine Logikänderung erwartet. Gerätetest: Mahlzeitentyp- und Einheiten-Auswahl sehen wie das Deltiq-Orange/Dunkelgrau-Segmented aus (nicht mehr Systemgrau), Verhalten (Auswahl wechselt, Vorschau aktualisiert sich) unverändert.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/AddMealView.swift
+git add Sources/DeltiqUI/Nutrition/AddMealView.swift
 git commit -m "fix: use DeltiqSegmentedPicker instead of system segmented control"
 ```
 
@@ -145,21 +145,21 @@ git commit -m "fix: use DeltiqSegmentedPicker instead of system segmented contro
 ### Task C: Locale-reaktive Katalognamen — verifizieren und absichern
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift` (nur falls Step 1 eine echte Lücke findet)
-- Test: `Tests/FitnessAppUITests/FoodCatalogLocalizationTests.swift` (neu)
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift` (nur falls Step 1 eine echte Lücke findet)
+- Test: `Tests/DeltiqUITests/FoodCatalogLocalizationTests.swift` (neu)
 
 **Ausgangslage:** Diese App hat KEINEN In-App-Sprachumschalter (geprüft: kein `.environment(\.locale:)`/`AppLanguage`-Mechanismus im Repo) — ein Sprachwechsel läuft ausschließlich über die iOS-Systemeinstellungen (oder die iOS-15+-Pro-App-Sprache), was die App in beiden Fällen neu startet. `resolvedName(for:)` löst `entry.nameKey` bereits bei jedem Rendering über `String(localized:bundle:)` gegen die AKTUELL aktive Locale auf — es gibt also wahrscheinlich keinen echten "Sprache wechselt, View bleibt aber gemountet"-Fall in dieser App. Diese Task verifiziert das, statt blind eine Live-Reaktivität nachzubauen, die es in diesem Produkt vermutlich nie braucht.
 
 - [ ] **Step 1: Verifizieren, ob die Prämisse stimmt**
 
-Grep erneut (nach eigenem Code-Stand) nach `.environment(\.locale` und jedem In-App-Sprachumschalter im gesamten `Sources/`-Baum, nicht nur `FitnessAppUI`. Falls tatsächlich keiner existiert: Ruling — die Live-Reaktivität ist nicht umsetzbar/nicht nötig, dieser Task liefert ausschließlich Tests, die die KORREKTHEIT der Namensauflösung pro Locale beweisen (das eigentliche Risiko: ein falscher/fehlender `nameKey` oder eine falsche Übersetzung, nicht fehlende Reaktivität). Falls doch ein Mechanismus existiert, der `AddMealView` oder `FoodCatalogEntry` ohne Neustart live umschalten könnte: das dann tatsächlich bestehende Reaktivitätsproblem beheben (z.B. `searchText`/`selectedEntry`-State, der an die Locale gebunden neu berechnet werden muss) und diesen Fund im Report explizit benennen, da er von dieser Planannahme abweicht.
+Grep erneut (nach eigenem Code-Stand) nach `.environment(\.locale` und jedem In-App-Sprachumschalter im gesamten `Sources/`-Baum, nicht nur `DeltiqUI`. Falls tatsächlich keiner existiert: Ruling — die Live-Reaktivität ist nicht umsetzbar/nicht nötig, dieser Task liefert ausschließlich Tests, die die KORREKTHEIT der Namensauflösung pro Locale beweisen (das eigentliche Risiko: ein falscher/fehlender `nameKey` oder eine falsche Übersetzung, nicht fehlende Reaktivität). Falls doch ein Mechanismus existiert, der `AddMealView` oder `FoodCatalogEntry` ohne Neustart live umschalten könnte: das dann tatsächlich bestehende Reaktivitätsproblem beheben (z.B. `searchText`/`selectedEntry`-State, der an die Locale gebunden neu berechnet werden muss) und diesen Fund im Report explizit benennen, da er von dieser Planannahme abweicht.
 
 - [ ] **Step 2: Test schreiben — Namensauflösung pro Locale**
 
 ```swift
 import XCTest
-@testable import FitnessAppCore
-@testable import FitnessAppUI
+@testable import DeltiqCore
+@testable import DeltiqUI
 
 final class FoodCatalogLocalizationTests: XCTestCase {
     private func resolvedName(_ key: String, locale: Locale) -> String {
@@ -201,37 +201,37 @@ Exakten `id`/`nameKey` für "Wasser" vorher in `FoodCatalogData.swift` nachschla
 
 - [ ] **Step 3: Test laufen lassen**
 
-Run: `swift test --filter FoodCatalogLocalizationTests` (über macOS-CI, nicht Windows — `bundle: .module` für `FitnessAppUI` braucht das echte Ressourcen-Bundle).
+Run: `swift test --filter FoodCatalogLocalizationTests` (über macOS-CI, nicht Windows — `bundle: .module` für `DeltiqUI` braucht das echte Ressourcen-Bundle).
 Expected: PASS. Ein Fehlschlag hier bedeutet eine ECHTE fehlende/falsche Übersetzung im Katalog — das vor dem Commit beheben (fehlenden xcstrings-Eintrag ergänzen), nicht den Test abschwächen.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add Tests/FitnessAppUITests/FoodCatalogLocalizationTests.swift Sources/FitnessAppUI/Nutrition/AddMealView.swift
+git add Tests/DeltiqUITests/FoodCatalogLocalizationTests.swift Sources/DeltiqUI/Nutrition/AddMealView.swift
 git commit -m "test: verify catalog name resolution across de/en/tr locales"
 ```
 
 ---
 
-### Task D: `FitnessAppAI`-Modul und Laufzeit-Verfügbarkeit
+### Task D: `DeltiqAI`-Modul und Laufzeit-Verfügbarkeit
 
-**Ziel:** Lokale KI kapseln, ohne `FitnessAppCore`/`FitnessAppData` oder die bestehende manuelle Erfassung von ihr abhängig zu machen.
+**Ziel:** Lokale KI kapseln, ohne `DeltiqCore`/`DeltiqData` oder die bestehende manuelle Erfassung von ihr abhängig zu machen.
 
 **Vor Implementierung zwingend (in dieser Reihenfolge):**
-1. `Package.swift` und die bestehende Target-Struktur lesen (`FitnessAppCore`/`FitnessAppData`/`FitnessAppHealth`/`FitnessAppActivities`/`FitnessAppUI`) — verstehen, wie ein neues Target eingehängt wird (Produkt-Deklaration, Abhängigkeiten, `App/`-Xcode-Projekt-Einbindung über `project.yml`/XcodeGen).
+1. `Package.swift` und die bestehende Target-Struktur lesen (`DeltiqCore`/`DeltiqData`/`DeltiqHealth`/`DeltiqActivities`/`DeltiqUI`) — verstehen, wie ein neues Target eingehängt wird (Produkt-Deklaration, Abhängigkeiten, `App/`-Xcode-Projekt-Einbindung über `project.yml`/XcodeGen).
 2. Per `WebSearch`/`WebFetch` die AKTUELLE Apple-Dokumentation zum Foundation-Models-Framework (Namen, Mindest-OS-Version, Verfügbarkeitsprüfung, Sprach-Unterstützung) nachschlagen — NICHT aus Trainingswissen raten, dieses Framework ist neu genug, dass veraltete/erfundene API-Namen ein reales Risiko sind. Konkret klären: wie heißt der Verfügbarkeits-Typ zur Laufzeit, wie wird eine Sitzung/Anfrage gestartet, wie werden strukturierte (typisierte) Ausgaben angefordert, welche Mindestversion/welche Sprachen werden unterstützt.
-3. Erst danach die exakten Typnamen/Signaturen für `FitnessAppAI` festlegen.
+3. Erst danach die exakten Typnamen/Signaturen für `DeltiqAI` festlegen.
 
 **Files (Pfade nach Schritt 1 ggf. anpassen):**
-- Create: `Sources/FitnessAppAI/NutritionAIAvailability.swift` (oder nach Projektkonvention benannt)
-- Create: `Sources/FitnessAppAI/NutritionAIService.swift` (Protokoll + echte Implementierung)
+- Create: `Sources/DeltiqAI/NutritionAIAvailability.swift` (oder nach Projektkonvention benannt)
+- Create: `Sources/DeltiqAI/NutritionAIService.swift` (Protokoll + echte Implementierung)
 - Modify: `Package.swift`, `project.yml` (neues Target/Produkt)
-- Test: `Tests/FitnessAppAITests/NutritionAIAvailabilityTests.swift`
+- Test: `Tests/DeltiqAITests/NutritionAIAvailabilityTests.swift`
 
 **Interfaces (Mindestanforderung, exakte Namen nach SDK-Recherche):**
 - Ein Verfügbarkeitsstatus-Enum mit mindestens den Fällen: verfügbar, Gerät/OS nicht unterstützt, Sprache nicht unterstützt, vorübergehend nicht verfügbar (z.B. Modell lädt/Systemlast) — Namenskonvention wie bestehende Status-Enums im Projekt (siehe `HealthKitError`/`WorkoutWriteAuthorization` als Vorbild für "klare, pattern-matchbare Zustände statt Bool+String").
 - Ein Protokoll (z.B. `NutritionAIAvailabilityChecking`) mit einer Methode, die den aktuellen Status liefert — injizierbar, damit Tests und nicht unterstützte Plattformen ohne echtes Foundation-Models-Backend auskommen (Vorbild: `HealthKitController`s injizierbarer `HealthKitService`).
-- Foundation-Models-Typen bleiben vollständig innerhalb von `FitnessAppAI` — kein `import FoundationModels` (oder wie das Framework tatsächlich heißt) in `FitnessAppCore`, `FitnessAppData` oder in Dateien außerhalb von `Sources/FitnessAppAI/`.
+- Foundation-Models-Typen bleiben vollständig innerhalb von `DeltiqAI` — kein `import FoundationModels` (oder wie das Framework tatsächlich heißt) in `DeltiqCore`, `DeltiqData` oder in Dateien außerhalb von `Sources/DeltiqAI/`.
 
 - [ ] **Step 1: Recherche durchführen und dokumentieren**
 
@@ -243,7 +243,7 @@ Test für den injizierbaren Verfügbarkeits-Provider: ein Fake/Mock-Provider, de
 
 - [ ] **Step 3: Implementieren**
 
-Echte Verfügbarkeitsprüfung gegen die recherchierte API, gated hinter `#if canImport(...)` für das tatsächliche Framework (analog `#if canImport(HealthKit)` in `FitnessAppHealth`) — das Target muss auf macOS/älteren Simulatoren ohne das Framework weiterhin kompilieren.
+Echte Verfügbarkeitsprüfung gegen die recherchierte API, gated hinter `#if canImport(...)` für das tatsächliche Framework (analog `#if canImport(HealthKit)` in `DeltiqHealth`) — das Target muss auf macOS/älteren Simulatoren ohne das Framework weiterhin kompilieren.
 
 - [ ] **Step 4: Test laufen lassen, Build aller Targets**
 
@@ -264,9 +264,9 @@ git commit -m "feat: add optional on-device AI capability layer"
 **Voraussetzung:** Task D abgeschlossen und gemerged in diesen Task-Branch/diese Commit-Historie.
 
 **Files (nach Repo-Stand konkretisieren):**
-- Create: `Sources/FitnessAppAI/MealTextExtractor.swift` (oder analog benannt) — nimmt Freitext + den lokalen Katalog entgegen, liefert typisierte Kandidaten (Lebensmitteltext, erkannte Menge/Einheit, vermuteter `MealType`, Konfidenz/Mehrdeutigkeits-Flag), ruft dafür Foundation Models auf.
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift` — neue, klar beschriftete KI-Eingabeaktion (sichtbarer Text-Label, siehe Review Focus); bei `.unavailable`-Status zeigt die Aktion stattdessen einen kurzen, lokalisierten Hinweistext plus sichtbarer Verweis auf die normale Suche (kein Ausblenden, kein leerer Zustand).
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
+- Create: `Sources/DeltiqAI/MealTextExtractor.swift` (oder analog benannt) — nimmt Freitext + den lokalen Katalog entgegen, liefert typisierte Kandidaten (Lebensmitteltext, erkannte Menge/Einheit, vermuteter `MealType`, Konfidenz/Mehrdeutigkeits-Flag), ruft dafür Foundation Models auf.
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift` — neue, klar beschriftete KI-Eingabeaktion (sichtbarer Text-Label, siehe Review Focus); bei `.unavailable`-Status zeigt die Aktion stattdessen einen kurzen, lokalisierten Hinweistext plus sichtbarer Verweis auf die normale Suche (kein Ausblenden, kein leerer Zustand).
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
 - Test: Extraktions-Logik, Zuordnungs-Mehrdeutigkeit, Rückfrage-Pfad, Fehlerfälle (ungültige/unvollständige Modellantwort).
 
 **Verbindlich:**
@@ -305,9 +305,9 @@ git commit -m "feat: add local AI-assisted meal draft parsing"
 **Voraussetzung:** Task D abgeschlossen.
 
 **Files (nach Repo-Stand konkretisieren):**
-- Create: `Sources/FitnessAppAI/NutritionInsightGenerator.swift` (oder analog) — nimmt `NutrientValues` (Tagessumme, aus `NutritionDayAggregator`, bestehend) + optionale Zielwerte (`UserBodyProfile`, bestehend) entgegen, liefert lokalisierten, als KI-generiert gekennzeichneten Text.
-- Modify: `Sources/FitnessAppUI/Nutrition/NutritionDayView.swift` — optionaler Analyse-/Coaching-Abschnitt, nur sichtbar wenn KI verfügbar UND mindestens eine Mahlzeit für den Tag existiert.
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
+- Create: `Sources/DeltiqAI/NutritionInsightGenerator.swift` (oder analog) — nimmt `NutrientValues` (Tagessumme, aus `NutritionDayAggregator`, bestehend) + optionale Zielwerte (`UserBodyProfile`, bestehend) entgegen, liefert lokalisierten, als KI-generiert gekennzeichneten Text.
+- Modify: `Sources/DeltiqUI/Nutrition/NutritionDayView.swift` — optionaler Analyse-/Coaching-Abschnitt, nur sichtbar wenn KI verfügbar UND mindestens eine Mahlzeit für den Tag existiert.
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
 - Test: fehlende Ziele werden nie als gesetzt dargestellt; Analyse-Text basiert nachweislich auf den übergebenen deterministischen Werten (kein eigenständiges Neuberechnen); KI-Ausfall lässt die normale Tagesübersicht unverändert.
 
 **Verbindlich:**

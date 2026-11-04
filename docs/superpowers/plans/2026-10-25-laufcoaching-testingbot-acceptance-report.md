@@ -10,7 +10,7 @@ Apple CI zu diesem Commit: GRÜN, 1928/1928 Tests (Run `40204487288`)
 
 - TestingBot-Session-ID: `24ab53ab-e2f1-46e8-a4f8-28a3063be11c` (Appium, `https://hub.testingbot.com/wd/hub`)
 - Gerät/OS: iPhone 15, iOS 18.0 (TestingBot-Simulator)
-- Build: `FitnessApp-simulator.zip` aus dem Apple-CI-Artefakt zu Commit `cf9e03d`, hochgeladen als `tb://d2699b1e1bbcff83cd1e7f41`
+- Build: `Deltiq-simulator.zip` aus dem Apple-CI-Artefakt zu Commit `cf9e03d`, hochgeladen als `tb://d2699b1e1bbcff83cd1e7f41`
 - TestingBot-Account: Free Trial, 6000s Guthaben — innerhalb des vorhandenen Guthabens getestet, keine Zusatzkäufe
 - Keine Feature-Änderungen, kein Merge, kein PR im Rahmen dieses Auftrags
 

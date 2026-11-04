@@ -1,16 +1,16 @@
 # Xcode App-Target Setup
 
-Schritt-fuer-Schritt-Anleitung, um das Swift-Package (`./` mit Sources/FitnessAppCore, FitnessAppData, FitnessAppUI) in ein echtes iOS-App-Target einzubinden. Sobald das App-Target laeuft, koennen wir auf native APIs wie HealthKit, Benachrichtigungen und Live Activities zugreifen.
+Schritt-fuer-Schritt-Anleitung, um das Swift-Package (`./` mit Sources/DeltiqCore, DeltiqData, DeltiqUI) in ein echtes iOS-App-Target einzubinden. Sobald das App-Target laeuft, koennen wir auf native APIs wie HealthKit, Benachrichtigungen und Live Activities zugreifen.
 
 ## 1. Xcode-Projekt anlegen
 
 1. **Xcode → File → New → Project**
 2. **iOS → App** waehlen
 3. Felder ausfuellen:
-   - **Product Name:** `FitnessApp`
+   - **Product Name:** `Deltiq`
    - **Team:** dein Apple-Developer-Team (fuer spaetere HealthKit-Entitlements)
    - **Organization Identifier:** `com.atamya` (passend zu `a.isik@atamya.com`)
-   - **Bundle Identifier** wird automatisch zu `com.atamya.FitnessApp`
+   - **Bundle Identifier** wird automatisch zu `com.atamya.Deltiq`
    - **Interface:** SwiftUI
    - **Language:** Swift
    - **Storage:** None  ← wichtig, wir setzen den ModelContainer manuell auf
@@ -20,29 +20,29 @@ Schritt-fuer-Schritt-Anleitung, um das Swift-Package (`./` mit Sources/FitnessAp
 ## 2. Swift-Package als lokale Dependency einbinden
 
 1. Im Project Navigator (links) auf das **blaue Projekt-Icon ganz oben** klicken
-2. Im mittleren Pane: **Targets → FitnessApp** waehlen
+2. Im mittleren Pane: **Targets → Deltiq** waehlen
 3. Tab **General → Frameworks, Libraries, and Embedded Content**
 4. **+** klicken → **Add Other… → Add Local…**
 5. Den Package-Ordner (`fitnessapp_ios/`) auswaehlen
 6. **Wichtig:** alle drei Libraries hinzufuegen:
-   - `FitnessAppCore`
-   - `FitnessAppData`
-   - `FitnessAppUI`
+   - `DeltiqCore`
+   - `DeltiqData`
+   - `DeltiqUI`
 
 Wenn du nur eine Library hinzufuegst, beschwert sich der Linker spaeter ueber fehlende Symbole.
 
 ## 3. App-Entry-Point verkabeln
 
-Xcode hat dir eine `FitnessAppApp.swift` generiert. Inhalt komplett ersetzen mit:
+Xcode hat dir eine `DeltiqApp.swift` generiert. Inhalt komplett ersetzen mit:
 
 ```swift
 import SwiftUI
 import SwiftData
-import FitnessAppUI
-import FitnessAppData
+import DeltiqUI
+import DeltiqData
 
 @main
-struct FitnessAppApp: App {
+struct DeltiqApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -56,7 +56,7 @@ struct FitnessAppApp: App {
 }
 ```
 
-`import SwiftData` ist Pflicht — `.modelContainer(for:)` ist ein SwiftData-Scene-Modifier und ohne den Import nicht sichtbar (auch wenn `RootView` aus FitnessAppUI SwiftData intern nutzt, re-exportieren Swift-Module standardmaessig nicht).
+`import SwiftData` ist Pflicht — `.modelContainer(for:)` ist ein SwiftData-Scene-Modifier und ohne den Import nicht sichtbar (auch wenn `RootView` aus DeltiqUI SwiftData intern nutzt, re-exportieren Swift-Module standardmaessig nicht).
 
 `RootView` regelt den Onboarding-vs-MainTabView-Switch automatisch via `@Query` auf `UserBodyProfile` und stellt die drei `@Observable`-Controller (`AppNavigation`, `HealthKitController`, `RestTimerActivityController`) ueber den Environment bereit. Du musst nichts weiter injizieren.
 
@@ -73,7 +73,7 @@ Wenn das alles funktioniert: Foundation steht.
 
 ## 5. Bundle-ID festhalten
 
-Nach dem Anlegen die **Bundle-ID** notieren — typischerweise `com.atamya.FitnessApp`. Wir brauchen sie fuer:
+Nach dem Anlegen die **Bundle-ID** notieren — typischerweise `com.atamya.Deltiq`. Wir brauchen sie fuer:
 
 - HealthKit-Capabilities (ans App-Target gebunden)
 - App-Group fuer Live-Activities-Widget (separates Bundle, abgeleitet von der Haupt-ID)
@@ -86,14 +86,14 @@ Sobald die App startet:
 
 1. **Im App-Target die HealthKit-Capability aktivieren**:
    - Project Settings → Signing & Capabilities → **+ Capability** → **HealthKit**
-2. **Info.plist:** zwei Keys hinzufuegen (sonst crasht der Permission-Flow): `NSHealthShareUsageDescription` und `NSHealthUpdateUsageDescription`. Die Texte (englischer Fallback in `App/FitnessApp/Info.plist`, DE/EN/TR in `App/FitnessApp/InfoPlist.xcstrings`) muessen nennen, was `HealthKitService` tatsaechlich liest und schreibt.
-3. **HealthKit-Service** kommt als neues Package-Target `FitnessAppHealth` — wird beim naechsten Schritt zusammen mit dem Permission-Flow gebaut.
+2. **Info.plist:** zwei Keys hinzufuegen (sonst crasht der Permission-Flow): `NSHealthShareUsageDescription` und `NSHealthUpdateUsageDescription`. Die Texte (englischer Fallback in `App/Deltiq/Info.plist`, DE/EN/TR in `App/Deltiq/InfoPlist.xcstrings`) muessen nennen, was `HealthKitService` tatsaechlich liest und schreibt.
+3. **HealthKit-Service** kommt als neues Package-Target `DeltiqHealth` — wird beim naechsten Schritt zusammen mit dem Permission-Flow gebaut.
 
 ## Troubleshooting
 
-- **"No such module 'FitnessAppCore'"**: Package nicht eingebunden. Schritt 2 wiederholen, alle drei Libraries hinzufuegen.
-- **"Cannot find 'RootView' in scope"**: `import FitnessAppUI` fehlt in `FitnessAppApp.swift`.
-- **"Cannot find 'AppSchema' in scope"**: `import FitnessAppData` fehlt.
+- **"No such module 'DeltiqCore'"**: Package nicht eingebunden. Schritt 2 wiederholen, alle drei Libraries hinzufuegen.
+- **"Cannot find 'RootView' in scope"**: `import DeltiqUI` fehlt in `DeltiqApp.swift`.
+- **"Cannot find 'AppSchema' in scope"**: `import DeltiqData` fehlt.
 - **Package-Source-Aenderungen kommen nicht durch**: Xcode → Product → Clean Build Folder (Shift+Cmd+K), dann erneut bauen. Bei lokalen Packages cached Xcode aggressiv.
 - **Preview crasht in Xcode**: das Package nutzt `PreviewSeed.*Container` mit In-Memory-Storage — das funktioniert in Xcode-Previews. Wenn ein Crash kommt, liegt's vermutlich an `@Query`-Fields ohne ModelContainer im Environment.
 - **Profil-Reset**: aktuell gibt's keinen Reset-Knopf. Fuer Tests die App im Simulator unter **Device → Erase All Content and Settings** zuruecksetzen, oder den Simulator komplett neu installieren.

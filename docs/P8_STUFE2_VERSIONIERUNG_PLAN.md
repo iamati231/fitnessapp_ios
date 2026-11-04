@@ -57,7 +57,7 @@ unten mehr unter "Nicht erfunden".
 | `TrainingPlan.activatedAt: Date?` | `TrainingPlan.swift:50` | Zeitanker "seit wann aktiv" (P6.1) | Nein — Plan-Ebene, kein Tagesinhalt |
 | `TrainingDay.generationFingerprint: String?` + `currentContentFingerprint` (computed) | `TrainingDay.swift:54`, `:109-127` | Dirty-Flag: hat der User seit der letzten Generierung etwas editiert? ("neu rechnen" darf nur unangetastete Tage überschreiben) | Nein — reiner Live-Vergleichswert, speichert selbst keinen Inhalt |
 | `TrainingDay.generatorSequenceIndex: Int?` | `TrainingDay.swift:64` | Stabiler Tag-Anker NUR für `recalculate`-Matching, `nil` bei Nicht-Wizard-Tagen | Nein — keine Versionsidentität, nur Positions-Ersatz |
-| `DraftDay.isContentFixed`/`.isPositionFixed` | `FitnessAppCore/Planning/PlanDraft.swift:56-69` | Schützt EINEN Entwurf (`PlanDraft`, noch nicht persistiert) vor Überschreiben bei "Woche anders verteilen"/"Vorschlag neu erstellen" | Nein — lebt nur im Builder-Entwurf, nie auf `TrainingDay` persistiert |
+| `DraftDay.isContentFixed`/`.isPositionFixed` | `DeltiqCore/Planning/PlanDraft.swift:56-69` | Schützt EINEN Entwurf (`PlanDraft`, noch nicht persistiert) vor Überschreiben bei "Woche anders verteilen"/"Vorschlag neu erstellen" | Nein — lebt nur im Builder-Entwurf, nie auf `TrainingDay` persistiert |
 | `Exercise.exerciseTemplateID: UUID?` + `ExerciseLog.exerciseTemplateIDSnapshot`/`exerciseNameSnapshot` | `Exercise.swift:28`, `ExerciseLog.swift:40,49` | Stabile Katalog-Referenz + Namens-Snapshot, damit eine Übungs-Umbenennung die Verlaufsanzeige nicht bricht (Settings-Epic P6.1, EXLIB-07/09) | Teilweise wiederverwendbar als MUSTER (ID + Namens-Snapshot), deckt aber nur "welche Übung", nicht "in welcher Reihenfolge/mit welchen Zielwerten" |
 | `WorkoutSession.dayName`/`timeFormatSnapshot`/`partialRepsExerciseName` | `WorkoutSession.swift:46,58,69` | Punktuelle Einzelwert-Snapshots (Tagesname, Zeitformat, EIN Übungsname für AMRAP-Teilrunden) | Nein — kein Snapshot der vollständigen, geordneten Übungsliste |
 
@@ -145,7 +145,7 @@ Wiederaufnahme sichtbar sind und deshalb jetzt Teil des Snapshots sind:
 `Exercise.role` (DEL-087 — Warmup/Arbeitssatz/Cooldown), `Exercise.supersetId`
 (DEL-083 — A1/B1-Gruppierung), `isCardio`/`isTimeBased`/`cardioEquipment`
 (bestimmen, welche Spalten ein Player überhaupt zeigt). Umgesetzt in
-`Sources/FitnessAppCore/Training/TrainingDayContentSnapshot.swift`:
+`Sources/DeltiqCore/Training/TrainingDayContentSnapshot.swift`:
 
 ```swift
 public struct TrainingDayContentSnapshot: Codable, Sendable, Equatable {
@@ -203,7 +203,7 @@ stillschweigend durch den Live-Tagesinhalt ersetzt; das bleibt (erst in
 Paket E) Sache des jeweiligen Lesepfads, der `.unreadable` explizit anders
 behandeln muss als `.notCaptured`.
 
-**Data (`FitnessAppData`, SwiftData, additiv) — ÜBERARBEITET nach einem
+**Data (`DeltiqData`, SwiftData, additiv) — ÜBERARBEITET nach einem
 Apple-CI-Befund (siehe "Ergebnis Paket A+B" unten für die volle
 Diagnose-Historie): der ursprüngliche Entwurf (ein eigenes `@Model`
 `TrainingDayContentRecord`, per `@Relationship` ODER per manuellem
@@ -469,8 +469,8 @@ ergänzt (`dayName`, `timeFormatSnapshot` u.v.m.). Entfällt daher ersatzlos.
 **Paket A — UMGESETZT.** Core-Struct + Encode/Decode, Linux-testbar, keine
 Abhängigkeit. `TrainingDayContentSnapshot`/`ExerciseEntry`/
 `TrainingDayContentSnapshotState`/`TrainingDayContentSnapshotDecodeError` in
-`Sources/FitnessAppCore/Training/TrainingDayContentSnapshot.swift`. 10 Tests
-in `Tests/FitnessAppCoreTests/TrainingDayContentSnapshotTests.swift` — JSON-
+`Sources/DeltiqCore/Training/TrainingDayContentSnapshot.swift`. 10 Tests
+in `Tests/DeltiqCoreTests/TrainingDayContentSnapshotTests.swift` — JSON-
 Roundtrip (Normalfall, Duplikate am selben Tag, Superset+Rollen, Cardio/
 Time-Based, Zirkel-Parameter), gültig leerer Snapshot, beschädigtes JSON,
 leerer String, nicht unterstützte Schemaversion, alle drei `State`-Fälle.
@@ -487,9 +487,9 @@ in Apples eigenem SwiftData-Binary. Finale Fassung: zwei zusätzliche
 optionale Felder `WorkoutSession.contentSnapshotJSON`/
 `.contentSnapshotCapturedAt` + `TrainingDayContentSnapshotWriter.
 capture(for:in:)` als einzige Schreibstelle, in
-`Sources/FitnessAppData/TrainingDayContentSnapshotWriter.swift` (kein neuer
+`Sources/DeltiqData/TrainingDayContentSnapshotWriter.swift` (kein neuer
 Eintrag in `AppSchema.types` nötig — keine neue Entity). 8 Tests in
-`Tests/FitnessAppDataTests/TrainingDayContentSnapshotWriterTests.swift`:
+`Tests/DeltiqDataTests/TrainingDayContentSnapshotWriterTests.swift`:
 Roundtrip durch SwiftData, Session ohne Tag (No-Op), leere Übungsliste
 (gültig), Session-Isolation zwischen zwei Sessions, Schutz vor
 Überschreiben eines abgeschlossenen Snapshots (inkl. Gegenprobe, dass eine
@@ -737,7 +737,7 @@ folgt umgestellt:
   komplett, dessen `Exercise` inzwischen gelöscht wurde (z. B. nach
   Tag-Löschung) — der Satz blieb in `session.totalSets` mitgezählt, war in
   der Aufschlüsselung aber unsichtbar. Behoben über die neue, öffentliche
-  `ExerciseLogGrouping.group(_:)` (FitnessAppData, Apple-CI-testbar):
+  `ExerciseLogGrouping.group(_:)` (DeltiqData, Apple-CI-testbar):
   orphane Logs werden jetzt separat gruppiert (`ExerciseLogGroup.orphaned`,
   Schlüssel ist das neue `ExerciseLog.exerciseOrderIndexSnapshot` —
   NICHT der Name, sonst würden zwei gleichnamige, gelöschte Übungen wie
@@ -899,7 +899,7 @@ korrekt in den Snapshot einfließt.
 
 ### 10.2 Umsetzung
 
-- **`Exercise.instanceID: UUID?`** (neu, `FitnessAppData/Exercise.swift`):
+- **`Exercise.instanceID: UUID?`** (neu, `DeltiqData/Exercise.swift`):
   immer frisch per `UUID()` im `init` erzeugt, nie nachträglich gesetzt.
   `nil` nur für Alt-Zeilen vor diesem Feld (lightweight-migrationsfähig,
   gleiches Muster wie alle bisherigen optionalen Felder in diesem Modell).
@@ -908,7 +908,7 @@ korrekt in den Snapshot einfließt.
   ein Alt-JSON ohne diesen Key dekodiert dank Codables
   `Optional`-Synthese automatisch zu `nil` (Linux-verifiziert, siehe
   `testExerciseEntryWithoutInstanceIDKeyDecodesAsNilNotAsCorrupted`).
-- **`SessionContentResolver`** (neu, `FitnessAppData`): einzige Stelle, die
+- **`SessionContentResolver`** (neu, `DeltiqData`): einzige Stelle, die
   einen Snapshot gegen den aktuellen Live-Tag auflöst. Matching PRIMÄR über
   `instanceID` (übersteht externe Umsortierung), Fallback
   `exerciseTemplateID`+`orderIndex` für Alt-Snapshots ohne `instanceID`
@@ -954,7 +954,7 @@ korrekt in den Snapshot einfließt.
   `CircuitWorkoutPlayerView`**: neue `WorkoutSession`-Extension
   `contentSnapshotFirst`/`contentSnapshotTimeCapMinutes`/
   `contentSnapshotCircuitRounds`/`-RestSeconds`/`-Mode`
-  (`FitnessAppData/WorkoutSessionContentSnapshotFirst.swift`, aus
+  (`DeltiqData/WorkoutSessionContentSnapshotFirst.swift`, aus
   `WorkoutSummaryView`s bisher privater, dupliziertem Helfer extrahiert und
   dort durch Aufrufe auf `session.` ersetzt) ersetzt alle `day?.`-Lesungen,
   die bislang echte Timer-/Rundenlogik trieben. Jeder der drei Player-
@@ -990,7 +990,7 @@ korrekt in den Snapshot einfließt.
 
 ### 10.4 Neue Regressionstests (vor dem Fix geschrieben, reproduzieren die Lücke)
 
-- **`SessionContentResolverTests`** (neu, `FitnessAppDataTests`): die
+- **`SessionContentResolverTests`** (neu, `DeltiqDataTests`): die
   Kernregression — externe Umsortierung zweier Übungen während die Session
   offen ist, danach muss jeder Snapshot-Eintrag weiterhin auf SEIN eigenes
   Live-Objekt zeigen (`===`-Identitätsprüfung), nicht auf das Objekt, das
@@ -1103,9 +1103,9 @@ grün geprüfte Stand verwendet, kein unveränderter Code erneut gebaut:
   `6ad5318ef5c0969964373dbc` (Commit `a4fff0b`, alle Schritte
   `success`, 1407/1407 Tests) — beide bereits in 10.5 dokumentiert,
   hier wiederverwendet statt erneut gebaut.
-- **App-Artefakt:** `FitnessApp.app.zip` aus Build
+- **App-Artefakt:** `Deltiq.app.zip` aus Build
   `6ad52fde4ac5864d3de15029`, 39.219.328 Bytes, Bundle-ID
-  `com.atamya.FitnessApp`, Version `0.1.0`, `MinimumOSVersion 17.0`,
+  `com.atamya.Deltiq`, Version `0.1.0`, `MinimumOSVersion 17.0`,
   nur Simulator-Plattform (`iPhoneSimulator`). Dieses Artefakt wird für
   die Geräte-/Simulator-Abnahme unten verwendet.
 
@@ -1116,7 +1116,7 @@ nicht nur Code-Review. Build-Identität vor Testbeginn per SHA256
 verifiziert: lokal von Codemagic heruntergeladenes Artefakt (Build
 `6ad52fde4ac5864d3de15029`, Commit `d0d01f4`) und die bei TestingBot
 hinterlegte Kopie (`tb://c8d911abfd829a5fc9c6b5bc`,
-`FitnessApp_d0d01f4_resumeisolation.zip`) sind BYTE-IDENTISCH
+`Deltiq_d0d01f4_resumeisolation.zip`) sind BYTE-IDENTISCH
 (`f4b7bc2e...4fc6f6a`). TestingBot-Session:
 `c450bc6b40ad-ceed206b8cd1-db5a5071b4a8-179235816557-36254547`.
 
@@ -1162,7 +1162,7 @@ terminiert und neu gestartet.
   `TrainingDayContentSnapshotWriter` rief nach dem Setzen von
   `contentSnapshotJSON`/`.contentSnapshotCapturedAt` explizit
   `context.save()` auf — anders als die meisten übrigen Schreibstellen
-  in `FitnessAppData` (z. B. `DeloadManager`, `FourWeekReviewDueStatus`,
+  in `DeltiqData` (z. B. `DeloadManager`, `FourWeekReviewDueStatus`,
   die beide `try context.save()` direkt nach der Mutation aufrufen). Ein
   Prozess-Kill kurz nach der Mutation, bevor SwiftDatas impliziter
   Autosave greift, verliert die Änderung — reproduzierbar bis in die

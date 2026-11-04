@@ -8,25 +8,25 @@ on the Lock Screen and in the Dynamic Island. Picks up where `XcodeSetup.md` lef
 1. **Xcode → File → New → Target...**
 2. **Widget Extension** auswaehlen
 3. Felder:
-   - **Product Name:** `FitnessAppWidgets`
-   - **Bundle Identifier:** `com.atamya.FitnessApp.widgets` (passt zur App-ID-Hierarchie)
+   - **Product Name:** `DeltiqWidgets`
+   - **Bundle Identifier:** `com.atamya.Deltiq.widgets` (passt zur App-ID-Hierarchie)
    - **Include Live Activity:** ☑️ aktivieren  ← **wichtig**, generiert das Boilerplate
    - **Include Configuration App Intent:** ☐ kann aus bleiben (brauchen wir nicht)
 4. **Embed in Application:** dein App-Target
 
-Xcode legt das Target an und fuegt eine Boilerplate-Datei wie `FitnessAppWidgetsLiveActivity.swift` oder `FitnessAppWidgetsBundle.swift` in den Extension-Ordner.
+Xcode legt das Target an und fuegt eine Boilerplate-Datei wie `DeltiqWidgetsLiveActivity.swift` oder `DeltiqWidgetsBundle.swift` in den Extension-Ordner.
 
 ## 2. Package-Dependency hinzufuegen
 
-Das Widget braucht Zugriff auf `RestTimerAttributes` (in `FitnessAppActivities`):
+Das Widget braucht Zugriff auf `RestTimerAttributes` (in `DeltiqActivities`):
 
 1. Im Project Navigator das **Widget-Target** auswaehlen
 2. Tab **General → Frameworks, Libraries, and Embedded Content**
-3. **+** → `FitnessAppActivities` auswaehlen
+3. **+** → `DeltiqActivities` auswaehlen
 4. **Frameworks erscheint mit `Embed: Do Not Embed`** — das ist richtig fuer ein
    Widget, da es im selben App-Bundle laeuft
 
-Sollte `FitnessAppActivities` in der Liste fehlen: das Swift-Package ist nicht zur
+Sollte `DeltiqActivities` in der Liste fehlen: das Swift-Package ist nicht zur
 App-Workspace hinzugefuegt — siehe `XcodeSetup.md` Schritt 2.
 
 ## 3. Info.plist-Eintraege
@@ -43,7 +43,7 @@ In `Info.plist` des App-Targets zwei Eintraege:
 <array>
     <dict>
         <key>CFBundleURLName</key>
-        <string>com.atamya.FitnessApp</string>
+        <string>com.atamya.Deltiq</string>
         <key>CFBundleURLSchemes</key>
         <array>
             <string>fitnessapp</string>
@@ -53,19 +53,19 @@ In `Info.plist` des App-Targets zwei Eintraege:
 ```
 
 - `NSSupportsLiveActivities = YES` — ohne das ignoriert iOS unsere `Activity.request(...)`-Aufrufe stillschweigend
-- `CFBundleURLTypes` registriert das Custom-Scheme `fitnessapp` — damit ein Tap auf das Widget die App oeffnet (siehe `FitnessAppDeepLink.scheme` im Package)
+- `CFBundleURLTypes` registriert das Custom-Scheme `fitnessapp` — damit ein Tap auf das Widget die App oeffnet (siehe `DeltiqDeepLink.scheme` im Package)
 
 ## 4. Widget-UI implementieren
 
 Ersetze den von Xcode generierten Boilerplate-Code in
-`FitnessAppWidgetsLiveActivity.swift` (oder wie auch immer Xcode die Datei genannt hat)
+`DeltiqWidgetsLiveActivity.swift` (oder wie auch immer Xcode die Datei genannt hat)
 mit folgendem Code. Er verkabelt sich exakt mit `RestTimerAttributes` aus dem Package.
 
 ```swift
 import ActivityKit
 import WidgetKit
 import SwiftUI
-import FitnessAppActivities
+import DeltiqActivities
 
 struct RestTimerLiveActivity: Widget {
     var body: some WidgetConfiguration {
@@ -109,7 +109,7 @@ struct RestTimerLiveActivity: Widget {
             }
             // Tap → App oeffnet auf der ActiveWorkoutView. Scheme-Registrierung in
             // Info.plist (siehe Schritt 3) ist Pflicht — sonst macht das Tap nichts.
-            .widgetURL(FitnessAppDeepLink.activeWorkout)
+            .widgetURL(DeltiqDeepLink.activeWorkout)
             .keylineTint(.cyan)
         }
     }
@@ -154,7 +154,7 @@ private struct LockScreenTimerView: View {
 }
 ```
 
-## 5. Bundle-Konfiguration in `FitnessAppWidgetsBundle.swift`
+## 5. Bundle-Konfiguration in `DeltiqWidgetsBundle.swift`
 
 Xcode generiert eine zweite Datei, die alle Widgets dieser Extension auflistet.
 Stell sicher, dass `RestTimerLiveActivity()` darin enthalten ist:
@@ -164,7 +164,7 @@ import WidgetKit
 import SwiftUI
 
 @main
-struct FitnessAppWidgetsBundle: WidgetBundle {
+struct DeltiqWidgetsBundle: WidgetBundle {
     var body: some Widget {
         RestTimerLiveActivity()
         // Future Home-Screen-Widgets adden sich hier dazu.
@@ -175,16 +175,16 @@ struct FitnessAppWidgetsBundle: WidgetBundle {
 ## 6. Deep-Link-Handling im App-Target
 
 Tap auf das Widget oeffnet die App via `fitnessapp://workout/active`. Damit das
-nicht ins Leere laeuft, in `FitnessAppApp.swift` einen `.onOpenURL`-Handler:
+nicht ins Leere laeuft, in `DeltiqApp.swift` einen `.onOpenURL`-Handler:
 
 ```swift
 import SwiftUI
-import FitnessAppUI
-import FitnessAppData
-import FitnessAppActivities
+import DeltiqUI
+import DeltiqData
+import DeltiqActivities
 
 @main
-struct FitnessAppApp: App {
+struct DeltiqApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -196,7 +196,7 @@ struct FitnessAppApp: App {
     }
 
     private func handle(url: URL) {
-        guard url.scheme == FitnessAppDeepLink.scheme else { return }
+        guard url.scheme == DeltiqDeepLink.scheme else { return }
         // Naechster Schritt: AppNavigation injizieren und auf den Plan-Tab + die
         // aktive Session navigieren. Das brauchen wir aus `RootView` heraus —
         // siehe Issue "Deep-Link-Routing" im Backlog.
@@ -226,7 +226,7 @@ hatten.)
 ## Troubleshooting
 
 - **Activity erscheint nicht**: `NSSupportsLiveActivities` fehlt in der App-Plist
-- **"No such module 'FitnessAppActivities'"**: Library nicht zum Widget-Target hinzugefuegt
+- **"No such module 'DeltiqActivities'"**: Library nicht zum Widget-Target hinzugefuegt
 - **Widget-Tap macht nichts**: `CFBundleURLTypes` mit Scheme `fitnessapp` fehlt in der App-Plist
 - **Activity zeigt 00:00 statisch**: `endDate` liegt in der Vergangenheit. `Text(timerInterval:countsDown:)` zaehlt selbststaendig — wir muessen NICHT pro Sekunde updaten
 - **Compile-Fehler `Cannot find 'RestTimerAttributes'`**: Activities-Library nicht
@@ -244,11 +244,11 @@ im Repo — es bleibt EIN manueller Schritt im Apple Developer Portal.
 
 1. **Developer Portal → Identifiers → App Groups → "+"**
    - Description: `Deltiq Shared`
-   - Identifier: `group.com.atamya.FitnessApp`  ← muss EXAKT so heissen
+   - Identifier: `group.com.atamya.Deltiq`  ← muss EXAKT so heissen
      (referenziert in beiden `.entitlements`-Dateien + `SharedStore.swift`)
-2. **Identifiers → "Delta iOS App" (com.atamya.FitnessApp)**
+2. **Identifiers → "Delta iOS App" (com.atamya.Deltiq)**
    - Capability **App Groups** ankreuzen → Configure → die neue Group waehlen → Save
-3. **Identifiers → "Delta Widgets" (com.atamya.FitnessApp.widgets)**
+3. **Identifiers → "Delta Widgets" (com.atamya.Deltiq.widgets)**
    - gleiches Spiel: App Groups → Configure → Group waehlen → Save
 
 **Provisioning-Profile müssen NICHT manuell angefasst werden** — der

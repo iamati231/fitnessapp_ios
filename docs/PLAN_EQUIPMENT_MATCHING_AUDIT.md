@@ -34,7 +34,7 @@ gefunden und behoben:
 Ergebnis: Upper-Lower (einziger 4-Tage-Kandidat) rankt jetzt vor CrossFit
 mit Gewichten und Kettlebell Grundlagen. Details, Zahlen und die beiden
 Regressionstests siehe Commit `f55f02f` und
-`Tests/FitnessAppCoreTests/PlanMatchmakerTests.swift` (Abschnitt
+`Tests/DeltiqCoreTests/PlanMatchmakerTests.swift` (Abschnitt
 "Szenario 8").
 
 ## 2. Wochenziel wird 1:1 als Tage-Obergrenze verwendet (bestätigt)
@@ -46,7 +46,7 @@ zwar als bewusste, dokumentierte Design-Entscheidung aus einem früheren Fix
 — kein Versehen:
 
 ```swift
-// Sources/FitnessAppUI/OnboardingView.swift:1255-1267
+// Sources/DeltiqUI/OnboardingView.swift:1255-1267
 /// Fix "doppeltes Onboarding": die Antworten, mit denen der
 /// Plan-Schritt direkt `PlanMatchmaker.rankPlans` aufruft — `weeklyGoal`
 /// dient zugleich als `preferredDays`, eine zweite "wie oft"-Frage nur
@@ -92,7 +92,7 @@ Es gibt **keine** Bank-Option irgendwo im Onboarding, weil es dafür auf
 Modell-Ebene gar keinen Equipment-Fall gibt:
 
 ```swift
-// Sources/FitnessAppCore/Domain/DomainEnums.swift:4-13
+// Sources/DeltiqCore/Domain/DomainEnums.swift:4-13
 public enum Equipment: String, Codable, Sendable, CaseIterable {
     case barbell, dumbbell, bodyweight, machine, cable, kettlebell, band
 }
@@ -111,7 +111,7 @@ im UI-Pattern. Eine "Bank-Checkbox" ließe sich ohne Erweiterung von
 aufgetreten ist:
 
 ```swift
-// Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift:90-95
+// Sources/DeltiqUI/Baseline/BaselineCheckFlowView.swift:90-95
 // C. Pull — Equipment entscheidet den Pfad (siehe `pullHasGymEquipment`);
 // ... nach einer Klimmzugstange gefragt, da `Equipment` dafür keinen
 // eigenen Fall kennt.
@@ -169,7 +169,7 @@ nachträglicher Bearbeitung.
 ### 5.1 "Ort ist nicht Ausstattung" — Environment schlägt Equipment vor (Vorschlag, kein Bypass)
 
 ```swift
-// Sources/FitnessAppUI/OnboardingView.swift:913-921
+// Sources/DeltiqUI/OnboardingView.swift:913-921
 /// Sinnvolle Equipment-Defaults pro Trainings-Umgebung. Gym = "hat alles";
 private func defaultEquipment(for env: EnvironmentType) -> Set<Equipment> {
     switch env {
@@ -197,7 +197,7 @@ Modell", nicht eine einzelne stille Überschreibung.
 ### 5.2 Prefill verschmilzt nur (fügt hinzu), bereinigt aber nie
 
 ```swift
-// Sources/FitnessAppUI/OnboardingView.swift:906-911
+// Sources/DeltiqUI/OnboardingView.swift:906-911
 private func prefillEquipmentIfNeeded(force: Bool = false) {
     if !force, equipmentPrefilledForEnv == environment { return }
     let suggestion = defaultEquipment(for: environment)
@@ -222,7 +222,7 @@ dass er sie auch nie bereinigt.
 ### 5.3 Kein Tri-State — `[]` ist doppeldeutig
 
 ```swift
-// Sources/FitnessAppData/UserBodyProfile.swift:55-58
+// Sources/DeltiqData/UserBodyProfile.swift:55-58
 // Default leer — Lightweight-Migration: pre-DEL-170-Profile kommen mit
 // `[]` an. Plan-Matcher behandelt leeres Set wie "User hat das nicht
 // gepflegt" und nutzt die Standard-Variante (template.days).
@@ -298,18 +298,18 @@ in Abschnitt 4 beschriebene ganze-Tage-Liste-Variantenwahl hinaus
 existiert nichts. Zwei Stellen im Code bestätigen das explizit selbst:
 
 ```swift
-// Sources/FitnessAppCore/Baseline/BaselineAssessmentEvaluator.swift:4-8 (sinngemäß)
+// Sources/DeltiqCore/Baseline/BaselineAssessmentEvaluator.swift:4-8 (sinngemäß)
 // ... die Anwendung auf einen echten Plan folgt erst, wenn ein PlanAdapter
 // existiert (Epic-Vorgehen Schritt 5, Stand heute: existiert nicht).
 ```
 ```swift
-// Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift:1014 (sinngemäß)
+// Sources/DeltiqUI/Baseline/BaselineCheckFlowView.swift:1014 (sinngemäß)
 // Bis Phase 4 (PlanAdapter existiert noch nicht) ...
 ```
 
 Der einzige tatsächlich implementierte Übungs-Austausch-Mechanismus im
 gesamten Repo ist `PlanEnvironmentMigrator`
-(`Sources/FitnessAppData/PlanEnvironmentMigrator.swift`, UI-Label "Adapt
+(`Sources/DeltiqData/PlanEnvironmentMigrator.swift`, UI-Label "Adapt
 Exercises" in `PlanEditorView.swift:174`) — er tauscht Übungen aber anhand
 von `EnvironmentType` (gym/homeGym/noEquipment), nicht anhand von
 `Equipment`/`equipmentPreferences`, läuft ausschließlich **nach** dem
@@ -327,15 +327,15 @@ unterhalb des ganzen Tage-Listen-Tauschs.
 
 ## 6. Betroffene Call-Sites (vollständig, Equipment-bezogen)
 
-- `Sources/FitnessAppCore/Programs/PlanMatchmaker.swift` — `equipmentMatches`, `requiredEquipment(for:)`, `matchReasons` (K.O.-Filter + Badge, bereits in der vorigen Audit-Runde gehärtet).
-- `Sources/FitnessAppData/ProgramInstantiator.swift:101-114` — Varianten-Wahl bei Instanziierung (Onboarding-Adopt + Picker-Adopt).
-- `Sources/FitnessAppData/PlanGeneratorInstantiator.swift:58` — reicht `input.equipmentPreferences` nur durch, gleiche Instantiator-Logik.
-- `Sources/FitnessAppUI/OnboardingView.swift:197-224` (Vorschau-Sheet), `:906-921` (Prefill), `:1255-1267` (Wochenziel-als-Tage, Abschnitt 2), `:1711-1719` (Adopt) — vier unabhängige Fundstellen in derselben Datei.
-- `Sources/FitnessAppUI/Workout/ProgramTemplatePickerView.swift:116-124,356-358` — Vorschau/Instanziierung-Divergenz (Abschnitt 5.4).
-- `Sources/FitnessAppUI/Settings/ProfileEditorView.swift:836-847` — zweite Editier-Stelle, gleiche 7-Fälle-Begrenzung.
-- `Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift:90-203` — eigener, nicht persistierter Equipment-Sonderfall (Klimmzugstange).
-- `Sources/FitnessAppData/PlanEnvironmentMigrator.swift` — strukturelles Vorbild für Ersatz-Logik, aber Environment- statt Equipment-basiert (Abschnitt 5.5).
-- `Sources/FitnessAppUI/Settings/ExerciseLibraryView.swift:390`, `Sources/FitnessAppUI/Workout/DayEditorView.swift:770` — nutzen `ExerciseLibraryData.isEquipment(_:compatibleWith:)`, also Environment-basiert, nicht Equipment-Profil-basiert; von einem künftigen Equipment-Umbau separat zu betrachten.
+- `Sources/DeltiqCore/Programs/PlanMatchmaker.swift` — `equipmentMatches`, `requiredEquipment(for:)`, `matchReasons` (K.O.-Filter + Badge, bereits in der vorigen Audit-Runde gehärtet).
+- `Sources/DeltiqData/ProgramInstantiator.swift:101-114` — Varianten-Wahl bei Instanziierung (Onboarding-Adopt + Picker-Adopt).
+- `Sources/DeltiqData/PlanGeneratorInstantiator.swift:58` — reicht `input.equipmentPreferences` nur durch, gleiche Instantiator-Logik.
+- `Sources/DeltiqUI/OnboardingView.swift:197-224` (Vorschau-Sheet), `:906-921` (Prefill), `:1255-1267` (Wochenziel-als-Tage, Abschnitt 2), `:1711-1719` (Adopt) — vier unabhängige Fundstellen in derselben Datei.
+- `Sources/DeltiqUI/Workout/ProgramTemplatePickerView.swift:116-124,356-358` — Vorschau/Instanziierung-Divergenz (Abschnitt 5.4).
+- `Sources/DeltiqUI/Settings/ProfileEditorView.swift:836-847` — zweite Editier-Stelle, gleiche 7-Fälle-Begrenzung.
+- `Sources/DeltiqUI/Baseline/BaselineCheckFlowView.swift:90-203` — eigener, nicht persistierter Equipment-Sonderfall (Klimmzugstange).
+- `Sources/DeltiqData/PlanEnvironmentMigrator.swift` — strukturelles Vorbild für Ersatz-Logik, aber Environment- statt Equipment-basiert (Abschnitt 5.5).
+- `Sources/DeltiqUI/Settings/ExerciseLibraryView.swift:390`, `Sources/DeltiqUI/Workout/DayEditorView.swift:770` — nutzen `ExerciseLibraryData.isEquipment(_:compatibleWith:)`, also Environment-basiert, nicht Equipment-Profil-basiert; von einem künftigen Equipment-Umbau separat zu betrachten.
 
 ## 7. Persistenz/Export/Import-Implikationen
 
@@ -356,7 +356,7 @@ unterhalb des ganzen Tage-Listen-Tauschs.
   `experienceTrackRaw == nil`, leitet einmalig aus echter Trainingshistorie
   her und schreibt nie ein bereits gesetztes Feld um — Idempotenz und
   Nie-überschreiben sind in
-  `Tests/FitnessAppDataTests/ExperienceTrackBackfillTests.swift` gegen
+  `Tests/DeltiqDataTests/ExperienceTrackBackfillTests.swift` gegen
   einen echten In-Memory-`ModelContainer` abgesichert. Ein künftiger
   Equipment-Tri-State-Umbau sollte exakt dieses Muster wiederverwenden
   (optionales Sentinel-Feld + eigene, getestete Backfill-Klasse), statt ein
@@ -441,7 +441,7 @@ kommuniziert, nicht stillschweigend vorausgesetzt.
 
 Umgesetzt (Tasks #84/#85, Commit siehe Git-Log):
 
-- **Core** (`Sources/FitnessAppCore/Programs/EquipmentRequirement.swift`):
+- **Core** (`Sources/DeltiqCore/Programs/EquipmentRequirement.swift`):
   `EquipmentItem` (10 Faelle: 4 Gewichte + 6 Zubehoer/Stationen, bewusst
   getrennt von `Equipment`), `EquipmentAvailability` (available/unavailable/
   unknown), `UserEquipmentProfile` (reine Sicht, kein SwiftData-Bezug),
@@ -502,11 +502,11 @@ Umgesetzt (Tasks #84/#85, Commit siehe Git-Log):
 
 Dieses Projekt dokumentiert in seiner `README.md` bereits selbst, dass
 `swift test` auf Linux NUR den Core- und Health-Teil ausfuehrt — der
-komplette `FitnessAppDataTests`-Teil (laut README ca. 80 Tests, inklusive
+komplette `DeltiqDataTests`-Teil (laut README ca. 80 Tests, inklusive
 aller bereits bestehenden SwiftData-Roundtrip-/Backfill-Tests) braucht
 echtes SwiftData und laeuft nur auf macOS/Codemagic. Das ist keine neue
 Einschraenkung dieser Phase, sondern durch `swift test list` empirisch
-bestaetigt: **kein einziger** Test aus `FitnessAppDataTests` erscheint in
+bestaetigt: **kein einziger** Test aus `DeltiqDataTests` erscheint in
 der Linux-Testliste, obwohl der komplette Code (inklusive der neuen
 SwiftData-Tests dieser Phase) sauber kompiliert.
 
@@ -516,7 +516,7 @@ Konkret fuer diese Phase:
   volle bestehende Core/Health-Suite (885 Tests insgesamt, 0 Fehler).
 - **Geschrieben, kompiliert, manuell gegengelesen, aber NICHT lokal
   ausgefuehrt** (identische Einschraenkung wie bei JEDEM bestehenden
-  `FitnessAppDataTests`-Test in diesem Projekt, nicht spezifisch fuer diese
+  `DeltiqDataTests`-Test in diesem Projekt, nicht spezifisch fuer diese
   Aenderung): 5 neue `UserBodyProfileTests` (equipmentProfile Get/Set,
   Stale-Value-Robustheit, Disjunktheit der beiden Rohlisten) + 2 neue
   `DataPortabilityRoundtripTests` (Export/Import-Rundlauf, Bestandsprofil
@@ -548,7 +548,7 @@ Umgesetzt (Task #86):
   Angaben" wörtlich am Code durchgesetzt). CSV um eine vierte additive
   Spalte erweitert. 7 neue Tests (Data-Layer): geschrieben, kompiliert,
   nicht lokal ausgefuehrt (siehe Abschnitt 10 — gilt fuer jeden
-  `FitnessAppDataTests`-Test in diesem Projekt).
+  `DeltiqDataTests`-Test in diesem Projekt).
 - **Geteilte UI-Komponente** (`Components/EquipmentProfileEditor.swift`,
   neu): EINZIGE Implementierung der Mehrfachauswahl — Gewichte-Sektion (4
   Items) + Zubehoer-Sektion (6 Items), je Item ein Toggle, Stueckzahl-Chips
@@ -680,7 +680,7 @@ tatsaechliche Lauf-Status des `swift-package`-Workflows aus
 `codemagic.yaml` (triggert laut Konfiguration auf `push`/`pull_request`
 fuer jeden Branch, `instance_type: mac_mini_m2`, fuehrt `swift build` +
 `swift test --parallel` + iOS-Simulator-Library-Build fuer alle 5 Targets
-aus — inklusive `FitnessAppUI`, wo diese Phase ausschliesslich gearbeitet
+aus — inklusive `DeltiqUI`, wo diese Phase ausschliesslich gearbeitet
 hat) **nicht pruefbar**. Ob Codemagic tatsaechlich automatisch angelaufen
 ist und mit welchem Ergebnis, kann nur im Codemagic-Dashboard selbst
 eingesehen werden — das liegt ausserhalb dessen, was ueber die in dieser
@@ -761,7 +761,7 @@ Phase-4-Blocker, aber dokumentiert fuer eine spaetere UI-Verfeinerung.
 
 ### 13.2 Planvarianten-Pruefung (Punkt 3) — neue Core-Typen
 
-`Sources/FitnessAppCore/Programs/PlanEquipmentCheck.swift` (neu):
+`Sources/DeltiqCore/Programs/PlanEquipmentCheck.swift` (neu):
 
 - `PlanEquipmentStatus` (available / unavailable(gaps:) / unknown(gaps:)) +
   `PlanEquipmentGap`/`PlanEquipmentGapReason` (notAnnotated / missing / uncertain)
@@ -873,7 +873,7 @@ gegen die Phase-1-Vorschau/Instanziierung-Divergenz in neuer Form).
 `PlanMatchmakerTests`-Faelle), inklusive `swift build` fuer alle 5 Targets.
 
 **Geschrieben, kompiliert, NICHT lokal ausgefuehrt** (gilt wie bei jeder
-bisherigen Phase fuer `FitnessAppDataTests` — SwiftData, laut README nur auf
+bisherigen Phase fuer `DeltiqDataTests` — SwiftData, laut README nur auf
 macOS lauffaehig, `swift test list` zeigt auf diesem Linux-Sandbox
 weiterhin `0` Data-Tests): die 3 neuen Tests in
 `ProgramInstantiatorEquipmentTests.swift`.

@@ -32,7 +32,7 @@ Drei-Wert-Logik selbst bleibt unangetastet.
 
 ## 2. `EquipmentPlanningContext` (Core, neu)
 
-Neue Datei `Sources/FitnessAppCore/Programs/EquipmentPlanningContext.swift`:
+Neue Datei `Sources/DeltiqCore/Programs/EquipmentPlanningContext.swift`:
 
 ```swift
 public enum EquipmentPlanningSource: String, Sendable, Equatable {
@@ -372,7 +372,7 @@ Compile-Zeit oder zur Laufzeit konstruiert wurde.
 
 **Projektweite Verifikation statt Einzelfix.** `grep` nach demselben Muster
 (`Text(<Bezeichner>, bundle:)` ohne `LocalizedStringKey(...)`) ueber den
-gesamten `FitnessAppUI`-Zielordner zeigt: die einzigen 3 echten Treffer
+gesamten `DeltiqUI`-Zielordner zeigt: die einzigen 3 echten Treffer
 waren die jetzt gefixten Stellen. Drei weitere, oberflaechlich aehnliche
 Stellen (`DashboardEmptyState.swift`, `DayAnalysisCard.swift`,
 `BaselineCheckFlowView.swift`) sind KORREKT — ihre Parameter sind bereits
