@@ -64,6 +64,10 @@ public struct WorkoutSummaryView: View {
     /// sie automatisch mit.
     @State private var saveErrorMessage: String?
 
+    /// Guard against session backing becoming invalid after modelContext.delete+save
+    /// (DEL-252: dismiss-transition still evaluates body after deletion).
+    @State private var isDeleted: Bool = false
+
     @Environment(\.dismiss) private var dismiss
 
     public init(session: WorkoutSession, isReadOnly: Bool = false) {
@@ -81,6 +85,10 @@ public struct WorkoutSummaryView: View {
     }
 
     public var body: some View {
+        if isDeleted { Color.clear } else { safeBody }
+    }
+
+    @ViewBuilder private var safeBody: some View {
         // Signature-Geruest: eigene Kopfzone statt navigationTitle/Toolbar.
         // `List` bleibt Container - der History-Edit-Mode braucht .onDelete
         // fuer Saetze/Uebungen. Kein `onBack` im New-Mode (frisch beendete
@@ -823,6 +831,8 @@ public struct WorkoutSummaryView: View {
     /// Health ist eine separate Datenquelle, der User kann dort selbst
     /// Workouts loeschen via Health-App.
     private func deleteEntireSession() {
+        // Guard body before backing becomes invalid after save() (DEL-252).
+        isDeleted = true
         // 0. DEL-213: Gear-Kilometer zurueckbuchen — Spiegel der Credit-
         //    Buchung beim Finish (ActiveWorkoutView) bzw. in assignGear().
         //    Ohne das akkumuliert geloeschte Cardio-Distanz dauerhaft auf
