@@ -20,8 +20,9 @@ public struct MealPlannerView: View {
 
     @State private var selectedDate: Date
     @State private var replacingAssignment: PlannedMealAssignment? = nil
-    @State private var removingAssignment: PlannedMealAssignment? = nil
+
     @State private var cardSwipeOffset: [PersistentIdentifier: CGFloat] = [:]
+    @State private var cardSwipeStart: [PersistentIdentifier: CGFloat] = [:]
     @State private var generationError: String? = nil
     @State private var regeneratingAssignment: PlannedMealAssignment? = nil
     @State private var showRegenerationError = false
@@ -131,19 +132,6 @@ public struct MealPlannerView: View {
                     swapAssignment(assignment, to: newRecipe)
                 }
             )
-        }
-        .confirmationDialog(
-            String(localized: "mealPlanner.remove.confirm.title", bundle: .module),
-            isPresented: Binding(
-                get: { removingAssignment != nil },
-                set: { if !$0 { removingAssignment = nil } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "mealPlanner.remove.confirm.action", bundle: .module), role: .destructive) {
-                if let a = removingAssignment { removeAssignment(a) }
-            }
-            Button(String(localized: "common.cancel", bundle: .module), role: .cancel) {}
         }
         .alert(
             String(localized: "mealPlanner.regenerate.noAlternative.title", bundle: .module),
@@ -406,20 +394,33 @@ public struct MealPlannerView: View {
         let n = nutrients(for: assignment)
         return VStack(spacing: 0) {
             ZStack(alignment: .trailing) {
-                // Delete background revealed on left-swipe
-                Color.red
-                    .overlay(alignment: .trailing) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.trailing, 20)
-                            .opacity(Double(min(abs(swipeX) / 40.0, 1.0)))
+                // Tappable delete background — only reachable once card slides away
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        cardSwipeOffset[assignmentID] = -400
                     }
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(0.2))
+                        cardSwipeOffset.removeValue(forKey: assignmentID)
+                        removeAssignment(assignment)
+                    }
+                } label: {
+                    Color.red
+                        .overlay(alignment: .trailing) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(.trailing, 24)
+                        }
+                }
+                .buttonStyle(.plain)
 
                 // Sliding card content
                 VStack(alignment: .leading, spacing: 0) {
                     // Tappable area: navigiert zur Rezeptdetailseite
                     Button {
+                        // Close any open swipe before navigating
+                        withAnimation(.spring(response: 0.3)) { cardSwipeOffset[assignmentID] = 0 }
                         navigation.nutritionPath.append(MealPlannerRoute.recipeDetail(
                             recipeID: assignment.recipeID,
                             mealType: assignment.mealType,
@@ -477,24 +478,26 @@ public struct MealPlannerView: View {
                 .gesture(
                     DragGesture(minimumDistance: 10)
                         .onChanged { value in
-                            guard value.translation.width < 0,
-                                  abs(value.translation.width) > abs(value.translation.height) else { return }
-                            cardSwipeOffset[assignmentID] = max(value.translation.width, -120)
+                            guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                            // Track starting offset on first gesture event
+                            if cardSwipeStart[assignmentID] == nil {
+                                cardSwipeStart[assignmentID] = cardSwipeOffset[assignmentID] ?? 0
+                                // Close other revealed cards
+                                for key in cardSwipeOffset.keys where key != assignmentID {
+                                    withAnimation(.spring(response: 0.3)) { cardSwipeOffset[key] = 0 }
+                                    cardSwipeStart.removeValue(forKey: key)
+                                }
+                            }
+                            let start = cardSwipeStart[assignmentID] ?? 0
+                            cardSwipeOffset[assignmentID] = max(min(start + value.translation.width, 0), -120)
                         }
                         .onEnded { _ in
-                            if (cardSwipeOffset[assignmentID] ?? 0) <= -80 {
-                                withAnimation(.easeOut(duration: 0.2)) {
-                                    cardSwipeOffset[assignmentID] = -400
-                                }
-                                Task { @MainActor in
-                                    try? await Task.sleep(for: .seconds(0.2))
-                                    cardSwipeOffset.removeValue(forKey: assignmentID)
-                                    removeAssignment(assignment)
-                                }
-                            } else {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    cardSwipeOffset[assignmentID] = 0
-                                }
+                            cardSwipeStart.removeValue(forKey: assignmentID)
+                            let currentOffset = cardSwipeOffset[assignmentID] ?? 0
+                            // Snap to revealed (-80) or closed (0)
+                            let target: CGFloat = currentOffset <= -50 ? -80 : 0
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                cardSwipeOffset[assignmentID] = target
                             }
                         }
                 )
@@ -526,11 +529,6 @@ public struct MealPlannerView: View {
                 } label: {
                     Label(String(localized: "mealPlanner.action.exclude", bundle: .module), systemImage: "nosign")
                 }
-            }
-            Button(role: .destructive) {
-                removingAssignment = assignment
-            } label: {
-                Label(String(localized: "mealPlanner.action.remove", bundle: .module), systemImage: "trash")
             }
         }
     }
@@ -593,7 +591,6 @@ public struct MealPlannerView: View {
         if let plan = assignment.plan { plan.isManuallyAdjusted = true }
         modelContext.delete(assignment)
         try? modelContext.save()
-        removingAssignment = nil
     }
 
     private func regenerateAssignment(_ assignment: PlannedMealAssignment) {
