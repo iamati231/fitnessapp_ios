@@ -405,23 +405,16 @@ public struct MealPlannerView: View {
                         removeAssignment(assignment)
                     }
                 } label: {
-                    Color.clear
-                        .overlay(alignment: .trailing) {
-                            VStack(spacing: 4) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.red)
-                                        .frame(width: 52, height: 52)
-                                    Image(systemName: "trash")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundStyle(.white)
-                                }
+                    HStack(spacing: 0) {
+                        Color.clear
+                        Color.red
+                            .frame(width: 80)
+                            .overlay {
                                 Text("common.delete", bundle: .module)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(Color.red)
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(.white)
                             }
-                            .padding(.trailing, 14)
-                        }
+                    }
                 }
                 .buttonStyle(.plain)
 
