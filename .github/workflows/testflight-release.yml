@@ -58,7 +58,7 @@ permissions:
 env:
   XCODE_PROJECT: 'Deltiq.xcodeproj'
   XCODE_SCHEME: 'Deltiq'
-  APP_STORE_APP_ID: '6768627358'
+  APP_STORE_APP_ID: '6830893232'
   BUNDLE_ID: 'com.deltiq.Deltiq'
   WIDGET_BUNDLE_ID: 'com.deltiq.Deltiq.widgets'
 
