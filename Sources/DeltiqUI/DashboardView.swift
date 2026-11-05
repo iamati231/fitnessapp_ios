@@ -246,51 +246,6 @@ public struct DashboardView: View {
                         resumeSessionTile(open)
                     }
 
-                    // Task 8 (Leitplanke 6, CoachAdjustmentCardModel.swift):
-                    // existiert ein aktiver Plan UND ueberhaupt eine
-                    // Anpassungsempfehlung (egal ob pending oder bereits
-                    // uebernommen), hat diese Karte Vorrang - ein `if/else
-                    // if`, NIE zwei unabhaengige `if`s, damit beide Karten
-                    // fuer denselben Zustand nie gleichzeitig erscheinen.
-                    // Handoff "Lauf-Coaching - Machbarkeits-Check" (2.30)
-                    // bleibt der Fallback nur fuer den Fall, dass
-                    // `CoachAdjustmentCardModel.make` `nil` liefert (kein
-                    // aktiver Plan, oder keine Empfehlung fuer dieses
-                    // Profil/diesen Plan moeglich) - statisch ueber den
-                    // konfigurierbaren Widgets, gleiche Prioritaet wie
-                    // unrepresentedOpenSession - kein gespeicherter Zustand,
-                    // jeder Aufruf rechnet live neu.
-                    //
-                    // Nachbesserung (finales Branch-Review, Fix 2): vorher
-                    // gatete dieser Zweig zusaetzlich auf
-                    // `!adjustment.isAlreadyApplied` - das liess den Slot auf
-                    // die VERALTETE Feasibility-Karte fuer denselben Plan
-                    // zurueckfallen, sobald eine Anpassung erfolgreich
-                    // uebernommen wurde (Task 7s In-Place-Anpassungspfad setzt
-                    // nur `cardioPlanAdjustmentFingerprint`, nie
-                    // `cardioFeasibilityDismissedFingerprint`). Das verletzte
-                    // Leitplanke 6 ("Feasibility nur zeigen, wenn `make`
-                    // `nil` liefert") und widersprach
-                    // `ProfileEditorView.coachAdjustmentModel`/
-                    // `feasibilityModel`, die genauso NIE auf
-                    // `isAlreadyApplied` gaten. `laufcoachingAdjustmentCard`
-                    // deckt jetzt selbst beide Zustaende ab (siehe deren
-                    // Doku).
-                    if let profile = profiles.first, let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans),
-                       !activePlan.days.isEmpty,
-                       let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
-                        // Snapshot-Muster (identisch zu planDayCard/PlanDayExerciseItem): nextDayName
-                        // als reinen String an die Funktion uebergeben, damit deren verschachtelte
-                        // ViewBuilder-Closures keinen live-Verweis auf plan.days halten — sonst kann
-                        // SwiftUI/Observation sie unabhaengig neu aufrufen, nachdem die Tage des
-                        // geloeschten Plans ihre eigene Aenderungs-Benachrichtigung gefeuert haben,
-                        // und nextScheduledDay's sortedDays[0] crasht auf dem leeren Array.
-                        let nextDayName = nextScheduledDay(in: activePlan).displayName
-                        laufcoachingAdjustmentCard(adjustment, nextDayName: nextDayName)
-                    } else if let model = cardioFeasibilityModel {
-                        cardioFeasibilityDashboardCard(model)
-                    }
-
                     // 3A: Kurzer Rückblick — erscheint wenn letzter Check-in >7 Tage zurückliegt.
                     if isCheckInDue && !isCheckInSkipped {
                         checkInDashboardCard
@@ -323,6 +278,7 @@ public struct DashboardView: View {
                         case .volumeOverTime:  volumeOverTimeChart
                         case .trainingCalendar: trainingCalendarCard
                         case .nutrition:       nutritionCard
+                        case .runCoachCard:    runCoachDashboardCard
                         }
                     }
                 }
@@ -2707,6 +2663,42 @@ public struct DashboardView: View {
 
     // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"
 
+    /// Widget-Slot fuer Lauf-Coaching: CoachAdjustmentCard (falls aktiver
+    /// Plan + Empfehlung vorhanden), sonst CardioFeasibilityCard als Fallback.
+    /// Leitplanke 6: nie beide gleichzeitig sichtbar (if/else if).
+    @ViewBuilder
+    private var runCoachDashboardCard: some View {
+        if let profile = profiles.first,
+           let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans),
+           !activePlan.days.isEmpty,
+           let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
+            let nextDayName = nextScheduledDay(in: activePlan).displayName
+            laufcoachingAdjustmentCard(adjustment, nextDayName: nextDayName)
+        } else if let model = cardioFeasibilityModel {
+            cardioFeasibilityDashboardCard(model)
+        }
+    }
+
+    /// Gemeinsame Karten-Huelle fuer beide Lauf-Coaching-Cards:
+    /// DeltiqCard > HStack > Image + content + Spacer.
+    private func laufCoachCardShell<Content: View>(
+        systemImage: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        DeltiqCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: systemImage)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.deltiqOrange)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 8) {
+                    content()
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
     /// Live gerechnet bei jedem Render, keine gespeicherte "ausstehende
     /// Empfehlung" - Profil, Dashboard und Plan-Tab rufen alle denselben
     /// `CardioFeasibilityCardModel.make(for:)` auf.
@@ -2724,86 +2716,77 @@ public struct DashboardView: View {
         Group {
             if let profile = profiles.first,
                profile.cardioAdjustmentCardDismissedFingerprint != adjustment.fingerprint {
-                DeltiqCard {
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(Color.deltiqOrange)
-                            .font(.title3)
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(adjustment.isAlreadyApplied
-                                 ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
-                                 : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
+                laufCoachCardShell(systemImage: "arrow.triangle.2.circlepath") {
+                    Text(adjustment.isAlreadyApplied
+                         ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
+                         : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+
+                    HStack(spacing: 16) {
+                        Button {
+                            showingMissedRunAdjustmentPreview = true
+                        } label: {
+                            Text("dashboard.missedRunDays.reviewButton", bundle: .module)
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-
-                            HStack(spacing: 16) {
-                                Button {
-                                    showingMissedRunAdjustmentPreview = true
-                                } label: {
-                                    Text("dashboard.missedRunDays.reviewButton", bundle: .module)
-                                        .font(.subheadline.weight(.semibold))
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundStyle(Color.deltiqOrange)
-                                // Nicht-jetzt nur anbieten, wenn noch nicht uebernommen
-                                if !adjustment.isAlreadyApplied {
-                                    Button {
-                                        withAnimation { adjustment.dismiss(profile: profile) }
-                                    } label: {
-                                        Text("dashboard.missedRunDays.dismissButton", bundle: .module)
-                                            .font(.subheadline.weight(.semibold))
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                                }
-                            }
-
-                            VStack(alignment: .leading, spacing: 3) {
-                                if let goal = adjustment.proposedGoal {
-                                    Text(String(
-                                        format: String(localized: "dashboard.coachAdjustment.proposedGoal", bundle: .module),
-                                        String(localized: goal.localizedName)
-                                    ))
-                                    .font(.caption)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                                }
-                                Text(String(
-                                    format: String(localized: "dashboard.coachAdjustment.nextUnit", bundle: .module),
-                                    nextDayName
-                                ))
-                                .font(.caption)
-                                .foregroundStyle(Color.Deltiq.textSecondary)
-                                if let raceDate = profile.cardioRaceDate, raceDate > Date() {
-                                    let days = Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day ?? 0
-                                    Text(String(
-                                        format: String(localized: "dashboard.coachAdjustment.daysToRace", bundle: .module),
-                                        days
-                                    ))
-                                    .font(.caption)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                                }
-                                if case .ready(let ids) = adjustment.analysis.cardioAvailability, !ids.isEmpty {
-                                    Text(String(
-                                        format: String(localized: "dashboard.coachAdjustment.cardioDays", bundle: .module),
-                                        ids.count
-                                    ))
-                                    .font(.caption)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                                }
-                                if let secs = profile.current5kReferenceSeconds {
-                                    Text(String(
-                                        format: String(localized: "dashboard.coachAdjustment.fiveKRef", bundle: .module),
-                                        String(format: "%d:%02d", secs / 60, secs % 60)
-                                    ))
-                                    .font(.caption)
-                                    .foregroundStyle(Color.Deltiq.textSecondary)
-                                }
-                            }
-                            .fixedSize(horizontal: false, vertical: true)
                         }
-                        Spacer(minLength: 0)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.deltiqOrange)
+                        // Nicht-jetzt nur anbieten, wenn noch nicht uebernommen
+                        if !adjustment.isAlreadyApplied {
+                            Button {
+                                withAnimation { adjustment.dismiss(profile: profile) }
+                            } label: {
+                                Text("dashboard.missedRunDays.dismissButton", bundle: .module)
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
                     }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        if let goal = adjustment.proposedGoal {
+                            Text(String(
+                                format: String(localized: "dashboard.coachAdjustment.proposedGoal", bundle: .module),
+                                String(localized: goal.localizedName)
+                            ))
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        Text(String(
+                            format: String(localized: "dashboard.coachAdjustment.nextUnit", bundle: .module),
+                            nextDayName
+                        ))
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        if let raceDate = profile.cardioRaceDate, raceDate > Date() {
+                            let days = Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day ?? 0
+                            Text(String(
+                                format: String(localized: "dashboard.coachAdjustment.daysToRace", bundle: .module),
+                                days
+                            ))
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        if case .ready(let ids) = adjustment.analysis.cardioAvailability, !ids.isEmpty {
+                            Text(String(
+                                format: String(localized: "dashboard.coachAdjustment.cardioDays", bundle: .module),
+                                ids.count
+                            ))
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                        if let secs = profile.current5kReferenceSeconds {
+                            Text(String(
+                                format: String(localized: "dashboard.coachAdjustment.fiveKRef", bundle: .module),
+                                String(format: "%d:%02d", secs / 60, secs % 60)
+                            ))
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                        }
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -2814,40 +2797,31 @@ public struct DashboardView: View {
     /// - die Annahme selbst passiert im Profil oder im Plan-Tab (dort erneut
     /// `CardioFeasibilityCardModel.make(for:)`, nicht dasselbe Objekt).
     private func cardioFeasibilityDashboardCard(_ model: CardioFeasibilityCardModel) -> some View {
-        DeltiqCard {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "flag.checkered")
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(Color.deltiqOrange)
-                    .font(.title3)
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(model.verdict.feasible
-                         ? String(localized: "dashboard.cardioFeasibility.feasibleTitle", bundle: .module)
-                         : String(localized: "dashboard.cardioFeasibility.infeasibleTitle", bundle: .module))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                    Text(model.detailText)
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if model.hasPlan, let days = model.planResult?.days {
-                        VStack(alignment: .leading, spacing: 0) {
-                            ForEach(Array(days.prefix(2).enumerated()), id: \.offset) { _, day in
-                                CardioFeasibilityDayRow(day: day)
-                            }
-                        }
+        laufCoachCardShell(systemImage: "flag.checkered") {
+            Text(model.verdict.feasible
+                 ? String(localized: "dashboard.cardioFeasibility.feasibleTitle", bundle: .module)
+                 : String(localized: "dashboard.cardioFeasibility.infeasibleTitle", bundle: .module))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(model.detailText)
+                .font(.caption)
+                .foregroundStyle(Color.Deltiq.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if model.hasPlan, let days = model.planResult?.days {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(days.prefix(2).enumerated()), id: \.offset) { _, day in
+                        CardioFeasibilityDayRow(day: day)
                     }
-                    Button {
-                        navigation.selectedTab = .plan
-                    } label: {
-                        Text("dashboard.cardioFeasibility.viewPlan", bundle: .module)
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.deltiqOrange)
                 }
-                Spacer(minLength: 0)
             }
+            Button {
+                navigation.selectedTab = .plan
+            } label: {
+                Text("dashboard.cardioFeasibility.viewPlan", bundle: .module)
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.deltiqOrange)
         }
     }
 

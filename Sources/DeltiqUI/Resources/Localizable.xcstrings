@@ -37929,6 +37929,29 @@
         }
       }
     },
+    "widget.runCoachCard.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lauf-Coaching"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run Coaching"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu Koçluğu"
+          }
+        }
+      }
+    },
     "dashboard.calendar.title": {
       "extractionState": "manual",
       "localizations": {

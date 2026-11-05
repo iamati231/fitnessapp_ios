@@ -1,6 +1,7 @@
 #if canImport(SwiftUI) && canImport(SwiftData)
 import SwiftUI
 import SwiftData
+import Charts
 import DeltiqCore
 import DeltiqData
 
@@ -254,6 +255,29 @@ struct CoachAdjustmentPreviewView: View {
                     ))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                }
+                let projGoal = model.proposedGoal ?? profile.cardioGoal
+                if let startVol = profile.weeklyBaseVolumeKm, startVol > 0,
+                   let raceDate = profile.cardioRaceDate, raceDate > Date() {
+                    let weeks = min(20, Calendar.current.dateComponents(
+                        [.weekOfYear], from: Date(), to: raceDate
+                    ).weekOfYear ?? 0)
+                    let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+                        startKm: startVol, goal: projGoal, weeksAvailable: weeks
+                    )
+                    if !points.isEmpty {
+                        Chart {
+                            ForEach(0..<points.count, id: \.self) { i in
+                                BarMark(
+                                    x: .value("Woche", points[i].week),
+                                    y: .value("km", points[i].km)
+                                )
+                                .foregroundStyle(Color.deltiqOrange.opacity(0.75))
+                            }
+                        }
+                        .frame(height: 80)
+                        .chartXAxis(.hidden)
+                    }
                 }
             } header: {
                 Text("profile.cardio.adjustment.detail.header", bundle: .module)

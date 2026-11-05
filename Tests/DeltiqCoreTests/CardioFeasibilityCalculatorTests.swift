@@ -294,4 +294,103 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
             XCTAssertEqual(CardioFeasibilityCalculator.runTypeMix(for: goal), CardioFeasibilityCalculator.runTypeMix(for: goal))
         }
     }
+
+    // MARK: - weeklyVolumeProjection
+
+    func testProjectionRampsFromStartTowardTarget() {
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 20, goal: .marathon, weeksAvailable: 10
+        )
+        XCTAssertEqual(points.count, 10)
+        // Week 1 must exceed startKm (10% ramp)
+        XCTAssertGreaterThan(points[0].km, 20)
+        // Weeks 1 through rampWeeks must increase or stay at target
+        let rampWeeks = 10 - CardioFeasibilityCalculator.taperWeeks
+        for i in 1..<rampWeeks {
+            XCTAssertGreaterThanOrEqual(points[i].km, points[i - 1].km)
+        }
+    }
+
+    func testProjectionCapsAtTargetVolume() {
+        // Start near target so ramp hits it quickly
+        let target = CardioFeasibilityCalculator.targetWeeklyVolumeKm(for: .fiveK)! // 20
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 19, goal: .fiveK, weeksAvailable: 15
+        )
+        let rampWeeks = 15 - CardioFeasibilityCalculator.taperWeeks
+        for i in 0..<rampWeeks {
+            XCTAssertLessThanOrEqual(points[i].km, target + 0.001)
+        }
+    }
+
+    func testProjectionTapersLastTwoWeeks() {
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .marathon, weeksAvailable: 10
+        )
+        let taperWeeks = CardioFeasibilityCalculator.taperWeeks
+        let n = points.count
+        // Taper weeks must be less than peak (ramp phase max)
+        let peak = points[0..<(n - taperWeeks)].map { $0.km }.max() ?? 0
+        for i in (n - taperWeeks)..<n {
+            XCTAssertLessThan(points[i].km, peak + 0.001)
+        }
+    }
+
+    func testProjectionTaperIsSeventyPercent() {
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .marathon, weeksAvailable: 10
+        )
+        let taperWeeks = CardioFeasibilityCalculator.taperWeeks
+        let n = points.count
+        let peak = points[0..<(n - taperWeeks)].map { $0.km }.max() ?? 0
+        for i in (n - taperWeeks)..<n {
+            XCTAssertEqual(points[i].km, peak * 0.7, accuracy: 0.001)
+        }
+    }
+
+    func testProjectionZeroWeeksReturnsEmpty() {
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 20, goal: .marathon, weeksAvailable: 0
+        )
+        XCTAssertTrue(points.isEmpty)
+    }
+
+    func testProjectionZeroStartKmReturnsEmpty() {
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 0, goal: .marathon, weeksAvailable: 10
+        )
+        XCTAssertTrue(points.isEmpty)
+    }
+
+    func testProjectionNonFiniteStartKmReturnsEmpty() {
+        for bad in [Double.nan, Double.infinity, -Double.infinity] {
+            let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+                startKm: bad, goal: .marathon, weeksAvailable: 10
+            )
+            XCTAssertTrue(points.isEmpty, "startKm \(bad) soll [] liefern")
+        }
+    }
+
+    func testProjectionGeneralFitnessReturnsEmpty() {
+        // generalFitness hat kein Zielvolumen
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .generalFitness, weeksAvailable: 10
+        )
+        XCTAssertTrue(points.isEmpty)
+    }
+
+    func testProjectionDeterministic() {
+        let a = CardioFeasibilityCalculator.weeklyVolumeProjection(startKm: 15, goal: .halfMarathon, weeksAvailable: 12)
+        let b = CardioFeasibilityCalculator.weeklyVolumeProjection(startKm: 15, goal: .halfMarathon, weeksAvailable: 12)
+        XCTAssertEqual(a.map { $0.km }, b.map { $0.km })
+    }
+
+    func testProjectionShortPrepTimeAllTaper() {
+        // 1 Woche: rampWeeks = max(0, 1-2) = 0, also nur Taper
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 20, goal: .marathon, weeksAvailable: 1
+        )
+        XCTAssertEqual(points.count, 1)
+        XCTAssertEqual(points[0].km, 20 * 0.7, accuracy: 0.001)
+    }
 }

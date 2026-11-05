@@ -31,6 +31,7 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     case volumeOverTime    // DEL-178: Wochen-Volume-Trend (BarMark)
     case trainingCalendar  // DEL-197: Monats-Kalender + Wochen-Streak
     case nutrition         // Task 9: Tagesuebersicht-Teaser + "Mahlzeit hinzufuegen"
+    case runCoachCard      // DEL-XXX: Lauf-Coaching-Widget (AdjustmentCard oder FeasibilityCard)
 
     /// xcstrings-Lookup-Key: `widget.{rawValue}.name`.
     public var localizationKey: String {
@@ -43,6 +44,7 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     public static var defaultOrder: [DashboardWidgetType] {
         [
             .nextWorkout,
+            .runCoachCard,
             .coachingInsight,
             .weeklyVolume,
             .muscleHeatmap,

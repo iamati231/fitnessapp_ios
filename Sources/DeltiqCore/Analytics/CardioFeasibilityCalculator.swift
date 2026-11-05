@@ -73,6 +73,30 @@ public enum CardioFeasibilityCalculator {
         return Int(rampWeeksExact) + taperWeeks
     }
 
+    /// Wochenvolumen-Rampe bis Renn-Tag: 10 % pro Woche aufbauen (capped
+    /// bei Zielvolumen), letzte `taperWeeks` Wochen bei 70 % des Peaks.
+    /// Gibt [] zurueck wenn kein Zielvolumen fuer `goal` existiert oder
+    /// Inputs invalide sind. Max `weeksAvailable` Datenpunkte (Woche 1 … N).
+    public static func weeklyVolumeProjection(
+        startKm: Double,
+        goal: CardioGoal,
+        weeksAvailable: Int
+    ) -> [(week: Int, km: Double)] {
+        guard weeksAvailable > 0,
+              startKm > 0, startKm.isFinite,
+              let target = targetWeeklyVolumeKm(for: goal) else { return [] }
+        let rampWeeks = max(0, weeksAvailable - taperWeeks)
+        let peak = rampWeeks > 0
+            ? min(startKm * pow(1 + maxWeeklyRampPercent, Double(rampWeeks)), target)
+            : startKm
+        return (1...weeksAvailable).map { week in
+            let km = week <= rampWeeks
+                ? min(startKm * pow(1 + maxWeeklyRampPercent, Double(week)), target)
+                : peak * 0.7
+            return (week: week, km: km)
+        }
+    }
+
     /// `nil`, wenn kein Check moeglich ist: kein Renn-Datum, keine
     /// Start-Basis oder `goal == .generalFitness`. Sonst immer ein Ergebnis -
     /// auch wenn `feasible == true` (der Aufrufer zeigt dann den kuerzeren,
