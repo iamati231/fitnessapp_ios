@@ -1100,6 +1100,23 @@ private struct SwipeBackController: UIViewControllerRepresentable {
             // Chains intakt — sonst konkuriert der Pop-Recognizer mit
             // .menu-Picker-Interaktionen und verschiebt die Ansicht horizontal.
             navController.interactivePopGestureRecognizer?.isEnabled = enabled
+            // containerRelativeFrame(.horizontal) in ScrollView(.vertical) sorgt
+            // dafuer, dass UINavigationController die scroll pan → require(toFail:)
+            // Verkettung nicht mehr automatisch aufbaut (UIScrollView wird nach dem
+            // Auto-Setup-Zeitfenster des NavControllers angelegt). Manuell nachholen.
+            if enabled, let edgePan = navController.interactivePopGestureRecognizer {
+                ancestorScrollView()?.panGestureRecognizer.require(toFail: edgePan)
+            }
+        }
+
+        // Sucht den naechsten UIScrollView-Vorfahren (O(Tiefe), idempotent).
+        private func ancestorScrollView() -> UIScrollView? {
+            var v: UIView? = view.superview
+            while let current = v {
+                if let sv = current as? UIScrollView { return sv }
+                v = current.superview
+            }
+            return nil
         }
     }
 }
