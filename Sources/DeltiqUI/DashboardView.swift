@@ -182,6 +182,7 @@ public struct DashboardView: View {
     /// öffnet ausschließlich diesen bestehenden Paket-1-Pfad — kein neues
     /// Sheet/keine neue Card-Komponente.
     @State private var showingMissedRunAdjustmentPreview = false
+    @State private var showingCardioCoachDetail = false
 
     /// Gecachter Plateau-Befund — wird via .onChange(of: completedSessions, initial: true)
     /// aktualisiert, sodass die O(n·m)-Berechnung nur einmal pro Datenaenderung laeuft
@@ -390,6 +391,17 @@ public struct DashboardView: View {
         .sheet(isPresented: $showingMissedRunAdjustmentPreview) {
             if let profile = profiles.first, let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
                 CoachAdjustmentPreviewView(profile: profile, activePlan: plan)
+            }
+        }
+        .sheet(isPresented: $showingCardioCoachDetail) {
+            if let profile = profiles.first, let model = cardioFeasibilityModel {
+                CardioCoachDetailView(
+                    profile: profile,
+                    model: model,
+                    daysSinceLastRunSession: daysSinceLastRunSession,
+                    last7DaysRunSessionCount: last7DaysRunSessionCount,
+                    last7DaysRunVolumeKm: last7DaysRunVolumeKm
+                )
             }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
@@ -2109,6 +2121,21 @@ public struct DashboardView: View {
         return completedSessions.filter { $0.isRealWorkout && $0.startTime >= cutoff }.count
     }
 
+    private var last7DaysRunSessionCount: Int {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
+        return completedSessions.filter {
+            $0.isRealWorkout && $0.startTime >= cutoff && $0.logs.contains { $0.resolvedIsCardio }
+        }.count
+    }
+
+    private var last7DaysRunVolumeKm: Double {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
+        return completedSessions
+            .filter { $0.isRealWorkout && $0.startTime >= cutoff && $0.logs.contains { $0.resolvedIsCardio } }
+            .map(\.totalDistanceKm)
+            .reduce(0, +)
+    }
+
     /// Tage seit der juengsten realen Session. `nil` wenn nie trainiert
     /// → triggert reEntry nicht (keine Daten = kein Hinweis).
     ///
@@ -2793,10 +2820,8 @@ public struct DashboardView: View {
         }
     }
 
-    /// Verkuerzte Vorschau (2.30): zwei Tage statt der vollen Woche, kein
-    /// Wochensummen-Fusstext. Knopf ist "Plan ansehen", nicht "Uebernehmen"
-    /// - die Annahme selbst passiert im Profil oder im Plan-Tab (dort erneut
-    /// `CardioFeasibilityCardModel.make(for:)`, nicht dasselbe Objekt).
+    /// Kompakt-Karte fuer Lauf-Coaching: Ziel, Renntermin, Wochenvolumen,
+    /// Laeufe diese Woche, Fortschritts-Einschaetzung, Plan-Vorschau, CTAs.
     private func cardioFeasibilityDashboardCard(_ model: CardioFeasibilityCardModel) -> some View {
         laufCoachCardShell(systemImage: "flag.checkered") {
             Text(model.verdict.feasible
@@ -2804,6 +2829,33 @@ public struct DashboardView: View {
                  : String(localized: "dashboard.cardioFeasibility.infeasibleTitle", bundle: .module))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
+
+            if let profile = profiles.first {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(String(localized: profile.cardioGoal.localizedName))
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                    if let raceDate = profile.cardioRaceDate, raceDate > Date() {
+                        let days = Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day ?? 0
+                        Text(String(
+                            format: String(localized: "dashboard.coachAdjustment.daysToRace", bundle: .module),
+                            days
+                        ))
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                    }
+                    let runCount = last7DaysRunSessionCount
+                    let runVol = last7DaysRunVolumeKm
+                    if runCount > 0 || runVol > 0.1 {
+                        let countStr = String(format: String(localized: "cardioCoach.detail.runsPerWeek", bundle: .module), runCount)
+                        let volStr = String(format: "%.1f km", runVol)
+                        Text("\(countStr) · \(volStr)")
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.textSecondary)
+                    }
+                }
+            }
+
             Text(model.detailText)
                 .font(.caption)
                 .foregroundStyle(Color.Deltiq.textSecondary)
@@ -2815,14 +2867,24 @@ public struct DashboardView: View {
                     }
                 }
             }
-            Button {
-                navigation.selectedTab = .plan
-            } label: {
-                Text("dashboard.cardioFeasibility.viewPlan", bundle: .module)
-                    .font(.subheadline.weight(.semibold))
+            HStack(spacing: 16) {
+                Button {
+                    navigation.selectedTab = .plan
+                } label: {
+                    Text("dashboard.cardioFeasibility.viewPlan", bundle: .module)
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.deltiqOrange)
+                Button {
+                    showingCardioCoachDetail = true
+                } label: {
+                    Text("dashboard.cardioCoach.details", bundle: .module)
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.deltiqOrange)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.deltiqOrange)
         }
     }
 

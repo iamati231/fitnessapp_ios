@@ -669,11 +669,16 @@ public final class UserBodyProfile {
         self.maxHeartRateBpm = maxHeartRateBpm
         self.cardioFeasibilityDismissedFingerprint = cardioFeasibilityDismissedFingerprint
         // Neues Profil ohne Lauf-Coaching bekommt runCoachCard nicht im Standard-Set.
+        // Mit Coaching: runCoachCard ganz oben (Spec: "standardmäßig ganz oben").
         // Nur bei erstmaliger Initialisierung — bestehende Profile werden nie angefasst.
         if !cardioCoachingEnabled {
             activeDashboardWidgetsRaw = DashboardWidgetType.defaultOrder
                 .filter { $0 != .runCoachCard }
                 .map { $0.rawValue }
+        } else {
+            var order = DashboardWidgetType.defaultOrder.filter { $0 != .runCoachCard }
+            order.insert(.runCoachCard, at: 0)
+            activeDashboardWidgetsRaw = order.map { $0.rawValue }
         }
     }
 }

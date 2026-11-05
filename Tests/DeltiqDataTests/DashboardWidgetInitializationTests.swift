@@ -75,7 +75,20 @@ final class DashboardWidgetInitializationTests: XCTestCase {
         XCTAssertFalse(profile.activeDashboardWidgets.contains(.runCoachCard))
     }
 
-    // 5. Eine benutzerdefinierte Widget-Reihenfolge bleibt unveraendert.
+    // 5. Neues Profil mit Lauf-Coaching: runCoachCard ist an erster Position (ganz oben).
+    func testNewProfileWithCardioEnabledHasRunCoachCardFirst() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: true
+        )
+        container.mainContext.insert(profile)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
+                       "Neues Profil mit cardioCoachingEnabled soll runCoachCard als erstes Widget haben")
+    }
+
+    // 6. Eine benutzerdefinierte Widget-Reihenfolge bleibt unveraendert.
     func testCustomWidgetOrderSurvivesCardioToggle() throws {
         let container = try makeContainer()
         let profile = UserBodyProfile(

@@ -413,11 +413,14 @@ public struct DeltiqScreenModifier: ViewModifier {
     }
 
     public func body(content: Content) -> some View {
-        ScrollView {
+        // ScrollView(.vertical) + containerRelativeFrame: verhindert horizontales
+        // Scrollen, wenn ein Child breiter als der Viewport wird (vgl. DEL-214).
+        ScrollView(.vertical) {
             content
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
                 .padding(.bottom, extraBottomInset ? 140 : 100)
+                .containerRelativeFrame(.horizontal)
         }
         .scrollContentBackground(.hidden)
         .background(Color.Deltiq.background.ignoresSafeArea())
