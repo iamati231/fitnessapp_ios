@@ -73,10 +73,13 @@ public enum CardioFeasibilityCalculator {
         return Int(rampWeeksExact) + taperWeeks
     }
 
-    /// Wochenvolumen-Rampe bis Renn-Tag: 10 % pro Woche aufbauen (capped
-    /// bei Zielvolumen), letzte `taperWeeks` Wochen bei 70 % des Peaks.
-    /// Gibt [] zurueck wenn kein Zielvolumen fuer `goal` existiert oder
-    /// Inputs invalide sind. Max `weeksAvailable` Datenpunkte (Woche 1 … N).
+    /// Wochenvolumen-Rampe bis Renn-Tag: Woche 0 = Startvolumen,
+    /// dann 10 % pro Woche aufbauen (capped bei Zielvolumen), letzte
+    /// `taperWeeks` Wochen bei 70 % des Peaks — aber nur wenn
+    /// `weeksAvailable > taperWeeks` (kein kuenstlicher Taper bei zu
+    /// kurzer Vorbereitung). Gibt [] zurueck wenn kein Zielvolumen fuer
+    /// `goal` existiert oder Inputs invalide sind.
+    /// Rueckgabe: `weeksAvailable + 1` Punkte (Woche 0 … N).
     public static func weeklyVolumeProjection(
         startKm: Double,
         goal: CardioGoal,
@@ -85,15 +88,35 @@ public enum CardioFeasibilityCalculator {
         guard weeksAvailable > 0,
               startKm > 0, startKm.isFinite,
               let target = targetWeeklyVolumeKm(for: goal) else { return [] }
-        let rampWeeks = max(0, weeksAvailable - taperWeeks)
-        let peak = rampWeeks > 0
-            ? min(startKm * pow(1 + maxWeeklyRampPercent, Double(rampWeeks)), target)
-            : startKm
-        return (1...weeksAvailable).map { week in
-            let km = week <= rampWeeks
+        let applyTaper = weeksAvailable > taperWeeks
+        let rampWeeks = applyTaper ? weeksAvailable - taperWeeks : weeksAvailable
+        let peakKm = min(startKm * pow(1 + maxWeeklyRampPercent, Double(rampWeeks)), target)
+        var result: [(week: Int, km: Double)] = [(week: 0, km: startKm)]
+        for week in 1...weeksAvailable {
+            let km: Double = week <= rampWeeks
                 ? min(startKm * pow(1 + maxWeeklyRampPercent, Double(week)), target)
-                : peak * 0.7
-            return (week: week, km: km)
+                : peakKm * 0.7
+            result.append((week: week, km: km))
+        }
+        return result
+    }
+
+    /// Reduziert eine vollstaendige Projektion auf maximal `maxCount`
+    /// Datenpunkte fuer die Chart-Darstellung. Erster und letzter Punkt
+    /// (Woche 0 und Woche N) bleiben immer erhalten; dazwischen werden
+    /// Datenpunkte gleichmaessig verteilt.
+    public static func chartPoints(
+        from projection: [(week: Int, km: Double)],
+        maxCount: Int = 20
+    ) -> [(week: Int, km: Double)] {
+        guard !projection.isEmpty else { return [] }
+        if projection.count <= maxCount { return projection }
+        let n = projection.count
+        return (0..<maxCount).map { i in
+            let idx = i == maxCount - 1
+                ? n - 1
+                : Int((Double(i) * Double(n - 1) / Double(maxCount - 1)).rounded())
+            return projection[idx]
         }
     }
 

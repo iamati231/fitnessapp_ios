@@ -259,12 +259,13 @@ struct CoachAdjustmentPreviewView: View {
                 let projGoal = model.proposedGoal ?? profile.cardioGoal
                 if let startVol = profile.weeklyBaseVolumeKm, startVol > 0,
                    let raceDate = profile.cardioRaceDate, raceDate > Date() {
-                    let weeks = min(20, Calendar.current.dateComponents(
+                    let totalWeeks = Calendar.current.dateComponents(
                         [.weekOfYear], from: Date(), to: raceDate
-                    ).weekOfYear ?? 0)
-                    let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
-                        startKm: startVol, goal: projGoal, weeksAvailable: weeks
+                    ).weekOfYear ?? 0
+                    let allPoints = CardioFeasibilityCalculator.weeklyVolumeProjection(
+                        startKm: startVol, goal: projGoal, weeksAvailable: totalWeeks
                     )
+                    let points = CardioFeasibilityCalculator.chartPoints(from: allPoints, maxCount: 20)
                     if !points.isEmpty {
                         Chart {
                             ForEach(0..<points.count, id: \.self) { i in
@@ -275,8 +276,28 @@ struct CoachAdjustmentPreviewView: View {
                                 .foregroundStyle(Color.deltiqOrange.opacity(0.75))
                             }
                         }
-                        .frame(height: 80)
-                        .chartXAxis(.hidden)
+                        .frame(height: 110)
+                        .chartXAxis {
+                            AxisMarks(values: .automatic(desiredCount: 5)) {
+                                AxisGridLine()
+                                AxisTick()
+                                AxisValueLabel { v in
+                                    if let w = v.as(Int.self) {
+                                        Text("W\(w)").font(.caption2)
+                                    }
+                                }
+                            }
+                        }
+                        .chartYAxis {
+                            AxisMarks(values: .automatic(desiredCount: 3)) {
+                                AxisGridLine()
+                                AxisValueLabel { v in
+                                    if let km = v.as(Double.self) {
+                                        Text("\(Int(km))km").font(.caption2)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             } header: {

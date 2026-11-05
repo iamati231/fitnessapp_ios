@@ -297,28 +297,51 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
 
     // MARK: - weeklyVolumeProjection
 
-    func testProjectionRampsFromStartTowardTarget() {
+    func testProjectionIncludesStartVolumeAtWeekZero() {
+        let startKm = 20.0
         let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
-            startKm: 20, goal: .marathon, weeksAvailable: 10
+            startKm: startKm, goal: .marathon, weeksAvailable: 10
         )
-        XCTAssertEqual(points.count, 10)
-        // Week 1 must exceed startKm (10% ramp)
-        XCTAssertGreaterThan(points[0].km, 20)
-        // Weeks 1 through rampWeeks must increase or stay at target
+        // Returns weeksAvailable + 1 points (week 0..N)
+        XCTAssertEqual(points.count, 11)
+        XCTAssertEqual(points[0].week, 0)
+        XCTAssertEqual(points[0].km, startKm, accuracy: 0.001)
+    }
+
+    func testProjectionFirstRampStepDoesNotExceedMaxWeeklyRamp() {
+        let startKm = 20.0
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: startKm, goal: .marathon, weeksAvailable: 10
+        )
+        let maxAllowed = startKm * (1 + CardioFeasibilityCalculator.maxWeeklyRampPercent)
+        XCTAssertLessThanOrEqual(points[1].km, maxAllowed + 0.001)
+    }
+
+    func testProjectionRampsFromStartTowardTarget() {
+        let startKm = 20.0
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: startKm, goal: .marathon, weeksAvailable: 10
+        )
+        XCTAssertEqual(points.count, 11)
+        XCTAssertEqual(points[0].km, startKm, accuracy: 0.001)
+        // Week 1 starts ramping up
+        XCTAssertGreaterThan(points[1].km, startKm)
+        // Ramp phase (weeks 1..rampWeeks, indices 1..8) must not decrease
         let rampWeeks = 10 - CardioFeasibilityCalculator.taperWeeks
         for i in 1..<rampWeeks {
-            XCTAssertGreaterThanOrEqual(points[i].km, points[i - 1].km)
+            XCTAssertGreaterThanOrEqual(points[i + 1].km, points[i].km)
         }
     }
 
     func testProjectionCapsAtTargetVolume() {
-        // Start near target so ramp hits it quickly
         let target = CardioFeasibilityCalculator.targetWeeklyVolumeKm(for: .fiveK)! // 20
         let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
             startKm: 19, goal: .fiveK, weeksAvailable: 15
         )
+        // Returns 16 points (week 0..15)
+        XCTAssertEqual(points.count, 16)
         let rampWeeks = 15 - CardioFeasibilityCalculator.taperWeeks
-        for i in 0..<rampWeeks {
+        for i in 1...rampWeeks {
             XCTAssertLessThanOrEqual(points[i].km, target + 0.001)
         }
     }
@@ -327,10 +350,11 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
         let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
             startKm: 10, goal: .marathon, weeksAvailable: 10
         )
+        // Returns 11 points; taper at last 2 (indices 9..10)
         let taperWeeks = CardioFeasibilityCalculator.taperWeeks
-        let n = points.count
-        // Taper weeks must be less than peak (ramp phase max)
-        let peak = points[0..<(n - taperWeeks)].map { $0.km }.max() ?? 0
+        let n = points.count // 11
+        // Peak is max of ramp phase (indices 1..n-1-taperWeeks)
+        let peak = points[1..<(n - taperWeeks)].map { $0.km }.max() ?? 0
         for i in (n - taperWeeks)..<n {
             XCTAssertLessThan(points[i].km, peak + 0.001)
         }
@@ -341,10 +365,61 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
             startKm: 10, goal: .marathon, weeksAvailable: 10
         )
         let taperWeeks = CardioFeasibilityCalculator.taperWeeks
-        let n = points.count
-        let peak = points[0..<(n - taperWeeks)].map { $0.km }.max() ?? 0
+        let n = points.count // 11
+        // Peak is at the last ramp index (n - taperWeeks - 1)
+        let peakKm = points[n - taperWeeks - 1].km
         for i in (n - taperWeeks)..<n {
-            XCTAssertEqual(points[i].km, peak * 0.7, accuracy: 0.001)
+            XCTAssertEqual(points[i].km, peakKm * 0.7, accuracy: 0.001)
+        }
+    }
+
+    func testProjectionNoTaperForOneWeek() {
+        // 1 week <= taperWeeks (2): no artificial taper
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 20, goal: .marathon, weeksAvailable: 1
+        )
+        XCTAssertEqual(points.count, 2)
+        XCTAssertEqual(points[0].km, 20, accuracy: 0.001)
+        // Week 1 is a pure ramp step, NOT a taper
+        XCTAssertGreaterThan(points[1].km, 20)
+    }
+
+    func testProjectionNoTaperForTwoWeeks() {
+        // 2 weeks == taperWeeks: still no taper
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 20, goal: .marathon, weeksAvailable: 2
+        )
+        XCTAssertEqual(points.count, 3)
+        XCTAssertEqual(points[0].km, 20, accuracy: 0.001)
+        XCTAssertGreaterThan(points[1].km, 20)
+        XCTAssertGreaterThan(points[2].km, points[1].km)
+    }
+
+    func testProjectionTaperAppearsAtThreeWeeks() {
+        // 3 weeks > taperWeeks (2): rampWeeks=1, then 2 taper weeks
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 20, goal: .marathon, weeksAvailable: 3
+        )
+        XCTAssertEqual(points.count, 4)
+        let peakKm = points[1].km // only ramp week
+        XCTAssertEqual(points[2].km, peakKm * 0.7, accuracy: 0.001)
+        XCTAssertEqual(points[3].km, peakKm * 0.7, accuracy: 0.001)
+    }
+
+    func testProjectionTaperBasedOnActualPeak() {
+        // Start already near target: peak = target, taper = target * 0.7
+        let startKm = 60.0
+        let goal = CardioGoal.marathon
+        let target = CardioFeasibilityCalculator.targetWeeklyVolumeKm(for: goal)! // 65
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: startKm, goal: goal, weeksAvailable: 5
+        )
+        let taperWeeks = CardioFeasibilityCalculator.taperWeeks
+        let n = points.count
+        let peakKm = points[n - taperWeeks - 1].km
+        XCTAssertLessThanOrEqual(peakKm, target + 0.001)
+        for i in (n - taperWeeks)..<n {
+            XCTAssertEqual(points[i].km, peakKm * 0.7, accuracy: 0.001)
         }
     }
 
@@ -372,7 +447,6 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
     }
 
     func testProjectionGeneralFitnessReturnsEmpty() {
-        // generalFitness hat kein Zielvolumen
         let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
             startKm: 10, goal: .generalFitness, weeksAvailable: 10
         )
@@ -385,12 +459,77 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
         XCTAssertEqual(a.map { $0.km }, b.map { $0.km })
     }
 
-    func testProjectionShortPrepTimeAllTaper() {
-        // 1 Woche: rampWeeks = max(0, 1-2) = 0, also nur Taper
+    func testProjectionAllValuesFiniteAndNonNegative() {
         let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
-            startKm: 20, goal: .marathon, weeksAvailable: 1
+            startKm: 10, goal: .halfMarathon, weeksAvailable: 20
         )
-        XCTAssertEqual(points.count, 1)
-        XCTAssertEqual(points[0].km, 20 * 0.7, accuracy: 0.001)
+        for p in points {
+            XCTAssertTrue(p.km.isFinite && p.km >= 0, "km \(p.km) bei Woche \(p.week) ist ungueltig")
+        }
+    }
+
+    // MARK: - chartPoints
+
+    func testChartPointsReturnsAllWhenUnderMax() {
+        let proj = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .marathon, weeksAvailable: 15
+        )
+        // 16 points, well under maxCount=20
+        XCTAssertEqual(proj.count, 16)
+        let chart = CardioFeasibilityCalculator.chartPoints(from: proj, maxCount: 20)
+        XCTAssertEqual(chart.count, 16)
+    }
+
+    func testChartPointsReducesToMaxCount() {
+        let proj = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .marathon, weeksAvailable: 30
+        )
+        XCTAssertEqual(proj.count, 31)
+        let chart = CardioFeasibilityCalculator.chartPoints(from: proj, maxCount: 20)
+        XCTAssertLessThanOrEqual(chart.count, 20)
+    }
+
+    func testChartPointsKeepsFirstPoint() {
+        let proj = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .marathon, weeksAvailable: 30
+        )
+        let chart = CardioFeasibilityCalculator.chartPoints(from: proj, maxCount: 20)
+        XCTAssertEqual(chart.first?.week, 0)
+        XCTAssertEqual(chart.first?.km, 10, accuracy: 0.001)
+    }
+
+    func testChartPointsKeepsLastPoint() {
+        let proj = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .marathon, weeksAvailable: 30
+        )
+        let chart = CardioFeasibilityCalculator.chartPoints(from: proj, maxCount: 20)
+        XCTAssertEqual(chart.last?.week, 30)
+    }
+
+    func testChartPointsIsChronological() {
+        let proj = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .marathon, weeksAvailable: 30
+        )
+        let chart = CardioFeasibilityCalculator.chartPoints(from: proj, maxCount: 20)
+        for i in 1..<chart.count {
+            XCTAssertGreaterThan(chart[i].week, chart[i - 1].week)
+        }
+    }
+
+    func testChartPointsEmptyProjectionReturnsEmpty() {
+        let chart = CardioFeasibilityCalculator.chartPoints(from: [], maxCount: 20)
+        XCTAssertTrue(chart.isEmpty)
+    }
+
+    func testChartPointsTaperIsRepresented() {
+        // 25 weeks: last 2 are taper (lower than peak); last chart point must be taper
+        let proj = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .marathon, weeksAvailable: 25
+        )
+        let chart = CardioFeasibilityCalculator.chartPoints(from: proj, maxCount: 20)
+        let maxKm = chart.map { $0.km }.max() ?? 0
+        // Last point is week 25 (taper), which must be below peak
+        XCTAssertEqual(chart.last?.week, 25)
+        XCTAssertLessThan(chart.last?.km ?? maxKm, maxKm)
     }
 }
