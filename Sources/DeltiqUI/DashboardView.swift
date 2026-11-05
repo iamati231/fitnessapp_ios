@@ -2685,14 +2685,15 @@ public struct DashboardView: View {
         systemImage: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        DeltiqCard {
+        let inner = content()
+        return DeltiqCard {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: systemImage)
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(Color.deltiqOrange)
                     .font(.title3)
                 VStack(alignment: .leading, spacing: 8) {
-                    content()
+                    inner
                 }
                 Spacer(minLength: 0)
             }
