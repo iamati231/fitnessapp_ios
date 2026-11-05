@@ -847,7 +847,7 @@ public struct WorkoutSummaryView: View {
         for log in logsCopy {
             modelContext.delete(log)
         }
-        // 2. Session selbst — PRs ueberleben via nullify.
+        // 2. Session selbst — PRs werden per Cascade-Delete mitgeloescht.
         modelContext.delete(session)
         try? modelContext.save()
         // 3. View aufloesen.

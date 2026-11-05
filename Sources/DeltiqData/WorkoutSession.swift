@@ -202,6 +202,10 @@ public final class WorkoutSession {
     @Relationship(deleteRule: .nullify, inverse: \ExerciseLog.session)
     public var logs: [ExerciseLog] = []
 
+    // Cascade: deleting a session removes all PR entries it produced.
+    @Relationship(deleteRule: .cascade, inverse: \PersonalRecordEntry.session)
+    public var personalRecords: [PersonalRecordEntry] = []
+
     /// P8-Vorbereitung (Stufe-2-Versionierung,
     /// `docs/P8_STUFE2_VERSIONIERUNG_PLAN.md`): eingefrorener Tagesinhalt
     /// zum Zeitpunkt dieser Session, JSON-codiert (siehe

@@ -753,5 +753,56 @@ final class PersonalRecordSyncTests: XCTestCase {
         XCTAssertNotNil(heaviest, "A legacy log on a different, differently-named Exercise row sharing the template ID must still count")
         XCTAssertEqual(heaviest?.previousValue, 80)
     }
+
+    // MARK: - Cascade-Delete
+
+    /// Test A: Deleting a WorkoutSession must also delete all its PR entries.
+    func testDeleteSessionRemovesItsPREntries() throws {
+        let session1 = makeSession(weight: 80, reps: 5, date: day(1))
+        let session2 = makeSession(weight: 90, reps: 5, date: day(2))
+        try context.save()
+
+        PersonalRecordSync.recordPRs(for: session1, in: context)
+        PersonalRecordSync.recordPRs(for: session2, in: context)
+        try context.save()
+
+        let prsBeforeDelete = try allPREs().filter {
+            $0.session?.persistentModelID == session2.persistentModelID
+        }
+        XCTAssertFalse(prsBeforeDelete.isEmpty, "Precondition: session2 has PR entries")
+
+        context.delete(session2)
+        try context.save()
+
+        let prsAfterDelete = try allPREs().filter {
+            $0.session?.persistentModelID == session2.persistentModelID
+        }
+        XCTAssertTrue(prsAfterDelete.isEmpty,
+                      "Cascade-delete: session2's PR entries must be gone after session is deleted")
+    }
+
+    /// Test B: Deleting one session must not affect other sessions' PR entries.
+    func testDeleteSessionLeavesOtherSessionsPREntriesIntact() throws {
+        let session1 = makeSession(weight: 80, reps: 5, date: day(1))
+        let session2 = makeSession(weight: 90, reps: 5, date: day(2))
+        try context.save()
+
+        PersonalRecordSync.recordPRs(for: session1, in: context)
+        PersonalRecordSync.recordPRs(for: session2, in: context)
+        try context.save()
+
+        let session1PRCount = try allPREs().filter {
+            $0.session?.persistentModelID == session1.persistentModelID
+        }.count
+
+        context.delete(session2)
+        try context.save()
+
+        let session1PRsAfter = try allPREs().filter {
+            $0.session?.persistentModelID == session1.persistentModelID
+        }
+        XCTAssertEqual(session1PRsAfter.count, session1PRCount,
+                       "session1's PR entries must survive deletion of session2")
+    }
 }
 #endif
