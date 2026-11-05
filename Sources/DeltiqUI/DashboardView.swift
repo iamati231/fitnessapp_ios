@@ -1617,7 +1617,13 @@ public struct DashboardView: View {
     // MARK: - 3A/4B Dashboard Cards
 
     private var isCheckInDue: Bool {
-        guard let last = lastCheckInDate else { return true }
+        guard let last = lastCheckInDate else {
+            // Erste Anzeige: 7 Tage nach Planaktivierung UND mindestens eine abgeschlossene Einheit.
+            guard !completedSessions.isEmpty,
+                  let anchor = activePlans.compactMap(\.activatedAt).min()
+            else { return false }
+            return Date.now.timeIntervalSince(anchor) > 7 * 86400
+        }
         return Date.now.timeIntervalSince(last) > 7 * 86400
     }
 
