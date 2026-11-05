@@ -1104,17 +1104,23 @@ private struct SwipeBackController: UIViewControllerRepresentable {
             // dafuer, dass UINavigationController die scroll pan → require(toFail:)
             // Verkettung nicht mehr automatisch aufbaut (UIScrollView wird nach dem
             // Auto-Setup-Zeitfenster des NavControllers angelegt). Manuell nachholen.
+            // WICHTIG: Ancestor-Walk von self.view greift hier NICHT — HostController
+            // ist Geschwister (nicht Kind) von UIScrollView, da .deltiqSwipeBackEnabled()
+            // aussen um .deltiqScreen() liegt. Stattdessen Tiefensuche von navController.view.
             if enabled, let edgePan = navController.interactivePopGestureRecognizer {
-                ancestorScrollView()?.panGestureRecognizer.require(toFail: edgePan)
+                screenScrollView(in: navController.view)?
+                    .panGestureRecognizer.require(toFail: edgePan)
             }
         }
 
-        // Sucht den naechsten UIScrollView-Vorfahren (O(Tiefe), idempotent).
-        private func ancestorScrollView() -> UIScrollView? {
-            var v: UIView? = view.superview
-            while let current = v {
-                if let sv = current as? UIScrollView { return sv }
-                v = current.superview
+        // Tiefensuche nach dem ersten UIScrollView unterhalb von root.
+        // Muss von navController.view starten, weil HostController.view und
+        // UIScrollView aus DeltiqScreenModifier Geschwister sind — kein
+        // gemeinsamer Ancestor innerhalb des ScrollView-Teilbaums.
+        private func screenScrollView(in root: UIView) -> UIScrollView? {
+            if let sv = root as? UIScrollView { return sv }
+            for sub in root.subviews {
+                if let found = screenScrollView(in: sub) { return found }
             }
             return nil
         }
