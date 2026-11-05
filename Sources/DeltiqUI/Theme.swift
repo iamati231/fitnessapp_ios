@@ -1068,7 +1068,7 @@ private struct SwipeBackController: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> HostController { HostController() }
     func updateUIViewController(_ c: HostController, context: Context) { c.apply(enabled: enabled) }
 
-    final class HostController: UIViewController, UIGestureRecognizerDelegate {
+    final class HostController: UIViewController {
         private var pendingEnabled: Bool = true
 
         override func viewDidLoad() {
@@ -1092,15 +1092,11 @@ private struct SwipeBackController: UIViewControllerRepresentable {
         func apply(enabled: Bool) {
             pendingEnabled = enabled
             guard let navController = navigationController else { return }
-            if enabled {
-                navController.interactivePopGestureRecognizer?.delegate = self
-            }
+            // Den Original-Delegate (navController selbst) NICHT ersetzen:
+            // Nur so bleiben Kanten-Einschraenkung und Gesture-Interaction-
+            // Chains intakt — sonst konkuriert der Pop-Recognizer mit
+            // .menu-Picker-Interaktionen und verschiebt die Ansicht horizontal.
             navController.interactivePopGestureRecognizer?.isEnabled = enabled
-        }
-
-        // Verhindert Pop an der Stack-Wurzel (viewControllers.count == 1).
-        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-            (navigationController?.viewControllers.count ?? 0) > 1
         }
     }
 }
