@@ -2695,14 +2695,17 @@ public struct DashboardView: View {
     /// Leitplanke 6: nie beide gleichzeitig sichtbar (if/else if).
     @ViewBuilder
     private var runCoachDashboardCard: some View {
-        if let profile = profiles.first,
-           let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans),
-           !activePlan.days.isEmpty,
-           let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
-            let nextDayName = nextScheduledDay(in: activePlan).displayName
-            laufcoachingAdjustmentCard(adjustment, nextDayName: nextDayName)
-        } else if let model = cardioFeasibilityModel {
-            cardioFeasibilityDashboardCard(model)
+        // Globaler Coaching-Schalter hat Vorrang — Widget-Eintrag allein
+        // genuegt nicht (Spec: Tabelle "Coaching An/Aus x Widget-Einstellung").
+        if let profile = profiles.first, profile.cardioCoachingEnabled {
+            if let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans),
+               !activePlan.days.isEmpty,
+               let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
+                let nextDayName = nextScheduledDay(in: activePlan).displayName
+                laufcoachingAdjustmentCard(adjustment, nextDayName: nextDayName)
+            } else if let model = cardioFeasibilityModel {
+                cardioFeasibilityDashboardCard(model)
+            }
         }
     }
 

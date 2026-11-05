@@ -2837,19 +2837,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%d Läufe diese Woche"
+            "value": "%d Läufe (letzte 7 Tage)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%d runs this week"
+            "value": "%d runs (last 7 days)"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bu hafta %d koşu"
+            "value": "Son 7 gün %d koşu"
           }
         }
       }
@@ -2883,19 +2883,203 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%.1f km diese Woche"
+            "value": "%.1f km (letzte 7 Tage)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%.1f km this week"
+            "value": "%.1f km (last 7 days)"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bu hafta %.1f km"
+            "value": "Son 7 gün %.1f km"
+          }
+        }
+      }
+    },
+    "cardioCoach.detail.history.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Laufdaten vorhanden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No run data yet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz koşu verisi yok."
+          }
+        }
+      }
+    },
+    "cardioCoach.detail.history.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufhistorie (8 Wochen)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run History (8 Weeks)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu Geçmişi (8 Hafta)"
+          }
+        }
+      }
+    },
+    "cardioCoach.detail.paceEstimate": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richtwert aus deiner 5-km-Referenzzeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimates based on your 5K reference time"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 km referans sürenize dayalı tahmini değer"
+          }
+        }
+      }
+    },
+    "cardioCoach.detail.paceNoReference": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein 5-km-Referenzwert vorhanden – lockeres Tempo: gesprächsfähig."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No 5K reference available – easy pace: conversational."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 km referans süresi yok – kolay tempo: konuşabilir hızda."
+          }
+        }
+      }
+    },
+    "cardioCoach.detail.trainingWeeks": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weeks"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hafta"
+          }
+        }
+      }
+    },
+    "cardioCoach.insight.lowFrequency": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du läufst derzeit weniger als zweimal pro Woche. Regelmäßigkeit ist der Schlüssel."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're running less than twice a week. Consistency matters most."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftada iki kereden az koşuyorsun. Tutarlılık en önemli etken."
+          }
+        }
+      }
+    },
+    "cardioCoach.insight.onTrack": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Training ist regelmäßig. Weiter so!"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your training is consistent. Keep it up!"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenmanın düzenli. Böyle devam et!"
+          }
+        }
+      }
+    },
+    "cardioCoach.insight.volumeSpike": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Volumen ist stark gestiegen. Diese Woche lockerer trainieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume jumped significantly. Keep this week lighter."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hacim önemli ölçüde arttı. Bu hafta daha hafif antrenman yap."
           }
         }
       }

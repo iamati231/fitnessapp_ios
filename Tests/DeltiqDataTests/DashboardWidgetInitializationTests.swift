@@ -88,7 +88,42 @@ final class DashboardWidgetInitializationTests: XCTestCase {
                        "Neues Profil mit cardioCoachingEnabled soll runCoachCard als erstes Widget haben")
     }
 
-    // 6. Eine benutzerdefinierte Widget-Reihenfolge bleibt unveraendert.
+    // 6. setEnduranceModality aktiviert Coach: Widget wird ganz oben eingefuegt
+    //    (cardioWidgetUserConfigured == false → kein Veto).
+    func testEnablingCoachingViaSetEnduranceModalityInsertsRunCoachCardFirst() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        XCTAssertFalse(profile.activeDashboardWidgets.contains(.runCoachCard))
+
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertTrue(profile.cardioCoachingEnabled)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
+                       "Nach erstem Aktivieren via setEnduranceModality soll runCoachCard ganz oben stehen")
+    }
+
+    // 7. Wenn cardioWidgetUserConfigured == true, kein Auto-Insert durch setEnduranceModality.
+    func testNoAutoInsertWhenUserHasExplicitlyConfiguredWidgets() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        profile.cardioWidgetUserConfigured = true
+
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertTrue(profile.cardioCoachingEnabled)
+        XCTAssertFalse(profile.activeDashboardWidgets.contains(.runCoachCard),
+                       "Nach expliziter User-Konfiguration kein Auto-Insert von runCoachCard")
+    }
+
+    // 9. Eine benutzerdefinierte Widget-Reihenfolge bleibt unveraendert.
     func testCustomWidgetOrderSurvivesCardioToggle() throws {
         let container = try makeContainer()
         let profile = UserBodyProfile(

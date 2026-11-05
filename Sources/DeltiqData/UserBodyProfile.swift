@@ -139,6 +139,14 @@ public final class UserBodyProfile {
     /// ist bewusst auf den Profil-Editor beschraenkt) — rein UI-Zustand.
     public var cardioCoachingEnabled: Bool = false
 
+    /// Widget-Konfigurationsstatus: `true` sobald der User die Dashboard-
+    /// Widget-Liste explizit angepasst hat (via DashboardSettingsView).
+    /// Steuert, ob `setEnduranceModality` das runCoachCard-Widget auto-einfuegt.
+    /// Default false — Lightweight-Migration: Bestandsnutzer beginnen ohne
+    /// explizite Konfiguration und bekommen das Widget beim naechsten
+    /// Aktivieren automatisch oben platziert.
+    public var cardioWidgetUserConfigured: Bool = false
+
     /// DEL-250: Lauf-Ziel-Kategorie. Persistiert als String, sodass
     /// pre-DEL-250-Bestand via Default-Wert lightweight migriert wird
     /// (identisches Muster wie `coachingToneRaw`/`trainingGoalRaw`).
@@ -290,7 +298,16 @@ public final class UserBodyProfile {
         // EXPLIZIT gewaehlte, nicht unterstuetzende Modalitaet (`.cycling`)
         // sperrt den Coach - identischer Default wie `displayedEnduranceModality`
         // in `ProfileEditorView` (dort `?? .running`, hier aequivalent `?? true`).
+        let wasEnabled = cardioCoachingEnabled
         cardioCoachingEnabled = wantsCoach && (modality?.supportsRunCoach ?? true)
+        // Auto-Insert nur wenn Coaching gerade aktiviert wird UND der User die
+        // Widget-Liste noch nie explizit konfiguriert hat — kein Ueberschreiben
+        // einer bewussten Nutzerentscheidung.
+        if cardioCoachingEnabled && !wasEnabled && !cardioWidgetUserConfigured {
+            var order = activeDashboardWidgets.filter { $0 != .runCoachCard }
+            order.insert(.runCoachCard, at: 0)
+            activeDashboardWidgets = order
+        }
     }
 
     // MARK: - Start-Check (optionaler Baseline-Check im Onboarding)
