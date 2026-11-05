@@ -278,21 +278,21 @@ struct CoachAdjustmentPreviewView: View {
                         }
                         .frame(height: 110)
                         .chartXAxis {
-                            AxisMarks(values: .automatic(desiredCount: 5)) {
+                            AxisMarks(values: .automatic(desiredCount: 5)) { value in
                                 AxisGridLine()
                                 AxisTick()
-                                AxisValueLabel { v in
-                                    if let w = v.as(Int.self) {
+                                AxisValueLabel {
+                                    if let w = value.as(Int.self) {
                                         Text("W\(w)").font(.caption2)
                                     }
                                 }
                             }
                         }
                         .chartYAxis {
-                            AxisMarks(values: .automatic(desiredCount: 3)) {
+                            AxisMarks(values: .automatic(desiredCount: 3)) { value in
                                 AxisGridLine()
-                                AxisValueLabel { v in
-                                    if let km = v.as(Double.self) {
+                                AxisValueLabel {
+                                    if let km = value.as(Double.self) {
                                         Text("\(Int(km))km").font(.caption2)
                                     }
                                 }
