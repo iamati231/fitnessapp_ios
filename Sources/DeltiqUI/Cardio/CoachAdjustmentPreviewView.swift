@@ -128,7 +128,8 @@ struct CoachAdjustmentPreviewView: View {
             // goal instead of starting from zero.
             let desiredDays = newCardioDays(for: model)
             let extraNeeded = max(0, desiredDays.count - ids.count)
-            if extraNeeded == 0 || model.analysis.insertableRestDays.count >= extraNeeded {
+            if extraNeeded == 0 || model.analysis.insertableRestDays.count >= extraNeeded
+                || model.analysis.freeWeekdaysForNewDays.count >= extraNeeded {
                 Section {
                     ForEach(Array(activePlan.days.filter { ids.contains($0.persistentModelID) }), id: \.persistentModelID) { day in
                         Text(day.name)

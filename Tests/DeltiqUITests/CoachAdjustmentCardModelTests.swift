@@ -102,6 +102,16 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
         }
     }
 
+    /// Belegt Wochentage mit nicht-einfuegbaren Ruhetagen (isAutoFilledPlaceholder: false),
+    /// damit freeWeekdays() diese Slots als besetzt zaehlt.
+    private func addNonInsertableRestDays(count: Int, to plan: TrainingPlan, startingWeekday: Int) {
+        for offset in 0..<count {
+            let day = TrainingDay(name: "Ruhetag", weekday: startingWeekday + offset, type: .rest, plan: plan)
+            context.insert(day)
+            plan.days.append(day)
+        }
+    }
+
     // MARK: - Leitplanke 2: Coach-Präferenz vs. Planübernahme getrennt
 
     func testAcceptNeverChangesCardioCoachingEnabled() throws {
@@ -602,13 +612,16 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
         XCTAssertTrue(eligibleDays.allSatisfy { $0.activeExercises.allSatisfy(\.isCardio) }, "beide urspruenglich anfassbaren Tage muessen ersetzt worden sein")
     }
 
-    /// Goal-Upgrade ohne genug freie Ruhetage: darf NICHT still nur 2 von 5 anwenden (der
-    /// alte Bug) - muss stattdessen komplett fehlschlagen, kein Fingerprint, kein
-    /// `cardioGoal`-Wechsel, kein einziger Tag angefasst.
-    func testAcceptThrowsAndWritesNothingWhenNewGoalNeedsMoreDaysThanAvailableRestDays() throws {
+    /// Goal-Upgrade ohne freie Ruhetage UND ohne freie Wochentage: darf NICHT still
+    /// nur 2 von 5 anwenden - muss stattdessen 0 zurueckgeben, kein Fingerprint,
+    /// kein cardioGoal-Wechsel, kein einziger Tag angefasst.
+    /// (Alle 7 Wochentage besetzt: 2 anfassbare Cardio + 5 nicht-einfuegbare Ruhe.)
+    func testAcceptReturnsZeroWhenNeitherRestDaysNorFreeWeekdaysAreAvailableForGoalUpgrade() throws {
         let (profile, plan, eligibleDays) = makeProfileAndPlan(
-            goal: .marathon, eligibleCardioDayCount: 2, insertableRestDayCount: 1
+            goal: .marathon, eligibleCardioDayCount: 2, insertableRestDayCount: 0
         )
+        // Alle verbleibenden Wochentage 3-7 belegen → freeWeekdays() = []
+        addNonInsertableRestDays(count: 5, to: plan, startingWeekday: 3)
         guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
             return XCTFail("expected model")
         }
@@ -616,17 +629,38 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
         let originalDayCount = plan.days.count
         let eligibleDaySnapshot = eligibleDays.map { ($0.persistentModelID, $0.activeExercises.map(\.name)) }
 
-        XCTAssertThrowsError(try model.accept(plan: plan, profile: profile, in: context)) { error in
-            XCTAssertEqual(error as? PlanGeneratorInstantiator.CardioInsertionError, .insufficientRestDays)
-        }
+        let count = try model.accept(plan: plan, profile: profile, in: context)
 
+        XCTAssertEqual(count, 0, "wenn kein Platz vorhanden ist, muss accept() 0 zurueckgeben")
         XCTAssertNil(profile.cardioPlanAdjustmentFingerprint, "nichts wurde uebernommen - kein Fingerprint darf gesetzt sein")
-        XCTAssertEqual(profile.cardioGoal, originalGoal, "ein gescheiterter Versuch darf profile.cardioGoal nicht anfassen")
+        XCTAssertEqual(profile.cardioGoal, originalGoal, "ein Fehlschlag darf profile.cardioGoal nicht anfassen")
         XCTAssertEqual(plan.days.count, originalDayCount, "kein zusaetzlicher Tag darf entstanden sein")
         for (id, names) in eligibleDaySnapshot {
             let day = plan.days.first { $0.persistentModelID == id }
-            XCTAssertEqual(day?.activeExercises.map(\.name), names, "kein bestehender Tag darf halb/teilweise ersetzt worden sein")
+            XCTAssertEqual(day?.activeExercises.map(\.name), names, "kein bestehender Tag darf veraendert worden sein")
         }
+    }
+
+    /// Zielwechsel-Bug-Fix: Halbmarathon → Marathon ohne einfuegbare Ruhetage,
+    /// aber mit freien Wochentagen → accept() muss freie Wochentage nutzen.
+    func testAcceptSucceedsByUsingFreeWeekdaysWhenRestDaysAreInsufficient() throws {
+        // 2 anfassbare Cardio-Tage (Wochentag 1+2), 0 einfuegbare Ruhetage,
+        // freie Wochentage 3-7 → Marathon braucht 3 zusaetzliche Tage.
+        let (profile, plan, eligibleDays) = makeProfileAndPlan(
+            goal: .marathon, eligibleCardioDayCount: 2, insertableRestDayCount: 0
+        )
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+
+        XCTAssertGreaterThan(count, 0, "accept() muss freie Wochentage nutzen wenn Ruhetage nicht reichen")
+        XCTAssertEqual(profile.cardioPlanAdjustmentFingerprint, model.fingerprint)
+        let cardioContentDays = plan.days.filter { !$0.activeExercises.isEmpty && $0.activeExercises.allSatisfy(\.isCardio) }
+        let marathonDayCount = CoachAdjustmentCardModel.cardioOnlyDaySpecs(for: .marathon).count
+        XCTAssertEqual(cardioContentDays.count, marathonDayCount, "der Plan muss nach accept() alle Marathon-Lauftage enthalten")
+        XCTAssertTrue(eligibleDays.allSatisfy { $0.activeExercises.allSatisfy(\.isCardio) }, "beide urspruenglich anfassbaren Tage muessen ersetzt worden sein")
     }
 
     /// Goal-Downgrade: 5 bestehende anfassbare Cardio-Tage, Ziel wechselt auf 5K (braucht nur
