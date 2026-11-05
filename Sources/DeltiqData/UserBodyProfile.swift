@@ -300,10 +300,10 @@ public final class UserBodyProfile {
         // in `ProfileEditorView` (dort `?? .running`, hier aequivalent `?? true`).
         let wasEnabled = cardioCoachingEnabled
         cardioCoachingEnabled = wantsCoach && (modality?.supportsRunCoach ?? true)
-        // Auto-Insert nur wenn Coaching gerade aktiviert wird UND der User die
-        // Widget-Liste noch nie explizit konfiguriert hat — kein Ueberschreiben
-        // einer bewussten Nutzerentscheidung.
-        if cardioCoachingEnabled && !wasEnabled && !cardioWidgetUserConfigured {
+        // Bei jedem Aktivieren (false→true) erscheint die Karte ganz oben —
+        // der User kann sie danach verschieben, aber das naechste Einschalten
+        // bringt sie wieder an Position 0.
+        if cardioCoachingEnabled && !wasEnabled {
             var order = activeDashboardWidgets.filter { $0 != .runCoachCard }
             order.insert(.runCoachCard, at: 0)
             activeDashboardWidgets = order

@@ -106,8 +106,10 @@ final class DashboardWidgetInitializationTests: XCTestCase {
                        "Nach erstem Aktivieren via setEnduranceModality soll runCoachCard ganz oben stehen")
     }
 
-    // 7. Wenn cardioWidgetUserConfigured == true, kein Auto-Insert durch setEnduranceModality.
-    func testNoAutoInsertWhenUserHasExplicitlyConfiguredWidgets() throws {
+    // 7. setEnduranceModality fuegt runCoachCard IMMER an Position 0 ein — auch
+    //    wenn cardioWidgetUserConfigured == true (neues Verhalten: jedes Re-Enable
+    //    bringt die Karte ganz oben, unabhaengig von vorheriger Konfiguration).
+    func testAutoInsertEvenWhenUserHasExplicitlyConfiguredWidgets() throws {
         let container = try makeContainer()
         let profile = UserBodyProfile(
             birthDate: Date(timeIntervalSince1970: 760_000_000),
@@ -119,8 +121,34 @@ final class DashboardWidgetInitializationTests: XCTestCase {
 
         profile.setEnduranceModality(.running, runCoachEnabled: true)
         XCTAssertTrue(profile.cardioCoachingEnabled)
-        XCTAssertFalse(profile.activeDashboardWidgets.contains(.runCoachCard),
-                       "Nach expliziter User-Konfiguration kein Auto-Insert von runCoachCard")
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
+                       "Jedes Aktivieren via setEnduranceModality bringt runCoachCard an Position 0")
+    }
+
+    // 8. Karte nach Verschieben: naechstes Re-Enable bringt sie wieder an Position 0.
+    func testReEnableAfterMoveRestoresRunCoachCardToFirst() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        // Erster Enable: Karte oben
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard)
+
+        // User verschiebt Karte ans Ende
+        var order = profile.activeDashboardWidgets.filter { $0 != .runCoachCard }
+        order.append(.runCoachCard)
+        profile.activeDashboardWidgets = order
+        XCTAssertNotEqual(profile.activeDashboardWidgets.first, .runCoachCard)
+
+        // Deaktivieren + Reaktivieren: Karte wieder oben
+        profile.setEnduranceModality(.running, runCoachEnabled: false)
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
+                       "Re-Enable soll runCoachCard immer zurueck an Position 0 setzen")
     }
 
     // 9. Eine benutzerdefinierte Widget-Reihenfolge bleibt unveraendert.

@@ -106,6 +106,12 @@ struct CoachAdjustmentPreviewView: View {
 
     @ViewBuilder
     private func beforeAfterSection(_ model: CoachAdjustmentCardModel) -> some View {
+        // Nach Uebernahme: kein Vergleich mehr zeigen — der User hat bereits
+        // entschieden, die Alt/Neu-Gegenueber­stellung ist jetzt Laerm.
+        if model.isAlreadyApplied {
+            trainingDetailSection(model)
+            createNewPlanButton(model)
+        } else {
         switch model.analysis.cardioAvailability {
         case .ready(let ids):
             // Fix 2 (Deltiq_Laufcoaching_Audit_Fixes_Claude.md): `ids.count`
@@ -198,6 +204,7 @@ struct CoachAdjustmentPreviewView: View {
         case .noActivePlan:
             EmptyView()
         }
+        } // end else
     }
 
     @ViewBuilder
@@ -262,10 +269,11 @@ struct CoachAdjustmentPreviewView: View {
                     let totalWeeks = Calendar.current.dateComponents(
                         [.weekOfYear], from: Date(), to: raceDate
                     ).weekOfYear ?? 0
-                    let allPoints = CardioFeasibilityCalculator.weeklyVolumeProjection(
+                    // Alle Punkte direkt — kein chartPoints-Sampling, das Wochen
+                    // ueberspringt und visuelle Luecken erzeugt (Section 4A).
+                    let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
                         startKm: startVol, goal: projGoal, weeksAvailable: totalWeeks
                     )
-                    let points = CardioFeasibilityCalculator.chartPoints(from: allPoints, maxCount: 20)
                     if !points.isEmpty {
                         Chart {
                             ForEach(0..<points.count, id: \.self) { i in
