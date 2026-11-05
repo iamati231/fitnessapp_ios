@@ -489,13 +489,14 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
         XCTAssertLessThanOrEqual(chart.count, 20)
     }
 
-    func testChartPointsKeepsFirstPoint() {
+    func testChartPointsKeepsFirstPoint() throws {
         let proj = CardioFeasibilityCalculator.weeklyVolumeProjection(
             startKm: 10, goal: .marathon, weeksAvailable: 30
         )
         let chart = CardioFeasibilityCalculator.chartPoints(from: proj, maxCount: 20)
         XCTAssertEqual(chart.first?.week, 0)
-        XCTAssertEqual(chart.first?.km, 10, accuracy: 0.001)
+        let firstKm = try XCTUnwrap(chart.first?.km)
+        XCTAssertEqual(firstKm, 10, accuracy: 0.001)
     }
 
     func testChartPointsKeepsLastPoint() {
