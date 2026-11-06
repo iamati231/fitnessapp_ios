@@ -67123,6 +67123,558 @@
           }
         }
       }
+    },
+    "raceProgress.detail.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wettkampf-Fortschritt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Race progress"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yarış ilerlemesi"
+          }
+        }
+      }
+    },
+    "raceProgress.detail.lastAnalyzed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuletzt ausgewertet: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last analyzed: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son analiz: %@"
+          }
+        }
+      }
+    },
+    "raceProgress.detail.weeksHeader": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausgewertete Wochen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weeks analyzed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analiz edilen haftalar"
+          }
+        }
+      }
+    },
+    "raceProgress.detail.concernsHeader": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erkannte Auffälligkeiten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Findings"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tespitler"
+          }
+        }
+      }
+    },
+    "raceProgress.detail.dataGapsHeader": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fehlende oder unklare Daten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missing or unclear data"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eksik veya belirsiz veriler"
+          }
+        }
+      }
+    },
+    "raceProgress.outcome.onTrack": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du bist auf Kurs für dein Ziel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're on track for your goal"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedefin için yolundasın"
+          }
+        }
+      }
+    },
+    "raceProgress.outcome.attentionNeeded": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein paar Dinge solltest du im Blick behalten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A few things are worth keeping an eye on"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göz önünde bulundurman gereken birkaç şey var"
+          }
+        }
+      }
+    },
+    "raceProgress.outcome.offTrack": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein aktuelles Ziel ist mit dem bisherigen Training nicht realistisch"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your current goal isn't realistic given your training so far"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdiye kadarki antrenmanına göre mevcut hedefin gerçekçi değil"
+          }
+        }
+      }
+    },
+    "raceProgress.outcome.insufficientData": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch nicht genug Trainingsdaten für eine Einschätzung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough training data yet for an assessment"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değerlendirme için henüz yeterli antrenman verisi yok"
+          }
+        }
+      }
+    },
+    "raceProgress.weekFlag.active": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lauf-Woche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running week"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu haftası"
+          }
+        }
+      }
+    },
+    "raceProgress.weekFlag.beforeObservation": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vor Coaching-Beginn"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before coaching started"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koçluk öncesi"
+          }
+        }
+      }
+    },
+    "raceProgress.weekFlag.strengthOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Krafttraining"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strength training only"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sadece kuvvet antrenmanı"
+          }
+        }
+      }
+    },
+    "raceProgress.weekFlag.crossTraining": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anderes Ausdauertraining"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cross-training"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çapraz antrenman"
+          }
+        }
+      }
+    },
+    "raceProgress.weekFlag.ambiguous": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sportart unklar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activity type unclear"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivite türü belirsiz"
+          }
+        }
+      }
+    },
+    "raceProgress.weekFlag.gap": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingspause"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training gap"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman arası"
+          }
+        }
+      }
+    },
+    "raceProgress.concern.loadIncreasedTooFast": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Laufumfang ist in den letzten %2$d Wochen um %1$d%% gestiegen – das ist ein schneller Anstieg."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your running volume increased by %1$d%% over the last %2$d weeks – that's a fast ramp-up."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu hacmin son %2$d haftada %%%1$d arttı – bu hızlı bir artış."
+          }
+        }
+      }
+    },
+    "raceProgress.concern.insufficientRecovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Laufumfang ist %d Wochen in Folge gestiegen, ohne eine ruhigere Woche dazwischen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your running volume has increased for %d consecutive weeks without a lighter week in between."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu hacmin, arada daha hafif bir hafta olmadan %d hafta üst üste arttı."
+          }
+        }
+      }
+    },
+    "raceProgress.concern.volumePlateau": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Laufumfang ist seit %d Wochen nahezu unverändert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your running volume has stayed nearly flat for %d weeks."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu hacmin %d haftadır neredeyse değişmedi."
+          }
+        }
+      }
+    },
+    "raceProgress.concern.goalLikelyUnrealistic": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit deinem bisherigen Trainingsumfang ist dein aktuelles Ziel bis zum Renndatum wahrscheinlich nicht erreichbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Based on your training so far, your current goal is unlikely to be achievable by your race date."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdiye kadarki antrenmanına göre, yarış tarihine kadar mevcut hedefine ulaşman pek mümkün görünmüyor."
+          }
+        }
+      }
+    },
+    "raceProgress.concern.recentTrainingGap": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast seit %d Wochen keine Laufeinheit mehr absolviert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You haven't logged a run in %d weeks."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d haftadır koşu kaydın yok."
+          }
+        }
+      }
+    },
+    "raceProgress.dataGap.insufficientHistory": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erst %1$d von %2$d benötigten Wochen Trainingshistorie vorhanden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only %1$d of %2$d needed weeks of training history available so far."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdilik gereken %2$d haftadan sadece %1$d hafta antrenman geçmişi mevcut."
+          }
+        }
+      }
+    },
+    "raceProgress.dataGap.noHeartRateData": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Herzfrequenz-Daten verfügbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No heart rate data available."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalp atış hızı verisi mevcut değil."
+          }
+        }
+      }
+    },
+    "raceProgress.dataGap.coachingObservationStartUnknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Beginn deines Coaching-Zeitraums ist noch nicht bekannt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The start of your coaching period isn't known yet."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koçluk döneminin başlangıcı henüz bilinmiyor."
+          }
+        }
+      }
+    },
+    "raceProgress.dataGap.ambiguousActivityPresent": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Woche(n) mit Ausdauertraining, dessen Sportart unklar ist."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d week(s) with endurance training of an unclear sport type."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spor türü belirsiz dayanıklılık antrenmanı içeren %d hafta."
+          }
+        }
+      }
     }
   }
 }

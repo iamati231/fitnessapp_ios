@@ -183,6 +183,8 @@ public struct DashboardView: View {
     /// Sheet/keine neue Card-Komponente.
     @State private var showingMissedRunAdjustmentPreview = false
     @State private var showingCardioCoachDetail = false
+    /// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md).
+    @State private var showingRaceProgressDetail = false
 
     /// Gecachter Plateau-Befund — wird via .onChange(of: completedSessions, initial: true)
     /// aktualisiert, sodass die O(n·m)-Berechnung nur einmal pro Datenaenderung laeuft
@@ -402,6 +404,11 @@ public struct DashboardView: View {
                     last7DaysRunSessionCount: last7DaysRunSessionCount,
                     last7DaysRunVolumeKm: last7DaysRunVolumeKm
                 )
+            }
+        }
+        .sheet(isPresented: $showingRaceProgressDetail) {
+            if let profile = profiles.first, let model = raceProgressModel {
+                RaceProgressDetailView(profile: profile, model: model)
             }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
@@ -2721,6 +2728,67 @@ public struct DashboardView: View {
             } else if let model = cardioFeasibilityModel {
                 cardioFeasibilityDashboardCard(model)
             }
+            // AI-Running-Coach Phase 1: eigenstaendige, rein informative
+            // Karte - unabhaengig von der Anpassungs-/Machbarkeits-Karte
+            // oben (Leitplanke 6 gilt NUR zwischen jenen beiden, die
+            // dieselbe Aktion "Plan anpassen" anbieten; diese Karte bietet
+            // keine Planaenderung an, daher kein Konflikt).
+            raceProgressDashboardCard
+        }
+    }
+
+    /// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md,
+    /// Abschnitt 9): zeigt die aktuelle Wettkampf-Fortschritts-Einschaetzung.
+    /// Rein lesend - bietet keine Planaenderung an (die bleibt der
+    /// bestehenden Coach-Anpassungs-Karte oben vorbehalten).
+    private var raceProgressModel: RaceProgressCardModel? {
+        profiles.first.flatMap { RaceProgressCardModel.make(for: $0, allSessions: completedSessions) }
+    }
+
+    @ViewBuilder
+    private var raceProgressDashboardCard: some View {
+        if let profile = profiles.first, let model = raceProgressModel,
+           profile.raceProgressDismissedFingerprint != model.dismissalFingerprint {
+            laufCoachCardShell(systemImage: "chart.line.uptrend.xyaxis") {
+                Text(raceProgressOutcomeHeadline(model.assessment.outcome))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                HStack(spacing: 16) {
+                    Button {
+                        showingRaceProgressDetail = true
+                    } label: {
+                        Text("dashboard.missedRunDays.reviewButton", bundle: .module)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                    Button {
+                        withAnimation { model.dismiss(profile: profile) }
+                    } label: {
+                        Text("dashboard.missedRunDays.dismissButton", bundle: .module)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+            }
+            .task(id: model.configurationFingerprint) {
+                // Migrations-Anker + "als gezeigt markieren" - NIE aus der
+                // `body`-Auswertung selbst, siehe `RaceProgressDueCalculator`-
+                // Doku. `.task(id:)` laeuft erneut, wenn sich die Ziel-/
+                // Renndatum-Konfiguration aendert.
+                RaceProgressDueCalculator.establishObservationAnchorIfNeeded(for: profile, in: modelContext)
+                model.recordAnalysisShown(for: profile, in: modelContext)
+            }
+        }
+    }
+
+    private func raceProgressOutcomeHeadline(_ outcome: RaceProgressAssessment.Outcome) -> String {
+        switch outcome {
+        case .onTrack: return String(localized: "raceProgress.outcome.onTrack", bundle: .module)
+        case .attentionNeeded: return String(localized: "raceProgress.outcome.attentionNeeded", bundle: .module)
+        case .offTrack: return String(localized: "raceProgress.outcome.offTrack", bundle: .module)
+        case .insufficientData: return String(localized: "raceProgress.outcome.insufficientData", bundle: .module)
         }
     }
 

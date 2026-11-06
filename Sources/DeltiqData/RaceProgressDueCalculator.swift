@@ -22,7 +22,14 @@ import SwiftData
 /// (eine signifikante Umfangssteigerung ohne neu geloggte Einheiten ist
 /// nicht moeglich), ein eigenes "Umfang beim letzten Check"-Feld waere
 /// unbelegter Mehraufwand ohne echten Zusatznutzen.
-@MainActor
+///
+/// Anders als `FourWeekReviewDueStatus` (komplett `@MainActor`, weil JEDE
+/// dortige Funktion `ModelContext` beruehrt) ist NUR hier `state(...)`
+/// bewusst NICHT MainActor-isoliert: eine reine Wertfunktion ohne
+/// SwiftData-Zugriff, die `RaceProgressCardModel.make` (DeltiqUI) synchron
+/// aufruft - eine Isolation des gesamten Typs wuerde das unnoetig
+/// erzwingen. Nur die beiden Funktionen, die tatsaechlich einen
+/// `ModelContext` mutieren, sind `@MainActor`.
 public enum RaceProgressDueCalculator {
 
     public enum DueReason: Sendable, Equatable {
@@ -81,6 +88,7 @@ public enum RaceProgressDueCalculator {
     /// nachweislich" ist die einzige wahre Aussage. NIE aus einer SwiftUI-
     /// `body`-Auswertung heraus aufrufen (identische Regel wie beim Vorbild
     /// `FourWeekReviewDueStatus.establishObservationAnchorIfNeeded`).
+    @MainActor
     public static func establishObservationAnchorIfNeeded(
         for profile: UserBodyProfile, now: Date = Date(), in context: ModelContext
     ) {
@@ -96,6 +104,7 @@ public enum RaceProgressDueCalculator {
     /// zuverlaessig (`.configurationChanged`), ohne ein eigenes
     /// "letztes Ziel"-Feld zu brauchen.
     @discardableResult
+    @MainActor
     public static func recordAnalysisCompleted(
         for profile: UserBodyProfile,
         configurationFingerprint: String,
