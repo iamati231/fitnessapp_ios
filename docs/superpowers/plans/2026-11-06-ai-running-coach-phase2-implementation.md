@@ -146,73 +146,111 @@ bestehende grüne Phase-1-Testlauf in CI ist der Regressionsnachweis.
 
 ## Phase 2B — Belastungsanalyse
 
-### Neue Dateien
+**Status: IMPLEMENTIERT.** Abweichungen vom urspruenglichen Entwurf (anderer
+Dateiname, deutlich reichhaltigerer Typ als die skizzierte `Trend`-Struct,
+kein `HeartRateZoneCalculator`-Bezug — der gehoert zu 2D, nicht 2B) sind
+unten dokumentiert.
 
-**`Sources/DeltiqCore/Analytics/TrainingLoadTrendCalculator.swift`**
+### Neue Datei
+
+**`Sources/DeltiqCore/Analytics/TrainingLoadTrendAnalyzer.swift`** — einziger
+Eintrittspunkt `analyze(weeks:now:calendar:) -> TrainingLoadTrend`, reine
+Funktion auf `[TrainingLoadWeek]` (2A-Output, unveraendert konsumiert, keine
+zweite Wochenaggregation).
+
+**Zentrale, dokumentierte Konstanten:**
 ```swift
-public enum TrainingLoadTrendCalculator {
-    public static let comparisonWindowWeeks = 5
-    public static let volumeIncreaseThreshold = 0.25
-    public static let minimumWeeksForTrend = 3
-
-    public struct Trend: Sendable, Equatable {
-        public let discipline: Discipline
-        public let percentChange: Double
-        public let acuteChronicRatio: Double?   // nil bei < 28 Tagen Historie
-    }
-    public enum Discipline: Sendable, Equatable { case running, strength }
-
-    public static func runningTrend(_ weeks: [TrainingLoadWeek]) -> Trend?
-    public static func strengthTrend(_ weeks: [TrainingLoadWeek]) -> Trend?
-}
+comparisonWindowWeeks = 5                 // Fenster fuer Variationskoeffizient
+moderateIncreaseThreshold = 0.25          // identisch zu RaceProgressAssessment.loadIncreaseThreshold
+significantIncreaseThreshold = 0.50       // Ticket-Beispiel 18km->27km
+variabilityCoefficientThreshold = 0.30    // neu, da "stark schwankend" in Phase 1 kein Vorbild hat
+minimumCompleteWeeksForTrend = 3
+acuteChronicChronicWindowWeeks = 4        // 4 Wochen = 28 Tage bei Wochengranularitaet
 ```
-`percentChange` exakt wie `RaceProgressAssessment.checkLoadIncrease`
-berechnet (`(last - first) / first` über die letzten
-`comparisonWindowWeeks` Punkte), aber hier für Kraft-Sessions/-Volumen
-UND Lauf-Kilometer getrennt aufrufbar — bewusst zwei separate
-Aufrufe/Discipline-Parameter statt einer gemeinsamen Zahl (Design-Dokument
-Abschnitt 2, "vier getrennte Tracks").
 
-### Tests 2B (Testfälle 10–21)
+**Kernlogik — pro Kennzahl (`WeeklyMetricTrend`), zwei GETRENNTE Vergleiche:**
+1. `changeVsPreviousCompleteWeek`: strikter Paarvergleich letzte
+   vollstaendige Woche gegen GENAU die eine Woche davor.
+2. `changeVsPreviousWeeksAverage`: aktuelle (ggf. unvollstaendige) Woche
+   gegen den Durchschnitt ALLER historischen vollstaendigen Wochen — treibt
+   `classification` (Ticket-Beispiel-Berechnung: 18/18/18km Basis, 27km
+   aktuell = exakt +50%). **Wichtige Invariante, waehrend der Testerstellung
+   als Bug gefunden und korrigiert:** die historische Vergleichsbasis wird
+   STRUKTURELL aus `weeks.dropLast()` gebildet, nie aus einer reinen
+   Vollstaendigkeits-Filterung des GESAMTEN Arrays — sonst koennte eine
+   bereits kalendarisch vollstaendige "aktuelle" Woche in ihre EIGENE
+   Vergleichsbasis einfliessen und den Vergleich verfaelschen.
+3. `changeOver28Days`: Durchschnitt der letzten 4 vs. der 4 Wochen davor
+   (Ticket: "28-Tage-Entwicklung"), `nil` ohne 8 vollstaendige Wochen.
 
-`Tests/DeltiqCoreTests/TrainingLoadTrendCalculatorTests.swift`:
-10. Wochenumfang korrekt (Laufkilometer direkt aus `TrainingLoadWeek.
-    running`, Kraft aus `strengthVolumeKg`).
-11. Wochenveränderung korrekt (Ticket-Beispiel 18km→27km = +50% exakt
-    nachgerechnet).
-12. Belastungsanstieg bei ausreichender Historie (≥
-    `minimumWeeksForTrend`, Änderung über `volumeIncreaseThreshold`).
-13. Unzureichende Historie → `nil` statt erfundener Prozentzahl.
-14. Fehlende Wochen (0-Aktivität-Wochen aus dem Gap-Filling) nicht als
-    "sicher trainingsfrei" interpretiert — reine Trendberechnung macht
-    dazu keine Aussage, das ist Sache von 2C/`DataGap`.
-15. Keine falschen Warnungen durch Radfahren/Krafttraining in der
-    LAUF-Trendberechnung (`runningTrend` liest ausschließlich
-    `week.running.runningDistanceKm`, nie `strengthVolumeKg` oder
-    `week.running.crossTrainingSessionCount`).
+`classify(...)` prueft in dieser Reihenfolge: (a) Datenbasis
+(`historicalWeekCount >= 3`, sonst `.insufficientData`), (b)
+Variationskoeffizient ueber das Vergleichsfenster (`>= 0.30` →
+`.highlyVariable`, VOR jeder gerichteten Trendaussage — ein schwankender
+Verlauf mit zufaellig hohem letzten Wert ist kein verlaesslicher
+"Anstieg"), (c) Prozentveraenderung gegen die drei Schwellen. Beide
+Vergleichswerte `0` (eine Disziplin, die nicht stattfindet) → `.notApplicable`,
+nie Datenmangel oder Warnung.
 
-`Tests/DeltiqCoreTests/HeartRateZoneReuseTests.swift` (schlanker
-Regressionstest, kein neuer Code):
-16. Vorhandene HFmax korrekt berücksichtigt — `TrainingLoadCardModel`
-    reicht `HeartRateZoneContextBuilder.make(...)`-Ergebnis unverändert
-    durch (Identitätstest: gleiches Ergebnis wie direkter Aufruf).
-17. HFmax nicht als gemessene HF behandelt — bereits durch bestehenden
-    `RaceProgressPhase1StructuralGuardTests`-Mechanismus abgedeckt; hier
-    nur ein Structural-Guard-Eintrag für die NEUEN Phase-2-Dateien
-    (`TrainingLoadCardModel.swift`, `TrainingLoadDetailView.swift`) analog
-    `testNeverReadsProfileMaxHeartRateOutsideTheExplicitZoneWiring`.
-18. HF-Messungen nur bei vorhandenen Messwerten ausgewertet — ergibt sich
-    aus Wiederverwendung, kein neuer Pfad.
-19. Durchschnittspuls nicht als Zeit-in-Zone — ergibt sich aus
-    Wiederverwendung derselben Strings/Typen wie Phase 1.
-20. Fehlende Intensitätsdaten bleiben unbekannt —
-    `DataGap.noIntensityDataForSomeSessions` (2C) statt Rateversuch.
-21. Pace nicht automatisch mit HF-Intensität gleichgesetzt — Structural-
-    Guard-Test: `TrainingLoadAssessment.swift`/`TrainingLoadTrendCalculator.
-    swift` dürfen `averagePaceMinutesPerKm` nicht lesen, um daraus eine
-    HF-Zonen-Aussage abzuleiten (Textsuche nach
-    `averagePaceMinutesPerKm` in der Naehe von `HeartRateZone`-Bezeichnern
-    — einfacher, aber wirksamer Negativ-Test).
+**`combineLoadDevelopment`:** kombiniert NUR Lauf-Distanz und Kraft-Volumen
+(die beiden Kennzahlen mit echter Groessenordnung — nie Ausdauer-Distanz
+und Kraft-Volumen, Ticket Teil 4). Beide Disziplinen werden UNABHAENGIG
+klassifiziert, das schwerwiegendere Ergebnis gewinnt, beide werden als
+ausloesende `Discipline`(n) genannt — niemals "allein anhand der
+Laufkilometer" bewertet, wenn Krafttraining gleichzeitig eskaliert.
+
+**Acute:Chronic (`acuteChronicRatio`):** ausschliesslich Lauf-Distanz, `nil`
+ohne 4 vollstaendige Wochen VOLLSTAENDIG innerhalb der bekannten Historie
+(`weeks` ist bereits exakt darauf begrenzt) und `nil` bei chronischem
+Durchschnitt `0` (Divisionsschutz UND ein Sprung von 0 auf irgendeinen Wert
+ist kein sinnvolles Verhaeltnis). Rein interne Kennzahl, nie die zentrale
+Coach-Aussage.
+
+**`TrainingLoadDataCompleteness`** (`complete`/`partial`/`insufficient` +
+`Reason`-Liste): `.durationDataUnavailable` ist IMMER gesetzt (siehe unten),
+daher kann das Ergebnis aktuell nie `.complete` sein — ehrlich, nicht
+erfunden. Weitere Gruende: `shortHistory`, `currentWeekIncomplete`,
+`missingRunningDistance` (Sessions gezaehlt, aber 0 km — mit hoher
+Wahrscheinlichkeit unbekannte Distanz, siehe Modellgrenze unten),
+`unknownActivityPresent`.
+
+**Dokumentierte Modellgrenze (Ticket: "dokumentiere das Problem, erfinde
+keine Ersatzwerte"):** `CardioVolumeOverTimePoint` (Phase 1, von
+`TrainingLoadWeek.running` eingebettet) traegt keine Lauf-Gesamtdauer (nur
+Durchschnitts-Pace) und `TrainingActivity`/`TrainingLoadWeek` (2A) tragen
+keine Distanz/Dauer fuer sonstige Ausdaueraktivitaeten (nur eine
+Sessionzahl) und keine Gesamttrainingsdauer irgendeiner Disziplin
+(`WorkoutSession.durationMinutes` existiert auf SwiftData-Ebene, wurde von
+2A's `TrainingActivityExtractor` aber nicht abgegriffen). Eine Erweiterung
+dieser bereits abgeschlossenen Arbeitspakete war ausserhalb des
+2B-Auftrags — `OverallTrainingSummary.weeklyTotalDurationSeconds` bleibt
+daher bewusst ein `Int?`-Feld, das heute immer `nil` ist (identisches
+Prinzip wie `CardioVolumeOverTimePoint.averageHeartRateBpm` in Phase 1 —
+die Spalte existiert, damit eine spaetere Phase sie nicht neu einfuehren
+muss, aber niemand errät ihren Wert). Gleiches gilt fuer "Gesamtanzahl
+Trainingseinheiten": eine Session kann gleichzeitig Lauf- UND Krafttraining
+enthalten ("Brick"), `TrainingLoadWeek` haelt das nicht separiert fest -
+eine ungeprüfte Summe ueber alle Disziplinen koennte doppelt zaehlen, daher
+bewusst NICHT modelliert statt einer scheinbar exakten, aber potenziell
+falschen Zahl.
+
+### Tests
+
+`Tests/DeltiqCoreTests/TrainingLoadTrendAnalyzerTests.swift` — 26 Tests,
+lokal kompiliert UND ausgefuehrt (reine Funktion, kein SwiftData):
+deckt alle 24 Ticket-Testfaelle (stabiles/steigendes/sinkendes/schwankendes
+Laufvolumen, steigendes Kraftvolumen, sinkende Kraftfrequenz unabhaengig
+vom Volumen, kombinierte Wochen, Radfahren ohne Laufkilometer, mehrere
+Sportarten in einer Woche, fehlende Distanz/Dauer, historische Luecke,
+keine/eine Vergleichswoche, 0-Basis-Woche, unvollstaendige aktuelle Woche,
+Zeitzonen-/Wochen-/Jahres-/Schaltjahr-Grenzen, unbekannte Aktivitaet, ACR
+bei <28/genau 28/Fenster-vor-Historie-Tagen, Determinismus) plus Grenzfaelle
+(leeres Array, Null-Mittelwert ohne NaN, ACR bei chronischem
+Durchschnitt 0, negativer Eingabewert).
+
+**Regressionstest Phase 1 (Testfall 24):** keine neue Datei noetig — 2B
+aendert keine bestehende Phase-1- oder 2A-Datei, der bestehende gruene
+Testlauf in CI ist der Regressionsnachweis.
 
 ---
 

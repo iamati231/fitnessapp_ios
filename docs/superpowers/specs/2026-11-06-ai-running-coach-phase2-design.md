@@ -436,24 +436,40 @@ Gesamtergebnis kommt automatisch aus `CardioVolumeOverTimeAggregator.aggregate`s
 bereits lückenlosem Ergebnis, über das `TrainingLoadAggregator` nur noch
 mapt — keine zweite Lücken-Füll-Implementierung.
 
-## 3. Belastungstrends und -anstiege (Teil C.5)
+## 3. Belastungstrends und -anstiege (Teil C.5) — Work Package 2B, IMPLEMENTIERT
 
-**Ruling — zentrale, dokumentierte Produktregeln** (wie
-`RaceProgressAssessment`/`CardioFeasibilityCalculator`):
+**Status: implementiert als `TrainingLoadTrendAnalyzer`** (nicht
+`TrainingLoadTrendCalculator`, siehe Implementierungsplan 2B-Abschnitt fuer
+die vollstaendige, tatsaechliche Typdefinition inkl. `WeeklyMetricTrend`,
+`MetricChange`, `MetricTrendClassification`, `LoadDevelopment`,
+`TrainingLoadDataCompleteness`). Die zentralen Konstanten sind dieselben wie
+urspruenglich geplant, um eine vierte Kategorie ("stark schwankend")
+ergaenzt:
 
 ```swift
-public enum TrainingLoadTrendCalculator {
-    /// Fenster fuer den Wochenvergleich (aktuelle + 4 vorherige Wochen).
+public enum TrainingLoadTrendAnalyzer {
     public static let comparisonWindowWeeks = 5
-    /// Anstieg der Laufkilometer ggue. dem Schnitt der vorherigen Wochen,
-    /// ab dem ein Belastungsanstieg als Befund gilt. Ticket-Beispiel (18km
-    /// -> 27km = +50%) liegt deutlich darueber; 25% ist konsistent mit
-    /// RaceProgressAssessment.loadIncreaseThreshold (dieselbe Zahl, bewusst
-    /// NICHT neu erfunden).
-    public static let volumeIncreaseThreshold = 0.25
-    public static let minimumWeeksForTrend = 3
+    /// Bewusst identisch zu RaceProgressAssessment.loadIncreaseThreshold -
+    /// keine neu erfundene Zahl fuer denselben Sachverhalt.
+    public static let moderateIncreaseThreshold = 0.25
+    /// Konsistent mit dem Ticket-Beispiel (18km -> 27km = +50%).
+    public static let significantIncreaseThreshold = 0.50
+    /// NEU - fuer "stark schwankend" (Ticket Teil 4) existiert in Phase 1
+    /// kein Vorbild-Schwellenwert.
+    public static let variabilityCoefficientThreshold = 0.30
+    public static let minimumCompleteWeeksForTrend = 3
+    public static let acuteChronicChronicWindowWeeks = 4
 }
 ```
+
+**Wichtiger, waehrend der eigenen Testerstellung gefundener und behobener
+Entwurfsfehler:** die Vergleichsbasis fuer "aktuelle Woche gegen Durchschnitt
+der vorherigen Wochen" muss die aktuelle Woche STRUKTURELL ausschliessen
+(`weeks.dropLast()`), nicht ueber eine reine Kalendervollstaendigkeits-
+Filterung des gesamten Arrays - sonst koennte eine bereits abgeschlossene
+"aktuelle" Woche in ihre eigene Vergleichsbasis einfliessen und den
+berechneten Prozentwert verfaelschen. Siehe Implementierungsplan fuer die
+vollstaendige Herleitung.
 
 **Acute:Chronic (Teil C.5.3) — Architekturprüfung Teil 3, Ergebnis: BEIBEHALTEN,
 ein Punkt präzisiert.** Vor der Entscheidung wurde geprüft, ob der
