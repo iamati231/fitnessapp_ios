@@ -215,30 +215,32 @@ public enum RunCoachPlanAdjustment {
     }
 
     /// `targetGoal`: das Ziel, auf das gewechselt wird - nur dann kann
-    /// beurteilt werden, wie viele der vorhandenen Krafttage dafuer noch
-    /// gebraucht werden (`convertibleStrengthDays`). Ohne `targetGoal`
-    /// (bestehende Aufrufer, z.B. der reine Machbarkeits-Check ohne
-    /// Zielwechsel-Kontext) bleibt das Verhalten unveraendert: nur
-    /// bestehende Cardio-Tage zaehlen als `.ready`.
+    /// beurteilt werden, wie viele der vorhandenen Krafttage dafuer laut
+    /// Ziel-Tabelle noch gebraucht werden (`convertibleStrengthDays`).
+    ///
+    /// Nachbesserung ("Krafttraining bei Laufzieländerung erhalten"):
+    /// `cardioAvailability`/`.ready` zaehlt bewusst NUR bestehende
+    /// anfassbare Lauftage - Krafttage werden NIE allein aufgrund der
+    /// internen Ziel-Tabelle (`CardioFeasibilityCalculator.
+    /// strengthDaysNeeded`) als verzichtbar eingestuft und automatisch in
+    /// diesen Satz gemischt (das war der vorherige, zurueckgenommene Fehler:
+    /// ein Marathon-Wechsel durfte Krafttage NICHT ungefragt umwandeln).
+    /// `convertibleStrengthDays` bleibt trotzdem berechnet - als rein
+    /// INFORMATIVES Feld, das die Vorschau nutzt, um eine SEPARATE,
+    /// explizit zu bestaetigende Option anzubieten, wenn die normale
+    /// Kapazitaet (Lauftage + einfuegbare Ruhetage + freie Wochentage)
+    /// nicht reicht (siehe `CoachAdjustmentCardModel.accept`s
+    /// `convertStrengthDaysIfNeeded`-Parameter).
     public static func analyze(plan: TrainingPlan?, targetGoal: CardioGoal? = nil) -> Analysis {
         guard let plan else {
             return Analysis(cardioAvailability: .noActivePlan, legWork: .conflict, insertableRestDays: [], freeWeekdaysForNewDays: [], convertibleStrengthDays: [])
         }
 
         let eligibleCardio = eligibleCardioDays(in: plan)
-        // Bugfix ("Bestehenden Trainingsplan bei Zieländerung flexibel
-        // umstrukturieren"): ein Zielwechsel, der WENIGER Krafttage braucht
-        // (z.B. Halbmarathon 2 -> Marathon 0), machte die jetzt
-        // ueberfluessigen Krafttage bisher nirgends als verfuegbaren Platz
-        // sichtbar - obwohl sie dieselbe Eignung wie ein anfassbarer
-        // Cardio-Tag haben. `accept()` MUSS denselben kombinierten Satz
-        // verwenden (siehe `eligibleDaysForGoalChange`), sonst zeigt die
-        // Vorschau etwas an, das die Anwendung nicht leisten kann.
-        let strengthSurplus = targetGoal.map { convertibleStrengthDays(in: plan, targetGoal: $0) } ?? []
-        let combinedEligible = eligibleCardio + strengthSurplus
-        let cardioAvailability: CardioAvailability = combinedEligible.isEmpty
+        let cardioAvailability: CardioAvailability = eligibleCardio.isEmpty
             ? .noEligibleCardioDay
-            : .ready(combinedEligible.map(\.persistentModelID))
+            : .ready(eligibleCardio.map(\.persistentModelID))
+        let strengthSurplus = targetGoal.map { convertibleStrengthDays(in: plan, targetGoal: $0) } ?? []
 
         let legWork = legWorkRecommendation(eligibleStrengthDays: eligibleStrengthDays(in: plan))
         let insertableRestDays = eligibleRestDaysForInsertion(in: plan).map(\.persistentModelID)
@@ -258,12 +260,13 @@ public enum RunCoachPlanAdjustment {
         plan.days.filter { $0.type != .rest && !isCardioDay($0) && isEligibleForAdjustment($0) }
     }
 
-    /// Bugfix ("Bestehenden Trainingsplan bei Zieländerung flexibel
-    /// umstrukturieren"): anfassbare Krafttage, die `targetGoal` nicht mehr
-    /// braucht (`CardioFeasibilityCalculator.strengthDaysNeeded`) - sortiert
-    /// nach Wochentag, die SPAETESTEN in der Woche liegenden ueberzaehligen
-    /// Tage werden zuerst freigegeben (deterministisch, gleiche
-    /// Sortier-vor-Auswahl-Regel wie `selectRestDaysForInsertion`).
+    /// Anfassbare Krafttage, die `targetGoal` laut Ziel-Tabelle
+    /// (`CardioFeasibilityCalculator.strengthDaysNeeded`) nicht mehr braucht
+    /// - sortiert nach Wochentag, die SPAETESTEN in der Woche liegenden
+    /// ueberzaehligen Tage zuerst. Rein INFORMATIV (siehe `analyze`s Doku) -
+    /// wird NIE automatisch verwendet, nur nach expliziter Bestaetigung ueber
+    /// `eligibleDaysForGoalChange`/`CoachAdjustmentCardModel.accept`s
+    /// `convertStrengthDaysIfNeeded`.
     public static func convertibleStrengthDays(in plan: TrainingPlan, targetGoal: CardioGoal) -> [TrainingDay] {
         let eligible = eligibleStrengthDays(in: plan).sorted { $0.weekday < $1.weekday }
         let stillNeeded = CardioFeasibilityCalculator.strengthDaysNeeded(for: targetGoal)
@@ -271,12 +274,12 @@ public enum RunCoachPlanAdjustment {
         return Array(eligible.suffix(surplus))
     }
 
-    /// Alle Tage, die ein Zielwechsel automatisch mit neuen Cardio-Inhalten
-    /// belegen darf: bestehende anfassbare Cardio-Tage PLUS die durch das
-    /// neue Ziel ueberzaehlig gewordenen Krafttage. Einzige Quelle fuer
-    /// diesen kombinierten Satz - `analyze` (Vorschau) UND
-    /// `CoachAdjustmentCardModel.accept` (tatsaechliche Anwendung) rufen
-    /// BEIDE diese Funktion, damit sie nie auseinanderlaufen koennen.
+    /// Bestehende anfassbare Lauftage PLUS die durch `targetGoal`
+    /// ueberzaehlig gewordenen Krafttage - NUR fuer den expliziten
+    /// Bestaetigungs-Pfad (`CoachAdjustmentCardModel.accept(
+    /// convertStrengthDaysIfNeeded: true)`). Der normale, unbestaetigte Pfad
+    /// verwendet ausschliesslich `eligibleCardioDays` - diese Funktion darf
+    /// dort NICHT aufgerufen werden.
     public static func eligibleDaysForGoalChange(in plan: TrainingPlan, targetGoal: CardioGoal) -> [TrainingDay] {
         eligibleCardioDays(in: plan) + convertibleStrengthDays(in: plan, targetGoal: targetGoal)
     }

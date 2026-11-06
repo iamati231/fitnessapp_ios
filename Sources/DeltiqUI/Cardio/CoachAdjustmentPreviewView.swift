@@ -217,6 +217,8 @@ struct CoachAdjustmentPreviewView: View {
                 }
                 actionButtons(model)
                 trainingDetailSection(model)
+            } else if model.analysis.convertibleStrengthDays.count >= extraNeeded {
+                strengthConversionSection(model)
             } else {
                 // Not the same state as `.planChanged` (that's a real
                 // race between preview-open and tap) and not the same as
@@ -266,6 +268,8 @@ struct CoachAdjustmentPreviewView: View {
                 }
                 actionButtons(model)
                 trainingDetailSection(model)
+            } else if model.analysis.convertibleStrengthDays.count >= desired.count {
+                strengthConversionSection(model)
             } else {
                 Section {
                     Text("profile.cardio.adjustment.noEligibleDay", bundle: .module)
@@ -304,6 +308,49 @@ struct CoachAdjustmentPreviewView: View {
                 Text("profile.cardio.adjustment.applyToCurrentPlan", bundle: .module)
             }
             .disabled(isApplying || model.isAlreadyApplied)
+        }
+        createNewPlanButton(model)
+    }
+
+    /// Nachbesserung ("Krafttraining bei Laufzieländerung erhalten"): wird
+    /// nur erreicht, wenn weder bestehende Lauftage noch einfuegbare
+    /// Ruhetage/freie Wochentage ausreichen, ABER die ueberzaehligen
+    /// Krafttage (`model.analysis.convertibleStrengthDays`) die Luecke
+    /// schliessen wuerden. Eine EIGENE, explizit zu bestaetigende Aktion -
+    /// bewusst NICHT `actionButtons(model)` (das normale "Auf aktuellen
+    /// Plan anwenden" ruehrt Krafttage nie an, siehe
+    /// `CoachAdjustmentCardModel.accept`s `convertStrengthDaysIfNeeded`).
+    @ViewBuilder
+    private func strengthConversionSection(_ model: CoachAdjustmentCardModel) -> some View {
+        let strengthDays = activePlan.days.filter { model.analysis.convertibleStrengthDays.contains($0.persistentModelID) }
+        Section {
+            ForEach(Array(strengthDays), id: \.persistentModelID) { day in
+                Text(day.name)
+                    .strikethrough()
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("profile.cardio.adjustment.strengthConversion.header", bundle: .module)
+        } footer: {
+            Text("profile.cardio.adjustment.strengthConversion.footer", bundle: .module)
+        }
+        Section {
+            Button {
+                guard !isApplying else { return }
+                isApplying = true
+                do {
+                    try model.accept(plan: activePlan, profile: profile, in: modelContext, convertStrengthDaysIfNeeded: true)
+                    dismiss()
+                } catch is PlanGeneratorInstantiator.CardioInsertionError {
+                    errorMessage = String(localized: "profile.cardio.adjustment.planChanged", bundle: .module)
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
+                isApplying = false
+            } label: {
+                Text("profile.cardio.adjustment.confirmStrengthConversion", bundle: .module)
+            }
+            .disabled(isApplying)
         }
         createNewPlanButton(model)
     }

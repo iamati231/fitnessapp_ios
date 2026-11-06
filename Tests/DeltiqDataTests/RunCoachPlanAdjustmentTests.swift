@@ -201,11 +201,13 @@ final class RunCoachPlanAdjustmentTests: XCTestCase {
 
     // MARK: - convertibleStrengthDays / eligibleDaysForGoalChange
     //
-    // Bugfix ("Bestehenden Trainingsplan bei Zieländerung flexibel
-    // umstrukturieren"): Halbmarathon (3 Lauf + 2 Krafttage) -> Marathon (5
-    // Lauf + 0 Krafttage) brauchte bisher 2 zusaetzliche freie Tage, obwohl
-    // die 2 bestehenden Krafttage fuer das neue Ziel gar nicht mehr gebraucht
-    // werden - sie wurden nirgends als verfuegbarer Platz gezaehlt.
+    // `convertibleStrengthDays` erkennt anfassbare Krafttage, die ein
+    // Zielwechsel laut Ziel-Tabelle ueberfluessig macht (z.B. Halbmarathon
+    // mit 2 Krafttagen -> Marathon mit 0). Nachbesserung ("Krafttraining bei
+    // Laufzieländerung erhalten"): dieses Ergebnis fliesst NICHT automatisch
+    // in `cardioAvailability`/`.ready` ein - es ist rein informativ, fuer
+    // eine SEPARATE, nur nach expliziter Nutzerbestaetigung nutzbare Option
+    // (`CoachAdjustmentCardModel.accept`s `convertStrengthDaysIfNeeded`).
 
     private func makeStrengthDay(weekday: Int, in plan: TrainingPlan) -> TrainingDay {
         let day = TrainingDay(name: "Kraft", weekday: weekday, type: .legs, plan: plan)
@@ -261,12 +263,14 @@ final class RunCoachPlanAdjustmentTests: XCTestCase {
         XCTAssertEqual(RunCoachPlanAdjustment.analyze(plan: plan).convertibleStrengthDays, [])
     }
 
-    /// Der gemeldete Fehler, End-to-End auf `analyze` selbst: Halbmarathon-
-    /// Struktur (3 anfassbare Lauftage + 2 anfassbare Krafttage, ALLE 7
-    /// Wochentage belegt, keine Ruhetage) -> mit `targetGoal: .marathon`
-    /// muss `cardioAvailability` `.ready` mit allen 5 Tagen sein, nicht
-    /// `.noEligibleCardioDay`/eine zu kleine `.ready`-Liste.
-    func testAnalyzeWithTargetGoalCombinesCardioAndConvertibleStrengthDays() {
+    /// Nachbesserung ("Krafttraining bei Laufzieländerung erhalten"):
+    /// Halbmarathon-Struktur (3 anfassbare Lauftage + 2 anfassbare
+    /// Krafttage, ALLE 7 Wochentage belegt, keine Ruhetage) -> mit
+    /// `targetGoal: .marathon` darf `cardioAvailability` NUR die 3
+    /// bestehenden Lauftage enthalten, NIE die Krafttage - diese duerfen
+    /// ausschliesslich ueber `convertibleStrengthDays` sichtbar werden, als
+    /// separate, nur nach Bestaetigung nutzbare Information.
+    func testAnalyzeNeverMixesConvertibleStrengthDaysIntoCardioAvailability() {
         let plan = makePlan()
         var runDays: [TrainingDay] = []
         for weekday in [1, 3, 5] {
@@ -295,10 +299,10 @@ final class RunCoachPlanAdjustmentTests: XCTestCase {
         XCTAssertEqual(analysis.insertableRestDays, [], "Testaufbau: keine einfuegbaren Ruhetage vorhanden")
         XCTAssertEqual(analysis.freeWeekdaysForNewDays, [], "Testaufbau: alle 7 Wochentage sind belegt")
         guard case .ready(let ids) = analysis.cardioAvailability else {
-            return XCTFail("expected .ready - die 2 ueberzaehligen Krafttage muessen den fehlenden Platz liefern")
+            return XCTFail("expected .ready fuer die 3 bestehenden Lauftage")
         }
-        let expectedIDs = Set((runDays + [strength1, strength2]).map(\.persistentModelID))
-        XCTAssertEqual(Set(ids), expectedIDs)
+        XCTAssertEqual(Set(ids), Set(runDays.map(\.persistentModelID)), "cardioAvailability darf NIE Krafttage enthalten")
+        XCTAssertEqual(Set(analysis.convertibleStrengthDays), Set([strength1, strength2].map(\.persistentModelID)), "die Krafttage bleiben als separate, informative Groesse sichtbar")
     }
 }
 #endif

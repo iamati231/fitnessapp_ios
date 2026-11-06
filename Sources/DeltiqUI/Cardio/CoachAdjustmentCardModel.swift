@@ -160,10 +160,24 @@ public struct CoachAdjustmentCardModel: Equatable {
         profile.cardioAdjustmentCardDismissedFingerprint = fingerprint
     }
 
+    /// `convertStrengthDaysIfNeeded`: Nachbesserung ("Krafttraining bei
+    /// Laufzieländerung erhalten"). `false` (Default) - Krafttage werden
+    /// NIE angefasst, auch nicht wenn die Ziel-Tabelle sie fuer
+    /// `effectiveProposedGoal` als ueberfluessig ausweist; reicht die
+    /// Kapazitaet aus bestehenden Lauftagen + einfuegbaren Ruhetagen +
+    /// freien Wochentagen dann nicht, liefert `accept()` `0` (wie vor
+    /// dieser Nachbesserung und vor dem zurueckgenommenen Zwischenstand).
+    /// Nur wenn der Aufrufer diesen Parameter explizit `true` setzt - nach
+    /// einer eigenen, separaten Nutzerbestaetigung in
+    /// `CoachAdjustmentPreviewView` (nie als Teil des normalen "Auf
+    /// aktuellen Plan anwenden") - durfen die ueberzaehligen Krafttage
+    /// (`RunCoachPlanAdjustment.convertibleStrengthDays`) zusaetzlich
+    /// herangezogen werden.
     @discardableResult
     @MainActor
     public func accept(
         plan: TrainingPlan, profile: UserBodyProfile, in context: ModelContext,
+        convertStrengthDaysIfNeeded: Bool = false,
         now: Date = Date(), calendar: Calendar = .current
     ) throws -> Int {
         // Bugfix (Leitplanke 3, vor Geräteeinsatz gefunden): `self.isAlreadyApplied`
@@ -185,13 +199,14 @@ public struct CoachAdjustmentCardModel: Equatable {
         // gibt es keinen besseren Vorschlag, den man stattdessen anwenden
         // koennte.
         let effectiveProposedGoal = proposedGoal ?? profile.cardioGoal
-        // Bugfix ("Bestehenden Trainingsplan bei Zieländerung flexibel
-        // umstrukturieren"): nicht mehr nur bestehende Cardio-Tage - auch
-        // Krafttage, die `effectiveProposedGoal` nicht mehr braucht, zaehlen
-        // als anfassbar (siehe `eligibleDaysForGoalChange`). Dieselbe
-        // Funktion, die `analyze` fuer die Vorschau verwendet (`make` oben) -
-        // Vorschau und Anwendung koennen dadurch nie auseinanderlaufen.
-        let eligibleDays = RunCoachPlanAdjustment.eligibleDaysForGoalChange(in: plan, targetGoal: effectiveProposedGoal)
+        // Nachbesserung ("Krafttraining bei Laufzieländerung erhalten"):
+        // bestehende Krafttage zaehlen nur dann als anfassbar, wenn der
+        // Aufrufer das explizit bestaetigt hat (`convertStrengthDaysIfNeeded`)
+        // - niemals automatisch nur weil die Ziel-Tabelle sie fuer
+        // `effectiveProposedGoal` als ueberfluessig ausweist.
+        let eligibleDays = convertStrengthDaysIfNeeded
+            ? RunCoachPlanAdjustment.eligibleDaysForGoalChange(in: plan, targetGoal: effectiveProposedGoal)
+            : RunCoachPlanAdjustment.eligibleCardioDays(in: plan)
         // Task 9 Nachbesserung: dieselbe Baseline-Weitergabe wie
         // `CardioFeasibilityCardModel.make` - `accept` rechnet bei jedem
         // Aufruf frisch aus dem aktuellen `profile`, die Baseline ist also

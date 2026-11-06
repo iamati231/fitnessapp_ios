@@ -67054,6 +67054,75 @@
           }
         }
       }
+    },
+    "profile.cardio.adjustment.strengthConversion.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein neues Ziel braucht mehr Lauftage"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your new goal needs more running days"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni hedefin daha fazla koşu günü gerektiriyor"
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.strengthConversion.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein aktueller Plan hat keine freien Tage mehr dafür. Die oben aufgeführten Krafttage könnten stattdessen zu Lauftagen werden – das geschieht nur, wenn du das unten bestätigst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your current plan has no free days left for this. The strength days listed above could become running days instead – this only happens if you confirm it below."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevcut planında bunun için boş gün kalmadı. Yukarıda listelenen kuvvet günleri bunun yerine koşu günlerine dönüştürülebilir – bu yalnızca aşağıda onaylarsan gerçekleşir."
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.confirmStrengthConversion": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krafttage in Lauftage umwandeln"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert strength days to running days"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvvet günlerini koşu günlerine dönüştür"
+          }
+        }
+      }
     }
   }
 }
