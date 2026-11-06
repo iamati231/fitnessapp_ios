@@ -48,8 +48,9 @@ final class TrainingLoadAggregatorTests: XCTestCase {
 
     func testPureRunningWeekHasZeroStrengthNumbers() {
         let week = date(2026, 1, 5)
-        let activities = [running(on: week, km: 5), running(on: week.addingTimeInterval(2 * 86400), km: 8)]
-        let weeks = TrainingLoadAggregator.aggregate(activities: activities, windowStart: week, now: week)
+        let secondRunDay = week.addingTimeInterval(2 * 86400)
+        let activities = [running(on: week, km: 5), running(on: secondRunDay, km: 8)]
+        let weeks = TrainingLoadAggregator.aggregate(activities: activities, windowStart: week, now: secondRunDay)
         XCTAssertEqual(weeks.reduce(0.0) { $0 + $1.running.runningDistanceKm }, 13)
         XCTAssertEqual(weeks.reduce(0) { $0 + $1.strengthSessionCount }, 0)
         XCTAssertEqual(weeks.reduce(0) { $0 + $1.strengthSetCount }, 0)
