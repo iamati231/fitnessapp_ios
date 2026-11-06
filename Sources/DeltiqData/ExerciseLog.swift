@@ -62,6 +62,20 @@ public final class ExerciseLog {
     /// faellt auf die Live-Exercise bzw. `.none` zurueck.
     public var exerciseCardioEquipmentSnapshot: String? = nil
 
+    /// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md,
+    /// Abschnitt 0): Snapshot von `Exercise.enduranceSportKind` zum
+    /// Log-Zeitpunkt, analog `exerciseCardioEquipmentSnapshot`. OHNE diesen
+    /// Snapshot waere die geloggte Sportart (Laufen vs. Radfahren) nach
+    /// einem Exercise-Delete (DEL-051 `.nullify`-Regel, z.B. durch eine
+    /// spaetere Coach-Plananpassung) dauerhaft nicht mehr rekonstruierbar -
+    /// `nil` heisst hier immer "unbekannt", NIE "Laufen". Anders als
+    /// `exerciseCardioEquipmentSnapshot` wird dieses Feld snapshot-first
+    /// gelesen (siehe `resolvedEnduranceSportKind`), nicht live-first: die
+    /// gelaufene Sportart ist eine unveraenderliche Tatsache des damaligen
+    /// Laufs, kein nachtraeglich korrigierbares Praeferenz-Feld wie das
+    /// Equipment.
+    public var exerciseEnduranceSportKindSnapshot: String? = nil
+
     /// DEL-058: Distanz in km fuer Cardio-Lifts (Easy Run, Long Run, ...).
     /// Nil fuer Strength + Time-Based. Wird im Workout direkt vom
     /// CardioSetRow ueberschrieben.
@@ -129,6 +143,11 @@ public final class ExerciseLog {
         self.exerciseCardioEquipmentSnapshot = (exercise?.isCardio == true)
             ? exercise?.cardioEquipmentRaw
             : nil
+        // AI-Running-Coach Phase 1: Sportart-Snapshot, nur fuer Cardio-Logs
+        // relevant, identisches Muster wie der Equipment-Snapshot oben.
+        self.exerciseEnduranceSportKindSnapshot = (exercise?.isCardio == true)
+            ? exercise?.enduranceSportKindRaw
+            : nil
     }
 
     // MARK: - DEL-051 Snapshot Accessors
@@ -164,6 +183,19 @@ public final class ExerciseLog {
     public var resolvedIsTimeBased: Bool {
         if exerciseNameSnapshot != nil { return exerciseIsTimeBasedSnapshot }
         return exercise?.isTimeBased ?? false
+    }
+
+    /// AI-Running-Coach Phase 1: Sportart mit Snapshot-first-Auflesung,
+    /// identisches Verzweigungsmuster wie `resolvedIsCardio`/`resolvedIsTimeBased`
+    /// (`exerciseNameSnapshot != nil` als Beweis "dieser Log durchlief den
+    /// DEL-051-Snapshot-Pfad"). `nil` bedeutet immer "unbekannt" - weder ein
+    /// fehlender Snapshot noch eine fehlende Live-Exercise werden je als
+    /// Laufen angenommen.
+    public var resolvedEnduranceSportKind: TrainingTypeKind? {
+        if exerciseNameSnapshot != nil {
+            return exerciseEnduranceSportKindSnapshot.flatMap(TrainingTypeKind.init(rawValue:))
+        }
+        return exercise?.enduranceSportKind
     }
 
     /// DEL-155: Cardio-Equipment, LIVE-first. Anders als die anderen
