@@ -57,6 +57,7 @@ public enum ExternalWorkoutImportService {
             guard !knownUUIDs.contains(sample.hkUUID) else {
                 if let session = sessionsByUUID[sample.hkUUID] {
                     correctDuration(of: session, from: sample)
+                    backfillEnduranceSportKindIfNeeded(session, from: sample)
                 }
                 continue
             }
@@ -113,6 +114,34 @@ public enum ExternalWorkoutImportService {
         }
     }
 
+    /// Bugfix (AI-Running-Coach Phase 1, siehe Ticket "0.0 km vor Coaching-
+    /// Beginn"): `activityType` ist beim Import bereits bekannt und muss auf
+    /// `Exercise.enduranceSportKind` landen — sonst bleibt JEDER importierte
+    /// Lauf/Rad-Workout fuer `CardioHistoryExtractor` auf Dauer "Sportart
+    /// unklar" (Ambiguous), nie "Laufen", egal wie viel echte Laufhistorie
+    /// vorliegt.
+    static func sportKind(for activity: ExternalWorkoutActivityType) -> TrainingTypeKind {
+        switch activity {
+        case .running: return .running
+        case .cycling: return .cycling
+        }
+    }
+
+    /// Migrations-Backfill fuer Sessions, die VOR diesem Fix importiert
+    /// wurden: deren `Exercise.enduranceSportKind` ist dauerhaft `nil`, weil
+    /// `insertSession` (Erstimport) es nie gesetzt hat. Jeder erneute Sync
+    /// liefert `sample.activityType` fuer dieselbe HealthKit-UUID erneut —
+    /// hier nachtragen statt eine fehlende Sportart zu erraten. Idempotent
+    /// (`enduranceSportKind == nil`-Guard), ruehrt bereits klassifizierte
+    /// Exercises nie an.
+    static func backfillEnduranceSportKindIfNeeded(_ session: WorkoutSession, from sample: ExternalWorkoutSample) {
+        guard let exercise = session.logs.first?.exercise,
+              exercise.isCardio,
+              exercise.enduranceSportKind == nil
+        else { return }
+        exercise.enduranceSportKind = sportKind(for: sample.activityType)
+    }
+
     private static func insertSession(for sample: ExternalWorkoutSample, in context: ModelContext) {
         let name = templateName(for: sample.activityType)
         let template = try? context.fetch(FetchDescriptor<ExerciseTemplate>(
@@ -138,6 +167,7 @@ public enum ExternalWorkoutImportService {
             equipment: template?.equipment,
             day: nil
         )
+        exercise.enduranceSportKind = sportKind(for: sample.activityType)
         context.insert(exercise)
 
         // Die Laufzeit der Quell-App (aktive Zeit ohne Pausen), abgerundet; Beginn

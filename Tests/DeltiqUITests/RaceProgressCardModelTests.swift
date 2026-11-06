@@ -167,5 +167,62 @@ final class RaceProgressCardModelTests: XCTestCase {
             XCTFail("6 Wochen Historie + 2+ Wochen Luecke sind genug Daten fuer ein echtes Urteil, nicht 'unzureichend'")
         }
     }
+
+    // MARK: - Dashboard-Fix "0.0 km vor Coaching-Beginn" (Ticket-Integrationstest)
+    //
+    // Baut eine Session exakt so, wie `ExternalWorkoutImportService.
+    // insertSession` sie NACH dem Fix anlegt (eigene, freistehende Exercise
+    // ohne Tag/Plan, `enduranceSportKind` direkt gesetzt, `healthKitSampleUUID`
+    // + `isAdHoc`) - beweist, dass echte HealthKit-importierte Laufhistorie
+    // vor Coaching-Aktivierung korrekt mitgezaehlt wird und KEINE rueckwirkenden
+    // Beobachtungs-Warnungen (Luecke/Plateau) fuer die Zeit davor entstehen.
+    private func makeExternalWorkoutRunningSession(startTime: Date, km: Double, seconds: Int, uuid: String) -> WorkoutSession {
+        let exercise = Exercise(name: "Freier Lauf", isCardio: true, day: nil)
+        exercise.enduranceSportKind = .running
+        context.insert(exercise)
+        let session = WorkoutSession(startTime: startTime, isCompleted: true, isAdHoc: true, healthKitSampleUUID: uuid)
+        context.insert(session)
+        context.insert(ExerciseLog(setIndex: 0, weight: 0, reps: 0, rir: 0, exercise: exercise, session: session, distanceKm: km, durationSeconds: seconds))
+        return session
+    }
+
+    func testEightWeeksOfHealthKitImportedHistoryBeforeActivationCountsWithoutRetroactiveWarnings() throws {
+        let profile = makeProfile()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let week: TimeInterval = 7 * 86400
+
+        var sessions: [WorkoutSession] = []
+        for weeksAgo in stride(from: 8, through: 1, by: -1) {
+            let km = Double(15 + weeksAgo)
+            sessions.append(makeExternalWorkoutRunningSession(
+                startTime: now.addingTimeInterval(-Double(weeksAgo) * week),
+                km: km, seconds: 3600, uuid: "hk-\(weeksAgo)"
+            ))
+        }
+        try context.save()
+
+        // Coaching wird erst JETZT, nach den 8 Wochen Historie, aktiviert.
+        profile.cardioCoachingEnabledAt = now
+
+        let model = try XCTUnwrap(RaceProgressCardModel.make(for: profile, allSessions: sessions, now: now))
+
+        // Summiert statt auf eine exakte Wochen-/Bucket-Zahl zu pruefen -
+        // `weekStart` haengt von `Calendar.current` (host-/locale-abhaengig)
+        // ab, siehe CardioVolumeOverTimeAggregatorTests-Doku zur selben Falle.
+        let expectedKm = stride(from: 8, through: 1, by: -1).reduce(0.0) { $0 + Double(15 + $1) }
+        let totalCountedKm = model.weeklySeries.reduce(0.0) { $0 + $1.runningDistanceKm }
+        XCTAssertEqual(totalCountedKm, expectedKm, accuracy: 0.001,
+                       "alle 8 Wochen echter Importhistorie muessen in den Laufkilometern erscheinen, keine als 0.0 km")
+        XCTAssertTrue(
+            model.assessment.weeklyFlags.allSatisfy { $0 == .beforeCoachingObservationPeriod },
+            "alle 8 Wochen liegen vor der Aktivierung - keine darf als genuineGap/Plateau markiert werden, Flags: \(model.assessment.weeklyFlags)"
+        )
+        if case .attentionNeeded(let concerns) = model.assessment.outcome {
+            XCTAssertFalse(
+                concerns.contains { if case .recentTrainingGap = $0 { return true }; if case .volumePlateau = $0 { return true }; return false },
+                "keine rueckwirkende Luecken-/Plateau-Warnung fuer Wochen vor der Coaching-Aktivierung"
+            )
+        }
+    }
 }
 #endif
