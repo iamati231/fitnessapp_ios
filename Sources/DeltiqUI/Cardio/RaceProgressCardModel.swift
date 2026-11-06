@@ -27,6 +27,11 @@ public struct RaceProgressCardModel: Equatable {
     /// wenn sich das Urteil durch neue Trainingsdaten aendert, auch ohne
     /// Ziel-/Renndatum-Wechsel.
     public let dismissalFingerprint: String
+    /// Running Coach - Herzfrequenz-Trainingszonen: trennt die aus der
+    /// manuell hinterlegten HFmax berechneten Zonen von einer tatsaechlich
+    /// gemessenen Trainingsherzfrequenz (siehe `HeartRateZoneContextBuilder`-
+    /// Doku) - niemals eine erfundene Durchschnittsherzfrequenz.
+    public let heartRateZoneContext: HeartRateZoneDisplayState
 
     /// `nil`, wenn der Coach nicht aktiv ist (Leitplanke: identischer Vertrag
     /// wie `CoachAdjustmentCardModel.make`).
@@ -66,8 +71,21 @@ public struct RaceProgressCardModel: Equatable {
             assessment: assessment,
             dueState: dueState,
             configurationFingerprint: configurationFingerprint,
-            dismissalFingerprint: "\(configurationFingerprint)#\(String(describing: assessment.outcome))"
+            dismissalFingerprint: "\(configurationFingerprint)#\(String(describing: assessment.outcome))",
+            heartRateZoneContext: HeartRateZoneContextBuilder.make(
+                maxHeartRateBpm: profile.maxHeartRateBpm,
+                measuredAverageBpm: Self.mostRecentMeasuredAverageHeartRateBpm(from: series)
+            )
         )
+    }
+
+    /// Juengster Wochenwert MIT tatsaechlich gemessener Durchschnitts-HF
+    /// (`CardioVolumeOverTimePoint.averageHeartRateBpm` - Phase 1 hat dafuer
+    /// noch keine Datenquelle, bleibt also heute immer `nil`; die Auswahl-
+    /// logik ist bereits bereit fuer eine spaetere Messdatenquelle). Rundet
+    /// erst HIER auf einen ganzzahligen bpm-Wert, nie vorher.
+    static func mostRecentMeasuredAverageHeartRateBpm(from series: [CardioVolumeOverTimePoint]) -> Int? {
+        series.last(where: { $0.averageHeartRateBpm != nil })?.averageHeartRateBpm.map { Int($0.rounded()) }
     }
 
     /// Implementierungsplan Abschnitt 4 ("Schutz vor stale Werten"): NIE

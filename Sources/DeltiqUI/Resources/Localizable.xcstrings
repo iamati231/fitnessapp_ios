@@ -67698,6 +67698,420 @@
           }
         }
       }
+    },
+    "heartRateZone.1.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 1 – Regeneration"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 1 – Recovery"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bölge 1 – Toparlanma"
+          }
+        }
+      }
+    },
+    "heartRateZone.1.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sehr lockeres Tempo zur Erholung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very easy pace for recovery."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toparlanma için çok hafif tempo."
+          }
+        }
+      }
+    },
+    "heartRateZone.2.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 2 – Grundlagenausdauer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 2 – Base endurance"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bölge 2 – Temel dayanıklılık"
+          }
+        }
+      }
+    },
+    "heartRateZone.2.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lockeres, gut sprechbares Tempo für die aerobe Basis."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Easy, conversational pace for your aerobic base."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aerobik taban için hafif, konuşabilir tempo."
+          }
+        }
+      }
+    },
+    "heartRateZone.3.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 3 – Aerob"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 3 – Aerobic"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bölge 3 – Aerobik"
+          }
+        }
+      }
+    },
+    "heartRateZone.3.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderates, spürbar anstrengenderes Tempo."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate pace, noticeably harder."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orta, belirgin şekilde daha zorlu tempo."
+          }
+        }
+      }
+    },
+    "heartRateZone.4.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 4 – Schwelle"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 4 – Threshold"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bölge 4 – Eşik"
+          }
+        }
+      }
+    },
+    "heartRateZone.4.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intensives Tempo nahe deiner Schwelle."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intense pace near your threshold."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eşiğine yakın yoğun tempo."
+          }
+        }
+      }
+    },
+    "heartRateZone.5.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 5 – Maximal"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone 5 – Maximal"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bölge 5 – Maksimal"
+          }
+        }
+      }
+    },
+    "heartRateZone.5.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sehr intensives Tempo, nur kurz haltbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very intense pace, sustainable only briefly."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok yoğun, sadece kısa süre sürdürülebilir tempo."
+          }
+        }
+      }
+    },
+    "raceProgress.heartRateZones.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herzfrequenzzonen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heart rate zones"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalp atış hızı bölgeleri"
+          }
+        }
+      }
+    },
+    "raceProgress.heartRateZones.noMaxHeartRate": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinterlege deine maximale Herzfrequenz im Profil, um deine Trainingszonen berechnen zu können."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add your maximum heart rate to your profile to calculate your training zones."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman bölgelerini hesaplayabilmek için profiline maksimum kalp atış hızını ekle."
+          }
+        }
+      }
+    },
+    "raceProgress.heartRateZones.calculatedNoMeasuredData": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Herzfrequenzzonen basieren auf deiner hinterlegten maximalen Herzfrequenz von %d bpm. Für die Auswertung deiner tatsächlichen Herzfrequenz während der Läufe liegen noch keine Messdaten vor."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your heart rate zones are based on your stored maximum heart rate of %d bpm. There's no measured data yet for your actual heart rate during runs."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalp atış hızı bölgelerin, kayıtlı maksimum kalp atış hızın olan %d bpm değerine dayanmaktadır. Koşuların sırasındaki gerçek kalp atış hızın için henüz ölçüm verisi yok."
+          }
+        }
+      }
+    },
+    "raceProgress.heartRateZones.calculatedWithMeasuredData": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Trainingsherzfrequenz kann anhand deiner berechneten Herzfrequenzzonen eingeordnet werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your training heart rate can be classified using your calculated heart rate zones."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman kalp atış hızın, hesaplanan kalp atış hızı bölgelerine göre sınıflandırılabilir."
+          }
+        }
+      }
+    },
+    "raceProgress.heartRateZones.maxHeartRateLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine maximale Herzfrequenz: %d bpm (manuell hinterlegt)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your maximum heart rate: %d bpm (manually entered)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maksimum kalp atış hızın: %d bpm (manuel olarak girildi)"
+          }
+        }
+      }
+    },
+    "raceProgress.heartRateZones.measuredInZone": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Durchschnittspuls von %d bpm lag in Zone %d."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your average heart rate of %d bpm was in zone %d."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d bpm ortalama kalp atış hızın, bölge %d içindeydi."
+          }
+        }
+      }
+    },
+    "raceProgress.heartRateZones.measuredOutsideZones": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Durchschnittspuls von %d bpm lag außerhalb der berechneten Zonen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your average heart rate of %d bpm was outside the calculated zones."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d bpm ortalama kalp atış hızın, hesaplanan bölgelerin dışındaydı."
+          }
+        }
+      }
+    },
+    "raceProgress.heartRateZones.disclaimer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vereinfachte Orientierung anhand deiner HFmax – keine individuell gemessene Laktatschwelle oder medizinisch validierte Trainingsbereiche."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A simplified guide based on your max heart rate – not an individually measured lactate threshold or medically validated training zone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maksimum kalp atış hızına dayalı basitleştirilmiş bir rehber – bireysel olarak ölçülmüş bir laktat eşiği veya tıbbi olarak doğrulanmış antrenman bölgesi değildir."
+          }
+        }
+      }
     }
   }
 }

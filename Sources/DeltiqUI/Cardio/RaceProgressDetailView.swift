@@ -30,7 +30,8 @@ struct RaceProgressDetailView: View {
                 if !concerns.isEmpty {
                     concernsSection
                 }
-                if !model.assessment.dataGaps.isEmpty {
+                heartRateZonesSection
+                if !remainingDataGaps.isEmpty {
                     dataGapsSection
                 }
             }
@@ -134,10 +135,23 @@ struct RaceProgressDetailView: View {
         }
     }
 
+    /// `.noHeartRateData` wird nicht mehr hier, sondern differenziert in
+    /// `heartRateZonesSection` kommuniziert (Running Coach - Herzfrequenz-
+    /// Trainingszonen-Ticket, Teil 5) - die generische Zeile wuerde sonst
+    /// der neuen, kontextabhaengigen Meldung widersprechen. Der DataGap-Case
+    /// selbst bleibt in `RaceProgressAssessment` unveraendert bestehen
+    /// (Architektur-Vorgabe: keine Aenderung bestehender Berechnungen).
+    private var remainingDataGaps: [RaceProgressAssessment.DataGap] {
+        model.assessment.dataGaps.filter {
+            if case .noHeartRateData = $0 { return false }
+            return true
+        }
+    }
+
     @ViewBuilder
     private var dataGapsSection: some View {
         Section {
-            ForEach(Array(model.assessment.dataGaps.enumerated()), id: \.offset) { _, gap in
+            ForEach(Array(remainingDataGaps.enumerated()), id: \.offset) { _, gap in
                 Text(dataGapText(gap))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -145,6 +159,70 @@ struct RaceProgressDetailView: View {
         } header: {
             Text("raceProgress.detail.dataGapsHeader", bundle: .module)
         }
+    }
+
+    // MARK: - Running Coach - Herzfrequenz-Trainingszonen
+
+    @ViewBuilder
+    private var heartRateZonesSection: some View {
+        Section {
+            switch model.heartRateZoneContext {
+            case .noMaxHeartRateConfigured:
+                Text("raceProgress.heartRateZones.noMaxHeartRate", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+            case .zonesCalculatedNoMeasuredData(let maxHeartRateBpm, let zones):
+                Text(String(format: String(localized: "raceProgress.heartRateZones.calculatedNoMeasuredData", bundle: .module), maxHeartRateBpm))
+                    .font(.subheadline)
+                zoneRows(zones)
+                heartRateZonesDisclaimer
+
+            case .zonesCalculatedWithMeasuredData(let maxHeartRateBpm, let zones, let measuredAverageBpm, let measuredZone):
+                Text("raceProgress.heartRateZones.calculatedWithMeasuredData", bundle: .module)
+                    .font(.subheadline)
+                Text(String(format: String(localized: "raceProgress.heartRateZones.maxHeartRateLabel", bundle: .module), maxHeartRateBpm))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let measuredZone {
+                    Text(String(
+                        format: String(localized: "raceProgress.heartRateZones.measuredInZone", bundle: .module),
+                        measuredAverageBpm, measuredZone.index
+                    ))
+                    .font(.caption)
+                } else {
+                    Text(String(format: String(localized: "raceProgress.heartRateZones.measuredOutsideZones", bundle: .module), measuredAverageBpm))
+                        .font(.caption)
+                }
+                zoneRows(zones)
+                heartRateZonesDisclaimer
+            }
+        } header: {
+            Text("raceProgress.heartRateZones.title", bundle: .module)
+        }
+    }
+
+    @ViewBuilder
+    private func zoneRows(_ zones: [HeartRateZone]) -> some View {
+        ForEach(zones) { zone in
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(String(localized: String.LocalizationValue(stringLiteral: zone.nameLocalizationKey), bundle: .module))
+                    Spacer()
+                    Text("\(zone.lowerBoundBpm)–\(zone.upperBoundBpm) bpm")
+                        .foregroundStyle(.secondary)
+                }
+                Text(String(localized: String.LocalizationValue(stringLiteral: zone.descriptionLocalizationKey), bundle: .module))
+                    .foregroundStyle(.secondary)
+            }
+            .font(.caption)
+        }
+    }
+
+    private var heartRateZonesDisclaimer: some View {
+        Text("raceProgress.heartRateZones.disclaimer", bundle: .module)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
     }
 
     private func dataGapText(_ gap: RaceProgressAssessment.DataGap) -> String {

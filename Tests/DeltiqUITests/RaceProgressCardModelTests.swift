@@ -266,5 +266,57 @@ final class RaceProgressCardModelTests: XCTestCase {
             "alle 8 Wochen liegen vor der Aktivierung, Flags: \(model.assessment.weeklyFlags)"
         )
     }
+
+    // MARK: - Running Coach - Herzfrequenz-Trainingszonen (Testfaelle 8/9/12)
+
+    func testHeartRateZoneContextIsNoMaxHeartRateConfiguredWhenProfileHasNoMaxHeartRate() throws {
+        let profile = makeProfile()
+        profile.maxHeartRateBpm = nil
+        let model = try XCTUnwrap(RaceProgressCardModel.make(for: profile, allSessions: []))
+        XCTAssertEqual(model.heartRateZoneContext, .noMaxHeartRateConfigured)
+    }
+
+    /// Testfall 8: Phase 1 hat (noch) keine Messdatenquelle fuer
+    /// `averageHeartRateBpm` - jede Session ohne Messwert fuehrt daher zu
+    /// `.zonesCalculatedNoMeasuredData`, solange eine gueltige HFmax
+    /// hinterlegt ist.
+    func testHeartRateZoneContextIsZonesOnlyWhenProfileHasMaxHeartRateButNoMeasuredSeries() throws {
+        let profile = makeProfile()
+        profile.maxHeartRateBpm = 190
+        let model = try XCTUnwrap(RaceProgressCardModel.make(for: profile, allSessions: []))
+        guard case .zonesCalculatedNoMeasuredData(let maxHR, let zones) = model.heartRateZoneContext else {
+            return XCTFail("expected .zonesCalculatedNoMeasuredData, got \(model.heartRateZoneContext)")
+        }
+        XCTAssertEqual(maxHR, 190)
+        XCTAssertEqual(zones.count, 5)
+    }
+
+    /// Testfall 9 (Modell-Ebene): sobald IRGENDEINE Woche in der Serie einen
+    /// gueltigen gemessenen Durchschnittspuls traegt, muss das Modell ihn
+    /// aufgreifen und korrekt einordnen - unabhaengig davon, ob Phase 1
+    /// diese Quelle heute schon befuellt.
+    func testMostRecentMeasuredAverageHeartRateBpmPicksTheLatestWeekWithAValue() {
+        let withoutValue = CardioVolumeOverTimePoint(
+            weekStart: Date(timeIntervalSince1970: 1_700_000_000), runningDistanceKm: 10, runningSessionCount: 2,
+            longestRunKm: 7, averagePaceMinutesPerKm: 6, averageHeartRateBpm: nil,
+            crossTrainingSessionCount: 0, ambiguousCardioSessionCount: 0, strengthSessionCount: 0
+        )
+        let withValue = CardioVolumeOverTimePoint(
+            weekStart: Date(timeIntervalSince1970: 1_700_604_800), runningDistanceKm: 12, runningSessionCount: 2,
+            longestRunKm: 8, averagePaceMinutesPerKm: 5.9, averageHeartRateBpm: 149.6,
+            crossTrainingSessionCount: 0, ambiguousCardioSessionCount: 0, strengthSessionCount: 0
+        )
+        let result = RaceProgressCardModel.mostRecentMeasuredAverageHeartRateBpm(from: [withoutValue, withValue])
+        XCTAssertEqual(result, 150, "muss auf einen ganzzahligen bpm-Wert runden")
+    }
+
+    func testMostRecentMeasuredAverageHeartRateBpmIsNilWhenNoWeekHasAValue() {
+        let point = CardioVolumeOverTimePoint(
+            weekStart: Date(), runningDistanceKm: 10, runningSessionCount: 2, longestRunKm: 7,
+            averagePaceMinutesPerKm: 6, averageHeartRateBpm: nil,
+            crossTrainingSessionCount: 0, ambiguousCardioSessionCount: 0, strengthSessionCount: 0
+        )
+        XCTAssertNil(RaceProgressCardModel.mostRecentMeasuredAverageHeartRateBpm(from: [point]))
+    }
 }
 #endif
