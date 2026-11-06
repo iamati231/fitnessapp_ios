@@ -26,6 +26,7 @@ struct CoachAdjustmentPreviewView: View {
     @State private var isCreatingNewPlan = false
     @State private var createNewPlanOperation = PlanCreationOperation()
     @State private var errorMessage: String?
+    @State private var selectedChartWeek: Int?
 
     private var model: CoachAdjustmentCardModel? {
         CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan)
@@ -276,15 +277,36 @@ struct CoachAdjustmentPreviewView: View {
                         startKm: startVol, goal: projGoal, weeksAvailable: totalWeeks
                     )
                     if !points.isEmpty {
+                        let phases = CardioFeasibilityCalculator.chartPhases(for: points)
+                        let presentPhases: [CardioFeasibilityCalculator.ChartPhase] =
+                            [.buildUp, .peak, .taper].filter { phases.contains($0) }
+                        if presentPhases.count > 1 {
+                            HStack(spacing: 12) {
+                                ForEach(presentPhases, id: \.self) { phase in
+                                    HStack(spacing: 4) {
+                                        Circle()
+                                            .fill(phaseColor(phase))
+                                            .frame(width: 6, height: 6)
+                                        Text(phaseLabelKey(phase), bundle: .module)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            .accessibilityElement(children: .combine)
+                        }
                         Chart {
                             ForEach(0..<points.count, id: \.self) { i in
                                 BarMark(
                                     x: .value("Woche", points[i].week),
                                     y: .value("km", points[i].km)
                                 )
-                                .foregroundStyle(Color.deltiqOrange.opacity(0.75))
+                                .foregroundStyle(phaseColor(phases[i]))
+                                .accessibilityLabel(weekLabel(points[i].week))
+                                .accessibilityValue("\(points[i].km.formattedWholeOrTwoDecimals) km")
                             }
                         }
+                        .chartXSelection(value: $selectedChartWeek)
                         .frame(height: 110)
                         .chartXAxis {
                             AxisMarks(values: .automatic(desiredCount: 5)) { value in
@@ -292,7 +314,7 @@ struct CoachAdjustmentPreviewView: View {
                                 AxisTick()
                                 AxisValueLabel {
                                     if let w = value.as(Int.self) {
-                                        Text("W\(w)").font(.caption2)
+                                        Text(weekLabel(w)).font(.caption2)
                                     }
                                 }
                             }
@@ -307,11 +329,87 @@ struct CoachAdjustmentPreviewView: View {
                                 }
                             }
                         }
+                        .chartYAxisLabel {
+                            Text("profile.cardio.adjustment.chart.yAxisLabel", bundle: .module)
+                                .font(.caption2)
+                        }
+                        if let selectedWeek = selectedChartWeek,
+                           let i = points.firstIndex(where: { $0.week == selectedWeek }) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(weekLabel(points[i].week))
+                                    .font(.caption.weight(.semibold))
+                                Text("\(points[i].km.formattedWholeOrTwoDecimals) km")
+                                    .font(.caption)
+                                Text("profile.cardio.adjustment.chart.plannedVolumeCaption", bundle: .module)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                if i > 0 {
+                                    let delta = points[i].km - points[i - 1].km
+                                    Text(String(
+                                        format: String(localized: "profile.cardio.adjustment.chart.weekDelta", bundle: .module),
+                                        (delta >= 0 ? "+" : "−") + abs(delta).formattedWholeOrTwoDecimals + " km"
+                                    ))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                }
+                            }
+                            .accessibilityElement(children: .combine)
+                        }
+                        Text(coachingExplanationKey(points: points, phases: phases), bundle: .module)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
             } header: {
                 Text("profile.cardio.adjustment.detail.header", bundle: .module)
             }
+        }
+    }
+
+    /// 1-basierte Wochen-Beschriftung fuer Achse + Auswahl-Panel: `week: 0`
+    /// aus `weeklyVolumeProjection` ist die aktuelle Ausgangswoche, nicht
+    /// "Woche 0" - Menschen zaehlen Wochen ab 1.
+    private func weekLabel(_ week: Int) -> String {
+        String(
+            format: String(localized: "profile.cardio.adjustment.chart.weekLabel", bundle: .module),
+            week + 1
+        )
+    }
+
+    /// Dezente Opacity-Abstufungen DER BESTEHENDEN Akzentfarbe statt neuer
+    /// Farben (Ticket-Vorgabe Teil 3: "Die bestehende orangefarbene Deltiq-
+    /// Akzentfarbe soll weiterhin dominieren").
+    private func phaseColor(_ phase: CardioFeasibilityCalculator.ChartPhase) -> Color {
+        switch phase {
+        case .buildUp: return Color.deltiqOrange.opacity(0.5)
+        case .peak: return Color.deltiqOrange.opacity(0.9)
+        case .taper: return Color.deltiqOrange.opacity(0.3)
+        }
+    }
+
+    private func phaseLabelKey(_ phase: CardioFeasibilityCalculator.ChartPhase) -> LocalizedStringKey {
+        switch phase {
+        case .buildUp: return "profile.cardio.adjustment.chart.phase.buildUp"
+        case .peak: return "profile.cardio.adjustment.chart.phase.peak"
+        case .taper: return "profile.cardio.adjustment.chart.phase.taper"
+        }
+    }
+
+    /// Teil 5 (Ticket): welche Coaching-Erklaerung passt, rein aus den
+    /// bereits berechneten Projektionsdaten abgeleitet - keine generische
+    /// Standardaussage, wenn die Daten etwas anderes zeigen (z.B. Start
+    /// bereits ueber dem Zielvolumen, oder Plan zu kurz fuer einen Taper).
+    private func coachingExplanationKey(
+        points: [(week: Int, km: Double)],
+        phases: [CardioFeasibilityCalculator.ChartPhase]
+    ) -> LocalizedStringKey {
+        let rampOccurred = points.count > 1 && points[1].km > points[0].km + 0.001
+        let taperOccurred = phases.contains(.taper)
+        switch (rampOccurred, taperOccurred) {
+        case (true, true): return "profile.cardio.adjustment.chart.explanation.rampAndTaper"
+        case (true, false): return "profile.cardio.adjustment.chart.explanation.rampNoTaper"
+        case (false, true): return "profile.cardio.adjustment.chart.explanation.alreadyAtTargetWithTaper"
+        case (false, false): return "profile.cardio.adjustment.chart.explanation.steady"
         }
     }
 

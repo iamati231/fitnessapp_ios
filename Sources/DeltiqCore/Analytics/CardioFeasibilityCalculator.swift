@@ -120,6 +120,37 @@ public enum CardioFeasibilityCalculator {
         }
     }
 
+    /// Trainingsphasen-Chart-Ticket (2026-11-06): Phase eines einzelnen
+    /// `weeklyVolumeProjection`-Punkts, ausschliesslich aus den bereits
+    /// berechneten Projektionsdaten abgeleitet - keine zusaetzlichen, fest
+    /// codierten Wochenbereiche (Ticket-Vorgabe: "Die Phasen muessen aus den
+    /// tatsaechlichen Daten des Trainingsplans abgeleitet werden").
+    public enum ChartPhase: String, Sendable, Hashable {
+        case buildUp
+        case peak
+        case taper
+    }
+
+    /// Markiert jeden Projektionspunkt als `.buildUp` (vor dem Maximum),
+    /// `.peak` (auf dem Maximum - deckt auch ein am Zielvolumen gedeckeltes
+    /// Mehrwochen-Plateau waehrend der Rampe korrekt als Spitze ab, nicht nur
+    /// eine einzelne Woche) oder `.taper` (jeder Punkt NACH dem ersten
+    /// Erreichen des Maximums, der darunter liegt). Letzteres greift
+    /// automatisch nur dann, wenn `weeklyVolumeProjection` ueberhaupt einen
+    /// Taper angewendet hat (`weeksAvailable > taperWeeks`) - ohne das hier
+    /// erneut abzufragen, rein aus den Werten selbst.
+    public static func chartPhases(for projection: [(week: Int, km: Double)]) -> [ChartPhase] {
+        guard let maxKm = projection.map(\.km).max() else { return [] }
+        var reachedPeak = false
+        return projection.map { point in
+            if point.km >= maxKm - 0.001 {
+                reachedPeak = true
+                return .peak
+            }
+            return reachedPeak ? .taper : .buildUp
+        }
+    }
+
     /// `nil`, wenn kein Check moeglich ist: kein Renn-Datum, keine
     /// Start-Basis oder `goal == .generalFitness`. Sonst immer ein Ergebnis -
     /// auch wenn `feasible == true` (der Aufrufer zeigt dann den kuerzeren,

@@ -522,6 +522,55 @@ final class CardioFeasibilityCalculatorTests: XCTestCase {
         XCTAssertTrue(chart.isEmpty)
     }
 
+    // MARK: - chartPhases
+
+    func testChartPhasesEmptyForEmptyProjection() {
+        XCTAssertTrue(CardioFeasibilityCalculator.chartPhases(for: []).isEmpty)
+    }
+
+    func testChartPhasesMarksLastWeekAsPeakWhenNoTaperApplied() {
+        // 1 week <= taperWeeks: weeklyVolumeProjection applies no taper, so the
+        // ramp's own last (= highest) point must be the only peak.
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 20, goal: .marathon, weeksAvailable: 1
+        )
+        let phases = CardioFeasibilityCalculator.chartPhases(for: points)
+        XCTAssertEqual(phases, [.buildUp, .peak])
+    }
+
+    func testChartPhasesMarksTaperWeeksAfterThePeak() {
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 10, goal: .marathon, weeksAvailable: 10
+        )
+        let phases = CardioFeasibilityCalculator.chartPhases(for: points)
+        // n=11, taperWeeks=2: peak at index 8 (see testProjectionTaperIsSeventyPercent),
+        // build-up before it, taper at indices 9-10.
+        XCTAssertEqual(Array(phases[0..<8]), Array(repeating: .buildUp, count: 8))
+        XCTAssertEqual(phases[8], .peak)
+        XCTAssertEqual(Array(phases[9...10]), [.taper, .taper])
+    }
+
+    func testChartPhasesMarksAPlateauAtTargetVolumeEntirelyAsPeak() {
+        // Start 19, 5K target 20: the ramp caps at 20 after week 1 and stays
+        // there for several weeks before the taper - all of those weeks are
+        // genuinely at peak load, not just the first one.
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 19, goal: .fiveK, weeksAvailable: 15
+        )
+        let phases = CardioFeasibilityCalculator.chartPhases(for: points)
+        let target = CardioFeasibilityCalculator.targetWeeklyVolumeKm(for: .fiveK)!
+        let plateauCount = points.filter { $0.km >= target - 0.001 }.count
+        XCTAssertGreaterThan(plateauCount, 1, "Vorbedingung: Test braucht ein echtes Mehrwochen-Plateau.")
+        XCTAssertEqual(phases.filter { $0 == .peak }.count, plateauCount)
+    }
+
+    func testChartPhasesCountMatchesProjectionCount() {
+        let points = CardioFeasibilityCalculator.weeklyVolumeProjection(
+            startKm: 15, goal: .halfMarathon, weeksAvailable: 12
+        )
+        XCTAssertEqual(CardioFeasibilityCalculator.chartPhases(for: points).count, points.count)
+    }
+
     func testChartPointsTaperIsRepresented() {
         // 25 weeks: last 2 are taper (lower than peak); last chart point must be taper
         let proj = CardioFeasibilityCalculator.weeklyVolumeProjection(

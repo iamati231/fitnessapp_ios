@@ -66755,6 +66755,259 @@
           }
         }
       }
+    },
+    "profile.cardio.adjustment.chart.yAxisLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufumfang (km/Woche)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running volume (km/week)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu hacmi (km/hafta)"
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.weekLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woche %d"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Week %d"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d. Hafta"
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.plannedVolumeCaption": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geplanter Laufumfang"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planned running volume"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planlanan koşu hacmi"
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.weekDelta": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veränderung zur Vorwoche: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change vs. previous week: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önceki haftaya göre değişim: %@"
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.phase.buildUp": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufbau"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build-up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yükleniş"
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.phase.peak": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spitze"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peak"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zirve"
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.phase.taper": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapering"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapering"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yükü azaltma"
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.explanation.rampAndTaper": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Laufumfang steigt schrittweise, damit sich dein Körper an die Belastung gewöhnen kann. Vor dem Wettkampf wird der Umfang reduziert, um die Regeneration zu unterstützen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your running volume increases step by step so your body can adapt to the load. It's reduced before race day to support recovery."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücudunun yüke alışması için koşu hacmin kademeli olarak artıyor. Yarış öncesi toparlanmayı desteklemek için hacim azaltılıyor."
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.explanation.rampNoTaper": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Laufumfang steigt schrittweise bis zum Wettkampf – für eine Tapering-Phase reicht die verbleibende Zeit nicht mehr aus."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your running volume increases step by step until race day – there's not enough time left for a tapering phase."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu hacmin yarış gününe kadar kademeli olarak artıyor – yükü azaltma aşaması için yeterli süre kalmadı."
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.explanation.alreadyAtTargetWithTaper": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du liegst bereits auf deinem Zielvolumen. Die letzten Wochen vor dem Wettkampf dienen der Erholung, damit du ausgeruht an den Start gehst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're already at your target volume. The final weeks before race day are for recovery, so you start well rested."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaten hedef hacmine ulaştın. Yarıştan önceki son haftalar, dinlenmiş başlaman için toparlanmaya ayrıldı."
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.explanation.steady": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Laufumfang bleibt bis zum Wettkampf stabil auf deinem aktuellen Niveau."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your running volume stays steady at your current level until race day."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu hacmin yarış gününe kadar şu anki seviyende sabit kalıyor."
+          }
+        }
+      }
     }
   }
 }
