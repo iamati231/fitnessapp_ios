@@ -66917,94 +66917,140 @@
         }
       }
     },
-    "profile.cardio.adjustment.chart.explanation.rampAndTaper": {
+    "profile.cardio.adjustment.chart.weekLabel.current": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Laufumfang steigt schrittweise, damit sich dein Körper an die Belastung gewöhnen kann. Vor dem Wettkampf wird der Umfang reduziert, um die Regeneration zu unterstützen."
+            "value": "Aktuell"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your running volume increases step by step so your body can adapt to the load. It's reduced before race day to support recovery."
+            "value": "Now"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vücudunun yüke alışması için koşu hacmin kademeli olarak artıyor. Yarış öncesi toparlanmayı desteklemek için hacim azaltılıyor."
+            "value": "Şu an"
           }
         }
       }
     },
-    "profile.cardio.adjustment.chart.explanation.rampNoTaper": {
+    "profile.cardio.adjustment.chart.explanation.continuousBuildUp": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Laufumfang steigt schrittweise bis zum Wettkampf – für eine Tapering-Phase reicht die verbleibende Zeit nicht mehr aus."
+            "value": "Dein Laufumfang wird schrittweise erhöht, damit sich dein Körper an die steigende Belastung gewöhnen kann."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your running volume increases step by step until race day – there's not enough time left for a tapering phase."
+            "value": "Your running volume is increased step by step so your body can adapt to the rising load."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu hacmin yarış gününe kadar kademeli olarak artıyor – yükü azaltma aşaması için yeterli süre kalmadı."
+            "value": "Vücudunun artan yüke alışabilmesi için koşu hacmin kademeli olarak artırılıyor."
           }
         }
       }
     },
-    "profile.cardio.adjustment.chart.explanation.alreadyAtTargetWithTaper": {
+    "profile.cardio.adjustment.chart.explanation.plateau": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du liegst bereits auf deinem Zielvolumen. Die letzten Wochen vor dem Wettkampf dienen der Erholung, damit du ausgeruht an den Start gehst."
+            "value": "Dein Laufumfang bleibt zunächst stabil. So kann sich dein Körper an das erreichte Belastungsniveau gewöhnen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You're already at your target volume. The final weeks before race day are for recovery, so you start well rested."
+            "value": "Your running volume stays steady for now. This lets your body adapt to the load level it has reached."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zaten hedef hacmine ulaştın. Yarıştan önceki son haftalar, dinlenmiş başlaman için toparlanmaya ayrıldı."
+            "value": "Koşu hacmin şimdilik sabit kalıyor. Böylece vücudun ulaştığı yük seviyesine alışabilir."
           }
         }
       }
     },
-    "profile.cardio.adjustment.chart.explanation.steady": {
+    "profile.cardio.adjustment.chart.explanation.deloadWithinBuildUp": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Laufumfang bleibt bis zum Wettkampf stabil auf deinem aktuellen Niveau."
+            "value": "Der Umfang wird vorübergehend reduziert, um die Regeneration zu unterstützen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your running volume stays steady at your current level until race day."
+            "value": "The volume is temporarily reduced to support recovery."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu hacmin yarış gününe kadar şu anki seviyende sabit kalıyor."
+            "value": "Toparlanmayı desteklemek için hacim geçici olarak azaltılıyor."
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.explanation.peakReached": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In dieser Phase erreichst du deinen höchsten geplanten Wochenumfang."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In this phase, you reach your highest planned weekly volume."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu aşamada planlanan en yüksek haftalık hacmine ulaşıyorsun."
+          }
+        }
+      }
+    },
+    "profile.cardio.adjustment.chart.explanation.taper": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vor deinem Wettkampf wird der Umfang reduziert, damit du dich erholen und mit frischen Beinen starten kannst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before your race, the volume is reduced so you can recover and start with fresh legs."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yarışından önce, dinlenip zinde bacaklarla başlayabilmen için hacim azaltılıyor."
           }
         }
       }

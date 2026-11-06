@@ -14,6 +14,76 @@ import DeltiqData
 /// bleibt bewusst bei der bestehenden `CardioFeasibilityCardModel`/
 /// `feasibilitySection` (Leitplanke 6), die ihre eigene
 /// "vorbefüllte Neuerstellung" bereits beherrscht).
+/// Review-Fix (Teil 4): die drei Werte, die `weeklyVolumeProjection`
+/// vollstaendig und eindeutig bestimmen - wechselt einer davon (neuer Plan,
+/// anderes Ziel, anderes Rennen), ist `selectedChartWeek` auf einen fremden
+/// Datenpunkt bezogen und muss zurueckgesetzt werden. Ein normales
+/// SwiftUI-Re-Render mit UNVERAENDERTEN Werten darf die Auswahl dagegen NICHT
+/// verwerfen - `Equatable` liefert genau diese Unterscheidung fuer
+/// `.onChange(of:)`, ohne die (nicht-Equatable) `points`-Tupelliste selbst
+/// vergleichen zu muessen.
+private struct ChartProjectionIdentity: Equatable {
+    let startKm: Double
+    let goal: CardioGoal
+    let weeksAvailable: Int
+}
+
+/// Review-Fix (Teil 3/6): reine Klassifikationslogik, OHNE SwiftUI-Zustand
+/// (keine `@State`, keine View-Instanz noetig) - dadurch mit echten
+/// Verhaltens-Asserts testbar (siehe `CoachAdjustmentChartExplanationTests`),
+/// nicht nur per Source-Introspection. Keine Trainings-Berechnung (das bleibt
+/// exklusiv `CardioFeasibilityCalculator`) - nur die Frage, welche der
+/// vorformulierten Erklaerungen zu einem bereits fertig berechneten
+/// Projektionsverlauf passt. Prioritaet von spezifischster zu generischster
+/// Aussage:
+///
+/// 1. Reduzierung INNERHALB des Aufbaus (vor dem eigentlichen Taper) - mit
+///    der heutigen, monoton steigenden Rampe (unveraendert) kann das nie
+///    eintreten, der Pfad bleibt aber fuer eine spaetere, eigenstaendige
+///    Entlastungswochen-Logik vorbereitet, OHNE selbst eine einzufuehren.
+/// 2. Taper vorhanden - unmittelbar relevante Aussage kurz vor dem
+///    Wettkampf, unabhaengig davon wie der Aufbau davor aussah.
+/// 3. Ein echtes Mehrwochen-Plateau auf der Spitze (mehrere Wochen auf dem
+///    Maximum, nachdem tatsaechlich aufgebaut wurde).
+/// 4. Ein laengerer, durchgehender Anstieg (>= 2 Aufbau-Wochen) ohne
+///    Plateau/Taper.
+/// 5. Fallback: die Spitze wird quasi sofort erreicht (0-1 echte
+///    Aufbau-Wochen) - z.B. sehr kurzer Plan oder bereits am Zielvolumen.
+enum CoachAdjustmentChartExplanation: String, Sendable, Equatable {
+    case deloadWithinBuildUp
+    case taper
+    case plateau
+    case continuousBuildUp
+    case peakReached
+
+    static func classify(
+        points: [(week: Int, km: Double)],
+        phases: [CardioFeasibilityCalculator.ChartPhase]
+    ) -> CoachAdjustmentChartExplanation {
+        let buildUpCount = phases.filter { $0 == .buildUp }.count
+        let peakCount = phases.filter { $0 == .peak }.count
+        let taperOccurred = phases.contains(.taper)
+        let hasDeloadWithinBuildUp = (1..<points.count).contains { i in
+            phases[i] != .taper && points[i].km < points[i - 1].km - 0.001
+        }
+        if hasDeloadWithinBuildUp { return .deloadWithinBuildUp }
+        if taperOccurred { return .taper }
+        if peakCount > 1 && buildUpCount > 0 { return .plateau }
+        if buildUpCount >= 2 { return .continuousBuildUp }
+        return .peakReached
+    }
+
+    var localizationKey: LocalizedStringKey {
+        switch self {
+        case .deloadWithinBuildUp: return "profile.cardio.adjustment.chart.explanation.deloadWithinBuildUp"
+        case .taper: return "profile.cardio.adjustment.chart.explanation.taper"
+        case .plateau: return "profile.cardio.adjustment.chart.explanation.plateau"
+        case .continuousBuildUp: return "profile.cardio.adjustment.chart.explanation.continuousBuildUp"
+        case .peakReached: return "profile.cardio.adjustment.chart.explanation.peakReached"
+        }
+    }
+}
+
 @available(iOS 17.0, macOS 14.0, *)
 struct CoachAdjustmentPreviewView: View {
     @Bindable var profile: UserBodyProfile
@@ -307,6 +377,9 @@ struct CoachAdjustmentPreviewView: View {
                             }
                         }
                         .chartXSelection(value: $selectedChartWeek)
+                        .onChange(of: ChartProjectionIdentity(startKm: startVol, goal: projGoal, weeksAvailable: totalWeeks)) {
+                            selectedChartWeek = nil
+                        }
                         .frame(height: 110)
                         .chartXAxis {
                             AxisMarks(values: .automatic(desiredCount: 5)) { value in
@@ -366,13 +439,22 @@ struct CoachAdjustmentPreviewView: View {
         }
     }
 
-    /// 1-basierte Wochen-Beschriftung fuer Achse + Auswahl-Panel: `week: 0`
-    /// aus `weeklyVolumeProjection` ist die aktuelle Ausgangswoche, nicht
-    /// "Woche 0" - Menschen zaehlen Wochen ab 1.
+    /// Review-Fix: `weeklyVolumeProjection`s `week`-Feld IST bereits die
+    /// tatsaechliche Trainingswochen-Nummer (`week: 1` = erste Trainingswoche,
+    /// siehe dortige Doku "Woche 0 = Startvolumen, dann 10% pro Woche
+    /// aufbauen") - eine zusaetzliche `+ 1`-Verschiebung zeigte faelschlich
+    /// "Woche 2" fuer die erste Trainingswoche an. Einzige Ausnahme: `week: 0`
+    /// ist der Ausgangspunkt (aktuelles Volumen), keine Trainingswoche - der
+    /// bekommt eine eigene, eindeutige Beschriftung statt "Woche 0".
+    /// Achse UND Auswahl-Panel rufen beide ausschliesslich diese eine
+    /// Funktion auf, koennen also nie auseinanderlaufen.
     private func weekLabel(_ week: Int) -> String {
-        String(
+        guard week > 0 else {
+            return String(localized: "profile.cardio.adjustment.chart.weekLabel.current", bundle: .module)
+        }
+        return String(
             format: String(localized: "profile.cardio.adjustment.chart.weekLabel", bundle: .module),
-            week + 1
+            week
         )
     }
 
@@ -395,22 +477,14 @@ struct CoachAdjustmentPreviewView: View {
         }
     }
 
-    /// Teil 5 (Ticket): welche Coaching-Erklaerung passt, rein aus den
-    /// bereits berechneten Projektionsdaten abgeleitet - keine generische
-    /// Standardaussage, wenn die Daten etwas anderes zeigen (z.B. Start
-    /// bereits ueber dem Zielvolumen, oder Plan zu kurz fuer einen Taper).
+    /// Delegiert an die SwiftUI-unabhaengige, testbare
+    /// `CoachAdjustmentChartExplanation` (siehe dort fuer die
+    /// Prioritaets-Begruendung der einzelnen Faelle).
     private func coachingExplanationKey(
         points: [(week: Int, km: Double)],
         phases: [CardioFeasibilityCalculator.ChartPhase]
     ) -> LocalizedStringKey {
-        let rampOccurred = points.count > 1 && points[1].km > points[0].km + 0.001
-        let taperOccurred = phases.contains(.taper)
-        switch (rampOccurred, taperOccurred) {
-        case (true, true): return "profile.cardio.adjustment.chart.explanation.rampAndTaper"
-        case (true, false): return "profile.cardio.adjustment.chart.explanation.rampNoTaper"
-        case (false, true): return "profile.cardio.adjustment.chart.explanation.alreadyAtTargetWithTaper"
-        case (false, false): return "profile.cardio.adjustment.chart.explanation.steady"
-        }
+        CoachAdjustmentChartExplanation.classify(points: points, phases: phases).localizationKey
     }
 
     /// "Als neuen Plan erstellen": reuse des bereits bestehenden, geprüften
