@@ -32,6 +32,11 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     case trainingCalendar  // DEL-197: Monats-Kalender + Wochen-Streak
     case nutrition         // Task 9: Tagesuebersicht-Teaser + "Mahlzeit hinzufuegen"
     case runCoachCard      // DEL-XXX: Lauf-Coaching-Widget (AdjustmentCard oder FeasibilityCard)
+    /// AI-Running-Coach Phase 1 (Dashboard-Fix "doppelte Coach-Karten"):
+    /// eigener Widget-Typ, nicht laenger fest an `.runCoachCard` gehaengt —
+    /// unabhaengig an-/ausschaltbar und verschiebbar, siehe
+    /// `RaceProgressCardModel`.
+    case raceProgressCard
 
     /// xcstrings-Lookup-Key: `widget.{rawValue}.name`.
     public var localizationKey: String {
@@ -45,6 +50,7 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
         [
             .nextWorkout,
             .runCoachCard,
+            .raceProgressCard,
             .coachingInsight,
             .weeklyVolume,
             .muscleHeatmap,

@@ -329,7 +329,8 @@ public final class UserBodyProfile {
         // der User kann sie danach verschieben, aber das naechste Einschalten
         // bringt sie wieder an Position 0.
         if cardioCoachingEnabled && !wasEnabled {
-            var order = activeDashboardWidgets.filter { $0 != .runCoachCard }
+            var order = activeDashboardWidgets.filter { $0 != .runCoachCard && $0 != .raceProgressCard }
+            order.insert(.raceProgressCard, at: 0)
             order.insert(.runCoachCard, at: 0)
             activeDashboardWidgets = order
             // AI-Running-Coach Phase 1: markiert den Beginn des Coaching-
@@ -722,10 +723,11 @@ public final class UserBodyProfile {
         // Nur bei erstmaliger Initialisierung — bestehende Profile werden nie angefasst.
         if !cardioCoachingEnabled {
             activeDashboardWidgetsRaw = DashboardWidgetType.defaultOrder
-                .filter { $0 != .runCoachCard }
+                .filter { $0 != .runCoachCard && $0 != .raceProgressCard }
                 .map { $0.rawValue }
         } else {
-            var order = DashboardWidgetType.defaultOrder.filter { $0 != .runCoachCard }
+            var order = DashboardWidgetType.defaultOrder.filter { $0 != .runCoachCard && $0 != .raceProgressCard }
+            order.insert(.raceProgressCard, at: 0)
             order.insert(.runCoachCard, at: 0)
             activeDashboardWidgetsRaw = order.map { $0.rawValue }
         }

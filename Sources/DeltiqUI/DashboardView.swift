@@ -282,6 +282,7 @@ public struct DashboardView: View {
                         case .trainingCalendar: trainingCalendarCard
                         case .nutrition:       nutritionCard
                         case .runCoachCard:    runCoachDashboardCard
+                        case .raceProgressCard: raceProgressDashboardCard
                         }
                     }
                 }
@@ -2728,12 +2729,6 @@ public struct DashboardView: View {
             } else if let model = cardioFeasibilityModel {
                 cardioFeasibilityDashboardCard(model)
             }
-            // AI-Running-Coach Phase 1: eigenstaendige, rein informative
-            // Karte - unabhaengig von der Anpassungs-/Machbarkeits-Karte
-            // oben (Leitplanke 6 gilt NUR zwischen jenen beiden, die
-            // dieselbe Aktion "Plan anpassen" anbieten; diese Karte bietet
-            // keine Planaenderung an, daher kein Konflikt).
-            raceProgressDashboardCard
         }
     }
 
