@@ -25,8 +25,12 @@ final class CardioGoalEditorActivePlanResolverTests: XCTestCase {
 
     func testPostActivationAdjustmentPreviewUsesActivePlanResolver() throws {
         let source = try contents(of: "Settings/CardioGoalEditorView.swift")
-        guard let coachJustActivatedRange = source.range(of: "if coachJustActivated, let plan = ") else {
-            XCTFail("coachJustActivated-Zweig in save() nicht gefunden")
+        // Bugfix ("Änderung des Laufziels muss den aktiven Trainingsplan
+        // aktualisieren"): derselbe Zweig loest die Vorschau seither auch bei
+        // einem reinen Zielwechsel aus (`goalChanged`), nicht mehr nur bei
+        // `coachJustActivated` allein - die Bedingung ist jetzt geklammert.
+        guard let coachJustActivatedRange = source.range(of: "if (coachJustActivated || goalChanged), let plan = ") else {
+            XCTFail("coachJustActivated/goalChanged-Zweig in save() nicht gefunden")
             return
         }
         let body = source[coachJustActivatedRange.upperBound...].prefix(100)
