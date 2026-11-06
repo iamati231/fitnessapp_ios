@@ -127,7 +127,7 @@ public struct NutritionDayView: View {
                         accessibilityLabel: String(localized: "nutrition.day.addMeal.button", bundle: .module)
                     ) {
                         if isTabRoot {
-                            navigation.nutritionPath.append(AddMealRoute.addMeal(date: selectedDate, mealType: .snack))
+                            navigation.nutritionPath.append(AddMealRoute.addMeal(date: selectedDate, mealType: .suggested(for: selectedDate)))
                         } else {
                             showingAddMeal = true
                         }
@@ -433,7 +433,7 @@ public struct NutritionDayView: View {
             ctaTitle: "nutrition.day.addMeal.button",
             ctaAction: {
                 if isTabRoot {
-                    navigation.nutritionPath.append(AddMealRoute.addMeal(date: selectedDate, mealType: .snack))
+                    navigation.nutritionPath.append(AddMealRoute.addMeal(date: selectedDate, mealType: .suggested(for: selectedDate)))
                 } else {
                     showingAddMeal = true
                 }
