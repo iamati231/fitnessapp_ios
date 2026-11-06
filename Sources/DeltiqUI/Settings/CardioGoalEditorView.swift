@@ -213,26 +213,6 @@ struct CardioGoalEditorView: View {
         guard !isSaving else { return }
         isSaving = true
 
-        // Paket 1, Komponente 5: ECHTES Aktivieren (vorher aus, jetzt an)
-        // loest die Anpassungsvorschau aus.
-        let coachJustActivated = !profile.cardioCoachingEnabled && draftCardioCoachingEnabled
-        // Bugfix ("Änderung des Laufziels muss den aktiven Trainingsplan
-        // aktualisieren"): ein Laufziel-Wechsel bei bereits aktivem Coach
-        // speicherte bisher NUR `profile.cardioGoal` und schloss den Editor -
-        // der aktive Trainingsplan blieb auf dem alten Ziel stehen, bis der
-        // Nutzer zufaellig die separate Dashboard-/Profil-Karte
-        // (`CoachAdjustmentCardModel`) bemerkte und selbst antippte. Die
-        // Vorschau, die das korrekt macht (bestehenden Plan anpassen,
-        // absolvierte/editierte Tage schuetzen - `CoachAdjustmentCardModel.
-        // accept`/`RunCoachPlanAdjustment`, unveraendert), existierte also
-        // bereits; sie wurde nur beim Zielwechsel nie angeboten. Erweiterung
-        // des bestehenden Ausloesers statt einer zweiten, parallelen
-        // Planungslogik. `draftCardioCoachingEnabled` zusaetzlich geprueft,
-        // obwohl `cardioSetupDraft.goal` nur bei eingeschaltetem Coach
-        // ueberhaupt editierbar ist (siehe `cardioFields` unten) - macht die
-        // Invariante hier explizit, statt sich nur auf die UI zu verlassen.
-        let goalChanged = draftCardioCoachingEnabled && cardioSetupDraft.goal != profile.cardioGoal
-
         // Finding 3 (Laufcoaching-Audit): Schnappschuss ALLER sieben Felder,
         // die gleich mutiert werden - inklusive der beiden, die
         // `setEnduranceModality` selbst anfasst (siehe dortige Doku:
@@ -284,7 +264,17 @@ struct CardioGoalEditorView: View {
             return
         }
 
-        if (coachJustActivated || goalChanged), let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
+        // Bugfix ("Änderung des Laufziels muss den aktiven Trainingsplan
+        // aktualisieren"): ob Aktivieren des Coachs ODER ein reiner
+        // Zielwechsel bei bereits aktivem Coach die Anpassungsvorschau
+        // ausloesen soll, entscheidet `ActivePlanResolver.
+        // planRequiringAdjustment` (siehe dortige Doku) - extrahiert aus
+        // dieser View, damit die Entscheidung selbst unabhaengig von SwiftUI
+        // testbar ist, nicht nur per Source-Introspection.
+        if let plan = ActivePlanResolver.planRequiringAdjustment(
+            coachWasEnabled: originalCardioCoachingEnabled, coachWillBeEnabled: draftCardioCoachingEnabled,
+            oldGoal: originalCardioGoal, newGoal: cardioSetupDraft.goal, among: activePlans
+        ) {
             planForAdjustmentPreview = plan
             showingAdjustmentPreview = true
         } else {

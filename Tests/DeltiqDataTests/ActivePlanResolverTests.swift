@@ -179,5 +179,100 @@ final class ActivePlanResolverTests: XCTestCase {
     func test_cardioRelevantPlan_withNoActivePlans_returnsNil() {
         XCTAssertNil(ActivePlanResolver.cardioRelevantPlan(among: []))
     }
+
+    // MARK: - planRequiringAdjustment
+    //
+    // Nachbesserung ("Tatsächlichen Zielwechsel über CardioGoalEditorView
+    // absichern"): deckt genau die vom Ticket geforderten fuenf Faelle ab -
+    // echte Verhaltenstests ueber die tatsaechliche Entscheidung, nicht nur
+    // den nachgelagerten `cardioRelevantPlan`-Aufruf (den decken die Tests
+    // oben bereits ab).
+
+    /// 1. Coach bereits aktiv + Ziel unveraendert -> keine unnoetige erneute
+    /// Anpassung.
+    func test_planRequiringAdjustment_coachAlreadyEnabled_goalUnchanged_returnsNil() throws {
+        let plan = makePlan(name: "Active", generationSource: .cardioCoach)
+        try context.save()
+
+        XCTAssertNil(ActivePlanResolver.planRequiringAdjustment(
+            coachWasEnabled: true, coachWillBeEnabled: true,
+            oldGoal: .halfMarathon, newGoal: .halfMarathon, among: [plan]
+        ))
+    }
+
+    /// 2. Coach bereits aktiv + Ziel geaendert -> erneute Anpassung wird
+    /// ausgeloest.
+    func test_planRequiringAdjustment_coachAlreadyEnabled_goalChanged_returnsThePlan() throws {
+        let plan = makePlan(name: "Active", generationSource: .cardioCoach)
+        try context.save()
+
+        XCTAssertEqual(
+            ActivePlanResolver.planRequiringAdjustment(
+                coachWasEnabled: true, coachWillBeEnabled: true,
+                oldGoal: .halfMarathon, newGoal: .marathon, among: [plan]
+            )?.persistentModelID,
+            plan.persistentModelID
+        )
+    }
+
+    /// 3. Coach wird erstmals aktiviert -> bisheriges Verhalten bleibt
+    /// erhalten, unabhaengig davon ob sich das Ziel dabei "aendert" (beim
+    /// ersten Einschalten ist das Ziel-Feld oft unveraendert vom Default).
+    func test_planRequiringAdjustment_coachJustActivated_sameGoal_stillReturnsThePlan() throws {
+        let plan = makePlan(name: "Active", generationSource: .manual)
+        try context.save()
+
+        XCTAssertEqual(
+            ActivePlanResolver.planRequiringAdjustment(
+                coachWasEnabled: false, coachWillBeEnabled: true,
+                oldGoal: .generalFitness, newGoal: .generalFitness, among: [plan]
+            )?.persistentModelID,
+            plan.persistentModelID
+        )
+    }
+
+    /// 4. Bereits einmal angepasster Plan + erneute Zieländerung -> erneute
+    /// Anpassung wird ausgeloest. Die Funktion haengt bewusst NICHT von
+    /// `UserBodyProfile.cardioPlanAdjustmentFingerprint` ab (das bleibt
+    /// `CoachAdjustmentCardModel.make`s `isAlreadyApplied` vorbehalten) - ein
+    /// bereits durch Coaching angepasster Plan (hier durch
+    /// `generationSource == .cardioCoach` reprasentiert) wird bei einem
+    /// weiteren Zielwechsel genauso zuverlaessig zurueckgegeben wie ein
+    /// frischer.
+    func test_planRequiringAdjustment_alreadyAdjustedPlan_repeatedGoalChange_returnsThePlanAgain() throws {
+        let alreadyAdjustedPlan = makePlan(name: "AlreadyAdjusted", generationSource: .cardioCoach)
+        try context.save()
+
+        XCTAssertEqual(
+            ActivePlanResolver.planRequiringAdjustment(
+                coachWasEnabled: true, coachWillBeEnabled: true,
+                oldGoal: .marathon, newGoal: .halfMarathon, among: [alreadyAdjustedPlan]
+            )?.persistentModelID,
+            alreadyAdjustedPlan.persistentModelID,
+            "ein bereits angepasster Plan muss bei einer weiteren Zieländerung erneut zurueckgegeben werden"
+        )
+    }
+
+    /// 5. Kein aktiver Plan -> keine Anpassung eines nicht existierenden
+    /// Plans.
+    func test_planRequiringAdjustment_noActivePlan_returnsNil() {
+        XCTAssertNil(ActivePlanResolver.planRequiringAdjustment(
+            coachWasEnabled: true, coachWillBeEnabled: true,
+            oldGoal: .halfMarathon, newGoal: .marathon, among: []
+        ))
+    }
+
+    /// Ergaenzend: Coach bleibt AUS (weder vorher noch nachher aktiv) - ein
+    /// im UI gar nicht editierbares Zielfeld darf trotzdem nie ausloesen,
+    /// selbst wenn sich der rohe Wert technisch unterscheidet.
+    func test_planRequiringAdjustment_coachStaysDisabled_returnsNilEvenIfGoalDiffers() throws {
+        let plan = makePlan(name: "Active", generationSource: .cardioCoach)
+        try context.save()
+
+        XCTAssertNil(ActivePlanResolver.planRequiringAdjustment(
+            coachWasEnabled: false, coachWillBeEnabled: false,
+            oldGoal: .halfMarathon, newGoal: .marathon, among: [plan]
+        ))
+    }
 }
 #endif

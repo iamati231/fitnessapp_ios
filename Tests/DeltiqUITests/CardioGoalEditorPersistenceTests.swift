@@ -268,57 +268,52 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
     // Quelltext-Pruefung des Ausloesers, gleiches Muster wie
     // `testFailedSaveSnapshotsAndRestoresAllSevenMutatedProfileFields`.
 
+    /// Nachbesserung ("Tatsächlichen Zielwechsel über CardioGoalEditorView
+    /// absichern"): die eigentliche Entscheidungslogik (Coach gerade
+    /// aktiviert ODER Ziel geaendert?) wohnt seit dieser Nachbesserung NICHT
+    /// mehr inline in `save()`, sondern in `ActivePlanResolver.
+    /// planRequiringAdjustment` (siehe dessen behaviorale Tests in
+    /// `Tests/DeltiqDataTests/ActivePlanResolverTests.swift` - ECHTE
+    /// Verhaltenstests, keine Source-Introspection, da die Funktion keine
+    /// SwiftUI-Abhaengigkeit hat). Dieser Test bleibt auf Quelltext-Ebene
+    /// (save() ist weiterhin `private`, ohne Laufzeit-Oberflaeche), prueft
+    /// aber nur noch die VERDRAHTUNG: dass `save()` diese Funktion tatsaechlich
+    /// mit den VOR der Mutation erfassten Original-Werten aufruft und ihr
+    /// Ergebnis fuer die Vorschau verwendet, statt die Entscheidung erneut
+    /// selbst zu treffen oder zu umgehen.
     func testGoalChangeTriggersTheSameAdjustmentPreviewAsActivatingTheCoach() throws {
         let source = try cardioGoalEditorViewSource
         XCTAssertTrue(
-            source.contains("let goalChanged = draftCardioCoachingEnabled && cardioSetupDraft.goal != profile.cardioGoal"),
-            "A goal change while the coach stays on must be detected BEFORE profile.cardioGoal is mutated."
+            source.contains("if let plan = ActivePlanResolver.planRequiringAdjustment("),
+            "save() must delegate the trigger decision to ActivePlanResolver.planRequiringAdjustment, not re-implement it inline."
         )
         XCTAssertTrue(
-            source.contains("if (coachJustActivated || goalChanged), let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {"),
-            "Changing the goal must offer the same plan-adjustment preview as activating the coach, not just dismiss."
+            source.contains("coachWasEnabled: originalCardioCoachingEnabled, coachWillBeEnabled: draftCardioCoachingEnabled,"),
+            "the call must pass the PRE-mutation coaching-enabled snapshot, not the live (already-mutated) profile value."
+        )
+        XCTAssertTrue(
+            source.contains("oldGoal: originalCardioGoal, newGoal: cardioSetupDraft.goal, among: activePlans"),
+            "the call must pass the PRE-mutation goal snapshot as oldGoal and the drafted goal as newGoal."
+        )
+        XCTAssertFalse(
+            source.contains("let goalChanged") || source.contains("let coachJustActivated"),
+            "the trigger decision must no longer be duplicated inline in this View - ActivePlanResolver.planRequiringAdjustment is the single source of truth."
         )
     }
 
-    /// `goalChanged` must be computed from `profile.cardioGoal` BEFORE the
-    /// mutating block below it - comparing against the already-mutated
-    /// property would make it permanently false.
-    func testGoalChangedIsComputedBeforeProfileIsMutated() throws {
-        let source = try cardioGoalEditorViewSource
-        guard let goalChangedRange = source.range(of: "let goalChanged =") else {
-            return XCTFail("goalChanged not found")
-        }
-        guard let mutationRange = source.range(of: "profile.cardioGoal = cardioSetupDraft.goal") else {
-            return XCTFail("the profile.cardioGoal mutation was not found")
-        }
-        XCTAssertLessThan(goalChangedRange.lowerBound, mutationRange.lowerBound, "goalChanged must be captured before profile.cardioGoal is overwritten")
-    }
-
-    /// Regression guard: a save that only touches unrelated fields (e.g. max
-    /// heart rate) while the goal itself is unchanged must not re-trigger the
-    /// adjustment preview on every unrelated save.
-    func testUnrelatedFieldChangesDoNotFalselyTriggerTheAdjustmentPreview() throws {
-        let source = try cardioGoalEditorViewSource
-        guard let range = source.range(of: "let goalChanged =") else {
-            return XCTFail("goalChanged not found")
-        }
-        let line = source[range.lowerBound...].prefix(while: { $0 != "\n" })
-        XCTAssertTrue(line.contains("cardioSetupDraft.goal != profile.cardioGoal"), "goalChanged must compare goal specifically, not any other field")
-        XCTAssertFalse(line.contains("raceDate") || line.contains("weeklyBaseVolumeKm") || line.contains("maxHeartRateBpm"), "goalChanged must not also fire on unrelated field changes")
-    }
-
-    // MARK: - Follow-up ticket ("Bestehenden aktiven Lauftrainingsplan nach
-    // Zieländerung erneut anpassen"): the three tests above prove the TRIGGER
-    // is wired correctly (source-introspection - `save()` is private, no
-    // SwiftUI render harness exists in this repo, see file doc above). They
-    // do NOT prove the plan itself actually changes, which is exactly what
-    // this ticket calls out ("ein Test, der lediglich die Anzeige einer
-    // Option ... prueft, reicht nicht"). This test exercises the real
-    // data-layer path `save()` wires up end-to-end with a live in-memory
-    // `ModelContainer`: `ActivePlanResolver.cardioRelevantPlan` ->
-    // `CoachAdjustmentCardModel.make` -> `.accept()` - the same calls
-    // `CardioGoalEditorView.save()`/`CoachAdjustmentPreviewView` make, just
-    // without the SwiftUI layer in between (which cannot be driven here).
+    // MARK: - Follow-up ticket ("Tatsächlichen Zielwechsel über
+    // CardioGoalEditorView absichern"): the wiring test above proves `save()`
+    // delegates to `ActivePlanResolver.planRequiringAdjustment` (source-
+    // introspection - `save()` is private, no SwiftUI render harness exists
+    // in this repo, see file doc above). This test goes one level further
+    // and calls the REAL trigger function itself end-to-end with a live
+    // in-memory `ModelContainer`: `ActivePlanResolver.planRequiringAdjustment`
+    // (the actual UI-auslöser decision, not bypassed) -> `CoachAdjustmentCardModel.make`
+    // -> `.accept()` - the same calls `CardioGoalEditorView.save()`/
+    // `CoachAdjustmentPreviewView` make, just without the SwiftUI layer in
+    // between (which cannot be driven here). This is genuinely
+    // "end-to-end" precisely because the trigger decision is no longer
+    // bypassed or re-implemented inline in the test.
     @MainActor
     func testGoalChangeEndToEndUpdatesTheExistingActivePlanWithoutCreatingASecondOne() throws {
         let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
@@ -381,11 +376,18 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
         let halfMarathonFingerprint = try XCTUnwrap(CoachAdjustmentCardModel.make(for: profile, activePlan: plan)).fingerprint
         profile.cardioPlanAdjustmentFingerprint = halfMarathonFingerprint
 
-        // Exakt das, was `CardioGoalEditorView.save()` bei einem Zielwechsel
-        // jetzt tut: Ziel aendern, dann ueber `ActivePlanResolver` denselben
-        // aktiven Plan wiederfinden.
+        // Exakt der TRIGGER, den `CardioGoalEditorView.save()` jetzt aufruft
+        // (`ActivePlanResolver.planRequiringAdjustment`, siehe dortige Doku) -
+        // nicht nur der nachgelagerte `cardioRelevantPlan`-Aufruf. Beweist,
+        // dass die Entscheidung "Ziel geaendert, Coach weiterhin an" selbst
+        // tatsaechlich auf den bestehenden Plan zeigt, nicht nur dass der
+        // Plan sich hinterher mit `accept()` anpassen LIESSE.
+        let originalGoal = profile.cardioGoal
         profile.cardioGoal = .marathon
-        let resolvedPlan = try XCTUnwrap(ActivePlanResolver.cardioRelevantPlan(among: [plan]))
+        let resolvedPlan = try XCTUnwrap(ActivePlanResolver.planRequiringAdjustment(
+            coachWasEnabled: profile.cardioCoachingEnabled, coachWillBeEnabled: profile.cardioCoachingEnabled,
+            oldGoal: originalGoal, newGoal: profile.cardioGoal, among: [plan]
+        ), "der Zielwechsel muss den Trigger tatsaechlich ausloesen, nicht nur den Plan nachtraeglich resolvbar machen")
         XCTAssertTrue(resolvedPlan === plan, "muss denselben Plan wiederfinden, keinen neuen")
 
         guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: resolvedPlan) else {

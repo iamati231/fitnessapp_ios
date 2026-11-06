@@ -47,5 +47,37 @@ public enum ActivePlanResolver {
             return withLatest.count == 1 ? withLatest[0] : nil
         }
     }
+
+    /// Bugfix ("Änderung des Laufziels muss den aktiven Trainingsplan
+    /// aktualisieren", Nachbesserung): die Entscheidung, OB eine Coach-
+    /// Aktivierung/ein Zielwechsel ueberhaupt eine erneute Plananpassung
+    /// ausloesen soll - vorher inline in `CardioGoalEditorView.save()` als
+    /// zwei lokale `let`-Bindings (`coachJustActivated`/`goalChanged`), ohne
+    /// eigene Laufzeit-Oberflaeche, nur per Source-Introspection pruefbar.
+    /// Reine Funktion ueber ihre Eingaben (kein SwiftUI-/Context-Zugriff),
+    /// daher mit echten `TrainingPlan`-Werten direkt testbar - gleiches
+    /// Prinzip wie `cardioRelevantPlan` oben, dessen Ergebnis sie bei Bedarf
+    /// durchreicht.
+    ///
+    /// `nil`, wenn keine Anpassung angeboten werden soll (Coach blieb aus
+    /// ODER Ziel unveraendert) ODER kein eindeutig zustaendiger aktiver Plan
+    /// existiert (siehe `cardioRelevantPlan`-Doku). Haengt bewusst NICHT vom
+    /// `UserBodyProfile.cardioPlanAdjustmentFingerprint` ab: eine bereits
+    /// einmal uebernommene Anpassung darf eine ERNEUTE Zieländerung nicht
+    /// unterdruecken - das trennt `CoachAdjustmentCardModel.make`s
+    /// `isAlreadyApplied` bereits sauber (nachgelagert, fuer die Vorschau-
+    /// Anzeige), diese Funktion entscheidet nur ueber das Ausloesen selbst.
+    public static func planRequiringAdjustment(
+        coachWasEnabled: Bool,
+        coachWillBeEnabled: Bool,
+        oldGoal: CardioGoal,
+        newGoal: CardioGoal,
+        among activePlans: [TrainingPlan]
+    ) -> TrainingPlan? {
+        let coachJustActivated = !coachWasEnabled && coachWillBeEnabled
+        let goalChanged = coachWillBeEnabled && newGoal != oldGoal
+        guard coachJustActivated || goalChanged else { return nil }
+        return cardioRelevantPlan(among: activePlans)
+    }
 }
 #endif

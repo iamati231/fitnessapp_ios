@@ -25,18 +25,15 @@ final class CardioGoalEditorActivePlanResolverTests: XCTestCase {
 
     func testPostActivationAdjustmentPreviewUsesActivePlanResolver() throws {
         let source = try contents(of: "Settings/CardioGoalEditorView.swift")
-        // Bugfix ("Änderung des Laufziels muss den aktiven Trainingsplan
-        // aktualisieren"): derselbe Zweig loest die Vorschau seither auch bei
-        // einem reinen Zielwechsel aus (`goalChanged`), nicht mehr nur bei
-        // `coachJustActivated` allein - die Bedingung ist jetzt geklammert.
-        guard let coachJustActivatedRange = source.range(of: "if (coachJustActivated || goalChanged), let plan = ") else {
-            XCTFail("coachJustActivated/goalChanged-Zweig in save() nicht gefunden")
-            return
-        }
-        let body = source[coachJustActivatedRange.upperBound...].prefix(100)
+        // Nachbesserung ("Tatsächlichen Zielwechsel über CardioGoalEditorView
+        // absichern"): die Aktivieren-ODER-Zielwechsel-Entscheidung lebt jetzt
+        // in `ActivePlanResolver.planRequiringAdjustment` (siehe dessen Doku
+        // und behaviorale Tests in `ActivePlanResolverTests`), das intern
+        // weiterhin `cardioRelevantPlan(among:)` verwendet - nicht mehr
+        // `activePlans.first` direkt in dieser View.
         XCTAssertTrue(
-            body.hasPrefix("ActivePlanResolver.cardioRelevantPlan(among: activePlans)"),
-            "die Post-Aktivierungs-Vorschau muss ActivePlanResolver.cardioRelevantPlan(among:) verwenden statt activePlans.first"
+            source.contains("if let plan = ActivePlanResolver.planRequiringAdjustment("),
+            "die Post-Aktivierungs-/Zielwechsel-Vorschau muss ActivePlanResolver.planRequiringAdjustment verwenden"
         )
         XCTAssertFalse(
             source.contains("let plan = activePlans.first"),
