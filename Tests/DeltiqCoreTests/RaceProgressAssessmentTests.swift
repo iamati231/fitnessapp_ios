@@ -24,16 +24,24 @@ final class RaceProgressAssessmentTests: XCTestCase {
         )
     }
 
+    /// Bugfix-Regression (CI-Fund auf echtem macOS-Runner): `observationStart
+    /// ?? series.first?.weekStart` kollabierte ein ausdruecklich uebergebenes
+    /// `nil` (bei `testUnknownCoachingObservationStartSuppressesAllPeriodBasedConcerns`
+    /// explizit gewollt) stillschweigend auf einen echten Wert - jeder
+    /// Aufrufer dieser Datei uebergibt `observationStart` bereits explizit
+    /// (auch `nil`), der Default existiert nur fuer eine nicht genutzte
+    /// Bequemlichkeit und wird hier entfernt, damit ein echtes `nil` auch
+    /// ein echtes `nil` bleibt.
     private func input(
         series: [CardioVolumeOverTimePoint],
         goal: CardioGoal = .halfMarathon,
         raceDate: Date? = nil,
-        observationStart: Date? = nil,
+        observationStart: Date?,
         currentWeeklyVolumeKm: Double? = 20
     ) -> RaceProgressAssessment.Input {
         .init(
             weeklySeries: series, goal: goal, raceDate: raceDate,
-            coachingObservationStart: observationStart ?? series.first?.weekStart,
+            coachingObservationStart: observationStart,
             currentWeeklyVolumeKm: currentWeeklyVolumeKm,
             now: series.last?.weekStart.addingTimeInterval(6 * 86400) ?? Date()
         )

@@ -32,6 +32,23 @@ final class RaceProgressPhase1StructuralGuardTests: XCTestCase {
         try String(contentsOf: repoRoot.appendingPathComponent(relativePath), encoding: .utf8)
     }
 
+    /// Bugfix-Regression (CI-Fund auf echtem macOS-Runner): ein
+    /// `source.contains(term)`-Check trifft auch auf eine erklaerende
+    /// Doc-Kommentar-Zeile, die den verbotenen Begriff selbst nennt, um zu
+    /// begruenden warum er NICHT verwendet wird - exakt der Fall, den
+    /// `CoachAdjustmentInsertionUITests.withoutLineComments` in diesem Repo
+    /// bereits kennt. Strippt `//`-Zeilenkommentare vor jedem Check.
+    private func withoutLineComments(_ text: String) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line -> Substring in
+                if let commentRange = line.range(of: "//") {
+                    return line[line.startIndex..<commentRange.lowerBound]
+                }
+                return line
+            }
+            .joined(separator: "\n")
+    }
+
     /// Abschnitt 5: Phase 1 hat schlicht keinen Schreibpfad auf
     /// `TrainingPlan`/`TrainingDay` - keine der neuen Dateien darf
     /// Plan-Mutationsfunktionen aufrufen oder neue Tage/Plaene anlegen.
@@ -45,7 +62,7 @@ final class RaceProgressPhase1StructuralGuardTests: XCTestCase {
             "TrainingPlan(",
         ]
         for file in phase1Files {
-            let source = try contents(of: file)
+            let source = withoutLineComments(try contents(of: file))
             for term in forbidden {
                 XCTAssertFalse(
                     source.contains(term),
@@ -60,7 +77,7 @@ final class RaceProgressPhase1StructuralGuardTests: XCTestCase {
     func testPhase1NeverImportsNetworkingFrameworks() throws {
         let forbidden = ["URLSession", "import Network", "URLRequest"]
         for file in phase1Files {
-            let source = try contents(of: file)
+            let source = withoutLineComments(try contents(of: file))
             for term in forbidden {
                 XCTAssertFalse(source.contains(term), "\(file) darf '\(term)' nicht verwenden - Phase 1 ist strikt lokal/offline")
             }
@@ -75,9 +92,19 @@ final class RaceProgressPhase1StructuralGuardTests: XCTestCase {
             "Sources/DeltiqUI/Cardio/RaceProgressCardModel.swift",
         ]
         for file in filesThatMustNotReadStaleVolume {
-            let source = try contents(of: file)
+            let source = withoutLineComments(try contents(of: file))
+            // Bugfix-Regression (CI-Fund): die bare Kennung
+            // "weeklyBaseVolumeKm" allein ist zu grob - `RaceProgressAssessment.
+            // swift` reicht `input.currentWeeklyVolumeKm` legitim an
+            // `CardioFeasibilityCalculator.evaluate(weeklyBaseVolumeKm:)`
+            // weiter (ein FREMDER Funktions-Parametername, keine
+            // `profile`-Eigenschaft). Nur ein PUNKT-praefixierter Zugriff
+            // (".weeklyBaseVolumeKm", z.B. "profile.weeklyBaseVolumeKm")
+            // beweist ein tatsaechliches Lesen der stale Onboarding-
+            // Eigenschaft - ein Funktionsargument-Label (gefolgt von ":")
+            // trifft das nicht.
             XCTAssertFalse(
-                source.contains("weeklyBaseVolumeKm"),
+                source.contains(".weeklyBaseVolumeKm"),
                 "\(file) darf profile.weeklyBaseVolumeKm (stale Onboarding-Schnappschuss) nicht lesen - currentWeeklyVolumeKm muss frisch aus der echten Wochenserie stammen"
             )
         }
@@ -87,7 +114,7 @@ final class RaceProgressPhase1StructuralGuardTests: XCTestCase {
     func testPhase1HasNoAIOrExternalServiceCode() throws {
         let forbidden = ["DeltiqAI", "import FoundationModels"]
         for file in phase1Files {
-            let source = try contents(of: file)
+            let source = withoutLineComments(try contents(of: file))
             for term in forbidden {
                 XCTAssertFalse(source.contains(term), "\(file) darf '\(term)' nicht verwenden - Phase 1 ist deterministisch, keine KI")
             }
