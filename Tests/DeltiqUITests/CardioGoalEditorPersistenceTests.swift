@@ -306,5 +306,120 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
         XCTAssertTrue(line.contains("cardioSetupDraft.goal != profile.cardioGoal"), "goalChanged must compare goal specifically, not any other field")
         XCTAssertFalse(line.contains("raceDate") || line.contains("weeklyBaseVolumeKm") || line.contains("maxHeartRateBpm"), "goalChanged must not also fire on unrelated field changes")
     }
+
+    // MARK: - Follow-up ticket ("Bestehenden aktiven Lauftrainingsplan nach
+    // Zieländerung erneut anpassen"): the three tests above prove the TRIGGER
+    // is wired correctly (source-introspection - `save()` is private, no
+    // SwiftUI render harness exists in this repo, see file doc above). They
+    // do NOT prove the plan itself actually changes, which is exactly what
+    // this ticket calls out ("ein Test, der lediglich die Anzeige einer
+    // Option ... prueft, reicht nicht"). This test exercises the real
+    // data-layer path `save()` wires up end-to-end with a live in-memory
+    // `ModelContainer`: `ActivePlanResolver.cardioRelevantPlan` ->
+    // `CoachAdjustmentCardModel.make` -> `.accept()` - the same calls
+    // `CardioGoalEditorView.save()`/`CoachAdjustmentPreviewView` make, just
+    // without the SwiftUI layer in between (which cannot be driven here).
+    @MainActor
+    func testGoalChangeEndToEndUpdatesTheExistingActivePlanWithoutCreatingASecondOne() throws {
+        let container = try ModelContainer(for: Schema(AppSchema.types), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let context = container.mainContext
+
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: .halfMarathon
+        )
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 30)
+        profile.weeklyBaseVolumeKm = 20
+        context.insert(profile)
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+
+        // Trainingshistorie, die eine Zieländerung niemals antasten darf.
+        let completedDay = TrainingDay(name: "Long Run (done)", weekday: 1, type: .fullBody, plan: plan)
+        context.insert(completedDay)
+        let completedRun = Exercise(name: "Completed Run", isCardio: true, day: completedDay)
+        context.insert(completedRun)
+        completedDay.exercises.append(completedRun)
+        plan.days.append(completedDay)
+        let session = WorkoutSession(startTime: Date(), isCompleted: true, day: completedDay)
+        context.insert(session)
+        completedDay.sessions.append(session)
+
+        // Der einzige anfassbare Cardio-Tag - "bereits durch Coaching
+        // angepasst" wird unten per direkt gesetztem Fingerprint simuliert
+        // (identisches Ergebnis zu einem vorherigen echten `accept()`-Lauf,
+        // ohne dessen genaue Tage-Zahl fuer `.halfMarathon` hier nachbauen
+        // zu muessen).
+        let eligibleDay = TrainingDay(name: "Easy Run", weekday: 3, type: .fullBody, plan: plan)
+        context.insert(eligibleDay)
+        let run = Exercise(name: "Easy Run", isCardio: true, day: eligibleDay)
+        context.insert(run)
+        eligibleDay.exercises.append(run)
+        eligibleDay.generationFingerprint = eligibleDay.currentContentFingerprint
+        plan.days.append(eligibleDay)
+
+        // Genug einfuegbare Ruhetage, damit der Zielwechsel unabhaengig davon
+        // funktioniert, wie viele Lauftage/Woche Marathon gegenueber
+        // Halbmarathon tatsaechlich braucht (nicht Gegenstand dieses Tests -
+        // das deckt bereits `CoachAdjustmentCardModelTests` ab).
+        for offset in 0..<4 {
+            let restDay = TrainingDay(
+                name: "Ruhetag", weekday: 5 + offset, type: .rest, plan: plan,
+                localizationKey: "day.restDay.title", isAutoFilledPlaceholder: true
+            )
+            context.insert(restDay)
+            plan.days.append(restDay)
+        }
+        try context.save()
+
+        let planCountBefore = try context.fetch(FetchDescriptor<TrainingPlan>()).count
+        XCTAssertEqual(planCountBefore, 1)
+
+        // "bereits durch Coaching angepasster Plan": die vorherige Anpassung
+        // fuer das ALTE Ziel gilt bereits als uebernommen.
+        let halfMarathonFingerprint = try XCTUnwrap(CoachAdjustmentCardModel.make(for: profile, activePlan: plan)).fingerprint
+        profile.cardioPlanAdjustmentFingerprint = halfMarathonFingerprint
+
+        // Exakt das, was `CardioGoalEditorView.save()` bei einem Zielwechsel
+        // jetzt tut: Ziel aendern, dann ueber `ActivePlanResolver` denselben
+        // aktiven Plan wiederfinden.
+        profile.cardioGoal = .marathon
+        let resolvedPlan = try XCTUnwrap(ActivePlanResolver.cardioRelevantPlan(among: [plan]))
+        XCTAssertTrue(resolvedPlan === plan, "muss denselben Plan wiederfinden, keinen neuen")
+
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: resolvedPlan) else {
+            return XCTFail("expected a non-nil model after the goal change")
+        }
+        XCTAssertFalse(model.isAlreadyApplied, "eine erneute Zieländerung muss wieder angeboten werden, nicht durch den alten Fingerprint unterdrueckt bleiben")
+
+        let expectedSpecs = CoachAdjustmentCardModel.cardioOnlyDaySpecs(
+            for: .marathon,
+            cardioRunProfile: CardioRunProfile(goal: .marathon, current5kReferenceSeconds: nil, weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm)
+        )
+        XCTAssertFalse(expectedSpecs.isEmpty, "Testaufbau: Marathon muss Cardio-Tagesinhalte liefern")
+
+        let changedCount = try model.accept(plan: resolvedPlan, profile: profile, in: context)
+        XCTAssertGreaterThan(changedCount, 0, "accept() muss den bestehenden Plan tatsaechlich aendern")
+        XCTAssertEqual(profile.cardioGoal, .marathon)
+
+        // Der bestehende Plan wurde tatsaechlich aktualisiert - der zuvor
+        // anfassbare Tag traegt jetzt den Inhalt fuer Marathon, nicht nur
+        // einen anderen Titel/Zielwert im Profil.
+        let updatedEligibleDay = try XCTUnwrap(resolvedPlan.days.first { $0.persistentModelID == eligibleDay.persistentModelID })
+        XCTAssertEqual(
+            updatedEligibleDay.activeExercises.map(\.name), expectedSpecs[0].exercises.map(\.name),
+            "der anfassbare Tag muss den Inhalt fuer das NEUE Ziel (Marathon) tragen"
+        )
+
+        // Bereits absolvierte Einheiten bleiben vollstaendig unangetastet.
+        let unchangedCompletedDay = try XCTUnwrap(resolvedPlan.days.first { $0.persistentModelID == completedDay.persistentModelID })
+        XCTAssertEqual(unchangedCompletedDay.sessions.count, 1)
+        XCTAssertEqual(unchangedCompletedDay.exercises.map(\.name), ["Completed Run"])
+
+        // Keine zweite aktive Planinstanz entstanden.
+        let planCountAfter = try context.fetch(FetchDescriptor<TrainingPlan>()).count
+        XCTAssertEqual(planCountAfter, 1, "eine Zieländerung darf niemals eine zweite Planinstanz erzeugen")
+    }
 }
 #endif
