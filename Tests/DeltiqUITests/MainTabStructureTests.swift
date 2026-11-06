@@ -107,10 +107,20 @@ final class MainTabStructureTests: XCTestCase {
 
     func testSettingsViewHasProgressEntryRightAfterProfile() throws {
         let source = try settingsViewSource
-        let profileRange = source.range(of: "profileSection")
-        let progressRange = source.range(of: "progressSection")
-        let groupRange = source.range(of: "groupNavigationSection")
-        XCTAssertNotNil(progressRange, "SettingsView must reference a progressSection.")
+        // Suche erst AB der `body`-Deklaration: "groupNavigationSection" taucht
+        // vorher bereits in einem Datei-Kopf-Kommentar auf (Begruendung fuer
+        // dessen Fuenf-Gruppen-Aufbau) — eine ungebundene `range(of:)`-Suche
+        // ueber die GANZE Datei faende diese Kommentar-Erwaehnung zuerst und
+        // meldete faelschlich eine falsche Reihenfolge.
+        guard let bodyRange = source.range(of: "public var body: some View") else {
+            XCTFail("SettingsView must declare `body`.")
+            return
+        }
+        let searchRange = bodyRange.upperBound..<source.endIndex
+        let profileRange = source.range(of: "profileSection", range: searchRange)
+        let progressRange = source.range(of: "progressSection", range: searchRange)
+        let groupRange = source.range(of: "groupNavigationSection", range: searchRange)
+        XCTAssertNotNil(progressRange, "SettingsView.body must reference a progressSection.")
         guard let profileRange, let progressRange, let groupRange else { return }
         // Reihenfolge im body: profileSection, progressSection, groupNavigationSection.
         XCTAssertTrue(profileRange.lowerBound < progressRange.lowerBound)
