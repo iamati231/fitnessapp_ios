@@ -82,6 +82,53 @@ final class HeartRateZoneCalculatorTests: XCTestCase {
         XCTAssertEqual(zonesB.last?.upperBoundBpm, 200)
     }
 
+    // MARK: - Verifikations-Nachfrage Punkt 1: jeder ganzzahlige bpm-Wert
+    // innerhalb des Zonenbereichs gehoert zu GENAU einer Zone.
+
+    func testEveryIntegerBpmWithinTheZoneRangeMatchesExactlyOneZone() {
+        for maxHR in [100, 150, 185, 200, 220, 230] {
+            let zones = try! XCTUnwrap(HeartRateZoneCalculator.zones(maxHeartRateBpm: maxHR))
+            let lowest = zones.first!.lowerBoundBpm
+            let highest = zones.last!.upperBoundBpm
+            for bpm in lowest...highest {
+                let matches = zones.filter { ($0.lowerBoundBpm...$0.upperBoundBpm).contains(bpm) }
+                XCTAssertEqual(matches.count, 1,
+                               "bpm=\(bpm) bei maxHR=\(maxHR) muss genau einer Zone zugeordnet sein, traf auf \(matches.count) zu")
+            }
+        }
+    }
+
+    // MARK: - Verifikations-Nachfrage Punkt 3: zentrale Plausibilitaet,
+    // keine altersbasierte Schaetzung, keine automatische Ueberschreibung.
+
+    /// Die Plausibilitaetsgrenzen sind EINMAL als Konstanten definiert und
+    /// werden von `isPlausible`/`zones` ausschliesslich darueber gelesen -
+    /// kein zweiter, abweichender Grenzwert irgendwo sonst im Typ.
+    func testPlausibilityBoundsAreTheSingleSourceOfTruthForZoneGeneration() {
+        XCTAssertNil(HeartRateZoneCalculator.zones(maxHeartRateBpm: HeartRateZoneCalculator.minimumPlausibleMaxHeartRateBpm - 1))
+        XCTAssertNotNil(HeartRateZoneCalculator.zones(maxHeartRateBpm: HeartRateZoneCalculator.minimumPlausibleMaxHeartRateBpm))
+        XCTAssertNotNil(HeartRateZoneCalculator.zones(maxHeartRateBpm: HeartRateZoneCalculator.maximumPlausibleMaxHeartRateBpm))
+        XCTAssertNil(HeartRateZoneCalculator.zones(maxHeartRateBpm: HeartRateZoneCalculator.maximumPlausibleMaxHeartRateBpm + 1))
+    }
+
+    /// `zones(maxHeartRateBpm:)` nimmt NUR den einen expliziten Parameter
+    /// entgegen - es gibt keinen Code-Pfad, der je Alter, Geburtsdatum oder
+    /// einen anderen Profilwert zur Schaetzung heranzieht oder den
+    /// eingegebenen Wert stillschweigend ersetzt. Strukturelle Pruefung per
+    /// Quelltext-Scan, gleiches Prinzip wie `RaceProgressPhase1Structural-
+    /// GuardTests`.
+    func testCalculatorSourceNeverEstimatesFromAgeOrOverwritesTheManualValue() throws {
+        let path = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // this file
+            .deletingLastPathComponent() // DeltiqCoreTests
+            .deletingLastPathComponent() // Tests
+            .appendingPathComponent("Sources/DeltiqCore/Analytics/HeartRateZoneCalculator.swift")
+        let source = try String(contentsOf: path, encoding: .utf8)
+        for forbidden in ["birthDate", "age ", "Age(", ".age", "220 -", "220-"] {
+            XCTAssertFalse(source.contains(forbidden), "HeartRateZoneCalculator darf '\(forbidden)' nicht enthalten - keine altersbasierte HFmax-Schaetzung")
+        }
+    }
+
     // MARK: - Messwert-Klassifikation (Teil 4)
 
     func testMeasuredBpmIsClassifiedIntoTheCorrectZone() {

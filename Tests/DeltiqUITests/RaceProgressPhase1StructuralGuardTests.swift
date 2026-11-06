@@ -145,6 +145,31 @@ final class RaceProgressPhase1StructuralGuardTests: XCTestCase {
         )
     }
 
+    /// Verifikations-Nachfrage Punkt 2 (Running Coach - Herzfrequenz-
+    /// Trainingszonen): die Einordnung eines DURCHSCHNITTSPULSES in eine
+    /// Zone darf textlich nie wie eine tatsaechlich GEMESSENE ZEIT in dieser
+    /// Zone klingen - Phase 1 hat keine Zeit-in-Zone-Messung. Beide
+    /// betroffenen Localizable.xcstrings-Keys muessen das explizit
+    /// klarstellen.
+    func testMeasuredHeartRateZoneMessagesExplicitlyDistinguishAverageFromMeasuredTime() throws {
+        let catalogURL = repoRoot.appendingPathComponent("Sources/DeltiqUI/Resources/Localizable.xcstrings")
+        let data = try Data(contentsOf: catalogURL)
+        let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let strings = try XCTUnwrap(json["strings"] as? [String: Any])
+
+        for key in ["raceProgress.heartRateZones.measuredInZone", "raceProgress.heartRateZones.measuredOutsideZones"] {
+            let entry = try XCTUnwrap(strings[key] as? [String: Any], "\(key) fehlt im Catalog")
+            let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
+            let de = try XCTUnwrap(localizations["de"] as? [String: Any])
+            let stringUnit = try XCTUnwrap(de["stringUnit"] as? [String: Any])
+            let value = try XCTUnwrap(stringUnit["value"] as? String)
+            XCTAssertTrue(
+                value.contains("Durchschnitt") && value.contains("keine gemessene Zeit"),
+                "\(key) muss explizit klarstellen, dass es sich um eine Durchschnitts-Einordnung handelt, keine gemessene Zeit in der Zone - aktueller Text: \(value)"
+            )
+        }
+    }
+
     /// Abschnitt 6: keine KI-/externen Dienste in Phase 1.
     func testPhase1HasNoAIOrExternalServiceCode() throws {
         let forbidden = ["DeltiqAI", "import FoundationModels"]

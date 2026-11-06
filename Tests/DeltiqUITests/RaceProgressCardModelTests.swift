@@ -310,6 +310,50 @@ final class RaceProgressCardModelTests: XCTestCase {
         XCTAssertEqual(result, 150, "muss auf einen ganzzahligen bpm-Wert runden")
     }
 
+    /// Verifikations-Nachfrage Punkt 4: `RaceProgressCardModel.make` liest
+    /// `profile.maxHeartRateBpm` bei JEDEM Aufruf frisch - es gibt keinen
+    /// gecachten/gespeicherten Zonen-Schnappschuss irgendwo. Eine Aenderung
+    /// am Profil zwischen zwei `.make`-Aufrufen muss sich daher vollstaendig
+    /// in neu berechneten Zonen niederschlagen, nie in veralteten Werten.
+    func testChangingProfileMaxHeartRateBetweenTwoMakeCallsProducesFreshlyRecalculatedZones() throws {
+        let profile = makeProfile()
+        profile.maxHeartRateBpm = 180
+
+        let before = try XCTUnwrap(RaceProgressCardModel.make(for: profile, allSessions: []))
+        guard case .zonesCalculatedNoMeasuredData(let maxHRBefore, let zonesBefore) = before.heartRateZoneContext else {
+            return XCTFail("expected .zonesCalculatedNoMeasuredData, got \(before.heartRateZoneContext)")
+        }
+        XCTAssertEqual(maxHRBefore, 180)
+        XCTAssertEqual(zonesBefore.last?.upperBoundBpm, 180)
+
+        // Nutzer aendert die HFmax im Profil-Editor.
+        profile.maxHeartRateBpm = 200
+
+        let after = try XCTUnwrap(RaceProgressCardModel.make(for: profile, allSessions: []))
+        guard case .zonesCalculatedNoMeasuredData(let maxHRAfter, let zonesAfter) = after.heartRateZoneContext else {
+            return XCTFail("expected .zonesCalculatedNoMeasuredData, got \(after.heartRateZoneContext)")
+        }
+        XCTAssertEqual(maxHRAfter, 200, "muss den NEUEN Profilwert widerspiegeln, nicht den alten")
+        XCTAssertEqual(zonesAfter.last?.upperBoundBpm, 200)
+        XCTAssertNotEqual(zonesBefore, zonesAfter, "die Zonen muessen sich mit der HFmax aendern - kein veralteter Stand")
+    }
+
+    /// Dieselbe Garantie, wenn die HFmax komplett entfernt wird (z.B.
+    /// versehentlich geleertes Feld) - das Modell darf dann nicht die
+    /// zuletzt berechneten Zonen weiter anzeigen.
+    func testClearingProfileMaxHeartRateRemovesTheZonesOnTheNextMakeCall() throws {
+        let profile = makeProfile()
+        profile.maxHeartRateBpm = 180
+        let before = try XCTUnwrap(RaceProgressCardModel.make(for: profile, allSessions: []))
+        guard case .zonesCalculatedNoMeasuredData = before.heartRateZoneContext else {
+            return XCTFail("Testaufbau: erwartet Zonen vor dem Leeren")
+        }
+
+        profile.maxHeartRateBpm = nil
+        let after = try XCTUnwrap(RaceProgressCardModel.make(for: profile, allSessions: []))
+        XCTAssertEqual(after.heartRateZoneContext, .noMaxHeartRateConfigured)
+    }
+
     func testMostRecentMeasuredAverageHeartRateBpmIsNilWhenNoWeekHasAValue() {
         let point = CardioVolumeOverTimePoint(
             weekStart: Date(), runningDistanceKm: 10, runningSessionCount: 2, longestRunKm: 7,

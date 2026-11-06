@@ -68050,19 +68050,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Durchschnittspuls von %d bpm lag in Zone %d."
+            "value": "Dein Durchschnittspuls von %d bpm entspricht Zone %d (Einordnung des Durchschnitts, keine gemessene Zeit in der Zone)."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your average heart rate of %d bpm was in zone %d."
+            "value": "Your average heart rate of %d bpm corresponds to zone %d (an average-based classification, not a measured time spent in that zone)."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%d bpm ortalama kalp atış hızın, bölge %d içindeydi."
+            "value": "%d bpm ortalama kalp atış hızın, bölge %d'e karşılık gelir (ortalamaya dayalı sınıflandırma, bölgede ölçülmüş bir süre değildir)."
           }
         }
       }
@@ -68073,19 +68073,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Durchschnittspuls von %d bpm lag außerhalb der berechneten Zonen."
+            "value": "Dein Durchschnittspuls von %d bpm liegt außerhalb der berechneten Zonen (Einordnung des Durchschnitts, keine gemessene Zeit in einer Zone)."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your average heart rate of %d bpm was outside the calculated zones."
+            "value": "Your average heart rate of %d bpm is outside the calculated zones (an average-based classification, not a measured time spent in any zone)."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%d bpm ortalama kalp atış hızın, hesaplanan bölgelerin dışındaydı."
+            "value": "%d bpm ortalama kalp atış hızın, hesaplanan bölgelerin dışında (ortalamaya dayalı sınıflandırma, herhangi bir bölgede ölçülmüş bir süre değildir)."
           }
         }
       }
