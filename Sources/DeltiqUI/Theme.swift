@@ -1092,6 +1092,17 @@ private struct SwipeBackController: UIViewControllerRepresentable {
             apply(enabled: pendingEnabled)
         }
 
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            // Sicherheitsnetz: SwiftUI baut die UIScrollView manchmal erst
+            // WAEHREND der Push-Animation auf — bei viewWillAppear kann die
+            // Tiefensuche unten dann noch nichts finden. Nach Abschluss der
+            // Animation (viewDidAppear) existiert sie garantiert; erneuter
+            // Aufruf ist idempotent (require(toFail:) mehrfach mit denselben
+            // zwei Recognizern zu setzen ist harmlos).
+            apply(enabled: pendingEnabled)
+        }
+
         func apply(enabled: Bool) {
             pendingEnabled = enabled
             guard let navController = navigationController else { return }
@@ -1107,22 +1118,30 @@ private struct SwipeBackController: UIViewControllerRepresentable {
             // WICHTIG: Ancestor-Walk von self.view greift hier NICHT — HostController
             // ist Geschwister (nicht Kind) von UIScrollView, da .deltiqSwipeBackEnabled()
             // aussen um .deltiqScreen() liegt. Stattdessen Tiefensuche von navController.view.
+            //
+            // ALLE gefundenen UIScrollViews bekommen die Abhaengigkeit, nicht nur
+            // die erste gefundene — ein Screen kann zusaetzliche ScrollViews
+            // enthalten (Charts, horizontale Picker, verschachtelte Listen), deren
+            // Pan-Geste sonst weiterhin unkontrolliert mit der Edge-Pan-Geste
+            // konkurrieren koennte.
             if enabled, let edgePan = navController.interactivePopGestureRecognizer {
-                screenScrollView(in: navController.view)?
-                    .panGestureRecognizer.require(toFail: edgePan)
+                for scrollView in allScrollViews(in: navController.view) {
+                    scrollView.panGestureRecognizer.require(toFail: edgePan)
+                }
             }
         }
 
-        // Tiefensuche nach dem ersten UIScrollView unterhalb von root.
-        // Muss von navController.view starten, weil HostController.view und
-        // UIScrollView aus DeltiqScreenModifier Geschwister sind — kein
-        // gemeinsamer Ancestor innerhalb des ScrollView-Teilbaums.
-        private func screenScrollView(in root: UIView) -> UIScrollView? {
-            if let sv = root as? UIScrollView { return sv }
+        // Sammelt ALLE UIScrollViews unterhalb von root (Tiefensuche, nicht nur
+        // die erste). Muss von navController.view starten, weil HostController.view
+        // und die ScrollView(s) aus DeltiqScreenModifier/Charts/etc. Geschwister
+        // sein koennen — kein gemeinsamer Ancestor innerhalb eines Teilbaums.
+        private func allScrollViews(in root: UIView) -> [UIScrollView] {
+            var result: [UIScrollView] = []
+            if let sv = root as? UIScrollView { result.append(sv) }
             for sub in root.subviews {
-                if let found = screenScrollView(in: sub) { return found }
+                result.append(contentsOf: allScrollViews(in: sub))
             }
-            return nil
+            return result
         }
     }
 }
