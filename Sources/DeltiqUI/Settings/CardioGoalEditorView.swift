@@ -213,11 +213,25 @@ struct CardioGoalEditorView: View {
         guard !isSaving else { return }
         isSaving = true
 
-        // Paket 1, Komponente 5: nur ECHTES Aktivieren (vorher aus, jetzt
-        // an) loest die Anpassungsvorschau aus - ein Speichern, bei dem der
-        // Coach schon vorher an war (z. B. nur Renndatum geaendert), zeigt
-        // sie nicht erneut.
+        // Paket 1, Komponente 5: ECHTES Aktivieren (vorher aus, jetzt an)
+        // loest die Anpassungsvorschau aus.
         let coachJustActivated = !profile.cardioCoachingEnabled && draftCardioCoachingEnabled
+        // Bugfix ("Änderung des Laufziels muss den aktiven Trainingsplan
+        // aktualisieren"): ein Laufziel-Wechsel bei bereits aktivem Coach
+        // speicherte bisher NUR `profile.cardioGoal` und schloss den Editor -
+        // der aktive Trainingsplan blieb auf dem alten Ziel stehen, bis der
+        // Nutzer zufaellig die separate Dashboard-/Profil-Karte
+        // (`CoachAdjustmentCardModel`) bemerkte und selbst antippte. Die
+        // Vorschau, die das korrekt macht (bestehenden Plan anpassen,
+        // absolvierte/editierte Tage schuetzen - `CoachAdjustmentCardModel.
+        // accept`/`RunCoachPlanAdjustment`, unveraendert), existierte also
+        // bereits; sie wurde nur beim Zielwechsel nie angeboten. Erweiterung
+        // des bestehenden Ausloesers statt einer zweiten, parallelen
+        // Planungslogik. `draftCardioCoachingEnabled` zusaetzlich geprueft,
+        // obwohl `cardioSetupDraft.goal` nur bei eingeschaltetem Coach
+        // ueberhaupt editierbar ist (siehe `cardioFields` unten) - macht die
+        // Invariante hier explizit, statt sich nur auf die UI zu verlassen.
+        let goalChanged = draftCardioCoachingEnabled && cardioSetupDraft.goal != profile.cardioGoal
 
         // Finding 3 (Laufcoaching-Audit): Schnappschuss ALLER sieben Felder,
         // die gleich mutiert werden - inklusive der beiden, die
@@ -270,7 +284,7 @@ struct CardioGoalEditorView: View {
             return
         }
 
-        if coachJustActivated, let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
+        if (coachJustActivated || goalChanged), let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
             planForAdjustmentPreview = plan
             showingAdjustmentPreview = true
         } else {

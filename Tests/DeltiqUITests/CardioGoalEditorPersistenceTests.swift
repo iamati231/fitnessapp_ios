@@ -257,5 +257,54 @@ final class CardioGoalEditorPersistenceTests: XCTestCase {
             "The error message must come from a localized string key, not a hardcoded literal."
         )
     }
+
+    // MARK: - Bugfix ("Änderung des Laufziels muss den aktiven Trainingsplan
+    // aktualisieren"): ein Zielwechsel bei bereits aktivem Coach speicherte
+    // bisher nur `profile.cardioGoal` und schloss den Editor - die bereits
+    // bestehende, bereits ausfuehrlich getestete Plan-Anpassungs-Vorschau
+    // (`CoachAdjustmentCardModel`/`CoachAdjustmentPreviewView`, siehe
+    // `CoachAdjustmentCardModelTests`) wurde nur nie angeboten. `save()` ist
+    // `private`, ohne testbare Laufzeit-Oberflaeche (siehe Typ-Doku oben) -
+    // Quelltext-Pruefung des Ausloesers, gleiches Muster wie
+    // `testFailedSaveSnapshotsAndRestoresAllSevenMutatedProfileFields`.
+
+    func testGoalChangeTriggersTheSameAdjustmentPreviewAsActivatingTheCoach() throws {
+        let source = try cardioGoalEditorViewSource
+        XCTAssertTrue(
+            source.contains("let goalChanged = draftCardioCoachingEnabled && cardioSetupDraft.goal != profile.cardioGoal"),
+            "A goal change while the coach stays on must be detected BEFORE profile.cardioGoal is mutated."
+        )
+        XCTAssertTrue(
+            source.contains("if (coachJustActivated || goalChanged), let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {"),
+            "Changing the goal must offer the same plan-adjustment preview as activating the coach, not just dismiss."
+        )
+    }
+
+    /// `goalChanged` must be computed from `profile.cardioGoal` BEFORE the
+    /// mutating block below it - comparing against the already-mutated
+    /// property would make it permanently false.
+    func testGoalChangedIsComputedBeforeProfileIsMutated() throws {
+        let source = try cardioGoalEditorViewSource
+        guard let goalChangedRange = source.range(of: "let goalChanged =") else {
+            return XCTFail("goalChanged not found")
+        }
+        guard let mutationRange = source.range(of: "profile.cardioGoal = cardioSetupDraft.goal") else {
+            return XCTFail("the profile.cardioGoal mutation was not found")
+        }
+        XCTAssertLessThan(goalChangedRange.lowerBound, mutationRange.lowerBound, "goalChanged must be captured before profile.cardioGoal is overwritten")
+    }
+
+    /// Regression guard: a save that only touches unrelated fields (e.g. max
+    /// heart rate) while the goal itself is unchanged must not re-trigger the
+    /// adjustment preview on every unrelated save.
+    func testUnrelatedFieldChangesDoNotFalselyTriggerTheAdjustmentPreview() throws {
+        let source = try cardioGoalEditorViewSource
+        guard let range = source.range(of: "let goalChanged =") else {
+            return XCTFail("goalChanged not found")
+        }
+        let line = source[range.lowerBound...].prefix(while: { $0 != "\n" })
+        XCTAssertTrue(line.contains("cardioSetupDraft.goal != profile.cardioGoal"), "goalChanged must compare goal specifically, not any other field")
+        XCTAssertFalse(line.contains("raceDate") || line.contains("weeklyBaseVolumeKm") || line.contains("maxHeartRateBpm"), "goalChanged must not also fire on unrelated field changes")
+    }
 }
 #endif
