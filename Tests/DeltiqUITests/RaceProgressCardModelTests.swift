@@ -4,6 +4,7 @@ import SwiftData
 @testable import DeltiqUI
 import DeltiqData
 import DeltiqCore
+import DeltiqHealth
 
 /// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md).
 @available(iOS 17.0, macOS 14.0, *)
@@ -223,6 +224,47 @@ final class RaceProgressCardModelTests: XCTestCase {
                 "keine rueckwirkende Luecken-/Plateau-Warnung fuer Wochen vor der Coaching-Aktivierung"
             )
         }
+    }
+
+    // MARK: - Vollstaendiger Datenfluss ueber den ECHTEN Importpfad
+    //
+    // Anforderung (Verifikations-Nachfrage): nicht nur importaehnliche
+    // Fixtures, sondern der komplette Weg HealthKit-Sample -> `insertSession`
+    // (echte Produktionsfunktion) -> ExerciseLog/Exercise -> `CardioHistory-
+    // Extractor` -> `CardioVolumeOverTimeAggregator` -> `RaceProgressAssessment`
+    // -> `RaceProgressCardModel`.
+    func testEightWeeksOfHistoryImportedViaTheRealInsertSessionPathCountsCorrectlyEndToEnd() throws {
+        let profile = makeProfile()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let week: TimeInterval = 7 * 86400
+
+        for weeksAgo in stride(from: 8, through: 1, by: -1) {
+            let km = Double(15 + weeksAgo)
+            let start = now.addingTimeInterval(-Double(weeksAgo) * week)
+            ExternalWorkoutImportService.insertSession(for: ExternalWorkoutSample(
+                hkUUID: "hk-real-\(weeksAgo)", activityType: .running,
+                startDate: start, endDate: start.addingTimeInterval(3600),
+                distanceKm: km, sourceName: "Strava", sourceBundleIdentifier: "com.strava.app"
+            ), in: context)
+        }
+        try context.save()
+
+        let sessions = try context.fetch(FetchDescriptor<WorkoutSession>())
+        XCTAssertEqual(sessions.count, 8, "Testaufbau: 8 echte Importe")
+
+        // Coaching wird erst JETZT, nach den 8 Wochen Historie, aktiviert.
+        profile.cardioCoachingEnabledAt = now
+
+        let model = try XCTUnwrap(RaceProgressCardModel.make(for: profile, allSessions: sessions, now: now))
+
+        let expectedKm = stride(from: 8, through: 1, by: -1).reduce(0.0) { $0 + Double(15 + $1) }
+        let totalCountedKm = model.weeklySeries.reduce(0.0) { $0 + $1.runningDistanceKm }
+        XCTAssertEqual(totalCountedKm, expectedKm, accuracy: 0.001,
+                       "ueber den echten insertSession-Pfad importierte Historie muss vollstaendig in den Laufkilometern erscheinen")
+        XCTAssertTrue(
+            model.assessment.weeklyFlags.allSatisfy { $0 == .beforeCoachingObservationPeriod },
+            "alle 8 Wochen liegen vor der Aktivierung, Flags: \(model.assessment.weeklyFlags)"
+        )
     }
 }
 #endif

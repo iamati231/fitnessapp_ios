@@ -110,6 +110,21 @@ final class RaceProgressPhase1StructuralGuardTests: XCTestCase {
         }
     }
 
+    /// Dashboard-Fix "Herzfrequenz" (Verifikations-Nachfrage, Punkt 5): ein
+    /// hinterlegter Profil-Maximalpuls (`UserBodyProfile.maxHeartRateBpm`,
+    /// rein deskriptiv, DEL-250) ist kein Messwert - keine der Phase-1-
+    /// Auswertungsdateien darf ihn lesen oder als Ersatz fuer gemessene
+    /// Herzfrequenzdaten verwenden.
+    func testNeverReadsProfileMaxHeartRateAsIfItWereMeasuredData() throws {
+        for file in phase1Files {
+            let source = withoutLineComments(try contents(of: file))
+            XCTAssertFalse(
+                source.contains("maxHeartRateBpm"),
+                "\(file) darf maxHeartRateBpm (rein deskriptiver Profilwert) nicht lesen - Phase 1 hat keine gemessene HF-Datenquelle"
+            )
+        }
+    }
+
     /// Abschnitt 6: keine KI-/externen Dienste in Phase 1.
     func testPhase1HasNoAIOrExternalServiceCode() throws {
         let forbidden = ["DeltiqAI", "import FoundationModels"]

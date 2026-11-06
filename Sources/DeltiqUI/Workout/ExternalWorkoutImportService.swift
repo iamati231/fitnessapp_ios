@@ -142,7 +142,7 @@ public enum ExternalWorkoutImportService {
         exercise.enduranceSportKind = sportKind(for: sample.activityType)
     }
 
-    private static func insertSession(for sample: ExternalWorkoutSample, in context: ModelContext) {
+    static func insertSession(for sample: ExternalWorkoutSample, in context: ModelContext) {
         let name = templateName(for: sample.activityType)
         let template = try? context.fetch(FetchDescriptor<ExerciseTemplate>(
             predicate: #Predicate<ExerciseTemplate> { $0.name == name }
