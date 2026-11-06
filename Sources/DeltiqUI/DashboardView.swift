@@ -1131,7 +1131,16 @@ public struct DashboardView: View {
                     title: "dashboard.trend.emptyTitle",
                     description: "dashboard.trend.emptyDescription",
                     ctaTitle: "dashboard.empty.cta.addMeasurement",
-                    ctaAction: { navigation.selectedTab = .measurement }
+                    // UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): kein
+                    // eigener Fortschritt-Tab mehr zum Umschalten — landet
+                    // jetzt in der Fortschrittsuebersicht unter "Mehr" (siehe
+                    // `ProgressRoute`), analog zum Notification-Deep-Link in
+                    // RootView.applyPendingRouteIfAny.
+                    ctaAction: {
+                        navigation.selectedTab = .settings
+                        navigation.toolsPath = NavigationPath()
+                        navigation.toolsPath.append(ProgressRoute.overview)
+                    }
                 )
             } else if measurements.count < 3 {
                 InsufficientDataCard(currentCount: measurements.count)

@@ -84,17 +84,30 @@ public enum CalculatorsRoute: Hashable, Sendable {
     case waterTracker
 }
 
-/// Fuenf Tabs (main-navigation Plan, 2026-10-22, Task 1): Heute/Training/
-/// Ernaehrung/Fortschritt/Mehr. Ablauf der vorherigen Werkzeuge-Tab-Aera
-/// (Signature-Screen-Geruest, Nachtrag 6. August) — `tools` weicht einem
-/// eigenen Ernaehrungs-Tab; `CalculatorsView` zieht laut Plan in Task 3 eine
-/// Ebene tief unter "Mehr" (Settings), analog zum alten Vor-6.-August-Stand.
+/// UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): Fortschritt &
+/// Messungen zieht vom entfallenen `AppTab.measurement`-Tab eine Ebene tief
+/// unter "Mehr" (Settings) — analog zu `CalculatorsRoute`, dieselbe
+/// Route-Maschinerie fuer Deep-Links (Erinnerungs-Notification UND
+/// Dashboard-Trend-Empty-State landen jetzt hier statt auf einem eigenen
+/// Tab). Eigener Enum statt eines dritten `CalculatorsRoute`-Falls — klarere
+/// Trennung, "Calculators" passt semantisch nicht zu einer Fortschritts-
+/// uebersicht, obwohl beide auf demselben `toolsPath` haengen.
+@available(iOS 17.0, macOS 14.0, *)
+public enum ProgressRoute: Hashable, Sendable {
+    case overview
+}
+
+/// Vier Tabs (UI-Ticket "Tab-Leiste vereinfachen", 2026-11-06, loest den
+/// Fuenf-Tab-Stand vom main-navigation Plan 2026-10-22 ab): Heute/Training/
+/// Ernaehrung/Mehr. `measurement` ist entfallen — Koerpermessungen werden
+/// seltener erfasst als die anderen Hauptbereiche und brauchen deshalb
+/// keinen dauerhaft sichtbaren eigenen Tab mehr; `ProgressOverviewView`
+/// haengt stattdessen eine Ebene tief unter "Mehr" (siehe `ProgressRoute`).
 @available(iOS 17.0, macOS 14.0, *)
 public enum AppTab: Hashable, Sendable {
     case dashboard
     case plan
     case nutrition
-    case measurement
     case settings
 }
 

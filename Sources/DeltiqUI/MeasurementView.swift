@@ -54,6 +54,15 @@ public struct MeasurementView: View {
     @Query private var profiles: [UserBodyProfile]
 
     private let editingMeasurement: BodyMeasurement?
+    /// UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): war bisher immer
+    /// `true` im New-Mode (eigener Tab-Root, kein Push, nichts zum
+    /// Zurueckgehen — daher `onBack: nil` unten). Jetzt wird New-Mode
+    /// ausschliesslich gepusht (von `ProgressOverviewView`'s "Neue Messung
+    /// erfassen"), braucht also einen echten Zurueck-Weg. Default `false`
+    /// (gepusht) passt zu JEDEM Aufrufer ausser dem frueheren Tab-Root, der
+    /// komplett entfallen ist — kein Call-Site ausser dem ehemaligen
+    /// `MainTabView` haette je `true` gebraucht.
+    private let isTabRoot: Bool
 
     @State private var weightKg: Double?
     @State private var neckCm:   Double?
@@ -127,12 +136,14 @@ public struct MeasurementView: View {
     /// fehlenden Save-Aufrufs (New-Mode).
     @State private var saveErrorMessage: String?
 
-    public init() {
+    public init(isTabRoot: Bool = false) {
         self.editingMeasurement = nil
+        self.isTabRoot = isTabRoot
     }
 
     public init(editing measurement: BodyMeasurement) {
         self.editingMeasurement = measurement
+        self.isTabRoot = false
     }
 
     private var isEditMode: Bool { editingMeasurement != nil }
@@ -146,15 +157,20 @@ public struct MeasurementView: View {
             DeltiqHeader(
                 eyebrow: loc("measurement.header.eyebrow"),
                 title: navTitle,
-                // Simulator-Befund (Light Mode, 5. August): New-Mode ist
-                // Tab-Root (kein Push, nichts zum Zurueckgehen) - der
-                // Chevron erschien trotzdem und tat nichts. Nur im
-                // gepushten Edit-Mode (historyRow-NavigationLink) gibt es
-                // etwas zum Dismissen.
-                // UI-Refactor (Korrektur V4): Verwerfen-Schutz wie bei jedem
-                // anderen Editor dieser Epic — ohne Aenderungen sofort
-                // schliessen, sonst erst nach Bestaetigung.
-                onBack: isEditMode ? { isDirty ? (showingDiscardConfirm = true) : dismiss() } : nil,
+                // Simulator-Befund (Light Mode, 5. August): New-Mode war
+                // urspruenglich Tab-Root (kein Push, nichts zum
+                // Zurueckgehen) - der Chevron erschien trotzdem und tat
+                // nichts, daher `nil` fuer diesen Fall.
+                // UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): New-Mode
+                // ist jetzt (ausser dem entfallenen Tab-Root) immer gepusht
+                // (von `ProgressOverviewView`) und braucht denselben
+                // Zurueck-Weg wie Edit-Mode.
+                // UI-Refactor (Korrektur V4): Verwerfen-Schutz im Edit-Mode —
+                // ohne Aenderungen sofort schliessen, sonst erst nach
+                // Bestaetigung. New-Mode hat keine eigene Dirty-Verfolgung
+                // (war nie noetig, solange es Tab-Root war) — schliesst
+                // direkt, unabhaengig von bereits eingegebenen Werten.
+                onBack: isTabRoot ? nil : { (isEditMode && isDirty) ? (showingDiscardConfirm = true) : dismiss() },
                 actions: headerActions
             )
 
@@ -1306,8 +1322,11 @@ public struct MeasurementView: View {
 
 // MARK: - History Row
 
+/// `internal` statt `private` (UI-Ticket "Tab-Leiste vereinfachen",
+/// 2026-11-06): `ProgressOverviewView`s Messungshistorie zeigt dieselbe
+/// Zeile — kein zweiter, fast identischer Row-Typ fuer denselben Inhalt.
 @available(iOS 17.0, macOS 14.0, *)
-private struct HistoryRow: View {
+struct HistoryRow: View {
     let measurement: BodyMeasurement
 
     var body: some View {

@@ -1,13 +1,20 @@
 #if canImport(SwiftUI) && canImport(SwiftData)
 import SwiftUI
 
-/// Hub for the utility calculators. Pure dispatcher — each row pushes onto the same
-/// NavigationStack so the user gets the standard back-swipe affordance.
+/// Hub for the utility calculators. Pure dispatcher — each tile pushes onto the
+/// same NavigationStack so the user gets the standard back-swipe affordance.
 ///
 /// main-navigation Plan, 2026-10-22, Task 3: zieht vom entfallenen
 /// Werkzeuge-Tab eine Ebene tief unter "Mehr" (`SettingsView`) ein — analog
 /// zum Vor-6.-August-Stand. Braucht deshalb wieder `onBack`/`dismiss()` und
 /// die Swipe-Back-Geste (siehe `ExerciseLibraryView` fuer dasselbe Muster).
+///
+/// UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): genau vier Werkzeuge —
+/// eine vertikale Liste war dafuer ueberdimensioniert. Jetzt ein 2x2-Raster
+/// (`LazyVGrid`, 2 feste Spalten), jede Kachel voll antippbar. Titel/
+/// Untertitel/Icons/Navigation unveraendert identisch zur bisherigen Liste —
+/// nur die Anordnung aendert sich, keine neue Wassertracker-Deep-Link-Logik
+/// noetig (bleibt wertbasiert ueber `CalculatorsRoute.waterTracker`).
 @available(iOS 17.0, macOS 14.0, *)
 public struct CalculatorsView: View {
 
@@ -20,6 +27,12 @@ public struct CalculatorsView: View {
     /// cm/inch-Einstellung. Die Kapsel zeigt daher die tatsaechliche,
     /// einzelne Einheit.
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
+
+    /// Feste 2-Spalten-Anordnung auf allen unterstuetzten Displaygroessen —
+    /// bei genau 4 Kacheln liefert `.adaptive` auf einem iPad/grossen Display
+    /// 3-4 Spalten und zerreisst das gewuenschte 2x2-Bild; `.fixed(count: 2)`
+    /// behaelt es ueberall bei.
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
     public init() {}
 
@@ -42,47 +55,53 @@ public struct CalculatorsView: View {
                     )
                 ])
 
-                DeltiqSection {
+                LazyVGrid(columns: columns, spacing: 12) {
                     NavigationLink(destination: PlateCalculatorView()) {
-                        DeltiqRow(
+                        CalculatorTile(
                             icon: "scalemass.fill",
-                            label: String(localized: "calc.index.plate.title", bundle: .module),
-                            subtitle: String(localized: "calc.index.plate.subtitle", bundle: .module),
-                            showsChevron: true
+                            title: String(localized: "calc.index.plate.title", bundle: .module),
+                            subtitle: String(localized: "calc.index.plate.subtitle", bundle: .module)
                         )
                     }
+                    .buttonStyle(.plain)
+
                     NavigationLink(destination: OneRepMaxView()) {
-                        DeltiqRow(
+                        CalculatorTile(
                             icon: "figure.strengthtraining.traditional",
-                            label: String(localized: "calc.index.oneRm.title", bundle: .module),
-                            subtitle: String(localized: "calc.index.oneRm.subtitle", bundle: .module),
-                            showsChevron: true
+                            title: String(localized: "calc.index.oneRm.title", bundle: .module),
+                            subtitle: String(localized: "calc.index.oneRm.subtitle", bundle: .module)
                         )
                     }
+                    .buttonStyle(.plain)
+
                     NavigationLink(destination: TDEEView()) {
-                        DeltiqRow(
+                        CalculatorTile(
                             icon: "flame.fill",
-                            label: String(localized: "calc.index.tdee.title", bundle: .module),
-                            subtitle: String(localized: "calc.index.tdee.subtitle", bundle: .module),
-                            showsChevron: true
+                            title: String(localized: "calc.index.tdee.title", bundle: .module),
+                            subtitle: String(localized: "calc.index.tdee.subtitle", bundle: .module)
                         )
                     }
+                    .buttonStyle(.plain)
+
                     // main-navigation Plan, 2026-10-22, Task 3, Fix-Runde 1:
                     // wertbasiert (`CalculatorsRoute.waterTracker`, aufgeloest
                     // von der `navigationDestination(for:)`-Registrierung in
                     // RootView) statt `NavigationLink(destination:)` — dieselbe
                     // Route-Maschinerie wie der Wassertracker-Deep-Link, damit
                     // kein Mix aus wert- und view-basierten Pushes zwischen
-                    // SettingsView und WaterTrackerView uebrig bleibt.
+                    // SettingsView und WaterTrackerView uebrig bleibt. Die
+                    // Kachel ist nur ein zweiter Weg dorthin — der Deep-Link
+                    // selbst (`RootView.applyPendingRouteIfAny`) haengt die
+                    // Route weiterhin direkt an `toolsPath`, unabhaengig von
+                    // dieser Ansicht.
                     NavigationLink(value: CalculatorsRoute.waterTracker) {
-                        DeltiqRow(
+                        CalculatorTile(
                             icon: "drop.fill",
-                            label: String(localized: "calc.index.water.title", bundle: .module),
-                            subtitle: String(localized: "calc.index.water.subtitle", bundle: .module),
-                            showsChevron: true,
-                            showsDivider: false
+                            title: String(localized: "calc.index.water.title", bundle: .module),
+                            subtitle: String(localized: "calc.index.water.subtitle", bundle: .module)
                         )
                     }
+                    .buttonStyle(.plain)
                 }
             }
             .deltiqScreen()
@@ -96,6 +115,48 @@ public struct CalculatorsView: View {
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
         .deltiqSwipeBackEnabled()
+    }
+}
+
+/// Eine Kachel im 2x2-Werkzeugraster. Volle Flaeche antippbar ueber den
+/// umschliessenden `NavigationLink` (`.buttonStyle(.plain)` dort entfernt
+/// den System-Blau-Tint); feste Mindesthoehe haelt alle vier Kacheln gleich
+/// hoch unabhaengig von Textlaenge. Gleiche Oberflaechen-/Eckenkonvention
+/// wie `DeltiqSection`/`DeltiqCard` (`Color.Deltiq.surface`,
+/// `Deltiq.Radius.card`) — kein neuer Designbaustein fuer vier Kacheln.
+@available(iOS 17.0, macOS 14.0, *)
+private struct CalculatorTile: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: icon)
+                .deltiqAccentIcon()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.primary)
+                    .lineLimit(2)
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+        .padding(14)
+        .background(Color.Deltiq.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title). \(subtitle)")
     }
 }
 

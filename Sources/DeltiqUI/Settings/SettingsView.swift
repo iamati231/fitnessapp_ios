@@ -76,6 +76,7 @@ public struct SettingsView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     profileSection
+                    progressSection
                     groupNavigationSection
                     dangerZoneSection
                 }
@@ -165,6 +166,25 @@ public struct SettingsView: View {
         }
         parts.append(environmentLabel(profile.environment))
         return parts.joined(separator: " • ")
+    }
+
+    /// UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): ersetzt den
+    /// entfallenen `AppTab.measurement`-Tab. Eigener Eintrag direkt nach
+    /// "Profil & Ziele" (vor den 5 Gruppen-Sektionen), wertbasiert wie die
+    /// "Werkzeuge"-Zeile (`ProgressRoute`, siehe AppNavigation.swift) — die
+    /// Erinnerungs-Notification muss per Deep-Link hierher durchschalten
+    /// koennen, genau wie der Wassertracker-Deep-Link zu "Werkzeuge".
+    private var progressSection: some View {
+        DeltiqSection(String(localized: "settings.group.progress", bundle: .module).uppercased()) {
+            NavigationLink(value: ProgressRoute.overview) {
+                DeltiqRow(
+                    icon: "ruler",
+                    label: String(localized: "settings.group.progress", bundle: .module),
+                    showsChevron: true,
+                    showsDivider: false
+                )
+            }
+        }
     }
 
     /// UI-Ticket ("Mehr-Informationsarchitektur"): die 5 Gruppen-Seiten (siehe
@@ -524,6 +544,12 @@ public struct SettingsView: View {
                     WaterTrackerView()
                 }
             }
+            .navigationDestination(for: ProgressRoute.self) { route in
+                switch route {
+                case .overview:
+                    ProgressOverviewView()
+                }
+            }
     }
     .modelContainer(PreviewSeed.dashboardContainer)
     .environment(AppNavigation())
@@ -540,6 +566,12 @@ public struct SettingsView: View {
                     CalculatorsView()
                 case .waterTracker:
                     WaterTrackerView()
+                }
+            }
+            .navigationDestination(for: ProgressRoute.self) { route in
+                switch route {
+                case .overview:
+                    ProgressOverviewView()
                 }
             }
     }

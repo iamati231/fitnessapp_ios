@@ -265,9 +265,10 @@ public struct RootView: View {
     }
 }
 
-/// Top-level container for the post-onboarding flow. Tab order (main-
-/// navigation Plan, 2026-10-22, Task 1): Heute → Training → Ernaehrung →
-/// Fortschritt → Mehr. Cross-tab navigation runs through `AppNavigation`.
+/// Top-level container for the post-onboarding flow. Tab order (UI-Ticket
+/// "Tab-Leiste vereinfachen", 2026-11-06, loest main-navigation Plan
+/// 2026-10-22 Task 1 ab): Heute → Training → Ernaehrung → Mehr. Cross-tab
+/// navigation runs through `AppNavigation`.
 @available(iOS 17.0, macOS 14.0, *)
 struct MainTabView: View {
     @Environment(AppNavigation.self) private var navigation
@@ -347,27 +348,12 @@ struct MainTabView: View {
             }
             .tag(AppTab.nutrition)
 
-            NavigationStack {
-                MeasurementView()
-            }
-            .tabItem {
-                Label {
-                    Text("tab.measurement", bundle: .module)
-                } icon: {
-                    Image(systemName: "ruler")
-                }
-            }
-            .tag(AppTab.measurement)
-
-            // main-navigation Plan, 2026-10-22, Task 3 (Fix-Runde 1: komplett
-            // wertbasiert statt mit view-basierten NavigationLinks gemischt,
-            // siehe `CalculatorsRoute`-Doku): path-bound auf `toolsPath`. Die
-            // "Werkzeuge"-Zeile in SettingsView pusht `.calculators`, die
-            // Wassertracker-Zeile in CalculatorsView pusht `.waterTracker` —
-            // beide ueber dieselbe hier registrierte `navigationDestination`.
-            // Der Deep-Link (`applyPendingRouteIfAny`) resettet `toolsPath`
-            // und haengt `.waterTracker` direkt an, landet also unabhaengig
-            // vom vorherigen Navigationszustand garantiert im WaterTracker.
+            // UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): kein eigener
+            // Fortschritt-Tab mehr — `ProgressOverviewView` haengt wie
+            // `CalculatorsView` eine Ebene tief unter "Mehr" (siehe
+            // `ProgressRoute`-Doku in AppNavigation.swift). Beide
+            // `navigationDestination`-Registrierungen teilen sich denselben
+            // `toolsPath`, SwiftUI dispatcht pro Werttyp.
             NavigationStack(path: $navigation.toolsPath) {
                 SettingsView()
                     .navigationDestination(for: CalculatorsRoute.self) { route in
@@ -376,6 +362,12 @@ struct MainTabView: View {
                             CalculatorsView()
                         case .waterTracker:
                             WaterTrackerView()
+                        }
+                    }
+                    .navigationDestination(for: ProgressRoute.self) { route in
+                        switch route {
+                        case .overview:
+                            ProgressOverviewView()
                         }
                     }
             }
@@ -429,7 +421,14 @@ struct MainTabView: View {
             navigation.toolsPath = NavigationPath()
             navigation.toolsPath.append(CalculatorsRoute.waterTracker)
         case .measurement:
-            navigation.selectedTab = .measurement
+            // UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): kein eigener
+            // Tab mehr zum Umschalten — landet jetzt in der Fortschritts-
+            // uebersicht unter "Mehr", NICHT direkt im Formular fuer eine
+            // neue Messung (ausdrueckliche Vorgabe: der User soll in der
+            // Uebersicht ankommen und von dort aus erfassen).
+            navigation.selectedTab = .settings
+            navigation.toolsPath = NavigationPath()
+            navigation.toolsPath.append(ProgressRoute.overview)
         }
     }
 
