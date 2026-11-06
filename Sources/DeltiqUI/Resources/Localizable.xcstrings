@@ -67613,19 +67613,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keine Herzfrequenz-Daten verfügbar."
+            "value": "Noch keine gemessenen Herzfrequenzdaten in der Laufhistorie verfügbar. Ein hinterlegter Maximalpuls im Profil ist kein Messwert aus deinem Training."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No heart rate data available."
+            "value": "No measured heart rate data in your running history yet. A stored max heart rate in your profile isn't the same as a recorded training measurement."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kalp atış hızı verisi mevcut değil."
+            "value": "Koşu geçmişinde henüz ölçülmüş kalp atış hızı verisi yok. Profilindeki kayıtlı maksimum kalp atış hızı, antrenmanından alınan bir ölçüm değildir."
           }
         }
       }
@@ -67672,6 +67672,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spor türü belirsiz dayanıklılık antrenmanı içeren %d hafta."
+          }
+        }
+      }
+    },
+    "widget.raceProgressCard.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wettkampf-Fortschritt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Race progress"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yarış ilerlemesi"
           }
         }
       }
