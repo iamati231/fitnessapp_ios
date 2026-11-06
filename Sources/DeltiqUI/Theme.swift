@@ -1092,17 +1092,6 @@ private struct SwipeBackController: UIViewControllerRepresentable {
             apply(enabled: pendingEnabled)
         }
 
-        override func viewDidAppear(_ animated: Bool) {
-            super.viewDidAppear(animated)
-            // Sicherheitsnetz: SwiftUI baut die UIScrollView manchmal erst
-            // WAEHREND der Push-Animation auf — bei viewWillAppear kann die
-            // Tiefensuche unten dann noch nichts finden. Nach Abschluss der
-            // Animation (viewDidAppear) existiert sie garantiert; erneuter
-            // Aufruf ist idempotent (require(toFail:) mehrfach mit denselben
-            // zwei Recognizern zu setzen ist harmlos).
-            apply(enabled: pendingEnabled)
-        }
-
         func apply(enabled: Bool) {
             pendingEnabled = enabled
             guard let navController = navigationController else { return }
@@ -1111,39 +1100,73 @@ private struct SwipeBackController: UIViewControllerRepresentable {
             // Chains intakt — sonst konkuriert der Pop-Recognizer mit
             // .menu-Picker-Interaktionen und verschiebt die Ansicht horizontal.
             navController.interactivePopGestureRecognizer?.isEnabled = enabled
-            // containerRelativeFrame(.horizontal) in ScrollView(.vertical) sorgt
-            // dafuer, dass UINavigationController die scroll pan → require(toFail:)
-            // Verkettung nicht mehr automatisch aufbaut (UIScrollView wird nach dem
-            // Auto-Setup-Zeitfenster des NavControllers angelegt). Manuell nachholen.
-            // WICHTIG: Ancestor-Walk von self.view greift hier NICHT — HostController
-            // ist Geschwister (nicht Kind) von UIScrollView, da .deltiqSwipeBackEnabled()
-            // aussen um .deltiqScreen() liegt. Stattdessen Tiefensuche von navController.view.
-            //
-            // ALLE gefundenen UIScrollViews bekommen die Abhaengigkeit, nicht nur
-            // die erste gefundene — ein Screen kann zusaetzliche ScrollViews
-            // enthalten (Charts, horizontale Picker, verschachtelte Listen), deren
-            // Pan-Geste sonst weiterhin unkontrolliert mit der Edge-Pan-Geste
-            // konkurrieren koennte.
-            if enabled, let edgePan = navController.interactivePopGestureRecognizer {
-                for scrollView in allScrollViews(in: navController.view) {
-                    scrollView.panGestureRecognizer.require(toFail: edgePan)
-                }
-            }
-        }
-
-        // Sammelt ALLE UIScrollViews unterhalb von root (Tiefensuche, nicht nur
-        // die erste). Muss von navController.view starten, weil HostController.view
-        // und die ScrollView(s) aus DeltiqScreenModifier/Charts/etc. Geschwister
-        // sein koennen — kein gemeinsamer Ancestor innerhalb eines Teilbaums.
-        private func allScrollViews(in root: UIView) -> [UIScrollView] {
-            var result: [UIScrollView] = []
-            if let sv = root as? UIScrollView { result.append(sv) }
-            for sub in root.subviews {
-                result.append(contentsOf: allScrollViews(in: sub))
-            }
-            return result
+            // Geraete-Befund (Feedback nach v0.1.74): auf echtem Geraet reagiert
+            // der native interactivePopGestureRecognizer trotz isEnabled=true auf
+            // JEDEM Screen ueberhaupt nicht mehr (nicht nur verdraengt durch eine
+            // ScrollView-Geste — buchstaeblich keinerlei Reaktion, einheitlich).
+            // Zwei Versuche, die vermutete fehlende require(toFail:)-Verkettung
+            // mit der UIScrollView aus DeltiqScreenModifier nachzuholen (Ancestor-
+            // Walk, dann Tiefensuche ueber alle ScrollViews), haben daran nichts
+            // geaendert — die Ursache liegt also vermutlich nicht dort.
+            // Statt weiter zu raten: ein VOM System-Recognizer komplett
+            // unabhaengiger Edge-Pan, der bei Erkennung direkt `popViewController`
+            // aufruft. Kein interaktives Mitziehen des Fingers mehr, aber
+            // garantiert funktionierendes Zurueck-Wischen, unabhaengig von jeder
+            // ScrollView-Interna. Pro NavigationController nur EINMAL installiert
+            // (ueber alle Screens hinweg), gated ueber genau das isEnabled oben.
+            EdgeSwipeCoordinator.install(on: navController)
         }
     }
+}
+
+/// Eigener, vom System-`interactivePopGestureRecognizer` unabhaengiger
+/// Links-Kanten-Pan — siehe Begruendung in `HostController.apply(enabled:)`.
+/// Genau EIN Coordinator pro `UINavigationController` (ueber `NSMapTable`
+/// mit `weakMemory`-Keys verwaltet, stirbt also automatisch mit dem
+/// NavController) statt einem pro Screen, sonst wuerden mehrere Recognizer
+/// auf demselben `navController.view` akkumulieren und einen einzigen Wisch
+/// mehrfach als Pop auszahlen.
+private final class EdgeSwipeCoordinator: NSObject, UIGestureRecognizerDelegate {
+    private static let coordinators = NSMapTable<UINavigationController, EdgeSwipeCoordinator>(
+        keyOptions: .weakMemory, valueOptions: .strongMemory
+    )
+
+    private weak var navigationController: UINavigationController?
+
+    static func install(on navController: UINavigationController) {
+        guard coordinators.object(forKey: navController) == nil else { return }
+        let coordinator = EdgeSwipeCoordinator()
+        coordinator.navigationController = navController
+        let recognizer = UIScreenEdgePanGestureRecognizer(target: coordinator, action: #selector(handle(_:)))
+        recognizer.edges = .left
+        recognizer.delegate = coordinator
+        navController.view.addGestureRecognizer(recognizer)
+        coordinators.setObject(coordinator, forKey: navController)
+    }
+
+    @objc private func handle(_ recognizer: UIScreenEdgePanGestureRecognizer) {
+        guard recognizer.state == .ended,
+              let nav = navigationController,
+              nav.viewControllers.count > 1,
+              // Respektiert dieselbe Pro-Screen-Freigabe wie der (weiterhin
+              // gesetzte) System-Recognizer — kein zweiter Enabled-Zustand.
+              nav.interactivePopGestureRecognizer?.isEnabled == true
+        else { return }
+        let translation = recognizer.translation(in: recognizer.view).x
+        let velocity = recognizer.velocity(in: recognizer.view).x
+        if translation > 60 || velocity > 500 {
+            nav.popViewController(animated: true)
+        }
+    }
+
+    // Erlaubt Gleichzeitigkeit mit jeder anderen Geste (ScrollView-Pan,
+    // Picker, ...) — der Edge-Pan startet ohnehin nur bei Touches nahe am
+    // linken Bildschirmrand und loest erst bei .ended + Mindestdistanz aus,
+    // konkurriert also praktisch nie mit normaler Bildschirminteraktion.
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool { true }
 }
 #endif
 
