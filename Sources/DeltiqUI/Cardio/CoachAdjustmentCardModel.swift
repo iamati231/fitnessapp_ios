@@ -103,7 +103,7 @@ public struct CoachAdjustmentCardModel: Equatable {
         return CoachAdjustmentCardModel(
             verdict: verdict,
             proposedGoal: proposedGoal,
-            analysis: RunCoachPlanAdjustment.analyze(plan: activePlan),
+            analysis: RunCoachPlanAdjustment.analyze(plan: activePlan, targetGoal: effectiveGoal),
             fingerprint: fingerprint,
             isAlreadyApplied: profile.cardioPlanAdjustmentFingerprint == fingerprint
         )
@@ -175,7 +175,6 @@ public struct CoachAdjustmentCardModel: Equatable {
         // gesetzt hat. Der eigentliche Schutz MUSS daher `profile` live zum
         // Zeitpunkt dieses Aufrufs lesen, nicht die eingefrorene Kopie.
         guard profile.cardioPlanAdjustmentFingerprint != fingerprint else { return 0 }
-        let eligibleDays = RunCoachPlanAdjustment.eligibleCardioDays(in: plan)
         // Task 7 (Decision 3 Teil 2): die anzuwendenden Tage muessen dem
         // tatsaechlich VORGESCHLAGENEN Ziel entsprechen (`proposedGoal`),
         // nicht dem moeglicherweise nicht erreichbaren `profile.cardioGoal`
@@ -186,6 +185,13 @@ public struct CoachAdjustmentCardModel: Equatable {
         // gibt es keinen besseren Vorschlag, den man stattdessen anwenden
         // koennte.
         let effectiveProposedGoal = proposedGoal ?? profile.cardioGoal
+        // Bugfix ("Bestehenden Trainingsplan bei Zieländerung flexibel
+        // umstrukturieren"): nicht mehr nur bestehende Cardio-Tage - auch
+        // Krafttage, die `effectiveProposedGoal` nicht mehr braucht, zaehlen
+        // als anfassbar (siehe `eligibleDaysForGoalChange`). Dieselbe
+        // Funktion, die `analyze` fuer die Vorschau verwendet (`make` oben) -
+        // Vorschau und Anwendung koennen dadurch nie auseinanderlaufen.
+        let eligibleDays = RunCoachPlanAdjustment.eligibleDaysForGoalChange(in: plan, targetGoal: effectiveProposedGoal)
         // Task 9 Nachbesserung: dieselbe Baseline-Weitergabe wie
         // `CardioFeasibilityCardModel.make` - `accept` rechnet bei jedem
         // Aufruf frisch aus dem aktuellen `profile`, die Baseline ist also

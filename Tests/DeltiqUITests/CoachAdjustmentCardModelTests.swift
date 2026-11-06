@@ -716,5 +716,101 @@ final class CoachAdjustmentCardModelTests: XCTestCase {
         XCTAssertEqual(manuallyEditedDay.activeExercises.map(\.name), originalExerciseNames)
         XCTAssertEqual(manuallyEditedDay.type, .fullBody)
     }
+
+    // MARK: - Bugfix ("Bestehenden Trainingsplan bei Zieländerung flexibel
+    // umstrukturieren"): Halbmarathon -> Marathon zeigte "nicht genug freie
+    // Tage", weil die 2 fuer Marathon nicht mehr benoetigten Krafttage
+    // nirgends als verfuegbarer Platz galten - obwohl sie genauso anfassbar
+    // sind wie ein bestehender Cardio-Tag (Wizard-erzeugt, unveraendert,
+    // keine Historie).
+
+    /// Reproduziert den gemeldeten Fehler exakt: Halbmarathon-Struktur
+    /// (3 anfassbare Lauftage + 2 anfassbare Krafttage), ALLE 7 Wochentage
+    /// belegt - weder einfuegbare Ruhetage noch freie Wochentage. Vorher
+    /// gab `accept()` hier 0 zurueck ("nicht genug freie Tage"); jetzt
+    /// muessen die 2 ueberzaehligen Krafttage den fehlenden Platz liefern.
+    private func makeHalfMarathonPlanFullyBookedNoFreeDays() -> (UserBodyProfile, TrainingPlan, runDays: [TrainingDay], strengthDays: [TrainingDay]) {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: .halfMarathon
+        )
+        context.insert(profile)
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+
+        var runDays: [TrainingDay] = []
+        for weekday in [1, 3, 5] {
+            let day = TrainingDay(name: "Run", weekday: weekday, type: .fullBody, plan: plan)
+            context.insert(day)
+            let run = Exercise(name: "Easy Run", isCardio: true, day: day)
+            context.insert(run)
+            day.exercises.append(run)
+            day.generationFingerprint = day.currentContentFingerprint
+            plan.days.append(day)
+            runDays.append(day)
+        }
+        var strengthDays: [TrainingDay] = []
+        for weekday in [2, 7] {
+            let day = TrainingDay(name: "Kraft", weekday: weekday, type: .legs, plan: plan)
+            context.insert(day)
+            let squat = Exercise(name: "Squat", sets: 3, primaryMuscle: .quads, day: day)
+            context.insert(squat)
+            day.exercises.append(squat)
+            day.generationFingerprint = day.currentContentFingerprint
+            plan.days.append(day)
+            strengthDays.append(day)
+        }
+        // Wochentage 4, 6: belegte, NICHT einfuegbare Ruhetage - alle 7
+        // Wochentage sind damit belegt (weder freie Wochentage noch
+        // isAutoFilledPlaceholder-Ruhetage verfuegbar).
+        for weekday in [4, 6] {
+            let day = TrainingDay(name: "Ruhetag", weekday: weekday, type: .rest, plan: plan)
+            context.insert(day)
+            plan.days.append(day)
+        }
+
+        try? context.save()
+        return (profile, plan, runDays, strengthDays)
+    }
+
+    func testAcceptRestructuresExistingStrengthDaysWhenGoalNoLongerNeedsThem() throws {
+        let (profile, plan, runDays, strengthDays) = makeHalfMarathonPlanFullyBookedNoFreeDays()
+        profile.cardioGoal = .marathon
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+
+        XCTAssertEqual(count, 5, "Marathon braucht 5 Lauftage - der Fehler lieferte hier 0 (\"nicht genug freie Tage\")")
+        XCTAssertEqual(profile.cardioPlanAdjustmentFingerprint, model.fingerprint)
+        let cardioContentDays = plan.days.filter { !$0.activeExercises.isEmpty && $0.activeExercises.allSatisfy(\.isCardio) }
+        XCTAssertEqual(cardioContentDays.count, 5, "alle 5 Lauftage muessen tatsaechlich existieren")
+        XCTAssertTrue(runDays.allSatisfy { $0.activeExercises.allSatisfy(\.isCardio) }, "die 3 urspruenglichen Lauftage muessen weiterhin Lauf-Inhalt tragen")
+        XCTAssertTrue(strengthDays.allSatisfy { $0.activeExercises.allSatisfy(\.isCardio) }, "die 2 ueberzaehligen Krafttage muessen zu Lauftagen umgewandelt worden sein")
+    }
+
+    /// Dieselbe Struktur, aber Zielwechsel auf 10K (braucht weiterhin 2
+    /// Krafttage) - die Krafttage duerfen NICHT als ueberzaehlig gelten, da
+    /// sich an der Krafttage-Anzahl nichts aendert.
+    func testAcceptLeavesStrengthDaysUntouchedWhenNewGoalStillNeedsThem() throws {
+        let (profile, plan, _, strengthDays) = makeHalfMarathonPlanFullyBookedNoFreeDays()
+        profile.cardioGoal = .tenK
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("expected model")
+        }
+        let originalStrengthContent = strengthDays.map { $0.activeExercises.map(\.name) }
+
+        // Halbmarathon und 10K brauchen beide 3 Lauftage - bereits exakt
+        // vorhanden, kein zusaetzlicher Platz noetig.
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertEqual(count, 3)
+
+        for (day, originalNames) in zip(strengthDays, originalStrengthContent) {
+            XCTAssertEqual(day.activeExercises.map(\.name), originalNames, "Krafttage, die weiterhin gebraucht werden, duerfen nie angefasst werden")
+            XCTAssertEqual(day.type, .legs)
+        }
+    }
 }
 #endif

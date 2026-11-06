@@ -224,19 +224,7 @@ public enum CardioFeasibilityCalculator {
     /// `GoalDrivenPlanSelectionBuilder.enduranceSelections`s
     /// `.bodyweight`/Kraft-Selection bleibt ohne Profil.
     public static func planGeneratorInput(for goal: CardioGoal, cardioRunProfile: CardioRunProfile? = nil) -> PlanGeneratorInput {
-        let runDays: Int
-        let strengthDays: Int
-        switch goal {
-        case .generalFitness, .fiveK:
-            runDays = 2
-            strengthDays = 2
-        case .tenK, .halfMarathon:
-            runDays = 3
-            strengthDays = 2
-        case .marathon:
-            runDays = 5
-            strengthDays = 0
-        }
+        let (runDays, strengthDays) = dayCounts(for: goal)
         var selections: [PlanGeneratorTypeSelection] = [
             PlanGeneratorTypeSelection(
                 kind: .running, daysPerWeek: runDays, sessionDurationMinutes: 45, experience: .intermediate,
@@ -249,6 +237,28 @@ public enum CardioFeasibilityCalculator {
             )
         }
         return PlanGeneratorInput(selections: selections, equipmentPreferences: [], usesFixedWeekdays: false)
+    }
+
+    private static func dayCounts(for goal: CardioGoal) -> (runDays: Int, strengthDays: Int) {
+        switch goal {
+        case .generalFitness, .fiveK:
+            return (runDays: 2, strengthDays: 2)
+        case .tenK, .halfMarathon:
+            return (runDays: 3, strengthDays: 2)
+        case .marathon:
+            return (runDays: 5, strengthDays: 0)
+        }
+    }
+
+    /// Bugfix ("Bestehenden Trainingsplan bei Zieländerung flexibel
+    /// umstrukturieren"): `RunCoachPlanAdjustment` braucht dieselbe
+    /// Kraft-Tage-Zuordnung wie `planGeneratorInput` oben, um zu erkennen,
+    /// wie viele vorhandene Krafttage bei einem Zielwechsel (z.B.
+    /// Halbmarathon mit 2 Krafttagen -> Marathon mit 0) ueberzaehlig werden
+    /// und somit als Einfuege-Platz fuer die zusaetzlich noetigen Lauftage
+    /// zur Verfuegung stehen - dieselbe Tabelle, kein zweites Mal erfunden.
+    public static func strengthDaysNeeded(for goal: CardioGoal) -> Int {
+        dayCounts(for: goal).strengthDays
     }
 
     /// Lauf-Zweck innerhalb der Wochenstruktur - `.quality` deckt sowohl

@@ -198,5 +198,107 @@ final class RunCoachPlanAdjustmentTests: XCTestCase {
         // der 10 Saetze.
         XCTAssertEqual(RunCoachPlanAdjustment.analyze(plan: plan).legWork, .conflict)
     }
+
+    // MARK: - convertibleStrengthDays / eligibleDaysForGoalChange
+    //
+    // Bugfix ("Bestehenden Trainingsplan bei Zieländerung flexibel
+    // umstrukturieren"): Halbmarathon (3 Lauf + 2 Krafttage) -> Marathon (5
+    // Lauf + 0 Krafttage) brauchte bisher 2 zusaetzliche freie Tage, obwohl
+    // die 2 bestehenden Krafttage fuer das neue Ziel gar nicht mehr gebraucht
+    // werden - sie wurden nirgends als verfuegbarer Platz gezaehlt.
+
+    private func makeStrengthDay(weekday: Int, in plan: TrainingPlan) -> TrainingDay {
+        let day = TrainingDay(name: "Kraft", weekday: weekday, type: .legs, plan: plan)
+        context.insert(day)
+        addExercise(to: day, name: "Squat", sets: 3, primaryMuscle: .quads)
+        markUntouched(day)
+        plan.days.append(day)
+        return day
+    }
+
+    /// Reproduziert den gemeldeten Fehler isoliert: Halbmarathon-Struktur (2
+    /// anfassbare Krafttage, Marathon braucht 0) ohne jeden freien Tag -
+    /// `convertibleStrengthDays(targetGoal: .marathon)` muss beide liefern.
+    func testConvertibleStrengthDaysReturnsSurplusWhenTargetGoalNeedsFewer() {
+        let plan = makePlan()
+        let strength1 = makeStrengthDay(weekday: 4, in: plan)
+        let strength2 = makeStrengthDay(weekday: 6, in: plan)
+        let result = RunCoachPlanAdjustment.convertibleStrengthDays(in: plan, targetGoal: .marathon)
+        XCTAssertEqual(Set(result.map(\.persistentModelID)), Set([strength1, strength2].map(\.persistentModelID)))
+    }
+
+    /// Wechsel zwischen zwei Zielen mit identischem Krafttage-Bedarf
+    /// (Halbmarathon/10K: je 2) darf KEINEN Krafttag als ueberzaehlig
+    /// melden - er wird weiterhin gebraucht.
+    func testConvertibleStrengthDaysReturnsEmptyWhenTargetGoalStillNeedsAllOfThem() {
+        let plan = makePlan()
+        _ = makeStrengthDay(weekday: 4, in: plan)
+        _ = makeStrengthDay(weekday: 6, in: plan)
+        XCTAssertEqual(RunCoachPlanAdjustment.convertibleStrengthDays(in: plan, targetGoal: .tenK), [])
+    }
+
+    /// Ein manuell editierter Krafttag (Fingerprint weicht ab) darf NIE als
+    /// konvertierbar gelten, auch wenn das neue Ziel gar keine Krafttage mehr
+    /// braucht - dieselbe Schutzregel wie ueberall sonst in dieser Datei.
+    func testConvertibleStrengthDaysExcludesManuallyEditedStrengthDays() {
+        let plan = makePlan()
+        let day = TrainingDay(name: "Legs", weekday: 4, type: .legs, plan: plan)
+        context.insert(day)
+        markUntouched(day)
+        addExercise(to: day, name: "Squat", sets: 3, primaryMuscle: .quads)
+        plan.days.append(day)
+        XCTAssertEqual(RunCoachPlanAdjustment.convertibleStrengthDays(in: plan, targetGoal: .marathon), [])
+    }
+
+    /// `analyze(plan:targetGoal:)` ohne `targetGoal` (bestehende Aufrufer)
+    /// bleibt unveraendert: ausschliesslich bestehende Cardio-Tage zaehlen,
+    /// auch wenn ueberzaehlige Krafttage vorhanden waeren.
+    func testAnalyzeWithoutTargetGoalIgnoresConvertibleStrengthDays() {
+        let plan = makePlan()
+        _ = makeStrengthDay(weekday: 4, in: plan)
+        _ = makeStrengthDay(weekday: 6, in: plan)
+        XCTAssertEqual(RunCoachPlanAdjustment.analyze(plan: plan).cardioAvailability, .noEligibleCardioDay)
+        XCTAssertEqual(RunCoachPlanAdjustment.analyze(plan: plan).convertibleStrengthDays, [])
+    }
+
+    /// Der gemeldete Fehler, End-to-End auf `analyze` selbst: Halbmarathon-
+    /// Struktur (3 anfassbare Lauftage + 2 anfassbare Krafttage, ALLE 7
+    /// Wochentage belegt, keine Ruhetage) -> mit `targetGoal: .marathon`
+    /// muss `cardioAvailability` `.ready` mit allen 5 Tagen sein, nicht
+    /// `.noEligibleCardioDay`/eine zu kleine `.ready`-Liste.
+    func testAnalyzeWithTargetGoalCombinesCardioAndConvertibleStrengthDays() {
+        let plan = makePlan()
+        var runDays: [TrainingDay] = []
+        for weekday in [1, 3, 5] {
+            let day = TrainingDay(name: "Run", weekday: weekday, type: .fullBody, plan: plan)
+            context.insert(day)
+            let run = Exercise(name: "Easy Run", isCardio: true, day: day)
+            context.insert(run)
+            day.exercises.append(run)
+            markUntouched(day)
+            plan.days.append(day)
+            runDays.append(day)
+        }
+        let strength1 = makeStrengthDay(weekday: 2, in: plan)
+        let strength2 = makeStrengthDay(weekday: 7, in: plan)
+        // Wochentag 4, 6 bleiben Ruhetage, aber NICHT isAutoFilledPlaceholder
+        // - alle 7 Wochentage sind belegt, es gibt also weder einfuegbare
+        // Ruhetage noch freie Wochentage.
+        let rest1 = TrainingDay(name: "Ruhetag", weekday: 4, type: .rest, plan: plan)
+        let rest2 = TrainingDay(name: "Ruhetag", weekday: 6, type: .rest, plan: plan)
+        context.insert(rest1)
+        context.insert(rest2)
+        plan.days.append(rest1)
+        plan.days.append(rest2)
+
+        let analysis = RunCoachPlanAdjustment.analyze(plan: plan, targetGoal: .marathon)
+        XCTAssertEqual(analysis.insertableRestDays, [], "Testaufbau: keine einfuegbaren Ruhetage vorhanden")
+        XCTAssertEqual(analysis.freeWeekdaysForNewDays, [], "Testaufbau: alle 7 Wochentage sind belegt")
+        guard case .ready(let ids) = analysis.cardioAvailability else {
+            return XCTFail("expected .ready - die 2 ueberzaehligen Krafttage muessen den fehlenden Platz liefern")
+        }
+        let expectedIDs = Set((runDays + [strength1, strength2]).map(\.persistentModelID))
+        XCTAssertEqual(Set(ids), expectedIDs)
+    }
 }
 #endif
