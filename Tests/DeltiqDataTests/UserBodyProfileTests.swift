@@ -427,6 +427,40 @@ final class UserBodyProfileTests: XCTestCase {
         XCTAssertTrue(profile.cardioCoachingEnabled, "Unbeantwortete Modalitaet darf den bestehenden Coach-Schalter nicht sperren")
     }
 
+    // MARK: - AI-Running-Coach Phase 1: cardioCoachingEnabledAt (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md)
+
+    func testFirstActivationStampsCardioCoachingEnabledAt() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+        XCTAssertNil(profile.cardioCoachingEnabledAt)
+
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+
+        XCTAssertNotNil(profile.cardioCoachingEnabledAt, "die erste Aktivierung muss den Beobachtungsbeginn setzen")
+    }
+
+    /// Ein Aus-/Wieder-Einschalten darf einen bereits bekannten
+    /// Beobachtungsbeginn nicht nach vorne verschieben - sonst wuerde jedes
+    /// kurze Deaktivieren die gesamte bisherige Laufhistorie faelschlich
+    /// "vor der Aktivierung" erscheinen lassen.
+    func testReactivationNeverMovesAnAlreadyKnownObservationStart() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+        // Bekannter, in der Vergangenheit liegender Beobachtungsbeginn -
+        // deterministisch gesetzt statt sich auf zwei schnell
+        // aufeinanderfolgende `Date()`-Aufrufe zu verlassen, die zufaellig
+        // zusammenfallen koennten.
+        let knownStart = Date(timeIntervalSince1970: 1_600_000_000)
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        profile.cardioCoachingEnabledAt = knownStart
+
+        profile.setEnduranceModality(.cycling, runCoachEnabled: true) // schaltet den Coach wieder aus
+        XCTAssertFalse(profile.cardioCoachingEnabled)
+        profile.setEnduranceModality(.running, runCoachEnabled: true) // und wieder ein
+
+        XCTAssertEqual(profile.cardioCoachingEnabledAt, knownStart, "ein bereits bekannter Beobachtungsbeginn darf nie ueberschrieben werden")
+    }
+
     /// Gleicher Robustness-Pattern wie `experienceTrack`/`equipmentProfile`:
     /// ein veralteter oder fremder Rohwert wird beim Lesen zu `nil`, nie zu
     /// einem erfundenen Default-Case.

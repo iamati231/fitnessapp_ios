@@ -245,6 +245,31 @@ public final class UserBodyProfile {
     /// NICHT im CSV-Export/Import, identische Begruendung).
     public var cardioAdjustmentCardDismissedFingerprint: String? = nil
 
+    /// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md):
+    /// Beginn des Coaching-Beobachtungszeitraums. Grenzt NUR Plateau-/
+    /// Inaktivitaets-/Konsistenz-WARNUNGEN ein (`RaceProgressAssessment`) -
+    /// schneidet NIE die fuer Trend-/Fortschritts-Metriken genutzte
+    /// Laufhistorie ab. Wird beim False->True-Uebergang von
+    /// `cardioCoachingEnabled` gesetzt (siehe `setEnduranceModality`); fuer
+    /// Bestandsnutzer, die den Coach schon vorher aktiv hatten, legt
+    /// `RaceProgressDueCalculator.establishObservationAnchorIfNeeded` ihn
+    /// EINMALIG auf den Zeitpunkt der ersten Auswertung fest - niemals ein
+    /// Datum in die Vergangenheit erfunden.
+    public var cardioCoachingEnabledAt: Date? = nil
+
+    /// Zeitpunkt der letzten `RaceProgressAssessment`-Auswertung.
+    public var raceProgressLastAnalyzedAt: Date? = nil
+
+    /// Ziel+Renndatum-Fingerprint zum Zeitpunkt der letzten Analyse - erkennt
+    /// eine zwischenzeitliche Ziel-/Renndatum-Aenderung
+    /// (`RaceProgressDueCalculator.DueReason.configurationChanged`), ohne
+    /// ein eigenes "letztes Ziel"-Feld zu brauchen.
+    public var raceProgressLastAnalyzedConfigurationFingerprint: String? = nil
+
+    /// Dashboard-Karte: "Nicht jetzt" fuer die Wettkampf-Fortschritts-Karte -
+    /// identische Fingerprint-Logik wie `cardioAdjustmentCardDismissedFingerprint`.
+    public var raceProgressDismissedFingerprint: String? = nil
+
     /// Smart-Onboarding-Epic: verhaltens-/pausenbasierte Track-Einstufung
     /// (Einstieg/Wiedereinstieg/volle Automatik) — separat von
     /// `coachingTone`/`trainingGoal`. Nil = noch nicht hergeleitet (z. B.
@@ -307,6 +332,13 @@ public final class UserBodyProfile {
             var order = activeDashboardWidgets.filter { $0 != .runCoachCard }
             order.insert(.runCoachCard, at: 0)
             activeDashboardWidgets = order
+            // AI-Running-Coach Phase 1: markiert den Beginn des Coaching-
+            // Beobachtungszeitraums (siehe cardioCoachingEnabledAt-Doku).
+            // `== nil`-Guard: ein Aus-/Wieder-Einschalten darf einen bereits
+            // bekannten Beobachtungsbeginn nicht verschieben.
+            if cardioCoachingEnabledAt == nil {
+                cardioCoachingEnabledAt = Date()
+            }
         }
     }
 
