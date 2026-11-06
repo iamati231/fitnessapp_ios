@@ -1,0 +1,158 @@
+import XCTest
+@testable import DeltiqCore
+
+/// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md,
+/// Abschnitt 3): reine Funktion, keine SwiftData-Abhaengigkeit - lokal auf
+/// jedem Host kompilierbar UND ausfuehrbar (anders als der DeltiqData-Bestand).
+final class CardioVolumeOverTimeAggregatorTests: XCTestCase {
+
+    private var calendar: Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.firstWeekday = 2 // Montag, wie im restlichen Repo ueblich (DE-Locale)
+        return cal
+    }
+
+    private func date(_ y: Int, _ m: Int, _ d: Int) -> Date {
+        calendar.date(from: DateComponents(year: y, month: m, day: d))!
+    }
+
+    private func running(
+        on day: Date, km: Double?, seconds: Int?
+    ) -> CardioVolumeOverTimeAggregator.LoggedSession {
+        .init(
+            date: day, runningDistanceKm: km, runningDurationSeconds: seconds,
+            isRunning: true, isCrossTrainingOnly: false, hasAmbiguousCardio: false,
+            hasStrengthActivity: false
+        )
+    }
+
+    private func crossTraining(on day: Date) -> CardioVolumeOverTimeAggregator.LoggedSession {
+        .init(
+            date: day, runningDistanceKm: nil, runningDurationSeconds: nil,
+            isRunning: false, isCrossTrainingOnly: true, hasAmbiguousCardio: false,
+            hasStrengthActivity: false
+        )
+    }
+
+    private func ambiguous(on day: Date) -> CardioVolumeOverTimeAggregator.LoggedSession {
+        .init(
+            date: day, runningDistanceKm: nil, runningDurationSeconds: nil,
+            isRunning: false, isCrossTrainingOnly: false, hasAmbiguousCardio: true,
+            hasStrengthActivity: false
+        )
+    }
+
+    private func strength(on day: Date) -> CardioVolumeOverTimeAggregator.LoggedSession {
+        .init(
+            date: day, runningDistanceKm: nil, runningDurationSeconds: nil,
+            isRunning: false, isCrossTrainingOnly: false, hasAmbiguousCardio: false,
+            hasStrengthActivity: true
+        )
+    }
+
+    // Testfall 9 (Plan Abschnitt 6): Krafttraining fliesst nie in Lauf-Umfang ein.
+    func testStrengthSessionCountFeedsLoadRecoveryButNeverRunningVolume() {
+        let week = date(2026, 1, 5) // Montag
+        let points = CardioVolumeOverTimeAggregator.aggregate(
+            sessions: [strength(on: week), strength(on: week.addingTimeInterval(86400))],
+            windowStart: week
+        )
+        let point = points.first { $0.weekStart == week }
+        XCTAssertEqual(point?.strengthSessionCount, 2)
+        XCTAssertEqual(point?.runningDistanceKm, 0, "Krafttraining darf nie in den Lauf-Umfang einfliessen")
+        XCTAssertEqual(point?.runningSessionCount, 0)
+    }
+
+    // Testfall 18: bekannte Cross-Training-Woche ist kein Lauf-Gap.
+    func testCyclingOnlyWeekIsCrossTrainingNotGapNotDataGap() {
+        let week = date(2026, 1, 5)
+        let points = CardioVolumeOverTimeAggregator.aggregate(
+            sessions: [crossTraining(on: week)], windowStart: week
+        )
+        let point = points.first { $0.weekStart == week }
+        XCTAssertEqual(point?.crossTrainingSessionCount, 1)
+        XCTAssertEqual(point?.runningSessionCount, 0)
+        XCTAssertEqual(point?.ambiguousCardioSessionCount, 0, "Radfahren ist bekannt, keine Mehrdeutigkeit")
+    }
+
+    // Testfall 19: unbekannte Sportart wird nie als Laufen gezaehlt.
+    func testAmbiguousEnduranceSportKindNeverCountsAsRunningDistance() {
+        let week = date(2026, 1, 5)
+        let points = CardioVolumeOverTimeAggregator.aggregate(
+            sessions: [ambiguous(on: week)], windowStart: week
+        )
+        let point = points.first { $0.weekStart == week }
+        XCTAssertEqual(point?.ambiguousCardioSessionCount, 1)
+        XCTAssertEqual(point?.runningSessionCount, 0)
+        XCTAssertEqual(point?.runningDistanceKm, 0)
+    }
+
+    // Testfall 23: eine Session mit Lauf- UND Rad-Signal (vom Extractor als
+    // isRunning=true UND zusaetzlichem Cross-Training-Kontext geliefert, z.B.
+    // ein Brick) zaehlt als Running, Cross-Training-Information bleibt sichtbar
+    // (hier: zwei separate LoggedSession-Eintraege am selben Tag, da die
+    // Aggregator-Ebene Session-granular arbeitet, nicht Log-granular -
+    // die Zusammenfuehrung pro WorkoutSession ist Aufgabe des Extractors).
+    func testMixedRunAndCyclingSessionCountsAsRunningWithCrossTrainingContextPreserved() {
+        let week = date(2026, 1, 5)
+        let mixedSession = CardioVolumeOverTimeAggregator.LoggedSession(
+            date: week, runningDistanceKm: 5, runningDurationSeconds: 1800,
+            isRunning: true, isCrossTrainingOnly: false, hasAmbiguousCardio: false,
+            hasStrengthActivity: false
+        )
+        let points = CardioVolumeOverTimeAggregator.aggregate(sessions: [mixedSession], windowStart: week)
+        let point = points.first { $0.weekStart == week }
+        XCTAssertEqual(point?.runningSessionCount, 1)
+        XCTAssertEqual(point?.runningDistanceKm, 5)
+    }
+
+    func testLongestRunAndDistanceWeightedPaceAreComputedCorrectly() {
+        let week = date(2026, 1, 5)
+        let points = CardioVolumeOverTimeAggregator.aggregate(
+            sessions: [
+                running(on: week, km: 5, seconds: 1800),       // 6:00 min/km
+                running(on: week.addingTimeInterval(2 * 86400), km: 15, seconds: 4500), // 5:00 min/km, longest
+            ],
+            windowStart: week
+        )
+        let point = points.first { $0.weekStart == week }
+        XCTAssertEqual(point?.runningDistanceKm, 20)
+        XCTAssertEqual(point?.runningSessionCount, 2)
+        XCTAssertEqual(point?.longestRunKm, 15)
+        // Distanz-gewichtet: (1800+4500)s / 20km = 315s/km = 5.25 min/km
+        XCTAssertEqual(point?.averagePaceMinutesPerKm ?? -1, 5.25, accuracy: 0.001)
+    }
+
+    func testPaceIsNilWhenNoRunHasBothDistanceAndDuration() {
+        let week = date(2026, 1, 5)
+        let points = CardioVolumeOverTimeAggregator.aggregate(
+            sessions: [running(on: week, km: 5, seconds: nil)], windowStart: week
+        )
+        XCTAssertNil(points.first { $0.weekStart == week }?.averagePaceMinutesPerKm)
+    }
+
+    func testHeartRateIsAlwaysNilInPhase1() {
+        let week = date(2026, 1, 5)
+        let points = CardioVolumeOverTimeAggregator.aggregate(
+            sessions: [running(on: week, km: 5, seconds: 1800)], windowStart: week
+        )
+        XCTAssertNil(points.first { $0.weekStart == week }?.averageHeartRateBpm, "Phase 1 hat keine HF-Datenquelle - nie geraten/geschaetzt")
+    }
+
+    // Luecken-Darstellung: jede Woche im Fenster bekommt einen Eintrag, auch
+    // komplett leer - gleiches Prinzip wie VolumeOverTimeAggregator.
+    func testGapWeeksWithNoActivityAtAllGetAZeroedEntryNotASkippedOne() {
+        let week1 = date(2026, 1, 5)
+        let week3 = date(2026, 1, 19)
+        let points = CardioVolumeOverTimeAggregator.aggregate(
+            sessions: [running(on: week1, km: 5, seconds: 1500)],
+            windowStart: week1, now: week3
+        )
+        XCTAssertEqual(points.count, 3, "3 Wochen im Fenster, auch die leere mittlere Woche")
+        let middle = points[1]
+        XCTAssertEqual(middle.runningSessionCount, 0)
+        XCTAssertEqual(middle.strengthSessionCount, 0)
+        XCTAssertEqual(middle.crossTrainingSessionCount, 0)
+        XCTAssertEqual(middle.ambiguousCardioSessionCount, 0)
+    }
+}
