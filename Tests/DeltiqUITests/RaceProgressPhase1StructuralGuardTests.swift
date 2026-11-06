@@ -111,20 +111,26 @@ final class RaceProgressPhase1StructuralGuardTests: XCTestCase {
         }
     }
 
-    /// Running Coach - Herzfrequenz-Trainingszonen-Ticket: seit diesem
-    /// Ticket liest `RaceProgressCardModel.swift` `profile.maxHeartRateBpm`
-    /// LEGITIM, als manuelle HFmax-Quelle fuer `HeartRateZoneContextBuilder.
-    /// make(maxHeartRateBpm:measuredAverageBpm:)` - dort bewusst
-    /// ausgenommen. Alle anderen Phase-1-Dateien duerfen diesen rein
-    /// deskriptiven Profilwert (DEL-250) weiterhin nicht lesen oder als
-    /// Ersatz fuer gemessene Herzfrequenzdaten verwenden.
+    /// Running Coach - Herzfrequenz-Trainingszonen-Ticket: der bare
+    /// Bezeichner "maxHeartRateBpm" allein ist seit diesem Ticket zu grob -
+    /// `HeartRateZoneCalculator.swift` hat ein GLEICHNAMIGES, aber voellig
+    /// unabhaengiges Funktionsparameter/Property (kennt `UserBodyProfile`
+    /// gar nicht, keine DeltiqData-Abhaengigkeit), und `RaceProgressDetailView.
+    /// swift` destrukturiert `model.heartRateZoneContext`s Enum-Payload in
+    /// eine gleichnamige lokale Konstante - beides legitim. Nur der
+    /// PUNKT-praefixierte Zugriff (".maxHeartRateBpm", z.B. "profile.
+    /// maxHeartRateBpm") beweist ein tatsaechliches Lesen des Profilfelds -
+    /// identisches Prinzip wie `testNeverReadsStaleOnboardingWeeklyVolume`
+    /// oben. `RaceProgressCardModel.swift` ist die EINE legitime Lesestelle
+    /// (siehe `testMaxHeartRateIsNeverPassedAsAMeasuredAverageBpm` unten),
+    /// dort bewusst ausgenommen.
     func testNeverReadsProfileMaxHeartRateOutsideTheExplicitZoneWiring() throws {
         let allowedFile = "Sources/DeltiqUI/Cardio/RaceProgressCardModel.swift"
         for file in phase1Files where file != allowedFile {
             let source = withoutLineComments(try contents(of: file))
             XCTAssertFalse(
-                source.contains("maxHeartRateBpm"),
-                "\(file) darf maxHeartRateBpm (rein deskriptiver Profilwert) nicht lesen - Phase 1 hat keine gemessene HF-Datenquelle"
+                source.contains(".maxHeartRateBpm"),
+                "\(file) darf profile.maxHeartRateBpm (rein deskriptiver Profilwert) nicht lesen - Phase 1 hat keine gemessene HF-Datenquelle"
             )
         }
     }
