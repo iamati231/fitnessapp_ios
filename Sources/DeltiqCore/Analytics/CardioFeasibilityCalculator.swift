@@ -13,7 +13,7 @@ public enum CardioFeasibilityCalculator {
     /// Ergebnis eines Machbarkeits-Checks. `suggestedGoal` ist nur bei
     /// `feasible == false` gesetzt (und dann nur, wenn ueberhaupt ein
     /// kleineres Ziel in der Rampen-Zeit noch aufgeht).
-    public struct Result: Equatable {
+    public struct Result: Equatable, Sendable {
         public let feasible: Bool
         public let weeksNeeded: Int
         public let weeksAvailable: Int
