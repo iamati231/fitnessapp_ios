@@ -118,6 +118,28 @@ final class CardioHistoryExtractorTests: XCTestCase {
         XCTAssertEqual(result[0].runningDistanceKm, 5, "nur der Lauf-Anteil zaehlt in die Lauf-Distanz")
     }
 
+    /// Bugfix-Regression (kritischer Migrations-Fund): eine Session, deren
+    /// Log `exerciseNameSnapshot` gesetzt (wie jeder Log seit DEL-051), aber
+    /// das NEUE `exerciseEnduranceSportKindSnapshot` noch `nil` hat (additive
+    /// Migration, Feld existierte beim urspruenglichen Loggen noch nicht),
+    /// muss trotzdem korrekt als Laufen klassifiziert werden - ueber den
+    /// Live-Fallback auf die noch vorhandene Exercise. Beweist, dass der Fix
+    /// bis in den Extractor durchschlaegt, nicht nur auf `ExerciseLog` selbst.
+    func testMigratedSessionWithNilSportKindSnapshotStillClassifiesAsRunningViaLiveExercise() {
+        let exercise = makeCardioExercise(sportKind: .running)
+        let session = makeSession()
+        let log = ExerciseLog(setIndex: 0, weight: 0, reps: 0, rir: 0, exercise: exercise, session: session, distanceKm: 8, durationSeconds: 2400)
+        context.insert(log)
+        XCTAssertNotNil(log.exerciseNameSnapshot, "Testaufbau: wie jeder Log seit DEL-051")
+        log.exerciseEnduranceSportKindSnapshot = nil
+
+        let result = CardioHistoryExtractor.loggedSessions(from: [session])
+
+        XCTAssertTrue(result[0].isRunning, "eine migrierte Lauf-Session darf nicht als unbekannt/nicht-Lauf erscheinen")
+        XCTAssertEqual(result[0].runningDistanceKm, 8)
+        XCTAssertFalse(result[0].hasAmbiguousCardio)
+    }
+
     /// Anforderung 4: eine geloeschte `Exercise` darf die Klassifikation
     /// nicht veraendern - der Extractor liest `resolvedEnduranceSportKind`
     /// (Snapshot-first), nicht die Live-Exercise.

@@ -185,15 +185,36 @@ public final class ExerciseLog {
         return exercise?.isTimeBased ?? false
     }
 
-    /// AI-Running-Coach Phase 1: Sportart mit Snapshot-first-Auflesung,
-    /// identisches Verzweigungsmuster wie `resolvedIsCardio`/`resolvedIsTimeBased`
-    /// (`exerciseNameSnapshot != nil` als Beweis "dieser Log durchlief den
-    /// DEL-051-Snapshot-Pfad"). `nil` bedeutet immer "unbekannt" - weder ein
-    /// fehlender Snapshot noch eine fehlende Live-Exercise werden je als
-    /// Laufen angenommen.
+    /// AI-Running-Coach Phase 1 (Nachbesserung nach gefundenem Migrations-
+    /// Fehler, siehe Abschlussbericht): Sportart-Zugriff.
+    ///
+    /// Bugfix: der urspruengliche Entwurf kopierte das `exerciseNameSnapshot
+    /// != nil`-Verzweigungsmuster von `resolvedIsCardio`/`resolvedIsTimeBased`
+    /// - das war hier falsch. `exerciseNameSnapshot` wird seit DEL-051 (lange
+    /// vor diesem Feld) fuer JEDEN Log mit `exercise != nil` gesetzt, also
+    /// nehmen praktisch ALLE Bestands-Logs den "Snapshot"-Zweig, in dem das
+    /// NEUE `exerciseEnduranceSportKindSnapshot` durch die additive
+    /// Migration zwangslaeufig `nil` ist (Lightweight Migration fuehrt
+    /// `init` nicht erneut aus). Ergebnis waere gewesen: die gesamte
+    /// Lauf-Historie VOR diesem Feld erscheint als "unbekannte Sportart",
+    /// obwohl die noch lebende `Exercise` die Antwort laengst kennt
+    /// (`PlanGenerator`/`ProgramInstantiator` setzen `enduranceSportKind`
+    /// bereits seit vor diesem Feld korrekt).
+    ///
+    /// Korrigierte Regel, unabhaengig von `exerciseNameSnapshot`:
+    /// 1. Snapshot gesetzt (`exerciseEnduranceSportKindSnapshot != nil`) ->
+    ///    IMMER diesen Wert verwenden, nie die Live-Exercise (die Sportart
+    ///    ist eine unveraenderliche Tatsache des damaligen Laufs - eine
+    ///    spaetere Aenderung an der Live-Exercise darf einen bereits
+    ///    geschnappschussten Log nie umklassifizieren).
+    /// 2. Snapshot `nil` (Bestandslog VOR diesem Feld ODER die Exercise
+    ///    hatte beim Loggen schlicht keine Sportart gepflegt) -> auf die
+    ///    noch lebende `exercise` zurueckfallen, falls vorhanden.
+    /// 3. Weder Snapshot noch lebende Exercise verfuegbar -> `nil`
+    ///    ("unbekannt"), NIE als Laufen geraten.
     public var resolvedEnduranceSportKind: TrainingTypeKind? {
-        if exerciseNameSnapshot != nil {
-            return exerciseEnduranceSportKindSnapshot.flatMap(TrainingTypeKind.init(rawValue:))
+        if let raw = exerciseEnduranceSportKindSnapshot {
+            return TrainingTypeKind(rawValue: raw)
         }
         return exercise?.enduranceSportKind
     }

@@ -107,10 +107,68 @@ final class ExerciseLogEnduranceSportKindTests: XCTestCase {
         XCTAssertEqual(log.resolvedEnduranceSportKind, .running, "bereits geloggte Einheiten duerfen durch eine spaetere Aenderung an der Plan-Uebung nicht umklassifiziert werden")
     }
 
-    /// Anforderung 2/3 (Migration): ein Alt-Log aus der Zeit vor diesem Feld
-    /// hat `exerciseNameSnapshot == nil` (kein DEL-051-Snapshot ueberhaupt) -
-    /// `resolvedEnduranceSportKind` faellt dann auf die Live-Exercise zurueck,
-    /// genau wie `resolvedIsCardio`/`resolvedIsTimeBased` es bereits tun.
+    // MARK: - Bugfix-Regression (kritischer Migrations-Fund im Abschlussbericht)
+    //
+    // Der urspruengliche Entwurf gatete den Live-Fallback hinter
+    // `exerciseNameSnapshot != nil` (kopiert von `resolvedIsCardio`/
+    // `resolvedIsTimeBased`). Das war falsch: `exerciseNameSnapshot` ist seit
+    // DEL-051 - lange vor diesem Feld - fuer JEDEN Log mit `exercise != nil`
+    // gesetzt. Praktisch jeder Bestandslog nahm dadurch den "Snapshot"-Zweig,
+    // in dem das NEUE `exerciseEnduranceSportKindSnapshot` durch die additive
+    // Migration zwangslaeufig `nil` ist - die gesamte Lauf-Historie VOR
+    // diesem Feld waere als "unbekannte Sportart" erschienen, obwohl die noch
+    // lebende `Exercise` die Antwort laengst kennt. Die folgenden drei Tests
+    // decken genau DIESEN (haeufigen) Fall ab - nicht den selteneren Fall
+    // "gar kein DEL-051-Snapshot" weiter unten.
+
+    /// Der zentrale Migrations-Fall: `exerciseNameSnapshot` ist (wie bei
+    /// jedem Log seit DEL-051) gesetzt, nur das NEUE Sportart-Feld ist `nil`,
+    /// weil es beim urspruenglichen Loggen noch nicht existierte.
+    func testMigratedLogWithPopulatedNameSnapshotButNilSportKindSnapshotFallsBackToLiveRunningExercise() {
+        let exercise = makeCardioExercise(sportKind: .running)
+        let log = ExerciseLog(setIndex: 0, weight: 0, reps: 1, rir: 0, exercise: exercise)
+        context.insert(log)
+        XCTAssertNotNil(log.exerciseNameSnapshot, "Testaufbau: exerciseNameSnapshot ist seit DEL-051 immer gesetzt")
+        log.exerciseEnduranceSportKindSnapshot = nil
+
+        XCTAssertEqual(
+            log.resolvedEnduranceSportKind, .running,
+            "ein migrierter Bestandslog mit noch lebender Lauf-Exercise darf nicht als unbekannt gelten"
+        )
+    }
+
+    func testMigratedLogWithPopulatedNameSnapshotButNilSportKindSnapshotFallsBackToLiveCyclingExercise() {
+        let exercise = makeCardioExercise(sportKind: .cycling)
+        let log = ExerciseLog(setIndex: 0, weight: 0, reps: 1, rir: 0, exercise: exercise)
+        context.insert(log)
+        log.exerciseEnduranceSportKindSnapshot = nil
+
+        XCTAssertEqual(log.resolvedEnduranceSportKind, .cycling)
+    }
+
+    /// Kehrseite: ein migrierter Log OHNE jede noch lebende Exercise (z.B.
+    /// bereits vor der Migration geloescht) UND ohne Sportart-Snapshot bleibt
+    /// unbekannt - unabhaengig davon, dass `exerciseNameSnapshot` gesetzt ist.
+    func testMigratedLogWithNoRelatedExerciseAndNilSportKindSnapshotIsUnknown() throws {
+        let exercise = makeCardioExercise(sportKind: .running)
+        let log = ExerciseLog(setIndex: 0, weight: 0, reps: 1, rir: 0, exercise: exercise)
+        context.insert(log)
+        log.exerciseEnduranceSportKindSnapshot = nil
+        try context.save()
+
+        context.delete(exercise)
+        try context.save()
+
+        XCTAssertNotNil(log.exerciseNameSnapshot, "Testaufbau: exerciseNameSnapshot bleibt nach dem Delete erhalten")
+        XCTAssertNil(
+            log.resolvedEnduranceSportKind,
+            "ohne Snapshot und ohne lebende Exercise bleibt die Sportart unbekannt - nie als Laufen geraten"
+        )
+    }
+
+    /// Selterener Randfall: ein Log aus der Zeit VOR DEL-051 selbst hat auch
+    /// `exerciseNameSnapshot == nil` - auch hier muss der Live-Fallback
+    /// greifen, exakt wie bei `resolvedIsCardio`/`resolvedIsTimeBased`.
     /// Existiert auch die Live-Exercise nicht mehr, bleibt das Ergebnis `nil`
     /// ("unbekannt") - niemals als Laufen angenommen.
     func testLegacyLogWithoutAnySnapshotFallsBackToLiveExerciseThenToUnknown() throws {
