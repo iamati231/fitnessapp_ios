@@ -19,7 +19,11 @@ internal func cardioRaceCalendarValues(
     let raceDay = calendar.startOfDay(for: raceDate)
     let days = calendar.dateComponents([.day], from: today, to: raceDay).day ?? 0
     guard days >= 0 else { return (nil, nil) }
-    let weeks = calendar.dateComponents([.weekOfYear], from: today, to: raceDay).weekOfYear ?? 0
+    // dateComponents([.weekOfYear],from:to:) gives floor(days/7), not calendar-week boundaries.
+    // Snap both dates to their week start first so the difference is in whole weeks.
+    let nowWeekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+    let raceWeekStart = calendar.dateInterval(of: .weekOfYear, for: raceDay)?.start ?? raceDay
+    let weeks = calendar.dateComponents([.weekOfYear], from: nowWeekStart, to: raceWeekStart).weekOfYear ?? 0
     return (days, max(0, weeks))
 }
 
