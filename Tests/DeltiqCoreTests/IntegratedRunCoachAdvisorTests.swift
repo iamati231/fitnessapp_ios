@@ -542,10 +542,17 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
     }
 
     func testDataQuality_density_historyInsufficient_surfaced() {
-        // .insufficientHistory(daysAvailable: 10) → .densityHistoryInsufficient(daysAvailable: 10), keine Tage→Wochen-Umrechnung
-        let d = makeDensityAssessment(outcome: .balanced, dataGaps: [.insufficientHistory(daysAvailable: 10)])
+        // .insufficientHistory(10 Tage) → .densityHistoryInsufficient(daysAvailable: 10), keine Tage→Wochen-Umrechnung.
+        // Realistischer Zustand: zu wenig Historie → .insufficientRecoveryEvidence (nicht .balanced).
+        // Fehlende Historie ist eine Datenlücke, kein Nachweis schlechter Regeneration.
+        let d = makeDensityAssessment(
+            outcome: .insufficientRecoveryEvidence,
+            dataGaps: [.insufficientHistory(daysAvailable: 10)]
+        )
         let result = assess(densityAssessment: d)
         XCTAssertTrue(result.dataQualityIssues.contains(.densityHistoryInsufficient(daysAvailable: 10)))
+        XCTAssertTrue(result.dataQualityIssues.contains(.recoveryEvidenceUnavailable))
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
     }
 
     func testDataQuality_noDuplicates_recoveryEvidenceFromOutcomeAndGap() {
