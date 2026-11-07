@@ -134,7 +134,20 @@ public enum IntegratedRunCoachAdvisor {
 | 11 | `outcome == .onTrack` + `loadDevelopment == .stable/.declining` | `.maintainCurrent` |
 | 12 | Alles andere | `.maintainCurrent` |
 
-### Präzisierungen für Prioritätsregeln 2 und 3
+### Präzisierungen für Prioritätsregeln 1, 2, 3 und 6
+
+**Prio 1 — Drei unterschiedliche Datenzustände (nicht vermischen!):**
+Die Prio-1-Trigger `loadTrend == nil` und `dataCompleteness == .insufficient` decken zwei verschiedene Szenarien ab:
+- `loadTrend == nil`: Kein einziges Training vorhanden (`activities.isEmpty` → `cachedLoadTrend` bleibt `nil`)
+- `dataCompleteness == .insufficient`: Sessions vorhanden, aber `historicalWeekCount < 3` (`minimumCompleteWeeksForTrend`, `TrainingLoadTrendAnalyzer.swift:41`)
+- `dataCompleteness == .partial`: ≥ 3 Vergleichswochen vorhanden, aber Datenlücken (z.B. fehlende Distanz, keine Dauer). **KEIN Prio-1-Trigger** — Prios 2–12 laufen durch.
+
+`dataCompleteness == .complete` wird NIEMALS zurückgegeben, da `.durationDataUnavailable` immer als `Reason` angehängt wird (das Datenmodell erfasst keine Laufdauer, `TrainingLoadTrendAnalyzer.swift:319`). Fehlende optionale Belastungsdaten dürfen eine ansonsten mögliche Rennverlaufs-Bewertung nicht blockieren.
+
+Testfälle Prio 1:
+- `testInsufficientData_noSessions` — `loadTrend == nil` → `.insufficientData` / `.shortHistory`
+- `testInsufficientData_shortHistory` — `dataCompleteness == .insufficient` (< 3 Wochen) → `.insufficientData`
+- `testPartialData_prios2to12EvaluateNormally` — `dataCompleteness == .partial`, `raceProgress != nil` → Prio 2–12 werden ausgewertet (kein Prio-1-Kurzschluss)
 
 **Prio 2 — Ableitung von `runningSessionCount` aus `weeklyFlags`:**
 Prio 2 feuert, wenn keine der letzten 4 ausgewerteten Wochen (exkl. `.beforeCoachingObservationPeriod`) Laufaktivität enthält:
@@ -146,7 +159,7 @@ let evaluated = raceProgress.weeklyFlags
 // (nil = Woche mit Lauf; .crossTrainingOnlyWeek / .strengthOnlyWeek / .genuineGap / .ambiguousActivityWeek = kein Lauf)
 ```
 
-**Prio 3 — Schwellenwert für "dominant":**
+**Prio 3 — Schwellenwert für "dominant" und Klassifikation gemischter Sessions:**
 "isCrossTrainingOnly dominant" = mindestens 3 der letzten 4 ausgewerteten Wochen sind `.crossTrainingOnlyWeek`:
 ```swift
 let evaluated = raceProgress.weeklyFlags
@@ -155,6 +168,59 @@ let evaluated = raceProgress.weeklyFlags
 let crossTrainingCount = evaluated.filter { $0 == .crossTrainingOnlyWeek }.count
 // Prio 3: crossTrainingCount >= 3
 ```
+
+⚠️ **Namens-Falle — `isCrossTrainingOnly` auf `LoggedSession` ist IRREFÜHREND:**
+`CardioHistoryExtractor.swift:51`: `isCrossTrainingOnly = !cyclingLogs.isEmpty` — fires für JEDE Session mit Cycling, unabhängig davon, ob auch Running vorhanden ist. Eine gemischte Lauf+Rad-Session hat also `isRunning = true` UND `isCrossTrainingOnly = true` gleichzeitig.
+
+Folge im Aggregator (`CardioVolumeOverTimeAggregator.swift:88`): Beide Zähler werden inkrementiert:
+```swift
+if session.isRunning { bucket.runningSessionCount += 1 }
+if session.isCrossTrainingOnly { bucket.crossTrainingSessionCount += 1 }
+```
+
+Die `WeeklyFlag`-Klassifikation (`RaceProgressAssessment.swift:191`) prüft ZUERST `runningSessionCount > 0`:
+```swift
+if point.runningSessionCount > 0 { return nil }  // → Laufwoche (nil) — KORREKT
+if point.crossTrainingSessionCount > 0 { return .crossTrainingOnlyWeek }
+```
+
+**Eine gemischte Lauf+Rad-Woche wird korrekt als Laufwoche (`nil`) klassifiziert, NICHT als `.crossTrainingOnlyWeek`.** Prio 3 kann nur feuern, wenn `runningSessionCount == 0` in dieser Woche. Die Namens-Verwirrung auf Session-Ebene führt NICHT zu Fehlklassifikationen auf Wochenebene.
+
+Testfälle Prio 3 (am `IntegratedRunCoachAdvisor`):
+- `testCrossTraining_pureCyclingWeek` — 1 Woche nur Radfahren → `.crossTrainingOnlyWeek` → kein Prio-3-Feuer (< 3 von 4)
+- `testCrossTraining_mixedRunCyclingWeek` — Lauf+Rad in einer Session → `nil` (Laufwoche) → `.crossTrainingOnlyWeek` NICHT gesetzt
+- `testCrossTraining_pureRunning` — nur Laufen → `nil` (Laufwoche) ✓
+- `testCrossTraining_unknownActivity` — unbekannte Cardio, kein Lauf → `.ambiguousActivityWeek` ✓
+- `testCrossTraining_threeCrossOneRun` — 3 × `.crossTrainingOnlyWeek`, 1 × `nil` (in beliebiger Reihenfolge innerhalb der letzten 4) → Prio 3 feuert
+- `testCrossTraining_fourCrossTraining` — 4 × `.crossTrainingOnlyWeek` → Prio 2 feuert vorher (kein Lauf in 4 Wochen), Prio 3 unreachable
+
+**Prio 6 — `recentTrainingGap`: Schwellenwert, unvollständige Wochen und Datenlücken:**
+Prio 6 basiert auf `RaceProgressAssessment.minimumConsecutiveGapWeeksForConcern = 2` (Quellcode, `RaceProgressAssessment.swift:136`). **Eine einzige trainingsfreie Woche löst Prio 6 NICHT aus.** Erst zwei aufeinanderfolgende `.genuineGap`-Wochen (`trailingGenuineGapStreak >= 2`) triggern `recentTrainingGap`.
+
+`.genuineGap` entsteht nur, wenn ALLE Zähler null sind:
+```swift
+// RaceProgressAssessment.swift:198
+// (runningSessionCount == 0 && crossTrainingSessionCount == 0 
+//  && strengthSessionCount == 0 && ambiguousCardioSessionCount == 0)
+return .genuineGap
+```
+Eine Deload-Woche mit einem einzigen Workout (Kraft oder Rad) → `.strengthOnlyWeek` oder `.crossTrainingOnlyWeek`, KEIN `.genuineGap`.
+
+⚠️ **Unvollständige laufende Woche kann als `.genuineGap` zählen:**
+`CardioVolumeOverTimeAggregator` erstellt einen Bucket für JEDE Woche im Fenster, auch die aktuelle unvollständige. Wenn der Nutzer noch nichts in der laufenden Woche geloggt hat, erscheinen alle Zähler als 0 → `.genuineGap`. Damit: 1 abgeschlossene Gap-Woche + laufende Woche ohne Session = streak 2 → Prio 6 feuert. Dies ist BEABSICHTIGT (Daten spiegeln Realität wider) und selbstkorrigierend: sobald eine Session geloggt wird, verschwindet der `.genuineGap` der aktuellen Woche.
+
+⚠️ **Geplante Trainingspause nicht unterscheidbar von ungeplanter Lücke:**
+Das System kennt keine "geplante Ruhezeit"-Information aus dem Trainingsplan. Eine 2-wöchige Holiday-Pause mit null Workouts ist für das System identisch mit einer ungewollten Trainingspause. Dokumentierte Datenlücke — keine Falschaussage, keine Workaround-Implementierung.
+
+⚠️ **Renndatum-Nähe:** Die Prio-6-Regel ignoriert `weeksToRace`. Wenn der Nutzer 1 Woche vor dem Rennen ein 2-wöchiges Taper hatte (reduzierte Belastung, aber irgendetwas geloggt → kein `.genuineGap`), feuert Prio 6 nicht. Falls das Taper lückenlos mit Workouts war: korrekt. Falls komplett pausiert: `.buildRunningBase` 1 Woche vor Rennen ist inhaltlich fragwürdig, aber durch `minimumConsecutiveGapWeeksForConcern = 2` nur bei 2+ komplett leeren Wochen erreichbar — ein echter Edge-Case.
+
+Testfälle Prio 6:
+- `testGap_oneCompleteGapWeek` — 1 genuineGap-Woche → streak = 1 < 2 → kein Prio-6-Feuer
+- `testGap_twoCompleteGapWeeks` — 2 genuineGap-Wochen trailing → streak = 2 → Prio 6 feuert → `.buildRunningBase`
+- `testGap_currentWeekNotYetLogged` — letzte abgeschlossene Woche = genuineGap, aktuelle Woche = noch kein Training → streak = 2 → Prio 6 feuert (self-correcting sobald Session geloggt)
+- `testGap_deloadWeekWithOneWorkout` — Woche mit nur Krafttraining → `.strengthOnlyWeek`, KEIN genuineGap → streak reset
+- `testGap_activePlan_noContext` — kein Plan-Information verfügbar → System kann geplante Pause nicht erkennen (Datenlücke dokumentiert)
+- `testGap_preRaceRest` — 2 Wochen komplett leer vor Rennen → Prio 6 feuert (Edge-Case, inhaltlich grenzwertig)
 
 ### Tests
 **Datei**: `Tests/DeltiqCoreTests/IntegratedRunCoachAdvisorTests.swift` (NEU)
@@ -214,6 +280,24 @@ WP-A muss zuerst kompilieren.
 cachedLoadTrend = trend
 ```
 Dann `CardioCoachDetailView` mit dem neuen Parameter aufrufen: `loadTrend: cachedLoadTrend`.
+
+⚠️ **KRITISCH — `cachedLoadTrend` im frühen Return zurücksetzen:**
+`computeTrainingDensityAssessment()` hat einen frühen `guard !activities.isEmpty else { return nil }` (vor der `trend`-Berechnung). Dieser Zweig setzt `cachedDensityAssessment` auf `nil`, aber `cachedLoadTrend` NICHT — ein veralteter Trend bleibt bei nächster Verwendung stehen, wenn alle Sessions gelöscht werden.
+
+**Implementierungsanforderung:** Der frühe-Return-Zweig MUSS explizit beide Caches zurücksetzen:
+```swift
+private func computeTrainingDensityAssessment() -> TrainingDensityAnalyzer.Assessment? {
+    let activities = TrainingActivityExtractor.extract(from: completedSessions)
+    guard !activities.isEmpty else {
+        cachedLoadTrend = nil  // ← PFLICHT: verhindert veralteten Trend bei leerer Session-Liste
+        return nil
+    }
+    // ... rest der Funktion
+    cachedLoadTrend = trend
+    return TrainingDensityAnalyzer.analyze(input: input)
+}
+```
+Beide Caches (`cachedDensityAssessment` und `cachedLoadTrend`) müssen bei jedem `.onChange`-Trigger konsistent aktualisiert oder zurückgesetzt werden. Der Setter in `.onChange` überschreibt `cachedDensityAssessment = computeTrainingDensityAssessment()` automatisch mit `nil` wenn die Funktion `nil` zurückgibt — ABER `cachedLoadTrend` muss INNERHALB der Funktion gesetzt werden, damit der Reset vor dem `return nil` passiert.
 
 ### Implementierungsdetails
 
