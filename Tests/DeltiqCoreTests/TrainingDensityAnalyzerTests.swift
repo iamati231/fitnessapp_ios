@@ -177,11 +177,11 @@ final class TrainingDensityAnalyzerTests: XCTestCase {
         XCTAssertNil(TrainingDensityAnalyzer.minimumGapHours(between: [now]))
     }
 
-    func testMinimumGapHoursComputesCorrectly() {
+    func testMinimumGapHoursComputesCorrectly() throws {
         let d1 = now
         let d2 = now.addingTimeInterval(10 * 3600)  // 10h later
         let d3 = now.addingTimeInterval(50 * 3600)  // 50h later
-        let gap = TrainingDensityAnalyzer.minimumGapHours(between: [d1, d2, d3])
+        let gap = try XCTUnwrap(TrainingDensityAnalyzer.minimumGapHours(between: [d1, d2, d3]))
         XCTAssertEqual(gap, 10, accuracy: 0.01)
     }
 
