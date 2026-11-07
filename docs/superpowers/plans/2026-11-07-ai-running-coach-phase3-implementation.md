@@ -111,22 +111,36 @@ public enum IntegratedRunCoachAdvisor {
         loadTrend: TrainingLoadTrend?,
         densityAssessment: TrainingDensityAssessment?,
         goal: CardioGoal?,
-        weeksToRace: Int?,   // für Prio 9: volumePlateau-Schwellenwert (< 10 Wochen)
-        daysToRace: Int?,    // für Prio 6a: exakte 14-Tage-Grenze (NEU — weeksToRace reicht nicht)
+        weeksToRace: Int?,   // für Prio 9: volumePlateau-Schwellenwert (< 10 Wochen); via [.weekOfYear], zählt Wochengrenzen
+        daysToRace: Int?,    // für Prio 6a: exakte 14-Tage-Grenze; via startOfDay + [.day], DST-sicher (NEU)
         planAdjustmentPending: Bool
     ) -> IntegratedCoachingOutcome
 }
 ```
 
 > ⚠️ **Warum `daysToRace` als separater Parameter:**
-> `Calendar.dateComponents([.weekOfYear], from: now, to: raceDate).weekOfYear` schneidet auf ganze Wochen ab (Ganzzahl-Division durch 7). Das bedeutet: 14 Tage → `weeksToRace = 2` und 15 Tage → `weeksToRace = 2` — derselbe Wert. `weeksToRace <= 2` deckt damit 0–20 Tage ab, nicht 0–14 Tage. Die fachliche Grenze ≤ 14 Tage lässt sich mit `weeksToRace` allein nicht exakt abbilden. WP-A muss `daysToRace: Int?` als separaten Parameter entgegennehmen.
+> `Calendar.dateComponents([.weekOfYear], from: now, to: raceDate).weekOfYear` zählt **locale-spezifische Wochengrenzen** (nicht Ganzzahl-Division durch 7). Das Ergebnis hängt davon ab, auf welchen Wochentag `now` fällt. Beispiele bei Wochenbeginn Montag:
+> - Montag heute: 14 Tage → `weeksToRace = 2`; 15 Tage → `weeksToRace = 2`; 20 Tage → `weeksToRace = 2`; 21 Tage → `weeksToRace = 3` → deckt 0–20 Tage ab
+> - Samstag heute: 14 Tage → `weeksToRace = 2`; 15 Tage → `weeksToRace = 2`; **16 Tage → `weeksToRace = 3`** → deckt nur 0–15 Tage ab
 >
-> Caller-Berechnung (in `CardioCoachDetailView`, neben der bestehenden `weeksToRace`-Berechnung):
+> Die fachliche Grenze ≤ 14 Tage lässt sich mit `weeksToRace` allein nicht exakt und wochentag-unabhängig abbilden. WP-A muss `daysToRace: Int?` als separaten Parameter entgegennehmen.
+>
+> **Kalender- und Zeitzonenquelle:** `Calendar.current` — identisch mit dem Muster im gesamten Codebase (u.a. `AbsenceDeload.swift`, `CardioCoachDetailView`, `HealthKitService`). Keine `TimeZone`-Überschreibung.
+>
+> **Caller-Berechnung** (in `CardioCoachDetailView`, neben der bestehenden `weeksToRace`-Berechnung):
 > ```swift
+> let cal = Calendar.current
 > let daysToRace: Int? = profile.cardioRaceDate.flatMap {
->     Calendar.current.dateComponents([.day], from: Date(), to: $0).day
+>     let today = cal.startOfDay(for: Date())    // Tagesbeginn lokal, DST-bereinigt
+>     let raceDay = cal.startOfDay(for: $0)      // Renntag auf 00:00 normalisiert
+>     return cal.dateComponents([.day], from: today, to: raceDay).day
 > }.flatMap { $0 >= 0 ? $0 : nil }  // negative Werte (Rennen in der Vergangenheit) = nil
 > ```
+>
+> **Warum `startOfDay`:** Das etablierte Codebase-Muster (`AbsenceDeload.swift:107-111`) normalisiert beide Datumswerte auf `startOfDay`, bevor `dateComponents([.day], ...)` aufgerufen wird. Dadurch:
+> - Unterschiedliche Uhrzeiten am selben Kalendertag liefern denselben `daysToRace`-Wert (Uhrzeit-Invarianz)
+> - Sommerzeitwechsel (23- oder 25-Stunden-Tage) haben keinen Einfluss — `startOfDay(for:)` gibt den tatsächlichen ersten Moment des Kalendertags zurück
+> - Ein Renntag um 06:00 früh und einer um 23:30 abends ergeben für denselben Kalendertag `daysToRace = 0`
 
 ### Prioritätsreihenfolge (12 Stufen, oben = höchste Priorität)
 
@@ -270,21 +284,34 @@ Bei Rennen in ≤ 14 Tagen (`daysToRace <= 14`) ist kein sinnvoller Laufbasis-Au
 - **Prio 6a** (`daysToRace != nil && daysToRace! <= 14`): `.maintainCurrent` + `.recentGapDetected` — keine Volumenerhöhung, kein Tapering, keine Aussage über Renntauglichkeit
 - **Prio 6b** (kein Rennen oder `daysToRace > 14`): `.buildRunningBase` + `.recentGapDetected` — gradueller Wiederaufbau
 
-**Schwellenwert und Berechnung:** Der Ausdruck `Calendar.dateComponents([.weekOfYear], from: now, to: raceDate).weekOfYear` schneidet auf ganze Wochen ab — 14 Tage und 15 Tage ergeben denselben Wert (2 Wochen). `weeksToRace <= 2` deckt damit 0–20 Tage ab, nicht nur 0–14 Tage. WP-A muss deshalb `daysToRace: Int?` aus `Calendar.dateComponents([.day], ...)` verwenden:
+**Schwellenwert und Berechnung:** `Calendar.dateComponents([.weekOfYear], ...)` zählt locale-spezifische Wochengrenzen, keine Ganzzahl-Division durch 7. Der bedeckte Bereich für `weeksToRace <= 2` hängt vom Wochentag ab — zwischen 0–15 Tage (Samstag, Wochenbeginn Montag) und 0–20 Tage (Montag, Wochenbeginn Montag). Die exakte 14-Tage-Grenze ist mit `weeksToRace` nicht wochentag-unabhängig abbildbar. WP-A muss deshalb `daysToRace: Int?` mit `startOfDay`-Normalisierung verwenden:
 
-| Abstand | `weeksToRace` | `daysToRace` | Prio 6a mit `weeksToRace <= 2` | Prio 6a mit `daysToRace <= 14` |
-|---------|--------------|--------------|-------------------------------|-------------------------------|
-| 0 Tage (Renntag) | 0 | 0 | ja | ja ✓ |
-| 1 Tag | 0 | 1 | ja | ja ✓ |
-| 7 Tage | 1 | 7 | ja | ja ✓ |
-| 14 Tage | 2 | 14 | ja | ja ✓ |
-| **15 Tage** | **2** | **15** | **ja ✗** | nein ✓ |
-| **20 Tage** | **2** | **20** | **ja ✗** | nein ✓ |
-| 21 Tage | 3 | 21 | nein | nein ✓ |
+| Abstand | `weeksToRace` (Montag heute, Mo-Start) | `daysToRace` (normalisiert) | Prio 6a mit `daysToRace <= 14` |
+|---------|----------------------------------------|----------------------------|-------------------------------|
+| Vergangenes Rennen | — | nil (negativ → nil) | nein → Prio 6b ✓ |
+| 0 Tage (Renntag) | 0 | 0 | ja ✓ |
+| 1 Tag | 0 | 1 | ja ✓ |
+| 7 Tage | 1 | 7 | ja ✓ |
+| 13 Tage | 1 | 13 | ja ✓ |
+| 14 Tage | 2 | 14 | ja ✓ |
+| **15 Tage** | **2** | **15** | **nein → Prio 6b ✓** |
+| 20 Tage | 2 | 20 | nein → Prio 6b ✓ |
+| 21 Tage | 3 | 21 | nein → Prio 6b ✓ |
+| Kein Renntag | nil | nil | nein → Prio 6b ✓ |
 
-Negative Werte (Rennen in der Vergangenheit) werden im Caller auf `nil` abgebildet → Prio 6b greift.
+**Kalender- und Zeitzonenquelle:** `Calendar.current` — locale-aware, Zeitzone des Nutzers, keine `TimeZone`-Überschreibung. Identisch mit `AbsenceDeload.swift`, `HealthKitService` und allen anderen Kalenderberechnungen im Codebase.
 
-**Tagesgrenze und Zeitzonen:** `Calendar.dateComponents([.day], from: now, to: raceDate)` verwendet den Kalender des Nutzers (Locale-spezifisch). Das Ergebnis zählt Kalendertage, keine 24-Stunden-Perioden. Zeitzonen-Effekte sind akzeptabel (±1 Tag) und fachlich irrelevant.
+**Kalendertagsemantik und `startOfDay`-Normalisierung:** Das etablierte Codebase-Muster (`AbsenceDeload.swift:107-111`) normalisiert beide Datumswerte auf `startOfDay(for:)` vor `dateComponents([.day], ...)`. `startOfDay(for:)` gibt den tatsächlichen ersten Moment des Kalendertags zurück — DST-bereinigt. Damit:
+
+| Szenario | `daysToRace` (mit startOfDay) |
+|----------|-------------------------------|
+| Jetzt 06:00, Rennen am selben Kalendertag 20:00 | 0 ✓ |
+| Jetzt 23:30, Rennen am selben Kalendertag 09:00 | 0 ✓ |
+| Jetzt 06:00, Rennen in 14 Kalendertagen 09:00 | 14 ✓ |
+| Jetzt 23:30, Rennen in 14 Kalendertagen 09:00 | 14 ✓ |
+| Sommerzeitwechsel zwischen heute und Renntag | kein Einfluss — startOfDay ist DST-bereinigt ✓ |
+
+Negative Werte (Rennen in der Vergangenheit) → `nil` im Caller → Prio 6b greift.
 
 **Lokalisierung:** `integratedCoach.action.maintainCurrent` → **"Aktuelles Programm beibehalten."** (war: "Du bist auf Kurs – weiter so." — letzteres ist irreführend bei Prio 6a mit Gap-Erkennung). Kombinierter Text Prio 6a: "Trainingspause erkannt." + "Aktuelles Programm beibehalten."
 
@@ -413,7 +440,15 @@ WP-A muss zuerst kompilieren.
 3. **Parameter `loadTrend: TrainingLoadTrend?`** — NEU, von `DashboardView` übergeben (separates `cachedLoadTrend`; `TrainingLoadTrend` ist NICHT in `TrainingDensityAnalyzer.Assessment` enthalten)
 4. **`@Query(filter: #Predicate<TrainingPlan> { $0.isActive == true }) private var activePlans`** — für `planAdjustmentPending = CoachAdjustmentCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: activePlans)) != nil`
 5. **`weeksToRace: Int?`** — lokal berechnet: `Calendar.current.dateComponents([.weekOfYear], from: Date(), to: raceDate).weekOfYear` (für Prio 9: volumePlateau-Schwellenwert)
-6. **`daysToRace: Int?`** — lokal berechnet: `Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day.flatMap { $0 >= 0 ? $0 : nil }` (für Prio 6a: exakte 14-Tage-Grenze — `weeksToRace` allein reicht nicht, da 15 Tage und 14 Tage denselben `weeksToRace`-Wert von 2 ergeben)
+6. **`daysToRace: Int?`** — lokal berechnet mit `startOfDay`-Normalisierung (für Prio 6a: exakte 14-Tage-Grenze — `weeksToRace` allein reicht nicht, da der bedeckte Bereich wochentag-abhängig ist):
+   ```swift
+   let cal = Calendar.current
+   let daysToRace: Int? = profile.cardioRaceDate.flatMap {
+       let today = cal.startOfDay(for: Date())
+       let raceDay = cal.startOfDay(for: $0)
+       return cal.dateComponents([.day], from: today, to: raceDay).day
+   }.flatMap { $0 >= 0 ? $0 : nil }
+   ```
 
 **DashboardView-Änderung:** `computeTrainingDensityAssessment()` berechnet `let trend = TrainingLoadTrendAnalyzer.analyze(...)` intern (Zeile 2888), verwirft es aber aktuell. Neu: zusätzlich `cachedLoadTrend = trend` setzen. Dafür in DashboardView:
 ```swift

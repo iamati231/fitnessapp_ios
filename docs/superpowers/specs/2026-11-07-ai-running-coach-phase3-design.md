@@ -503,19 +503,52 @@ Die ursprüngliche Prioritätstabelle aus §3.5 enthielt zwei Fehler, die hier k
 - **Prio 6** (ursprünglich): Nach einer Trainingspause ist das Volumen bereits niedrig. `reduceLoadThisWeek` wäre eine Empfehlung, noch weniger zu machen — das ist kontraproduktiv. Korrekt: gradueller Wiederaufbau → `buildRunningBase`.
 - **Prio 6a** (neu): Bei Rennen in ≤ 14 Tagen ist kein sinnvoller Laufbasis-Aufbau mehr möglich. Plötzliche Volumensteigerung kurz vor Wettkampf riskiert Überlastungsverletzungen. Die Gap ist erkannt (`.recentGapDetected`), aber die konservative Handlung ist `maintainCurrent` — keine automatische Planänderung, keine Tapering-Empfehlung, keine Aussage über Renntauglichkeit.
 
-**Schwellenwert `daysToRace <= 14`:** Für Prio 6a muss WP-A `daysToRace: Int?` als separaten Parameter entgegennehmen, berechnet via `Calendar.dateComponents([.day], from: now, to: raceDate).day`. Der Ausdruck `weeksToRace <= 2` (via `[.weekOfYear]`) reicht nicht: Er schneidet auf ganze Wochen ab und liefert für 14 Tage UND 15 Tage denselben Wert von 2 — 15 Tage würden fälschlich als Prio 6a klassifiziert. Korrekte Mapping-Tabelle für alle 7 Pflichtfälle:
+**Schwellenwert `daysToRace <= 14` — Kalendertagsemantik:**
 
-| Abstand | `weeksToRace` | `daysToRace` | Prio 6a mit `daysToRace <= 14` |
-|---------|--------------|--------------|-------------------------------|
-| Renntag (0 Tage) | 0 | 0 | ja ✓ |
-| 1 Tag | 0 | 1 | ja ✓ |
-| 7 Tage | 1 | 7 | ja ✓ |
-| 14 Tage | 2 | 14 | ja ✓ |
-| 15 Tage | 2 | 15 | nein → Prio 6b ✓ |
-| 20 Tage | 2 | 20 | nein → Prio 6b ✓ |
-| 21 Tage | 3 | 21 | nein → Prio 6b ✓ |
+Für Prio 6a muss WP-A `daysToRace: Int?` als separaten Parameter entgegennehmen. `weeksToRace <= 2` reicht nicht: `Calendar.dateComponents([.weekOfYear], ...)` zählt locale-spezifische Wochengrenzen — kein floor(days/7). Der abgedeckte Bereich für `weeksToRace <= 2` hängt vom Wochentag ab:
+- Montag (Wochenbeginn Mon): 0–20 Tage abgedeckt
+- Samstag (Wochenbeginn Mon): nur 0–15 Tage abgedeckt
+Die exakte 14-Tage-Grenze ist mit `weeksToRace` allein nicht wochentag-unabhängig abbildbar.
 
-Negative `daysToRace`-Werte (Renntag bereits vergangen) werden im Caller auf `nil` abgebildet → Prio 6b greift.
+**Kalender- und Zeitzonenquelle:** `Calendar.current` — locale-aware, keine `TimeZone`-Überschreibung. Identisches Muster im gesamten Codebase.
+
+**Berechnung:** Mit `startOfDay`-Normalisierung (etabliertes Codebase-Muster aus `AbsenceDeload.swift`):
+```swift
+let cal = Calendar.current
+let today = cal.startOfDay(for: Date())
+let raceDay = cal.startOfDay(for: raceDate)
+let daysToRace = cal.dateComponents([.day], from: today, to: raceDay).day
+// Negative Werte (Renntag vergangen) → nil → Prio 6b
+```
+
+`startOfDay(for:)` gibt den tatsächlichen ersten Moment des Kalendertags zurück — DST-bereinigt. Damit sind unterschiedliche Uhrzeiten am selben Kalendertag invariant.
+
+**Korrekte Mapping-Tabelle:**
+
+| Kalendertagsabstand | `daysToRace` (normalisiert) | Prio 6a mit `daysToRace <= 14` |
+|---------------------|----------------------------|---------------------------------|
+| Vergangenes Rennen | nil | nein → Prio 6b ✓ |
+| 0 (Renntag) | 0 | ja ✓ |
+| 1 | 1 | ja ✓ |
+| 7 | 7 | ja ✓ |
+| 13 | 13 | ja ✓ |
+| 14 | 14 | ja ✓ |
+| **15** | **15** | **nein → Prio 6b ✓** |
+| 20 | 20 | nein → Prio 6b ✓ |
+| 21 | 21 | nein → Prio 6b ✓ |
+| Kein Renntag | nil | nein → Prio 6b ✓ |
+
+**Uhrzeitvarianten** (alle invariant dank `startOfDay`):
+
+| Szenario | `daysToRace` |
+|----------|-------------|
+| Jetzt 06:00, Rennen am selben Kalendertag 20:00 | 0 |
+| Jetzt 23:30, Rennen am selben Kalendertag 09:00 | 0 |
+| Jetzt 06:00, Rennen in 14 Kalendertagen 09:00 | 14 |
+| Jetzt 23:30, Rennen in 14 Kalendertagen 09:00 | 14 |
+| Sommerzeitwechsel zwischen heute und Renntag | kein Einfluss |
+
+Negative `daysToRace`-Werte (Renntag bereits vergangen) → `nil` im Caller → Prio 6b greift.
 
 **Lokalisierung `integratedCoach.action.maintainCurrent`:** Wird zu "Aktuelles Programm beibehalten." geändert (statt "Du bist auf Kurs – weiter so." — letzteres ist irreführend bei Prio 6a, da die Gap erkannt wurde). Der kombinierte Text für Prio 6a wäre: "Trainingspause erkannt." + "Aktuelles Programm beibehalten." — ehrlich und ohne falsche Versprechen.
 
@@ -526,8 +559,8 @@ public static func assess(
     loadTrend: TrainingLoadTrend?,
     densityAssessment: TrainingDensityAssessment?,
     goal: CardioGoal?,
-    weeksToRace: Int?,    // für Prio 9: volumePlateau-Schwellenwert (< 10 Wochen)
-    daysToRace: Int?,     // für Prio 6a: exakte 14-Tage-Grenze (NEU)
+    weeksToRace: Int?,    // für Prio 9: volumePlateau-Schwellenwert (< 10 Wochen); via [.weekOfYear], kein floor(days/7)
+    daysToRace: Int?,     // für Prio 6a: exakte 14-Tage-Grenze (NEU); via startOfDay + [.day], DST-sicher
     planAdjustmentPending: Bool
 ) -> IntegratedCoachingOutcome
 ```
