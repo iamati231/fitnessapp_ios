@@ -109,11 +109,31 @@ struct RaceProgressDetailView: View {
     private var concernsSection: some View {
         Section {
             ForEach(Array(concerns.enumerated()), id: \.offset) { _, concern in
-                Text(concernText(concern))
-                    .font(.subheadline)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(concernText(concern))
+                        .font(.subheadline)
+                    Text(recommendation(for: concern))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         } header: {
             Text("raceProgress.detail.concernsHeader", bundle: .module)
+        }
+    }
+
+    private func recommendation(for concern: RaceProgressAssessment.Concern) -> String {
+        switch concern {
+        case .loadIncreasedTooFast:
+            return String(localized: "raceProgress.recommendation.loadIncreasedTooFast", bundle: .module)
+        case .insufficientRecovery:
+            return String(localized: "raceProgress.recommendation.insufficientRecovery", bundle: .module)
+        case .volumePlateau:
+            return String(localized: "raceProgress.recommendation.volumePlateau", bundle: .module)
+        case .goalLikelyUnrealistic:
+            return String(localized: "raceProgress.recommendation.goalLikelyUnrealistic", bundle: .module)
+        case .recentTrainingGap:
+            return String(localized: "raceProgress.recommendation.recentTrainingGap", bundle: .module)
         }
     }
 

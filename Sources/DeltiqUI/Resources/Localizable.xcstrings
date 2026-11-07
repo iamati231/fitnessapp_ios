@@ -68136,6 +68136,121 @@
         }
       }
     },
+    "raceProgress.recommendation.goalLikelyUnrealistic": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prüfen, ob ein angepasstes Wettkampfziel besser zum bisherigen Trainingsverlauf passt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consider whether an adjusted race goal might better match your training progress so far."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revize edilmiş bir yarış hedefinin şimdiye kadarki antrenman sürecinizle daha uyumlu olup olmadığını değerlendirin."
+          }
+        }
+      }
+    },
+    "raceProgress.recommendation.insufficientRecovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zwischen anspruchsvollen Laufeinheiten ausreichend Erholung einplanen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan adequate recovery time between demanding running sessions."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zorlu koşu antrenmanları arasında yeterli dinlenme süresi bırakın."
+          }
+        }
+      }
+    },
+    "raceProgress.recommendation.loadIncreasedTooFast": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufumfang zunächst stabil halten, statt ihn weiter zu steigern."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep your running volume stable for now rather than increasing it further."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu hacmini daha fazla artırmak yerine şimdilik sabit tutmayı deneyin."
+          }
+        }
+      }
+    },
+    "raceProgress.recommendation.recentTrainingGap": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach der Pause mit reduziertem Umfang beginnen und schrittweise aufbauen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After the break, start with reduced volume and build up gradually."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aradan sonra düşük hacimle başlayın ve kademeli olarak artırın."
+          }
+        }
+      }
+    },
+    "raceProgress.recommendation.volumePlateau": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochenumfang schrittweise erhöhen; die geplante Größenordnung von etwa 10 % beachten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gradually increase your weekly volume, keeping in mind a guideline of around 10%."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık hacmi kademeli olarak artırın; yaklaşık %10 artış kuralını göz önünde bulundurun."
+          }
+        }
+      }
+    },
     "raceProgress.dataGap.insufficientHistory": {
       "extractionState": "manual",
       "localizations": {
