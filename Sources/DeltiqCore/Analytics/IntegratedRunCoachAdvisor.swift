@@ -12,12 +12,15 @@ public enum IntegratedRunCoachAdvisor {
         raceProgress: RaceProgressAssessment.Assessment?,
         loadTrend: TrainingLoadTrend?,
         densityAssessment: TrainingDensityAnalyzer.Assessment?,
-        goal: CardioGoal?,
         weeksToRace: Int?,
         daysToRace: Int?,
         planAdjustmentPending: Bool
     ) -> IntegratedCoachingOutcome {
-        let issues = collectDataQualityIssues(from: loadTrend)
+        let issues = collectDataQualityIssues(
+            from: loadTrend,
+            raceProgress: raceProgress,
+            densityAssessment: densityAssessment
+        )
 
         func out(_ action: CoachingAction, _ rationale: CoachingRationale) -> IntegratedCoachingOutcome {
             IntegratedCoachingOutcome(primaryAction: action, rationale: rationale, dataQualityIssues: issues)
@@ -66,24 +69,40 @@ public enum IntegratedRunCoachAdvisor {
             return out(.reassessGoal, .goalLikelyUnreachable)
         }
 
-        // Prio 6 — Aktuelle Trainingspause (6a: Renntag ≤ 14 Tage → halten)
+        // Prio 6 — Aktuelle Trainingspause (6a: Renntag 0–14 Tage → halten)
         if concerns.contains(where: { if case .recentTrainingGap = $0 { return true }; return false }) {
-            if let days = daysToRace, days <= 14 {
+            if let days = daysToRace, days >= 0 && days <= 14 {
                 return out(.maintainCurrent, .recentGapDetected)
             }
             return out(.buildRunningBase, .recentGapDetected)
         }
 
-        // Prio 7 — Unzureichende Erholung
-        if concerns.contains(where: { if case .insufficientRecovery = $0 { return true }; return false }) {
+        // Prio 7 — Unzureichende Erholung (raceProgress oder Dichte-Signale)
+        let rpInsuffRecovery = concerns.contains(where: { if case .insufficientRecovery = $0 { return true }; return false })
+        let densityRecovery: Bool = {
+            guard let d = densityAssessment else { return false }
+            if d.outcome == .highTrainingDensity || d.outcome == .insufficientRecoveryEvidence { return true }
+            return d.concerns.contains(where: {
+                if case .deloadIndicatedByExistingSystem = $0 { return true }
+                if case .closelySpacedRunningSessions = $0 { return true }
+                if case .highConsecutiveTrainingDays = $0 { return true }
+                return false
+            })
+        }()
+        if rpInsuffRecovery || densityRecovery {
             return out(.reduceLoadThisWeek, .recoveryNeeded)
         }
 
-        // Prio 8 — Belastung zu schnell gestiegen
+        // Prio 8 — Belastung zu schnell gestiegen (nur Laufen, nicht reiner Kraft-Zuwachs)
         let tooFast = concerns.contains(where: { if case .loadIncreasedTooFast = $0 { return true }; return false })
-        let sigIncrease: Bool
-        if case .significantIncrease = loadDev { sigIncrease = true } else { sigIncrease = false }
-        if tooFast || sigIncrease {
+        let sigRunningIncrease: Bool = {
+            if case .significantIncrease(let disciplines, _) = loadDev {
+                return disciplines.contains(.running)
+            }
+            return false
+        }()
+        let densityHighLoad = densityAssessment?.outcome == .increasingLoad
+        if tooFast || sigRunningIncrease || densityHighLoad {
             return out(.reduceLoadThisWeek, .positiveProgressHighLoad)
         }
 
@@ -111,27 +130,52 @@ public enum IntegratedRunCoachAdvisor {
 
     // MARK: - Private
 
-    private static func collectDataQualityIssues(from loadTrend: TrainingLoadTrend?) -> [DataQualityIssue] {
-        guard let loadTrend else { return [] }
-        let reasons: [TrainingLoadDataCompleteness.Reason]
-        switch loadTrend.dataCompleteness {
-        case .complete: return []
-        case .partial(let r): reasons = r
-        case .insufficient(let r): reasons = r
+    private static func collectDataQualityIssues(
+        from loadTrend: TrainingLoadTrend?,
+        raceProgress: RaceProgressAssessment.Assessment?,
+        densityAssessment: TrainingDensityAnalyzer.Assessment?
+    ) -> [DataQualityIssue] {
+        var issues: [DataQualityIssue] = []
+        func addIfNew(_ issue: DataQualityIssue) {
+            if !issues.contains(issue) { issues.append(issue) }
         }
-        return reasons.compactMap { reason in
-            switch reason {
-            case .shortHistory(let avail, let needed):
-                return .historyTooShort(weeksAvailable: avail, weeksNeeded: needed)
-            case .currentWeekIncomplete:
-                return nil
-            case .missingRunningDistance(let weeks):
-                return .runningDistanceMissing(weekCount: weeks)
-            case .unknownActivityPresent(let weeks):
-                return .ambiguousActivitiesPresent(weekCount: weeks)
-            case .durationDataUnavailable:
-                return .durationDataUnavailable
+
+        // Lasttrend-Vollstaendigkeit
+        if let loadTrend {
+            let reasons: [TrainingLoadDataCompleteness.Reason]
+            switch loadTrend.dataCompleteness {
+            case .complete: reasons = []
+            case .partial(let r): reasons = r
+            case .insufficient(let r): reasons = r
+            }
+            for reason in reasons {
+                switch reason {
+                case .shortHistory(let avail, let needed): addIfNew(.historyTooShort(weeksAvailable: avail, weeksNeeded: needed))
+                case .currentWeekIncomplete: break
+                case .missingRunningDistance(let weeks): addIfNew(.runningDistanceMissing(weekCount: weeks))
+                case .unknownActivityPresent(let weeks): addIfNew(.ambiguousActivitiesPresent(weekCount: weeks))
+                case .durationDataUnavailable: addIfNew(.durationDataUnavailable)
+                }
             }
         }
+
+        // Race-Progress-Datenlücken
+        for gap in raceProgress?.dataGaps ?? [] {
+            switch gap {
+            case .insufficientHistory(let avail, let needed): addIfNew(.historyTooShort(weeksAvailable: avail, weeksNeeded: needed))
+            case .ambiguousActivityPresent(let count): addIfNew(.ambiguousActivitiesPresent(weekCount: count))
+            case .noHeartRateData, .coachingObservationStartUnknown: break
+            }
+        }
+
+        // Dichte-Datenlücken (.sessionFeelingUnavailable → kein erfundener RPE)
+        for gap in densityAssessment?.dataGaps ?? [] {
+            switch gap {
+            case .noMeasuredIntensityData: addIfNew(.durationDataUnavailable)
+            case .insufficientHistory, .sessionFeelingUnavailable: break
+            }
+        }
+
+        return issues
     }
 }

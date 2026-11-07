@@ -324,16 +324,153 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
         XCTAssertEqual(r1, r2)
     }
 
-    // MARK: - Ziel-Varianten (goal-Parameter hat keinen Einfluss auf Prio-Logik)
+    // MARK: - Prio 6a: Negativer daysToRace darf Prio 6a NICHT ausloesen
 
-    func testGoalHalfMarathon_doesNotChangePriorityLogic() {
-        let result = assess(goal: .halfMarathon)
-        XCTAssertNotNil(result.primaryAction)
+    func testPrio6a_negativeDaysToRace_returnsBuildBase() {
+        let rp = makeAssessment(outcome: .attentionNeeded([.recentTrainingGap(consecutiveWeeks: 2)]))
+        let result = assess(raceProgress: rp, daysToRace: -1)
+        XCTAssertEqual(result.primaryAction, .buildRunningBase)
+        XCTAssertEqual(result.rationale, .recentGapDetected)
     }
 
-    func testGoalMarathon_doesNotChangePriorityLogic() {
-        let result = assess(goal: .marathon)
-        XCTAssertNotNil(result.primaryAction)
+    // MARK: - Prio 7: Dichte-Signale loesen Erholungsempfehlung aus
+
+    func testPrio7_density_highTrainingDensity_triggersReduceLoad() {
+        let d = makeDensityAssessment(outcome: .highTrainingDensity)
+        let result = assess(densityAssessment: d)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .recoveryNeeded)
+    }
+
+    func testPrio7_density_insufficientRecoveryEvidence_triggersReduceLoad() {
+        let d = makeDensityAssessment(outcome: .insufficientRecoveryEvidence)
+        let result = assess(densityAssessment: d)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .recoveryNeeded)
+    }
+
+    func testPrio7_density_deloadIndicatedByExistingSystem_triggersReduceLoad() {
+        let d = makeDensityAssessment(outcome: .balanced, concerns: [.deloadIndicatedByExistingSystem])
+        let result = assess(densityAssessment: d)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .recoveryNeeded)
+    }
+
+    func testPrio7_density_closelySpacedRunningSessions_triggersReduceLoad() {
+        let d = makeDensityAssessment(outcome: .balanced, concerns: [.closelySpacedRunningSessions(minimumGapHours: 18)])
+        let result = assess(densityAssessment: d)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .recoveryNeeded)
+    }
+
+    func testPrio7_density_highConsecutiveTrainingDays_triggersReduceLoad() {
+        let d = makeDensityAssessment(outcome: .balanced, concerns: [.highConsecutiveTrainingDays(days: 6)])
+        let result = assess(densityAssessment: d)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .recoveryNeeded)
+    }
+
+    func testPrio7_density_balanced_doesNotTriggerReduceLoad() {
+        let d = makeDensityAssessment(outcome: .balanced)
+        let rp = makeAssessment(outcome: .onTrack)
+        let result = assess(raceProgress: rp, densityAssessment: d)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
+    }
+
+    func testPrio7_density_insufficientData_doesNotTriggerReduceLoad() {
+        let d = makeDensityAssessment(outcome: .insufficientData)
+        let rp = makeAssessment(outcome: .onTrack)
+        let result = assess(raceProgress: rp, densityAssessment: d)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
+    }
+
+    // MARK: - Prio 8: Disziplin-bewusstes Belastungssignal
+
+    func testPrio8_pureStrengthIncrease_doesNotReduceLoad() {
+        let trend = makeTrend(loadDevelopment: .significantIncrease(disciplines: [.strength], percent: 0.70))
+        let result = assess(loadTrend: trend)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
+    }
+
+    func testPrio8_pureRunningIncrease_reducesLoad() {
+        let trend = makeTrend(loadDevelopment: .significantIncrease(disciplines: [.running], percent: 0.70))
+        let result = assess(loadTrend: trend)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .positiveProgressHighLoad)
+    }
+
+    func testPrio8_mixedDisciplinesIncrease_reducesLoad() {
+        let trend = makeTrend(loadDevelopment: .significantIncrease(disciplines: [.running, .strength], percent: 0.50))
+        let result = assess(loadTrend: trend)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .positiveProgressHighLoad)
+    }
+
+    func testPrio8_density_increasingLoad_reducesLoad() {
+        let d = makeDensityAssessment(outcome: .increasingLoad)
+        let result = assess(densityAssessment: d)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .positiveProgressHighLoad)
+    }
+
+    // MARK: - Prioritaet: Dichte-Prio7 schlaegt Dichte-Prio8
+
+    func testPriority_densityPrio7_beats_densityPrio8() {
+        // highTrainingDensity (→Prio7) sollte vor increasingLoad (→Prio8) feuern
+        // Simuliere beide: outcome kann nur eines sein, aber zeige Prio7 gewinnt
+        let d = makeDensityAssessment(outcome: .highTrainingDensity)
+        let trend = makeTrend(loadDevelopment: .significantIncrease(disciplines: [.running], percent: 0.70))
+        let result = assess(loadTrend: trend, densityAssessment: d)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .recoveryNeeded) // Prio 7 gewinnt
+    }
+
+    // MARK: - DataQualityIssues: Mehrere Quellen, keine Duplikate
+
+    func testDataQuality_raceProgressGap_historyTooShort_mapped() {
+        let rp = makeAssessment(dataGaps: [.insufficientHistory(weeksAvailable: 1, weeksNeeded: 2)])
+        let result = assess(raceProgress: rp)
+        XCTAssertTrue(result.dataQualityIssues.contains(.historyTooShort(weeksAvailable: 1, weeksNeeded: 2)))
+    }
+
+    func testDataQuality_raceProgressGap_ambiguousActivity_mapped() {
+        let rp = makeAssessment(dataGaps: [.ambiguousActivityPresent(weekCount: 3)])
+        let result = assess(raceProgress: rp)
+        XCTAssertTrue(result.dataQualityIssues.contains(.ambiguousActivitiesPresent(weekCount: 3)))
+    }
+
+    func testDataQuality_density_noMeasuredIntensityData_mapsToDurationUnavailable() {
+        let d = makeDensityAssessment(outcome: .balanced, dataGaps: [.noMeasuredIntensityData])
+        let result = assess(densityAssessment: d)
+        XCTAssertTrue(result.dataQualityIssues.contains(.durationDataUnavailable))
+    }
+
+    func testDataQuality_density_sessionFeelingUnavailable_notMapped() {
+        // sessionFeelingUnavailable darf keinen erfundenen RPE-Wert implizieren
+        let d = makeDensityAssessment(outcome: .balanced, dataGaps: [.sessionFeelingUnavailable])
+        let trend = makeTrend(dataCompleteness: .complete)
+        let result = assess(loadTrend: trend, densityAssessment: d)
+        XCTAssertTrue(result.dataQualityIssues.isEmpty)
+    }
+
+    func testDataQuality_noDuplicates_whenBothSourcesReportSameIssue() {
+        // loadTrend + raceProgress melden beide historyTooShort(1,2) → nur einmal
+        let trend = makeTrend(dataCompleteness: .partial(reasons: [.shortHistory(weeksAvailable: 1, weeksNeeded: 2)]))
+        let rp = makeAssessment(dataGaps: [.insufficientHistory(weeksAvailable: 1, weeksNeeded: 2)])
+        let result = assess(raceProgress: rp, loadTrend: trend)
+        let count = result.dataQualityIssues.filter {
+            if case .historyTooShort(1, 2) = $0 { return true }; return false
+        }.count
+        XCTAssertEqual(count, 1)
+    }
+
+    func testDataQuality_noDuplicates_durationFromLoadTrendAndDensity() {
+        // loadTrend meldet durationDataUnavailable, Dichte auch → nur einmal
+        let d = makeDensityAssessment(outcome: .balanced, dataGaps: [.noMeasuredIntensityData])
+        let trend = makeTrend(dataCompleteness: .partial(reasons: [.durationDataUnavailable]))
+        let result = assess(loadTrend: trend, densityAssessment: d)
+        let count = result.dataQualityIssues.filter { $0 == .durationDataUnavailable }.count
+        XCTAssertEqual(count, 1)
     }
 
     // MARK: - RPE / Intensitaetsdaten fehlen (pruefe dataQualityIssues)
@@ -350,7 +487,6 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
         raceProgress: RaceProgressAssessment.Assessment? = nil,
         loadTrend: TrainingLoadTrend? = nil,
         densityAssessment: TrainingDensityAnalyzer.Assessment? = nil,
-        goal: CardioGoal? = nil,
         weeksToRace: Int? = nil,
         daysToRace: Int? = nil,
         planAdjustmentPending: Bool = false
@@ -359,7 +495,6 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
             raceProgress: raceProgress,
             loadTrend: loadTrend ?? makeDefaultTrend(),
             densityAssessment: densityAssessment,
-            goal: goal,
             weeksToRace: weeksToRace,
             daysToRace: daysToRace,
             planAdjustmentPending: planAdjustmentPending
@@ -400,8 +535,28 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
 
     private func makeAssessment(
         outcome: RaceProgressAssessment.Outcome = .onTrack,
-        weeklyFlags: [RaceProgressAssessment.WeeklyFlag?] = []
+        weeklyFlags: [RaceProgressAssessment.WeeklyFlag?] = [],
+        dataGaps: [RaceProgressAssessment.DataGap] = []
     ) -> RaceProgressAssessment.Assessment {
-        RaceProgressAssessment.Assessment(outcome: outcome, dataGaps: [], weeklyFlags: weeklyFlags)
+        RaceProgressAssessment.Assessment(outcome: outcome, dataGaps: dataGaps, weeklyFlags: weeklyFlags)
+    }
+
+    private func makeDensityAssessment(
+        outcome: TrainingDensityAnalyzer.Outcome = .balanced,
+        concerns: [TrainingDensityAnalyzer.Concern] = [],
+        dataGaps: [TrainingDensityAnalyzer.DataGap] = []
+    ) -> TrainingDensityAnalyzer.Assessment {
+        TrainingDensityAnalyzer.Assessment(
+            consecutiveTrainingDays: 0,
+            trainingDaysLast7: 0,
+            trainingDaysLast14: 0,
+            minimumRunningGapHours: nil,
+            minimumStrengthGapHours: nil,
+            concerns: concerns,
+            dataGaps: dataGaps,
+            outcome: outcome,
+            analyzedPeriodDays: 14,
+            analyzedActivityCount: 0
+        )
     }
 }

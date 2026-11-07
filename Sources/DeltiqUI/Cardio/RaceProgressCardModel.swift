@@ -48,19 +48,12 @@ public struct RaceProgressCardModel: Equatable {
         let series = CardioVolumeOverTimeAggregator.aggregate(sessions: loggedSessions, windowStart: windowStart, now: now)
         let currentWeeklyVolumeKm = Self.currentWeeklyVolume(from: series)
         let configurationFingerprint = Self.makeConfigurationFingerprint(goal: profile.cardioGoal, raceDate: profile.cardioRaceDate)
-        // Letzte Woche in `series` ist immer die laufende Kalenderwoche
-        // (CardioVolumeOverTimeAggregator-loop-Invariante). Das letzte Element
-        // stammt per Definition aus der aktuellen, noch nicht abgeschlossenen
-        // Woche, es sei denn, die Serie ist leer.
-        let isCurrentWeekIncomplete = !series.isEmpty
-
         let assessment = RaceProgressAssessment.assess(.init(
             weeklySeries: series,
             goal: profile.cardioGoal,
             raceDate: profile.cardioRaceDate,
             coachingObservationStart: profile.cardioCoachingEnabledAt,
             currentWeeklyVolumeKm: currentWeeklyVolumeKm,
-            isCurrentWeekIncomplete: isCurrentWeekIncomplete,
             now: now
         ))
 
