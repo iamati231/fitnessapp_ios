@@ -788,3 +788,22 @@ weiterreichen.
 
 36 neue xcstrings-Keys (DE/EN/TR), idempotent via
 `.scripts/training_density_phase2c_keys.py` eingespielt.
+
+---
+
+## Abnahme Phase 2C/2D (2026-11-07)
+
+**Status: ABGENOMMEN** — CI grün, TestFlight durch Benutzer bestätigt.
+
+| Dimension | Ergebnis |
+|-----------|----------|
+| CI-Run 42363677833, HEAD `0941b1b` | 2.750/2.750 Tests bestanden |
+| iOS Simulator Debug + Release Build | BUILD SUCCEEDED |
+| TestFlight-Verifikation (Benutzer Atakan) | Korrekte Darstellung aller Metriken bestätigt |
+| Deload-Integration | `isDeloadActive` (dual-check AppStorage + SwiftData) |
+| RPE-Behandlung | Nicht erfunden — `sessionFeelingUnavailable` DataGap |
+| Keine Regressionen | Bestätigt (Screenshots 1–6 unverändert) |
+
+Verbleibende Einschränkungen: Rolling-7-Tage-Vergleich, RPE-Abhängigkeit bei
+Erholungseinschätzung, `loadDevelopmentLabel` aus Outcome abgeleitet. Alle
+dokumentiert, keine Bugs — bewusste Modellgrenzen.

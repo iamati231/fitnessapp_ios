@@ -467,7 +467,7 @@ der Vorgehensweise verlangt.
 * `.scripts/training_density_phase2c_keys.py` (neu, idempotent)
 
 **Tests:**
-* `Tests/DeltiqCoreTests/TrainingDensityAnalyzerTests.swift` (28 Tests)
+* `Tests/DeltiqCoreTests/TrainingDensityAnalyzerTests.swift` (37 Tests)
   — 100% deterministisch, injizierte Zeit/Kalender
   — Abdeckung: alle Concerns, alle DataGaps, alle Outcomes, Hilfsfunktionen,
     Schwellenwertgrenzen, Rollenfenster-Zählungen, Stärke-/Lauf-Gaps
@@ -487,3 +487,70 @@ Siehe Design-Dokument, Abschnitt "Work Package 2C", Unterabschnitt
 "Bewusste Modellgrenze". Kurzfassung: wäre eine neue parallele Aggregation —
 explizit verboten. Die 2C-Implementierung nutzt stattdessen
 `TrainingActivity.date` (Tages-Granularität) für eine umfassendere Analyse.
+
+---
+
+## Abnahme und CI-Verifikation (2026-11-07)
+
+### CI-Ergebnis
+
+| Metrik | Wert |
+|--------|------|
+| CI-Run | 42363677833 |
+| Getesteter HEAD | `0941b1b` |
+| Gesamte Tests | 2.750 |
+| Fehlgeschlagene Tests | 0 |
+| Nicht ausgeführte Tests | 0 |
+| TrainingDensityAnalyzerTests | 37/37 bestanden (CI-Positionen [2551]–[2590]) |
+| iOS Simulator Debug Build | BUILD SUCCEEDED |
+| iOS Simulator Release Build | BUILD SUCCEEDED |
+
+Der CI-Lauf wurde manuell per `workflow_dispatch` ausgelöst (kein automatischer
+Trigger bei Push konfiguriert).
+
+### Korrektur vor finalem CI-Lauf
+
+Commit `0941b1b` korrigierte einen Typfehler in
+`testMinimumGapHoursComputesCorrectly`: `Double?` wurde direkt an
+`XCTAssertEqual(accuracy:)` übergeben, das `Double` erwartet. Fix: Funktion
+als `throws` deklariert, `try XCTUnwrap(...)` verwendet. Der Fehler trat nur
+auf macOS CI auf (Windows-Worktree kompiliert keine Test-Targets).
+
+### Produktive Verifikation durch Benutzer (TestFlight)
+
+Bestätigt durch Benutzer Atakan am 2026-11-07 im echten TestFlight-Build:
+
+| Prüfpunkt | Ergebnis |
+|-----------|----------|
+| Outcome `insufficientRecoveryEvidence` | Korrekt angezeigt |
+| Analysebasis | 254 Tage, 51 Einheiten |
+| Trainingstage 2/7 und 2/14 | Korrekt |
+| Folgetage 3/7 | Korrekt |
+| Kraft-Abstand 16 Stunden | `minimumStrengthGapHours` funktioniert |
+| DataGap `sessionFeelingUnavailable` | Korrekt bei fehlenden RPE-Daten |
+| Keine falschen Warnungen | Bestätigt |
+| Bestehende App-Funktionen (Screenshots 1–6) | Keine erkennbaren Regressionen |
+
+**Hinweis:** Diese Ergebnisse sind die Benutzer-Abnahme, keine eigene
+Claude-Testausführung.
+
+### Bekannte Einschränkungen (dokumentiert, keine Bugs)
+
+| Einschränkung | Begründung |
+|---------------|------------|
+| Ohne RPE-Daten keine belastbare Erholungseinschätzung | `sessionFeelingUnavailable` DataGap; RPE wird nicht erfunden |
+| Rolling-7-Tage-Vergleich nicht implementiert | Würde neue parallele Aggregation erfordern — Ticket-Leitplanke |
+| `loadDevelopmentLabel` aus Outcome abgeleitet, nicht aus rohem `TrainingLoadTrend` | Shortcut dokumentiert; Upgrade möglich durch Trend-Weitergabe im Init |
+| Trainingsdauer nicht vollständig verfügbar | Nicht künstlich abgeleitet — `noMeasuredIntensityData` DataGap greift korrekt |
+| XCUITest-Abdeckung für neue UI-Komponenten fehlt | Kein Präzedenzfall im Repo; würde eigenes Ticket erfordern |
+
+### Finale Architektur-Verifikation
+
+| Prüfpunkt | Ergebnis |
+|-----------|----------|
+| Keine parallele Deload-Logik | ✅ — `computeTrainingDensityAssessment()` nutzt `isDeloadActive` (dual-check: AppStorage + SwiftData) |
+| Keine erfundenen RPE-/HF-/Dauerwerte | ✅ — DataGaps statt Ersatzwerte |
+| Keine doppelten Dashboard-Karten | ✅ — `trainingLoadCard` taucht einmal in `defaultOrder` auf |
+| Unabhängig von `cardioCoachingEnabled` | ✅ — kein Guard in `trainingLoadDashboardCard` |
+| 36 Lokalisierungs-Keys DE/EN/TR | ✅ |
+| PR #4 unge-merged | ✅ — Branch `claude/great-dewdney-af8974`, `state: OPEN` |
