@@ -7,7 +7,11 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
     // MARK: - Prio 1: Unzureichende Lastdaten
 
     func testPrio1_nilLoadTrend_returnsInsufficientData() {
-        let result = assess(loadTrend: nil)
+        // assess()-Helper setzt nil → makeDefaultTrend(); Advisor direkt aufrufen damit nil durchkommt.
+        let result = IntegratedRunCoachAdvisor.assess(
+            raceProgress: nil, loadTrend: nil, densityAssessment: nil,
+            weeksToRace: nil, daysToRace: nil, planAdjustmentPending: false
+        )
         XCTAssertEqual(result.primaryAction, .insufficientData)
         XCTAssertEqual(result.rationale, .shortHistory)
     }
