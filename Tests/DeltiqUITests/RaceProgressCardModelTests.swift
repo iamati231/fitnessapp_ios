@@ -129,11 +129,14 @@ final class RaceProgressCardModelTests: XCTestCase {
         }
         try context.save()
 
-        // Beobachtungszeitraum beginnt vor 2 Wochen - die 6 Wochen Historie
+        // Beobachtungszeitraum beginnt vor 3 Wochen - die 6 Wochen Historie
         // liegen DAVOR (korrekt keine Inaktivitaets-Warnung dafuer), die
-        // letzten 2 Wochen (plus die aktuelle) sind eine ECHTE, aktuelle
-        // Trainingspause OHNE jegliches Log.
-        profile.cardioCoachingEnabledAt = now.addingTimeInterval(-2 * week)
+        // letzten 3 Wochen (plus die aktuelle laufende) sind eine ECHTE,
+        // aktuelle Trainingspause OHNE jegliches Log.
+        // Drei Wochen Abstand noetig, da isCurrentWeekIncomplete:true (loop-Invariante
+        // von CardioVolumeOverTimeAggregator) die letzte Woche aus dem Gap-Streak
+        // herausnimmt – nur so bleiben zwei abgeschlossene Luecken-Wochen uebrig.
+        profile.cardioCoachingEnabledAt = now.addingTimeInterval(-3 * week)
 
         let model = try XCTUnwrap(RaceProgressCardModel.make(for: profile, allSessions: sessions, now: now))
 

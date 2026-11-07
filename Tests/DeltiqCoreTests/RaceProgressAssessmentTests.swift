@@ -37,12 +37,14 @@ final class RaceProgressAssessmentTests: XCTestCase {
         goal: CardioGoal = .halfMarathon,
         raceDate: Date? = nil,
         observationStart: Date?,
-        currentWeeklyVolumeKm: Double? = 20
+        currentWeeklyVolumeKm: Double? = 20,
+        isCurrentWeekIncomplete: Bool = true
     ) -> RaceProgressAssessment.Input {
         .init(
             weeklySeries: series, goal: goal, raceDate: raceDate,
             coachingObservationStart: observationStart,
             currentWeeklyVolumeKm: currentWeeklyVolumeKm,
+            isCurrentWeekIncomplete: isCurrentWeekIncomplete,
             now: series.last?.weekStart.addingTimeInterval(6 * 86400) ?? Date()
         )
     }
@@ -94,7 +96,9 @@ final class RaceProgressAssessmentTests: XCTestCase {
         let gap1 = point(1, km: 0, runs: 0, cross: 0, ambiguous: 0, strength: 0)
         let gap2 = point(2, km: 0, runs: 0, cross: 0, ambiguous: 0, strength: 0)
         let series = [active, gap1, gap2]
-        let result = RaceProgressAssessment.assess(input(series: series, observationStart: series[0].weekStart))
+        // gap2 ist eine abgeschlossene historische Woche, nicht die laufende
+        // Woche – isCurrentWeekIncomplete: false, damit beide Luecken zaehlen.
+        let result = RaceProgressAssessment.assess(input(series: series, observationStart: series[0].weekStart, isCurrentWeekIncomplete: false))
         XCTAssertEqual(result.weeklyFlags[1], .genuineGap)
         XCTAssertEqual(result.weeklyFlags[2], .genuineGap)
         guard case .attentionNeeded(let concerns) = result.outcome else {
