@@ -27,6 +27,12 @@ public enum RaceProgressAssessment {
         /// Abschnitt 4, "Schutz vor stale Werten"). Diese Funktion selbst
         /// kennt `UserBodyProfile` nicht einmal.
         public let currentWeeklyVolumeKm: Double?
+        /// true wenn das letzte Element in `weeklySeries` die aktuelle, noch
+        /// nicht abgeschlossene Kalenderwoche repraesentiert. Immer true wenn
+        /// Daten aus `CardioVolumeOverTimeAggregator.aggregate()` stammen
+        /// (loop-Invariante). Verhindert, dass eine leere laufende Woche
+        /// faelschlich als zweite abgeschlossene Gap-Woche zaehlt.
+        public let isCurrentWeekIncomplete: Bool
         public let now: Date
 
         public init(
@@ -35,6 +41,7 @@ public enum RaceProgressAssessment {
             raceDate: Date?,
             coachingObservationStart: Date?,
             currentWeeklyVolumeKm: Double?,
+            isCurrentWeekIncomplete: Bool = true,
             now: Date
         ) {
             self.weeklySeries = weeklySeries
@@ -42,6 +49,7 @@ public enum RaceProgressAssessment {
             self.raceDate = raceDate
             self.coachingObservationStart = coachingObservationStart
             self.currentWeeklyVolumeKm = currentWeeklyVolumeKm
+            self.isCurrentWeekIncomplete = isCurrentWeekIncomplete
             self.now = now
         }
     }
@@ -169,7 +177,16 @@ public enum RaceProgressAssessment {
         ), feasibility.feasible == false {
             concerns.append(.goalLikelyUnrealistic(feasibility))
         }
-        let trailingGapStreak = trailingGenuineGapStreak(flags)
+        // Aktuelle (unvollstaendige) Woche aus Gap-Streak ausschliessen,
+        // damit eine leere laufende Woche nicht als zweite abgeschlossene
+        // Gap-Woche zaehlt (spec §10 "Problem A").
+        let flagsForStreak: [WeeklyFlag?]
+        if input.isCurrentWeekIncomplete && flags.last == .genuineGap {
+            flagsForStreak = Array(flags.dropLast())
+        } else {
+            flagsForStreak = flags
+        }
+        let trailingGapStreak = trailingGenuineGapStreak(flagsForStreak)
         if trailingGapStreak >= minimumConsecutiveGapWeeksForConcern {
             concerns.append(.recentTrainingGap(consecutiveWeeks: trailingGapStreak))
         }
