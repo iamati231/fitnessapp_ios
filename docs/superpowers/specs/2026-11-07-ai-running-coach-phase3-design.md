@@ -410,12 +410,116 @@ Phase 3 schließt explizit aus:
 
 ---
 
-## 9. Offene Fragen vor Implementierung
+## 9. Architektur-Entscheidungen (Phase-3-Review, 2026-11-07)
 
-1. **Schwelle für `increaseWeeklyVolume`**: Ticket-Beispiel nennt 10 % und 15 %. Exakte Zahlen per Fallunterscheidung oder dynamisch aus `weeksToRace` berechnen?
-2. **`cardioJunkMiles` aktivieren in Phase 3?**: Advisor `isJunkMiles` ist implementiert, `cardioJunkMiles` CoachingContext existiert — bewusst inaktiv. Bleibt Phase 3 dabei?
-3. **Widget-Repositionierung**: Nur beim ersten Einschalten oder bei jedem Einschalten (guard "in top 3" vs. `wasEverEnabled`-Flag)?
+### Entscheidung A: Platzierung von `IntegratedCoachingOutcome`
+
+**Entscheid: `CardioCoachDetailView`** (neue Section nach `loadSection`)
+
+Begründung: Die integrierte Bewertung verbindet Wettkampffortschritt, Belastung und Regeneration — das ist die Kerninformation der zentralen Coaching-Detailansicht. `RaceProgressDetailView` bleibt auf Concern-spezifische Details fokussiert; keine Doppeldarstellung.
+
+Daten-Zugang in `CardioCoachDetailView`:
+- `allSessions: [WorkoutSession]` — bereits via `@Query` vorhanden ✓
+- `profile: UserBodyProfile` — bereits `@Bindable` vorhanden ✓
+- **NEU**: Parameter `raceProgressModel: RaceProgressCardModel?` von DashboardView (bereits dort berechnet — keine Doppel-Aggregation)
+- **NEU**: Parameter `densityAssessment: TrainingDensityAssessment?` von DashboardView (`cachedDensityAssessment` aus Phase 2C — bereits vorhanden)
+- **NEU**: `@Query(filter: #Predicate<TrainingPlan> { $0.isActive == true }) private var activePlans` — für `planAdjustmentPending` via `CoachAdjustmentCardModel.make(for:activePlan:) != nil`
+
+WP-B muss die `CardioCoachDetailView`-Initialisierung erweitern und alle Aufrufer (primär `DashboardView`) anpassen.
+
+### Entscheidung B: `cardioJunkMiles` aktivieren?
+
+**Entscheid: NEIN — bleibt deaktiviert, Phase 4.**
+
+Drei harte Blocker:
+1. **Kein per-Trainingstag-Zieltempo**: `PlanGenerator.cardioCandidates` setzt `targetDistanceKm` NIE → `isJunkMiles(actualPaceMinPerKm:targetPaceMinPerKm:)` hat keinen validen Input
+2. **Dauer nicht erfasst**: `durationDataUnavailable` = dauernd in `dataCompleteness` → Tempo aus Distanz/Dauer nicht berechenbar
+3. **Kein Profil-weites Referenztempo**: `current5kReferenceSeconds` + Pace-Zonen = Phase-1-Prerequisite, noch nicht implementiert
+
+Fachliches Risiko: Lockere Grundlagenläufe (easy pace) sind intentional langsam — sie würden systematisch als "Junk Miles" bewertet, auch wenn sie trainingsplanerisch korrekt sind. Das führt zu falschen Empfehlungen.
+
+Vorbedingung für Re-Aktivierung (Phase 4): `current5kReferenceSeconds` + personalisierte Pace-Zonen müssen vorliegen; `PlanGenerator` muss `targetPaceMinPerKm` pro Lauf-Tag setzen.
+
+### Entscheidung C: `runCoachCard`-Repositionierung
+
+**Entscheid: Bei jeder Aktivierung von AUS auf EIN, mit top-3-Guard.**
+
+Implementierungsort: `CardioGoalEditorView.save()` — nicht `ProfileEditorView.onChange` (da `cardioCoachingEnabled` nur über den expliziten Save-Flow in `CardioGoalEditorView` oder den Deaktivierungs-Button mutiert wird).
+
+```swift
+// In save(), nach erfolgreichem modelContext.save(), vor dismiss()
+let wasOff = originalCardioCoachingEnabled == false
+let isNowOn = draftCardioCoachingEnabled == true
+if wasOff && isNowOn {
+    var ws = profile.activeDashboardWidgets
+    guard !ws.prefix(3).contains(.runCoachCard) else { return }
+    ws.removeAll { $0 == .runCoachCard }
+    ws.insert(.runCoachCard, at: min(1, ws.count))
+    profile.activeDashboardWidgets = ws
+    // kein separates modelContext.save() – der äußere Save ist bereits durch
+}
+```
+
+Shortcut (dokumentiert): Ohne neues SwiftData-Feld kann Phase 3 nicht zwischen "echtem Erststart" und "Re-Aktivierung nach manueller Kartenverschiebung in pos 4+" unterscheiden. Folge: wer die Karte auf Position 5 schiebt, deaktiviert und wieder aktiviert, sieht sie erneut an Position 2. Wahrscheinlichkeit: gering. Upgrade: neues Bool `wasRunCoachCardEverPositioned` in `UserBodyProfile` (Phase 4).
+
+Deaktivierung → keine Mutation (guard `newValue else { return }` greift).
+
+### Entscheidung D: Volumen-Schwellenwerte für `increaseWeeklyVolume`
+
+**Entscheid: Feste Werte, Fallunterscheidung nach `weeksToRace`.**
+
+- `weeksToRace < 10`: `targetPercent = 0.15` (15 % — wenig Zeit, aggressiver)
+- `weeksToRace >= 10`: `targetPercent = 0.10` (10 % — genug Zeit, konservativer)
+- `weeksToRace == nil` (kein Renndatum): `targetPercent = 0.10` (Fallback konservativ)
 
 ---
 
-*Phase 3 Schritt 1 (Audit) und Schritt 2 (Design Review) abgeschlossen. Implementierung (Schritt 3) erfordert explizite Freigabe.*
+## 10. Korrigierte Entscheidungslogik
+
+Die ursprüngliche Prioritätstabelle aus §3.5 enthielt zwei Fehler, die hier korrigiert werden:
+
+| Priorität | Bedingung | Action (KORRIGIERT) | Rationale |
+|-----------|-----------|---------------------|-----------|
+| 1 | `loadTrend == nil` ODER `dataCompleteness == .insufficient` | `.insufficientData` | `.shortHistory` |
+| 2 | Keine Lauf-Sessions (runningSessionCount == 0 letzte 4 Wochen) | `.buildRunningBase` | `.noRunningData` |
+| 3 | Ausschließlich Cross-Training (`isCrossTrainingOnly` dominant) | ~~`.maintainCurrent`~~ → **`.buildRunningBase`** | `.crossTrainingOnly` |
+| 4 | `planAdjustmentPending == true` | `.planAdjustmentAvailable` | `.planJustAdjusted` |
+| 5 | Concern `.goalLikelyUnrealistic` vorhanden | `.reassessGoal` | `.goalLikelyUnreachable` |
+| 6 | Concern `.recentTrainingGap` vorhanden | ~~`.reduceLoadThisWeek`~~ → **`.buildRunningBase`** | `.recentGapDetected` |
+| 7 | Concern `.insufficientRecovery` vorhanden | `.reduceLoadThisWeek` | `.recoveryNeeded` |
+| 8 | Concern `.loadIncreasedTooFast` ODER `loadDevelopment == .significantIncrease` | `.reduceLoadThisWeek` | `.positiveProgressHighLoad` oder `.recoveryNeeded` |
+| 9 | Concern `.volumePlateau` + `weeksToRace < 10` | `.increaseWeeklyVolume(0.15)` | `.plateauNearRace` |
+| 10 | Concern `.volumePlateau` + `weeksToRace >= 10 / nil` | `.increaseWeeklyVolume(0.10)` | `.plateauNearRace` |
+| 11 | `outcome == .onTrack` + `loadDevelopment == .stable/.declining` | `.maintainCurrent` | `.positiveProgressStableLoad` |
+| 12 | Alles andere | `.maintainCurrent` | `.positiveProgressStableLoad` |
+
+**Korrektur-Begründungen:**
+- **Prio 3**: Ein Läufer/eine Läuferin mit Renndatum, der/die nur Cross-Training (Radfahren) absolviert, braucht `buildRunningBase` — nicht `maintainCurrent`. Radfahren erhält Ausdauer, ersetzt aber kein laufspezifisches Training.
+- **Prio 6**: Nach einer Trainingspause ist das Volumen bereits niedrig. `reduceLoadThisWeek` wäre eine Empfehlung, noch weniger zu machen — das ist kontraproduktiv. Korrekt: gradueller Wiederaufbau → `buildRunningBase`.
+
+---
+
+## 11. Kritisches Architektur-Review (10 Punkte)
+
+| Punkt | Ergebnis |
+|-------|---------|
+| 1. Prioritätsregeln fachlich begründet? | Ja — nach Korrektur Prio 3 + 6 (s. §10) |
+| 2. Kurzfristige Last überschreibt langfristigen Fortschritt fälschlich? | Nein — `.goalLikelyUnrealistic` (Prio 5) > `.loadIncreasedTooFast` (Prio 8) > `.onTrack` (Prio 11); Reihenfolge fachlich korrekt |
+| 3. `insufficientData` vs `planAdjustmentAvailable` korrekt getrennt? | Ja — Prio 1 vs Prio 4; keine Überschneidung |
+| 4. Fehlende RPE / Dauer? | Ja korrekt — `durationDataUnavailable` = informativer `DataQualityIssue`, blockiert keine Empfehlung |
+| 5. Historische Läufe vor Coaching-Aktivierung berücksichtigt? | Ja — `windowStart` = früheste Session (nicht `cardioCoachingEnabledAt`); `minimumCompleteWeeksForTrend = 3` greift als Safety-Net |
+| 6. Kraft / Cross-Training korrekt klassifiziert? | Ja — `isCrossTrainingOnly`, `combineLoadDevelopment` nach Korrektur Prio 3 |
+| 7. Zieländerung HM→Marathon vollständig? | Ja — `planRequiringAdjustment()` → `CoachAdjustmentCardModel.make()` → `planAdjustmentPending = true` → Prio 4 |
+| 8. Bestehende Plan-Mechanismen wiederverwendet? | Ja — `CoachAdjustmentCardModel.accept()` und `CardioFeasibilityCardModel.accept()` unverändert |
+| 9. Doppelte Empfehlungen möglich? | Nein — reine pure function, kein State, deterministisch |
+| 10. Deterministisch und testbar? | Ja — kein `Date()` oder `UUID()` im Advisor; `weeksToRace` von außen übergeben |
+
+---
+
+## 12. Offene Fragen (nach Review)
+
+Keine verbleibenden offenen Fragen — alle drei Entscheidungen (A, B, C) sind in §9 entschieden. §10 korrigiert die Prioritätstabelle.
+
+---
+
+*Phase 3 Schritt 1 (Audit) und Schritt 2 (Design Review, inkl. Architektur-Review) abgeschlossen. Implementierung (Schritt 3) erfordert explizite Freigabe.*

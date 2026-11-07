@@ -20,11 +20,20 @@ Status: **WARTEND AUF FREIGABE**
 
 ---
 
-## Offene Entscheidungen (vor WP-A zu klären)
+## Architektur-Entscheidungen (geklärt 2026-11-07)
 
-1. **Kombiniertes Assessment sichtbar machen**: Soll `IntegratedCoachingOutcome` in `CardioCoachDetailView` eine neue Section bekommen (WP-B), oder reicht Einzelempfehlung in RaceProgressDetailView (WP-C)?
-2. **`cardioJunkMiles` aktivieren**: Ist Phase 3 der richtige Zeitpunkt?
-3. **Widget-Repositionierung**: Nur bei Erstaktivierung oder auch bei Re-Aktivierung nach Deaktivierung?
+Alle offenen Fragen sind entschieden — keine Blockaden vor WP-A:
+
+| Entscheidung | Ergebnis |
+|---|---|
+| A: Platzierung `IntegratedCoachingOutcome` | `CardioCoachDetailView` (neue Section, neue Parameter) — Details in Spec §9 |
+| B: `cardioJunkMiles` aktivieren | NEIN — bleibt deaktiviert; Phase 4. Drei harte Blocker: kein per-Tag-Zieltempo, kein Profil-Tempo, kein Dauerdaten — Details in Spec §9 |
+| C: Widget-Repositionierung | Bei jeder Aktivierung AUS→EIN, top-3-Guard, in `CardioGoalEditorView.save()` — Details in WP-D |
+| D: Volumen-Schwellenwerte | 15 % bei weeksToRace < 10; 10 % sonst — Details in Spec §9 |
+
+**Zwei Prioritäts-Korrekturen** (Architektur-Review):
+- Prio 3 `isCrossTrainingOnly` → `.buildRunningBase` (war `.maintainCurrent` — fachlich falsch für Läufer:innen mit Renndatum)
+- Prio 6 `recentTrainingGap` → `.buildRunningBase` (war `.reduceLoadThisWeek` — nach Pause ist Volumen bereits niedrig; weiter reduzieren ist kontraproduktiv)
 
 ---
 
@@ -105,18 +114,18 @@ public enum IntegratedRunCoachAdvisor {
 
 | Priorität | Bedingung | Action |
 |-----------|-----------|--------|
-| 1 | `raceProgress == nil && loadTrend == nil` | `.insufficientData([.lessThanTwoWeeks])` |
-| 2 | Keine Lauf-Sessions (nur Kraft) | `.insufficientData([.noRunningData])` |
-| 3 | Nur Cross-Training (`isCrossTrainingOnly`) | `.insufficientData([.crossTrainingOnly])` |
+| 1 | `loadTrend == nil` ODER `dataCompleteness == .insufficient` | `.insufficientData` |
+| 2 | Keine Lauf-Sessions (runningSessionCount == 0 letzte 4 Wochen) | `.buildRunningBase` |
+| 3 | Nur Cross-Training (`isCrossTrainingOnly` dominant) | `.buildRunningBase` ← **korrigiert** |
 | 4 | `planAdjustmentPending == true` | `.planAdjustmentAvailable` |
 | 5 | `concerns.contains(.goalLikelyUnrealistic)` | `.reassessGoal` |
-| 6 | `concerns.contains(.recentTrainingGap)` | `.buildRunningBase` |
+| 6 | `concerns.contains(.recentTrainingGap)` | `.buildRunningBase` ← **korrigiert** |
 | 7 | `concerns.contains(.insufficientRecovery)` | `.reduceLoadThisWeek` |
-| 8 | `loadTrend.acuteChronicRatio > 1.5` | `.reduceLoadThisWeek` |
-| 9 | `concerns.contains(.loadIncreasedTooFast)` | `.reduceLoadThisWeek` |
-| 10 | `concerns.contains(.volumePlateau) && weeksToRace < 8` | `.increaseWeeklyVolume(targetPercent: 0.10)` |
-| 11 | `concerns.contains(.volumePlateau) && weeksToRace >= 8` | `.increaseWeeklyVolume(targetPercent: 0.08)` |
-| 12 | Stabile Lage (Outcome `.onTrack`) | `.maintainCurrent` |
+| 8 | `concerns.contains(.loadIncreasedTooFast)` ODER `loadDevelopment == .significantIncrease` | `.reduceLoadThisWeek` |
+| 9 | `concerns.contains(.volumePlateau) && weeksToRace != nil && weeksToRace! < 10` | `.increaseWeeklyVolume(targetPercent: 0.15)` |
+| 10 | `concerns.contains(.volumePlateau) && (weeksToRace == nil \|\| weeksToRace! >= 10)` | `.increaseWeeklyVolume(targetPercent: 0.10)` |
+| 11 | `outcome == .onTrack` + `loadDevelopment == .stable/.declining` | `.maintainCurrent` |
+| 12 | Alles andere | `.maintainCurrent` |
 
 ### Tests
 **Datei**: `Tests/DeltiqCoreTests/IntegratedRunCoachAdvisorTests.swift` (NEU)
@@ -153,75 +162,102 @@ Neue Section in `CardioCoachDetailView` nach `loadSection`, die `IntegratedRunCo
 
 ### Betroffene Dateien
 - `Sources/DeltiqUI/Cardio/CardioCoachDetailView.swift` **(ändern)**
+- `Sources/DeltiqUI/DashboardView.swift` **(ändern — Initialisierungsaufruf)**
 - `Sources/DeltiqUI/Resources/Localizable.xcstrings` **(neue Keys)**
 
 ### Abhängigkeiten
 WP-A muss zuerst kompilieren.
 
+### Daten-Zugang (entschieden in Architektur-Review)
+
+`CardioCoachDetailView` hat bereits `@Query allSessions: [WorkoutSession]` und `@Bindable profile`. Folgendes wird ergänzt:
+
+1. **Parameter `raceProgressModel: RaceProgressCardModel?`** — von `DashboardView` übergeben (bereits dort berechnet via `RaceProgressCardModel.make(for: profile, allSessions: completedSessions, now: .now)`)
+2. **Parameter `densityAssessment: TrainingDensityAssessment?`** — von `DashboardView` übergeben (`cachedDensityAssessment` aus Phase 2C, bereits vorhanden)
+3. **`@Query(filter: #Predicate<TrainingPlan> { $0.isActive == true }) private var activePlans`** — für `planAdjustmentPending = CoachAdjustmentCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: activePlans)) != nil`
+4. **`weeksToRace: Int?`** — lokal berechnet: `Calendar.current.dateComponents([.weekOfYear], from: Date(), to: raceDate).weekOfYear`
+
 ### Implementierungsdetails
 
-Die View braucht Zugang zu:
-1. `RaceProgressAssessment.Assessment?` — bereits via `RaceProgressCardModel.assessment` berechenbar (oder direkt vom profil)
-2. `TrainingLoadTrend?` — aus `DashboardView.computeTrainingDensityAssessment()` Vorbild; dort ist `TrainingLoadTrendAnalyzer.analyze()` der Einstieg
-3. `weeksToRace: Int?` — aus `profile.cardioRaceDate` und `Calendar.current.dateComponents`
-4. `planAdjustmentPending: Bool` — aus `profile.hasPendingCoachAdjustment` oder `CoachAdjustmentCardModel != nil`
+Initialisierungssignatur (neue Parameter am Ende):
+```swift
+init(
+    profile: UserBodyProfile,
+    model: CardioFeasibilityCardModel,
+    daysSinceLastRunSession: Int?,
+    last7DaysRunSessionCount: Int,
+    last7DaysRunVolumeKm: Double,
+    raceProgressModel: RaceProgressCardModel?,       // NEU
+    densityAssessment: TrainingDensityAssessment?    // NEU
+)
+```
 
 Neues ViewBuilder-Property `private var integratedCoachingSection: some View`:
 ```swift
-// Guard: mindestens cardioCoachingEnabled
 guard profile.cardioCoachingEnabled else { return AnyView(EmptyView()) }
+let weeksToRace = profile.cardioRaceDate.flatMap {
+    Calendar.current.dateComponents([.weekOfYear], from: Date(), to: $0).weekOfYear
+}
+let planAdjustmentPending = ActivePlanResolver.cardioRelevantPlan(among: activePlans)
+    .flatMap { CoachAdjustmentCardModel.make(for: profile, activePlan: $0) } != nil
 let outcome = IntegratedRunCoachAdvisor.assess(
-    raceProgress: /* computed locally */,
-    loadTrend: /* computed locally */,
-    densityAssessment: /* computed locally */,
+    raceProgress: raceProgressModel?.assessment,
+    loadTrend: densityAssessment.flatMap { ... },   // aus DensityAssessment
+    densityAssessment: densityAssessment,
     goal: profile.cardioGoal,
-    weeksToRace: /* computed locally */,
-    planAdjustmentPending: /* computed locally */
+    weeksToRace: weeksToRace,
+    planAdjustmentPending: planAdjustmentPending
 )
-// Render: CoachingAction.localizedTitle + CoachingRationale.primarySignal
+// Render: outcome.primaryAction.localizedTitle + outcome.rationale.localizedText
+// Zweite Zeile: outcome.dataQualityIssues (je ein .caption-Text)
 ```
 
-**Wichtig**: Die drei Pipelines werden lokal in der View neu berechnet (kein neues State, kein @Query — die View hat `profile` und `allSessions` bereits). Kein neues ObservableObject.
-
-Section in `body`:
+Section in `body` nach `loadSection`:
 ```swift
-Section(header: Text("integratedCoach.section.recommendation", bundle: .module)) {
+Section(header: Text("cardioCoach.detail.integrated.header", bundle: .module)) {
     integratedCoachingSection
 }
 ```
 
-### Lokalisierungs-Keys (Subset — vollständig in WP-E)
+### Lokalisierungs-Keys (vollständig in WP-E)
 ```
-integratedCoach.section.recommendation
+cardioCoach.detail.integrated.header
 integratedCoach.action.maintainCurrent
 integratedCoach.action.reduceLoadThisWeek
-integratedCoach.action.increaseWeeklyVolume
+integratedCoach.action.increaseVolume          ← %d-Platzhalter für Prozentzahl
 integratedCoach.action.reassessGoal
 integratedCoach.action.planAdjustmentAvailable
 integratedCoach.action.buildRunningBase
 integratedCoach.action.insufficientData
-integratedCoach.rationale.highACR
-integratedCoach.rationale.goalUnrealistic
+integratedCoach.rationale.positiveProgressHighLoad
+integratedCoach.rationale.positiveProgressStableLoad
+integratedCoach.rationale.plateauNearRace
+integratedCoach.rationale.goalUnreachable
 integratedCoach.rationale.recentGap
-integratedCoach.rationale.insufficientRecovery
-integratedCoach.rationale.volumePlateau
-integratedCoach.rationale.onTrack
-integratedCoach.rationale.noRunData
-integratedCoach.rationale.crossTrainingOnly
+integratedCoach.rationale.recoveryNeeded
+integratedCoach.rationale.noRunning
+integratedCoach.rationale.crossTraining
+integratedCoach.rationale.shortHistory
+integratedCoach.rationale.planAdjusted
+integratedCoach.dataQuality.missingDistance    ← %d-Platzhalter
+integratedCoach.dataQuality.ambiguousActivity  ← %d-Platzhalter
+integratedCoach.dataQuality.noDuration
+integratedCoach.dataQuality.shortHistory       ← %d-Platzhalter
 ```
 
 ### Tests
-Kein neuer XCTest erforderlich (View-Rendering; IntegratedRunCoachAdvisor-Logik durch WP-A abgedeckt). Optional: Screenshot-Test oder SwiftUI Preview.
+Kein neuer XCTest für View-Rendering (IntegratedRunCoachAdvisor-Logik durch WP-A abgedeckt). Visuelle Verifikation auf Simulator nach Implementation.
 
 ### Abnahmekriterien
-- Section erscheint in `CardioCoachDetailView` wenn `cardioCoachingEnabled == true`
-- Bei `cardioCoachingEnabled == false` leer / EmptyView
-- Kein Absturz wenn `raceDate == nil` oder `cardioGoal == nil`
-- `swift build --target DeltiqCore` und `swift build --target DeltiqUI` (ZIPFoundation-Fehler auf Windows erwartet) grün für Core
+- Section erscheint wenn `cardioCoachingEnabled == true`
+- Kein Crash wenn `raceProgressModel == nil` oder `densityAssessment == nil`
+- `volumeChart` (Zeilen 189–260) unverändert
+- Bestehende Sections (`statusSection`, `historicalSection`, `planSection`, `progressSection`, `loadSection`) unberührt
+- DashboardView-Aufruf kompiliert mit neuen Parametern
 
 ### Regressionsrisiken
-- `CardioCoachDetailView` ist eine wichtige View — bestehende Sections (`statusSection`, `historicalSection`, `volumeChart`, `planSection`, `progressSection`, `loadSection`) dürfen nicht angetastet werden
-- `volumeChart` (Zeilen 189–260) existiert bereits und ruft `weeklyVolumeProjection` auf — NICHT entfernen, NICHT duplizieren
+- Initialisierungsänderung in `CardioCoachDetailView` → **DashboardView-Aufrufer muss angepasst werden** (einziger Aufrufer; in `DashboardView` nach `model: CardioFeasibilityCardModel` Berechnung)
+- `volumeChart` arbeitet mit `profile.weeklyBaseVolumeKm` — NICHT entfernen, NICHT duplizieren
 
 ### Commit
 ```
@@ -305,57 +341,67 @@ feat(cardio): Phase 3C – actionable recommendations in RaceProgressDetailView
 ## Work Package D — Erstaktivierungs-UX runCoachCard
 
 ### Ziel
-Beim Einschalten von `cardioCoachingEnabled` → `runCoachCard` an Position 1 im Widget-Array (hinter dem ersten Widget, d.h. Index 1).
+Beim Aktivieren von `cardioCoachingEnabled` (AUS → EIN) → `runCoachCard` an Position 1 im Widget-Array, falls nicht bereits in top-3.
 
 ### Betroffene Dateien
-- `Sources/DeltiqUI/Settings/ProfileEditorView.swift` **(ändern)**
+- `Sources/DeltiqUI/Settings/CardioGoalEditorView.swift` **(ändern — `save()`)**
+
+**Nicht ProfileEditorView**: `cardioCoachingEnabled` wird ausschließlich in `CardioGoalEditorView.save()` gesetzt (via `profile.setEnduranceModality(draftEnduranceModality, runCoachEnabled: draftCardioCoachingEnabled)`). Ein `.onChange` in `ProfileEditorView` würde erst nach Sheet-Dismiss feuern und ist anfälliger.
 
 ### Abhängigkeiten
 Keine (unabhängig von WP-A, B, C).
 
 ### Implementierungsdetails
 
-Inline `.onChange`-Handler in `ProfileEditorView` (kein neuer Export, kein neues StaticFunc):
+In `CardioGoalEditorView.save()`, **nach** erfolgreichem `modelContext.save()`, **vor** den Folge-Calls (`planRequiringAdjustment` etc.):
 
 ```swift
-.onChange(of: profile.cardioCoachingEnabled) { _, newValue in
-    guard newValue else { return }
+// Nach try modelContext.save(), vor dismiss()/showingAdjustmentPreview
+let wasActivated = !originalCardioCoachingEnabled && draftCardioCoachingEnabled
+if wasActivated {
     var ws = profile.activeDashboardWidgets
-    guard !ws.prefix(3).contains(.runCoachCard) else { return }
-    ws.removeAll { $0 == .runCoachCard }
-    ws.insert(.runCoachCard, at: min(1, ws.count))
-    profile.activeDashboardWidgets = ws
+    if !ws.prefix(3).contains(.runCoachCard) {
+        ws.removeAll { $0 == .runCoachCard }
+        ws.insert(.runCoachCard, at: min(1, ws.count))
+        profile.activeDashboardWidgets = ws
+        // kein separates modelContext.save() – anschließende Interaktionen persistieren ws
+    }
 }
 ```
 
-**Verhalten**:
-- Einschalten → `runCoachCard` an Position 1 (Duplikat-Schutz: bereits in top-3 → keine Mutation)
-- Ausschalten → keine Mutation (Widget bleibt wo es ist; nächste Einschaltung bewegt es wieder)
-- Re-Aktivierung nach Deaktivierung → bewegt Karte erneut, falls nicht in top-3 (entspricht Erstaktivierungs-UX)
+`originalCardioCoachingEnabled` = Snapshot-Variable aus dem bereits bestehenden Rollback-Muster (Zeile 227: `let originalCardioCoachingEnabled = profile.cardioCoachingEnabled`).
+
+**Verhalten:**
+- AUS → EIN, Karte nicht in top-3: Karte zu Index 1 ✓
+- AUS → EIN, Karte bereits in top-3: keine Mutation ✓
+- EIN → AUS (Deaktivierungs-Pfad, Zeile 149): `wasActivated` = false → keine Mutation ✓
+- EIN → EIN (Ziel-/Datumsänderung, kein Coaching-Toggle): `wasActivated` = false → keine Mutation ✓
+
+**Shortcut**: Ohne neues SwiftData-Feld (`wasRunCoachCardEverPositioned: Bool`) kann Phase 3 "Erstaktivierung" nicht von "Re-Aktivierung nach manueller Kartenverschiebung in pos 4+" trennen. Folge: wer Karte auf pos 5 schiebt, deaktiviert und re-aktiviert, sieht sie erneut an pos 2. Edge case — akzeptiert. Upgrade: neues Bool in `UserBodyProfile` (Phase 4).
+
+**Onboarding-Pfad**: `OnboardingView` und `PlanBuilderView` setzen `cardioCoachingEnabled` separat. Sie sind NICHT von dieser Änderung betroffen. Die Karte erscheint dort an ihrer Standardposition 2 (defaultOrder), die bereits in top-3 liegt — kein Handlungsbedarf.
 
 ### Tests
-Da die Logik inline ist (kein testbarer Export), als Integration-Kommentar dokumentieren. Falls Extraktion gewünscht, aus `ws`-Mutation eine `static func insertRunCoachCard(into:) -> [DashboardWidgetType]` extrahieren und in `DeltiqDataTests` testen.
+`originalCardioCoachingEnabled` und `draftCardioCoachingEnabled` sind in `save()` bereits lokale Variablen → Logik ist in-line testbar durch manuelle Verifikation auf Simulator:
 
-Ruling (Ponytail ultra): inline in ProfileEditorView — kein neuer Export, kein neues Symbol. Test-Extraktion nur auf explizite Anfrage.
-
-**Pflicht-Verhalten validieren** (manuell oder Snapshot):
-- `[.nextWorkout, .coachingInsight, .weeklyVolume]` + toggle → `[.nextWorkout, .runCoachCard, .coachingInsight, .weeklyVolume]`
-- `[.runCoachCard, .nextWorkout]` + toggle → keine Änderung (runCoachCard bereits top-3)
-- Leeres Array + toggle → `[.runCoachCard]`
+- `[.nextWorkout, .coachingInsight, .weeklyVolume]` + coach AUS→EIN → `[.nextWorkout, .runCoachCard, .coachingInsight, .weeklyVolume]`
+- `[.runCoachCard, .nextWorkout]` + coach AUS→EIN → unverändert (guard feuert)
+- `[]` + coach AUS→EIN → `[.runCoachCard]`
+- coach EIN→AUS → kein Widget-Array-Change
 
 ### Abnahmekriterien
-- `.onChange`-Handler ist vorhanden
-- Kein Duplikat von `runCoachCard` im Array nach Toggle
-- Widget an Index 1 (oder Index 0 wenn Array war leer)
+- Kein Duplikat von `runCoachCard` im Array
+- Widget an Index 1 (oder 0 bei leerem Array)
+- Deaktivierung: kein Widget-Array-Change
 - `swift build --target DeltiqCore` grün
 
 ### Regressionsrisiken
-- `profile.activeDashboardWidgets` wird auch in `DashboardView` und anderen `ProfileEditorView`-Teilen gelesen — keine anderen Widgets dürfen verschoben werden
-- `runCoachCard` existiert bereits in `DashboardWidgetType` mit `defaultOrder = 2` — kein Konflikt
+- `save()` hat komplexes Rollback-Muster — `wasActivated`-Block nur nach `try modelContext.save()`, niemals im Rollback-Pfad (Zeile 255 ff.) 
+- Kein Konflikt mit `showingAdjustmentPreview`-Flow der nach demselben Save startet
 
 ### Commit
 ```
-feat(cardio): Phase 3D – auto-position runCoachCard on first coaching enable
+feat(cardio): Phase 3D – auto-position runCoachCard on coaching enable
 ```
 
 ---
