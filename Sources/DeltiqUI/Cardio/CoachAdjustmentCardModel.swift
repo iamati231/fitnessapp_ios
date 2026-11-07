@@ -275,27 +275,52 @@ public struct CoachAdjustmentCardModel: Equatable {
                     restDays: selectedRestDays, plan: plan, in: context
                 )
             } else {
-                // Zielwechsel-Fallback: freie Wochentage nutzen wenn Ruhetage nicht reichen.
-                // shortcut: Ersetzung + Einfuegen in zwei Schritten statt atomar;
+                // Zielwechsel-Fallback: freie Wochentage nutzen wenn Ruhetage nicht allein reichen.
+                // Kapazitätsregel: Rest + Free kombiniert (identisch zur UI-Kapazitätsprüfung).
+                // shortcut: Ersetzung + Einfuegen in zwei/drei Schritten statt atomar;
                 // upgradeable zu applyCoachCardioAdjustmentInsertingRemainderOnFreeWeekdays
                 // wenn Rollback bei save-Fehlern in Schritt 2 gebraucht wird.
                 let freeWds = RunCoachPlanAdjustment.freeWeekdays(in: plan)
-                let selectedWds = RunCoachPlanAdjustment.selectWeekdaysForNewDays(
-                    free: freeWds, count: remainderCount, otherDays: plan.days
-                )
-                guard selectedWds.count >= remainderCount else { return 0 }
-                let replaceCount = try PlanGeneratorInstantiator.applyCoachCardioAdjustment(
-                    eligibleDays: eligibleDays,
-                    newCardioDays: Array(newCardioDays.prefix(eligibleDays.count)),
-                    in: context
-                )
-                let insertCount = try PlanGeneratorInstantiator.insertCoachCardioDaysOnFreeWeekdays(
-                    plan: plan,
-                    weekdays: selectedWds,
-                    newCardioDays: Array(newCardioDays.dropFirst(eligibleDays.count)),
-                    in: context
-                )
-                count = replaceCount + insertCount
+                let restCount = eligibleRestDays.count
+                let neededFromFree = remainderCount - restCount
+                guard freeWds.count >= neededFromFree else { return 0 }
+                if restCount > 0 {
+                    // Kombiniert: alle verfügbaren Ruhetage + Rest auf freien Wochentagen.
+                    let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
+                        eligible: eligibleRestDays, count: restCount, otherDays: plan.days
+                    )
+                    let step1Count = try PlanGeneratorInstantiator.applyCoachCardioAdjustmentInsertingRemainder(
+                        eligibleDays: eligibleDays,
+                        newCardioDays: Array(newCardioDays.prefix(eligibleDays.count + restCount)),
+                        restDays: selectedRestDays, plan: plan, in: context
+                    )
+                    let step2Count = neededFromFree > 0 ? try PlanGeneratorInstantiator.insertCoachCardioDaysOnFreeWeekdays(
+                        plan: plan,
+                        weekdays: RunCoachPlanAdjustment.selectWeekdaysForNewDays(
+                            free: freeWds, count: neededFromFree, otherDays: plan.days
+                        ),
+                        newCardioDays: Array(newCardioDays.dropFirst(eligibleDays.count + restCount)),
+                        in: context
+                    ) : 0
+                    count = step1Count + step2Count
+                } else {
+                    let selectedWds = RunCoachPlanAdjustment.selectWeekdaysForNewDays(
+                        free: freeWds, count: remainderCount, otherDays: plan.days
+                    )
+                    guard selectedWds.count >= remainderCount else { return 0 }
+                    let replaceCount = try PlanGeneratorInstantiator.applyCoachCardioAdjustment(
+                        eligibleDays: eligibleDays,
+                        newCardioDays: Array(newCardioDays.prefix(eligibleDays.count)),
+                        in: context
+                    )
+                    let insertCount = try PlanGeneratorInstantiator.insertCoachCardioDaysOnFreeWeekdays(
+                        plan: plan,
+                        weekdays: selectedWds,
+                        newCardioDays: Array(newCardioDays.dropFirst(eligibleDays.count)),
+                        in: context
+                    )
+                    count = replaceCount + insertCount
+                }
             }
         } else if newCardioDays.count < eligibleDays.count {
             // Finding 1: neues Ziel braucht WENIGER Lauftage - die ersten
