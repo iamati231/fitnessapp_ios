@@ -77,11 +77,13 @@ public enum IntegratedRunCoachAdvisor {
             return out(.buildRunningBase, .recentGapDetected)
         }
 
-        // Prio 7 — Unzureichende Erholung (raceProgress oder Dichte-Signale)
+        // Prio 7 — Unzureichende Erholung: konkrete Befunde aus raceProgress oder Dichte.
+        // .insufficientRecoveryEvidence ist eine Datenlücke, kein Belastungsbefund —
+        // es landet als DataQualityIssue, loest aber keine Reduktion aus.
         let rpInsuffRecovery = concerns.contains(where: { if case .insufficientRecovery = $0 { return true }; return false })
         let densityRecovery: Bool = {
             guard let d = densityAssessment else { return false }
-            if d.outcome == .highTrainingDensity || d.outcome == .insufficientRecoveryEvidence { return true }
+            if d.outcome == .highTrainingDensity { return true }
             return d.concerns.contains(where: {
                 if case .deloadIndicatedByExistingSystem = $0 { return true }
                 if case .closelySpacedRunningSessions = $0 { return true }
@@ -93,7 +95,10 @@ public enum IntegratedRunCoachAdvisor {
             return out(.reduceLoadThisWeek, .recoveryNeeded)
         }
 
-        // Prio 8 — Belastung zu schnell gestiegen (nur Laufen, nicht reiner Kraft-Zuwachs)
+        // Prio 8 — Laufbelastung zu schnell gestiegen.
+        // density.outcome == .increasingLoad wird NICHT als pauschaler Auslöser verwendet:
+        // es kann durch reinen Kraft-Zuwachs oder aktiven Deload entstehen, beides bereits
+        // durch sigRunningIncrease bzw. .deloadIndicatedByExistingSystem (Prio 7) abgedeckt.
         let tooFast = concerns.contains(where: { if case .loadIncreasedTooFast = $0 { return true }; return false })
         let sigRunningIncrease: Bool = {
             if case .significantIncrease(let disciplines, _) = loadDev {
@@ -101,8 +106,7 @@ public enum IntegratedRunCoachAdvisor {
             }
             return false
         }()
-        let densityHighLoad = densityAssessment?.outcome == .increasingLoad
-        if tooFast || sigRunningIncrease || densityHighLoad {
+        if tooFast || sigRunningIncrease {
             return out(.reduceLoadThisWeek, .positiveProgressHighLoad)
         }
 
@@ -168,11 +172,19 @@ public enum IntegratedRunCoachAdvisor {
             }
         }
 
-        // Dichte-Datenlücken (.sessionFeelingUnavailable → kein erfundener RPE)
+        // Dichte-Outcome: insufficientRecoveryEvidence → Datenlücke, kein Aktions-Auslöser
+        if densityAssessment?.outcome == .insufficientRecoveryEvidence {
+            addIfNew(.recoveryEvidenceUnavailable)
+        }
+
+        // Dichte-Datenlücken
         for gap in densityAssessment?.dataGaps ?? [] {
             switch gap {
             case .noMeasuredIntensityData: addIfNew(.durationDataUnavailable)
-            case .insufficientHistory, .sessionFeelingUnavailable: break
+            // sessionFeelingUnavailable: kein erfundener RPE, aber Datenlücke kennzeichnen
+            case .sessionFeelingUnavailable: addIfNew(.recoveryEvidenceUnavailable)
+            // keine künstliche Tage→Wochen-Umrechnung
+            case .insufficientHistory(let days): addIfNew(.densityHistoryInsufficient(daysAvailable: days))
             }
         }
 

@@ -30,6 +30,12 @@ public enum DataQualityIssue: Sendable, Equatable {
     case ambiguousActivitiesPresent(weekCount: Int)
     case durationDataUnavailable
     case historyTooShort(weeksAvailable: Int, weeksNeeded: Int)
+    /// Regenerationsqualitaet konnte nicht beurteilt werden (fehlende RPE-/
+    /// Befindlichkeitsdaten, unzureichende Historie oder ausschliesslich
+    /// moderate Belastung). Kein Nachweis schlechter Regeneration.
+    case recoveryEvidenceUnavailable
+    /// Dichte-Analyse hat zu wenig Verlauf fuer ein Urteil.
+    case densityHistoryInsufficient(daysAvailable: Int)
 }
 
 public struct IntegratedCoachingOutcome: Sendable, Equatable {

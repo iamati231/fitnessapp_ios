@@ -342,11 +342,33 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
         XCTAssertEqual(result.rationale, .recoveryNeeded)
     }
 
-    func testPrio7_density_insufficientRecoveryEvidence_triggersReduceLoad() {
+    func testPrio7_density_insufficientRecoveryEvidence_doesNotTriggerReduceLoad() {
+        // insufficientRecoveryEvidence = Datenluecke, kein Belastungsbefund
         let d = makeDensityAssessment(outcome: .insufficientRecoveryEvidence)
-        let result = assess(densityAssessment: d)
-        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
-        XCTAssertEqual(result.rationale, .recoveryNeeded)
+        let rp = makeAssessment(outcome: .onTrack)
+        let result = assess(raceProgress: rp, densityAssessment: d)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
+    }
+
+    func testPrio7_density_insufficientRecoveryEvidence_withSessionFeelingUnavailable_noReduction() {
+        let d = makeDensityAssessment(outcome: .insufficientRecoveryEvidence, dataGaps: [.sessionFeelingUnavailable])
+        let rp = makeAssessment(outcome: .onTrack)
+        let result = assess(raceProgress: rp, densityAssessment: d)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
+    }
+
+    func testPrio7_density_insufficientRecoveryEvidence_withNoIntensityData_noReduction() {
+        let d = makeDensityAssessment(outcome: .insufficientRecoveryEvidence, dataGaps: [.noMeasuredIntensityData])
+        let rp = makeAssessment(outcome: .onTrack)
+        let result = assess(raceProgress: rp, densityAssessment: d)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
+    }
+
+    func testPrio7_density_insufficientRecoveryEvidence_withInsufficientHistory_noReduction() {
+        let d = makeDensityAssessment(outcome: .insufficientRecoveryEvidence, dataGaps: [.insufficientHistory(daysAvailable: 10)])
+        let rp = makeAssessment(outcome: .onTrack)
+        let result = assess(raceProgress: rp, densityAssessment: d)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
     }
 
     func testPrio7_density_deloadIndicatedByExistingSystem_triggersReduceLoad() {
@@ -406,18 +428,55 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
         XCTAssertEqual(result.rationale, .positiveProgressHighLoad)
     }
 
-    func testPrio8_density_increasingLoad_reducesLoad() {
+    func testPrio8_density_increasingLoad_withStrengthOnly_doesNotReduceLoad() {
+        // .increasingLoad kann durch reinen Kraft-Zuwachs entstehen → kein Lauf-Reduktionssignal
         let d = makeDensityAssessment(outcome: .increasingLoad)
-        let result = assess(densityAssessment: d)
+        let trend = makeTrend(loadDevelopment: .significantIncrease(disciplines: [.strength], percent: 0.70))
+        let rp = makeAssessment(outcome: .onTrack)
+        let result = assess(raceProgress: rp, loadTrend: trend, densityAssessment: d)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
+    }
+
+    func testPrio8_density_increasingLoad_withRunningTrend_reducesLoadViaTrend() {
+        // Prio 8 loest aus, aber durch loadTrend.sigRunningIncrease, nicht durch density.outcome
+        let d = makeDensityAssessment(outcome: .increasingLoad)
+        let trend = makeTrend(loadDevelopment: .significantIncrease(disciplines: [.running], percent: 0.70))
+        let result = assess(loadTrend: trend, densityAssessment: d)
         XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
         XCTAssertEqual(result.rationale, .positiveProgressHighLoad)
     }
 
-    // MARK: - Prioritaet: Dichte-Prio7 schlaegt Dichte-Prio8
+    func testPrio7_density_increasingLoad_withActiveDeload_triggersRecovery() {
+        // .increasingLoad + .deloadIndicatedByExistingSystem → Prio 7
+        let d = makeDensityAssessment(outcome: .increasingLoad, concerns: [.deloadIndicatedByExistingSystem])
+        let trend = makeTrend(loadDevelopment: .stable)
+        let result = assess(loadTrend: trend, densityAssessment: d)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .recoveryNeeded)
+    }
 
-    func testPriority_densityPrio7_beats_densityPrio8() {
-        // highTrainingDensity (→Prio7) sollte vor increasingLoad (→Prio8) feuern
-        // Simuliere beide: outcome kann nur eines sein, aber zeige Prio7 gewinnt
+    func testPrio7_density_increasingLoad_withoutConcerns_noFallbackPrio8() {
+        // .increasingLoad ohne laufbezogenen Trend und ohne Concerns → kein Prio-8-Auslöser
+        let d = makeDensityAssessment(outcome: .increasingLoad)
+        let trend = makeTrend(loadDevelopment: .stable)
+        let rp = makeAssessment(outcome: .onTrack)
+        let result = assess(raceProgress: rp, loadTrend: trend, densityAssessment: d)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
+    }
+
+    func testPrio7_highGeneralDensity_noRunningIncrease_triggersGeneralRecovery() {
+        // Allgemeine Dichte (nicht laufspezifisch) → allgemeine Belastungsreduktion
+        let d = makeDensityAssessment(outcome: .highTrainingDensity, concerns: [.highConsecutiveTrainingDays(days: 6)])
+        let trend = makeTrend(loadDevelopment: .stable)
+        let result = assess(loadTrend: trend, densityAssessment: d)
+        XCTAssertEqual(result.primaryAction, .reduceLoadThisWeek)
+        XCTAssertEqual(result.rationale, .recoveryNeeded) // allgemein, nicht laufspezifisch
+    }
+
+    // MARK: - Prioritaet: Dichte-Prio7 schlaegt Trend-Prio8
+
+    func testPriority_densityPrio7_beats_runningTrendPrio8() {
+        // highTrainingDensity (Prio 7) schlaegt significantRunningIncrease (Prio 8)
         let d = makeDensityAssessment(outcome: .highTrainingDensity)
         let trend = makeTrend(loadDevelopment: .significantIncrease(disciplines: [.running], percent: 0.70))
         let result = assess(loadTrend: trend, densityAssessment: d)
@@ -445,12 +504,13 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
         XCTAssertTrue(result.dataQualityIssues.contains(.durationDataUnavailable))
     }
 
-    func testDataQuality_density_sessionFeelingUnavailable_notMapped() {
-        // sessionFeelingUnavailable darf keinen erfundenen RPE-Wert implizieren
+    func testDataQuality_density_sessionFeelingUnavailable_surfacedAsRecoveryEvidenceUnavailable() {
+        // sessionFeelingUnavailable: kein RPE-Wert erfunden, aber Datenluecke kennzeichnen
         let d = makeDensityAssessment(outcome: .balanced, dataGaps: [.sessionFeelingUnavailable])
         let trend = makeTrend(dataCompleteness: .complete)
         let result = assess(loadTrend: trend, densityAssessment: d)
-        XCTAssertTrue(result.dataQualityIssues.isEmpty)
+        XCTAssertTrue(result.dataQualityIssues.contains(.recoveryEvidenceUnavailable))
+        XCTAssertFalse(result.dataQualityIssues.contains(.durationDataUnavailable))
     }
 
     func testDataQuality_noDuplicates_whenBothSourcesReportSameIssue() {
@@ -471,6 +531,33 @@ final class IntegratedRunCoachAdvisorTests: XCTestCase {
         let result = assess(loadTrend: trend, densityAssessment: d)
         let count = result.dataQualityIssues.filter { $0 == .durationDataUnavailable }.count
         XCTAssertEqual(count, 1)
+    }
+
+    func testDataQuality_density_insufficientRecoveryEvidence_outcome_surfaced() {
+        // Dichte-Outcome .insufficientRecoveryEvidence → recoveryEvidenceUnavailable im DataQualityIssue
+        let d = makeDensityAssessment(outcome: .insufficientRecoveryEvidence)
+        let result = assess(densityAssessment: d)
+        XCTAssertTrue(result.dataQualityIssues.contains(.recoveryEvidenceUnavailable))
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
+    }
+
+    func testDataQuality_density_historyInsufficient_surfaced() {
+        // .insufficientHistory(daysAvailable: 10) → .densityHistoryInsufficient(daysAvailable: 10), keine Tage→Wochen-Umrechnung
+        let d = makeDensityAssessment(outcome: .balanced, dataGaps: [.insufficientHistory(daysAvailable: 10)])
+        let result = assess(densityAssessment: d)
+        XCTAssertTrue(result.dataQualityIssues.contains(.densityHistoryInsufficient(daysAvailable: 10)))
+    }
+
+    func testDataQuality_noDuplicates_recoveryEvidenceFromOutcomeAndGap() {
+        // Outcome .insufficientRecoveryEvidence + Gap .sessionFeelingUnavailable → nur ein .recoveryEvidenceUnavailable
+        let d = makeDensityAssessment(
+            outcome: .insufficientRecoveryEvidence,
+            dataGaps: [.sessionFeelingUnavailable]
+        )
+        let result = assess(densityAssessment: d)
+        let count = result.dataQualityIssues.filter { $0 == .recoveryEvidenceUnavailable }.count
+        XCTAssertEqual(count, 1)
+        XCTAssertNotEqual(result.primaryAction, .reduceLoadThisWeek)
     }
 
     // MARK: - RPE / Intensitaetsdaten fehlen (pruefe dataQualityIssues)
