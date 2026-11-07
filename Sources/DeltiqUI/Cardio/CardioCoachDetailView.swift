@@ -16,6 +16,10 @@ struct CardioCoachDetailView: View {
     let daysSinceLastRunSession: Int?
     let last7DaysRunSessionCount: Int
     let last7DaysRunVolumeKm: Double
+    let raceProgressModel: RaceProgressCardModel?
+    let densityAssessment: TrainingDensityAnalyzer.Assessment?
+    let loadTrend: TrainingLoadTrend?
+    let planAdjustmentPending: Bool
 
     @Environment(\.dismiss) private var dismiss
 
@@ -79,6 +83,7 @@ struct CardioCoachDetailView: View {
                 if model.hasPlan { planSection }
                 progressSection
                 loadSection
+                if profile.cardioCoachingEnabled { integratedSection }
             }
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
@@ -288,6 +293,100 @@ struct CardioCoachDetailView: View {
             }
         } header: {
             Text("cardioCoach.detail.load.header", bundle: .module)
+        }
+    }
+    // MARK: - Integrierte Coaching-Empfehlung (Section 6)
+
+    @ViewBuilder
+    private var integratedSection: some View {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let daysToRace: Int? = profile.cardioRaceDate.flatMap { raceDate in
+            let d = cal.dateComponents([.day], from: today, to: cal.startOfDay(for: raceDate)).day ?? 0
+            return d > 0 ? d : nil
+        }
+        let outcome = IntegratedRunCoachAdvisor.assess(
+            raceProgress: raceProgressModel?.assessment,
+            loadTrend: loadTrend,
+            densityAssessment: densityAssessment,
+            weeksToRace: daysToRace.map { $0 / 7 },
+            daysToRace: daysToRace,
+            planAdjustmentPending: planAdjustmentPending
+        )
+        Section {
+            Text(localizedAction(outcome.primaryAction))
+                .fontWeight(.medium)
+            Text(localizedRationale(outcome.rationale))
+                .foregroundStyle(.secondary)
+            ForEach(Array(outcome.dataQualityIssues.enumerated()), id: \.offset) { _, issue in
+                Text(localizedDataQuality(issue))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        } header: {
+            Text("cardioCoach.detail.integrated.header", bundle: .module)
+        }
+    }
+
+    private func localizedAction(_ action: CoachingAction) -> String {
+        switch action {
+        case .maintainCurrent:
+            return String(localized: "integratedCoach.action.maintainCurrent", bundle: .module)
+        case .reduceLoadThisWeek:
+            return String(localized: "integratedCoach.action.reduceLoadThisWeek", bundle: .module)
+        case .increaseWeeklyVolume(let pct):
+            let pctStr = String(format: "+%.0f %%", pct * 100)
+            return String(format: String(localized: "integratedCoach.action.increaseWeeklyVolume", bundle: .module), pctStr)
+        case .reassessGoal:
+            return String(localized: "integratedCoach.action.reassessGoal", bundle: .module)
+        case .planAdjustmentAvailable:
+            return String(localized: "integratedCoach.action.planAdjustmentAvailable", bundle: .module)
+        case .buildRunningBase:
+            return String(localized: "integratedCoach.action.buildRunningBase", bundle: .module)
+        case .insufficientData:
+            return String(localized: "integratedCoach.action.insufficientData", bundle: .module)
+        }
+    }
+
+    private func localizedRationale(_ rationale: CoachingRationale) -> String {
+        switch rationale {
+        case .positiveProgressHighLoad:
+            return String(localized: "integratedCoach.rationale.positiveProgressHighLoad", bundle: .module)
+        case .positiveProgressStableLoad:
+            return String(localized: "integratedCoach.rationale.positiveProgressStableLoad", bundle: .module)
+        case .plateauNearRace(let weeks):
+            return String(format: String(localized: "integratedCoach.rationale.plateauNearRace", bundle: .module), weeks)
+        case .goalLikelyUnreachable:
+            return String(localized: "integratedCoach.rationale.goalLikelyUnreachable", bundle: .module)
+        case .recentGapDetected:
+            return String(localized: "integratedCoach.rationale.recentGapDetected", bundle: .module)
+        case .recoveryNeeded:
+            return String(localized: "integratedCoach.rationale.recoveryNeeded", bundle: .module)
+        case .noRunningData:
+            return String(localized: "integratedCoach.rationale.noRunningData", bundle: .module)
+        case .crossTrainingOnly:
+            return String(localized: "integratedCoach.rationale.crossTrainingOnly", bundle: .module)
+        case .shortHistory:
+            return String(localized: "integratedCoach.rationale.shortHistory", bundle: .module)
+        case .planJustAdjusted:
+            return String(localized: "integratedCoach.rationale.planJustAdjusted", bundle: .module)
+        }
+    }
+
+    private func localizedDataQuality(_ issue: DataQualityIssue) -> String {
+        switch issue {
+        case .runningDistanceMissing(let n):
+            return String(format: String(localized: "integratedCoach.dataQuality.runningDistanceMissing", bundle: .module), n)
+        case .ambiguousActivitiesPresent(let n):
+            return String(format: String(localized: "integratedCoach.dataQuality.ambiguousActivitiesPresent", bundle: .module), n)
+        case .durationDataUnavailable:
+            return String(localized: "integratedCoach.dataQuality.durationDataUnavailable", bundle: .module)
+        case .historyTooShort(let avail, let needed):
+            return String(format: String(localized: "integratedCoach.dataQuality.historyTooShort", bundle: .module), avail, needed)
+        case .recoveryEvidenceUnavailable:
+            return String(localized: "integratedCoach.dataQuality.recoveryEvidenceUnavailable", bundle: .module)
+        case .densityHistoryInsufficient(let days):
+            return String(format: String(localized: "integratedCoach.dataQuality.densityHistoryInsufficient", bundle: .module), days)
         }
     }
 }

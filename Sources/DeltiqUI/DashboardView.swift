@@ -190,6 +190,7 @@ public struct DashboardView: View {
     /// Unabhaengig von `cardioCoachingEnabled` (Ticket-Leitplanke).
     @State private var showingTrainingLoadDetail = false
     @State private var cachedDensityAssessment: TrainingDensityAnalyzer.Assessment?
+    @State private var cachedLoadTrend: TrainingLoadTrend?
 
     /// Gecachter Plateau-Befund — wird via .onChange(of: completedSessions, initial: true)
     /// aktualisiert, sodass die O(n·m)-Berechnung nur einmal pro Datenaenderung laeuft
@@ -364,7 +365,9 @@ public struct DashboardView: View {
         // bei jeder Session-Änderung neu berechnen (O(n) statt pro Render-Pass).
         .onChange(of: completedSessions, initial: true) {
             cachedPlateauFinding = computePlateauFinding()
-            cachedDensityAssessment = computeTrainingDensityAssessment()
+            let densityResult = computeTrainingDensityAssessment()
+            cachedDensityAssessment = densityResult.density
+            cachedLoadTrend = densityResult.trend
         }
         .alert(
             Text("dashboard.onboardingPlanCreationFailed.title", bundle: .module),
@@ -410,7 +413,11 @@ public struct DashboardView: View {
                     model: model,
                     daysSinceLastRunSession: daysSinceLastRunSession,
                     last7DaysRunSessionCount: last7DaysRunSessionCount,
-                    last7DaysRunVolumeKm: last7DaysRunVolumeKm
+                    last7DaysRunVolumeKm: last7DaysRunVolumeKm,
+                    raceProgressModel: raceProgressModel,
+                    densityAssessment: cachedDensityAssessment,
+                    loadTrend: cachedLoadTrend,
+                    planAdjustmentPending: planAdjustmentPending
                 )
             }
         }
@@ -2876,9 +2883,9 @@ public struct DashboardView: View {
 
     /// Führt die komplette 2A→2B→2C-Pipeline durch und cached das Ergebnis.
     /// Aufgerufen von `.onChange(of: completedSessions, initial: true)`.
-    private func computeTrainingDensityAssessment() -> TrainingDensityAnalyzer.Assessment? {
+    private func computeTrainingDensityAssessment() -> (density: TrainingDensityAnalyzer.Assessment?, trend: TrainingLoadTrend?) {
         let activities = TrainingActivityExtractor.extract(from: completedSessions)
-        guard !activities.isEmpty else { return nil }
+        guard !activities.isEmpty else { return (nil, nil) }
         let now = Date()
         let calendar = Calendar.current
         let windowStart = calendar.date(byAdding: .weekOfYear, value: -12, to: now) ?? now
@@ -2894,7 +2901,14 @@ public struct DashboardView: View {
             now: now,
             calendar: calendar
         )
-        return TrainingDensityAnalyzer.analyze(input: input)
+        return (TrainingDensityAnalyzer.analyze(input: input), trend)
+    }
+
+    private var planAdjustmentPending: Bool {
+        guard let profile = profiles.first,
+              let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans)
+        else { return false }
+        return CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) != nil
     }
 
     /// Live gerechnet bei jedem Render, keine gespeicherte "ausstehende

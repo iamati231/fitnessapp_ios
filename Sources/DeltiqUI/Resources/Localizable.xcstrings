@@ -2992,6 +2992,29 @@
         }
       }
     },
+    "cardioCoach.detail.integrated.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coaching-Empfehlung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coaching Recommendation"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman Önerisi"
+          }
+        }
+      }
+    },
     "cardioCoach.insight.lowFrequency": {
       "extractionState": "manual",
       "localizations": {
@@ -45239,6 +45262,535 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ayarlar"
+          }
+        }
+      }
+    },
+    "integratedCoach.action.buildRunningBase": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufbasis aufbauen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build running base."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu tabanı oluştur."
+          }
+        }
+      }
+    },
+    "integratedCoach.action.increaseWeeklyVolume": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wochenumfang erhöhen (%@)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase weekly volume (%@)."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık hacmi artır (%@)."
+          }
+        }
+      }
+    },
+    "integratedCoach.action.insufficientData": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu wenig Daten für eine Empfehlung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough data for a recommendation."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öneri için yeterli veri yok."
+          }
+        }
+      }
+    },
+    "integratedCoach.action.maintainCurrent": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelles Programm beibehalten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep current program."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevcut programı sürdür."
+          }
+        }
+      }
+    },
+    "integratedCoach.action.planAdjustmentAvailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plananpassung verfügbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan adjustment available."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan düzenlemesi mevcut."
+          }
+        }
+      }
+    },
+    "integratedCoach.action.reassessGoal": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziel überdenken."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reassess your goal."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedefi yeniden değerlendir."
+          }
+        }
+      }
+    },
+    "integratedCoach.action.reduceLoadThisWeek": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belastung diese Woche reduzieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reduce load this week."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu hafta yükü azalt."
+          }
+        }
+      }
+    },
+    "integratedCoach.dataQuality.ambiguousActivitiesPresent": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivitäten in %d Wochen nicht eindeutig einer Sportart zugeordnet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activities in %d weeks could not be assigned to a sport."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d haftadaki aktiviteler bir spora atanamadı."
+          }
+        }
+      }
+    },
+    "integratedCoach.dataQuality.densityHistoryInsufficient": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dichte-Analyse: nur %d Tage Verlauf verfügbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Density analysis: only %d days of history available."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yoğunluk analizi: yalnızca %d gün geçmiş mevcut."
+          }
+        }
+      }
+    },
+    "integratedCoach.dataQuality.durationDataUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intensitätsdaten für einzelne Einheiten nicht verfügbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intensity data not available for some sessions."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bazı antrenmanlar için yoğunluk verisi mevcut değil."
+          }
+        }
+      }
+    },
+    "integratedCoach.dataQuality.historyTooShort": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingshistorie zu kurz: %d von mind. %d Wochen verfügbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training history too short: %d of %d weeks available."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman geçmişi çok kısa: %d/%d hafta mevcut."
+          }
+        }
+      }
+    },
+    "integratedCoach.dataQuality.recoveryEvidenceUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erholungsqualität konnte nicht beurteilt werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery quality could not be assessed."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toparlanma kalitesi değerlendirilemedi."
+          }
+        }
+      }
+    },
+    "integratedCoach.dataQuality.runningDistanceMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufdistanz fehlt in %d Wochen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running distance missing in %d weeks."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d haftada koşu mesafesi eksik."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.crossTrainingOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überwiegend Cross-Training ohne Laufeinheiten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostly cross-training, no running recorded."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çoğunlukla çapraz antrenman, koşu kaydedilmedi."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.goalLikelyUnreachable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit dem aktuellen Tempo ist das Ziel voraussichtlich nicht erreichbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At the current pace, the goal may not be reachable."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevcut hızla hedefe ulaşmak muhtemelen mümkün olmayacak."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.noRunningData": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In den letzten Wochen kein Lauftraining erfasst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No running recorded in recent weeks."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son haftalarda koşu antrenmanı kaydedilmedi."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.planJustAdjusted": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Plananpassungsvorschlag liegt zur Bestätigung vor."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A plan adjustment is pending your confirmation."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir plan düzenlemesi onayınızı bekliyor."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.plateauNearRace": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen-Plateau erkannt – noch %d Wochen bis zum Renntag."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume plateau detected – %d weeks to race day."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hacim platosu tespit edildi – yarış gününe %d hafta kaldı."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.positiveProgressHighLoad": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufbelastung ist zuletzt stark gestiegen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running load has increased significantly."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu yükü önemli ölçüde arttı."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.positiveProgressStableLoad": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training verläuft planmäßig."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training is on track."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman planlandığı gibi ilerliyor."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.recentGapDetected": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelle Trainingspause im Beobachtungszeitraum festgestellt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training gap detected in the observation window."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gözlem penceresinde antrenman boşluğu tespit edildi."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.recoveryNeeded": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsbelastung deutet auf erhöhten Erholungsbedarf hin."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training load suggests increased recovery may be needed."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman yükü artmış toparlanma ihtiyacına işaret ediyor."
+          }
+        }
+      }
+    },
+    "integratedCoach.rationale.shortHistory": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu wenig Trainingsdaten für ein verlässliches Urteil."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough training data for a reliable assessment."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güvenilir bir değerlendirme için yeterli antrenman verisi yok."
           }
         }
       }
