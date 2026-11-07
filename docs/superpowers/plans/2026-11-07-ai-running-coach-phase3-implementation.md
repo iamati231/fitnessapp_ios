@@ -111,11 +111,22 @@ public enum IntegratedRunCoachAdvisor {
         loadTrend: TrainingLoadTrend?,
         densityAssessment: TrainingDensityAssessment?,
         goal: CardioGoal?,
-        weeksToRace: Int?,
+        weeksToRace: Int?,   // für Prio 9: volumePlateau-Schwellenwert (< 10 Wochen)
+        daysToRace: Int?,    // für Prio 6a: exakte 14-Tage-Grenze (NEU — weeksToRace reicht nicht)
         planAdjustmentPending: Bool
     ) -> IntegratedCoachingOutcome
 }
 ```
+
+> ⚠️ **Warum `daysToRace` als separater Parameter:**
+> `Calendar.dateComponents([.weekOfYear], from: now, to: raceDate).weekOfYear` schneidet auf ganze Wochen ab (Ganzzahl-Division durch 7). Das bedeutet: 14 Tage → `weeksToRace = 2` und 15 Tage → `weeksToRace = 2` — derselbe Wert. `weeksToRace <= 2` deckt damit 0–20 Tage ab, nicht 0–14 Tage. Die fachliche Grenze ≤ 14 Tage lässt sich mit `weeksToRace` allein nicht exakt abbilden. WP-A muss `daysToRace: Int?` als separaten Parameter entgegennehmen.
+>
+> Caller-Berechnung (in `CardioCoachDetailView`, neben der bestehenden `weeksToRace`-Berechnung):
+> ```swift
+> let daysToRace: Int? = profile.cardioRaceDate.flatMap {
+>     Calendar.current.dateComponents([.day], from: Date(), to: $0).day
+> }.flatMap { $0 >= 0 ? $0 : nil }  // negative Werte (Rennen in der Vergangenheit) = nil
+> ```
 
 ### Prioritätsreihenfolge (12 Stufen, oben = höchste Priorität)
 
@@ -126,7 +137,7 @@ public enum IntegratedRunCoachAdvisor {
 | 3 | Nur Cross-Training (`isCrossTrainingOnly` dominant) | `.buildRunningBase` ← **korrigiert** |
 | 4 | `planAdjustmentPending == true` | `.planAdjustmentAvailable` |
 | 5 | `concerns.contains(.goalLikelyUnrealistic)` | `.reassessGoal` |
-| **6a** | `concerns.contains(.recentTrainingGap)` **UND** `weeksToRace != nil && weeksToRace! <= 2` | `.maintainCurrent` ← **neu** |
+| **6a** | `concerns.contains(.recentTrainingGap)` **UND** `daysToRace != nil && daysToRace! <= 14` | `.maintainCurrent` ← **neu** |
 | **6b** | `concerns.contains(.recentTrainingGap)` | `.buildRunningBase` ← **korrigiert** |
 | 7 | `concerns.contains(.insufficientRecovery)` | `.reduceLoadThisWeek` |
 | 8 | `concerns.contains(.loadIncreasedTooFast)` ODER `loadDevelopment == .significantIncrease` | `.reduceLoadThisWeek` |
@@ -254,12 +265,26 @@ let assessment = RaceProgressAssessment.assess(.init(
 
 **Problem B — Wettkampfnähe: Prio 6a**
 
-Bei Rennen in ≤ 2 Wochen (`weeksToRace <= 2`) ist kein sinnvoller Laufbasis-Aufbau mehr möglich. Plötzliche Volumensteigerung kurz vor Wettkampf riskiert Überlastungsverletzungen. Prio 6a greift vor 6b (Renndatum vorhanden und nah):
+Bei Rennen in ≤ 14 Tagen (`daysToRace <= 14`) ist kein sinnvoller Laufbasis-Aufbau mehr möglich. Plötzliche Volumensteigerung kurz vor Wettkampf riskiert Überlastungsverletzungen. Prio 6a greift vor 6b (Renndatum vorhanden und nah):
 
-- **Prio 6a** (`weeksToRace != nil && weeksToRace! <= 2`): `.maintainCurrent` + `.recentGapDetected` — keine Volumenerhöhung, kein Tapering, keine Aussage über Renntauglichkeit
-- **Prio 6b** (kein Rennen oder `weeksToRace > 2`): `.buildRunningBase` + `.recentGapDetected` — gradueller Wiederaufbau
+- **Prio 6a** (`daysToRace != nil && daysToRace! <= 14`): `.maintainCurrent` + `.recentGapDetected` — keine Volumenerhöhung, kein Tapering, keine Aussage über Renntauglichkeit
+- **Prio 6b** (kein Rennen oder `daysToRace > 14`): `.buildRunningBase` + `.recentGapDetected` — gradueller Wiederaufbau
 
-Schwellenwert ≤ 2 Wochen: `Calendar.dateComponents([.weekOfYear], from: now, to: raceDate).weekOfYear` → 6 Tage = 0 Wochen, 13 Tage = 1 Woche, 14 Tage = 2 Wochen. Schwellenwert ≤ 2 Wochen entspricht ≤ 14 Tage bis Rennen.
+**Schwellenwert und Berechnung:** Der Ausdruck `Calendar.dateComponents([.weekOfYear], from: now, to: raceDate).weekOfYear` schneidet auf ganze Wochen ab — 14 Tage und 15 Tage ergeben denselben Wert (2 Wochen). `weeksToRace <= 2` deckt damit 0–20 Tage ab, nicht nur 0–14 Tage. WP-A muss deshalb `daysToRace: Int?` aus `Calendar.dateComponents([.day], ...)` verwenden:
+
+| Abstand | `weeksToRace` | `daysToRace` | Prio 6a mit `weeksToRace <= 2` | Prio 6a mit `daysToRace <= 14` |
+|---------|--------------|--------------|-------------------------------|-------------------------------|
+| 0 Tage (Renntag) | 0 | 0 | ja | ja ✓ |
+| 1 Tag | 0 | 1 | ja | ja ✓ |
+| 7 Tage | 1 | 7 | ja | ja ✓ |
+| 14 Tage | 2 | 14 | ja | ja ✓ |
+| **15 Tage** | **2** | **15** | **ja ✗** | nein ✓ |
+| **20 Tage** | **2** | **20** | **ja ✗** | nein ✓ |
+| 21 Tage | 3 | 21 | nein | nein ✓ |
+
+Negative Werte (Rennen in der Vergangenheit) werden im Caller auf `nil` abgebildet → Prio 6b greift.
+
+**Tagesgrenze und Zeitzonen:** `Calendar.dateComponents([.day], from: now, to: raceDate)` verwendet den Kalender des Nutzers (Locale-spezifisch). Das Ergebnis zählt Kalendertage, keine 24-Stunden-Perioden. Zeitzonen-Effekte sind akzeptabel (±1 Tag) und fachlich irrelevant.
 
 **Lokalisierung:** `integratedCoach.action.maintainCurrent` → **"Aktuelles Programm beibehalten."** (war: "Du bist auf Kurs – weiter so." — letzteres ist irreführend bei Prio 6a mit Gap-Erkennung). Kombinierter Text Prio 6a: "Trainingspause erkannt." + "Aktuelles Programm beibehalten."
 
@@ -272,7 +297,43 @@ Das System kennt keine "geplante Ruhezeit"-Information. Eine Urlaubs-Pause mit n
 
 ---
 
-**Testfälle Prio 6a + 6b (am `IntegratedRunCoachAdvisor`, alle 11 Ticket-Szenarien):**
+**Wechselseitiger Ausschluss: `.recentTrainingGap` und `.insufficientRecovery`**
+
+Diese beiden Concerns sind mit der aktuellen Implementierung **physikalisch nicht gleichzeitig möglich**:
+
+- `.recentTrainingGap` setzt voraus: die letzten ≥ 2 Wochen sind `.genuineGap` → `runningDistanceKm == 0` in der letzten Woche
+- `checkRecovery()` hat als erstes Guard-Statement `guard series.last!.runningDistanceKm > 0` (`RaceProgressAssessment.swift:232`) → schlägt bei Gap-Woche sofort fehl → liefert `nil`
+
+**Folge:** Wenn `recentTrainingGap` feuert, kann `insufficientRecovery` niemals gleichzeitig in `concerns` erscheinen. Die Prioritätsreihenfolge Prio 6b vor 7 bleibt trotzdem dokumentiert (defensive Reihenfolge, falls künftige Implementierungsänderungen diese Exklusivität aufheben).
+
+---
+
+**Aktiver Plan vs. ausstehende Plananpassung**
+
+`planAdjustmentPending` ist **NICHT** dasselbe wie „aktiver Plan vorhanden":
+
+```
+planAdjustmentPending = (CoachAdjustmentCardModel.make(for: profile, activePlan: plan) != nil)
+```
+
+`make()` gibt nur dann non-nil zurück, wenn `ActivePlanResolver.planRequiringAdjustment()` ein Ergebnis liefert — was ausschließlich bei zwei Ereignissen passiert:
+
+1. **Coach-Aktivierung AUS→EIN** (neuer Lauf-Coach-Plan wird benötigt)
+2. **Zieländerung** (z.B. Halbmarathon → Marathon — Plan passt nicht mehr zum neuen Ziel)
+
+| Zustand | `planAdjustmentPending` | Prio |
+|---------|------------------------|------|
+| Kein aktiver Plan | `false` | — (kein Prio-4-Trigger) |
+| Aktiver Plan, kein Ereignis | `false` | — (Prio 6b greift bei Gap) |
+| Aktiver Plan + Coach gerade aktiviert | `true` | **4** |
+| Aktiver Plan + Ziel gerade geändert | `true` | **4** |
+| Aktiver Plan + bereits bestätigte Anpassung | `false` (Fingerprint-Match → `make() = nil`) | — (Prio 6b greift bei Gap) |
+
+---
+
+**Testfälle Prio 6a + 6b (am `IntegratedRunCoachAdvisor`, aktualisiert):**
+
+Alle 7 Tagesgrenzen aus dem Ticket plus kombinierte Szenarien:
 
 | Test | Eingabe | Erw. Prio | Erw. Action | Erw. Rationale |
 |------|---------|-----------|-------------|----------------|
@@ -280,18 +341,27 @@ Das System kennt keine "geplante Ruhezeit"-Information. Eine Urlaubs-Pause mit n
 | `testGap_twoCompleteGapWeeks_currentWeekEmpty` | 2 abgeschl. Gap + akt. Woche leer | 6b | `.buildRunningBase` | `.recentGapDetected` |
 | `testGap_oneCompleteGapWeek_currentWeekEmpty` | 1 abgeschl. Gap + akt. Woche leer | — | kein Gap-Concern (streak = 1 < 2) → `.maintainCurrent` | `.positiveProgressStableLoad` |
 | `testGap_currentWeekEmpty_noCompletedGap` | akt. Woche leer, davor Laufwochen | — | kein Gap-Concern (streak = 0) | — |
-| `testGap_raceIn7Days_twoCompleteGaps` | 2 abgeschl. Gap + `weeksToRace = 1` | **6a** | `.maintainCurrent` | `.recentGapDetected` |
-| `testGap_raceIn14Days_twoCompleteGaps` | 2 abgeschl. Gap + `weeksToRace = 2` | **6a** | `.maintainCurrent` | `.recentGapDetected` |
-| `testGap_raceIn21Days_twoCompleteGaps` | 2 abgeschl. Gap + `weeksToRace = 3` | **6b** | `.buildRunningBase` | `.recentGapDetected` |
-| `testGap_noRaceDate_twoCompleteGaps` | 2 abgeschl. Gap + `weeksToRace = nil` | **6b** | `.buildRunningBase` | `.recentGapDetected` |
-| `testGap_activePlan_twoCompleteGaps` | 2 abgeschl. Gap + `planAdjustmentPending = true` | **4** | `.planAdjustmentAvailable` | `.planJustAdjusted` |
-| `testGap_withRecoveryConcern_twoGaps` | 2 abgeschl. Gap + `insufficientRecovery` Concern | **6b** | `.buildRunningBase` (Gap vor Recovery priorisiert) | `.recentGapDetected` |
+| `testGap_raceToday_twoCompleteGaps` | 2 abgeschl. Gap + `daysToRace = 0` | **6a** | `.maintainCurrent` | `.recentGapDetected` |
+| `testGap_raceIn1Day_twoCompleteGaps` | 2 abgeschl. Gap + `daysToRace = 1` | **6a** | `.maintainCurrent` | `.recentGapDetected` |
+| `testGap_raceIn7Days_twoCompleteGaps` | 2 abgeschl. Gap + `daysToRace = 7` | **6a** | `.maintainCurrent` | `.recentGapDetected` |
+| `testGap_raceIn14Days_twoCompleteGaps` | 2 abgeschl. Gap + `daysToRace = 14` | **6a** | `.maintainCurrent` | `.recentGapDetected` |
+| `testGap_raceIn15Days_twoCompleteGaps` | 2 abgeschl. Gap + `daysToRace = 15` | **6b** | `.buildRunningBase` | `.recentGapDetected` |
+| `testGap_raceIn20Days_twoCompleteGaps` | 2 abgeschl. Gap + `daysToRace = 20` | **6b** | `.buildRunningBase` | `.recentGapDetected` |
+| `testGap_raceIn21Days_twoCompleteGaps` | 2 abgeschl. Gap + `daysToRace = 21` | **6b** | `.buildRunningBase` | `.recentGapDetected` |
+| `testGap_noRaceDate_twoCompleteGaps` | 2 abgeschl. Gap + `daysToRace = nil` | **6b** | `.buildRunningBase` | `.recentGapDetected` |
+| `testGap_planAdjustmentPending_twoCompleteGaps` | 2 abgeschl. Gap + `planAdjustmentPending = true` (Coach gerade aktiviert oder Ziel geändert) | **4** | `.planAdjustmentAvailable` | `.planJustAdjusted` |
+| `testGap_activePlanNoPendingAdjustment_twoCompleteGaps` | 2 abgeschl. Gap + aktiver Plan + kein Ereignis (`planAdjustmentPending = false`) | **6b** | `.buildRunningBase` | `.recentGapDetected` |
+| `testGap_planAlreadyAccepted_twoCompleteGaps` | 2 abgeschl. Gap + Plan vorhanden + Anpassung bereits bestätigt (`planAdjustmentPending = false`, Fingerprint gesetzt) | **6b** | `.buildRunningBase` | `.recentGapDetected` |
+| `testGap_recoveryWithRunningLastWeek` | Aktive Laufwoche (kein Gap), Recovery-Concern vorhanden, kein Gap-Concern | **7** | `.reduceLoadThisWeek` | `.recoveryNeeded` |
 | `testGap_mixedWeeks_kraftAndCross` | Woche mit Kraft → `.strengthOnlyWeek`; Woche mit Rad → `.crossTrainingOnly` → kein genuineGap | — | kein Gap-Concern | — |
 
+> ⚠️ **`testGap_withRecoveryConcern_twoGaps` ist ein unmögliches Szenario** — wenn `recentTrainingGap` feuert (trailing 2+ Gap-Wochen), ist `series.last.runningDistanceKm == 0`, und `checkRecovery()` liefert nil wegen des ersten Guard-Statements. Diese Kombination kann mit dem bestehenden Code nie eintreten. Der Test wurde durch realistische Szenarien ersetzt.
+
 **Wichtige Invarianten pro Test:**
-- Kein Test darf eine automatische Planänderung auslösen (kein `CoachAdjustmentCardModel.accept()`-Call)
+- `planAdjustmentPending = true` erfordert entweder Coach-Aktivierung AUS→EIN ODER Zieländerung — kein bloßer aktiver Plan
 - `isCurrentWeekIncomplete = true` in allen Prod-Szenarien (von `RaceProgressCardModel.make()` berechnet)
 - `assessment.weeklyFlags` enthält IMMER alle Wochen inkl. aktueller (Display-Transparenz)
+- `daysToRace` und `weeksToRace` werden vom Caller getrennt berechnet — `daysToRace` aus `dateComponents([.day], ...)`, `weeksToRace` aus `dateComponents([.weekOfYear], ...)`
 
 ### Tests
 **Datei**: `Tests/DeltiqCoreTests/IntegratedRunCoachAdvisorTests.swift` (NEU)
@@ -342,7 +412,8 @@ WP-A muss zuerst kompilieren.
 2. **Parameter `densityAssessment: TrainingDensityAnalyzer.Assessment?`** — von `DashboardView` übergeben (`cachedDensityAssessment` aus Phase 2C, bereits vorhanden)
 3. **Parameter `loadTrend: TrainingLoadTrend?`** — NEU, von `DashboardView` übergeben (separates `cachedLoadTrend`; `TrainingLoadTrend` ist NICHT in `TrainingDensityAnalyzer.Assessment` enthalten)
 4. **`@Query(filter: #Predicate<TrainingPlan> { $0.isActive == true }) private var activePlans`** — für `planAdjustmentPending = CoachAdjustmentCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: activePlans)) != nil`
-5. **`weeksToRace: Int?`** — lokal berechnet: `Calendar.current.dateComponents([.weekOfYear], from: Date(), to: raceDate).weekOfYear`
+5. **`weeksToRace: Int?`** — lokal berechnet: `Calendar.current.dateComponents([.weekOfYear], from: Date(), to: raceDate).weekOfYear` (für Prio 9: volumePlateau-Schwellenwert)
+6. **`daysToRace: Int?`** — lokal berechnet: `Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day.flatMap { $0 >= 0 ? $0 : nil }` (für Prio 6a: exakte 14-Tage-Grenze — `weeksToRace` allein reicht nicht, da 15 Tage und 14 Tage denselben `weeksToRace`-Wert von 2 ergeben)
 
 **DashboardView-Änderung:** `computeTrainingDensityAssessment()` berechnet `let trend = TrainingLoadTrendAnalyzer.analyze(...)` intern (Zeile 2888), verwirft es aber aktuell. Neu: zusätzlich `cachedLoadTrend = trend` setzen. Dafür in DashboardView:
 ```swift

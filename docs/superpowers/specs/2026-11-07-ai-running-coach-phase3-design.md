@@ -489,7 +489,7 @@ Die ursprüngliche Prioritätstabelle aus §3.5 enthielt zwei Fehler, die hier k
 | 3 | Ausschließlich Cross-Training (`isCrossTrainingOnly` dominant) | ~~`.maintainCurrent`~~ → **`.buildRunningBase`** | `.crossTrainingOnly` |
 | 4 | `planAdjustmentPending == true` | `.planAdjustmentAvailable` | `.planJustAdjusted` |
 | 5 | Concern `.goalLikelyUnrealistic` vorhanden | `.reassessGoal` | `.goalLikelyUnreachable` |
-| **6a** | Concern `.recentTrainingGap` vorhanden **UND** `weeksToRace != nil && weeksToRace! <= 2` | `.maintainCurrent` | `.recentGapDetected` |
+| **6a** | Concern `.recentTrainingGap` vorhanden **UND** `daysToRace != nil && daysToRace! <= 14` | `.maintainCurrent` | `.recentGapDetected` |
 | **6b** | Concern `.recentTrainingGap` vorhanden | ~~`.reduceLoadThisWeek`~~ → **`.buildRunningBase`** | `.recentGapDetected` |
 | 7 | Concern `.insufficientRecovery` vorhanden | `.reduceLoadThisWeek` | `.recoveryNeeded` |
 | 8 | Concern `.loadIncreasedTooFast` ODER `loadDevelopment == .significantIncrease` | `.reduceLoadThisWeek` | `.positiveProgressHighLoad` oder `.recoveryNeeded` |
@@ -501,11 +501,57 @@ Die ursprüngliche Prioritätstabelle aus §3.5 enthielt zwei Fehler, die hier k
 **Korrektur-Begründungen:**
 - **Prio 3**: Ein Läufer/eine Läuferin mit Renndatum, der/die nur Cross-Training (Radfahren) absolviert, braucht `buildRunningBase` — nicht `maintainCurrent`. Radfahren erhält Ausdauer, ersetzt aber kein laufspezifisches Training.
 - **Prio 6** (ursprünglich): Nach einer Trainingspause ist das Volumen bereits niedrig. `reduceLoadThisWeek` wäre eine Empfehlung, noch weniger zu machen — das ist kontraproduktiv. Korrekt: gradueller Wiederaufbau → `buildRunningBase`.
-- **Prio 6a** (neu): Bei Rennen in ≤ 2 Wochen ist kein sinnvoller Laufbasis-Aufbau mehr möglich. Plötzliche Volumensteigerung kurz vor Wettkampf riskiert Überlastungsverletzungen. Die Gap ist erkannt (`.recentGapDetected`), aber die konservative Handlung ist `maintainCurrent` — keine automatische Planänderung, keine Tapering-Empfehlung, keine Aussage über Renntauglichkeit.
+- **Prio 6a** (neu): Bei Rennen in ≤ 14 Tagen ist kein sinnvoller Laufbasis-Aufbau mehr möglich. Plötzliche Volumensteigerung kurz vor Wettkampf riskiert Überlastungsverletzungen. Die Gap ist erkannt (`.recentGapDetected`), aber die konservative Handlung ist `maintainCurrent` — keine automatische Planänderung, keine Tapering-Empfehlung, keine Aussage über Renntauglichkeit.
 
-**Schwellenwert `weeksToRace <= 2`:** `weeksToRace` ist `Int?`, berechnet via `Calendar.dateComponents([.weekOfYear], from: now, to: raceDate).weekOfYear`. Rennen in 6 Tagen → 0 Wochen. Rennen in 13 Tagen → 1 Woche. Rennen in 14 Tagen → 2 Wochen. Der Schwellenwert ≤ 2 Wochen entspricht ≤ 14 Tage, was die Mindestzeit für eine sichere Rückkehr zu regelmäßigem Lauftraining unterschreitet.
+**Schwellenwert `daysToRace <= 14`:** Für Prio 6a muss WP-A `daysToRace: Int?` als separaten Parameter entgegennehmen, berechnet via `Calendar.dateComponents([.day], from: now, to: raceDate).day`. Der Ausdruck `weeksToRace <= 2` (via `[.weekOfYear]`) reicht nicht: Er schneidet auf ganze Wochen ab und liefert für 14 Tage UND 15 Tage denselben Wert von 2 — 15 Tage würden fälschlich als Prio 6a klassifiziert. Korrekte Mapping-Tabelle für alle 7 Pflichtfälle:
+
+| Abstand | `weeksToRace` | `daysToRace` | Prio 6a mit `daysToRace <= 14` |
+|---------|--------------|--------------|-------------------------------|
+| Renntag (0 Tage) | 0 | 0 | ja ✓ |
+| 1 Tag | 0 | 1 | ja ✓ |
+| 7 Tage | 1 | 7 | ja ✓ |
+| 14 Tage | 2 | 14 | ja ✓ |
+| 15 Tage | 2 | 15 | nein → Prio 6b ✓ |
+| 20 Tage | 2 | 20 | nein → Prio 6b ✓ |
+| 21 Tage | 3 | 21 | nein → Prio 6b ✓ |
+
+Negative `daysToRace`-Werte (Renntag bereits vergangen) werden im Caller auf `nil` abgebildet → Prio 6b greift.
 
 **Lokalisierung `integratedCoach.action.maintainCurrent`:** Wird zu "Aktuelles Programm beibehalten." geändert (statt "Du bist auf Kurs – weiter so." — letzteres ist irreführend bei Prio 6a, da die Gap erkannt wurde). Der kombinierte Text für Prio 6a wäre: "Trainingspause erkannt." + "Aktuelles Programm beibehalten." — ehrlich und ohne falsche Versprechen.
+
+**WP-A-Signatur (aktualisiert):** `IntegratedRunCoachAdvisor.assess()` erhält `daysToRace: Int?` als separaten Parameter (zusätzlich zu `weeksToRace: Int?` für Prio 9):
+```swift
+public static func assess(
+    raceProgress: RaceProgressAssessment.Assessment?,
+    loadTrend: TrainingLoadTrend?,
+    densityAssessment: TrainingDensityAssessment?,
+    goal: CardioGoal?,
+    weeksToRace: Int?,    // für Prio 9: volumePlateau-Schwellenwert (< 10 Wochen)
+    daysToRace: Int?,     // für Prio 6a: exakte 14-Tage-Grenze (NEU)
+    planAdjustmentPending: Bool
+) -> IntegratedCoachingOutcome
+```
+
+---
+
+**Wechselseitiger Ausschluss: `.recentTrainingGap` und `.insufficientRecovery` (§3.4-Korrektur)**
+
+Diese beiden Concerns können mit der bestehenden Implementierung **nicht gleichzeitig** in `concerns` erscheinen:
+
+- `.recentTrainingGap` setzt trailing ≥ 2 `.genuineGap`-Wochen voraus → letzte Woche hat `runningDistanceKm == 0`
+- `checkRecovery()` hat als erstes Guard-Statement `guard series.last!.runningDistanceKm > 0` (`RaceProgressAssessment.swift:232`) → schlägt bei Gap-Woche sofort fehl
+
+Die Prioritätsreihenfolge Prio 6b vor Prio 7 bleibt trotzdem dokumentiert (defensive Reihenfolge für künftige Implementierungsänderungen).
+
+---
+
+**Aktiver Plan vs. ausstehende Plananpassung (§3.7-Ergänzung)**
+
+`planAdjustmentPending` ist **NICHT** dasselbe wie „aktiver Plan vorhanden". `CoachAdjustmentCardModel.make()` liefert nur dann non-nil, wenn `ActivePlanResolver.planRequiringAdjustment()` ein Ergebnis liefert — ausschließlich bei:
+1. Coach-Aktivierung AUS→EIN, oder
+2. Zieländerung (z.B. Halbmarathon → Marathon)
+
+Ein aktiver Plan ohne eines dieser Ereignisse (und nach bereits bestätigter Anpassung) liefert `planAdjustmentPending = false` → Prio 4 feuert NICHT → bei Gap-Concern greift Prio 6b.
 
 ---
 
