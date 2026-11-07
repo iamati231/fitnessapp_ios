@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   apple-build-and-test:
@@ -64,21 +65,21 @@ jobs:
       - name: Xcode-Projekt generieren
         run: |
           xcodegen generate
-          ls -la FitnessApp.xcodeproj
+          ls -la Deltiq.xcodeproj
 
       - name: Swift-Package-Dependencies für das Xcode-Projekt auflösen
         run: |
           xcodebuild \
             -resolvePackageDependencies \
-            -project FitnessApp.xcodeproj \
-            -scheme FitnessApp
+            -project Deltiq.xcodeproj \
+            -scheme Deltiq
 
       - name: App + Widget für iOS-Simulator bauen
         run: |
           set -o pipefail
           xcodebuild \
-            -project FitnessApp.xcodeproj \
-            -scheme FitnessApp \
+            -project Deltiq.xcodeproj \
+            -scheme Deltiq \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build \
@@ -94,11 +95,11 @@ jobs:
             exit 1
           fi
           echo "Gefunden: $APP_PATH"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" FitnessApp-simulator.zip
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Deltiq-simulator.zip
 
       # Task E / I1 (task-D-review.md): Task D only checked weak-linking on a
-      # Debug simulator dylib with no real FitnessAppAI callers. Now that
-      # AddMealView actually calls into FitnessAppAI, re-verify on a Release
+      # Debug simulator dylib with no real DeltiqAI callers. Now that
+      # AddMealView actually calls into DeltiqAI, re-verify on a Release
       # build: a non-weak FoundationModels reference (e.g. an un-gated
       # @Generable conformance) would turn LC_LOAD_WEAK_DYLIB into
       # LC_LOAD_DYLIB and crash at launch on iOS 17-25.
@@ -106,8 +107,8 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild \
-            -project FitnessApp.xcodeproj \
-            -scheme FitnessApp \
+            -project Deltiq.xcodeproj \
+            -scheme Deltiq \
             -configuration Release \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build-release \
@@ -117,13 +118,13 @@ jobs:
       - name: FoundationModels-Weak-Link im Release-Binary prüfen (I1)
         run: |
           set -o pipefail
-          APP_PATH=$(find build-release/Build/Products -mindepth 2 -maxdepth 2 -iname "FitnessApp.app" | head -n 1)
+          APP_PATH=$(find build-release/Build/Products -mindepth 2 -maxdepth 2 -iname "Deltiq.app" | head -n 1)
           if [ -z "$APP_PATH" ]; then
-            echo "Keine Release-FitnessApp.app gefunden" >&2
+            echo "Keine Release-Deltiq.app gefunden" >&2
             find build-release/Build/Products -maxdepth 3
             exit 1
           fi
-          BINARY="$APP_PATH/FitnessApp"
+          BINARY="$APP_PATH/Deltiq"
           echo "Binary: $BINARY"
           file "$BINARY"
           # Getrennte Dateinamen ohne reine Gross/Kleinschreibungs-Unterschied
@@ -173,8 +174,23 @@ jobs:
             RUN_INFO.txt
             swift-test-output.log
             xcodebuild-build.log
-            FitnessApp-simulator.zip
+            Deltiq-simulator.zip
             xcodebuild-release-build.log
             otool-dylibs-release.txt
             otool-loadcommands-release.txt
             foundationmodels-link-kind.txt
+
+  trigger-testflight:
+    name: TestFlight-Build auslösen (gleicher Branch)
+    needs: apple-build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: testflight-release.yml auf demselben Branch starten
+        run: |
+          gh workflow run testflight-release.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$GITHUB_REF" \
+            -f upload_to_testflight=true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -19,7 +19,7 @@ Account nicht existiert.
    - **Name**: `Atamya Fitness` (oder dein Wunschname — kann später geändert
      werden)
    - **Primary Language**: Englisch (US)
-   - **Bundle ID**: `com.atamya.FitnessApp` *(muss exakt mit `project.yml`
+   - **Bundle ID**: `com.atamya.Deltiq` *(muss exakt mit `project.yml`
      übereinstimmen)*
    - **SKU**: `fitnessapp-ios-001` (egal was, muss nur unique in deinem
      Account sein)
@@ -93,8 +93,8 @@ In der `codemagic.yaml`, im `testflight`-Workflow:
 
 ```yaml
 vars:
-  XCODE_PROJECT: 'FitnessApp.xcodeproj'
-  XCODE_SCHEME: 'FitnessApp'
+  XCODE_PROJECT: 'Deltiq.xcodeproj'
+  XCODE_SCHEME: 'Deltiq'
   APP_STORE_APP_ID: '1234567890'   # ← Apple ID aus Phase 1, Schritt 5
 ```
 
@@ -144,11 +144,11 @@ Done. Erster Real-Device-Build live.
 
 | Symptom | Ursache | Fix |
 |---|---|---|
-| `No matching profiles found` | Bundle-ID stimmt nicht | `project.yml` `PRODUCT_BUNDLE_IDENTIFIER` muss exakt `com.atamya.FitnessApp` sein |
+| `No matching profiles found` | Bundle-ID stimmt nicht | `project.yml` `PRODUCT_BUNDLE_IDENTIFIER` muss exakt `com.atamya.Deltiq` sein |
 | `Build number already used` | Forgot to bump | Workflow tut das automatisch via `agvtool new-version` — wenn der Schritt fehlt, wird's blockt |
 | `Invalid API key` | `.p8`-Inhalt enthält Whitespace | Codemagic-Variable: `.p8` mit `cat` ausgeben und reinkopieren, **nicht** öffnen-und-copy-paste aus dem Editor |
 | `Missing privacy manifests` | iOS 17.2+-Anforderung | Ggf. später nachzulegen — nicht für die ersten TestFlight-Builds blocking |
-| `App icon missing` | `AppIcon`-Asset im Asset-Catalog leer | Schaut in `App/FitnessApp/Assets.xcassets/AppIcon.appiconset/` — Slots müssen alle bestueckt sein |
+| `App icon missing` | `AppIcon`-Asset im Asset-Catalog leer | Schaut in `App/Deltiq/Assets.xcassets/AppIcon.appiconset/` — Slots müssen alle bestueckt sein |
 
 ---
 

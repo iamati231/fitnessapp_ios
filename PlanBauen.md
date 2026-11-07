@@ -7,7 +7,7 @@ eine feste `ProgramTemplate`.
 
 ## Einstiegspunkt
 
-`Sources/FitnessAppUI/Workout/PlansListView.swift`
+`Sources/DeltiqUI/Workout/PlansListView.swift`
 Plus-Menü der Plan-Liste → `showingPlanBuilder = true` → `.sheet` präsentiert
 `PlanBuilderView()`.
 
@@ -20,19 +20,19 @@ Rechenlogik ohne SwiftData/UI testbar bleibt:
 PlansListView (Plus-Menü)
         │  Sheet
         ▼
-PlanBuilderView.swift                 FitnessAppUI
+PlanBuilderView.swift                 DeltiqUI
   3-Schritte-Wizard: Trainingsarten → Ausrüstung → Ergebnis
         │  baut PlanGeneratorInput
         ▼
-PlanGeneratorInput.swift              FitnessAppCore
+PlanGeneratorInput.swift              DeltiqCore
   TrainingTypeKind, PlanGeneratorTypeSelection, PlanGeneratorInput
         │
         ▼
-PlanGenerator.swift                   FitnessAppCore
+PlanGenerator.swift                   DeltiqCore
   PlanGenerator.generate(from:) -> Result   (reine Funktion, kein SwiftData)
         │  Result.days: [GeneratedDay] (DaySpec + PlanLoadLevel)
         ▼
-PlanGeneratorInstantiator.swift       FitnessAppData
+PlanGeneratorInstantiator.swift       DeltiqData
   .build(from:in:)       -> neuer aktiver TrainingPlan
   .recalculate(_:in:)    -> "neu rechnen" für bestehenden Plan
 ```
@@ -45,31 +45,31 @@ PlanGeneratorInstantiator.swift       FitnessAppData
   einen erzeugten Tag mit seiner Position im letzten Rechenlauf und markieren,
   ob er seither manuell bearbeitet wurde.
 - Additive CSV-Spalte `generator_input_raw` in Export/Import
-  (`Sources/FitnessAppData/Export/Data{Export,Import}Service.swift`) sichert
+  (`Sources/DeltiqData/Export/Data{Export,Import}Service.swift`) sichert
   das für Backup/Restore.
 
 ## Lokalisierung
 
 Alle sichtbaren Wizard-Texte über `planBuilder.*`-Keys in
-`Sources/FitnessAppUI/Resources/Localizable.xcstrings` (DE/EN/TR).
-`PlanGenerator` selbst liegt in `FitnessAppCore` (kein `Bundle.module` dort)
+`Sources/DeltiqUI/Resources/Localizable.xcstrings` (DE/EN/TR).
+`PlanGenerator` selbst liegt in `DeltiqCore` (kein `Bundle.module` dort)
 und erzeugt Tages-/Plan-Namen daher als hartcodierte deutsche Strings —
 einzige echte Lokalisierung ist `Result.explanationKey`, ein Schlüssel-String,
 den die Wizard-UI auflöst.
 
 ## Tests
 
-- `Tests/FitnessAppCoreTests/PlanGeneratorTests.swift` — reine
+- `Tests/DeltiqCoreTests/PlanGeneratorTests.swift` — reine
   Generator-Logik (Kandidaten, Verteilung, Namensdisambiguierung, Kettlebell-
   EMOM-Finisher-Cap, ...), kein SwiftData nötig.
-- `Tests/FitnessAppDataTests/PlanGeneratorInstantiatorTests.swift` —
+- `Tests/DeltiqDataTests/PlanGeneratorInstantiatorTests.swift` —
   `build`/`recalculate` inkl. Fingerprint-Schutz und Wochentag-Zuordnung.
 
 ---
 
 ## Code
 
-### 1. `Sources/FitnessAppUI/Workout/PlanBuilderView.swift`
+### 1. `Sources/DeltiqUI/Workout/PlanBuilderView.swift`
 
 Die UI selbst. Struktur folgt `OnboardingView` (`NavigationStack`,
 Fortschrittsbalken, `switch step`, Zurück/Weiter-Leiste). Schritte
@@ -85,8 +85,8 @@ Fortschrittsbalken, `switch step`, Zurück/Weiter-Leiste). Schritte
 #if canImport(SwiftUI) && canImport(SwiftData)
 import SwiftUI
 import SwiftData
-import FitnessAppCore
-import FitnessAppData
+import DeltiqCore
+import DeltiqData
 
 /// README 2.20 "Plan bauen": 3-Schritte-Assistent, der aus mehreren
 /// Trainingsarten (z.B. "3 Tage Kettlebell + 2 Tage Laufen") eine berechnete
@@ -751,7 +751,7 @@ private struct ContentUnavailableViewCompat: View {
 #endif
 ```
 
-### 2. `Sources/FitnessAppCore/Programs/PlanGeneratorInput.swift`
+### 2. `Sources/DeltiqCore/Programs/PlanGeneratorInput.swift`
 
 Reine Eingabe-Typen (kein SwiftData, `Codable` für die spätere Persistierung
 als JSON): `TrainingTypeKind` (die 6 Wizard-Trainingsarten), eine Zeile aus
@@ -792,8 +792,8 @@ public enum TrainingTypeKind: String, Codable, Sendable, CaseIterable {
     }
 
     /// Lokalisierungs-KEY fuer die Schritt-1-Auswahlzeile (nicht aufgeloester
-    /// Text - `FitnessAppCore` hat kein `Bundle.module`, siehe
-    /// `PlanGenerator`-Datei-Kommentar). Die Wizard-UI in FitnessAppUI loest
+    /// Text - `DeltiqCore` hat kein `Bundle.module`, siehe
+    /// `PlanGenerator`-Datei-Kommentar). Die Wizard-UI in DeltiqUI loest
     /// das via `String(localized: String.LocalizationValue(kind.titleKey), bundle: .module)`
     /// auf. Getrennt von `PlanGenerator`s internen, hartcodiert-deutschen
     /// Tages-Titel-Woertern (`germanTypeLabel`) - dort geht es um bereits
@@ -866,7 +866,7 @@ public struct PlanGeneratorInput: Codable, Sendable, Hashable {
 }
 ```
 
-### 3. `Sources/FitnessAppCore/Programs/PlanGenerator.swift`
+### 3. `Sources/DeltiqCore/Programs/PlanGenerator.swift`
 
 Die eigentliche Rechenlogik, `PlanGenerator.generate(from:) -> Result`:
 sammelt pro gewählter Trainingsart Kandidaten-Tage (`strengthCandidates`/
@@ -899,7 +899,7 @@ import Foundation
 /// bereits getunten DEL-098-Faktoren wieder (sonst landen generische
 /// Isolations-Defaults im Plan, siehe `ProgramInstantiator.swift`).
 ///
-/// **Keine Lokalisierung in diesem Typ:** `FitnessAppCore` deklariert in
+/// **Keine Lokalisierung in diesem Typ:** `DeltiqCore` deklariert in
 /// `Package.swift` keine `resources:` - es gibt hier gar kein
 /// `Bundle.module`, jeder `String(localized:bundle: .module)`-Aufruf waere
 /// ein Compile-Fehler. Erzeugte Tages-/Plan-Namen sind deshalb bewusst
@@ -909,7 +909,7 @@ import Foundation
 /// (kein `localizationKey`, da der Name dynamisch aus mehreren Teilen
 /// zusammengesetzt ist, nicht ein fixer Katalog-Eintrag). Die einzige
 /// echte Lokalisierung ist `Result.explanationKey` - eine KEY-STRING, die
-/// FitnessAppUI (wo `.module` existiert) aufloest. Fuer Schritt-1 der
+/// DeltiqUI (wo `.module` existiert) aufloest. Fuer Schritt-1 der
 /// Wizard-UI (Trainingsart-AUSWAHL) siehe stattdessen
 /// `TrainingTypeKind.titleKey` in `PlanGeneratorInput.swift`.
 public enum PlanGenerator {
@@ -933,7 +933,7 @@ public enum PlanGenerator {
         /// der die nicht-triviale Umordnungs-Entscheidung erklaert - `nil`
         /// wenn die Reihenfolge trivial ist (z.B. nur eine Trainingsart
         /// gewaehlt). Core kann den Key nicht selbst aufloesen (kein
-        /// `Bundle.module` hier) - der Aufrufer (Wizard-UI in FitnessAppUI)
+        /// `Bundle.module` hier) - der Aufrufer (Wizard-UI in DeltiqUI)
         /// macht `String(localized: String.LocalizationValue(key), bundle: .module)`.
         public let explanationKey: String?
     }
@@ -1155,7 +1155,7 @@ public enum PlanGenerator {
     /// Datei-Kommentar oben ("Keine Lokalisierung in diesem Typ"). Fuer die
     /// Wizard-Auswahl-Labels in Schritt 1 siehe stattdessen
     /// `TrainingTypeKind.titleKey` (`PlanGeneratorInput.swift`), das
-    /// FitnessAppUI aufloest. "Koerpergewicht" statt "Eigengewicht", damit
+    /// DeltiqUI aufloest. "Koerpergewicht" statt "Eigengewicht", damit
     /// generierte Tages-Titel exakt denselben Begriff wie der
     /// Equipment-Picker verwenden (`equipment.bodyweight`s DE-Wert).
     private static func germanTypeLabel(_ kind: TrainingTypeKind) -> String {
@@ -1381,7 +1381,7 @@ public enum PlanLoadLevel: String, Codable, Sendable, CaseIterable {
 }
 ```
 
-### 4. `Sources/FitnessAppData/PlanGeneratorInstantiator.swift`
+### 4. `Sources/DeltiqData/PlanGeneratorInstantiator.swift`
 
 Brücke zwischen dem reinen Generator-Ergebnis und der bestehenden
 `ProgramInstantiator`-Materialisierung:
@@ -1400,7 +1400,7 @@ Brücke zwischen dem reinen Generator-Ergebnis und der bestehenden
 #if canImport(SwiftData)
 import Foundation
 import SwiftData
-import FitnessAppCore
+import DeltiqCore
 
 /// README 2.20 "Plan bauen": Bruecke zwischen dem reinen Core-Generator
 /// (`PlanGenerator`, kein SwiftData) und der bestehenden

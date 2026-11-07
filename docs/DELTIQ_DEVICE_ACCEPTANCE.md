@@ -72,7 +72,7 @@ CI-grün nach einer vorsorglichen Vereinfachung (sechs Views in einem
 Durchgang: Paket 2, Schritt 1 umgesetzt —
 Datenmodell für strukturierte Ausdauereinheiten (`WorkoutTimeFormat.
 enduranceIntervals`, `DaySpec`/`TrainingDay`-Felder, Fingerprint,
-17 betroffene Switch-Stellen inkl. einer in `App/FitnessAppWidgets/`),
+17 betroffene Switch-Stellen inkl. einer in `App/DeltiqWidgets/`),
 CI-grün nach zwei Fix-Runden (Typchecker-Timeout, fehlender Case in der
 Widget-Extension), HEAD `4654775`. Siehe Abschnitt „Paket 2, Schritt 1" unten. Davor
 siebzehnter Durchgang: Zurück-Navigations-Beobachtung aus Durchgang 16
@@ -248,11 +248,11 @@ auszublenden — das ist jetzt explizit zurückgenommen.
   `minimumMissedRunDaysToFlag` (2), `isRecurringMissedRunDays` (reine
   Schwellwert-Entscheidung), `missedRunHintFingerprint` (Planfassung +
   Beobachtung, siehe oben).
-- `MissedRunDayEvaluator` (FitnessAppData, neu): projiziert nur Lauf-Tage
+- `MissedRunDayEvaluator` (DeltiqData, neu): projiziert nur Lauf-Tage
   eines Plans in `PlanParticipationEvaluator.Input`, inkl. explizitem
   P9-Fetch-Fehler-Schutz (kein stillschweigendes „keine Sessions" bei
   echtem Fetch-Fehler).
-- `MissedRunDaysCardModel` (FitnessAppUI, neu): bündelt Signal +
+- `MissedRunDaysCardModel` (DeltiqUI, neu): bündelt Signal +
   Suppression + Paket-1-CTA-Verfügbarkeit (`CoachAdjustmentCardModel`,
   unverändert) zu einem einzigen, testbaren `make`/`dismiss`-Modell — exakt
   nach dem etablierten `CardioFeasibilityCardModel`/`CoachAdjustmentCardModel`-
@@ -376,7 +376,7 @@ nur von `activatedAt`/der Schedule-Struktur/`now` ab, braucht keinen
 Sessions-Fetch und wächst monoton um genau 1, sobald eine weitere
 Gelegenheit kalendarisch verstreicht — unabhängig davon, ob sie erfüllt oder
 verfehlt wurde. Neu: `MissedRunDayEvaluator.totalConcludedRunOpportunities`
-(`Sources/FitnessAppData/MissedRunDayEvaluator.swift`) — ruft
+(`Sources/DeltiqData/MissedRunDayEvaluator.swift`) — ruft
 `PlanParticipationEvaluator.evaluate` ein zweites Mal mit demselben
 Schedule, aber OHNE Fenster-Clamping auf, kein neuer Analyse-Pfad.
 `CardioCoachingAdvisor.missedRunHintFingerprint` (Core) nimmt diesen Wert
@@ -482,7 +482,7 @@ SwiftData-Objekten vollständig prüfbar. Ein zusätzliches TestingBot-Fenster
 nur für diesen Punkt wäre unverhältnismäßig; **kein Budget verbraucht**.
 
 Neuer, gezielter Swift-Integrationstest (nicht die Paket-1-Gerätefälle
-wiederholt): `Tests/FitnessAppUITests/MissedRunDaysCardAdjustmentWiringTests.swift`,
+wiederholt): `Tests/DeltiqUITests/MissedRunDaysCardAdjustmentWiringTests.swift`,
 mit ZWEI gleichzeitig aktiven Plänen unter einem Profil (unterschiedliche
 `activatedAt`, damit eine falsch durchgereichte Plan-Referenz nicht
 zufällig unauffällig bliebe):
@@ -526,7 +526,7 @@ Gerätenachweis.
 **Build/Commit:** CI-Artefakt fuer Commit `d5b9ed0` (enthält `a1a3d40`
 und `15441c9`, den aktuellen HEAD der Restpunkte-Runde, plus die in
 diesem Durchgang hinzugekommene Fixture — siehe unten), heruntergeladen
-aus GitHub-Actions-Run `39600304050`, als `FitnessApp-simulator.zip` zu
+aus GitHub-Actions-Run `39600304050`, als `Deltiq-simulator.zip` zu
 TestingBot hochgeladen (`tb://4966f1e70b7a2d0e3083ece6`).
 
 ### Auslösezustand: kein vorhandener Fixture-/Debug-Weg gefunden, gezielter Debug-Fixture-Einstieg gebaut
@@ -542,7 +542,7 @@ erreichbar, der auf dem TestingBot-Gerät in früheren Runden
 reproduzierbar hing (siehe „F01–F08"-Abschnitt) — kein neuer Lösungsweg
 in diesem Durchgang gefunden, daher nicht erneut versucht.
 
-**Gebaut:** `Sources/FitnessAppUI/DeviceAcceptanceFixturePaket3a.swift`
+**Gebaut:** `Sources/DeltiqUI/DeviceAcceptanceFixturePaket3a.swift`
 (Commits `526b977`/`f43026f`/`d5b9ed0`) — ein einziger neuer Typ, aktiv
 nur wenn BEIDE Bedingungen gelten: `#if DEBUG` (jeder CI-/TestingBot-Build
 dieses Projekts ist ausschließlich Debug, siehe `project.yml`) UND das
@@ -736,7 +736,7 @@ Gerätefenster.**
 
 1. **Fixture-/Backfill-Fix (Commit `d5b9ed0`):** ausschließlich eine
    **Debug-only-Änderung** — per `git show --stat d5b9ed0` verifiziert,
-   geändert wurden nur `Sources/FitnessAppUI/DeviceAcceptanceFixturePaket3a.swift`
+   geändert wurden nur `Sources/DeltiqUI/DeviceAcceptanceFixturePaket3a.swift`
    (selbst vollständig hinter `#if DEBUG` + explizitem Launch-Argument)
    und dessen Testdatei. Die betroffene **Produktionsfunktion**
    `LibrarySeeder.backfillCustomNamesIfNeeded` (läuft reguläch bei jedem
@@ -868,7 +868,7 @@ Konkret:
 
 ### Wiederverwendung bestehender Bausteine (kein zweiter Analyse-Pfad)
 
-- **`PlanParticipationEvaluator` (P6.2, `Sources/FitnessAppCore/Analytics/
+- **`PlanParticipationEvaluator` (P6.2, `Sources/DeltiqCore/Analytics/
   PlanParticipationEvaluator.swift`)** liefert bereits eine reine,
   deterministische Soll-Ist-Teilnahmeauswertung inkl. `missedCount` — exakt
   das "wurden geplante Tage verfehlt"-Signal, das dieses Stück braucht. Er
@@ -942,7 +942,7 @@ Konkret:
 
 1. `CardioCoachingAdvisor` um eine neue, reine Funktion erweitern (Signal,
    Schwellwert nach offener Frage 1), mit Unit-Tests nach bestehendem Muster.
-2. Kleine Projektions-/Mapping-Funktion in `FitnessAppData`, die aus den
+2. Kleine Projektions-/Mapping-Funktion in `DeltiqData`, die aus den
    realen Sessions + dem aktiven Plan nur die Lauf-Tage als
    `PlanParticipationEvaluator.Input` aufbereitet (reuse, kein neuer
    Evaluator).
@@ -976,7 +976,7 @@ abwarten), kein lokaler Compiler nötig. Drei Versuche bis grün:
    in reasonable time").
 2. `191c4de` — Fix: auf Zeichenketten-Interpolation umgestellt (gleiches
    Muster wie `circuitPart` direkt daneben). CI-Fehler: eine 17. Stelle
-   fehlte — `App/FitnessAppWidgets/TimedWorkoutLiveActivity.swift` liegt
+   fehlte — `App/DeltiqWidgets/TimedWorkoutLiveActivity.swift` liegt
    außerhalb von `Sources/`/`Tests/`, wurde bei der ursprünglichen Suche
    übersehen (eigener Icon-Switch der Widget-Extension).
 3. `4654775` — fehlenden Case ergänzt. **CI-Lauf `39510085874`: erfolgreich.**
@@ -1172,7 +1172,7 @@ Punkt 7 deckte eine zweite, unabhängige Lücke auf: Schritt 3 behauptete
 "CSV-Export/-Import additiv ergänzt", ohne Testnachweis — anders als der
 direkte Präzedenzfall `testCircuitDayAndSessionSurviveRoundtrip` für
 `.circuit`. Neuer Unit-Test `testEnduranceIntervalsDayAndSessionSurviveRoundtrip`
-(`Tests/FitnessAppDataTests/DataPortabilityRoundtripTests.swift`, Commit
+(`Tests/DeltiqDataTests/DataPortabilityRoundtripTests.swift`, Commit
 `2c3182b`) schließt das nach demselben Muster — alle sechs `TrainingDay`-
 Konfigurationsfelder und sieben `WorkoutSession`-Ergebnisfelder (inkl. des
 laufenden-Pause-Falls `endurancePausedRemainingSeconds` und der
@@ -1475,7 +1475,7 @@ analog `.circuit`.
 
 **Neue Felder (Vorschlag, mirror-Muster wie `circuit*`):**
 - `WorkoutTimeFormat.enduranceIntervals` (neuer Case in
-  `Sources/FitnessAppCore/Domain/DomainEnums.swift`).
+  `Sources/DeltiqCore/Domain/DomainEnums.swift`).
 - `TrainingDay`/`DaySpec` (mirror, wie bei `circuitRounds` etc.):
   `enduranceWarmupDurationSeconds: Int?`,
   `enduranceCooldownDurationSeconds: Int?`,
@@ -1587,7 +1587,7 @@ Codeänderung.
 **Build/Commit:** CI-Artefakt für Commit `b7ac9f1` (identischer
 Produktivcode wie HEAD `8aa4e09`, dazwischen nur der Doku-Commit),
 heruntergeladen aus GitHub-Actions-Run `39488838613`, als
-`FitnessApp-simulator.zip` zu TestingBot hochgeladen (`tb://6613cf64e80e4d6afcdba435`).
+`Deltiq-simulator.zip` zu TestingBot hochgeladen (`tb://6613cf64e80e4d6afcdba435`).
 
 **TestingBot-Session:** iPhone 15 / iOS 18.0, `autoAcceptAlerts: false`
 (aus Runde 6 bekannt: `true` kann Dialoge maskieren), eine Session
@@ -1862,7 +1862,7 @@ Teil dieses Commits):**
   "manuell fixierte Tage/Übungen schützen" auf einem bereits
   AKTIVEN, persistierten `TrainingPlan` — `PlanDraft.isContentFixed`/
   `isPositionFixed` existieren nur in der Wizard-Entwurfsschicht
-  (`Sources/FitnessAppCore/Planning/PlanDraft.swift`), bevor ein Plan
+  (`Sources/DeltiqCore/Planning/PlanDraft.swift`), bevor ein Plan
   überhaupt gespeichert wird, nicht danach. Der einzige vorhandene
   Signal-Kandidat ist `TrainingDay.generationFingerprint` (zeigt, ob ein
   Wizard-Tag seit der Erzeugung manuell verändert wurde — exakt das
@@ -1999,7 +1999,7 @@ Fingerprint (seit Erzeugung editiert) ist immer geschützt. Keine neue
 Fixierungs-Logik gebaut.
 
 **Umgesetzt (Commits `d86bf4b`, `5bc8e5b`):**
-- **`RunCoachPlanAdjustment`** (`Sources/FitnessAppData/`, neu): reine
+- **`RunCoachPlanAdjustment`** (`Sources/DeltiqData/`, neu): reine
   Analyse, welche Cardio-/Kraft-Tage eines aktiven Plans anfassbar sind
   (`isEligibleForAdjustment`), und ob die vorhandene Bein-Kraftarbeit zum
   Laufziel passt — fünf Fälle (`unchanged`/`addSmallAddition`/
@@ -2067,7 +2067,7 @@ erneut geprüft.
 
 ### Befund 1 — `GoalDrivenPlanSelectionBuilder`: Radfahren verschwindet bei Hybrid+„Both" am UI-Default still (neue Zeile A12)
 
-Code-Analyse (`Sources/FitnessAppCore/Programs/GoalDrivenPlanSelectionBuilder.swift`):
+Code-Analyse (`Sources/DeltiqCore/Programs/GoalDrivenPlanSelectionBuilder.swift`):
 für `.hybrid` gilt `strengthDays = ceil(totalDaysPerWeek/2)`,
 `enduranceDays = totalDaysPerWeek - strengthDays`;
 `enduranceSelections(modality: .both, totalDays:, ...)` splittet diese
@@ -2081,7 +2081,7 @@ von den meisten Nutzern nie angefasst) ergibt das `strengthDays = 2`,
 (Radfahren **komplett entfernt**).
 
 Regressionstest (committed, pinnt den Ist-Zustand):
-`Tests/FitnessAppCoreTests/GoalDrivenPlanSelectionBuilderTests.swift::testHybridGoalWithBothModalityAtTheDefaultThreeDaysSilentlyDropsCycling`,
+`Tests/DeltiqCoreTests/GoalDrivenPlanSelectionBuilderTests.swift::testHybridGoalWithBothModalityAtTheDefaultThreeDaysSilentlyDropsCycling`,
 Commit `9956f8e`, CI grün (Run `39475868792`, nach zwei
 infrastrukturbedingten Queue-Timeouts beim dritten Versuch erfolgreich —
 siehe Budget-Abschnitt unten).
@@ -2416,7 +2416,7 @@ fähigen iPhone-Modellen (iPhone SE 2022/17.5, iPhone 14/17.6, iPhone
 Runde **nur „iPhone 15"/iOS 18.0 als Simulator tatsächlich startbar** —
 alle anderen waren laut `/v1/devices` entweder `available: false` oder
 (wie „iPhone Air"/iOS 26.2) nur als **physisches Gerät** verfügbar, das
-unseren Simulator-Build (`FitnessApp-simulator.zip`) nicht ausführen
+unseren Simulator-Build (`Deltiq-simulator.zip`) nicht ausführen
 kann. Ein echtes schmaleres iOS-17+-Gerät war damit — wie bereits in
 einer Vorrunde dokumentiert — strukturell nicht verfügbar. Als Ersatz für
 die geforderte „schmale Breite"-Kombination wurde wie in Runde 8/9 die
@@ -2505,7 +2505,7 @@ hier nicht beauftragtes Thema).
 
 ### Implementierung
 
-Neuer, kleiner Typ `WeightUnit` (`Sources/FitnessAppCore/Numerics/WeightUnit.swift`,
+Neuer, kleiner Typ `WeightUnit` (`Sources/DeltiqCore/Numerics/WeightUnit.swift`,
 `enum kg/lbs` mit `fromKg(_:)`/`toKg(_:)`) ersetzt die vier zuvor
 duplizierten `kg / 0.453592`-Stellen als einzige Konvertierungsquelle für
 die neuen Stellen. Jede Anzeige/Eingabe konvertiert IMMER frisch vom
@@ -2515,22 +2515,22 @@ Korrektheit, wiederholtes Umschalten ohne Eingabe erzeugt keinen Drift,
 Linearität der Konvertierung für Differenzen).
 
 Geänderte Dateien:
-- `Sources/FitnessAppUI/Workout/SetRow.swift`: `weightInput`-Binding,
+- `Sources/DeltiqUI/Workout/SetRow.swift`: `weightInput`-Binding,
   `weightPlaceholder` ("→ KG"/"→ LBS"), `previousLogHint` (kg-fixer
   Hint direkt neben dem jetzt umschaltbaren Feld wäre ein neuer,
   selbstverursachter Einheiten-Mix gewesen).
-- `Sources/FitnessAppUI/Workout/ExerciseCard.swift`: Spaltenkopf
+- `Sources/DeltiqUI/Workout/ExerciseCard.swift`: Spaltenkopf
   ("KG"/"LBS", neue Keys `unit.lbs.upper`/`unit.lbs.lower`).
-- `Sources/FitnessAppUI/Settings/BodyDataEditorView.swift`: Gewicht- und
+- `Sources/DeltiqUI/Settings/BodyDataEditorView.swift`: Gewicht- und
   Zielgewicht-Feld (Wert UND Label, neue Keys
   `profile.bodyData.weight.label.lbs`/`profile.bodyData.goalWeight.label.lbs`).
-- `Sources/FitnessAppUI/Settings/ProfileEditorView.swift`:
+- `Sources/DeltiqUI/Settings/ProfileEditorView.swift`:
   `bodyDataSummaryText`.
-- `Sources/FitnessAppUI/DashboardView.swift`: Hero-Kachel (Wert + Delta,
+- `Sources/DeltiqUI/DashboardView.swift`: Hero-Kachel (Wert + Delta,
   `MetricCard` bekam dafür einen `deltaUnit`-Parameter mit kg-Default,
   alle anderen Kachel-Typen unverändert), Trend-Chart (Linie/Punkte/
   Prognose/Zielgewicht-Linie, neuer Key `dashboard.goal.line.lbs`).
-- `Sources/FitnessAppUI/Resources/Localizable.xcstrings`: 6 neue Keys
+- `Sources/DeltiqUI/Resources/Localizable.xcstrings`: 6 neue Keys
   (DE/EN/TR), `dead_catalog_v3.py` bestätigt UNUSED:0,
   `generate_translations_md.py` regeneriert `TRANSLATIONS.md`.
 
@@ -3505,7 +3505,7 @@ diesen Test). TestingBot-Session `fc34bafa1392-76dae1c872b2-17cb025342d7-1792491
   Duplikat): Plan-Liste zeigt weiterhin genau „1 PLAN", kein neuer Plan
   angelegt, keine andere Aktivierung ausgelöst.
 - **Echter Kaltstart durchgeführt** (`mobile: terminateApp` +
-  `mobile: activateApp` auf `com.atamya.FitnessApp`): Dashboard zeigt
+  `mobile: activateApp` auf `com.atamya.Deltiq`): Dashboard zeigt
   danach weiterhin „Individueller Plan" mit identischem nächsten
   Workout (Push-Up/Wide-Grip Pull-Up/Pike Push-Up), Plan-Tab weiterhin
   genau „1 PLAN" ohne Karte, Profil-Editor zeigt weiterhin Coach an +
@@ -3693,7 +3693,7 @@ Der in der vorigen Runde als "scope-fremde Beobachtung" notierte Fund
 ("Reset App löscht ohne Rückfrage") wurde per Code-Prüfung untersucht,
 nicht durch eine erneute destruktive Geräteaktion mit echten Daten.
 
-Befund (`Sources/FitnessAppUI/Settings/SettingsView.swift`):
+Befund (`Sources/DeltiqUI/Settings/SettingsView.swift`):
 - Es gibt genau EINE Aufrufstelle von `resetApp()`, gegated durch
   `showingResetConfirm`.
 - Der Tap auf "Reset App" in der Danger-Zone-Sektion setzt NUR

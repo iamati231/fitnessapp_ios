@@ -4,7 +4,7 @@
 
 **Goal:** Lokale, deterministische Mahlzeiten- und Ernährungserfassung (Katalog, manuelle Erfassung, Vorschau, Tagesübersicht, optionale Ziele) als Dashboard-Kachel — ohne jede KI-Komponente.
 
-**Architecture:** Neue Typen in den drei bestehenden Modulen, kein neues Package. `FitnessAppCore` bekommt den statischen Katalog + reine Berechnungsfunktionen (Linux/Windows-testbar). `FitnessAppData` bekommt drei neue `@Model`-Typen (`FoodCatalogEntry`, `MealEntry`, `MealItem`) plus einen eigenen, von `LibrarySeeder` unabhängigen `FoodCatalogSeeder`. `FitnessAppUI` bekommt die Erfassungs-/Übersichts-Screens und die Dashboard-Kachel. Das spätere `FitnessAppAI`-Modul (Spec Abschnitt 8) ist NICHT Teil dieses Plans.
+**Architecture:** Neue Typen in den drei bestehenden Modulen, kein neues Package. `DeltiqCore` bekommt den statischen Katalog + reine Berechnungsfunktionen (Linux/Windows-testbar). `DeltiqData` bekommt drei neue `@Model`-Typen (`FoodCatalogEntry`, `MealEntry`, `MealItem`) plus einen eigenen, von `LibrarySeeder` unabhängigen `FoodCatalogSeeder`. `DeltiqUI` bekommt die Erfassungs-/Übersichts-Screens und die Dashboard-Kachel. Das spätere `DeltiqAI`-Modul (Spec Abschnitt 8) ist NICHT Teil dieses Plans.
 
 **Tech Stack:** Swift 5.9, SwiftUI, SwiftData, XCTest (bestehende Target-Struktur, keine neuen Dependencies).
 
@@ -13,10 +13,10 @@
 ## Global Constraints
 
 - App-Mindestziel bleibt iOS 17 / macOS 14 (`Package.swift` unverändert) — keine KI-spezifischen `@available`-Gates in diesem Plan nötig.
-- Sprachen: Deutsch, Englisch, Türkisch — jeder neue sichtbare Text geht über `Sources/FitnessAppUI/Resources/Localizable.xcstrings`, nie hartkodiert.
-- Rundung/Formatierung: ausschließlich bestehende `Double`-Extensions aus `Sources/FitnessAppCore/Numerics/DoubleFormatting.swift` (`truncated(to:)`, `formattedWholeOrTwoDecimals`, `formattedTwoDecimals`) — keine neue Rundungslogik.
-- SwiftData: rein additive `@Model`-Typen, Eintrag in `Sources/FitnessAppData/AppSchema.swift`, kein `VersionedSchema`/`SchemaMigrationPlan` (Projekt-Konvention, siehe `BaselineAssessment.swift`-Kommentar).
-- `Sources/FitnessAppData/LibrarySeeder.swift` wird NICHT verändert — der Katalog bekommt einen eigenen Seeder.
+- Sprachen: Deutsch, Englisch, Türkisch — jeder neue sichtbare Text geht über `Sources/DeltiqUI/Resources/Localizable.xcstrings`, nie hartkodiert.
+- Rundung/Formatierung: ausschließlich bestehende `Double`-Extensions aus `Sources/DeltiqCore/Numerics/DoubleFormatting.swift` (`truncated(to:)`, `formattedWholeOrTwoDecimals`, `formattedTwoDecimals`) — keine neue Rundungslogik.
+- SwiftData: rein additive `@Model`-Typen, Eintrag in `Sources/DeltiqData/AppSchema.swift`, kein `VersionedSchema`/`SchemaMigrationPlan` (Projekt-Konvention, siehe `BaselineAssessment.swift`-Kommentar).
+- `Sources/DeltiqData/LibrarySeeder.swift` wird NICHT verändert — der Katalog bekommt einen eigenen Seeder.
 - Gramm ist Standardmengeneinheit; Stück nur mit `pieceWeightGrams`; Milliliter nur mit `densityGramsPerMl` — niemals pauschal 1 ml = 1 g.
 - Vorschau erzeugt keine gespeicherte Mahlzeit; Speichern nur nach explizitem Bestätigen-Tap; Abbrechen verwirft jeden Entwurf ohne Persistenz-Spur; ein Speicherfehler behält den Entwurf und zeigt keinen Erfolg.
 - Historische `MealItem`-Nährwert-Snapshots ändern sich nie rückwirkend durch spätere Katalogänderungen.
@@ -39,10 +39,10 @@
 ### Task 1: Lokaler Lebensmittelkatalog (Core)
 
 **Files:**
-- Create: `Sources/FitnessAppCore/Nutrition/FoodCatalogItem.swift`
-- Create: `Sources/FitnessAppCore/Nutrition/FoodCategory.swift`
-- Create: `Sources/FitnessAppCore/Nutrition/FoodCatalogData.swift`
-- Test: `Tests/FitnessAppCoreTests/FoodCatalogDataTests.swift`
+- Create: `Sources/DeltiqCore/Nutrition/FoodCatalogItem.swift`
+- Create: `Sources/DeltiqCore/Nutrition/FoodCategory.swift`
+- Create: `Sources/DeltiqCore/Nutrition/FoodCatalogData.swift`
+- Test: `Tests/DeltiqCoreTests/FoodCatalogDataTests.swift`
 
 **Interfaces:**
 - Produces: `public struct FoodCatalogItem: Identifiable, Sendable, Codable` mit `id: String`, `nameKey: String`, `category: FoodCategory`, `kcalPer100g: Double`, `proteinPer100g: Double`, `carbsPer100g: Double`, `fatPer100g: Double`, `defaultServingGrams: Double?`, `servingNameKey: String?`, `pieceWeightGrams: Double?`, `densityGramsPerMl: Double?`.
@@ -53,7 +53,7 @@
 
 ```swift
 import XCTest
-@testable import FitnessAppCore
+@testable import DeltiqCore
 
 final class FoodCatalogDataTests: XCTestCase {
     func testAllIDsAreUnique() {
@@ -107,7 +107,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Nutrition/FoodCatalogItem.swift Sources/FitnessAppCore/Nutrition/FoodCategory.swift Sources/FitnessAppCore/Nutrition/FoodCatalogData.swift Tests/FitnessAppCoreTests/FoodCatalogDataTests.swift
+git add Sources/DeltiqCore/Nutrition/FoodCatalogItem.swift Sources/DeltiqCore/Nutrition/FoodCategory.swift Sources/DeltiqCore/Nutrition/FoodCatalogData.swift Tests/DeltiqCoreTests/FoodCatalogDataTests.swift
 git commit -m "feat: add local food catalog data (Core)"
 ```
 
@@ -116,10 +116,10 @@ git commit -m "feat: add local food catalog data (Core)"
 ### Task 2: Nährwert-Mengenberechnung (Core)
 
 **Files:**
-- Modify: `Sources/FitnessAppCore/Nutrition/NutritionCalculations.swift`
-- Create: `Sources/FitnessAppCore/Nutrition/FoodUnit.swift`
-- Create: `Sources/FitnessAppCore/Nutrition/NutrientValues.swift`
-- Test: `Tests/FitnessAppCoreTests/NutritionCalculationsTests.swift`
+- Modify: `Sources/DeltiqCore/Nutrition/NutritionCalculations.swift`
+- Create: `Sources/DeltiqCore/Nutrition/FoodUnit.swift`
+- Create: `Sources/DeltiqCore/Nutrition/NutrientValues.swift`
+- Test: `Tests/DeltiqCoreTests/NutritionCalculationsTests.swift`
 
 **Interfaces:**
 - Consumes: `FoodCatalogItem` (Task 1).
@@ -132,7 +132,7 @@ git commit -m "feat: add local food catalog data (Core)"
 
 ```swift
 import XCTest
-@testable import FitnessAppCore
+@testable import DeltiqCore
 
 final class NutritionCalculationsTests: XCTestCase {
     let chicken = FoodCatalogItem(
@@ -219,7 +219,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Nutrition/NutritionCalculations.swift Sources/FitnessAppCore/Nutrition/FoodUnit.swift Sources/FitnessAppCore/Nutrition/NutrientValues.swift Tests/FitnessAppCoreTests/NutritionCalculationsTests.swift
+git add Sources/DeltiqCore/Nutrition/NutritionCalculations.swift Sources/DeltiqCore/Nutrition/FoodUnit.swift Sources/DeltiqCore/Nutrition/NutrientValues.swift Tests/DeltiqCoreTests/NutritionCalculationsTests.swift
 git commit -m "feat: add quantity-aware nutrient calculation (Core)"
 ```
 
@@ -228,10 +228,10 @@ git commit -m "feat: add quantity-aware nutrient calculation (Core)"
 ### Task 3: Persistierter Katalog + Seeder (Data)
 
 **Files:**
-- Create: `Sources/FitnessAppData/FoodCatalogEntry.swift`
-- Create: `Sources/FitnessAppData/FoodCatalogSeeder.swift`
-- Modify: `Sources/FitnessAppData/AppSchema.swift`
-- Test: `Tests/FitnessAppDataTests/FoodCatalogSeederTests.swift`
+- Create: `Sources/DeltiqData/FoodCatalogEntry.swift`
+- Create: `Sources/DeltiqData/FoodCatalogSeeder.swift`
+- Modify: `Sources/DeltiqData/AppSchema.swift`
+- Test: `Tests/DeltiqDataTests/FoodCatalogSeederTests.swift`
 
 **Interfaces:**
 - Consumes: `FoodCatalogItem`, `FoodCatalogData` (Task 1).
@@ -244,8 +244,8 @@ git commit -m "feat: add quantity-aware nutrient calculation (Core)"
 #if canImport(SwiftData)
 import XCTest
 import SwiftData
-@testable import FitnessAppData
-import FitnessAppCore
+@testable import DeltiqData
+import DeltiqCore
 
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
@@ -293,7 +293,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppData/FoodCatalogEntry.swift Sources/FitnessAppData/FoodCatalogSeeder.swift Sources/FitnessAppData/AppSchema.swift Tests/FitnessAppDataTests/FoodCatalogSeederTests.swift
+git add Sources/DeltiqData/FoodCatalogEntry.swift Sources/DeltiqData/FoodCatalogSeeder.swift Sources/DeltiqData/AppSchema.swift Tests/DeltiqDataTests/FoodCatalogSeederTests.swift
 git commit -m "feat: persist food catalog with idempotent seeder (Data)"
 ```
 
@@ -302,11 +302,11 @@ git commit -m "feat: persist food catalog with idempotent seeder (Data)"
 ### Task 4: Mahlzeiten-Modelle (Data)
 
 **Files:**
-- Create: `Sources/FitnessAppCore/Nutrition/MealType.swift`
-- Create: `Sources/FitnessAppData/MealEntry.swift`
-- Create: `Sources/FitnessAppData/MealItem.swift`
-- Modify: `Sources/FitnessAppData/AppSchema.swift`
-- Test: `Tests/FitnessAppDataTests/MealPersistenceTests.swift`
+- Create: `Sources/DeltiqCore/Nutrition/MealType.swift`
+- Create: `Sources/DeltiqData/MealEntry.swift`
+- Create: `Sources/DeltiqData/MealItem.swift`
+- Modify: `Sources/DeltiqData/AppSchema.swift`
+- Test: `Tests/DeltiqDataTests/MealPersistenceTests.swift`
 
 **Interfaces:**
 - Consumes: `NutrientValues`, `FoodUnit` (Task 2), `FoodCatalogEntry` (Task 3).
@@ -320,8 +320,8 @@ git commit -m "feat: persist food catalog with idempotent seeder (Data)"
 #if canImport(SwiftData)
 import XCTest
 import SwiftData
-@testable import FitnessAppData
-import FitnessAppCore
+@testable import DeltiqData
+import DeltiqCore
 
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
@@ -396,7 +396,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Nutrition/MealType.swift Sources/FitnessAppData/MealEntry.swift Sources/FitnessAppData/MealItem.swift Sources/FitnessAppData/AppSchema.swift Tests/FitnessAppDataTests/MealPersistenceTests.swift
+git add Sources/DeltiqCore/Nutrition/MealType.swift Sources/DeltiqData/MealEntry.swift Sources/DeltiqData/MealItem.swift Sources/DeltiqData/AppSchema.swift Tests/DeltiqDataTests/MealPersistenceTests.swift
 git commit -m "feat: add MealEntry/MealItem models with frozen nutrient snapshots (Data)"
 ```
 
@@ -405,10 +405,10 @@ git commit -m "feat: add MealEntry/MealItem models with frozen nutrient snapshot
 ### Task 5: Tagesziele — Profilfelder + Settings-UI
 
 **Files:**
-- Modify: `Sources/FitnessAppData/UserBodyProfile.swift`
-- Create: `Sources/FitnessAppUI/Nutrition/NutritionGoalsView.swift`
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-- Test: `Tests/FitnessAppDataTests/UserBodyProfileNutritionGoalsTests.swift`
+- Modify: `Sources/DeltiqData/UserBodyProfile.swift`
+- Create: `Sources/DeltiqUI/Nutrition/NutritionGoalsView.swift`
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
+- Test: `Tests/DeltiqDataTests/UserBodyProfileNutritionGoalsTests.swift`
 
 **Interfaces:**
 - Consumes: `TDEEView`'s bestehende BMR/TDEE-Berechnung (`BodyCalculations.bmrMifflinStJeor` + `BodyCalculations.tdee`, Core — bereits vorhanden, keine Änderung nötig).
@@ -421,8 +421,8 @@ git commit -m "feat: add MealEntry/MealItem models with frozen nutrient snapshot
 #if canImport(SwiftData)
 import XCTest
 import SwiftData
-@testable import FitnessAppData
-import FitnessAppCore
+@testable import DeltiqData
+import DeltiqCore
 
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
@@ -469,7 +469,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppData/UserBodyProfile.swift Sources/FitnessAppUI/Nutrition/NutritionGoalsView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests/FitnessAppDataTests/UserBodyProfileNutritionGoalsTests.swift
+git add Sources/DeltiqData/UserBodyProfile.swift Sources/DeltiqUI/Nutrition/NutritionGoalsView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests/DeltiqDataTests/UserBodyProfileNutritionGoalsTests.swift
 git commit -m "feat: add optional daily nutrition goals + settings screen"
 ```
 
@@ -478,10 +478,10 @@ git commit -m "feat: add optional daily nutrition goals + settings screen"
 ### Task 6: Mahlzeiten-Erfassung — neu, mit Vorschau
 
 **Files:**
-- Create: `Sources/FitnessAppUI/Nutrition/MealDraft.swift`
-- Create: `Sources/FitnessAppUI/Nutrition/AddMealView.swift`
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-- Test: `Tests/FitnessAppUITests/MealDraftTests.swift`
+- Create: `Sources/DeltiqUI/Nutrition/MealDraft.swift`
+- Create: `Sources/DeltiqUI/Nutrition/AddMealView.swift`
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
+- Test: `Tests/DeltiqUITests/MealDraftTests.swift`
 
 **Interfaces:**
 - Consumes: `FoodCatalogEntry` (Task 3), `MealEntry`/`MealItem` (Task 4), `NutritionCalculations.nutrients(for:quantity:unit:)` (Task 2).
@@ -498,9 +498,9 @@ git commit -m "feat: add optional daily nutrition goals + settings screen"
 #if canImport(SwiftData)
 import XCTest
 import SwiftData
-@testable import FitnessAppUI
-@testable import FitnessAppData
-import FitnessAppCore
+@testable import DeltiqUI
+@testable import DeltiqData
+import DeltiqCore
 
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
@@ -571,7 +571,7 @@ Expected: FAIL
 
 `MealDraft.save`: wenn `didSaveSuccessfully` bereits `true` ist, sofort `.success(())` zurückgeben, OHNE den Context erneut anzufassen (das ist der vollständige Doppeltap-Schutz, unabhängig vom UI-Button-Zustand). Sonst: EINE `MealEntry` + ihre `MealItem`s aufbauen, `context.insert(meal)` + pro Item `context.insert(item)`, dann `persist(context)` (Default `{ try $0.save() }`). Bei Erfolg `didSaveSuccessfully = true`, `.success(())` zurückgeben. Bei Fehler `context.delete(meal)` (SwiftData kaskadiert die Items mit), `items`/`didSaveSuccessfully` unverändert lassen, `.failure(error)` zurückgeben.
 
-`AddMealView`: `@Query` auf `FoodCatalogEntry`, Textfeld filtert client-seitig per `localizedCaseInsensitiveContains` auf dem aufgelösten `String(localized:)`-Namen (gleiches Live-Filter-Prinzip wie der bestehende Exercise-Picker). Mengen-Eingabe bietet nur die laut `FoodCatalogItem.supports(_:)` (Task 2) zulässigen `FoodUnit`-Fälle an — `Picker` aus `FoodUnit.allCases.filter { entry.asCatalogItem.supports($0) }` gebaut. Beim Hinzufügen einer Position wird `nameSnapshot` sofort über `String(localized: String.LocalizationValue(entry.nameKey), bundle: .module)` aufgelöst (Resolution lebt hier in der UI, da nur `FitnessAppUI` Zugriff auf `Bundle.module`/die xcstrings hat) und zusammen mit dem `NutritionCalculations`-Ergebnis an `draft.addItem` übergeben. Speichern-Button bindet zusätzlich `.disabled(draft.didSaveSuccessfully)` als UI-seitige Absicherung (der eigentliche Schutz sitzt aber in `save()` selbst, siehe oben).
+`AddMealView`: `@Query` auf `FoodCatalogEntry`, Textfeld filtert client-seitig per `localizedCaseInsensitiveContains` auf dem aufgelösten `String(localized:)`-Namen (gleiches Live-Filter-Prinzip wie der bestehende Exercise-Picker). Mengen-Eingabe bietet nur die laut `FoodCatalogItem.supports(_:)` (Task 2) zulässigen `FoodUnit`-Fälle an — `Picker` aus `FoodUnit.allCases.filter { entry.asCatalogItem.supports($0) }` gebaut. Beim Hinzufügen einer Position wird `nameSnapshot` sofort über `String(localized: String.LocalizationValue(entry.nameKey), bundle: .module)` aufgelöst (Resolution lebt hier in der UI, da nur `DeltiqUI` Zugriff auf `Bundle.module`/die xcstrings hat) und zusammen mit dem `NutritionCalculations`-Ergebnis an `draft.addItem` übergeben. Speichern-Button bindet zusätzlich `.disabled(draft.didSaveSuccessfully)` als UI-seitige Absicherung (der eigentliche Schutz sitzt aber in `save()` selbst, siehe oben).
 
 Neue xcstrings-Keys: `nutrition.addMeal.title`, `nutrition.addMeal.searchPlaceholder`, `nutrition.addMeal.save`, `nutrition.addMeal.cancel`, `nutrition.mealType.breakfast.name` / `.lunch.name` / `.dinner.name` / `.snack.name`, `nutrition.unit.gram.label` / `.piece.label` / `.milliliter.label`, plus je ein `nutrition.food.{id}.name`-Key pro Katalogeintrag aus Task 1 (alle ~100, hier erst wirklich benötigt).
 
@@ -583,7 +583,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/MealDraft.swift Sources/FitnessAppUI/Nutrition/AddMealView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests/FitnessAppUITests/MealDraftTests.swift
+git add Sources/DeltiqUI/Nutrition/MealDraft.swift Sources/DeltiqUI/Nutrition/AddMealView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests/DeltiqUITests/MealDraftTests.swift
 git commit -m "feat: add meal capture flow with preview-before-save (UI)"
 ```
 
@@ -592,10 +592,10 @@ git commit -m "feat: add meal capture flow with preview-before-save (UI)"
 ### Task 7: Mahlzeit bearbeiten / löschen
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Nutrition/MealDraft.swift`
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift` (wiederverwendet für Edit-Modus)
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-- Test: `Tests/FitnessAppUITests/MealDraftEditTests.swift`
+- Modify: `Sources/DeltiqUI/Nutrition/MealDraft.swift`
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift` (wiederverwendet für Edit-Modus)
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
+- Test: `Tests/DeltiqUITests/MealDraftEditTests.swift`
 
 **Interfaces:**
 - Consumes: `MealEntry`/`MealItem` (Task 4), `MealDraft` (Task 6).
@@ -607,9 +607,9 @@ git commit -m "feat: add meal capture flow with preview-before-save (UI)"
 #if canImport(SwiftData)
 import XCTest
 import SwiftData
-@testable import FitnessAppUI
-@testable import FitnessAppData
-import FitnessAppCore
+@testable import DeltiqUI
+@testable import DeltiqData
+import DeltiqCore
 
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
@@ -671,7 +671,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/MealDraft.swift Sources/FitnessAppUI/Nutrition/AddMealView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests/FitnessAppUITests/MealDraftEditTests.swift
+git add Sources/DeltiqUI/Nutrition/MealDraft.swift Sources/DeltiqUI/Nutrition/AddMealView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests/DeltiqUITests/MealDraftEditTests.swift
 git commit -m "feat: add meal editing and deletion with confirmation (UI)"
 ```
 
@@ -680,22 +680,22 @@ git commit -m "feat: add meal editing and deletion with confirmation (UI)"
 ### Task 8: Tagesübersicht
 
 **Files:**
-- Create: `Sources/FitnessAppUI/Nutrition/NutritionDayView.swift`
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-- Test: `Tests/FitnessAppUITests/NutritionDayAggregationTests.swift`
+- Create: `Sources/DeltiqUI/Nutrition/NutritionDayView.swift`
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
+- Test: `Tests/DeltiqUITests/NutritionDayAggregationTests.swift`
 
 **Interfaces:**
 - Consumes: `MealEntry`/`MealItem` (Task 4), `NutrientValues.sum` (Task 2), `UserBodyProfile`-Zielfelder (Task 5).
-- Produces: eine reine, UI-unabhängige Gruppierungsfunktion `NutritionDayAggregator.grouped(meals: [MealEntry]) -> [MealType: [MealEntry]]` und `NutritionDayAggregator.dailyTotal(meals: [MealEntry]) -> NutrientValues` (als `enum` in `FitnessAppUI/Nutrition/`, da sie nur `MealEntry` aus Data konsumiert, nicht in Core gehört — Data ist bereits eine Abhängigkeit von UI).
+- Produces: eine reine, UI-unabhängige Gruppierungsfunktion `NutritionDayAggregator.grouped(meals: [MealEntry]) -> [MealType: [MealEntry]]` und `NutritionDayAggregator.dailyTotal(meals: [MealEntry]) -> NutrientValues` (als `enum` in `DeltiqUI/Nutrition/`, da sie nur `MealEntry` aus Data konsumiert, nicht in Core gehört — Data ist bereits eine Abhängigkeit von UI).
 - Produces: `NutritionDayView` mit Datumsnavigation, Gruppen-Sektionen pro `MealType`, Tagessumme, Fortschrittsbalken NUR für gesetzte Ziele aus Task 5, Empty State für Tage ohne Einträge.
 
 - [ ] **Step 1: Write the failing test**
 
 ```swift
 import XCTest
-@testable import FitnessAppUI
-@testable import FitnessAppData
-import FitnessAppCore
+@testable import DeltiqUI
+@testable import DeltiqData
+import DeltiqCore
 
 @available(iOS 17.0, macOS 14.0, *)
 final class NutritionDayAggregationTests: XCTestCase {
@@ -744,7 +744,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/NutritionDayView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests/FitnessAppUITests/NutritionDayAggregationTests.swift
+git add Sources/DeltiqUI/Nutrition/NutritionDayView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests/DeltiqUITests/NutritionDayAggregationTests.swift
 git commit -m "feat: add daily nutrition overview (UI)"
 ```
 
@@ -753,10 +753,10 @@ git commit -m "feat: add daily nutrition overview (UI)"
 ### Task 9: Dashboard-Kachel
 
 **Files:**
-- Modify: `Sources/FitnessAppCore/Programs/DashboardWidgetType.swift`
-- Modify: `Sources/FitnessAppUI/DashboardView.swift`
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-- Test: `Tests/FitnessAppCoreTests/DashboardWidgetTypeNutritionTests.swift`
+- Modify: `Sources/DeltiqCore/Programs/DashboardWidgetType.swift`
+- Modify: `Sources/DeltiqUI/DashboardView.swift`
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
+- Test: `Tests/DeltiqCoreTests/DashboardWidgetTypeNutritionTests.swift`
 
 **Interfaces:**
 - Consumes: `NutritionDayAggregator` (Task 8), `AddMealView`/`NutritionDayView` (Task 6/8).
@@ -766,7 +766,7 @@ git commit -m "feat: add daily nutrition overview (UI)"
 
 ```swift
 import XCTest
-@testable import FitnessAppCore
+@testable import DeltiqCore
 
 final class DashboardWidgetTypeNutritionTests: XCTestCase {
     func testNutritionCaseExistsAndHasLocalizationKey() {
@@ -808,7 +808,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppCore/Programs/DashboardWidgetType.swift Sources/FitnessAppUI/DashboardView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests/FitnessAppCoreTests/DashboardWidgetTypeNutritionTests.swift
+git add Sources/DeltiqCore/Programs/DashboardWidgetType.swift Sources/DeltiqUI/DashboardView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests/DeltiqCoreTests/DashboardWidgetTypeNutritionTests.swift
 git commit -m "feat: add nutrition dashboard tile (additive, opt-in for existing users)"
 ```
 
@@ -823,11 +823,11 @@ git commit -m "feat: add nutrition dashboard tile (additive, opt-in for existing
 - [ ] **Step 1: Komplette Testsuite laufen lassen**
 
 Run: `swift test`
-Expected: alle Targets (FitnessAppCore, FitnessAppData, FitnessAppUI) PASS, keine Regression in bestehenden Tests.
+Expected: alle Targets (DeltiqCore, DeltiqData, DeltiqUI) PASS, keine Regression in bestehenden Tests.
 
 - [ ] **Step 2: Build aller Produkt-Targets**
 
-Run: `swift build --product FitnessAppCore && swift build --product FitnessAppData && swift build --product FitnessAppUI`
+Run: `swift build --product DeltiqCore && swift build --product DeltiqData && swift build --product DeltiqUI`
 Expected: erfolgreich, keine Warnungen zu fehlenden `AppSchema.types`-Einträgen oder nicht-exhaustiven Switches.
 
 - [ ] **Step 3: Dead-Key-Check für Localizable.xcstrings**

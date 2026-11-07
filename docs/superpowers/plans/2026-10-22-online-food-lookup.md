@@ -4,7 +4,7 @@
 
 **Goal:** Wenn ein Lebensmittel lokal keinen Treffer hat, kann der Nutzer entweder (a) — nach explizitem Opt-in und nur bei Netzverfügbarkeit — über Open Food Facts online suchen, einen Treffer wählen, die Nährwerte vor dem Speichern prüfen/korrigieren und erst nach Bestätigung einen neuen lokalen Katalogeintrag anlegen, oder (b) jederzeit, auch offline, ein eigenes Lebensmittel manuell mit Name und Nährwerten anlegen.
 
-**Architecture:** Ein neues, isoliertes SPM-Modul `FitnessAppFoodLookup` kapselt den gesamten Netzwerkzugriff (einzige Netzwerk-Komponente der App, keine Abhängigkeit zu/von `FitnessAppAI`). `FoodCatalogEntry` bekommt zwei additive Felder (`displayName`, `source: FoodCatalogEntrySource` mit Fällen `.seeded`/`.onlineImported`/`.userCreated`), damit online importierte UND manuell angelegte Einträge Klartext-Namen statt xcstrings-Keys tragen und einheitlich als Nutzerdaten (Export/Wipe) statt Katalogdaten behandelt werden. Die UI verdrahtet drei Einstiegspunkte in `AddMealView.swift` (0-Treffer-Zustand der manuellen Suche, KI-Kandidat ohne Katalogtreffer, jederzeit sichtbare "Eigenes Lebensmittel"-Aktion) auf zwei getrennte, aber dieselbe Datenbasis nutzende Flows.
+**Architecture:** Ein neues, isoliertes SPM-Modul `DeltiqFoodLookup` kapselt den gesamten Netzwerkzugriff (einzige Netzwerk-Komponente der App, keine Abhängigkeit zu/von `DeltiqAI`). `FoodCatalogEntry` bekommt zwei additive Felder (`displayName`, `source: FoodCatalogEntrySource` mit Fällen `.seeded`/`.onlineImported`/`.userCreated`), damit online importierte UND manuell angelegte Einträge Klartext-Namen statt xcstrings-Keys tragen und einheitlich als Nutzerdaten (Export/Wipe) statt Katalogdaten behandelt werden. Die UI verdrahtet drei Einstiegspunkte in `AddMealView.swift` (0-Treffer-Zustand der manuellen Suche, KI-Kandidat ohne Katalogtreffer, jederzeit sichtbare "Eigenes Lebensmittel"-Aktion) auf zwei getrennte, aber dieselbe Datenbasis nutzende Flows.
 
 **Tech Stack:** Swift 6 / SwiftUI / SwiftData, `URLSession` (erster Netzwerk-Code der App), Open Food Facts / Search-a-licious REST-API.
 
@@ -12,14 +12,14 @@
 
 ## Global Constraints
 
-- Netzwerkzugriff NUR in `FitnessAppFoodLookup` — nie in `FitnessAppAI`, `FitnessAppCore`, `FitnessAppData` oder direkt in UI-Code.
+- Netzwerkzugriff NUR in `DeltiqFoodLookup` — nie in `DeltiqAI`, `DeltiqCore`, `DeltiqData` oder direkt in UI-Code.
 - Netzwerkzugriff NUR nach explizitem Opt-in (Settings-Toggle, Standard aus).
 - Jede Anfrage trägt einen identifizierenden `User-Agent` im Format `AppName/Version (ContactEmail)` (Open-Food-Facts-Vorgabe).
 - Suchanfragen: max. 10/Min/IP (dokumentiertes Limit) — kein Search-as-you-type, nur auf expliziten Nutzer-Tap.
 - Kein Nährwert wird je erfunden/interpoliert — fehlendes API-Feld bleibt leer, nie 0 oder geraten.
 - Neuer Katalogeintrag entsteht ausschließlich nach expliziter Bestätigung in einer Vorschau (kein Auto-Save aus dem Suchergebnis).
-- Jeder neue sichtbare Text geht über `Sources/FitnessAppUI/Resources/Localizable.xcstrings` (DE/EN/TR).
-- Rundung/Formatierung ausschließlich über `Sources/FitnessAppCore/Numerics/DoubleFormatting.swift` — keine neue Rundungslogik.
+- Jeder neue sichtbare Text geht über `Sources/DeltiqUI/Resources/Localizable.xcstrings` (DE/EN/TR).
+- Rundung/Formatierung ausschließlich über `Sources/DeltiqCore/Numerics/DoubleFormatting.swift` — keine neue Rundungslogik.
 - SwiftData: rein additive Felder auf `FoodCatalogEntry`, kein `VersionedSchema`/`SchemaMigrationPlan`. Keine bestehenden Daten werden gelöscht/zurückgesetzt.
 - Katalogeinträge mit `source != .seeded` (online importiert ODER manuell angelegt) sind Nutzerdaten: von `UserDataWipe`/`DataExportService`/`DataImportService` erfasst; die ~100 seedierten Einträge bleiben davon unberührt.
 - "Eigenes Lebensmittel anlegen" braucht KEINEN Opt-in und KEIN Netz — rein lokale Aktion, jederzeit erreichbar.
@@ -39,7 +39,7 @@
 
 ---
 
-### Task 1: `FitnessAppFoodLookup` — Netzwerk-Client, Werttypen, Fehlerfälle
+### Task 1: `DeltiqFoodLookup` — Netzwerk-Client, Werttypen, Fehlerfälle
 
 **Vor Implementierung zwingend:** die exakte Such-API-Form ist bereits recherchiert (siehe unten), aber das **Antwort-Schema pro Treffer (`hits[]`) ist in der offiziellen OpenAPI-Spec nicht typisiert** (`"items":{"type":"object"}`) — vor Schritt 3 einen echten Request gegen `https://search.openfoodfacts.org/search?q=<bekanntes Produkt, z.B. nutella>&page_size=1&langs=de` ausführen (z.B. via `curl` mit einem echten `User-Agent`-Header) und die tatsächlichen Feldnamen in `hits[]` (insbesondere `product_name`, `nutriments` mit `energy-kcal_100g`/`proteins_100g`/`carbohydrates_100g`/`fat_100g`) gegen die Annahmen unten verifizieren, bevor die Decodable-Typen final festgelegt werden. Ergebnis als Kommentarblock am Kopf von `OnlineFoodSearchClient.swift` festhalten (analog zum Foundation-Models-Recherche-Kommentar aus dem vorherigen Plan).
 
@@ -53,11 +53,11 @@
 - Bekanntes Nutriments-Key-Pattern aus einer realen Produktantwort (v2-Produkt-Endpunkt, nicht Suche, aber dasselbe zugrunde liegende Datenmodell): `energy-kcal_100g`, `carbohydrates_100g` bestätigt; `proteins_100g`/`fat_100g` folgen mit hoher Wahrscheinlichkeit demselben `<nutrient>_100g`-Muster, aber NICHT aus einer Suchantwort bestätigt — das ist genau die oben geforderte Verifikation vor Schritt 3.
 
 **Files:**
-- Create: `Sources/FitnessAppFoodLookup/OnlineFoodCandidate.swift`
-- Create: `Sources/FitnessAppFoodLookup/OnlineFoodSearchError.swift`
-- Create: `Sources/FitnessAppFoodLookup/OnlineFoodSearchClient.swift`
-- Modify: `Package.swift` (neues Target/Produkt `FitnessAppFoodLookup` + Test-Target, Abhängigkeit nur zu `FitnessAppCore`)
-- Test: `Tests/FitnessAppFoodLookupTests/OnlineFoodSearchClientTests.swift`
+- Create: `Sources/DeltiqFoodLookup/OnlineFoodCandidate.swift`
+- Create: `Sources/DeltiqFoodLookup/OnlineFoodSearchError.swift`
+- Create: `Sources/DeltiqFoodLookup/OnlineFoodSearchClient.swift`
+- Modify: `Package.swift` (neues Target/Produkt `DeltiqFoodLookup` + Test-Target, Abhängigkeit nur zu `DeltiqCore`)
+- Test: `Tests/DeltiqFoodLookupTests/OnlineFoodSearchClientTests.swift`
 
 **Interfaces:**
 - Produziert (für Task 2-5):
@@ -92,7 +92,7 @@ Mindestens: gültige Antwort mit vollständigen Nährwerten → Candidates mit a
 
 - [ ] **Step 2: Tests laufen lassen, Fehlschlag bestätigen**
 
-Run: `swift test --filter OnlineFoodSearchClientTests` (lokal auf Windows für `FitnessAppFoodLookup` möglich, da reines `URLSession`+`Foundation`, kein SwiftData/UIKit).
+Run: `swift test --filter OnlineFoodSearchClientTests` (lokal auf Windows für `DeltiqFoodLookup` möglich, da reines `URLSession`+`Foundation`, kein SwiftData/UIKit).
 Expected: FAIL (Typen existieren noch nicht).
 
 - [ ] **Step 3: Implementieren**
@@ -108,8 +108,8 @@ Expected: PASS.
 
 ```bash
 swift build
-git add Package.swift Sources/FitnessAppFoodLookup Tests/FitnessAppFoodLookupTests
-git commit -m "feat: add FitnessAppFoodLookup module for Open Food Facts search"
+git add Package.swift Sources/DeltiqFoodLookup Tests/DeltiqFoodLookupTests
+git commit -m "feat: add DeltiqFoodLookup module for Open Food Facts search"
 ```
 
 ---
@@ -119,15 +119,15 @@ git commit -m "feat: add FitnessAppFoodLookup module for Open Food Facts search"
 **Voraussetzung:** keine (unabhängig von Task 1, kann parallel geplant werden, läuft aber danach in der Sequenz dieses Plans, da Task 4/6 diese Interfaces brauchen).
 
 **Files:**
-- Modify: `Sources/FitnessAppData/FoodCatalogEntry.swift`
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift:589-591` (`resolvedName(for:)`)
-- Modify: `Sources/FitnessAppData/Export/UserDataWipe.swift`
-- Modify: `Sources/FitnessAppData/Export/DataExportService.swift`
-- Modify: `Sources/FitnessAppData/Export/DataImportService.swift`
-- Test: `Tests/FitnessAppDataTests/FoodCatalogEntrySourceTests.swift`
+- Modify: `Sources/DeltiqData/FoodCatalogEntry.swift`
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift:589-591` (`resolvedName(for:)`)
+- Modify: `Sources/DeltiqData/Export/UserDataWipe.swift`
+- Modify: `Sources/DeltiqData/Export/DataExportService.swift`
+- Modify: `Sources/DeltiqData/Export/DataImportService.swift`
+- Test: `Tests/DeltiqDataTests/FoodCatalogEntrySourceTests.swift`
 
 **Interfaces:**
-- Konsumiert: `OnlineFoodCandidate` aus Task 1 (nur als Parameter-Typ für den neuen Initializer, keine SwiftData-Abhängigkeit auf `FitnessAppFoodLookup` — `FitnessAppData` importiert `FitnessAppFoodLookup` nicht; der Initializer nimmt stattdessen einfache Skalare entgegen, die UI-Schicht in Task 4/6 mappt `OnlineFoodCandidate` bzw. Formular-Eingaben auf diese Parameter).
+- Konsumiert: `OnlineFoodCandidate` aus Task 1 (nur als Parameter-Typ für den neuen Initializer, keine SwiftData-Abhängigkeit auf `DeltiqFoodLookup` — `DeltiqData` importiert `DeltiqFoodLookup` nicht; der Initializer nimmt stattdessen einfache Skalare entgegen, die UI-Schicht in Task 4/6 mappt `OnlineFoodCandidate` bzw. Formular-Eingaben auf diese Parameter).
 - Produziert (für Task 4/5/6):
   ```swift
   public enum FoodCatalogEntrySource: String, Codable, Sendable {
@@ -176,7 +176,7 @@ func testExistingSeededEntries_defaultToSeededSource() throws {
     XCTAssertEqual(entry.source, .seeded)
 }
 ```
-(Die eigentliche `resolvedName(for:)`-Präzedenz wird in `Tests/FitnessAppUITests/` getestet, da die Funktion `private` in `AddMealView` ist — siehe Step 3.)
+(Die eigentliche `resolvedName(for:)`-Präzedenz wird in `Tests/DeltiqUITests/` getestet, da die Funktion `private` in `AddMealView` ist — siehe Step 3.)
 
 - [ ] **Step 2: Tests laufen lassen, Fehlschlag bestätigen**
 
@@ -196,7 +196,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppData Sources/FitnessAppUI/Nutrition/AddMealView.swift Tests/FitnessAppDataTests
+git add Sources/DeltiqData Sources/DeltiqUI/Nutrition/AddMealView.swift Tests/DeltiqDataTests
 git commit -m "feat: add food catalog entry source tracking for online-imported and user-created entries"
 ```
 
@@ -207,10 +207,10 @@ git commit -m "feat: add food catalog entry source tracking for online-imported 
 **Voraussetzung:** keine.
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Settings/SettingsDataConnectionsView.swift` (Vorbild: bestehender `externalWorkoutImportEnabled`-Toggle, Zeile 90)
-- Create: `Sources/FitnessAppUI/Settings/OnlineFoodLookupCreditsView.swift` (Vorbild: `ExerciseMediaCreditsView.swift`)
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-- Test: `Tests/FitnessAppUITests/OnlineFoodLookupSettingPersistenceTests.swift` (falls ein bestehendes Persistenz-Test-Muster für `@AppStorage`-ähnliche Toggles existiert — gleiches Muster wie für `externalWorkoutImportEnabled` übernehmen, Pfad nach eigener Recherche im Repo festlegen)
+- Modify: `Sources/DeltiqUI/Settings/SettingsDataConnectionsView.swift` (Vorbild: bestehender `externalWorkoutImportEnabled`-Toggle, Zeile 90)
+- Create: `Sources/DeltiqUI/Settings/OnlineFoodLookupCreditsView.swift` (Vorbild: `ExerciseMediaCreditsView.swift`)
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
+- Test: `Tests/DeltiqUITests/OnlineFoodLookupSettingPersistenceTests.swift` (falls ein bestehendes Persistenz-Test-Muster für `@AppStorage`-ähnliche Toggles existiert — gleiches Muster wie für `externalWorkoutImportEnabled` übernehmen, Pfad nach eigener Recherche im Repo festlegen)
 
 **Interfaces:**
 - Produziert (für Task 4/5): einen lesbaren Zustand, z.B. `@AppStorage("onlineFoodLookupEnabled") private var onlineFoodLookupEnabled: Bool = false` nach demselben Persistenz-Mechanismus wie `externalWorkoutImportEnabled` — exakten Mechanismus (AppStorage vs. UserBodyProfile-Feld) aus dem bestehenden Toggle in `SettingsDataConnectionsView.swift:90` übernehmen, nicht neu erfinden.
@@ -230,7 +230,7 @@ Run: `swift build` (Sanity-Check lokal) + CI-Lauf (`apple-ci-comparison.yml`) f�
 - [ ] **Step 4: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Settings Sources/FitnessAppUI/Resources/Localizable.xcstrings
+git add Sources/DeltiqUI/Settings Sources/DeltiqUI/Resources/Localizable.xcstrings
 git commit -m "feat: add opt-in setting and attribution for online food lookup"
 ```
 
@@ -241,9 +241,9 @@ git commit -m "feat: add opt-in setting and attribution for online food lookup"
 **Voraussetzung:** Tasks 1, 2, 3 abgeschlossen.
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift:181-182` (bestehender `nutrition.addMeal.noResults`-Zustand)
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-- Test: Erweiterung von `Tests/FitnessAppUITests/` (Dateiname nach Repo-Konvention, z.B. `OnlineFoodLookupFlowTests.swift`)
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift:181-182` (bestehender `nutrition.addMeal.noResults`-Zustand)
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
+- Test: Erweiterung von `Tests/DeltiqUITests/` (Dateiname nach Repo-Konvention, z.B. `OnlineFoodLookupFlowTests.swift`)
 
 **Interfaces:**
 - Konsumiert: `OnlineFoodSearching`/`OpenFoodFactsSearchClient`/`OnlineFoodCandidate`/`OnlineFoodSearchError` aus Task 1; `FoodCatalogEntry`'s neuer `convenience init` aus Task 2; `onlineFoodLookupEnabled` aus Task 3.
@@ -255,7 +255,7 @@ Mindestens: `onlineFoodLookupEnabled == false` → keine "Online suchen"-Aktion 
 
 - [ ] **Step 2: Tests laufen lassen, Fehlschlag bestätigen**
 
-Run: CI-Lauf (`apple-ci-comparison.yml`) — Swift-UI-Tests brauchen das echte Target, nicht nur `FitnessAppCore` auf Windows.
+Run: CI-Lauf (`apple-ci-comparison.yml`) — Swift-UI-Tests brauchen das echte Target, nicht nur `DeltiqCore` auf Windows.
 Expected: FAIL.
 
 - [ ] **Step 3: Implementieren**
@@ -269,7 +269,7 @@ Run: CI-Lauf, Expected: PASS. Dead-Key-Audit: `python .scripts/dead_catalog_v3.p
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/AddMealView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests
+git add Sources/DeltiqUI/Nutrition/AddMealView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests
 git commit -m "feat: add online food search from manual search no-results state"
 ```
 
@@ -280,8 +280,8 @@ git commit -m "feat: add online food search from manual search no-results state"
 **Voraussetzung:** Task 4 abgeschlossen (wiederverwendet dessen Trefferlisten-/Vorschau-Komponenten).
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift` (bestehende `aiCandidateRow`, `hasNoCatalogMatch`-Zweig — exakte Zeilen nach Task 4's finalem Stand im eigenen Report nachschlagen, nicht aus diesem Plan raten, da Task 4 die Datei verändert)
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift` (bestehende `aiCandidateRow`, `hasNoCatalogMatch`-Zweig — exakte Zeilen nach Task 4's finalem Stand im eigenen Report nachschlagen, nicht aus diesem Plan raten, da Task 4 die Datei verändert)
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
 - Test: Erweiterung derselben Testdatei wie Task 4
 
 **Interfaces:**
@@ -306,7 +306,7 @@ Run: CI-Lauf, Expected: PASS. Dead-Key-Audit erneut: `UNUSED: 0` bestätigen.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/AddMealView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests
+git add Sources/DeltiqUI/Nutrition/AddMealView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests
 git commit -m "feat: add online food search from AI candidate with no catalog match"
 ```
 
@@ -317,9 +317,9 @@ git commit -m "feat: add online food search from AI candidate with no catalog ma
 **Voraussetzung:** Task 2 abgeschlossen (braucht `FoodCatalogEntrySource`/`displayName`/den erweiterten Initializer). Unabhängig von Tasks 1, 3, 4, 5 — kein Netz, keine Online-Suche, kein Opt-in nötig. Kann parallel zu Task 1/3/4/5 geplant werden, sofern keine Dateiüberschneidung mit deren jeweiligem Implementierungsstand besteht (vor Start den tatsächlichen Stand von `AddMealView.swift` prüfen, nicht pauschal Unabhängigkeit annehmen — siehe Plan-Vorbemerkung zu Dateiüberschneidungen).
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift`
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings`
-- Test: Erweiterung von `Tests/FitnessAppUITests/`
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift`
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings`
+- Test: Erweiterung von `Tests/DeltiqUITests/`
 
 **Interfaces:**
 - Konsumiert: `FoodCatalogEntry`'s erweiterten `convenience init` aus Task 2 (mit `source: .userCreated`).
@@ -345,6 +345,6 @@ Run: CI-Lauf, Expected: PASS. Dead-Key-Audit: `python .scripts/dead_catalog_v3.p
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/AddMealView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests
+git add Sources/DeltiqUI/Nutrition/AddMealView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests
 git commit -m "feat: add manual custom food creation independent of network/AI"
 ```

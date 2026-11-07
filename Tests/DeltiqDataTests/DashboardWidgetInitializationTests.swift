@@ -1,0 +1,223 @@
+#if canImport(SwiftData)
+import XCTest
+import SwiftData
+@testable import DeltiqData
+import DeltiqCore
+
+/// Testet, dass `runCoachCard` nur dann im Standard-Widget-Set eines neuen
+/// Profils erscheint, wenn `cardioCoachingEnabled == true`, und dass
+/// bestehende Nutzerentscheidungen nie ueberschrieben werden.
+@available(iOS 17.0, macOS 14.0, *)
+@MainActor
+final class DashboardWidgetInitializationTests: XCTestCase {
+
+    private func makeContainer() throws -> ModelContainer {
+        let schema = Schema(AppSchema.types)
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        return try ModelContainer(for: schema, configurations: config)
+    }
+
+    // 1. Neues Profil mit aktiviertem Lauf-Coaching enthaelt runCoachCard.
+    func testNewProfileWithCardioEnabledHasRunCoachCard() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: true
+        )
+        container.mainContext.insert(profile)
+        XCTAssertTrue(profile.activeDashboardWidgets.contains(.runCoachCard))
+    }
+
+    // 2. Neues Profil ohne Lauf-Coaching enthaelt runCoachCard nicht.
+    func testNewProfileWithCardioDisabledHasNoRunCoachCard() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        XCTAssertFalse(profile.activeDashboardWidgets.contains(.runCoachCard))
+    }
+
+    // 3. Bestehendes Profil mit manuell deaktiviertem runCoachCard behaelt diese Einstellung.
+    func testExistingProfileManuallyRemovedRunCoachCardIsPreserved() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: true
+        )
+        container.mainContext.insert(profile)
+        profile.activeDashboardWidgets = profile.activeDashboardWidgets.filter { $0 != .runCoachCard }
+        let savedRaw = profile.activeDashboardWidgetsRaw
+
+        // Toggling cardioCoachingEnabled darf activeDashboardWidgetsRaw nicht aendern
+        profile.cardioCoachingEnabled = false
+        XCTAssertEqual(profile.activeDashboardWidgetsRaw, savedRaw)
+        profile.cardioCoachingEnabled = true
+        XCTAssertEqual(profile.activeDashboardWidgetsRaw, savedRaw)
+    }
+
+    // 4. Erneutes Aktivieren von cardioCoachingEnabled aktiviert runCoachCard nicht automatisch.
+    func testReenablingCardioDoesNotRestoreRunCoachCard() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        XCTAssertFalse(profile.activeDashboardWidgets.contains(.runCoachCard))
+
+        profile.cardioCoachingEnabled = true
+        XCTAssertFalse(profile.activeDashboardWidgets.contains(.runCoachCard))
+    }
+
+    // 5. Neues Profil mit Lauf-Coaching: runCoachCard ist an erster Position (ganz oben).
+    func testNewProfileWithCardioEnabledHasRunCoachCardFirst() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: true
+        )
+        container.mainContext.insert(profile)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
+                       "Neues Profil mit cardioCoachingEnabled soll runCoachCard als erstes Widget haben")
+    }
+
+    // 6. setEnduranceModality aktiviert Coach: Widget wird ganz oben eingefuegt
+    //    (cardioWidgetUserConfigured == false → kein Veto).
+    func testEnablingCoachingViaSetEnduranceModalityInsertsRunCoachCardFirst() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        XCTAssertFalse(profile.activeDashboardWidgets.contains(.runCoachCard))
+
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertTrue(profile.cardioCoachingEnabled)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
+                       "Nach erstem Aktivieren via setEnduranceModality soll runCoachCard ganz oben stehen")
+    }
+
+    // 7. setEnduranceModality fuegt runCoachCard IMMER an Position 0 ein — auch
+    //    wenn cardioWidgetUserConfigured == true (neues Verhalten: jedes Re-Enable
+    //    bringt die Karte ganz oben, unabhaengig von vorheriger Konfiguration).
+    func testAutoInsertEvenWhenUserHasExplicitlyConfiguredWidgets() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        profile.cardioWidgetUserConfigured = true
+
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertTrue(profile.cardioCoachingEnabled)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
+                       "Jedes Aktivieren via setEnduranceModality bringt runCoachCard an Position 0")
+    }
+
+    // 8. Karte nach Verschieben: naechstes Re-Enable bringt sie wieder an Position 0.
+    func testReEnableAfterMoveRestoresRunCoachCardToFirst() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        // Erster Enable: Karte oben
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard)
+
+        // User verschiebt Karte ans Ende
+        var order = profile.activeDashboardWidgets.filter { $0 != .runCoachCard }
+        order.append(.runCoachCard)
+        profile.activeDashboardWidgets = order
+        XCTAssertNotEqual(profile.activeDashboardWidgets.first, .runCoachCard)
+
+        // Deaktivieren + Reaktivieren: Karte wieder oben
+        profile.setEnduranceModality(.running, runCoachEnabled: false)
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
+                       "Re-Enable soll runCoachCard immer zurueck an Position 0 setzen")
+    }
+
+    // 9. Eine benutzerdefinierte Widget-Reihenfolge bleibt unveraendert.
+    func testCustomWidgetOrderSurvivesCardioToggle() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: true
+        )
+        container.mainContext.insert(profile)
+        let customOrder: [DashboardWidgetType] = [.nutrition, .nextWorkout, .runCoachCard]
+        profile.activeDashboardWidgets = customOrder
+
+        profile.cardioCoachingEnabled = false
+        XCTAssertEqual(profile.activeDashboardWidgets, customOrder)
+        profile.cardioCoachingEnabled = true
+        XCTAssertEqual(profile.activeDashboardWidgets, customOrder)
+    }
+
+    // MARK: - Dashboard-Fix "doppelte Coach-Karten" / eigenstaendiger Widget-Typ
+
+    // 10. Neues Profil mit aktiviertem Lauf-Coaching enthaelt BEIDE Karten.
+    func testNewProfileWithCardioEnabledHasBothCoachCards() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: true
+        )
+        container.mainContext.insert(profile)
+        XCTAssertTrue(profile.activeDashboardWidgets.contains(.runCoachCard))
+        XCTAssertTrue(profile.activeDashboardWidgets.contains(.raceProgressCard))
+    }
+
+    // 11. User deaktiviert NUR die neue Karte - Einstellung bleibt bestehen,
+    //     auch nach Aus-/Wieder-Einschalten des Coachings (Ticket: "bis eine
+    //     neue Aenderung nicht wieder aktiviert").
+    func testManuallyDisablingOnlyRaceProgressCardSurvivesCardioToggle() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: true
+        )
+        container.mainContext.insert(profile)
+        profile.activeDashboardWidgets = profile.activeDashboardWidgets.filter { $0 != .raceProgressCard }
+        let savedRaw = profile.activeDashboardWidgetsRaw
+
+        profile.cardioCoachingEnabled = false
+        profile.cardioCoachingEnabled = true
+        XCTAssertEqual(profile.activeDashboardWidgetsRaw, savedRaw)
+        XCTAssertFalse(profile.activeDashboardWidgets.contains(.raceProgressCard))
+        XCTAssertTrue(profile.activeDashboardWidgets.contains(.runCoachCard))
+    }
+
+    // 12. setEnduranceModality aktiviert Coach: beide Karten landen ganz oben,
+    //     runCoachCard zuerst (identische Reihenfolge wie bisher).
+    func testEnablingCoachingViaSetEnduranceModalityInsertsBothCardsAtTop() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        XCTAssertEqual(Array(profile.activeDashboardWidgets.prefix(2)), [.runCoachCard, .raceProgressCard])
+    }
+}
+#endif

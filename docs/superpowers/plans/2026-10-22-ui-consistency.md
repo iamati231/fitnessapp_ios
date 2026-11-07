@@ -30,11 +30,11 @@
 
 ### Task 1: Tastatur-Typ-Korrekturen (Reps-Feld + WorkoutSummaryView-Dezimalfelder)
 
-**Audit-Fund (Keyboard-Kategorie):** `SetRow.repsInput` (`Sources/FitnessAppUI/Workout/SetRow.swift:645-646`) nutzt `.decimalKeyboard()` für ein `Int`-Feld (Reps) — app-weiter Standard für Integer-Felder ist `.keyboardType(.numberPad)` (siehe `NutritionGoalsView`/`CardioGoalEditorView`/`WorkoutSummaryView.repsField` für dasselbe semantische Feld). `WorkoutSummaryView.swift:2422,2451,2476,2491,2509` (Cardio-Distanz/Dauer/Gewicht-Felder) duplizieren manuell einen `#if os(iOS) .keyboardType(...) #endif`-Block statt des gemeinsamen `.decimalKeyboard()`-Helpers aus `Compatibility.swift`.
+**Audit-Fund (Keyboard-Kategorie):** `SetRow.repsInput` (`Sources/DeltiqUI/Workout/SetRow.swift:645-646`) nutzt `.decimalKeyboard()` für ein `Int`-Feld (Reps) — app-weiter Standard für Integer-Felder ist `.keyboardType(.numberPad)` (siehe `NutritionGoalsView`/`CardioGoalEditorView`/`WorkoutSummaryView.repsField` für dasselbe semantische Feld). `WorkoutSummaryView.swift:2422,2451,2476,2491,2509` (Cardio-Distanz/Dauer/Gewicht-Felder) duplizieren manuell einen `#if os(iOS) .keyboardType(...) #endif`-Block statt des gemeinsamen `.decimalKeyboard()`-Helpers aus `Compatibility.swift`.
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Workout/SetRow.swift:645-646`
-- Modify: `Sources/FitnessAppUI/Workout/WorkoutSummaryView.swift:2422, 2451, 2476, 2491, 2509`
+- Modify: `Sources/DeltiqUI/Workout/SetRow.swift:645-646`
+- Modify: `Sources/DeltiqUI/Workout/WorkoutSummaryView.swift:2422, 2451, 2476, 2491, 2509`
 
 - [ ] **Step 1: Failing Test (falls eine testbare Oberfläche existiert, sonst Step 3 direkt mit CI-Build-Verifikation)**
 
@@ -51,7 +51,7 @@ Falls `SetRow`/`WorkoutSummaryView` keine Unit-testbare Keyboard-Konfiguration e
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Workout/SetRow.swift Sources/FitnessAppUI/Workout/WorkoutSummaryView.swift
+git add Sources/DeltiqUI/Workout/SetRow.swift Sources/DeltiqUI/Workout/WorkoutSummaryView.swift
 git commit -m "fix: correct keyboard types for reps/decimal fields in workout views"
 ```
 
@@ -59,12 +59,12 @@ git commit -m "fix: correct keyboard types for reps/decimal fields in workout vi
 
 ### Task 2: Keyboard-Dismiss nachrüsten (3 Screens)
 
-**Audit-Fund:** `DayEditorView.swift:777-784` (Ausdauer-Distanzfeld), `Sources/FitnessAppUI/Settings/GearListView.swift:325-330` (Gear-Kilometerstand-Editor-Sheet), `Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift:1230-1239` (`decimalInputRow`-Helper) haben Dezimalfelder, rufen aber `.keyboardDismissToolbar()` (`Compatibility.swift`) nirgends auf ihrer Root-View auf — Tippen außerhalb des Feldes schließt die Tastatur dort nicht.
+**Audit-Fund:** `DayEditorView.swift:777-784` (Ausdauer-Distanzfeld), `Sources/DeltiqUI/Settings/GearListView.swift:325-330` (Gear-Kilometerstand-Editor-Sheet), `Sources/DeltiqUI/Baseline/BaselineCheckFlowView.swift:1230-1239` (`decimalInputRow`-Helper) haben Dezimalfelder, rufen aber `.keyboardDismissToolbar()` (`Compatibility.swift`) nirgends auf ihrer Root-View auf — Tippen außerhalb des Feldes schließt die Tastatur dort nicht.
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Workout/DayEditorView.swift`
-- Modify: `Sources/FitnessAppUI/Settings/GearListView.swift`
-- Modify: `Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift`
+- Modify: `Sources/DeltiqUI/Workout/DayEditorView.swift`
+- Modify: `Sources/DeltiqUI/Settings/GearListView.swift`
+- Modify: `Sources/DeltiqUI/Baseline/BaselineCheckFlowView.swift`
 
 - [ ] **Step 1: Implementieren**
 
@@ -75,7 +75,7 @@ git commit -m "fix: correct keyboard types for reps/decimal fields in workout vi
 - [ ] **Step 3: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Workout/DayEditorView.swift Sources/FitnessAppUI/Settings/GearListView.swift Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift
+git add Sources/DeltiqUI/Workout/DayEditorView.swift Sources/DeltiqUI/Settings/GearListView.swift Sources/DeltiqUI/Baseline/BaselineCheckFlowView.swift
 git commit -m "fix: add keyboard dismiss toolbar to 3 screens missing it"
 ```
 
@@ -83,12 +83,12 @@ git commit -m "fix: add keyboard dismiss toolbar to 3 screens missing it"
 
 ### Task 3: AddMealView-Suchfeld an ExerciseLibraryView-Standard angleichen
 
-**Audit-Fund:** `ExerciseLibraryView.searchField` (`Sources/FitnessAppUI/Settings/ExerciseLibraryView.swift:212-239`) baut bewusst Icon+Clear-Button+`Color.Deltiq.fill`-Hintergrund als einheitlichen `.searchable()`-Ersatz. `AddMealView.searchSection`s Such-TextField (`Sources/FitnessAppUI/Nutrition/AddMealView.swift:172-180`) ist dagegen ein nacktes `TextField` ohne dieses Chrome.
+**Audit-Fund:** `ExerciseLibraryView.searchField` (`Sources/DeltiqUI/Settings/ExerciseLibraryView.swift:212-239`) baut bewusst Icon+Clear-Button+`Color.Deltiq.fill`-Hintergrund als einheitlichen `.searchable()`-Ersatz. `AddMealView.searchSection`s Such-TextField (`Sources/DeltiqUI/Nutrition/AddMealView.swift:172-180`) ist dagegen ein nacktes `TextField` ohne dieses Chrome.
 
 **Voraussetzung:** vor Implementierung den TATSÄCHLICHEN Stand von `AddMealView.swift` prüfen — das Online-Food-Lookup-Plan könnte diese Datei zwischenzeitlich verändert haben (Zeilen 172-180 sind der Stand vor diesem Plan).
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift` (Suchfeld-Bereich, exakte Zeilen nach eigenem Stand prüfen)
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift` (Suchfeld-Bereich, exakte Zeilen nach eigenem Stand prüfen)
 
 - [ ] **Step 1: Implementieren**
 
@@ -99,7 +99,7 @@ Suchfeld in `AddMealView` auf dasselbe Icon+Clear-Button+`Color.Deltiq.fill`-Mus
 - [ ] **Step 3: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/AddMealView.swift
+git add Sources/DeltiqUI/Nutrition/AddMealView.swift
 git commit -m "fix: align AddMealView search field chrome with ExerciseLibraryView standard"
 ```
 
@@ -110,8 +110,8 @@ git commit -m "fix: align AddMealView search field chrome with ExerciseLibraryVi
 **Audit-Fund (KRITISCH, einzige echte Regression derselben bereits gefixten Bugklasse):** `PlanEditorView.swift:677-687`s `saveAction` ruft NUR `dismiss()` auf, KEIN `modelContext.save()` — trotz echter `@Bindable`-Mutationen (Wochen, Zielumgebung, Name, Aktiv-Toggle, Progression-RIR). Identischer Bug wurde in `DayEditorView.swift:337-366` bereits explizit gefixt (Kommentar dort referenziert denselben Fehler) — hier nie nachgezogen. Datenverlust bei Kaltstart kurz nach Edit möglich, da SwiftData `@Bindable`-Mutationen ohne expliziten `save()`-Aufruf nicht garantiert vor App-Terminierung persistiert sind.
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Workout/PlanEditorView.swift:677-687`
-- Test: `Tests/FitnessAppUITests/` oder `Tests/FitnessAppDataTests/` (Dateiname nach Konvention — Vorbild: falls ein Test für `DayEditorView`s Fix existiert, dasselbe Muster für `PlanEditorView` übernehmen)
+- Modify: `Sources/DeltiqUI/Workout/PlanEditorView.swift:677-687`
+- Test: `Tests/DeltiqUITests/` oder `Tests/DeltiqDataTests/` (Dateiname nach Konvention — Vorbild: falls ein Test für `DayEditorView`s Fix existiert, dasselbe Muster für `PlanEditorView` übernehmen)
 
 - [ ] **Step 1: Failing Test**
 
@@ -132,7 +132,7 @@ Run: CI-Lauf. Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Workout/PlanEditorView.swift Tests
+git add Sources/DeltiqUI/Workout/PlanEditorView.swift Tests
 git commit -m "fix: PlanEditorView now persists edits before dismissing (data-loss bug, same class as DayEditorView fix)"
 ```
 
@@ -146,14 +146,14 @@ Betroffen (alle mit demselben mechanischen Fix — EIN Dispatch für alle, da "g
 
 | Datei | Fehlendes |
 |---|---|
-| `Sources/FitnessAppUI/Settings/BodyDataEditorView.swift:236-254` | Kein Doppeltap-Schutz; kein explizites `modelContext.save()`/Fehlerbehandlung |
-| `Sources/FitnessAppUI/Settings/CardioGoalEditorView.swift:74-82, 170-196` | Kein `isDisabled`-Gate trotz Freitext-Zahlenfeldern; `try? modelContext.save()` verschluckt Fehler |
-| `Sources/FitnessAppUI/Settings/PeriodicCheckInView.swift:107-113, 324-390` | Zeigt `didJustSave=true` unconditional direkt nach `insert`, ohne Persistenz-Verifikation; kein Doppeltap-Schutz |
-| `Sources/FitnessAppUI/Settings/ExerciseLibraryEditorSheet.swift:78-87, 215-237` | Kein Doppeltap-Schutz; `try? modelContext.save()` verschluckt Fehler |
-| `Sources/FitnessAppUI/Settings/GearListView.swift:262-275, 375-396` (`GearEditorView`) | Kein Doppeltap-Schutz; GAR KEIN `modelContext.save()`-Aufruf |
-| `Sources/FitnessAppUI/Settings/TrainingLocationEquipmentEditorView.swift:61-73, 181-210` | Kein `modelContext.save()` überhaupt, obwohl ein Folge-Effekt (`applyEquipmentAdaptations`) auf Basis eines unbestätigten Writes ausgelöst wird |
-| `Sources/FitnessAppUI/Workout/ExerciseEditorView.swift:90-104, 273-288, 345-363` | Delete-Pfad: `try? modelContext.save()` verschluckt Fehler, `dismiss()` läuft trotzdem |
-| `Sources/FitnessAppUI/MeasurementView.swift:979-992, 996-1129, 1139-1140` | Kein Doppeltap-Schutz (Insert-Pfad kann 2× feuern); `try? modelContext.save()` verschluckt Fehler |
+| `Sources/DeltiqUI/Settings/BodyDataEditorView.swift:236-254` | Kein Doppeltap-Schutz; kein explizites `modelContext.save()`/Fehlerbehandlung |
+| `Sources/DeltiqUI/Settings/CardioGoalEditorView.swift:74-82, 170-196` | Kein `isDisabled`-Gate trotz Freitext-Zahlenfeldern; `try? modelContext.save()` verschluckt Fehler |
+| `Sources/DeltiqUI/Settings/PeriodicCheckInView.swift:107-113, 324-390` | Zeigt `didJustSave=true` unconditional direkt nach `insert`, ohne Persistenz-Verifikation; kein Doppeltap-Schutz |
+| `Sources/DeltiqUI/Settings/ExerciseLibraryEditorSheet.swift:78-87, 215-237` | Kein Doppeltap-Schutz; `try? modelContext.save()` verschluckt Fehler |
+| `Sources/DeltiqUI/Settings/GearListView.swift:262-275, 375-396` (`GearEditorView`) | Kein Doppeltap-Schutz; GAR KEIN `modelContext.save()`-Aufruf |
+| `Sources/DeltiqUI/Settings/TrainingLocationEquipmentEditorView.swift:61-73, 181-210` | Kein `modelContext.save()` überhaupt, obwohl ein Folge-Effekt (`applyEquipmentAdaptations`) auf Basis eines unbestätigten Writes ausgelöst wird |
+| `Sources/DeltiqUI/Workout/ExerciseEditorView.swift:90-104, 273-288, 345-363` | Delete-Pfad: `try? modelContext.save()` verschluckt Fehler, `dismiss()` läuft trotzdem |
+| `Sources/DeltiqUI/MeasurementView.swift:979-992, 996-1129, 1139-1140` | Kein Doppeltap-Schutz (Insert-Pfad kann 2× feuern); `try? modelContext.save()` verschluckt Fehler |
 
 **Files:** alle 8 oben gelisteten.
 
@@ -172,7 +172,7 @@ Für jede der 8 Dateien, am jeweiligen Save-Call-Site: (a) falls kein `modelCont
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Settings/BodyDataEditorView.swift Sources/FitnessAppUI/Settings/CardioGoalEditorView.swift Sources/FitnessAppUI/Settings/PeriodicCheckInView.swift Sources/FitnessAppUI/Settings/ExerciseLibraryEditorSheet.swift Sources/FitnessAppUI/Settings/GearListView.swift Sources/FitnessAppUI/Settings/TrainingLocationEquipmentEditorView.swift Sources/FitnessAppUI/Workout/ExerciseEditorView.swift Sources/FitnessAppUI/MeasurementView.swift Tests
+git add Sources/DeltiqUI/Settings/BodyDataEditorView.swift Sources/DeltiqUI/Settings/CardioGoalEditorView.swift Sources/DeltiqUI/Settings/PeriodicCheckInView.swift Sources/DeltiqUI/Settings/ExerciseLibraryEditorSheet.swift Sources/DeltiqUI/Settings/GearListView.swift Sources/DeltiqUI/Settings/TrainingLocationEquipmentEditorView.swift Sources/DeltiqUI/Workout/ExerciseEditorView.swift Sources/DeltiqUI/MeasurementView.swift Tests
 git commit -m "fix: unify save error handling and double-tap protection across 8 editors"
 ```
 
@@ -183,11 +183,11 @@ git commit -m "fix: unify save error handling and double-tap protection across 8
 **Audit-Fund:** 7 Screens verstecken die native Navbar (`DeltiqHeader`-Muster), rufen aber `.deltiqSwipeBackEnabled()` nicht auf — Swipe-Back bleibt tot, nur der Chevron funktioniert.
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Workout/TimedWorkoutPlayerView.swift` (AMRAP-, EMOM-, ForTime-Player — 3 Stellen: ~634-636, ~1265-1267, ~1879-1881)
-- Modify: `Sources/FitnessAppUI/Workout/CircuitWorkoutPlayerView.swift:211-213`
-- Modify: `Sources/FitnessAppUI/Workout/EnduranceIntervalPlayerView.swift:145-147`
-- Modify: `Sources/FitnessAppUI/Workout/FourWeekReviewEntryView.swift:74-128`
-- Modify: `Sources/FitnessAppUI/Workout/FourWeekReviewView.swift:75-102`
+- Modify: `Sources/DeltiqUI/Workout/TimedWorkoutPlayerView.swift` (AMRAP-, EMOM-, ForTime-Player — 3 Stellen: ~634-636, ~1265-1267, ~1879-1881)
+- Modify: `Sources/DeltiqUI/Workout/CircuitWorkoutPlayerView.swift:211-213`
+- Modify: `Sources/DeltiqUI/Workout/EnduranceIntervalPlayerView.swift:145-147`
+- Modify: `Sources/DeltiqUI/Workout/FourWeekReviewEntryView.swift:74-128`
+- Modify: `Sources/DeltiqUI/Workout/FourWeekReviewView.swift:75-102`
 
 - [ ] **Step 1: Implementieren**
 
@@ -198,7 +198,7 @@ git commit -m "fix: unify save error handling and double-tap protection across 8
 - [ ] **Step 3: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Workout/TimedWorkoutPlayerView.swift Sources/FitnessAppUI/Workout/CircuitWorkoutPlayerView.swift Sources/FitnessAppUI/Workout/EnduranceIntervalPlayerView.swift Sources/FitnessAppUI/Workout/FourWeekReviewEntryView.swift Sources/FitnessAppUI/Workout/FourWeekReviewView.swift
+git add Sources/DeltiqUI/Workout/TimedWorkoutPlayerView.swift Sources/DeltiqUI/Workout/CircuitWorkoutPlayerView.swift Sources/DeltiqUI/Workout/EnduranceIntervalPlayerView.swift Sources/DeltiqUI/Workout/FourWeekReviewEntryView.swift Sources/DeltiqUI/Workout/FourWeekReviewView.swift
 git commit -m "fix: restore swipe-back gesture on 7 screens hiding the native nav bar"
 ```
 
@@ -209,9 +209,9 @@ git commit -m "fix: restore swipe-back gesture on 7 screens hiding the native na
 **Audit-Fund:** `NewCustomExerciseSheet.swift:101-124`, `DayPickerSheet.swift:61-67`, `ProgramTemplatePickerView.swift:63-73` (Picker-Root, nicht `TemplatePreviewView`) nutzen natives `navigationTitle`+Toolbar-Cancel statt `DeltiqHeader`+Chevron+`interactiveDismissDisabled`.
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Workout/NewCustomExerciseSheet.swift`
-- Modify: `Sources/FitnessAppUI/Workout/DayPickerSheet.swift`
-- Modify: `Sources/FitnessAppUI/Workout/ProgramTemplatePickerView.swift`
+- Modify: `Sources/DeltiqUI/Workout/NewCustomExerciseSheet.swift`
+- Modify: `Sources/DeltiqUI/Workout/DayPickerSheet.swift`
+- Modify: `Sources/DeltiqUI/Workout/ProgramTemplatePickerView.swift`
 
 - [ ] **Step 1: Implementieren**
 
@@ -222,7 +222,7 @@ Alle 3 auf `DeltiqHeader`+Chevron+`interactiveDismissDisabled`-Muster umstellen,
 - [ ] **Step 3: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Workout/NewCustomExerciseSheet.swift Sources/FitnessAppUI/Workout/DayPickerSheet.swift Sources/FitnessAppUI/Workout/ProgramTemplatePickerView.swift
+git add Sources/DeltiqUI/Workout/NewCustomExerciseSheet.swift Sources/DeltiqUI/Workout/DayPickerSheet.swift Sources/DeltiqUI/Workout/ProgramTemplatePickerView.swift
 git commit -m "fix: align 3 sheets with the DeltiqHeader sheet-dismiss standard"
 ```
 
@@ -235,10 +235,10 @@ git commit -m "fix: align 3 sheets with the DeltiqHeader sheet-dismiss standard"
 **Voraussetzung:** Task 7 (falls `NewCustomExerciseSheet` dort bereits auf `DeltiqHeader` umgestellt wurde) UND aktueller Stand von `AddMealView.swift` nach dem parallel laufenden Online-Food-Lookup-Plan prüfen — nicht blind von den Audit-Zeilennummern ausgehen.
 
 **Files:**
-- Modify: `Sources/FitnessAppUI/Nutrition/AddMealView.swift`
-- Modify: `Sources/FitnessAppUI/Workout/NewCustomExerciseSheet.swift`
-- Modify: `Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift`
-- Modify: `Sources/FitnessAppUI/Resources/Localizable.xcstrings` (falls neue Bestätigungstexte nötig — `discardChangesConfirmation` nutzt vermutlich bereits existierende lokalisierte Strings aus `MeasurementView`s Verwendung, prüfen bevor neue angelegt werden)
+- Modify: `Sources/DeltiqUI/Nutrition/AddMealView.swift`
+- Modify: `Sources/DeltiqUI/Workout/NewCustomExerciseSheet.swift`
+- Modify: `Sources/DeltiqUI/Baseline/BaselineCheckFlowView.swift`
+- Modify: `Sources/DeltiqUI/Resources/Localizable.xcstrings` (falls neue Bestätigungstexte nötig — `discardChangesConfirmation` nutzt vermutlich bereits existierende lokalisierte Strings aus `MeasurementView`s Verwendung, prüfen bevor neue angelegt werden)
 
 - [ ] **Step 1: Failing Tests**
 
@@ -255,7 +255,7 @@ Je Screen: mit ungespeicherten Änderungen (z.B. getippter KI-Freitext in `AddMe
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/FitnessAppUI/Nutrition/AddMealView.swift Sources/FitnessAppUI/Workout/NewCustomExerciseSheet.swift Sources/FitnessAppUI/Baseline/BaselineCheckFlowView.swift Sources/FitnessAppUI/Resources/Localizable.xcstrings Tests
+git add Sources/DeltiqUI/Nutrition/AddMealView.swift Sources/DeltiqUI/Workout/NewCustomExerciseSheet.swift Sources/DeltiqUI/Baseline/BaselineCheckFlowView.swift Sources/DeltiqUI/Resources/Localizable.xcstrings Tests
 git commit -m "fix: add discard-changes confirmation to 3 screens with real draft data"
 ```
 
