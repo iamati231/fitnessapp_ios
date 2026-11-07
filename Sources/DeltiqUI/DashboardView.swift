@@ -2886,7 +2886,7 @@ public struct DashboardView: View {
             activities: activities, windowStart: windowStart, now: now, calendar: calendar
         )
         let trend = TrainingLoadTrendAnalyzer.analyze(weeks: weeks, now: now, calendar: calendar)
-        let deloadIsActive = deloadUntil > now.timeIntervalSince1970
+        let deloadIsActive = isDeloadActive
         let input = TrainingDensityAnalyzer.Input(
             activities: activities,
             trend: trend,

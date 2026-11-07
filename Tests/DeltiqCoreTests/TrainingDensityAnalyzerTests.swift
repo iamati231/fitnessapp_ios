@@ -356,4 +356,74 @@ final class TrainingDensityAnalyzerTests: XCTestCase {
         let result = TrainingDensityAnalyzer.analyze(input: input(activities: acts))
         XCTAssertEqual(result.analyzedActivityCount, 4)
     }
+
+    // MARK: - 11. Activity type handling
+
+    func testPureStrengthUserReceivesValidAssessment() {
+        // Pure strength trainer: no isRunning activities
+        let acts = [strengthActivity(-20), strengthActivity(-10), strengthActivity(-5)]
+        let result = TrainingDensityAnalyzer.analyze(input: input(activities: acts))
+        XCTAssertNotEqual(result.outcome, .insufficientData)
+        XCTAssertNil(result.minimumRunningGapHours, "No run gap for strength-only user")
+        // noMeasuredIntensityData is always present (no running duration data)
+        XCTAssertTrue(result.dataGaps.contains(.noMeasuredIntensityData))
+    }
+
+    func testCrossTrainingCountsAsTrainingDay() {
+        let crossActivity = TrainingActivity(
+            date: date(-3),
+            runningDistanceKm: nil, runningDurationSeconds: nil,
+            isRunning: false, isCrossTrainingOnly: true,
+            hasAmbiguousCardio: false, hasStrengthActivity: false,
+            strengthSetCount: 0, strengthVolumeKg: 0
+        )
+        let acts = [runActivity(-20), runActivity(-10), crossActivity]
+        let result = TrainingDensityAnalyzer.analyze(input: input(activities: acts))
+        XCTAssertEqual(result.analyzedActivityCount, 3)
+        // Cross-training in last 7 days counts
+        XCTAssertGreaterThanOrEqual(result.trainingDaysLast7, 1)
+    }
+
+    func testSameDayActivitiesCountOnceAsDensityDay() {
+        // Two activities logged on the same calendar day (-1) must count as 1 training day,
+        // not 2, in the rolling window and consecutive-day counts.
+        let morningRun = TrainingActivity(
+            date: date(-1).addingTimeInterval(7 * 3600),  // 07:00
+            runningDistanceKm: 5, runningDurationSeconds: nil,
+            isRunning: true, isCrossTrainingOnly: false,
+            hasAmbiguousCardio: false, hasStrengthActivity: false,
+            strengthSetCount: 0, strengthVolumeKg: 0
+        )
+        let eveningStrength = TrainingActivity(
+            date: date(-1).addingTimeInterval(19 * 3600),  // 19:00
+            runningDistanceKm: nil, runningDurationSeconds: nil,
+            isRunning: false, isCrossTrainingOnly: false,
+            hasAmbiguousCardio: false, hasStrengthActivity: true,
+            strengthSetCount: 10, strengthVolumeKg: 500
+        )
+        let acts = [runActivity(-20), runActivity(-10), morningRun, eveningStrength]
+        let result = TrainingDensityAnalyzer.analyze(input: input(activities: acts))
+        XCTAssertEqual(result.analyzedActivityCount, 4, "Raw activity count is 4")
+        // But only 3 distinct calendar days → trainingDaysLast7 = 1 (only day -1 is in window)
+        // Key: if same-day wasn't de-duplicated, trainingDaysLast7 would be 2 instead of 1
+        XCTAssertEqual(result.trainingDaysLast7, 1,
+                       "Same-day double session must count as 1 training day, not 2")
+    }
+
+    func testAmbiguousCardioNotCountedAsRunning() {
+        // 1 run + 1 ambiguous — if ambiguous were treated as running, gap would be computed
+        let ambiguous = TrainingActivity(
+            date: date(-4),
+            runningDistanceKm: nil, runningDurationSeconds: nil,
+            isRunning: false, isCrossTrainingOnly: false,
+            hasAmbiguousCardio: true, hasStrengthActivity: false,
+            strengthSetCount: 0, strengthVolumeKg: 0
+        )
+        let acts = [strengthActivity(-20), runActivity(-10), ambiguous]
+        let result = TrainingDensityAnalyzer.analyze(input: input(activities: acts))
+        XCTAssertEqual(result.analyzedActivityCount, 3)
+        // Only 1 real running session → gap is nil (need ≥2 for gap)
+        XCTAssertNil(result.minimumRunningGapHours,
+                     "Ambiguous cardio must not count as running for gap analysis")
+    }
 }
