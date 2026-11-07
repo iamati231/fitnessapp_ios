@@ -126,7 +126,8 @@ public enum IntegratedRunCoachAdvisor {
 | 3 | Nur Cross-Training (`isCrossTrainingOnly` dominant) | `.buildRunningBase` ← **korrigiert** |
 | 4 | `planAdjustmentPending == true` | `.planAdjustmentAvailable` |
 | 5 | `concerns.contains(.goalLikelyUnrealistic)` | `.reassessGoal` |
-| 6 | `concerns.contains(.recentTrainingGap)` | `.buildRunningBase` ← **korrigiert** |
+| **6a** | `concerns.contains(.recentTrainingGap)` **UND** `weeksToRace != nil && weeksToRace! <= 2` | `.maintainCurrent` ← **neu** |
+| **6b** | `concerns.contains(.recentTrainingGap)` | `.buildRunningBase` ← **korrigiert** |
 | 7 | `concerns.contains(.insufficientRecovery)` | `.reduceLoadThisWeek` |
 | 8 | `concerns.contains(.loadIncreasedTooFast)` ODER `loadDevelopment == .significantIncrease` | `.reduceLoadThisWeek` |
 | 9 | `concerns.contains(.volumePlateau) && weeksToRace != nil && weeksToRace! < 10` | `.increaseWeeklyVolume(targetPercent: 0.15)` |
@@ -194,33 +195,103 @@ Testfälle Prio 3 (am `IntegratedRunCoachAdvisor`):
 - `testCrossTraining_threeCrossOneRun` — 3 × `.crossTrainingOnlyWeek`, 1 × `nil` (in beliebiger Reihenfolge innerhalb der letzten 4) → Prio 3 feuert
 - `testCrossTraining_fourCrossTraining` — 4 × `.crossTrainingOnlyWeek` → Prio 2 feuert vorher (kein Lauf in 4 Wochen), Prio 3 unreachable
 
-**Prio 6 — `recentTrainingGap`: Schwellenwert, unvollständige Wochen und Datenlücken:**
-Prio 6 basiert auf `RaceProgressAssessment.minimumConsecutiveGapWeeksForConcern = 2` (Quellcode, `RaceProgressAssessment.swift:136`). **Eine einzige trainingsfreie Woche löst Prio 6 NICHT aus.** Erst zwei aufeinanderfolgende `.genuineGap`-Wochen (`trailingGenuineGapStreak >= 2`) triggern `recentTrainingGap`.
+**Prio 6a + 6b — `recentTrainingGap`: Schwellenwert, Wettkampfnähe, unvollständige Wochen:**
 
-`.genuineGap` entsteht nur, wenn ALLE Zähler null sind:
+**Schwellenwert:** `RaceProgressAssessment.minimumConsecutiveGapWeeksForConcern = 2` (`RaceProgressAssessment.swift:136`). Eine einzige trainingsfreie Woche löst Prio 6 **NICHT** aus. Erst zwei aufeinanderfolgende `.genuineGap`-Wochen aus **abgeschlossenen Kalenderwochen** (`trailingGenuineGapStreak >= 2`) triggern `recentTrainingGap`.
+
+`.genuineGap` entsteht nur, wenn ALLE Zähler null sind (`RaceProgressAssessment.swift:198`):
 ```swift
-// RaceProgressAssessment.swift:198
-// (runningSessionCount == 0 && crossTrainingSessionCount == 0 
-//  && strengthSessionCount == 0 && ambiguousCardioSessionCount == 0)
+// runningSessionCount == 0 && crossTrainingSessionCount == 0
+// && strengthSessionCount == 0 && ambiguousCardioSessionCount == 0
 return .genuineGap
 ```
 Eine Deload-Woche mit einem einzigen Workout (Kraft oder Rad) → `.strengthOnlyWeek` oder `.crossTrainingOnlyWeek`, KEIN `.genuineGap`.
 
-⚠️ **Unvollständige laufende Woche kann als `.genuineGap` zählen:**
-`CardioVolumeOverTimeAggregator` erstellt einen Bucket für JEDE Woche im Fenster, auch die aktuelle unvollständige. Wenn der Nutzer noch nichts in der laufenden Woche geloggt hat, erscheinen alle Zähler als 0 → `.genuineGap`. Damit: 1 abgeschlossene Gap-Woche + laufende Woche ohne Session = streak 2 → Prio 6 feuert. Dies ist BEABSICHTIGT (Daten spiegeln Realität wider) und selbstkorrigierend: sobald eine Session geloggt wird, verschwindet der `.genuineGap` der aktuellen Woche.
+---
 
-⚠️ **Geplante Trainingspause nicht unterscheidbar von ungeplanter Lücke:**
-Das System kennt keine "geplante Ruhezeit"-Information aus dem Trainingsplan. Eine 2-wöchige Holiday-Pause mit null Workouts ist für das System identisch mit einer ungewollten Trainingspause. Dokumentierte Datenlücke — keine Falschaussage, keine Workaround-Implementierung.
+**Problem A — Unvollständige Kalenderwochen: WP-A-Implementierungsanforderung**
 
-⚠️ **Renndatum-Nähe:** Die Prio-6-Regel ignoriert `weeksToRace`. Wenn der Nutzer 1 Woche vor dem Rennen ein 2-wöchiges Taper hatte (reduzierte Belastung, aber irgendetwas geloggt → kein `.genuineGap`), feuert Prio 6 nicht. Falls das Taper lückenlos mit Workouts war: korrekt. Falls komplett pausiert: `.buildRunningBase` 1 Woche vor Rennen ist inhaltlich fragwürdig, aber durch `minimumConsecutiveGapWeeksForConcern = 2` nur bei 2+ komplett leeren Wochen erreichbar — ein echter Edge-Case.
+`CardioVolumeOverTimeAggregator.aggregate()` erstellt einen Bucket für JEDE Woche im Fenster inklusive der aktuellen laufenden Woche (loop-Invariante, `CardioVolumeOverTimeAggregator.swift:97-98`). Das letzte Element in `series` ist IMMER die aktuelle, noch nicht abgeschlossene Woche. Wenn der Nutzer noch nichts in der laufenden Woche geloggt hat, erscheinen alle Zähler als 0 → `.genuineGap`. Die bestehende Implementierung von `trailingGenuineGapStreak` kennt keinen Unterschied zwischen abgeschlossenen und laufenden Wochen.
 
-Testfälle Prio 6:
-- `testGap_oneCompleteGapWeek` — 1 genuineGap-Woche → streak = 1 < 2 → kein Prio-6-Feuer
-- `testGap_twoCompleteGapWeeks` — 2 genuineGap-Wochen trailing → streak = 2 → Prio 6 feuert → `.buildRunningBase`
-- `testGap_currentWeekNotYetLogged` — letzte abgeschlossene Woche = genuineGap, aktuelle Woche = noch kein Training → streak = 2 → Prio 6 feuert (self-correcting sobald Session geloggt)
-- `testGap_deloadWeekWithOneWorkout` — Woche mit nur Krafttraining → `.strengthOnlyWeek`, KEIN genuineGap → streak reset
-- `testGap_activePlan_noContext` — kein Plan-Information verfügbar → System kann geplante Pause nicht erkennen (Datenlücke dokumentiert)
-- `testGap_preRaceRest` — 2 Wochen komplett leer vor Rennen → Prio 6 feuert (Edge-Case, inhaltlich grenzwertig)
+**Verbindliche Regel:** Für die Gap-Streak zählen ausschließlich **abgeschlossene** Kalenderwochen. Die aktuelle laufende Woche darf nie als zweite abgeschlossene Gap-Woche zählen.
+
+**WP-A muss `RaceProgressAssessment.Input` erweitern:**
+```swift
+// Neues Feld in RaceProgressAssessment.Input
+/// true, wenn das letzte Element in `weeklySeries` die aktuelle, noch nicht
+/// abgeschlossene Kalenderwoche repräsentiert. Immer true wenn Daten aus
+/// CardioVolumeOverTimeAggregator.aggregate() stammen (loop-Invariante).
+public let isCurrentWeekIncomplete: Bool
+```
+
+**WP-A muss `RaceProgressAssessment.assess()` anpassen** (Streak-Berechnung, nicht Display):
+```swift
+// Aktuelle (unvollständige) Woche aus Gap-Streak ausschließen, wenn sie leer ist
+let flagsForStreak: [WeeklyFlag?]
+if input.isCurrentWeekIncomplete && flags.last == .genuineGap {
+    flagsForStreak = Array(flags.dropLast())
+} else {
+    // Aktuelle Woche hat Aktivität (kein .genuineGap) → bricht Streak ohnehin
+    flagsForStreak = flags
+}
+let trailingGapStreak = trailingGenuineGapStreak(flagsForStreak)
+// assessment.weeklyFlags bleibt = flags (alle Wochen inkl. aktueller, für Display)
+```
+
+**WP-A muss `RaceProgressCardModel.make()` anpassen** (Caller):
+```swift
+let currentWeekStart = Calendar.current.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+let isCurrentWeekIncomplete = series.last?.weekStart == currentWeekStart
+let assessment = RaceProgressAssessment.assess(.init(
+    weeklySeries: series,
+    ...,
+    isCurrentWeekIncomplete: isCurrentWeekIncomplete,  // NEU
+    now: now
+))
+```
+
+---
+
+**Problem B — Wettkampfnähe: Prio 6a**
+
+Bei Rennen in ≤ 2 Wochen (`weeksToRace <= 2`) ist kein sinnvoller Laufbasis-Aufbau mehr möglich. Plötzliche Volumensteigerung kurz vor Wettkampf riskiert Überlastungsverletzungen. Prio 6a greift vor 6b (Renndatum vorhanden und nah):
+
+- **Prio 6a** (`weeksToRace != nil && weeksToRace! <= 2`): `.maintainCurrent` + `.recentGapDetected` — keine Volumenerhöhung, kein Tapering, keine Aussage über Renntauglichkeit
+- **Prio 6b** (kein Rennen oder `weeksToRace > 2`): `.buildRunningBase` + `.recentGapDetected` — gradueller Wiederaufbau
+
+Schwellenwert ≤ 2 Wochen: `Calendar.dateComponents([.weekOfYear], from: now, to: raceDate).weekOfYear` → 6 Tage = 0 Wochen, 13 Tage = 1 Woche, 14 Tage = 2 Wochen. Schwellenwert ≤ 2 Wochen entspricht ≤ 14 Tage bis Rennen.
+
+**Lokalisierung:** `integratedCoach.action.maintainCurrent` → **"Aktuelles Programm beibehalten."** (war: "Du bist auf Kurs – weiter so." — letzteres ist irreführend bei Prio 6a mit Gap-Erkennung). Kombinierter Text Prio 6a: "Trainingspause erkannt." + "Aktuelles Programm beibehalten."
+
+**Keine neuen `CoachingAction`- oder `CoachingRationale`-Cases erforderlich.** Existierende Typen sind ausreichend.
+
+---
+
+**Datenlücke — Geplante vs. ungeplante Trainingspause:**
+Das System kennt keine "geplante Ruhezeit"-Information. Eine Urlaubs-Pause mit null Workouts ist für das System identisch mit einer ungewollten Lücke. Dokumentierte Datenlücke — keine Falschaussage, kein Workaround.
+
+---
+
+**Testfälle Prio 6a + 6b (am `IntegratedRunCoachAdvisor`, alle 11 Ticket-Szenarien):**
+
+| Test | Eingabe | Erw. Prio | Erw. Action | Erw. Rationale |
+|------|---------|-----------|-------------|----------------|
+| `testGap_oneCompleteGapWeek_currentWeekLogged` | 1 abgeschl. genuineGap + akt. Woche mit Lauf | — | `.maintainCurrent` (kein Gap-Concern, Streak = 0) | `.positiveProgressStableLoad` |
+| `testGap_twoCompleteGapWeeks_currentWeekEmpty` | 2 abgeschl. Gap + akt. Woche leer | 6b | `.buildRunningBase` | `.recentGapDetected` |
+| `testGap_oneCompleteGapWeek_currentWeekEmpty` | 1 abgeschl. Gap + akt. Woche leer | — | kein Gap-Concern (streak = 1 < 2) → `.maintainCurrent` | `.positiveProgressStableLoad` |
+| `testGap_currentWeekEmpty_noCompletedGap` | akt. Woche leer, davor Laufwochen | — | kein Gap-Concern (streak = 0) | — |
+| `testGap_raceIn7Days_twoCompleteGaps` | 2 abgeschl. Gap + `weeksToRace = 1` | **6a** | `.maintainCurrent` | `.recentGapDetected` |
+| `testGap_raceIn14Days_twoCompleteGaps` | 2 abgeschl. Gap + `weeksToRace = 2` | **6a** | `.maintainCurrent` | `.recentGapDetected` |
+| `testGap_raceIn21Days_twoCompleteGaps` | 2 abgeschl. Gap + `weeksToRace = 3` | **6b** | `.buildRunningBase` | `.recentGapDetected` |
+| `testGap_noRaceDate_twoCompleteGaps` | 2 abgeschl. Gap + `weeksToRace = nil` | **6b** | `.buildRunningBase` | `.recentGapDetected` |
+| `testGap_activePlan_twoCompleteGaps` | 2 abgeschl. Gap + `planAdjustmentPending = true` | **4** | `.planAdjustmentAvailable` | `.planJustAdjusted` |
+| `testGap_withRecoveryConcern_twoGaps` | 2 abgeschl. Gap + `insufficientRecovery` Concern | **6b** | `.buildRunningBase` (Gap vor Recovery priorisiert) | `.recentGapDetected` |
+| `testGap_mixedWeeks_kraftAndCross` | Woche mit Kraft → `.strengthOnlyWeek`; Woche mit Rad → `.crossTrainingOnly` → kein genuineGap | — | kein Gap-Concern | — |
+
+**Wichtige Invarianten pro Test:**
+- Kein Test darf eine automatische Planänderung auslösen (kein `CoachAdjustmentCardModel.accept()`-Call)
+- `isCurrentWeekIncomplete = true` in allen Prod-Szenarien (von `RaceProgressCardModel.make()` berechnet)
+- `assessment.weeklyFlags` enthält IMMER alle Wochen inkl. aktueller (Display-Transparenz)
 
 ### Tests
 **Datei**: `Tests/DeltiqCoreTests/IntegratedRunCoachAdvisorTests.swift` (NEU)

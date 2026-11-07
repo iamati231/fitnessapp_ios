@@ -489,7 +489,8 @@ Die ursprüngliche Prioritätstabelle aus §3.5 enthielt zwei Fehler, die hier k
 | 3 | Ausschließlich Cross-Training (`isCrossTrainingOnly` dominant) | ~~`.maintainCurrent`~~ → **`.buildRunningBase`** | `.crossTrainingOnly` |
 | 4 | `planAdjustmentPending == true` | `.planAdjustmentAvailable` | `.planJustAdjusted` |
 | 5 | Concern `.goalLikelyUnrealistic` vorhanden | `.reassessGoal` | `.goalLikelyUnreachable` |
-| 6 | Concern `.recentTrainingGap` vorhanden | ~~`.reduceLoadThisWeek`~~ → **`.buildRunningBase`** | `.recentGapDetected` |
+| **6a** | Concern `.recentTrainingGap` vorhanden **UND** `weeksToRace != nil && weeksToRace! <= 2` | `.maintainCurrent` | `.recentGapDetected` |
+| **6b** | Concern `.recentTrainingGap` vorhanden | ~~`.reduceLoadThisWeek`~~ → **`.buildRunningBase`** | `.recentGapDetected` |
 | 7 | Concern `.insufficientRecovery` vorhanden | `.reduceLoadThisWeek` | `.recoveryNeeded` |
 | 8 | Concern `.loadIncreasedTooFast` ODER `loadDevelopment == .significantIncrease` | `.reduceLoadThisWeek` | `.positiveProgressHighLoad` oder `.recoveryNeeded` |
 | 9 | Concern `.volumePlateau` + `weeksToRace < 10` | `.increaseWeeklyVolume(0.15)` | `.plateauNearRace` |
@@ -499,7 +500,69 @@ Die ursprüngliche Prioritätstabelle aus §3.5 enthielt zwei Fehler, die hier k
 
 **Korrektur-Begründungen:**
 - **Prio 3**: Ein Läufer/eine Läuferin mit Renndatum, der/die nur Cross-Training (Radfahren) absolviert, braucht `buildRunningBase` — nicht `maintainCurrent`. Radfahren erhält Ausdauer, ersetzt aber kein laufspezifisches Training.
-- **Prio 6**: Nach einer Trainingspause ist das Volumen bereits niedrig. `reduceLoadThisWeek` wäre eine Empfehlung, noch weniger zu machen — das ist kontraproduktiv. Korrekt: gradueller Wiederaufbau → `buildRunningBase`.
+- **Prio 6** (ursprünglich): Nach einer Trainingspause ist das Volumen bereits niedrig. `reduceLoadThisWeek` wäre eine Empfehlung, noch weniger zu machen — das ist kontraproduktiv. Korrekt: gradueller Wiederaufbau → `buildRunningBase`.
+- **Prio 6a** (neu): Bei Rennen in ≤ 2 Wochen ist kein sinnvoller Laufbasis-Aufbau mehr möglich. Plötzliche Volumensteigerung kurz vor Wettkampf riskiert Überlastungsverletzungen. Die Gap ist erkannt (`.recentGapDetected`), aber die konservative Handlung ist `maintainCurrent` — keine automatische Planänderung, keine Tapering-Empfehlung, keine Aussage über Renntauglichkeit.
+
+**Schwellenwert `weeksToRace <= 2`:** `weeksToRace` ist `Int?`, berechnet via `Calendar.dateComponents([.weekOfYear], from: now, to: raceDate).weekOfYear`. Rennen in 6 Tagen → 0 Wochen. Rennen in 13 Tagen → 1 Woche. Rennen in 14 Tagen → 2 Wochen. Der Schwellenwert ≤ 2 Wochen entspricht ≤ 14 Tage, was die Mindestzeit für eine sichere Rückkehr zu regelmäßigem Lauftraining unterschreitet.
+
+**Lokalisierung `integratedCoach.action.maintainCurrent`:** Wird zu "Aktuelles Programm beibehalten." geändert (statt "Du bist auf Kurs – weiter so." — letzteres ist irreführend bei Prio 6a, da die Gap erkannt wurde). Der kombinierte Text für Prio 6a wäre: "Trainingspause erkannt." + "Aktuelles Programm beibehalten." — ehrlich und ohne falsche Versprechen.
+
+---
+
+**Korrektur Problem A — Unvollständige Kalenderwochen und Gap-Streak:**
+
+`CardioVolumeOverTimeAggregator.aggregate()` erzeugt IMMER einen Bucket für die aktuelle laufende Woche (loop-Invariante: `while cursor <= upper`, `upper = weekStartFor(now)`). Das letzte Element in `weeklySeries` ist IMMER die aktuelle, noch nicht abgeschlossene Woche.
+
+**Fachliche Regel:** Für die Gap-Streak (`trailingGenuineGapStreak`) zählen ausschließlich **abgeschlossene** Kalenderwochen. Die aktuelle laufende Woche darf nie als zweite abgeschlossene Gap-Woche zählen.
+
+**WP-A-Implementierungsanforderung:** `RaceProgressAssessment.Input` erhält ein neues Feld:
+```swift
+/// true, wenn die letzte Woche in `weeklySeries` die aktuelle, noch nicht
+/// abgeschlossene Kalenderwoche ist. Immer `true` wenn Daten aus
+/// `CardioVolumeOverTimeAggregator.aggregate()` stammen.
+public let isCurrentWeekIncomplete: Bool
+```
+
+In `RaceProgressAssessment.assess()` wird das letzte Flag vor `trailingGenuineGapStreak` bedingt ausgeschlossen:
+```swift
+let flagsForStreak: [WeeklyFlag?]
+if input.isCurrentWeekIncomplete && flags.last == .genuineGap {
+    // Aktuelle Woche leer, aber noch nicht abgeschlossen — nicht als Gap-Woche werten
+    flagsForStreak = Array(flags.dropLast())
+} else {
+    // Entweder vollständig abgeschlossene Wochen, oder aktuelle Woche hat bereits Aktivität
+    flagsForStreak = flags
+}
+let trailingGapStreak = trailingGenuineGapStreak(flagsForStreak)
+```
+
+Das `weeklyFlags`-Feld im `Assessment`-Output (für Display) bleibt unverändert — es enthält ALLE Wochen inkl. der aktuellen. Nur die Streak-Berechnung nutzt `flagsForStreak`.
+
+**Caller `RaceProgressCardModel.make()`:**
+```swift
+let currentWeekStart = Calendar.current.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+let isCurrentWeekIncomplete = series.last?.weekStart == currentWeekStart
+let assessment = RaceProgressAssessment.assess(.init(
+    weeklySeries: series,
+    ...,
+    isCurrentWeekIncomplete: isCurrentWeekIncomplete,  // NEU
+    now: now
+))
+```
+
+**Verhalten nach Fix:**
+
+| Situation | flags | flagsForStreak | streak |
+|-----------|-------|----------------|--------|
+| 1 abgeschl. Gap + aktuelle Woche leer | [..., .genuineGap, .genuineGap] | [..., .genuineGap] | 1 (korrekt) |
+| 2 abgeschl. Gap-Wochen | [..., .genuineGap, .genuineGap, nil(aktWoche)] | [..., .genuineGap, .genuineGap, nil] | 0? |
+| 2 abgeschl. Gap-Wochen, aktWoche leer | [..., .genuineGap, .genuineGap, .genuineGap] | [..., .genuineGap, .genuineGap] | 2 (korrekt) |
+| 2 abgeschl. Gap, aktWoche mit Lauf | [..., .genuineGap, .genuineGap, nil] | unverändert | 0 (korrekt) |
+| 1 abgeschl. Gap, aktWoche mit Lauf | [..., .genuineGap, nil] | unverändert | 0 (korrekt) |
+
+> ⚠️ Zeile 2 oben: Bei 2 abgeschlossenen Gap-Wochen und aktiver (nicht-leerer) aktueller Woche ist `flags.last != .genuineGap`, daher keine Ausschluss-Logik — streak = 0 (korrekt, da user diese Woche trainiert hat). Streaks werden von hinten gezählt: die erste nicht-`.genuineGap`-Flag bricht den Streak.
+
+**`minimumConsecutiveGapWeeksForConcern = 2` bleibt:** Zwei abgeschlossene Gap-Wochen lösen Prio 6 aus — das bleibt unverändert. Die Korrektur verhindert nur, dass eine leere aktuelle Woche fälschlich als zweite abgeschlossene Gap-Woche zählt.
 
 ---
 
