@@ -186,6 +186,11 @@ public struct DashboardView: View {
     /// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md).
     @State private var showingRaceProgressDetail = false
 
+    /// AI-Running-Coach Phase 2D: Trainingsbelastungs-Karte.
+    /// Unabhaengig von `cardioCoachingEnabled` (Ticket-Leitplanke).
+    @State private var showingTrainingLoadDetail = false
+    @State private var cachedDensityAssessment: TrainingDensityAnalyzer.Assessment?
+
     /// Gecachter Plateau-Befund — wird via .onChange(of: completedSessions, initial: true)
     /// aktualisiert, sodass die O(n·m)-Berechnung nur einmal pro Datenaenderung laeuft
     /// statt bis zu 4× pro SwiftUI-Render-Pass.
@@ -283,6 +288,7 @@ public struct DashboardView: View {
                         case .nutrition:       nutritionCard
                         case .runCoachCard:    runCoachDashboardCard
                         case .raceProgressCard: raceProgressDashboardCard
+                        case .trainingLoadCard: trainingLoadDashboardCard
                         }
                     }
                 }
@@ -354,10 +360,11 @@ public struct DashboardView: View {
                 showingOnboardingPlanCreationFailedAlert = true
             }
         }
-        // Plateau-Cache: einmal beim Erscheinen und bei jeder Session-Änderung neu
-        // berechnen, damit activePlateauFinding nicht O(n·m) pro Render-Pass kostet.
+        // Plateau-Cache + Belastungsdichte-Cache: einmal beim Erscheinen und
+        // bei jeder Session-Änderung neu berechnen (O(n) statt pro Render-Pass).
         .onChange(of: completedSessions, initial: true) {
             cachedPlateauFinding = computePlateauFinding()
+            cachedDensityAssessment = computeTrainingDensityAssessment()
         }
         .alert(
             Text("dashboard.onboardingPlanCreationFailed.title", bundle: .module),
@@ -410,6 +417,11 @@ public struct DashboardView: View {
         .sheet(isPresented: $showingRaceProgressDetail) {
             if let profile = profiles.first, let model = raceProgressModel {
                 RaceProgressDetailView(profile: profile, model: model)
+            }
+        }
+        .sheet(isPresented: $showingTrainingLoadDetail) {
+            if let assessment = cachedDensityAssessment {
+                TrainingLoadDetailView(assessment: assessment)
             }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
@@ -2806,6 +2818,83 @@ public struct DashboardView: View {
                 Spacer(minLength: 0)
             }
         }
+    }
+
+    // MARK: - Phase 2D: Trainingsbelastungs-Karte
+
+    /// Kompakte Dashboard-Karte für die Trainingsbelastungs-Bewertung.
+    /// Unabhaengig von `cardioCoachingEnabled` — Ticket-Leitplanke.
+    @ViewBuilder
+    private var trainingLoadDashboardCard: some View {
+        if let assessment = cachedDensityAssessment, assessment.outcome != .insufficientData {
+            laufCoachCardShell(systemImage: trainingLoadOutcomeIcon(assessment.outcome)) {
+                Text(trainingLoadOutcomeLabel(assessment.outcome))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                HStack(spacing: 4) {
+                    Text(String(format: String(localized: "trainingDensity.card.daysPerWeek", bundle: .module), assessment.trainingDaysLast7))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("·")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(String(format: String(localized: "trainingDensity.card.consecutiveDays", bundle: .module), assessment.consecutiveTrainingDays))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button {
+                        showingTrainingLoadDetail = true
+                    } label: {
+                        Text("trainingDensity.card.showDetails", bundle: .module)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.deltiqOrange)
+                }
+            }
+        }
+    }
+
+    private func trainingLoadOutcomeIcon(_ outcome: TrainingDensityAnalyzer.Outcome) -> String {
+        switch outcome {
+        case .balanced: return "checkmark.circle"
+        case .increasingLoad: return "arrow.up.circle"
+        case .highTrainingDensity: return "exclamationmark.circle"
+        case .insufficientRecoveryEvidence, .insufficientData: return "questionmark.circle"
+        }
+    }
+
+    private func trainingLoadOutcomeLabel(_ outcome: TrainingDensityAnalyzer.Outcome) -> String {
+        switch outcome {
+        case .balanced: return String(localized: "trainingDensity.outcome.balanced", bundle: .module)
+        case .increasingLoad: return String(localized: "trainingDensity.outcome.increasingLoad", bundle: .module)
+        case .highTrainingDensity: return String(localized: "trainingDensity.outcome.highTrainingDensity", bundle: .module)
+        case .insufficientRecoveryEvidence: return String(localized: "trainingDensity.outcome.insufficientRecoveryEvidence", bundle: .module)
+        case .insufficientData: return String(localized: "trainingDensity.outcome.insufficientData", bundle: .module)
+        }
+    }
+
+    /// Führt die komplette 2A→2B→2C-Pipeline durch und cached das Ergebnis.
+    /// Aufgerufen von `.onChange(of: completedSessions, initial: true)`.
+    private func computeTrainingDensityAssessment() -> TrainingDensityAnalyzer.Assessment? {
+        let activities = TrainingActivityExtractor.extract(from: completedSessions)
+        guard !activities.isEmpty else { return nil }
+        let now = Date()
+        let calendar = Calendar.current
+        let windowStart = calendar.date(byAdding: .weekOfYear, value: -12, to: now) ?? now
+        let weeks = TrainingLoadAggregator.aggregate(
+            activities: activities, windowStart: windowStart, now: now, calendar: calendar
+        )
+        let trend = TrainingLoadTrendAnalyzer.analyze(weeks: weeks, now: now, calendar: calendar)
+        let deloadIsActive = deloadUntil > now.timeIntervalSince1970
+        let input = TrainingDensityAnalyzer.Input(
+            activities: activities,
+            trend: trend,
+            deloadIsActive: deloadIsActive,
+            now: now,
+            calendar: calendar
+        )
+        return TrainingDensityAnalyzer.analyze(input: input)
     }
 
     /// Live gerechnet bei jedem Render, keine gespeicherte "ausstehende

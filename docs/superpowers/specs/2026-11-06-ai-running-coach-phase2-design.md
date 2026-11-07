@@ -684,3 +684,107 @@ drittes Vokabular dafür wäre redundant.
 * ~~Ob `TrainingActivity` als eigener Typ oder als reine Erweiterung von
   `CardioVolumeOverTimePoint`/`VolumeWeekPoint` umgesetzt wird~~ —
   **entschieden (2A implementiert):** eigener Typ, siehe Abschnitt 1.
+
+---
+
+## Work Package 2C: TrainingDensityAnalyzer (implementiert 2026-11-07)
+
+### Bewusste Modellgrenze: Kein Rolling-7-Day-Cross-Week-Vergleich
+
+Die ursprüngliche Idee eines rollenden 7-Tage-Vergleichs über Wochengrenzen
+hinweg ist mit der bestehenden Datenarchitektur **nicht ohne eine neue parallele
+Aggregation** umsetzbar:
+
+* `TrainingLoadWeek` hat Wochen-Granularität — kein Zugriff auf einzelne Tage.
+* Ein echter Rolling-7-Day-Vergleich würde tägliche Bucket-Aggregation
+  erfordern (neue parallele Aggregation), was explizit verboten ist.
+* `TrainingActivity.date` bietet aber Tages-Granularität — daher nutzt 2C
+  genau das für die Dichte-Analyse (tägliche Distinct-Training-Days, maximale
+  Folgetage, Laufabstände in Stunden).
+
+**Konsequenz:** Die Trainingsbelastungs-Karte vergleicht KEINE Belastungswerte
+wochenwechselübergreifend. Sie analysiert stattdessen die tägliche
+Trainingsstruktur der gesamten verfügbaren Aktivitätsliste. Das ist die
+umfassendere Aussage.
+
+### TrainingDensityAnalyzer: Design
+
+Reine Funktion nach FourWeekReviewOrchestrator-Muster:
+
+* **Input:** `[TrainingActivity]` + `TrainingLoadTrend` + `deloadIsActive: Bool`
+* **Output:** `Assessment` (Concern/DataGap/Outcome-Tripel)
+* Kein SwiftData, kein `Date()`, kein `Calendar.current` — alle zeitlichen
+  Bezugspunkte injiziert (testfreundlich).
+
+**deloadIsActive** wird vom Aufrufer aus AppStorage `deload_until >
+now.timeIntervalSince1970` berechnet — `TrainingDensityAnalyzer` berechnet
+ihn nie selbst (Ticket-Leitplanke: "Keine zweite Deload-Engine").
+
+**Schwellenwerte:**
+| Konstante | Wert | Bedeutung |
+|-----------|------|-----------|
+| `highConsecutiveDaysThreshold` | 5 | Aufeinanderfolgende Trainingstage |
+| `denseWeekThreshold` | 6 | Trainingstage in 7-Tage-Rollfenster |
+| `closeRunningGapHoursThreshold` | 18h | Mindestabstand zwischen Läufen |
+| `minimumActivityCount` | 3 | Mindest-Aktivitäten |
+| `minimumSpanDays` | 7 | Mindestspanne |
+| `sufficientHistoryDays` | 14 | Volle Aussagekraft |
+
+**Outcome-Priorität:**
+1. `deloadIsActive` ODER `significantIncrease` → `.increasingLoad`
+2. High-Density-Concern → `.highTrainingDensity`
+3. Span < 14 Tage → `.insufficientRecoveryEvidence`
+4. Trend `.stable`/`.declining` → `.balanced`
+5. Sonst → `.insufficientRecoveryEvidence`
+
+**DataGaps:** `sessionFeelingUnavailable` ist immer vorhanden (TrainingActivity
+trägt kein RPE — bewusste Modellgrenze). `noMeasuredIntensityData` wenn kein
+Lauf mit bekannter Dauer. `insufficientHistory` wenn Spanne < 14 Tage.
+
+---
+
+## Work Package 2D: Dashboard-Karte (implementiert 2026-11-07)
+
+### DashboardWidgetType.trainingLoadCard
+
+Neuer Widget-Typ, an **letzter Stelle** in `defaultOrder` angehängt
+(Migration-sicher, erscheint für bestehende User in der Inactive-Section).
+**UNABHÄNGIG von `cardioCoachingEnabled`** — Ticket-Leitplanke explizit.
+
+### Datenpipeline (DashboardView)
+
+```
+completedSessions
+  → TrainingActivityExtractor.extract(from:)      // DeltiqData
+  → TrainingLoadAggregator.aggregate(...)          // 12-Wochen-Fenster
+  → TrainingLoadTrendAnalyzer.analyze(...)         // 2B
+  → TrainingDensityAnalyzer.analyze(input:)        // 2C
+  → Assessment → cachedDensityAssessment
+```
+
+Caching: `@State private var cachedDensityAssessment` +
+`.onChange(of: completedSessions, initial: true)` — identisches Muster wie
+`cachedPlateauFinding`.
+
+### TrainingLoadDetailView
+
+9-sektionige Detailansicht (`NavigationStack` + `List`):
+1. Bewertung (Outcome-Icon + Label)
+2. Belastungsentwicklung (vereinfacht, da Assessment kein raw-Trend trägt)
+3. Trainingstage letzte 7 Tage (ProgressView)
+4. Trainingstage letzte 14 Tage (ProgressView)
+5. Maximale Folgetage (ProgressView, orange ab Schwellenwert)
+6. Kürzester Laufabstand (Stunden, Warnung wenn < 18h)
+7. Kürzester Kraft-Abstand (Stunden)
+8. Erkannte Auffälligkeiten (Concerns)
+9. Fehlende Daten (DataGaps)
+
+**Shortcut (dokumentiert):** `loadDevelopmentLabel` leitet sich aus dem
+Outcome ab statt aus dem rohen `TrainingLoadTrend`, weil `Assessment` den
+Trend-Objekt nicht mitführt. Upgrade: Trend durch Detail-View-Init
+weiterreichen.
+
+### Lokalisierung
+
+36 neue xcstrings-Keys (DE/EN/TR), idempotent via
+`.scripts/training_density_phase2c_keys.py` eingespielt.

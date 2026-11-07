@@ -37,6 +37,11 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     /// unabhaengig an-/ausschaltbar und verschiebbar, siehe
     /// `RaceProgressCardModel`.
     case raceProgressCard
+    /// AI-Running-Coach Phase 2D: Trainingsbelastungs-Karte — zeigt
+    /// `TrainingDensityAnalyzer.Assessment` kompakt an und öffnet
+    /// eine 9-teilige Detailansicht. UNABHÄNGIG von `cardioCoachingEnabled`
+    /// (Ticket-Leitplanke: "darf nicht von cardioCoachingEnabled abhängen").
+    case trainingLoadCard
 
     /// xcstrings-Lookup-Key: `widget.{rawValue}.name`.
     public var localizationKey: String {
@@ -63,6 +68,7 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
             .cardioPace,
             .recentWorkouts,
             .nutrition,
+            .trainingLoadCard,
         ]
     }
 }

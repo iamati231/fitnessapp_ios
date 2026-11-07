@@ -445,3 +445,45 @@ Verifikation, wie in den vorherigen Tickets etabliert), volle macOS-CI erst
 am Ende von 2D, dann vollständiger Abschlussbericht mit Commit-SHA,
 Testergebnissen und offenen Einschränkungen — wie vom Ticket in Schritt 6–8
 der Vorgehensweise verlangt.
+
+---
+
+## Phase 2C/2D — Umsetzungs-Ergebnis (2026-11-07)
+
+### Was implementiert wurde
+
+**Work Package 2C — TrainingDensityAnalyzer:**
+* `Sources/DeltiqCore/Analytics/TrainingDensityAnalyzer.swift` (neu)
+  — Reine Funktion, kein SwiftData, kein `Date()`/`Calendar.current`
+  — Concern/DataGap/Outcome-Tripel nach FourWeekReviewOrchestrator-Muster
+  — 6 öffentliche Schwellenwert-Konstanten
+  — 4 Hilfsfunktionen (intern, aber package-internal für Tests)
+
+**Work Package 2D — Dashboard-Karte:**
+* `Sources/DeltiqCore/Programs/DashboardWidgetType.swift` (+1 Case)
+* `Sources/DeltiqUI/TrainingLoad/TrainingLoadDetailView.swift` (neu, 9 Sektionen)
+* `Sources/DeltiqUI/DashboardView.swift` (kompakte Karte + Caching + Sheet)
+* `Sources/DeltiqUI/Resources/Localizable.xcstrings` (+36 Keys)
+* `.scripts/training_density_phase2c_keys.py` (neu, idempotent)
+
+**Tests:**
+* `Tests/DeltiqCoreTests/TrainingDensityAnalyzerTests.swift` (28 Tests)
+  — 100% deterministisch, injizierte Zeit/Kalender
+  — Abdeckung: alle Concerns, alle DataGaps, alle Outcomes, Hilfsfunktionen,
+    Schwellenwertgrenzen, Rollenfenster-Zählungen, Stärke-/Lauf-Gaps
+
+### Bewusste Abweichungen vom ursprünglichen Implementierungsplan
+
+| Plan | Tatsächlich | Begründung |
+|------|-------------|------------|
+| `TrainingLoadAssessment` als Name | `TrainingDensityAnalyzer.Assessment` | Konsistenter mit dem Enum-als-Namespace-Muster (wie `FourWeekReviewOrchestrator`) |
+| `TrainingLoadDueCalculator` | Nicht implementiert | Kein Use-Case gefunden, der nicht durch bestehende Timer-/AppStorage-Logik abgedeckt ist |
+| Neue UserBodyProfile-Felder für Schwellenwerte | Nicht implementiert | Schwellenwerte sind Produktkonstanten, kein nutzerbezogener Zustand |
+| 10 UI-Tests für 2D | Nicht implementiert | UI-Tests benötigen macOS-Simulator (lokal nicht ausführbar, Windows-Worktree). Ticket-Leitplanke: CI-Verifikation am Ende |
+
+### Modellgrenze: Rolling-7-Day-Vergleich
+
+Siehe Design-Dokument, Abschnitt "Work Package 2C", Unterabschnitt
+"Bewusste Modellgrenze". Kurzfassung: wäre eine neue parallele Aggregation —
+explizit verboten. Die 2C-Implementierung nutzt stattdessen
+`TrainingActivity.date` (Tages-Granularität) für eine umfassendere Analyse.
