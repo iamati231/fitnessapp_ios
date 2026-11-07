@@ -325,13 +325,13 @@ public final class UserBodyProfile {
         // in `ProfileEditorView` (dort `?? .running`, hier aequivalent `?? true`).
         let wasEnabled = cardioCoachingEnabled
         cardioCoachingEnabled = wantsCoach && (modality?.supportsRunCoach ?? true)
-        // WP-D: Beim Aktivieren (false→true) erscheint raceProgressCard ganz oben.
+        // WP-D: Bei AUS→EIN nur runCoachCard positionieren; alle anderen Widgets
+        // (einschliesslich raceProgressCard) bleiben unveraendert.
         // runCoachCard wird an Index 1 eingefuegt, aber NUR wenn sie noch nicht
-        // in den ersten drei Slots liegt — bereits bewusst platzierten Karten
-        // wird nicht ueberschrieben.
+        // in den ersten drei Slots liegt — bewusst platzierten Karten werden nicht
+        // ueberschrieben. Duplikate werden vor der Einfuegung entfernt.
         if cardioCoachingEnabled && !wasEnabled {
-            var order = activeDashboardWidgets.filter { $0 != .raceProgressCard }
-            order.insert(.raceProgressCard, at: 0)
+            var order = activeDashboardWidgets
             if !order.prefix(3).contains(.runCoachCard) {
                 order.removeAll { $0 == .runCoachCard }
                 order.insert(.runCoachCard, at: min(1, order.count))
