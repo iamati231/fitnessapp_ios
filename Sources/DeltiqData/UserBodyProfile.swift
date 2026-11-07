@@ -325,13 +325,17 @@ public final class UserBodyProfile {
         // in `ProfileEditorView` (dort `?? .running`, hier aequivalent `?? true`).
         let wasEnabled = cardioCoachingEnabled
         cardioCoachingEnabled = wantsCoach && (modality?.supportsRunCoach ?? true)
-        // Bei jedem Aktivieren (false→true) erscheint die Karte ganz oben —
-        // der User kann sie danach verschieben, aber das naechste Einschalten
-        // bringt sie wieder an Position 0.
+        // WP-D: Beim Aktivieren (false→true) erscheint raceProgressCard ganz oben.
+        // runCoachCard wird an Index 1 eingefuegt, aber NUR wenn sie noch nicht
+        // in den ersten drei Slots liegt — bereits bewusst platzierten Karten
+        // wird nicht ueberschrieben.
         if cardioCoachingEnabled && !wasEnabled {
-            var order = activeDashboardWidgets.filter { $0 != .runCoachCard && $0 != .raceProgressCard }
+            var order = activeDashboardWidgets.filter { $0 != .raceProgressCard }
             order.insert(.raceProgressCard, at: 0)
-            order.insert(.runCoachCard, at: 0)
+            if !order.prefix(3).contains(.runCoachCard) {
+                order.removeAll { $0 == .runCoachCard }
+                order.insert(.runCoachCard, at: min(1, order.count))
+            }
             activeDashboardWidgets = order
             // AI-Running-Coach Phase 1: markiert den Beginn des Coaching-
             // Beobachtungszeitraums (siehe cardioCoachingEnabledAt-Doku).

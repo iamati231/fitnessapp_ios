@@ -88,9 +88,9 @@ final class DashboardWidgetInitializationTests: XCTestCase {
                        "Neues Profil mit cardioCoachingEnabled soll runCoachCard als erstes Widget haben")
     }
 
-    // 6. setEnduranceModality aktiviert Coach: Widget wird ganz oben eingefuegt
-    //    (cardioWidgetUserConfigured == false → kein Veto).
-    func testEnablingCoachingViaSetEnduranceModalityInsertsRunCoachCardFirst() throws {
+    // 6. setEnduranceModality aktiviert Coach (WP-D): runCoachCard landet an Index 1,
+    //    raceProgressCard an Index 0.
+    func testEnablingCoachingViaSetEnduranceModalityInsertsRunCoachCardAtIndex1() throws {
         let container = try makeContainer()
         let profile = UserBodyProfile(
             birthDate: Date(timeIntervalSince1970: 760_000_000),
@@ -102,14 +102,15 @@ final class DashboardWidgetInitializationTests: XCTestCase {
 
         profile.setEnduranceModality(.running, runCoachEnabled: true)
         XCTAssertTrue(profile.cardioCoachingEnabled)
-        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
-                       "Nach erstem Aktivieren via setEnduranceModality soll runCoachCard ganz oben stehen")
+        let widgets = profile.activeDashboardWidgets
+        XCTAssertEqual(widgets.first, .raceProgressCard,
+                       "Nach Aktivieren via setEnduranceModality soll raceProgressCard ganz oben stehen")
+        XCTAssertEqual(widgets.dropFirst().first, .runCoachCard,
+                       "Nach Aktivieren via setEnduranceModality soll runCoachCard an Index 1 stehen")
     }
 
-    // 7. setEnduranceModality fuegt runCoachCard IMMER an Position 0 ein — auch
-    //    wenn cardioWidgetUserConfigured == true (neues Verhalten: jedes Re-Enable
-    //    bringt die Karte ganz oben, unabhaengig von vorheriger Konfiguration).
-    func testAutoInsertEvenWhenUserHasExplicitlyConfiguredWidgets() throws {
+    // 7. WP-D top-3-Check: runCoachCard wird nicht verschoben wenn bereits in ersten drei Slots.
+    func testRunCoachCardNotMovedWhenAlreadyInTop3() throws {
         let container = try makeContainer()
         let profile = UserBodyProfile(
             birthDate: Date(timeIntervalSince1970: 760_000_000),
@@ -117,16 +118,21 @@ final class DashboardWidgetInitializationTests: XCTestCase {
             cardioCoachingEnabled: false
         )
         container.mainContext.insert(profile)
-        profile.cardioWidgetUserConfigured = true
+        // Manuell runCoachCard an Position 2 legen
+        var order: [DashboardWidgetType] = [.nextWorkout, .nutrition, .runCoachCard, .weeklyVolume]
+        profile.activeDashboardWidgets = order
+        let savedRaw = profile.activeDashboardWidgetsRaw
 
         profile.setEnduranceModality(.running, runCoachEnabled: true)
         XCTAssertTrue(profile.cardioCoachingEnabled)
-        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
-                       "Jedes Aktivieren via setEnduranceModality bringt runCoachCard an Position 0")
+        // raceProgressCard wird oben eingefuegt, runCoachCard bleibt an ihrer bestehenden Position (nicht verschoben)
+        let widgets = profile.activeDashboardWidgets
+        XCTAssertTrue(widgets.prefix(3).contains(.runCoachCard),
+                      "runCoachCard war bereits in top-3 und bleibt dort")
     }
 
-    // 8. Karte nach Verschieben: naechstes Re-Enable bringt sie wieder an Position 0.
-    func testReEnableAfterMoveRestoresRunCoachCardToFirst() throws {
+    // 8. Karte nach Verschieben: naechstes Re-Enable bringt sie wieder an Index 1.
+    func testReEnableAfterMoveRestoresRunCoachCardToIndex1() throws {
         let container = try makeContainer()
         let profile = UserBodyProfile(
             birthDate: Date(timeIntervalSince1970: 760_000_000),
@@ -134,21 +140,25 @@ final class DashboardWidgetInitializationTests: XCTestCase {
             cardioCoachingEnabled: false
         )
         container.mainContext.insert(profile)
-        // Erster Enable: Karte oben
+        // Erster Enable: raceProgressCard an 0, runCoachCard an 1
         profile.setEnduranceModality(.running, runCoachEnabled: true)
-        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard)
+        XCTAssertEqual(profile.activeDashboardWidgets.first, .raceProgressCard)
+        XCTAssertEqual(profile.activeDashboardWidgets.dropFirst().first, .runCoachCard)
 
-        // User verschiebt Karte ans Ende
+        // User verschiebt runCoachCard ans Ende
         var order = profile.activeDashboardWidgets.filter { $0 != .runCoachCard }
         order.append(.runCoachCard)
         profile.activeDashboardWidgets = order
-        XCTAssertNotEqual(profile.activeDashboardWidgets.first, .runCoachCard)
+        XCTAssertFalse(profile.activeDashboardWidgets.prefix(3).contains(.runCoachCard))
 
-        // Deaktivieren + Reaktivieren: Karte wieder oben
+        // Deaktivieren + Reaktivieren: runCoachCard wieder an Index 1
         profile.setEnduranceModality(.running, runCoachEnabled: false)
         profile.setEnduranceModality(.running, runCoachEnabled: true)
-        XCTAssertEqual(profile.activeDashboardWidgets.first, .runCoachCard,
-                       "Re-Enable soll runCoachCard immer zurueck an Position 0 setzen")
+        let widgets = profile.activeDashboardWidgets
+        XCTAssertEqual(widgets.first, .raceProgressCard,
+                       "Re-Enable soll raceProgressCard an Position 0 setzen")
+        XCTAssertEqual(widgets.dropFirst().first, .runCoachCard,
+                       "Re-Enable soll runCoachCard an Index 1 zurueckbringen wenn sie ausserhalb top-3 war")
     }
 
     // 9. Eine benutzerdefinierte Widget-Reihenfolge bleibt unveraendert.
@@ -205,8 +215,7 @@ final class DashboardWidgetInitializationTests: XCTestCase {
         XCTAssertTrue(profile.activeDashboardWidgets.contains(.runCoachCard))
     }
 
-    // 12. setEnduranceModality aktiviert Coach: beide Karten landen ganz oben,
-    //     runCoachCard zuerst (identische Reihenfolge wie bisher).
+    // 12. setEnduranceModality aktiviert Coach (WP-D): raceProgressCard zuerst, runCoachCard an Index 1.
     func testEnablingCoachingViaSetEnduranceModalityInsertsBothCardsAtTop() throws {
         let container = try makeContainer()
         let profile = UserBodyProfile(
@@ -217,7 +226,8 @@ final class DashboardWidgetInitializationTests: XCTestCase {
         container.mainContext.insert(profile)
 
         profile.setEnduranceModality(.running, runCoachEnabled: true)
-        XCTAssertEqual(Array(profile.activeDashboardWidgets.prefix(2)), [.runCoachCard, .raceProgressCard])
+        XCTAssertEqual(Array(profile.activeDashboardWidgets.prefix(2)), [.raceProgressCard, .runCoachCard],
+                       "WP-D: raceProgressCard an 0, runCoachCard an 1")
     }
 }
 #endif
