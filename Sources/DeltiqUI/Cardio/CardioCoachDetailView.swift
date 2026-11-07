@@ -5,6 +5,24 @@ import Charts
 import DeltiqCore
 import DeltiqData
 
+/// Pure-Funktion fuer integratedSection: Renntag-Distanz in exakten Tagen und
+/// Kalenderwochen. Vergangene Renndaten → (nil, nil). Renntag heute → (0, 0).
+/// daysToRace: startOfDay-normalisiert fuer die exakte 14-Tage-Grenze (Prio 6a).
+/// weeksToRace: Calendar-Wochensemantik, unabhaengig von daysToRace.
+internal func cardioRaceCalendarValues(
+    for raceDate: Date?,
+    now: Date,
+    calendar: Calendar
+) -> (daysToRace: Int?, weeksToRace: Int?) {
+    guard let raceDate else { return (nil, nil) }
+    let today = calendar.startOfDay(for: now)
+    let raceDay = calendar.startOfDay(for: raceDate)
+    let days = calendar.dateComponents([.day], from: today, to: raceDay).day ?? 0
+    guard days >= 0 else { return (nil, nil) }
+    let weeks = calendar.dateComponents([.weekOfYear], from: today, to: raceDay).weekOfYear ?? 0
+    return (days, max(0, weeks))
+}
+
 /// Detail-Ansicht fuer die Lauf-Coaching-Karte: zeigt Trainingsstand,
 /// Wochenplan, Ziel-Fortschritt und Erholungs-Tipps.
 /// Daten kommen aus dem aufrufenden DashboardView und einem eigenen @Query
@@ -299,17 +317,16 @@ struct CardioCoachDetailView: View {
 
     @ViewBuilder
     private var integratedSection: some View {
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        let daysToRace: Int? = profile.cardioRaceDate.flatMap { raceDate in
-            let d = cal.dateComponents([.day], from: today, to: cal.startOfDay(for: raceDate)).day ?? 0
-            return d > 0 ? d : nil
-        }
+        let (daysToRace, weeksToRace) = cardioRaceCalendarValues(
+            for: profile.cardioRaceDate,
+            now: Date(),
+            calendar: .current
+        )
         let outcome = IntegratedRunCoachAdvisor.assess(
             raceProgress: raceProgressModel?.assessment,
             loadTrend: loadTrend,
             densityAssessment: densityAssessment,
-            weeksToRace: daysToRace.map { $0 / 7 },
+            weeksToRace: weeksToRace,
             daysToRace: daysToRace,
             planAdjustmentPending: planAdjustmentPending
         )
