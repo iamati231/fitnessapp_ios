@@ -65,34 +65,41 @@ Neue pure function, die Outputs aus allen drei parallelen Pipelines (Race Progre
 
 ```swift
 // IntegratedCoachingOutcome.swift
-public enum CoachingAction: Equatable {
+// ⚠️ Maßgeblich: Spec §3.4 — diese Typen exakt so implementieren
+public enum CoachingAction: Sendable, Equatable {
     case maintainCurrent
     case reduceLoadThisWeek
     case increaseWeeklyVolume(targetPercent: Double)
     case reassessGoal
     case planAdjustmentAvailable
     case buildRunningBase
-    case insufficientData(reasons: [DataQualityIssue])
+    case insufficientData  // KEIN associated value
 }
 
-public enum DataQualityIssue: String, CaseIterable {
+public enum DataQualityIssue: Sendable, Equatable {
+    case runningDistanceMissing(weekCount: Int)
+    case ambiguousActivitiesPresent(weekCount: Int)
+    case durationDataUnavailable
+    case historyTooShort(weeksAvailable: Int, weeksNeeded: Int)
+}
+
+public enum CoachingRationale: Sendable, Equatable {
+    case positiveProgressHighLoad
+    case positiveProgressStableLoad
+    case plateauNearRace(weeksToRace: Int)
+    case goalLikelyUnreachable
+    case recentGapDetected
+    case recoveryNeeded
     case noRunningData
     case crossTrainingOnly
-    case lessThanTwoWeeks
-    case durationUnavailable
-    case noGoalSet
+    case shortHistory
+    case planJustAdjusted
 }
 
-public struct CoachingRationale: Equatable {
-    public let primarySignal: String  // Lokalisierungs-Key
-    public let supportingFactors: [String]  // Lokalisierungs-Keys
-    public let dataQualityIssues: [DataQualityIssue]
-}
-
-public struct IntegratedCoachingOutcome: Equatable {
-    public let action: CoachingAction
+public struct IntegratedCoachingOutcome: Sendable, Equatable {
+    public let primaryAction: CoachingAction  // war fälschlich "action"
     public let rationale: CoachingRationale
-    public let confidence: Double  // 0.0–1.0
+    public let dataQualityIssues: [DataQualityIssue]  // war fälschlich in CoachingRationale + "confidence"
 }
 ```
 
@@ -126,6 +133,28 @@ public enum IntegratedRunCoachAdvisor {
 | 10 | `concerns.contains(.volumePlateau) && (weeksToRace == nil \|\| weeksToRace! >= 10)` | `.increaseWeeklyVolume(targetPercent: 0.10)` |
 | 11 | `outcome == .onTrack` + `loadDevelopment == .stable/.declining` | `.maintainCurrent` |
 | 12 | Alles andere | `.maintainCurrent` |
+
+### Präzisierungen für Prioritätsregeln 2 und 3
+
+**Prio 2 — Ableitung von `runningSessionCount` aus `weeklyFlags`:**
+Prio 2 feuert, wenn keine der letzten 4 ausgewerteten Wochen (exkl. `.beforeCoachingObservationPeriod`) Laufaktivität enthält:
+```swift
+let evaluated = raceProgress.weeklyFlags
+    .filter { $0 != .beforeCoachingObservationPeriod }
+    .suffix(4)
+// Prio 2: evaluated.allSatisfy { $0 != nil }
+// (nil = Woche mit Lauf; .crossTrainingOnlyWeek / .strengthOnlyWeek / .genuineGap / .ambiguousActivityWeek = kein Lauf)
+```
+
+**Prio 3 — Schwellenwert für "dominant":**
+"isCrossTrainingOnly dominant" = mindestens 3 der letzten 4 ausgewerteten Wochen sind `.crossTrainingOnlyWeek`:
+```swift
+let evaluated = raceProgress.weeklyFlags
+    .filter { $0 != .beforeCoachingObservationPeriod }
+    .suffix(4)
+let crossTrainingCount = evaluated.filter { $0 == .crossTrainingOnlyWeek }.count
+// Prio 3: crossTrainingCount >= 3
+```
 
 ### Tests
 **Datei**: `Tests/DeltiqCoreTests/IntegratedRunCoachAdvisorTests.swift` (NEU)
@@ -173,9 +202,18 @@ WP-A muss zuerst kompilieren.
 `CardioCoachDetailView` hat bereits `@Query allSessions: [WorkoutSession]` und `@Bindable profile`. Folgendes wird ergänzt:
 
 1. **Parameter `raceProgressModel: RaceProgressCardModel?`** — von `DashboardView` übergeben (bereits dort berechnet via `RaceProgressCardModel.make(for: profile, allSessions: completedSessions, now: .now)`)
-2. **Parameter `densityAssessment: TrainingDensityAssessment?`** — von `DashboardView` übergeben (`cachedDensityAssessment` aus Phase 2C, bereits vorhanden)
-3. **`@Query(filter: #Predicate<TrainingPlan> { $0.isActive == true }) private var activePlans`** — für `planAdjustmentPending = CoachAdjustmentCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: activePlans)) != nil`
-4. **`weeksToRace: Int?`** — lokal berechnet: `Calendar.current.dateComponents([.weekOfYear], from: Date(), to: raceDate).weekOfYear`
+2. **Parameter `densityAssessment: TrainingDensityAnalyzer.Assessment?`** — von `DashboardView` übergeben (`cachedDensityAssessment` aus Phase 2C, bereits vorhanden)
+3. **Parameter `loadTrend: TrainingLoadTrend?`** — NEU, von `DashboardView` übergeben (separates `cachedLoadTrend`; `TrainingLoadTrend` ist NICHT in `TrainingDensityAnalyzer.Assessment` enthalten)
+4. **`@Query(filter: #Predicate<TrainingPlan> { $0.isActive == true }) private var activePlans`** — für `planAdjustmentPending = CoachAdjustmentCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: activePlans)) != nil`
+5. **`weeksToRace: Int?`** — lokal berechnet: `Calendar.current.dateComponents([.weekOfYear], from: Date(), to: raceDate).weekOfYear`
+
+**DashboardView-Änderung:** `computeTrainingDensityAssessment()` berechnet `let trend = TrainingLoadTrendAnalyzer.analyze(...)` intern (Zeile 2888), verwirft es aber aktuell. Neu: zusätzlich `cachedLoadTrend = trend` setzen. Dafür in DashboardView:
+```swift
+@State private var cachedLoadTrend: TrainingLoadTrend?
+// In computeTrainingDensityAssessment() nach Zeile 2888:
+cachedLoadTrend = trend
+```
+Dann `CardioCoachDetailView` mit dem neuen Parameter aufrufen: `loadTrend: cachedLoadTrend`.
 
 ### Implementierungsdetails
 
@@ -187,8 +225,9 @@ init(
     daysSinceLastRunSession: Int?,
     last7DaysRunSessionCount: Int,
     last7DaysRunVolumeKm: Double,
-    raceProgressModel: RaceProgressCardModel?,       // NEU
-    densityAssessment: TrainingDensityAssessment?    // NEU
+    raceProgressModel: RaceProgressCardModel?,            // NEU
+    densityAssessment: TrainingDensityAnalyzer.Assessment?, // NEU
+    loadTrend: TrainingLoadTrend?                         // NEU (separat von densityAssessment!)
 )
 ```
 
@@ -202,7 +241,7 @@ let planAdjustmentPending = ActivePlanResolver.cardioRelevantPlan(among: activeP
     .flatMap { CoachAdjustmentCardModel.make(for: profile, activePlan: $0) } != nil
 let outcome = IntegratedRunCoachAdvisor.assess(
     raceProgress: raceProgressModel?.assessment,
-    loadTrend: densityAssessment.flatMap { ... },   // aus DensityAssessment
+    loadTrend: loadTrend,                // direkt aus cachedLoadTrend (DashboardView), NICHT aus densityAssessment
     densityAssessment: densityAssessment,
     goal: profile.cardioGoal,
     weeksToRace: weeksToRace,
@@ -438,14 +477,16 @@ integratedCoach.action.reassessGoal
 integratedCoach.action.planAdjustmentAvailable
 integratedCoach.action.buildRunningBase
 integratedCoach.action.insufficientData
-integratedCoach.rationale.highACR
-integratedCoach.rationale.goalUnrealistic
-integratedCoach.rationale.recentGap
-integratedCoach.rationale.insufficientRecovery
-integratedCoach.rationale.volumePlateau
-integratedCoach.rationale.onTrack
-integratedCoach.rationale.noRunData
+integratedCoach.rationale.positiveProgressHighLoad    ← war fälschlich "highACR"
+integratedCoach.rationale.positiveProgressStableLoad  ← war fälschlich "onTrack"
+integratedCoach.rationale.plateauNearRace             ← war fälschlich "volumePlateau"
+integratedCoach.rationale.goalLikelyUnreachable       ← war fälschlich "goalUnrealistic"
+integratedCoach.rationale.recentGapDetected           ← war fälschlich "recentGap"
+integratedCoach.rationale.recoveryNeeded              ← war fälschlich "insufficientRecovery"
+integratedCoach.rationale.noRunningData               ← war fälschlich "noRunData"
 integratedCoach.rationale.crossTrainingOnly
+integratedCoach.rationale.shortHistory
+integratedCoach.rationale.planJustAdjusted            ← war fälschlich "planAdjusted"
 ```
 
 **Formulierungsbeispiele (DE):**

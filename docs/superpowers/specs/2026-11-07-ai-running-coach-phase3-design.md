@@ -167,7 +167,9 @@ private func recommendation(for concern: RaceProgressAssessment.Concern) -> Stri
 
 ### 3.3 Komponente B: Erstaktivierungs-UX runCoachCard
 
-**Wo:** `ProfileEditorView`, `.onChange(of: profile.cardioCoachingEnabled)`.
+> ⚠️ **Implementierungsort korrigiert in §9 Entscheidung C:** `cardioCoachingEnabled` wird ausschließlich in `CardioGoalEditorView.save()` gesetzt; ein `ProfileEditorView.onChange` ist anfällig und feuert erst nach Sheet-Dismiss. Maßgeblich ist §9, nicht dieser Abschnitt.
+
+**Wo (überholt):** ~~`ProfileEditorView`, `.onChange(of: profile.cardioCoachingEnabled)`~~ → **`CardioGoalEditorView.save()` (s. §9)**.
 
 **Logik:**
 ```swift
@@ -246,16 +248,18 @@ public enum DataQualityIssue: Sendable, Equatable {
 
 ### 3.5 Entscheidungslogik (Prüfreihenfolge)
 
+> ⚠️ **Diese Tabelle enthält Vorfassungswerte für Prio 3 und Prio 6** — die korrigierten Werte stehen in **§10**. Für die Implementierung ist §10 maßgeblich.
+
 Reihenfolge ist Priorität — das schwerste Signal gewinnt:
 
 | Priorität | Bedingung | Action | Rationale |
 |-----------|-----------|--------|-----------|
 | 1 | `loadTrend == nil` ODER `dataCompleteness == .insufficient` | `.insufficientData` | `.shortHistory` |
 | 2 | Keine Lauf-Sessions (runningSessionCount == 0 letzte 4 Wochen) | `.buildRunningBase` | `.noRunningData` |
-| 3 | Ausschließlich Cross-Training (`isCrossTrainingOnly` dominant) | `.maintainCurrent` | `.crossTrainingOnly` |
+| 3 | Ausschließlich Cross-Training (`isCrossTrainingOnly` dominant) | ~~`.maintainCurrent`~~ → **`.buildRunningBase`** (s. §10) | `.crossTrainingOnly` |
 | 4 | `planAdjustmentPending == true` | `.planAdjustmentAvailable` | `.planJustAdjusted` |
 | 5 | Concern `.goalLikelyUnrealistic` vorhanden | `.reassessGoal` | `.goalLikelyUnreachable` |
-| 6 | Concern `.recentTrainingGap` vorhanden | `.reduceLoadThisWeek` | `.recentGapDetected` |
+| 6 | Concern `.recentTrainingGap` vorhanden | ~~`.reduceLoadThisWeek`~~ → **`.buildRunningBase`** (s. §10) | `.recentGapDetected` |
 | 7 | Concern `.insufficientRecovery` vorhanden | `.reduceLoadThisWeek` | `.recoveryNeeded` |
 | 8 | Concern `.loadIncreasedTooFast` ODER `loadDevelopment == .significantIncrease` | `.reduceLoadThisWeek` | `.positiveProgressHighLoad` oder `.recoveryNeeded` |
 | 9 | Concern `.volumePlateau` + `weeksToRace != nil && weeksToRace! < 10` | `.increaseWeeklyVolume(15)` | `.plateauNearRace` |
@@ -274,7 +278,7 @@ Reihenfolge ist Priorität — das schwerste Signal gewinnt:
 | Missing run distance | `dataCompleteness.reasons` enthält `.missingRunningDistance` → `DataQualityIssue.runningDistanceMissing` |
 | No run duration | Immer `durationDataUnavailable` → `DataQualityIssue.durationDataUnavailable` (kein blocker, nur info) |
 | Strength-only | runningSessionCount == 0 → Prio 2 → `.buildRunningBase` |
-| Cross-training only | isCrossTrainingOnly dominant → Prio 3 → `.maintainCurrent` mit `.crossTrainingOnly`-Rationale |
+| Cross-training only | isCrossTrainingOnly dominant → Prio 3 → `.buildRunningBase` mit `.crossTrainingOnly`-Rationale (s. §10) |
 | Unknown activities | `ambiguousCardioSessionCount > 0` → `DataQualityIssue.ambiguousActivitiesPresent` |
 | Missing history | `dataCompleteness == .insufficient(shortHistory)` → Prio 1 → `.insufficientData` |
 | Goal change HM→Marathon | `ActivePlanResolver.planRequiringAdjustment()` → `CoachAdjustmentCardModel.make()` → `planAdjustmentPending == true` → Prio 4 → `.planAdjustmentAvailable` |
