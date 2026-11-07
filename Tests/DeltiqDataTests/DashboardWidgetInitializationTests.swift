@@ -388,6 +388,65 @@ final class DashboardWidgetInitializationTests: XCTestCase {
         XCTAssertTrue(profile.activeDashboardWidgets.contains(.runCoachCard))
     }
 
+    // MARK: - WP-D Duplikat-Bereinigung innerhalb top-3
+
+    // 23. runCoachCard an Index 2 und Duplikat am Ende: Index 2 bleibt, genau ein Eintrag.
+    func testRunCoachCardAtIndex2WithDuplicateAtEnd() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        profile.activeDashboardWidgets = [.nextWorkout, .nutrition, .runCoachCard, .weeklyVolume, .runCoachCard]
+
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        let widgets = profile.activeDashboardWidgets
+        XCTAssertEqual(widgets[2], .runCoachCard,
+                       "runCoachCard war an Index 2 — muss dort bleiben (Duplikat entfernt)")
+        XCTAssertEqual(widgets.filter { $0 == .runCoachCard }.count, 1,
+                       "Genau ein runCoachCard-Eintrag muss verbleiben")
+    }
+
+    // 24. runCoachCard an Index 0 und Duplikat ausserhalb top-3: Index 0 bleibt, genau ein Eintrag.
+    func testRunCoachCardAtIndex0WithDuplicateOutsideTop3() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        profile.activeDashboardWidgets = [.runCoachCard, .nextWorkout, .nutrition, .weeklyVolume, .runCoachCard]
+
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        let widgets = profile.activeDashboardWidgets
+        XCTAssertEqual(widgets[0], .runCoachCard,
+                       "runCoachCard war an Index 0 — muss dort bleiben (Duplikat entfernt)")
+        XCTAssertEqual(widgets.filter { $0 == .runCoachCard }.count, 1,
+                       "Genau ein runCoachCard-Eintrag muss verbleiben")
+    }
+
+    // 25. runCoachCard an Index 1 und mehrere Duplikate: Index 1 bleibt, genau ein Eintrag.
+    func testRunCoachCardAtIndex1WithMultipleDuplicates() throws {
+        let container = try makeContainer()
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 760_000_000),
+            heightCm: 172, profile: .male,
+            cardioCoachingEnabled: false
+        )
+        container.mainContext.insert(profile)
+        profile.activeDashboardWidgets = [.nextWorkout, .runCoachCard, .nutrition, .runCoachCard, .weeklyVolume, .runCoachCard]
+
+        profile.setEnduranceModality(.running, runCoachEnabled: true)
+        let widgets = profile.activeDashboardWidgets
+        XCTAssertEqual(widgets[1], .runCoachCard,
+                       "runCoachCard war an Index 1 — muss dort bleiben (Duplikate entfernt)")
+        XCTAssertEqual(widgets.filter { $0 == .runCoachCard }.count, 1,
+                       "Genau ein runCoachCard-Eintrag muss verbleiben")
+    }
+
     // 22. WP-D Re-Enable: runCoachCard kommt zurueck an Index 1 (raceProgressCard unveraendert).
     func testReEnableAfterMoveRestoresRunCoachCardToIndex1() throws {
         let container = try makeContainer()

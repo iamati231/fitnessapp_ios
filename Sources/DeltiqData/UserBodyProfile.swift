@@ -327,12 +327,24 @@ public final class UserBodyProfile {
         cardioCoachingEnabled = wantsCoach && (modality?.supportsRunCoach ?? true)
         // WP-D: Bei AUS→EIN nur runCoachCard positionieren; alle anderen Widgets
         // (einschliesslich raceProgressCard) bleiben unveraendert.
-        // runCoachCard wird an Index 1 eingefuegt, aber NUR wenn sie noch nicht
-        // in den ersten drei Slots liegt — bewusst platzierten Karten werden nicht
-        // ueberschrieben. Duplikate werden vor der Einfuegung entfernt.
+        // Duplikat-Bereinigung erfolgt immer — unabhaengig davon, ob runCoachCard
+        // in top-3 liegt. War der erste Eintrag in top-3, bleibt er exakt dort;
+        // lag er ausserhalb (oder fehlte), wird er an Index 1 (bzw. 0) eingefuegt.
         if cardioCoachingEnabled && !wasEnabled {
             var order = activeDashboardWidgets
-            if !order.prefix(3).contains(.runCoachCard) {
+            let firstIdx = order.firstIndex(of: .runCoachCard)
+            if let idx = firstIdx, idx < 3 {
+                // Erste Instanz liegt in top-3: Position halten, Duplikate dahinter entfernen.
+                var seen = false
+                order = order.filter { widget in
+                    if widget == .runCoachCard {
+                        if seen { return false }
+                        seen = true
+                    }
+                    return true
+                }
+            } else {
+                // runCoachCard fehlt oder liegt ausserhalb top-3: neu an Index 1 einfuegen.
                 order.removeAll { $0 == .runCoachCard }
                 order.insert(.runCoachCard, at: min(1, order.count))
             }
