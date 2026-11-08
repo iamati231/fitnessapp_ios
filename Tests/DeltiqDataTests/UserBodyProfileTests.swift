@@ -346,6 +346,57 @@ final class UserBodyProfileTests: XCTestCase {
                        "Ein erneutes Abwaehlen VOR der Bestaetigung macht das Item wieder unbekannt, nie explizit nicht-verfuegbar")
     }
 
+    // MARK: - activeDashboardWidgets — Rollback-Kompatibilitaet (Commit 3e5a9f6)
+
+    /// Bestehende Nutzer, die `trainingLoadCard` in ihrer gespeicherten
+    /// Widget-Reihenfolge haben, duerfen dadurch weder crashen noch alle
+    /// anderen Widgets verlieren. Der compactMap-Filter in
+    /// `activeDashboardWidgets` muss den unbekannten Raw-Value stillschweigend
+    /// ueberspringen und die gueltigen Widgets in ihrer Reihenfolge erhalten.
+    func testRemovedTrainingLoadCardRawValueIsDroppedSilently() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        // Simuliert ein vor-Rollback gespeichertes Widget-Array:
+        // trainingLoadCard ist jetzt kein gueltiger Case mehr.
+        profile.activeDashboardWidgetsRaw = [
+            "nextWorkout",
+            "trainingLoadCard",   // entfernter Case — soll stillschweigend gefiltert werden
+            "weeklyVolume",
+            "cardioPace",
+        ]
+
+        let typed = profile.activeDashboardWidgets
+
+        XCTAssertFalse(typed.map(\.rawValue).contains("trainingLoadCard"),
+                       "trainingLoadCard darf nach dem Rollback nicht mehr auftauchen")
+        XCTAssertEqual(typed.map(\.rawValue), ["nextWorkout", "weeklyVolume", "cardioPace"],
+                       "Reihenfolge der gueltigen Widgets muss unveraendert erhalten bleiben")
+    }
+
+    /// Setter-Roundtrip nach dem Rollback: Speichern und erneutes Laden darf
+    /// die entfernte Karte nicht zurueckbringen.
+    func testActiveDashboardWidgetsSetterRoundTripAfterRollback() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        // Schreibe einen alten Raw-Stand zurueck (wie er in der DB stehen koennte)
+        profile.activeDashboardWidgetsRaw = ["trophyRoom", "trainingLoadCard", "nutrition"]
+
+        // Lesen, ohne aktiv etwas zu aendern
+        let typed = profile.activeDashboardWidgets
+        XCTAssertFalse(typed.map(\.rawValue).contains("trainingLoadCard"))
+        XCTAssertEqual(typed, [.trophyRoom, .nutrition])
+
+        // Setter mit dem bereinigten Wert aufrufen (wie DashboardSettingsView es tut)
+        profile.activeDashboardWidgets = typed
+
+        // Erneut laden — keine Zombie-Rueckkehr
+        XCTAssertEqual(profile.activeDashboardWidgets, [.trophyRoom, .nutrition])
+        XCTAssertFalse(profile.activeDashboardWidgetsRaw.contains("trainingLoadCard"),
+                       "Nach dem Setter-Roundtrip darf kein alter Raw-Value erhalten bleiben")
+    }
+
     func testConfirmBodyweightOnlyClearsPriorSelectionAndConfirms() throws {
         let container = try makeContainer()
         let profile = makeProfile(in: container.mainContext)
