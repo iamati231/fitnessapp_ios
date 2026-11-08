@@ -50,12 +50,18 @@ jobs:
       - name: Swift-Package bauen (debug)
         run: swift build
 
-      - name: Coaching-Era Legacy-Fixture erzeugen (WP1)
+      - name: Coaching-Era Legacy-Fixture erzeugen — Schritt 1 (WP1 Generator)
         run: |
-          # Creates a real SwiftData store with the pre-rollback coaching schema
-          # (UserBodyProfile + 15 coaching properties) so the migration test below
-          # can open it with the current production schema and prove WP2/WP3.
+          # Step 1: writes UserBodyProfile with the pre-rollback coaching schema
+          # (15 coaching properties). DeltiqCore-only target, no ZIPFoundation.
           swift run CoachingEraFixtureGenerator /tmp/deltiq_legacy_fixture.sqlite
+
+      - name: Coaching-Era Legacy-Fixture anreichern — Schritt 2 (WP1 Enricher)
+        run: |
+          # Step 2: opens the stub and creates tables for all 16 remaining
+          # DeltiqData entities (current schema), writing one representative record
+          # each. Result: mixed-schema store ready for the lightweight-migration test.
+          swift run CoachingEraFixtureEnricher /tmp/deltiq_legacy_fixture.sqlite
 
       - name: Swift-Package-Tests ausführen (echte Apple-/SwiftData-Testausführung)
         run: |

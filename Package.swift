@@ -139,15 +139,27 @@ let package = Package(
             path: "Tests/DeltiqFoodLookupTests"
         ),
         .executableTarget(
-            // WP1 (DEL-migration-proof): creates a real coaching-era SwiftData
-            // store (pre-rollback schema) so the migration test can open it with
-            // the current production schema and prove lightweight migration.
-            // SwiftData-dependent code is #if canImport(SwiftData)-gated so the
-            // file compiles on Windows (where SwiftData is unavailable) as a no-op.
-            // Run before `swift test` in CI: swift run CoachingEraFixtureGenerator <path>
+            // WP1 step-1: creates the coaching-era SQLite stub — only the
+            // UserBodyProfile entity with 15 coaching-era properties.
+            // DeltiqCore-only so this target compiles on Windows (SwiftData
+            // unavailable) as a no-op.
+            // Run before CoachingEraFixtureEnricher in CI.
             name: "CoachingEraFixtureGenerator",
             dependencies: ["DeltiqCore"],
             path: "Sources/CoachingEraFixtureGenerator"
+        ),
+        .executableTarget(
+            // WP1 step-2: enriches the stub produced by CoachingEraFixtureGenerator
+            // with representative records for all 17 SwiftData entities (all current
+            // DeltiqData entities except UserBodyProfile stay on the current schema;
+            // only the local UserBodyProfile shadow keeps the historic coaching columns).
+            // Depends on DeltiqData (and therefore ZIPFoundation); SwiftData-dependent
+            // code is #if canImport(SwiftData)-gated — Windows compilation falls through
+            // to the no-op else branch without running any enrichment.
+            // Run after CoachingEraFixtureGenerator in CI before swift test.
+            name: "CoachingEraFixtureEnricher",
+            dependencies: ["DeltiqData", "DeltiqCore"],
+            path: "Sources/CoachingEraFixtureEnricher"
         )
     ]
 )

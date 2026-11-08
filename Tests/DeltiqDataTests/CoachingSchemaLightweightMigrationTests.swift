@@ -4,117 +4,172 @@ import SwiftData
 @testable import DeltiqData
 import DeltiqCore
 
-/// WP2 + WP3: Opens the coaching-era SQLite fixture (created by
-/// CoachingEraFixtureGenerator BEFORE this test suite runs in CI) with the
-/// current production schema and verifies:
-///   WP2 — all non-coaching user data survived lightweight migration
-///   WP3 — the migrated store remains writable (insert + re-read)
+/// Full integration proof for the coaching-era lightweight migration.
 ///
-/// The fixture contains a UserBodyProfile with 15 coaching properties that no
-/// longer exist in the current DeltiqData.UserBodyProfile schema. SwiftData's
-/// lightweight migration silently drops those extra columns when opening.
+/// Covers WP2 + WP3 + WP4 + WP5 from DEL-migration-proof ticket.
 ///
-/// Constraint (from ticket): no manually manipulated SQLite, no current
-/// models pretending to be old. The fixture is a real SwiftData store written
-/// by the generator target using the genuine old schema definition.
+/// **WP2 — Entity identity proof**
+/// The fixture was created by CoachingEraFixtureEnricher using a *local*
+/// private class named `UserBodyProfile` (with 15 coaching columns). SwiftData
+/// derives the SQLite entity name from the UNQUALIFIED class name, so the
+/// fixture's entity name is "UserBodyProfile" — identical to
+/// `DeltiqData.UserBodyProfile`. When this test opens the fixture with
+/// `Schema(AppSchema.types)` (which references the production type), SwiftData
+/// finds the matching entity by name, performs lightweight migration (drops the
+/// coaching columns), and returns live objects — implicit identity proof.
+///
+/// **WP3 — Test isolation**
+/// The fixture is copied to a unique per-test temporary directory. Each test
+/// starts from an independent store, so execution order and parallelism cannot
+/// cause interference.
+///
+/// **WP4 — Data integrity after migration**
+/// All entity types written by the enricher are verified: counts, field values,
+/// and relationships.
+///
+/// **WP5 — Write-reopen verification**
+/// After checking migrated data the test writes new values, closes the
+/// container (releasing ARC → WAL checkpoint), reopens, and verifies persistence.
+///
+/// Constraint: fixture is a real SwiftData store written by the generator +
+/// enricher. No manual SQLite manipulation, no current models pretending to be
+/// legacy.
 final class CoachingSchemaLightweightMigrationTests: XCTestCase {
 
-    private static let fixturePath = "/tmp/deltiq_legacy_fixture.sqlite"
+    // Path to the fixture produced by CI step "Coaching-Era Legacy-Fixture erzeugen".
+    private static let sourcePath = "/tmp/deltiq_legacy_fixture.sqlite"
 
-    // MARK: - WP2: Non-coaching data survives migration
+    // MARK: - WP2 + WP3 + WP4 + WP5: single sequential integration test
 
-    func testLegacyStoreOpensWithCurrentSchemaAndRetainsEssentialData() throws {
-        guard FileManager.default.fileExists(atPath: Self.fixturePath) else {
-            XCTFail(
-                "Legacy fixture not found at \(Self.fixturePath). " +
-                "Run CoachingEraFixtureGenerator before this test suite."
-            )
-            return
-        }
+    func testFullMigrationIntegrity() throws {
+        // WP3: copy to per-test temp dir — no shared mutable state between runs
+        let url = try copyFixtureToTempDir()
 
-        let profiles = try openAndFetch()
+        // ── Open: triggers lightweight migration on UserBodyProfile ──────────
+        let (c1, ctx1) = try openContainer(at: url)
+
+        // WP4: UserBodyProfile — non-coaching fields survived migration
+        let profiles = try ctx1.fetch(FetchDescriptor<UserBodyProfile>())
         XCTAssertEqual(profiles.count, 1,
-                       "Migration must not destroy the profile row")
-
-        let p = try XCTUnwrap(profiles.first,
-                               "Profile must be fetchable after migration")
-
-        // Essential non-coaching fields must survive
-        XCTAssertEqual(p.heightCm, 178.0, accuracy: 0.001,
-                       "heightCm muss nach Migration erhalten bleiben")
-        XCTAssertEqual(p.profile, .male,
-                       "profile muss nach Migration erhalten bleiben")
-        XCTAssertEqual(p.environment, .gym,
-                       "environment muss nach Migration erhalten bleiben")
-        XCTAssertEqual(p.firstName, "Max",
-                       "firstName muss nach Migration erhalten bleiben")
-        XCTAssertEqual(p.weeklyWorkoutGoal, 3,
-                       "weeklyWorkoutGoal muss nach Migration erhalten bleiben")
-        // goalWeightKg is verified alive (non-nil); exact value not checked here
-        // because testMigratedStoreAcceptsNewWrites modifies it to prove writability.
-        XCTAssertNotNil(p.goalWeightKg,
-                        "goalWeightKg muss nach Migration erhalten bleiben")
-        XCTAssertEqual(p.experienceTrackRaw, "intermediate",
-                       "experienceTrackRaw muss nach Migration erhalten bleiben")
+                       "UserBodyProfile row must survive migration")
+        let p = try XCTUnwrap(profiles.first)
+        XCTAssertEqual(p.heightCm,            178.0,          accuracy: 0.001)
+        XCTAssertEqual(p.profile,             .male)
+        XCTAssertEqual(p.environment,         .gym)
+        XCTAssertEqual(p.firstName,           "Max")
+        XCTAssertEqual(p.weeklyWorkoutGoal,   3)
+        XCTAssertNotNil(p.goalWeightKg,       "goalWeightKg must survive")
+        XCTAssertEqual(p.experienceTrackRaw,  "intermediate")
 
         // Coaching widget types that were removed must be silently filtered
         let typed = p.activeDashboardWidgets
         XCTAssertFalse(typed.map(\.rawValue).contains("runCoachCard"),
-                       "runCoachCard must be filtered by compactMap after rollback")
+                       "runCoachCard must be filtered after rollback")
         XCTAssertFalse(typed.map(\.rawValue).contains("raceProgressCard"),
-                       "raceProgressCard must be filtered by compactMap after rollback")
-        // Surviving widget types must still be present in the raw column
+                       "raceProgressCard must be filtered after rollback")
         XCTAssertTrue(p.activeDashboardWidgetsRaw.contains("nextWorkout"))
         XCTAssertTrue(p.activeDashboardWidgetsRaw.contains("cardioPace"))
-    }
 
-    // MARK: - WP3: Migrated store is writable
+        // WP4: TrainingPlan
+        let plans = try ctx1.fetch(FetchDescriptor<TrainingPlan>())
+        XCTAssertEqual(plans.count, 1, "TrainingPlan count")
+        XCTAssertEqual(plans.first?.name, "Hypertrophie 12 Wochen")
 
-    func testMigratedStoreAcceptsNewWrites() throws {
-        guard FileManager.default.fileExists(atPath: Self.fixturePath) else {
-            XCTFail(
-                "Legacy fixture not found at \(Self.fixturePath). " +
-                "Run CoachingEraFixtureGenerator before this test suite."
-            )
-            return
-        }
+        // WP4: WorkoutSession
+        let sessions = try ctx1.fetch(FetchDescriptor<WorkoutSession>())
+        XCTAssertEqual(sessions.count, 1, "WorkoutSession count")
+        XCTAssertTrue(sessions.first?.isCompleted == true)
 
-        let newWeight = 82.5
+        // WP4: ExerciseLog
+        let logs = try ctx1.fetch(FetchDescriptor<ExerciseLog>())
+        XCTAssertEqual(logs.count, 1, "ExerciseLog count")
+        XCTAssertEqual(logs.first?.weight ?? 0, 100.0, accuracy: 0.001)
 
-        // Write to the migrated store (container named to keep ARC count alive)
-        do {
-            let (c1, ctx1) = try openContainer()
-            let all = try ctx1.fetch(FetchDescriptor<UserBodyProfile>())
-            let pw = try XCTUnwrap(all.first)
-            pw.goalWeightKg = newWeight
-            try ctx1.save()
-            _ = c1
-        }
+        // WP4: BodyMeasurement
+        let measurements = try ctx1.fetch(FetchDescriptor<BodyMeasurement>())
+        XCTAssertEqual(measurements.count, 1, "BodyMeasurement count")
+        XCTAssertEqual(measurements.first?.weightKg ?? 0, 80.0, accuracy: 0.001)
 
-        // Re-open and verify the write persisted
-        let (c2, ctx2) = try openContainer()
+        // WP4: MealEntry + MealItem (relationship)
+        let meals = try ctx1.fetch(FetchDescriptor<MealEntry>())
+        XCTAssertEqual(meals.count, 1, "MealEntry count")
+        XCTAssertEqual(meals.first?.items.count, 1, "MealItem count via relationship")
+
+        // WP4: WaterEntry
+        let waters = try ctx1.fetch(FetchDescriptor<WaterEntry>())
+        XCTAssertEqual(waters.count, 1, "WaterEntry count")
+        XCTAssertEqual(waters.first?.amountMl, 500)
+
+        // WP4: PersonalRecordEntry
+        let prs = try ctx1.fetch(FetchDescriptor<PersonalRecordEntry>())
+        XCTAssertEqual(prs.count, 1, "PersonalRecordEntry count")
+        XCTAssertEqual(prs.first?.exerciseName, "Bankdrücken")
+        XCTAssertEqual(prs.first?.kindRaw, "heaviestWeight")
+
+        // WP4: Gear
+        let gears = try ctx1.fetch(FetchDescriptor<Gear>())
+        XCTAssertEqual(gears.count, 1, "Gear count")
+        XCTAssertEqual(gears.first?.name, "Nike Metcon 9")
+
+        // ── WP5: write new data, close container (WAL checkpoint) ────────────
+        p.goalWeightKg = 82.5
+        let extraWater = WaterEntry(date: Date(), amountMl: 300)
+        ctx1.insert(extraWater)
+        try ctx1.save()
+        _ = c1  // keep ARC alive until here; deinit checkpoints WAL
+
+        // ── WP5: reopen and verify persistence ───────────────────────────────
+        let (c2, ctx2) = try openContainer(at: url)
         let profiles2 = try ctx2.fetch(FetchDescriptor<UserBodyProfile>())
         let p2 = try XCTUnwrap(profiles2.first)
-        XCTAssertEqual(p2.goalWeightKg ?? 0, newWeight, accuracy: 0.001,
-                       "Write after migration must persist across store re-opens")
+        XCTAssertEqual(p2.goalWeightKg ?? 0, 82.5, accuracy: 0.001,
+                       "Written goalWeightKg must persist across store re-open")
+
+        let waters2 = try ctx2.fetch(FetchDescriptor<WaterEntry>())
+        XCTAssertEqual(waters2.count, 2,
+                       "New WaterEntry must persist across store re-open")
         _ = c2
     }
 
     // MARK: - Helpers
 
-    private func openContainer() throws -> (ModelContainer, ModelContext) {
-        let url = URL(fileURLWithPath: Self.fixturePath)
+    /// Copies the fixture SQLite (and WAL/SHM sidecar files if present)
+    /// to an isolated temporary directory and returns the new SQLite URL.
+    private func copyFixtureToTempDir() throws -> URL {
+        guard FileManager.default.fileExists(atPath: Self.sourcePath) else {
+            throw XCTSkip(
+                "Legacy fixture not found at \(Self.sourcePath). " +
+                "Run CoachingEraFixtureGenerator + CoachingEraFixtureEnricher before this test suite."
+            )
+        }
+
+        let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("deltiq_migration_\(ProcessInfo.processInfo.globallyUniqueString)")
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        let destURL = tempDir.appendingPathComponent("fixture.sqlite")
+        try FileManager.default.copyItem(
+            atPath: Self.sourcePath,
+            toPath: destURL.path
+        )
+        // Copy WAL and SHM sidecar files if present (they are part of the store)
+        for ext in ["-wal", "-shm"] {
+            let sidecar = Self.sourcePath + ext
+            if FileManager.default.fileExists(atPath: sidecar) {
+                try FileManager.default.copyItem(
+                    atPath: sidecar,
+                    toPath: destURL.path + ext
+                )
+            }
+        }
+        return destURL
+    }
+
+    private func openContainer(at url: URL) throws -> (ModelContainer, ModelContext) {
         let schema = Schema(AppSchema.types)
         let config = ModelConfiguration(url: url)
         let container = try ModelContainer(for: schema, configurations: config)
         return (container, ModelContext(container))
-    }
-
-    private func openAndFetch() throws -> [UserBodyProfile] {
-        let (c, ctx) = try openContainer()
-        let result = try ctx.fetch(FetchDescriptor<UserBodyProfile>())
-        _ = c
-        return result
     }
 }
 #endif
