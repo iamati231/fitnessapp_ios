@@ -137,7 +137,7 @@ final class ExternalWorkoutImportServiceSportKindTests: XCTestCase {
         XCTAssertEqual(log.exercise?.enduranceSportKind, .running)
         XCTAssertEqual(log.distanceKm, 10)
 
-        let extracted = CardioHistoryExtractor.loggedSessions(from: sessions)
+        let extracted = TrainingActivityExtractor.extract(from: sessions)
         XCTAssertTrue(extracted[0].isRunning)
         XCTAssertEqual(extracted[0].runningDistanceKm, 10)
     }
@@ -155,7 +155,7 @@ final class ExternalWorkoutImportServiceSportKindTests: XCTestCase {
         let session = try XCTUnwrap(sessions.first)
         XCTAssertEqual(session.logs.first?.exercise?.enduranceSportKind, .cycling)
 
-        let extracted = CardioHistoryExtractor.loggedSessions(from: sessions)
+        let extracted = TrainingActivityExtractor.extract(from: sessions)
         XCTAssertFalse(extracted[0].isRunning, "ein importierter Radfahrt-Sample darf nie als Laufen gezaehlt werden")
         XCTAssertTrue(extracted[0].isCrossTrainingOnly)
         XCTAssertNil(extracted[0].runningDistanceKm)
@@ -182,7 +182,7 @@ final class ExternalWorkoutImportServiceSportKindTests: XCTestCase {
 
         let sessions = try context.fetch(FetchDescriptor<WorkoutSession>())
         XCTAssertEqual(sessions.count, 5)
-        let extracted = CardioHistoryExtractor.loggedSessions(from: sessions)
+        let extracted = TrainingActivityExtractor.extract(from: sessions)
 
         let totalRunningKm = extracted.compactMap(\.runningDistanceKm).reduce(0, +)
         XCTAssertEqual(totalRunningKm, 10 + 8 + 12, "Laufkilometer duerfen ausschliesslich aus den 3 Laufaktivitaeten stammen")
