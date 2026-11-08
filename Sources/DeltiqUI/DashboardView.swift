@@ -178,10 +178,6 @@ public struct DashboardView: View {
     /// `AddMealView` als Sheet — analog zu `showingNewMeasurement` oben.
     @State private var showingAddMealFromDashboard = false
 
-    @State private var showingTrainingLoadDetail = false
-    @State private var cachedDensityAssessment: TrainingDensityAnalyzer.Assessment?
-    @State private var cachedLoadTrend: TrainingLoadTrend?
-
     /// Gecachter Plateau-Befund — wird via .onChange(of: completedSessions, initial: true)
     /// aktualisiert, sodass die O(n·m)-Berechnung nur einmal pro Datenaenderung laeuft
     /// statt bis zu 4× pro SwiftUI-Render-Pass.
@@ -277,7 +273,6 @@ public struct DashboardView: View {
                         case .volumeOverTime:  volumeOverTimeChart
                         case .trainingCalendar: trainingCalendarCard
                         case .nutrition:       nutritionCard
-                        case .trainingLoadCard: trainingLoadDashboardCard
                         }
                     }
                 }
@@ -353,9 +348,6 @@ public struct DashboardView: View {
         // bei jeder Session-Änderung neu berechnen (O(n) statt pro Render-Pass).
         .onChange(of: completedSessions, initial: true) {
             cachedPlateauFinding = computePlateauFinding()
-            let densityResult = computeTrainingDensityAssessment()
-            cachedDensityAssessment = densityResult.density
-            cachedLoadTrend = densityResult.trend
         }
         .alert(
             Text("dashboard.onboardingPlanCreationFailed.title", bundle: .module),
@@ -384,11 +376,6 @@ public struct DashboardView: View {
         .sheet(item: $comebackAssessment) { assessment in
             ComebackPromptSheet(assessment: assessment) { factor in
                 resolveComeback(factor: factor)
-            }
-        }
-        .sheet(isPresented: $showingTrainingLoadDetail) {
-            if let assessment = cachedDensityAssessment {
-                TrainingLoadDetailView(assessment: assessment)
             }
         }
         // DEL-042: Conflict-Dialog wenn der User in Plan A starten will,
@@ -2467,102 +2454,6 @@ public struct DashboardView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("dashboard.resume.caption", bundle: .module))
-    }
-
-    /// Gemeinsame Karten-Huelle fuer Coaching-Cards:
-    /// DeltiqCard > HStack > Image + content + Spacer.
-    private func laufCoachCardShell<Content: View>(
-        systemImage: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        let inner = content()
-        return DeltiqCard {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: systemImage)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(Color.deltiqOrange)
-                    .font(.title3)
-                VStack(alignment: .leading, spacing: 8) {
-                    inner
-                }
-                Spacer(minLength: 0)
-            }
-        }
-    }
-
-    // MARK: - Phase 2D: Trainingsbelastungs-Karte
-
-    @ViewBuilder
-    private var trainingLoadDashboardCard: some View {
-        if let assessment = cachedDensityAssessment, assessment.outcome != .insufficientData {
-            laufCoachCardShell(systemImage: trainingLoadOutcomeIcon(assessment.outcome)) {
-                Text(trainingLoadOutcomeLabel(assessment.outcome))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                HStack(spacing: 4) {
-                    Text(String(format: String(localized: "trainingDensity.card.daysPerWeek", bundle: .module), assessment.trainingDaysLast7))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("·")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(String(format: String(localized: "trainingDensity.card.consecutiveDays", bundle: .module), assessment.consecutiveTrainingDays))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button {
-                        showingTrainingLoadDetail = true
-                    } label: {
-                        Text("trainingDensity.card.showDetails", bundle: .module)
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.deltiqOrange)
-                }
-            }
-        }
-    }
-
-    private func trainingLoadOutcomeIcon(_ outcome: TrainingDensityAnalyzer.Outcome) -> String {
-        switch outcome {
-        case .balanced: return "checkmark.circle"
-        case .increasingLoad: return "arrow.up.circle"
-        case .highTrainingDensity: return "exclamationmark.circle"
-        case .insufficientRecoveryEvidence, .insufficientData: return "questionmark.circle"
-        }
-    }
-
-    private func trainingLoadOutcomeLabel(_ outcome: TrainingDensityAnalyzer.Outcome) -> String {
-        switch outcome {
-        case .balanced: return String(localized: "trainingDensity.outcome.balanced", bundle: .module)
-        case .increasingLoad: return String(localized: "trainingDensity.outcome.increasingLoad", bundle: .module)
-        case .highTrainingDensity: return String(localized: "trainingDensity.outcome.highTrainingDensity", bundle: .module)
-        case .insufficientRecoveryEvidence: return String(localized: "trainingDensity.outcome.insufficientRecoveryEvidence", bundle: .module)
-        case .insufficientData: return String(localized: "trainingDensity.outcome.insufficientData", bundle: .module)
-        }
-    }
-
-    /// Führt die komplette 2A→2B→2C-Pipeline durch und cached das Ergebnis.
-    /// Aufgerufen von `.onChange(of: completedSessions, initial: true)`.
-    private func computeTrainingDensityAssessment() -> (density: TrainingDensityAnalyzer.Assessment?, trend: TrainingLoadTrend?) {
-        let activities = TrainingActivityExtractor.extract(from: completedSessions)
-        guard !activities.isEmpty else { return (nil, nil) }
-        let now = Date()
-        let calendar = Calendar.current
-        let windowStart = calendar.date(byAdding: .weekOfYear, value: -12, to: now) ?? now
-        let weeks = TrainingLoadAggregator.aggregate(
-            activities: activities, windowStart: windowStart, now: now, calendar: calendar
-        )
-        let trend = TrainingLoadTrendAnalyzer.analyze(weeks: weeks, now: now, calendar: calendar)
-        let deloadIsActive = isDeloadActive
-        let input = TrainingDensityAnalyzer.Input(
-            activities: activities,
-            trend: trend,
-            deloadIsActive: deloadIsActive,
-            now: now,
-            calendar: calendar
-        )
-        return (TrainingDensityAnalyzer.analyze(input: input), trend)
     }
 
     /// DEL-215: Resume fuer beliebige offene Sessions. Plan-gebundene

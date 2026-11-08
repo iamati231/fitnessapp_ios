@@ -31,11 +31,6 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     case volumeOverTime    // DEL-178: Wochen-Volume-Trend (BarMark)
     case trainingCalendar  // DEL-197: Monats-Kalender + Wochen-Streak
     case nutrition         // Task 9: Tagesuebersicht-Teaser + "Mahlzeit hinzufuegen"
-    /// AI-Running-Coach Phase 2D: Trainingsbelastungs-Karte — zeigt
-    /// `TrainingDensityAnalyzer.Assessment` kompakt an und öffnet
-    /// eine 9-teilige Detailansicht. UNABHÄNGIG von `cardioCoachingEnabled`
-    /// (Ticket-Leitplanke: "darf nicht von cardioCoachingEnabled abhängen").
-    case trainingLoadCard
 
     /// xcstrings-Lookup-Key: `widget.{rawValue}.name`.
     public var localizationKey: String {
@@ -60,7 +55,6 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
             .cardioPace,
             .recentWorkouts,
             .nutrition,
-            .trainingLoadCard,
         ]
     }
 }
