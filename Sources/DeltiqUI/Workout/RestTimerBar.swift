@@ -167,9 +167,13 @@ struct RestTimerBar: View {
         }
         #endif
         #if canImport(AudioToolbox)
+        if timerHapticsEnabled {
+            // kSystemSoundID_Vibrate ignoriert den Silent-Switch — spuerbar auch
+            // wenn das iPhone lautlos geschaltet ist.
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+        }
         if timerSoundEnabled {
             // SystemSoundID 1005 = "New Mail"-Ding (kurz, klar, nicht aufdringlich).
-            // Alternative: 1003 = "SMS-Recieved", 1322 = "Tweet-Sent".
             AudioServicesPlaySystemSound(1005)
         }
         #endif
