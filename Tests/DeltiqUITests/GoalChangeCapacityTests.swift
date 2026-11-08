@@ -393,7 +393,8 @@ final class GoalChangeCapacityTests: XCTestCase {
     }
 
     /// T3: Save-Fehler nach den in-memory-Mutationen → revert stellt ALLE Änderungen
-    /// zurück, kein teilweise persistierter Zustand.
+    /// zurück; frischer Kontext auf demselben In-Memory-Store bestätigt: weder
+    /// Ruhetag-Konvertierung noch neuer Cardio-Tag wurden persistiert.
     func testFindingA_insertCombined_saveFailure_noPartialPersistentChange() throws {
         let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
         context.insert(plan)
@@ -426,10 +427,18 @@ final class GoalChangeCapacityTests: XCTestCase {
             XCTAssert(error is TestSaveError)
         }
 
-        // Revert muss ALLE Mutationen rückgängig machen
+        // In-Memory-Rollback
         XCTAssertEqual(restDay.type, .rest, "Ruhetag wd3 muss nach Rollback wieder .rest sein")
         XCTAssertEqual(plan.days.count, daysBefore,
-            "kein neuer Tag auf wd7 darf persistent geblieben sein")
+            "kein neuer Tag auf wd7 darf im plan.days-Array stehen")
+
+        // Persistenz-Verifikation: frischer Kontext zeigt nur den initial gespeicherten Zustand
+        let freshCtx = ModelContext(container)
+        let storedDays = try freshCtx.fetch(FetchDescriptor<TrainingDay>())
+        XCTAssertNil(storedDays.first { $0.weekday == 7 },
+            "kein Tag auf wd7 darf im Store persistiert sein")
+        XCTAssertEqual(storedDays.first { $0.weekday == 3 }?.type, .rest,
+            "Ruhetag wd3 muss im Store weiterhin type .rest haben")
     }
 
     /// T4: eligibleDays.isEmpty + eligibleRestDays.isEmpty → freeWds-Pfad (bestehend).
