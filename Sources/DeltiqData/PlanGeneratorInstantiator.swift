@@ -1153,6 +1153,72 @@ public enum PlanGeneratorInstantiator {
         return newCardioDays.count
     }
 
+    /// Finding A fix (eligibleDays.isEmpty + combined): fuegt neue Cardio-Tage atomar ein —
+    /// `restDays.count` Ruhetage werden umgewandelt (targetType .cardio), `weekdays.count` neue
+    /// TrainingDay-Objekte auf freien Wochentagen erzeugt — ALLES in einem Save, kein halb
+    /// angewendetes Ergebnis. Validiert ALLE Vorbedingungen vor der ersten Mutation.
+    /// Schlaegt der Save fehl: Snapshots revertiert + neu erzeugte Tage geloescht.
+    /// `restDays.count + weekdays.count` MUSS >= `newCardioDays.count` sein.
+    @discardableResult
+    public static func insertCoachCardioDaysUsingRestAndFreeWeekdays(
+        plan: TrainingPlan,
+        restDays: [TrainingDay],
+        weekdays: [Int],
+        newCardioDays: [DaySpec],
+        in context: ModelContext
+    ) throws -> Int {
+        guard !newCardioDays.isEmpty else { return 0 }
+        guard restDays.count + weekdays.count >= newCardioDays.count else {
+            throw CardioInsertionError.insufficientRestDays
+        }
+        for day in restDays {
+            guard day.plan?.persistentModelID == plan.persistentModelID else {
+                throw CardioInsertionError.restDayBelongsToAnotherPlan
+            }
+            guard RunCoachPlanAdjustment.isEligibleRestDayForInsertion(day) else {
+                throw CardioInsertionError.restDayNoLongerEligible
+            }
+        }
+        let restSlice = Array(newCardioDays.prefix(restDays.count))
+        let freeSlice = Array(newCardioDays.suffix(from: restDays.count))
+        let (timeBasedNames, compoundNames) = ProgramInstantiator.libraryLookupNames()
+        let specByName = ProgramInstantiator.libraryLookupSpecs()
+        var snapshots: [DayMutationSnapshot] = []
+        var createdDays: [TrainingDay] = []
+        for (day, spec) in zip(restDays, restSlice) {
+            snapshots.append(apply(
+                spec, to: day, timeBasedNames: timeBasedNames,
+                compoundNames: compoundNames, specByName: specByName,
+                in: context, targetType: .cardio
+            ))
+        }
+        for (weekday, spec) in zip(weekdays, freeSlice) {
+            let day = TrainingDay(
+                name: "Ruhetag", weekday: weekday, type: .rest,
+                plan: plan, localizationKey: "day.restDay.title",
+                isAutoFilledPlaceholder: true
+            )
+            context.insert(day)
+            createdDays.append(day)
+            snapshots.append(apply(
+                spec, to: day, timeBasedNames: timeBasedNames,
+                compoundNames: compoundNames, specByName: specByName,
+                in: context, targetType: .cardio
+            ))
+        }
+        do {
+            try save(context)
+        } catch {
+            revert(snapshots, in: context)
+            for day in createdDays {
+                plan.days.removeAll { $0.persistentModelID == day.persistentModelID }
+                context.delete(day)
+            }
+            throw error
+        }
+        return newCardioDays.count
+    }
+
     /// Nachbesserung (Review nach Task #197): macht `apply(...)` fuer genau die Tage rueckgaengig,
     /// die diese `recalculate`-Ausfuehrung selbst veraendert hat - siehe Typ-Doku
     /// "Operations-/Fehlervertrag" Punkt 3. Reine Zuweisungen/Deletes frisch eingefuegter,

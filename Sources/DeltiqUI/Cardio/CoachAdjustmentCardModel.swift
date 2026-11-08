@@ -249,12 +249,30 @@ public struct CoachAdjustmentCardModel: Equatable {
                     plan: plan, weekdays: selectedWds, newCardioDays: newCardioDays, in: context
                 )
             } else {
-                let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
-                    eligible: eligibleRestDays, count: newCardioDays.count, otherDays: plan.days
-                )
-                count = try PlanGeneratorInstantiator.insertCoachCardioDays(
-                    plan: plan, restDays: selectedRestDays, newCardioDays: newCardioDays, in: context
-                )
+                let restCount = eligibleRestDays.count
+                if restCount >= newCardioDays.count {
+                    let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
+                        eligible: eligibleRestDays, count: newCardioDays.count, otherDays: plan.days
+                    )
+                    count = try PlanGeneratorInstantiator.insertCoachCardioDays(
+                        plan: plan, restDays: selectedRestDays, newCardioDays: newCardioDays, in: context
+                    )
+                } else {
+                    // Finding A fix: zu wenige Ruhetage - kombiniert Rest + freie Wochentage atomar.
+                    let freeWds = RunCoachPlanAdjustment.freeWeekdays(in: plan)
+                    let neededFromFree = newCardioDays.count - restCount
+                    guard freeWds.count >= neededFromFree else { return 0 }
+                    let selectedRestDays = RunCoachPlanAdjustment.selectRestDaysForInsertion(
+                        eligible: eligibleRestDays, count: restCount, otherDays: plan.days
+                    )
+                    let selectedWds = RunCoachPlanAdjustment.selectWeekdaysForNewDays(
+                        free: freeWds, count: neededFromFree, otherDays: plan.days
+                    )
+                    count = try PlanGeneratorInstantiator.insertCoachCardioDaysUsingRestAndFreeWeekdays(
+                        plan: plan, restDays: selectedRestDays, weekdays: selectedWds,
+                        newCardioDays: newCardioDays, in: context
+                    )
+                }
             }
         } else if newCardioDays.count > eligibleDays.count {
             // Finding 1 (Lauf-Coaching-Audit): neues Ziel braucht MEHR Lauftage als

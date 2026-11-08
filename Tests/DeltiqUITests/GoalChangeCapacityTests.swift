@@ -331,6 +331,242 @@ final class GoalChangeCapacityTests: XCTestCase {
         XCTAssertEqual(count, 0, "ohne Stärkekonversion: 1 Ruhetag < 2 benötigt → accept() muss 0 zurückgeben")
     }
 
+    // MARK: - Behavioral: Finding A — eligibleDays.isEmpty combined rest+free
+
+    /// T1: 1 Ruhetag + 1 freier Wochentag, desired=2 → insertCombined liefert 2,
+    /// beide Tage erhalten type == .cardio (kein partielles Ergebnis).
+    func testFindingA_insertCombined_oneRest_oneFree_inserts2() throws {
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+        let restDay = TrainingDay(
+            name: "Ruhetag", weekday: 3, type: .rest, plan: plan,
+            localizationKey: "day.restDay.title", isAutoFilledPlaceholder: true
+        )
+        context.insert(restDay)
+        plan.days.append(restDay)
+        // wd4-6 besetzt damit wd7 frei bleibt
+        for wd in [4, 5, 6] {
+            let d = TrainingDay(name: "Ruhetag", weekday: wd, type: .rest, plan: plan)
+            context.insert(d)
+            plan.days.append(d)
+        }
+        try context.save()
+
+        let spec = DaySpec(name: "Run", type: .cardio, sequenceIndex: 1, exercises: [])
+        let count = try PlanGeneratorInstantiator.insertCoachCardioDaysUsingRestAndFreeWeekdays(
+            plan: plan, restDays: [restDay], weekdays: [7],
+            newCardioDays: [spec, spec], in: context
+        )
+
+        XCTAssertEqual(count, 2, "rest=1 + free=1 → 2 neue Cardio-Tage erwartet")
+        let cardioDays = plan.days.filter { $0.type == .cardio }
+        XCTAssertEqual(cardioDays.count, 2, "beide Tage müssen type == .cardio haben")
+        XCTAssertEqual(restDay.type, .cardio, "Ruhetag wd3 muss in .cardio umgewandelt worden sein")
+    }
+
+    /// T2: Gleiche Ausgangslage aber kein freier Wochentag → guard wirft
+    /// insufficientRestDays BEVOR jede Mutation, plan.days unverändert.
+    func testFindingA_insertCombined_insufficientCapacity_throwsBeforeMutation() throws {
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+        let restDay = TrainingDay(
+            name: "Ruhetag", weekday: 3, type: .rest, plan: plan,
+            localizationKey: "day.restDay.title", isAutoFilledPlaceholder: true
+        )
+        context.insert(restDay)
+        plan.days.append(restDay)
+        try context.save()
+
+        let spec = DaySpec(name: "Run", type: .cardio, sequenceIndex: 1, exercises: [])
+        let daysBefore = plan.days.count
+
+        XCTAssertThrowsError(
+            try PlanGeneratorInstantiator.insertCoachCardioDaysUsingRestAndFreeWeekdays(
+                plan: plan, restDays: [restDay], weekdays: [],
+                newCardioDays: [spec, spec], in: context
+            )
+        ) { error in
+            XCTAssertEqual(error as? PlanGeneratorInstantiator.CardioInsertionError, .insufficientRestDays)
+        }
+        XCTAssertEqual(plan.days.count, daysBefore, "bei Kapazitätsfehler: keine Mutation")
+        XCTAssertEqual(restDay.type, .rest, "Ruhetag-Typ muss unverändert .rest bleiben")
+    }
+
+    /// T3: Save-Fehler nach den in-memory-Mutationen → revert stellt ALLE Änderungen
+    /// zurück, kein teilweise persistierter Zustand.
+    func testFindingA_insertCombined_saveFailure_noPartialPersistentChange() throws {
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+        let restDay = TrainingDay(
+            name: "Ruhetag", weekday: 3, type: .rest, plan: plan,
+            localizationKey: "day.restDay.title", isAutoFilledPlaceholder: true
+        )
+        context.insert(restDay)
+        plan.days.append(restDay)
+        // wd4-6 besetzt damit wd7 frei bleibt
+        for wd in [4, 5, 6] {
+            let d = TrainingDay(name: "Ruhetag", weekday: wd, type: .rest, plan: plan)
+            context.insert(d)
+            plan.days.append(d)
+        }
+        try context.save()
+        let daysBefore = plan.days.count
+
+        // Save-Fehler simulieren: alle in-memory-Mutationen finden statt, aber save schlägt fehl
+        struct TestSaveError: Error {}
+        PlanGeneratorInstantiator.saveOverrideForTesting = { _ in throw TestSaveError() }
+
+        let spec = DaySpec(name: "Run", type: .cardio, sequenceIndex: 1, exercises: [])
+        XCTAssertThrowsError(
+            try PlanGeneratorInstantiator.insertCoachCardioDaysUsingRestAndFreeWeekdays(
+                plan: plan, restDays: [restDay], weekdays: [7],
+                newCardioDays: [spec, spec], in: context
+            )
+        ) { error in
+            XCTAssert(error is TestSaveError)
+        }
+
+        // Revert muss ALLE Mutationen rückgängig machen
+        XCTAssertEqual(restDay.type, .rest, "Ruhetag wd3 muss nach Rollback wieder .rest sein")
+        XCTAssertEqual(plan.days.count, daysBefore,
+            "kein neuer Tag auf wd7 darf persistent geblieben sein")
+    }
+
+    /// T4: eligibleDays.isEmpty + eligibleRestDays.isEmpty → freeWds-Pfad (bestehend).
+    func testFindingA_accept_eligibleDaysEmpty_onlyFreeWeekdays_insertsCorrectly() throws {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: .tenK
+        )
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 20)
+        profile.weeklyBaseVolumeKm = 20
+        context.insert(profile)
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+        // 3 Stärketage, keine Auto-Ruhetage → eligibleRestDays.isEmpty
+        for wd in [1, 2, 3] {
+            let d = TrainingDay(name: "Legs", weekday: wd, type: .legs, plan: plan)
+            context.insert(d)
+            let ex = Exercise(name: "Squat", sets: 3, orderIndex: 0, primaryMuscle: .quads, day: d)
+            context.insert(ex)
+            d.exercises.append(ex)
+            d.generationFingerprint = d.currentContentFingerprint
+            plan.days.append(d)
+        }
+        // wd4-7 sind frei
+        try context.save()
+        let daysBefore = plan.days.count
+
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("kein Modell erzeugt — freeWds-Kapazität sollte genügen")
+        }
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertGreaterThan(count, 0, "freeWds-Pfad: mindestens 1 Cardio-Tag eingefügt")
+        XCTAssertEqual(plan.days.count, daysBefore + count,
+            "freeWds-Pfad erzeugt neue TrainingDay-Objekte")
+        let cardioDays = plan.days.filter { $0.type == .cardio }
+        XCTAssertEqual(cardioDays.count, count, "eingefügte Tage sind type .cardio")
+    }
+
+    /// T5: eligibleDays.isEmpty + eligibleRestDays.count >= desired → reiner Rest-Pfad (bestehend).
+    func testFindingA_accept_eligibleDaysEmpty_enoughRestDaysAlone_insertsCorrectly() throws {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: .tenK
+        )
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 20)
+        profile.weeklyBaseVolumeKm = 20
+        context.insert(profile)
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+        // 1 Stärketag, 4 Auto-Ruhetage (mehr als tenK braucht) → reiner Rest-Pfad
+        let strengthDay = TrainingDay(name: "Legs", weekday: 1, type: .legs, plan: plan)
+        context.insert(strengthDay)
+        let squat = Exercise(name: "Squat", sets: 3, orderIndex: 0, primaryMuscle: .quads, day: strengthDay)
+        context.insert(squat)
+        strengthDay.exercises.append(squat)
+        strengthDay.generationFingerprint = strengthDay.currentContentFingerprint
+        plan.days.append(strengthDay)
+        for wd in [2, 3, 4, 5] {
+            let d = TrainingDay(
+                name: "Ruhetag", weekday: wd, type: .rest, plan: plan,
+                localizationKey: "day.restDay.title", isAutoFilledPlaceholder: true
+            )
+            context.insert(d)
+            plan.days.append(d)
+        }
+        try context.save()
+        let daysBefore = plan.days.count
+
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("kein Modell erzeugt")
+        }
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertGreaterThan(count, 0, "reiner Rest-Pfad: Cardio-Tage aus Ruhetagen eingefügt")
+        XCTAssertEqual(plan.days.count, daysBefore,
+            "reiner Rest-Pfad: keine neuen Tage, nur vorhandene Ruhetage umgewandelt")
+    }
+
+    /// T6: Manuell bearbeitete und abgeschlossene Einheiten bleiben unverändert
+    /// nach accept() mit kombiniertem Rest+Free-Pfad (eligibleDays.isEmpty).
+    func testFindingA_accept_eligibleDaysEmpty_combined_preservesCompletedSessions() throws {
+        let profile = UserBodyProfile(
+            birthDate: Date(timeIntervalSince1970: 0), heightCm: 180, profile: .male,
+            cardioCoachingEnabled: true, cardioGoal: .tenK
+        )
+        profile.cardioRaceDate = Date().addingTimeInterval(60 * 60 * 24 * 7 * 20)
+        profile.weeklyBaseVolumeKm = 20
+        context.insert(profile)
+
+        let plan = TrainingPlan(name: "Plan", weeks: 8, isActive: true, targetEnvironment: .gym)
+        context.insert(plan)
+
+        // 1 Stärketag MIT abgeschlossener Session — muss unverändert bleiben
+        let completedDay = TrainingDay(name: "Legs", weekday: 1, type: .legs, plan: plan)
+        context.insert(completedDay)
+        let squat = Exercise(name: "Squat", sets: 3, orderIndex: 0, primaryMuscle: .quads, day: completedDay)
+        context.insert(squat)
+        completedDay.exercises.append(squat)
+        completedDay.generationFingerprint = completedDay.currentContentFingerprint
+        let session = WorkoutSession(startTime: Date(), day: completedDay)
+        context.insert(session)
+        completedDay.sessions.append(session)
+        plan.days.append(completedDay)
+
+        // 2 Auto-Ruhetage (restCount=2 < tenK=3 → neededFromFree=1 → kombinierter Pfad)
+        for wd in [2, 3] {
+            let d = TrainingDay(
+                name: "Ruhetag", weekday: wd, type: .rest, plan: plan,
+                localizationKey: "day.restDay.title", isAutoFilledPlaceholder: true
+            )
+            context.insert(d)
+            plan.days.append(d)
+        }
+        // wd4-6 nicht-einfügbare Ruhetage, wd7 ist frei
+        for wd in [4, 5, 6] {
+            let d = TrainingDay(name: "Ruhetag", weekday: wd, type: .rest, plan: plan)
+            context.insert(d)
+            plan.days.append(d)
+        }
+        try context.save()
+
+        guard let model = CoachAdjustmentCardModel.make(for: profile, activePlan: plan) else {
+            return XCTFail("kein Modell erzeugt")
+        }
+        let count = try model.accept(plan: plan, profile: profile, in: context)
+        XCTAssertGreaterThan(count, 0, "kombinierter Pfad: Cardio-Tage eingefügt")
+
+        // Abgeschlossene Session und Stärketag-Daten dürfen nicht angetastet worden sein
+        XCTAssertEqual(completedDay.sessions.count, 1,
+            "abgeschlossene Session muss nach accept() erhalten bleiben")
+        XCTAssertEqual(completedDay.name, "Legs", "manuell benannter Tag muss unverändert bleiben")
+        XCTAssertEqual(completedDay.type, .legs, "Stärketag-Typ muss unverändert bleiben")
+        XCTAssertEqual(completedDay.activeExercises.count, 1,
+            "Stärkeübung muss unverändert erhalten bleiben")
+    }
+
     /// Regressions-Schutz: accept() mit genug Ruhetagen allein muss weiterhin funktionieren.
     func testAccept_sufficientRestDaysAlone_succeeds() throws {
         let profile = UserBodyProfile(
