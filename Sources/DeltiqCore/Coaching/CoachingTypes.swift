@@ -249,68 +249,12 @@ public enum CoachingContext: String, Sendable {
     /// jedes Post-Workout-Kompliment. Entscheidung via `DeloadAdvisor`.
     case deloadRecommended
 
-    // MARK: - DEL-248 (Phase 4): Cardio-Coaching-Trigger
-
-    /// Lauf-Kilometer dieser Woche > 120% der Vorwoche — direktes
-    /// Cardio-Pendant zu `deloadRecommended` (dort bewusst nur Kraft,
-    /// Laufvolumen braucht eine eigene Rechnung). Rangiert seit DEL-249 VOR
-    /// `deloadRecommended`, nicht danach: anders als `reEntry`/
-    /// `deloadRecommended` (die sich durch ihre Bedingungen praktisch
-    /// gegenseitig ausschliessen) koennen beide bei einem Hybrid-Athleten
-    /// gleichzeitig zutreffen - struktureller Schaden durch zu schnell
-    /// gesteigertes Laufvolumen (Sehnen/Baender) braucht Wochen zum Heilen,
-    /// ZNS-Ermuedung durch Krafttraining nur 1-2 Tage. Entscheidung via
-    /// `CardioCoachingAdvisor.isVolumeSpike`.
-    case cardioVolumeSpike
-
     // MARK: - DEL-198 Coach-Ausbau (mehr Dialog-Anlässe)
 
     /// Die letzte VOLLE Trainingswoche war die volumenstärkste der
     /// gesamten Historie (>= 4 Wochen Daten). Positiver Meilenstein —
     /// rangiert vor den generischen Post-Workout-Komplimenten.
     case volumeRecord
-
-    /// Der Plan sieht einen langen Lauf vor, aber in den letzten 7 Tagen
-    /// wurde keiner geloggt. Rangiert vor den generischen Post-Workout-
-    /// Komplimenten. Entscheidung via `CardioCoachingAdvisor.isLongRunOverdue`.
-    case cardioMissedLongRun
-    /// Letzter lockerer Lauf war deutlich schneller als seine Zielpace
-    /// (Tages-Ziel, nicht Profil-weit). Entscheidung via
-    /// `CardioCoachingAdvisor.isJunkMiles`.
-    ///
-    /// **NICHT loeschen, obwohl aktuell kein Emitter existiert** (Review-
-    /// Fund nach dem initialen DEL-248-Phase-4-Ship, analog zu `newPR`/
-    /// `plateauDetected` oben): `PlanGenerator.cardioCandidates` setzt fuer
-    /// Easy-/Tempo-Zonen nur `targetDurationMinutes`, nie `targetDistanceKm`
-    /// - ohne Zieldistanz gibt es keine Zielpace zum Vergleich, der Trigger
-    /// haette bei generierten Plaenen also praktisch nie eine Grundlage.
-    /// Bewusst aus der Prioritaetskette entfernt statt mit einer pauschalen
-    /// Pace-Annahme im Generator "gefixt" - das waere die falsche Abkuerzung.
-    /// Die drei Catalog-Keys (`coaching.soft.cardioJunkMiles.*`) bleiben
-    /// dreisprachig fertig liegen. Wieder verdrahten, sobald Phase 1
-    /// (`current5kReferenceSeconds` + Pace-Zonen) echte, personalisierte
-    /// Pace-Daten liefert.
-    case cardioJunkMiles
-
-    /// Paket 3a (Laufversäumnis-Hinweis, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
-    /// wiederholt verfehlte/übersprungene geplante Lauf-Tage in einem
-    /// rollierenden Fenster (`CardioCoachingAdvisor.missedRunWindowDays`).
-    /// Reine Beobachtung ("wurde nicht protokolliert"), KEINE Aussage zur
-    /// Ursache ("überfordert"/"untrainiert"/Erholung) und KEINE automatische
-    /// Planänderung — der zugehörige CTA öffnet ausschließlich den
-    /// bestehenden Paket-1-Pfad (`CoachAdjustmentCardModel`/
-    /// `CoachAdjustmentPreviewView`). Entscheidung via
-    /// `CardioCoachingAdvisor.isRecurringMissedRunDays`, zusammengebaut vom
-    /// Core/Data-Projektionslayer `MissedRunDayEvaluator`.
-    case cardioMissedRunDays
-
-    /// Phase E: Laufpause >= 14 Tage bei Laeufer mit vorhandener Lauf-
-    /// Historie (>= 3 Sessions). Konservativer Wiedereinstiegs-Hinweis:
-    /// Distanz reduzieren (nicht Tempo), harten Effort akzeptieren. Rangiert
-    /// VOR dem generischen `reEntry` (running-spezifisch > allgemein) und
-    /// VOR `cardioMissedRunDays` (allgemeiner Wiedereinstieg > einzelne
-    /// verfehlte Tage). Entscheidung via `CardioCoachingAdvisor.isRunReEntry`.
-    case cardioReEntry
 
     /// Letzte Körpermessung > 14 Tage her, obwohl der User das Feature
     /// aktiv nutzt (>= 2 Messungen vorhanden). Sanfter Mess-Reminder.

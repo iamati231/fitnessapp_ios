@@ -237,9 +237,6 @@ public extension TrainingGoal {
 
 }
 
-/// P2.5: Ausdauerform-Auswahl fuer ein `TrainingGoal.endurance`-Profil
-/// (`PlanningContext.swift`, Core) — unabhaengig von `CardioGoal`
-/// (DEL-250, bestehendes Renn-Ziel-/Coaching-Feature) direkt darunter.
 public extension EnduranceModality {
     var localizedName: LocalizedStringResource {
         switch self {
@@ -257,18 +254,6 @@ public extension EnduranceModality {
         case .running: LocalizedStringResource("enduranceModality.running.blurb", bundle: .fitnessAppUI)
         case .cycling: LocalizedStringResource("enduranceModality.cycling.blurb", bundle: .fitnessAppUI)
         case .both:    LocalizedStringResource("enduranceModality.both.blurb",    bundle: .fitnessAppUI)
-        }
-    }
-}
-
-public extension CardioGoal {
-    var localizedName: LocalizedStringResource {
-        switch self {
-        case .generalFitness: LocalizedStringResource("cardioGoal.generalFitness", bundle: .fitnessAppUI)
-        case .fiveK:           LocalizedStringResource("cardioGoal.fiveK",           bundle: .fitnessAppUI)
-        case .tenK:            LocalizedStringResource("cardioGoal.tenK",            bundle: .fitnessAppUI)
-        case .halfMarathon:    LocalizedStringResource("cardioGoal.halfMarathon",    bundle: .fitnessAppUI)
-        case .marathon:        LocalizedStringResource("cardioGoal.marathon",        bundle: .fitnessAppUI)
         }
     }
 }

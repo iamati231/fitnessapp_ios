@@ -439,14 +439,12 @@ final class DataPortabilityRoundtripTests: XCTestCase {
                        "\"neu rechnen\" braucht generatorInputRaw, um nach einem Restore weiter zu funktionieren")
     }
 
-    /// Phase B (Laufcoaching Dual-Path, Task 5): `TrainingDay.isAutoFilledPlaceholder`
-    /// muss den Export/Import-Roundtrip ueberleben - ohne die additive
-    /// `is_auto_filled_placeholder`-Spalte in `buildDays`/`importPlanDays`
-    /// wuerde ein exportierter und re-importierter Plan jeden echten
-    /// Auto-Ruhetag stillschweigend auf `false` zuruecksetzen und damit
-    /// `RunCoachPlanAdjustment.eligibleRestDaysForInsertion` leer laufen
-    /// lassen. Mix aus `true`/`false`, damit kein Test versehentlich beide
-    /// Werte verwechselt (z.B. durch einen `?? true`-Tippfehler).
+    /// `TrainingDay.isAutoFilledPlaceholder` muss den Export/Import-Roundtrip
+    /// ueberleben - ohne die additive `is_auto_filled_placeholder`-Spalte in
+    /// `buildDays`/`importPlanDays` wuerde ein exportierter und re-importierter
+    /// Plan jeden echten Auto-Ruhetag stillschweigend auf `false` zuruecksetzen.
+    /// Mix aus `true`/`false`, damit kein Test versehentlich beide Werte
+    /// verwechselt (z.B. durch einen `?? true`-Tippfehler).
     func test_dataImportService_roundTrip_preservesIsAutoFilledPlaceholder() async throws {
         let source = try makeContainer()
         let ctx = source.mainContext
@@ -1054,45 +1052,6 @@ final class DataPortabilityRoundtripTests: XCTestCase {
                        "bewusst leere Hero-Metric-Liste darf nach dem Restore nicht auf den Default zurueckspringen")
     }
 
-    /// DEL-250: alle sechs neuen Cardio-Profil-Felder muessen den Export/
-    /// Import-Roundtrip ueberleben — inklusive `cardioRaceDate` (ein echtes
-    /// `Date?`, nicht nur ein String-Feld wie `cardioGoalRaw`).
-    func testCardioProfileFieldsSurviveRoundtrip() async throws {
-        let source = try makeContainer()
-        let ctx = source.mainContext
-
-        let profile = UserBodyProfile(
-            birthDate: Date(timeIntervalSince1970: 760_000_000),
-            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
-        )
-        profile.cardioCoachingEnabled = true
-        profile.cardioGoal = .halfMarathon
-        profile.cardioRaceDate = Date(timeIntervalSince1970: 1_800_000_000)
-        profile.current5kReferenceSeconds = 1_500
-        profile.weeklyBaseVolumeKm = 25.5
-        profile.maxHeartRateBpm = 188
-        ctx.insert(profile)
-        try ctx.save()
-
-        let bundle = try DataExportService.makeExport(context: ctx)
-        let target = try makeContainer()
-        _ = try await DataImportService.performImport(
-            zipData: bundle.data,
-            context: target.mainContext,
-            strategy: .appendOnly
-        )
-
-        let imported = try XCTUnwrap(try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first)
-        XCTAssertEqual(imported.cardioCoachingEnabled, true)
-        XCTAssertEqual(imported.cardioGoal, .halfMarathon)
-        let restoredRaceDate = try XCTUnwrap(imported.cardioRaceDate)
-        XCTAssertEqual(restoredRaceDate.timeIntervalSince1970, 1_800_000_000, accuracy: 1.0)
-        XCTAssertEqual(imported.current5kReferenceSeconds, 1_500)
-        let restoredWeeklyVolumeKm = try XCTUnwrap(imported.weeklyBaseVolumeKm)
-        XCTAssertEqual(restoredWeeklyVolumeKm, 25.5, accuracy: 0.01)
-        XCTAssertEqual(imported.maxHeartRateBpm, 188)
-    }
-
     /// Audit-Fund (Deltiq-Ernaehrungsassistent): die 4 Tagesziel-Felder
     /// fehlten in `buildProfile`'s CSV-Spalten — ein Backup/Restore liess
     /// sie stillschweigend verschwinden, auch wenn das `UserBodyProfile`-
@@ -1222,134 +1181,6 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(importedItem.nutrientsSnapshot.carbsG.value, 12)
         XCTAssertTrue(importedItem.nutrientsSnapshot.proteinG.isUnknown, "fehlendes Protein darf nach dem Restore nicht 0 sein")
         XCTAssertTrue(importedItem.nutrientsSnapshot.fatG.isUnknown, "fehlendes Fett darf nach dem Restore nicht 0 sein")
-    }
-
-    /// DEL-250: ein Profil OHNE Cardio-Ziele (Default-Zustand, z.B.
-    /// Bestandsnutzer nach einem Update) darf beim Roundtrip nicht
-    /// versehentlich Werte "erfinden" — alle sechs Felder bleiben auf
-    /// ihrem Default/nil.
-    func testCardioProfileDefaultsSurviveRoundtrip() async throws {
-        let source = try makeContainer()
-        let ctx = source.mainContext
-
-        let profile = UserBodyProfile(
-            birthDate: Date(timeIntervalSince1970: 760_000_000),
-            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
-        )
-        ctx.insert(profile)
-        try ctx.save()
-
-        let bundle = try DataExportService.makeExport(context: ctx)
-        let target = try makeContainer()
-        _ = try await DataImportService.performImport(
-            zipData: bundle.data,
-            context: target.mainContext,
-            strategy: .appendOnly
-        )
-
-        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
-        XCTAssertEqual(imported?.cardioCoachingEnabled, false)
-        XCTAssertEqual(imported?.cardioGoal, .generalFitness)
-        XCTAssertNil(imported?.cardioRaceDate)
-        XCTAssertNil(imported?.current5kReferenceSeconds)
-        XCTAssertNil(imported?.weeklyBaseVolumeKm)
-        XCTAssertNil(imported?.maxHeartRateBpm)
-    }
-
-    // Handoff "Lauf-Coaching - Machbarkeits-Check": der Fingerprint muss
-    // ein Backup/Restore ueberleben, sonst zeigt die Karte nach einem
-    // Restore erneut einen bereits verworfenen/angenommenen Vorschlag.
-    func testCardioFeasibilityDismissedFingerprintSurvivesRoundtrip() async throws {
-        let source = try makeContainer()
-        let ctx = source.mainContext
-
-        let profile = UserBodyProfile(
-            birthDate: Date(timeIntervalSince1970: 760_000_000),
-            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
-        )
-        profile.cardioFeasibilityDismissedFingerprint = "marathon#1800000000#22.4"
-        ctx.insert(profile)
-        try ctx.save()
-
-        let bundle = try DataExportService.makeExport(context: ctx)
-        let target = try makeContainer()
-        _ = try await DataImportService.performImport(
-            zipData: bundle.data,
-            context: target.mainContext,
-            strategy: .appendOnly
-        )
-
-        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
-        XCTAssertEqual(imported?.cardioFeasibilityDismissedFingerprint, "marathon#1800000000#22.4")
-    }
-
-    func testCardioFeasibilityDismissedFingerprintDefaultsToNilOnRoundtrip() async throws {
-        let source = try makeContainer()
-        let ctx = source.mainContext
-
-        let profile = UserBodyProfile(
-            birthDate: Date(timeIntervalSince1970: 760_000_000),
-            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
-        )
-        ctx.insert(profile)
-        try ctx.save()
-
-        let bundle = try DataExportService.makeExport(context: ctx)
-        let target = try makeContainer()
-        _ = try await DataImportService.performImport(
-            zipData: bundle.data,
-            context: target.mainContext,
-            strategy: .appendOnly
-        )
-
-        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
-        XCTAssertNil(imported?.cardioFeasibilityDismissedFingerprint)
-    }
-
-    /// Paket-3a-Restpunkt 3 (Persistenz/Import, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
-    /// Kaltstart — ein frisch angelegtes Profil (kein Export/Import im
-    /// Spiel) hat den Hinweis nie abgelehnt. Trivial durch den Konstruktor-
-    /// Default, aber ausdruecklich verlangt und hier eigenstaendig
-    /// nachgewiesen statt nur behauptet.
-    func testMissedRunHintDismissedFingerprintDefaultsToNilOnColdStart() {
-        let profile = UserBodyProfile(
-            birthDate: Date(timeIntervalSince1970: 760_000_000),
-            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
-        )
-        XCTAssertNil(profile.missedRunHintDismissedFingerprint)
-    }
-
-    /// Paket-3a-Restpunkt 3: bewusster Vertrag (siehe `UserBodyProfile.
-    /// missedRunHintDismissedFingerprint`-Doc) — anders als
-    /// `cardioFeasibilityDismissedFingerprint` oben wird DIESES Feld beim
-    /// Export/Import NICHT mitgenommen, selbst wenn es vor dem Export
-    /// gesetzt war. Eigenstaendig nachgewiesen (nicht nur vom
-    /// `cardioPlanAdjustmentFingerprint`-Praezedenzfall abgeleitet) — ein
-    /// kuenftiger versehentlicher Export dieses Felds wuerde diesen Test
-    /// zum Fehlschlagen bringen.
-    func testMissedRunHintDismissedFingerprintResetsOnImport() async throws {
-        let source = try makeContainer()
-        let ctx = source.mainContext
-
-        let profile = UserBodyProfile(
-            birthDate: Date(timeIntervalSince1970: 760_000_000),
-            heightCm: 172, profile: .male, goalWeightKg: 74, environment: .gym
-        )
-        profile.missedRunHintDismissedFingerprint = "1700000000#flex:1#2#8"
-        ctx.insert(profile)
-        try ctx.save()
-
-        let bundle = try DataExportService.makeExport(context: ctx)
-        let target = try makeContainer()
-        _ = try await DataImportService.performImport(
-            zipData: bundle.data,
-            context: target.mainContext,
-            strategy: .appendOnly
-        )
-
-        let imported = try target.mainContext.fetch(FetchDescriptor<UserBodyProfile>()).first
-        XCTAssertNil(imported?.missedRunHintDismissedFingerprint,
-                     "bewusst zurueckgesetzt, nicht exportiert/importiert — siehe UserBodyProfile-Doc")
     }
 
     // Smart-Onboarding-Epic: `experience_track` ist eine additive CSV-Spalte

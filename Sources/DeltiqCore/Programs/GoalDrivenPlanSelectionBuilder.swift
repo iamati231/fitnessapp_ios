@@ -1,16 +1,33 @@
 import Foundation
 
-/// Deltiq-Weiterentwicklung, P3.1 (Doc01 §3 "Zielorientierter Einstieg –
-/// Option A", "Ziel zuerst, nicht Langhantel-/Kurzhanteltage"): uebersetzt
-/// eine Zielkarten-Auswahl (`TrainingGoal` + optionale `EnduranceModality`)
-/// in die bestehenden `PlanGeneratorTypeSelection`-Eingaben des
-/// UNVERAENDERTEN `PlanGenerator` — keine zweite, parallele Planungslogik
-/// (Doc01 §1: "Bestehende fachliche Engine ... erhalten"), nur ein neuer
-/// Uebersetzer davor. Der bisherige, direkt trainingsmittel-waehlende
-/// Schritt 1 (`PlanBuilderView.typesStep`) bleibt NUR noch fuer den
-/// Cardio-Machbarkeits-Handoff erreichbar (dort wird bereits eine konkrete
-/// `PlanGeneratorTypeSelection`-Mischung vorgegeben, siehe
-/// `PlanBuilderView.init(initialInput:)`).
+/// Ausdauerform fuer Ausdauer- und Hybrid-Plaene: Laufen, Radfahren oder
+/// beides. Wird von `GoalDrivenPlanSelectionBuilder` benutzt, um die
+/// Trainingstage auf die gewaehlten Disziplinen aufzuteilen.
+public enum EnduranceModality: String, Sendable, Hashable, CaseIterable {
+    case running
+    case cycling
+    case both
+
+    public var trainingTypeKinds: [TrainingTypeKind] {
+        switch self {
+        case .running: return [.running]
+        case .cycling: return [.cycling]
+        case .both:    return [.running, .cycling]
+        }
+    }
+
+    public var symbol: String {
+        switch self {
+        case .running: return "figure.run"
+        case .cycling: return "bicycle"
+        case .both:    return "arrow.triangle.2.circlepath"
+        }
+    }
+}
+
+/// Uebersetzt eine Zielkarten-Auswahl (`TrainingGoal` + optionale
+/// `EnduranceModality`) in die bestehenden `PlanGeneratorTypeSelection`-
+/// Eingaben des UNVERAENDERTEN `PlanGenerator`.
 public enum GoalDrivenPlanSelectionBuilder {
 
     /// A12 (docs/DELTIQ_DEVICE_ACCEPTANCE.md, Runde 11): wie viele
@@ -149,8 +166,7 @@ public enum GoalDrivenPlanSelectionBuilder {
         totalDaysPerWeek: Int,
         sessionDurationMinutes: Int,
         experience: DifficultyLevel,
-        equipmentPreferences: Set<Equipment>,
-        cardioRunProfile: CardioRunProfile? = nil
+        equipmentPreferences: Set<Equipment>
     ) -> [PlanGeneratorTypeSelection] {
         guard totalDaysPerWeek > 0 else { return [] }
 
@@ -174,8 +190,7 @@ public enum GoalDrivenPlanSelectionBuilder {
         case .endurance:
             return enduranceSelections(
                 modality: enduranceModality ?? .running, totalDays: totalDaysPerWeek,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
-                cardioRunProfile: cardioRunProfile
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience
             )
 
         case .hybrid:
@@ -224,8 +239,7 @@ public enum GoalDrivenPlanSelectionBuilder {
                     if enduranceDays > 0 {
                         fallback.append(contentsOf: enduranceSelections(
                             modality: modality, totalDays: enduranceDays,
-                            sessionDurationMinutes: sessionDurationMinutes, experience: experience,
-                            cardioRunProfile: cardioRunProfile
+                            sessionDurationMinutes: sessionDurationMinutes, experience: experience
                         ))
                     }
                     return fallback
@@ -245,33 +259,23 @@ public enum GoalDrivenPlanSelectionBuilder {
             if enduranceDays > 0 {
                 result.append(contentsOf: enduranceSelections(
                     modality: modality, totalDays: enduranceDays,
-                    sessionDurationMinutes: sessionDurationMinutes, experience: experience,
-                    cardioRunProfile: cardioRunProfile
+                    sessionDurationMinutes: sessionDurationMinutes, experience: experience
                 ))
             }
             return result
         }
     }
 
-    /// `cardioRunProfile` wird auf JEDE hier erzeugte Selection gesetzt
-    /// (Laufen UND Radfahren bei `.both`) - `PlanGenerator.cardioCandidates`
-    /// liest das Feld ohnehin nur fuer `.running`-Selections aus (Pace nur
-    /// fuer `.easy`/`.tempo`-Laufzonen), Radfahren ignoriert es komplett
-    /// (siehe dortiger `guard selection.kind == .running`-Zweig). Ein
-    /// kind-abhaengiges Verzweigen hier waere also zusaetzlicher Code ohne
-    /// zusaetzlichen Effekt.
     private static func enduranceSelections(
         modality: EnduranceModality, totalDays: Int,
-        sessionDurationMinutes: Int, experience: DifficultyLevel,
-        cardioRunProfile: CardioRunProfile? = nil
+        sessionDurationMinutes: Int, experience: DifficultyLevel
     ) -> [PlanGeneratorTypeSelection] {
         let kinds = modality.trainingTypeKinds
         guard let firstKind = kinds.first else { return [] }
         guard kinds.count > 1, let secondKind = kinds.dropFirst().first else {
             return [PlanGeneratorTypeSelection(
                 kind: firstKind, daysPerWeek: totalDays,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
-                cardioRunProfile: cardioRunProfile
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience
             )]
         }
         let firstDays = Int((Double(totalDays) / 2).rounded(.up))
@@ -280,15 +284,13 @@ public enum GoalDrivenPlanSelectionBuilder {
         if firstDays > 0 {
             result.append(PlanGeneratorTypeSelection(
                 kind: firstKind, daysPerWeek: firstDays,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
-                cardioRunProfile: cardioRunProfile
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience
             ))
         }
         if secondDays > 0 {
             result.append(PlanGeneratorTypeSelection(
                 kind: secondKind, daysPerWeek: secondDays,
-                sessionDurationMinutes: sessionDurationMinutes, experience: experience,
-                cardioRunProfile: cardioRunProfile
+                sessionDurationMinutes: sessionDurationMinutes, experience: experience
             ))
         }
         return result

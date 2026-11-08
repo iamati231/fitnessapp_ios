@@ -21,11 +21,6 @@ struct ExerciseCard: View {
     let content: TrainingDayContentSnapshot.ExerciseEntry
     let session: WorkoutSession
     /// Task 8 (laufcoaching-remediation-round-2, Decision 1): durchgereicht
-    /// von `ActiveWorkoutView`s live `@Query private var profiles` bis zu
-    /// jeder `SetRow` - siehe dortige Doku-Kommentare fuer die "live, nicht
-    /// eingefroren"-Begruendung. Beide Felder sind reine Pass-through-Werte,
-    /// kein eigener State/Cache hier.
-    let cardioCoachingEnabled: Bool
     let current5kReferenceSeconds: Int?
     /// Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2: `true`
     /// fuer JEDEN generator-gebauten Plan (`.planBuilder` ODER
@@ -125,7 +120,6 @@ struct ExerciseCard: View {
                     session: session,
                     existingLog: existingLog(forSetIndex: setIndex),
                     previousLog: previousLog(forSetIndex: setIndex),
-                    cardioCoachingEnabled: cardioCoachingEnabled,
                     current5kReferenceSeconds: current5kReferenceSeconds,
                     isGeneratorPlan: isGeneratorPlan,
                     seedLog: seedLog(forSetIndex: setIndex),

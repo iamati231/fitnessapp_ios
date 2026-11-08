@@ -120,7 +120,7 @@ public struct PlanBuilderView: View {
     /// erst in `finishOnboarding()` existent). Im eigenstaendigen Modus
     /// (`onGenerated == nil`, z.B. `PlansListView`s "+") schreibt diese View
     /// die Entscheidung stattdessen direkt selbst, siehe `adoptPlan()`.
-    private let onEnduranceModalityChosen: (@MainActor (EnduranceModality?, Bool) -> Void)?
+    private let onEnduranceModalityChosen: (@MainActor (EnduranceModality?) -> Void)?
 
     /// Ticket "Gym: Alle Gewichte und Geraete standardmaessig beruecksichtigen":
     /// `equipmentPreferences` startet sonst leer (siehe dortige Doku) - ein
@@ -153,28 +153,13 @@ public struct PlanBuilderView: View {
     /// (unveraendertes Verhalten), NICHT den neuen Ziel-Schritt. Ein Input
     /// mit LEEREN `selections` (Onboarding, `nil` fuer `PlansListView`s "+")
     /// zeigt stattdessen den neuen zielorientierten Einstieg.
-    /// P4.1: `preseededEnduranceModality`/`preseededRunCoachWanted` fuellen
-    /// die Ausdauerform-/Laufcoach-Unterfrage des neuen Ziel-Schritts
-    /// (`enduranceModalitySubflow`) VOR, wenn der Aufrufer die Antwort
-    /// bereits kennt - konkret: `OnboardingView`s neuer, fruehere
-    /// `.enduranceModality`-Schritt (P4.1) hat die Frage schon gestellt,
-    /// BEVOR der User ueberhaupt in den eingebetteten Builder wechselt. Ohne
-    /// Vorbefuellung muesste der User dieselbe Frage ein zweites Mal von
-    /// Null beantworten - KEIN zweiter, konkurrierender Schalter (es bleibt
-    /// derselbe `onEnduranceModalityChosen`-Rueckkanal), nur eine bequemere
-    /// Startauswahl, die der User fuer DIESEN Plan weiterhin aendern kann.
-    /// Ohne Wirkung im `isPreSeededFlow`-Pfad (dort gibt es den Ziel-Schritt
-    /// gar nicht) und im eigenstaendigen `PlansListView`-"+"-Pfad (dort gibt
-    /// es keine vorherige Antwort).
     public init(
         initialInput: PlanGeneratorInput? = nil,
         preseededEnduranceModality: EnduranceModality? = nil,
-        preseededRunCoachWanted: Bool = false,
-        preseededCardioCoachSetupDraft: CardioCoachSetupDraft? = nil,
         preseededGoal: TrainingGoal? = nil,
         preseededDaysPerWeek: Int? = nil,
         onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil,
-        onEnduranceModalityChosen: (@MainActor (EnduranceModality?, Bool) -> Void)? = nil
+        onEnduranceModalityChosen: (@MainActor (EnduranceModality?) -> Void)? = nil
     ) {
         self.onGenerated = onGenerated
         self.onEnduranceModalityChosen = onEnduranceModalityChosen
@@ -190,17 +175,6 @@ public struct PlanBuilderView: View {
             _fixedWeekdays = State(initialValue: Set(initialInput.fixedWeekdays))
         }
         _selectedEnduranceModality = State(initialValue: preseededEnduranceModality)
-        _runCoachWanted = State(initialValue: preseededRunCoachWanted)
-        // Finding 1 (Laufcoaching-Audit-Fixes), erweitert um den gemeinsamen Setup-Entwurf
-        // (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): das endgueltige `UserBodyProfile`
-        // existiert im Onboarding noch nicht - ohne diese Vorbefuellung haette `currentInput`
-        // fuer die Laufcoach-Komponente von `cardioRunProfile` keine Quelle. `OnboardingView`
-        // uebergibt hier seinen eigenen, bereits im Onboarding-Schritt erfassten Setup-Entwurf
-        // (Ziel + optional Referenzzeit/Wochenumfang). Derselbe Entwurf dient im eigenstaendigen
-        // Modus (kein `onGenerated`, z.B. `PlansListView`s "+") als der lokal bearbeitbare Entwurf
-        // fuer das neue Setup-Sheet (siehe `enduranceModalitySubflow`) - ein frisches Profil ohne
-        // Vorgabe startet mit `.empty`, nie erfundenen Werten.
-        _cardioCoachSetupDraft = State(initialValue: preseededCardioCoachSetupDraft ?? .empty)
         // Geraete-Abnahme (A01): `trainingGoal`/`weeklyGoal` wurden im
         // umschliessenden `OnboardingView` bereits beantwortet, BEVOR der
         // User ueberhaupt in diesen eingebetteten Builder wechselt - ohne
@@ -314,22 +288,6 @@ public struct PlanBuilderView: View {
     /// in Laufen umwandeln"), ein bereits laufend selektiert wirkendes
     /// Segment waere genau das.
     @State private var selectedEnduranceModality: EnduranceModality?
-    /// Doc02 §3, Zustandstabelle: nur wirksam, wenn die Modalitaet Laufen
-    /// unterstuetzt (`EnduranceModality.supportsRunCoach`) - siehe
-    /// `applyEnduranceModalityChoiceIfNeeded`.
-    @State private var runCoachWanted = false
-    /// Finding 1 (Laufcoaching-Audit-Fixes), erweitert um den gemeinsamen Setup-Entwurf
-    /// (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): der Laufcoach-Setup-Entwurf (Ziel,
-    /// optional Referenzzeit/Wochenumfang/Renndatum/max. Herzfrequenz) - siehe
-    /// `init(preseededCardioCoachSetupDraft:)`-Doku. Dient zwei Zwecken: (1) Fallback-Quelle fuer
-    /// `effectiveCardioRunProfile`, solange `profiles.first` (noch) kein Profil liefert
-    /// (Onboarding); (2) der lokal bearbeitbare Entwurf fuer das Setup-Sheet im eigenstaendigen
-    /// Modus (siehe `enduranceModalitySubflow`).
-    @State private var cardioCoachSetupDraft: CardioCoachSetupDraft = .empty
-    /// Steuert das neue Setup-Sheet (eigenstaendiger Modus, erstmalige Aktivierung) - siehe
-    /// `enduranceModalitySubflow`.
-    @State private var showingCardioCoachSetup = false
-
     private var selectedTrainingGoal: TrainingGoal? {
         guard let selectedGoalCard else { return nil }
         switch selectedGoalCard {
@@ -1103,100 +1061,6 @@ public struct PlanBuilderView: View {
                 ForEach(EnduranceModality.allCases, id: \.self) { modality in
                     selectableOptionRow(title: String(localized: modality.localizedName), isSelected: selectedEnduranceModality == modality) {
                         selectedEnduranceModality = modality
-                        if !modality.supportsRunCoach { runCoachWanted = false }
-                    }
-                }
-            }
-            if let selectedEnduranceModality, selectedEnduranceModality.supportsRunCoach {
-                VStack(alignment: .leading, spacing: 8) {
-                    Divider()
-                    Text("planBuilder.goal.runCoach.question", bundle: .module)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    runCoachOptionRow(
-                        titleKey: "planBuilder.goal.runCoach.withoutCoach.title",
-                        blurbKey: "planBuilder.goal.runCoach.withoutCoach.blurb",
-                        isSelected: !runCoachWanted
-                    ) { runCoachWanted = false }
-                    runCoachOptionRow(
-                        titleKey: "planBuilder.goal.runCoach.withCoach.title",
-                        blurbKey: "planBuilder.goal.runCoach.withCoach.blurb",
-                        isSelected: runCoachWanted
-                    ) {
-                        runCoachWanted = true
-                        // Vor jeder Entscheidung: Entwurf aus dem evtl. bereits vorhandenen Profil
-                        // neu seeden (nicht den `.empty`-Init-Default stehenlassen) - sonst wuerde
-                        // `applyEnduranceModalityChoiceIfNeeded` unten ein bereits eingerichtetes
-                        // Profil mit leeren Werten ueberschreiben, wenn das Sheet (weil schon
-                        // eingerichtet) gar nicht erst gezeigt wird. "Bestehende Daten gehen nicht
-                        // verloren" (Auftrag, Abschnitt 3/8).
-                        if let profile = profiles.first {
-                            cardioCoachSetupDraft = CardioCoachSetupDraft(
-                                goal: profile.cardioGoal, raceDate: profile.cardioRaceDate,
-                                weeklyBaseVolumeKm: profile.weeklyBaseVolumeKm, maxHeartRateBpm: profile.maxHeartRateBpm,
-                                fiveKReferenceText: profile.current5kReferenceSeconds.map(PaceCalculator.formatDuration) ?? ""
-                            )
-                        }
-                        // Gemeinsamer Setup-Schritt (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt):
-                        // nur im EIGENSTAENDIGEN Modus (`onGenerated == nil`, z.B. `PlansListView`s
-                        // "+") - im eingebetteten Onboarding-Modus hat `OnboardingView` den Entwurf
-                        // bereits VOR dem Oeffnen dieses Builders inline erfasst (siehe dortige
-                        // Doku), ein zweites Sheet hier waere eine doppelte Abfrage.
-                        if onGenerated == nil, Self.needsCardioCoachSetup(
-                            runCoachWanted: true, hasExistingCoachSetup: profiles.first?.cardioCoachingEnabled == true
-                        ) {
-                            showingCardioCoachSetup = true
-                        }
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $showingCardioCoachSetup) { cardioCoachSetupSheet }
-    }
-
-    /// Gemeinsamer Setup-Schritt: ob der Setup-Schritt (erneut) gezeigt werden muss - reine,
-    /// testbare Bedingung statt in der Button-Action verborgen. "Bereits eingerichtet" wird aus
-    /// `profile.cardioCoachingEnabled` abgeleitet (siehe Auftrags-Design, Abschnitt 4), kein neues
-    /// persistiertes Flag: erst wenn alle drei Aktivierungs-Stellen (Onboarding, PlanBuilder,
-    /// Settings) ausnahmslos ueber diesen Setup-Schritt laufen, bevor `cardioCoachingEnabled` auf
-    /// `true` gesetzt wird, ist dieses Flag selbst der verlaessliche Beweis "wurde mindestens
-    /// einmal eingerichtet".
-    static func needsCardioCoachSetup(runCoachWanted: Bool, hasExistingCoachSetup: Bool) -> Bool {
-        runCoachWanted && !hasExistingCoachSetup
-    }
-
-    /// Gemeinsamer Setup-Schritt: Abbruch verwirft den Entwurf (naechstes Oeffnen startet wieder
-    /// von den zuletzt gespeicherten/leeren Werten, siehe `init`) UND nimmt die gerade getroffene
-    /// "mit Coach"-Auswahl zurueck - "keine teilweise Einrichtung wird als erfolgreich
-    /// persistiert" (Auftrag, Abschnitt 8, Fall 8).
-    @ViewBuilder
-    private var cardioCoachSetupSheet: some View {
-        NavigationStack {
-            ScrollView {
-                DeltiqSection(String(localized: "profile.section.cardio", bundle: .module).uppercased()) {
-                    CardioCoachSetupFields(draft: $cardioCoachSetupDraft)
-                }
-                .padding()
-            }
-            .background(Color.Deltiq.background.ignoresSafeArea())
-            .navigationTitle(Text("profile.section.cardio", bundle: .module))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        runCoachWanted = false
-                        showingCardioCoachSetup = false
-                    } label: {
-                        Text("common.cancel", bundle: .module)
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        showingCardioCoachSetup = false
-                    } label: {
-                        Text("common.done", bundle: .module)
                     }
                 }
             }
@@ -1226,33 +1090,6 @@ public struct PlanBuilderView: View {
         .buttonStyle(.plain)
     }
 
-    private func runCoachOptionRow(titleKey: String, blurbKey: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(String(localized: String.LocalizationValue(titleKey), bundle: .module))
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.primary)
-                    Text(String(localized: String.LocalizationValue(blurbKey), bundle: .module))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(Color.deltiqOrange)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? Color.deltiqOrange : Color.Deltiq.divider, lineWidth: isSelected ? 1.5 : 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
 
     /// "Weiter"-Gate fuer den Ziel-Schritt: ein Ziel MUSS gewaehlt sein, und
     /// `.endurance`/`.hybrid` brauchen zusaetzlich eine explizite
@@ -1505,37 +1342,6 @@ public struct PlanBuilderView: View {
 
     // MARK: - Schritt 3: die gerechnete Woche
 
-    /// Finding 1 (Laufcoaching-Audit-Fixes): reine, SwiftData-freie Herleitung der
-    /// Lauf-Coach-Eingabe aus der AKTUELLEN Builder-Auswahl (`CardioRunProfile`s
-    /// eigene Typ-Doku: "bleibt ohne SwiftData testbar") - die EINZIGE Quelle fuer
-    /// `currentInput`, damit es nicht noch eine zweite, womoeglich abweichende Stelle
-    /// gibt (doppelte/widersprüchliche Quellen fuer dieselbe Auswahl). Das Gate ist
-    /// `runCoachWanted` (die aktuelle Builder-Auswahl), NICHT das moeglicherweise noch
-    /// nicht existierende oder bereits veraltete gespeicherte Profil - sonst weicht ein
-    /// frisch im Builder umgeschalteter Coach, oder das Onboarding (noch kein Profil),
-    /// von dem ab, was der Nutzer hier tatsaechlich sieht und bestaetigt. `savedCardioGoal`
-    /// faellt auf `preseededCardioGoal` zurueck, wenn noch kein Profil existiert (Onboarding
-    /// oder frischer Setup-Entwurf im eigenstaendigen Modus) - erweitert
-    /// (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt) um denselben Fallback fuer
-    /// Referenzzeit/Wochenvolumen: fehlt BEIDES (kein Profil UND kein Entwurfswert), bleiben
-    /// sie `nil` - NIE erfunden.
-    static func effectiveCardioRunProfile(
-        runCoachWanted: Bool,
-        savedCardioGoal: CardioGoal?,
-        savedCurrent5kReferenceSeconds: Int?,
-        savedWeeklyBaseVolumeKm: Double?,
-        preseededCardioGoal: CardioGoal,
-        preseededCurrent5kReferenceSeconds: Int? = nil,
-        preseededWeeklyBaseVolumeKm: Double? = nil
-    ) -> CardioRunProfile? {
-        guard runCoachWanted else { return nil }
-        return CardioRunProfile(
-            goal: savedCardioGoal ?? preseededCardioGoal,
-            current5kReferenceSeconds: savedCurrent5kReferenceSeconds ?? preseededCurrent5kReferenceSeconds,
-            weeklyBaseVolumeKm: savedWeeklyBaseVolumeKm ?? preseededWeeklyBaseVolumeKm
-        )
-    }
-
     private var currentInput: PlanGeneratorInput {
         let selections: [PlanGeneratorTypeSelection]
         if isPreSeededFlow {
@@ -1568,30 +1374,13 @@ public struct PlanBuilderView: View {
             // in dieselben `PlanGeneratorTypeSelection`-Eingaben, die der
             // UNVERAENDERTE `PlanGenerator` schon immer erwartet hat - siehe
             // dortige Typ-Doku.
-            // Requirement A: der Lauf-Coach wirkt auf die generierten Tage nur,
-            // wenn der Nutzer ihn aktiv eingeschaltet hat - sonst exakt das
-            // bisherige Verhalten (siehe `CardioRunProfile`-Typ-Doku).
-            //
-            // Finding 1 (Laufcoaching-Audit-Fixes): siehe `effectiveCardioRunProfile`-Doku -
-            // einzige Quelle fuer diese Herleitung, damit Vorschau/gespeicherter Plan nie
-            // auseinanderlaufen koennen.
-            let cardioRunProfile = Self.effectiveCardioRunProfile(
-                runCoachWanted: runCoachWanted,
-                savedCardioGoal: profiles.first?.cardioGoal,
-                savedCurrent5kReferenceSeconds: profiles.first?.current5kReferenceSeconds,
-                savedWeeklyBaseVolumeKm: profiles.first?.weeklyBaseVolumeKm,
-                preseededCardioGoal: cardioCoachSetupDraft.goal,
-                preseededCurrent5kReferenceSeconds: cardioCoachSetupDraft.current5kReferenceSeconds,
-                preseededWeeklyBaseVolumeKm: cardioCoachSetupDraft.weeklyBaseVolumeKm
-            )
             selections = GoalDrivenPlanSelectionBuilder.makeSelections(
                 goal: selectedTrainingGoal ?? .hybrid,
                 enduranceModality: selectedEnduranceModality,
                 totalDaysPerWeek: totalDaysPerWeek,
                 sessionDurationMinutes: sessionDurationMinutes,
                 experience: experience,
-                equipmentPreferences: equipmentPreferences,
-                cardioRunProfile: cardioRunProfile
+                equipmentPreferences: equipmentPreferences
             )
         }
         return PlanGeneratorInput(
@@ -2388,19 +2177,6 @@ public struct PlanBuilderView: View {
                 // `CardioFeasibilityDayRow.subtitle` - diese Zeile ist die
                 // "fuellere" Geschwister-Darstellung derselben
                 // Easy/Tempo-Tage, siehe dortige Doku.
-                // Nachbesserung (finales Branch-Review, Fix 1): NUR fuer
-                // Laufen UND nur, wenn der Coach ueberhaupt aktiv ist - sonst
-                // zeigte dieser Zweig die Pace/den Fallback auch bei
-                // abgeschaltetem Coach und bei Radfahren (beide tragen
-                // ebenfalls `targetDurationMinutes`), was Review Focus 1
-                // ("Coach aus -> keine Verhaltensaenderung") fuer genau diese
-                // Vorschau verletzte.
-                if exercise.enduranceSportKind == .running, profiles.first?.cardioCoachingEnabled == true {
-                    if let pace = exercise.targetPaceMinutesPerKm {
-                        return "\(durationText) · \(PaceCalculator.formatPace(pace))"
-                    }
-                    return "\(durationText) · \(String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module))"
-                }
                 return durationText
             }
             if let distance = exercise.targetDistanceKm {
@@ -2469,27 +2245,6 @@ public struct PlanBuilderView: View {
         step = prev
     }
 
-    /// Siehe `onEnduranceModalityChosen`-Doku und `adoptPlan()`s Aufrufstelle
-    /// im eigenstaendigen Modus. Gemeinsamer Setup-Schritt
-    /// (Deltiq_Laufcoaching_Gemeinsamer_Setup-Schritt): persistiert danach denselben
-    /// `cardioCoachSetupDraft`, den `currentInput`/die Vorschau bereits verwendet haben
-    /// (Auftrag, Abschnitt 9/10: "Bestaetigung: gespeicherter Plan entspricht exakt der
-    /// Vorschau") - identisches Muster wie `CardioGoalEditorView.save()`/
-    /// `OnboardingView.finishOnboarding()`. `profile.cardioCoachingEnabled` wird ERST NACH
-    /// `setEnduranceModality` gelesen, weil dieser Aufruf den tatsaechlichen Wert setzt
-    /// (inkl. `supportsRunCoach`-Veto), nicht das rohe `runCoachWanted`.
-    private func applyEnduranceModalityChoiceIfNeeded(to profile: UserBodyProfile) {
-        guard !isPreSeededFlow, let goal = selectedTrainingGoal, goal == .endurance || goal == .hybrid else { return }
-        profile.setEnduranceModality(selectedEnduranceModality, runCoachEnabled: runCoachWanted)
-        if profile.cardioCoachingEnabled {
-            profile.cardioGoal = cardioCoachSetupDraft.goal
-            profile.cardioRaceDate = cardioCoachSetupDraft.raceDate
-            profile.weeklyBaseVolumeKm = cardioCoachSetupDraft.weeklyBaseVolumeKm
-            profile.maxHeartRateBpm = cardioCoachSetupDraft.maxHeartRateBpm
-            profile.current5kReferenceSeconds = cardioCoachSetupDraft.current5kReferenceSeconds
-        }
-    }
-
     private func adoptPlan() {
         // Bugfix (Nutzer-Feedback, "Neu rechnen"-Shuffle): der bereits in
         // Schritt 3 angezeigte Entwurf wird durchgereicht statt neu zu
@@ -2513,7 +2268,7 @@ public struct PlanBuilderView: View {
         // (kein lokaler `profile`-Zugriff, siehe Typ-Doku) meldet diese View
         // die Entscheidung stattdessen an den Aufrufer zurueck.
         if !isPreSeededFlow, let goal = selectedTrainingGoal, goal == .endurance || goal == .hybrid {
-            onEnduranceModalityChosen?(selectedEnduranceModality, runCoachWanted)
+            onEnduranceModalityChosen?(selectedEnduranceModality)
         }
 
         // DEL-243: siehe Typ-Doku - `onGenerated`
@@ -2558,11 +2313,6 @@ public struct PlanBuilderView: View {
         }
 
         // P3.1: im eigenstaendigen Modus (kein `onGenerated`, z.B.
-        // `PlansListView`s "+") gibt es keinen externen Aufrufer, der
-        // `onEnduranceModalityChosen` auswerten koennte - diese View schreibt
-        // die Entscheidung deshalb direkt selbst (siehe Doku oben).
-        applyEnduranceModalityChoiceIfNeeded(to: profile)
-
         // Nachbesserung (P2.3): `createPlan(for:)` buendelt Equipment-
         // Aufloesung + `build(...)` an einer Stelle statt hier erneut
         // `equipmentPlanningContext` separat abzufragen — siehe dortige Doku.

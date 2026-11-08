@@ -279,20 +279,11 @@ public enum DataExportService {
         // DEL-250: sechs weitere additive Spalten fürs Cardio-Profil, gleiches
         // Prinzip — ältere Importer ignorieren sie, ältere ZIPs liefern beim
         // Import row.optionalString/.date/.int/.double == nil bzw. den
-        // dokumentierten Default.
-        // Handoff "Lauf-Coaching - Machbarkeits-Check": siebte additive
-        // Spalte, gleiches Prinzip.
         var w = CSVWriter(headers: [
             "id", "birth_date", "height_cm", "profile", "goal_weight_kg",
             "environment", "first_name", "coaching_tone", "training_goal",
             "equipment_preferences", "dashboard_widgets", "hero_metric_slots",
-            "weekly_workout_goal", "cardio_coaching_enabled", "cardio_goal",
-            "cardio_race_date", "current_5k_reference_seconds",
-            "weekly_base_volume_km", "max_heart_rate_bpm",
-            "cardio_feasibility_dismissed_fingerprint",
-            // Smart-Onboarding-Epic: achte additive Spalte — aeltere
-            // Importer ignorieren sie, aeltere ZIPs liefern beim Import nil
-            // (= "noch nicht hergeleitet", der Backfill greift dann erneut).
+            "weekly_workout_goal",
             "experience_track",
             // Start-Check-Epic: 18 weitere additive Spalten fuer den
             // optionalen Baseline-Check. Gleiches Prinzip — jedes Feld ist
@@ -343,13 +334,6 @@ public enum DataExportService {
                 p.activeDashboardWidgetsRaw.joined(separator: ";"),
                 p.heroMetricSlotsRaw.joined(separator: ";"),
                 String(p.weeklyWorkoutGoal),
-                CSVWriter.bool(p.cardioCoachingEnabled),
-                p.cardioGoalRaw,
-                p.cardioRaceDate.map(CSVWriter.iso8601) ?? "",
-                p.current5kReferenceSeconds.map(String.init) ?? "",
-                CSVWriter.decimal(p.weeklyBaseVolumeKm),
-                p.maxHeartRateBpm.map(String.init) ?? "",
-                p.cardioFeasibilityDismissedFingerprint ?? "",
                 p.experienceTrackRaw ?? "",
                 p.baselineDate.map(CSVWriter.iso8601) ?? "",
                 p.baselineSourceRaw ?? "",

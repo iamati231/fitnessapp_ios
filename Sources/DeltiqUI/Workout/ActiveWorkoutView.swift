@@ -700,27 +700,7 @@ public struct ActiveWorkoutView: View {
                 exercise: exercise,
                 content: entry,
                 session: session,
-                // Task 8 (Decision 1): live aus der `@Query`, NIE
-                // zwischengespeichert - eine Profil-Aenderung waehrend der
-                // offenen Session muss sich sofort in der Ziel-Pace zeigen.
-                cardioCoachingEnabled: profiles.first?.cardioCoachingEnabled ?? false,
-                current5kReferenceSeconds: profiles.first?.current5kReferenceSeconds,
-                // Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2:
-                // Ziel-Pace darf auf JEDEM GENERATOR-gebauten Plan erscheinen
-                // (`.planBuilder` ODER `.cardioCoach`), NICHT nur auf einem
-                // Laufcoach-eigenen Plan - die beiden echten Coach-Pfade
-                // (Onboarding, `PlanBuilderView`-Assistent) stempeln
-                // `generationSource == .planBuilder`, NICHT `.cardioCoach`
-                // (das steht nur auf den beiden "separaten neuen Plan
-                // erzeugen"-Fallback-Pfaden in `CardioFeasibilityCardModel`).
-                // Ausgeschlossen bleibt ausschliesslich `.manual`
-                // (Template-instanziierte Plaene, siehe
-                // `ProgramTemplates.swift`: dort tragen "Long Run"-Uebungen
-                // eine komplett andere, nicht-Tempo-Bedeutung). Ein fehlender
-                // Tag/Plan/generationSource (`nil`) darf die Pace NICHT
-                // zeigen ("Quelle unbekannt" ist kein Grund, sie anzuzeigen)
-                // - `.map { $0 != .manual } ?? false` faellt daher explizit
-                // auf `false`, nicht auf `true`.
+                current5kReferenceSeconds: nil,
                 isGeneratorPlan: (session.day?.plan?.generationSource).map { $0 != .manual } ?? false,
                 activeTimedSet: $activeTimedSet,
                 onSetLogged: { setIndex in

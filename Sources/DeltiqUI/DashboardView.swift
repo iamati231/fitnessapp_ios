@@ -178,16 +178,6 @@ public struct DashboardView: View {
     /// `AddMealView` als Sheet — analog zu `showingNewMeasurement` oben.
     @State private var showingAddMealFromDashboard = false
 
-    /// Paket 3a (Laufversäumnis-Hinweis): CTA der `coachingInsightCard`
-    /// öffnet ausschließlich diesen bestehenden Paket-1-Pfad — kein neues
-    /// Sheet/keine neue Card-Komponente.
-    @State private var showingMissedRunAdjustmentPreview = false
-    @State private var showingCardioCoachDetail = false
-    /// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md).
-    @State private var showingRaceProgressDetail = false
-
-    /// AI-Running-Coach Phase 2D: Trainingsbelastungs-Karte.
-    /// Unabhaengig von `cardioCoachingEnabled` (Ticket-Leitplanke).
     @State private var showingTrainingLoadDetail = false
     @State private var cachedDensityAssessment: TrainingDensityAnalyzer.Assessment?
     @State private var cachedLoadTrend: TrainingLoadTrend?
@@ -287,8 +277,6 @@ public struct DashboardView: View {
                         case .volumeOverTime:  volumeOverTimeChart
                         case .trainingCalendar: trainingCalendarCard
                         case .nutrition:       nutritionCard
-                        case .runCoachCard:    runCoachDashboardCard
-                        case .raceProgressCard: raceProgressDashboardCard
                         case .trainingLoadCard: trainingLoadDashboardCard
                         }
                     }
@@ -396,34 +384,6 @@ public struct DashboardView: View {
         .sheet(item: $comebackAssessment) { assessment in
             ComebackPromptSheet(assessment: assessment) { factor in
                 resolveComeback(factor: factor)
-            }
-        }
-        // Paket 3a: der CTA des Laufversäumnis-Hinweises öffnet exakt
-        // dieselbe View wie der Paket-1-Pfad in `ProfileEditorView` — kein
-        // neuer Anpassungs-Mechanismus.
-        .sheet(isPresented: $showingMissedRunAdjustmentPreview) {
-            if let profile = profiles.first, let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) {
-                CoachAdjustmentPreviewView(profile: profile, activePlan: plan)
-            }
-        }
-        .sheet(isPresented: $showingCardioCoachDetail) {
-            if let profile = profiles.first, let model = cardioFeasibilityModel {
-                CardioCoachDetailView(
-                    profile: profile,
-                    model: model,
-                    daysSinceLastRunSession: daysSinceLastRunSession,
-                    last7DaysRunSessionCount: last7DaysRunSessionCount,
-                    last7DaysRunVolumeKm: last7DaysRunVolumeKm,
-                    raceProgressModel: raceProgressModel,
-                    densityAssessment: cachedDensityAssessment,
-                    loadTrend: cachedLoadTrend,
-                    planAdjustmentPending: planAdjustmentPending
-                )
-            }
-        }
-        .sheet(isPresented: $showingRaceProgressDetail) {
-            if let profile = profiles.first, let model = raceProgressModel {
-                RaceProgressDetailView(profile: profile, model: model)
             }
         }
         .sheet(isPresented: $showingTrainingLoadDetail) {
@@ -1531,42 +1491,6 @@ public struct DashboardView: View {
         activeCoachingContext == nil && activeSoftCoachingContext == .deloadRecommended
     }
 
-    // MARK: - Paket 3a Laufversäumnis-Hinweis
-
-    /// Live gerechnet bei jedem Render, keine gespeicherte "ausstehende
-    /// Empfehlung" — gleiches Prinzip wie `cardioFeasibilityModel`/
-    /// `coachAdjustmentModel`. `nil` deckt sowohl "Coach aus"/"kein aktiver
-    /// Plan" als auch "Daten unklar/unzureichend" als auch "unter der
-    /// Schwelle" als auch "aktuell abgelehnt" ab (siehe
-    /// `MissedRunDaysCardModel.make`-Dokumentation).
-    private var missedRunDaysModel: MissedRunDaysCardModel? {
-        guard let profile = profiles.first else { return nil }
-        return MissedRunDaysCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: activePlans), in: modelContext)
-    }
-
-    /// Zeigt die CTA-/Ablehnen-Zeile unter dem Hinweistext — nur wenn dieser
-    /// Kontext tatsächlich der aktive ist (gleiches Gate wie
-    /// `showsDeloadApplyAction`).
-    private var showsMissedRunDaysActions: Bool {
-        activeCoachingContext == nil && activeSoftCoachingContext == .cardioMissedRunDays
-    }
-
-    /// "Nicht jetzt": blendet den Hinweis aus (siehe
-    /// `MissedRunDaysCardModel.dismiss`-Dokumentation zur
-    /// Planfassung-/Beobachtungs-Bindung). Rührt den Plan nicht an.
-    private func dismissMissedRunDaysHint() {
-        guard let profile = profiles.first, let model = missedRunDaysModel else { return }
-        model.dismiss(profile: profile)
-        // Audit-Fix (Save-Fehler, niedrigste Prioritaet laut Audit): schlimmstenfalls
-        // taucht der Hinweis nach einem Kaltstart wieder auf - trotzdem kein
-        // stilles `try?` mehr, derselbe Toast wie die anderen Dashboard-Fixes oben.
-        do {
-            try modelContext.save()
-        } catch {
-            showTimedWorkoutSaveErrorToast($saveErrorMessage)
-        }
-    }
-
     /// Startet die Deload-Woche: Gewichte via DeloadManager halbieren,
     /// Ablaufdatum setzen. Bei 0 angepassten Übungen (kein aktiver Plan
     /// mit Gewichten) passiert nichts — kein Phantom-Deload-Banner.
@@ -1836,76 +1760,13 @@ public struct DashboardView: View {
 
     /// Auswahl in Prioritaets-Reihenfolge — erster Treffer gewinnt. Wird nur
     /// erreicht, wenn `activeCoachingContext` nil ist (keine P1-Warnung).
-    /// Nachtrag (Audit): diese Liste war ueber mehrere Tickets hinweg nicht
-    /// mitgepflegt worden - hier vollstaendig, in der tatsaechlichen
-    /// Code-Reihenfolge:
-    ///
-    ///   1. **cardioVolumeSpike**   — Lauf-KM dieser Woche > 120% der
-    ///      Vorwoche (DEL-248). Rangiert VOR deloadRecommended (DEL-249):
-    ///      struktureller Schaden durch zu schnell gesteigertes Laufvolumen
-    ///      (Sehnen/Baender) braucht Wochen zum Heilen, ZNS-Ermuedung durch
-    ///      Krafttraining nur 1-2 Tage - das akutere Verletzungsrisiko
-    ///      gewinnt, falls ein Hybrid-Athlet beide Ramps gleichzeitig faehrt.
-    ///   2. **deloadRecommended**   — Overreaching-Muster im Krafttraining
-    ///      (DEL-196). Gesundheitsrelevanter als jedes Kompliment.
-    ///   3. **reEntry**             — Lange nicht trainiert (≥5 Tage Pause).
-    ///      Der wichtigste Re-Engagement-Hinweis.
-    ///   4. **volumeRecord**        — Letzte volle Woche war die
-    ///      volumenstaerkste der Historie (DEL-198).
-    ///   5. **cardioMissedRunDays** — Paket 3a: wiederholt verfehlte/
-    ///      uebersprungene geplante Lauf-Tage in einem rollierenden Fenster
-    ///      (`CardioCoachingAdvisor.missedRunWindowDays`). Rangiert VOR
-    ///      `cardioMissedLongRun`: wer wiederholt Lauf-Tage verfehlt, erfuellt
-    ///      ueblicherweise auch dessen engere Bedingung (ein einzelner
-    ///      verpasster langer Lauf) gleich mit - das breitere, konsolidierte
-    ///      Muster ist die wichtigere Aussage. Dieselbe Prioritaetskette IST
-    ///      hier die Koordination gegen konkurrierende Hinweise fuer denselben
-    ///      Anlass (ein Treffer belegt den einzigen Karten-Slot) - kein
-    ///      zusaetzlicher Abgleich noetig.
-    ///   6. **cardioMissedLongRun** — Plan sieht einen langen Lauf vor, aber
-    ///      keiner in den letzten 7 Tagen geloggt (DEL-248).
-    ///   7. **postVolume**/**postCardio** — gestrige Session ueber 5.000 kg
-    ///      bzw. 5 km (Volumen gewinnt bei Gleichstand).
-    ///   8. **streak**              — ≥5 reale Sessions in den letzten 7 Tagen.
-    ///   9. **trainedYesterday**    — irgendeine reale Session gestern
-    ///      (DEL-211, faengt alles ab, was 7. nicht schon abdeckt).
-    ///  10. **planPreview**         — heutiger Plan-Tag ist ein Trainings-Tag.
-    ///  11. **measurementOverdue**/**hydrationLow**/**backupOverdue** —
-    ///      Feature-Nudges, niedrigste Prioritaet.
-    /// Sonst nil → Dashboard zeigt den neutralen Empty-State (DEL-166).
-    ///
-    /// **cardioJunkMiles** ist definiert (Case + dreisprachige Catalog-Keys),
-    /// aber bewusst NICHT Teil dieser Liste - siehe Doc-Kommentar auf
-    /// `CoachingContext.cardioJunkMiles` fuer den Grund.
     private var activeSoftCoachingContext: CoachingContext? {
-        // DEL-249: Cardio-Volumen-Spike zuerst - anders als reEntry/
-        // deloadRecommended (die sich durch ihre Bedingungen praktisch
-        // gegenseitig ausschliessen) koennen deloadRecommended und
-        // cardioVolumeSpike bei einem Hybrid-Athleten GLEICHZEITIG
-        // zutreffen. Cardio gewinnt bewusst: struktureller Schaden durch
-        // zu schnell gesteigertes Laufvolumen (Sehnen/Baender) braucht
-        // Wochen zum Heilen, ZNS-Ermuedung durch Krafttraining nur 1-2 Tage.
-        if isCardioVolumeSpikeActive { return .cardioVolumeSpike }
         // DEL-196: gesundheitsrelevanter als jedes Post-Workout-Kompliment.
-        // Praktisch nie gleichzeitig mit reEntry (Deload braucht hohe
-        // RECENT-Aktivität, reEntry Inaktivität).
         if shouldRecommendDeload { return .deloadRecommended }
-        // Phase E: Lauf-spezifischer Wiedereinstieg gewinnt vor dem generischen
-        // reEntry-Case — running-spezifischer Text > allgemeiner Kraft-Text.
-        if let runDays = daysSinceLastRunSession,
-           CardioCoachingAdvisor.isRunReEntry(daysSinceLastRun: runDays, priorRunSessionCount: priorRunSessionCount) {
-            return .cardioReEntry
-        }
         if let days = daysSinceLastRealSession, days >= 5 { return .reEntry }
         // DEL-198: Volumen-Rekord schlägt die generischen Post-Workout-
         // Komplimente — "beste Woche ever" ist die stärkere Nachricht.
         if hadVolumeRecordWeek { return .volumeRecord }
-        // Paket 3a: wiederholt verfehlte Lauf-Tage rangieren VOR dem
-        // engeren `cardioMissedLongRun` (siehe Dokumentation oben).
-        if missedRunDaysModel != nil { return .cardioMissedRunDays }
-        // DEL-248: ein fehlendes Schluessel-Training (Long Run) ist wichtiger
-        // als die generischen Post-Workout-Komplimente unten.
-        if isLongRunOverdueForActivePlan { return .cardioMissedLongRun }
         if let yKm = yesterdayCardioDistanceKm, let yVol = yesterdayVolumeKg {
             if yVol >= 5_000 { return .postVolume }
             if yKm >= 5      { return .postCardio }
@@ -1965,74 +1826,6 @@ public struct DashboardView: View {
               let lastFull = fullWeeks.last, lastFull.volumeKg > 0 else { return false }
         // Strikt größer als ALLE vorherigen vollen Wochen.
         return fullWeeks.dropLast().allSatisfy { $0.volumeKg < lastFull.volumeKg }
-    }
-
-    // MARK: - DEL-248 (Phase 4): Cardio-Coaching-Trigger
-
-    /// DEL-248: Cardio-Pendant zu `shouldRecommendDeload` — anders als dort
-    /// wird bewusst die LAUFENDE (unvollstaendige) aktuelle Woche gegen die
-    /// letzte volle Vorwoche verglichen, nicht zwei volle Wochen. Ziel ist,
-    /// einen Spike zu erkennen, WAEHREND er passiert ("schon Donnerstag bei
-    /// 130% der Vorwoche") - beim Warten auf eine volle Woche waere die
-    /// Warnung erst nuetzlich, wenn die Woche schon vorbei ist.
-    private var isCardioVolumeSpikeActive: Bool {
-        let calendar = Calendar.current
-        let now = Date()
-        guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else {
-            return false
-        }
-        func cardioKm(weeksAgo: Int) -> Double {
-            guard let start = calendar.date(byAdding: .weekOfYear, value: -weeksAgo, to: currentWeekStart),
-                  let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { return 0 }
-            return completedSessions
-                .filter { $0.isRealWorkout && $0.startTime >= start && $0.startTime < end }
-                .flatMap(\.logs)
-                .filter(\.resolvedIsCardio)
-                .compactMap(\.distanceKm)
-                .reduce(0, +)
-        }
-        return CardioCoachingAdvisor.isVolumeSpike(
-            currentWeekKm: cardioKm(weeksAgo: 0),
-            previousWeekKm: cardioKm(weeksAgo: 1)
-        )
-    }
-
-    /// DEL-248: der aktive Plan gilt als "hat einen langen Lauf", wenn seine
-    /// Cardio-Uebungen mindestens zwei unterschiedliche Ziel-Dauern haben -
-    /// die laengste davon ist dann `planLongRunTargetMinutes`. Bewusst
-    /// RELATIV zum eigenen Plan statt ein fixer globaler Minutenwert (siehe
-    /// Kommentar auf `CardioCoachingAdvisor.isLongRunOverdue`: ein
-    /// Anfaenger-Tier setzt seinen langen Lauf bei 50 Minuten an, ein
-    /// Performance-Tier bei 85 - ein einzelner globaler Schwellwert wuerde
-    /// fuer kuerzere Tiers nie greifen). Hat der Plan gar keine Cardio-
-    /// Uebungen, oder sind alle gleich lang (z.B. nur gleich lange Easy
-    /// Runs), gibt es keinen erkennbar LAENGEREN Tag ->
-    /// `planLongRunTargetMinutes` ist `nil`, die Frage ist gegenstandslos.
-    /// Rein strukturell, KEIN Namens-/Key-Abgleich (siehe Datei-Kommentar
-    /// auf `CardioCoachingAdvisor`: "Long Run" ist im Generator tatsaechlich
-    /// der Uebungs-Name der Tempo-Zone, ein Namensabgleich waere hier
-    /// irrefuehrend).
-    private var isLongRunOverdueForActivePlan: Bool {
-        guard let plan = ActivePlanResolver.cardioRelevantPlan(among: activePlans) else { return false }
-        let cardioDurations = plan.days
-            .flatMap(\.activeExercises)
-            .filter(\.isCardio)
-            .compactMap(\.targetDurationMinutes)
-        var planLongRunTargetMinutes: Int?
-        if let maxDuration = cardioDurations.max(), let minDuration = cardioDurations.min(),
-           maxDuration > minDuration {
-            planLongRunTargetMinutes = maxDuration
-        }
-        let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
-        let recentRunMinutes = completedSessions
-            .filter { $0.isRealWorkout && $0.startTime >= sevenDaysAgo }
-            .flatMap(\.logs)
-            .filter(\.resolvedIsCardio)
-            .compactMap { $0.durationSeconds.map { $0 / 60 } }
-        return CardioCoachingAdvisor.isLongRunOverdue(
-            planLongRunTargetMinutes: planLongRunTargetMinutes,
-            recentRunDurationsMinutes: recentRunMinutes
-        )
     }
 
     /// True wenn die letzte Körpermessung > 14 Tage her ist UND der User
@@ -2163,21 +1956,6 @@ public struct DashboardView: View {
         return completedSessions.filter { $0.isRealWorkout && $0.startTime >= cutoff }.count
     }
 
-    private var last7DaysRunSessionCount: Int {
-        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
-        return completedSessions.filter {
-            $0.isRealWorkout && $0.startTime >= cutoff && $0.logs.contains { $0.resolvedIsCardio }
-        }.count
-    }
-
-    private var last7DaysRunVolumeKm: Double {
-        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? .distantPast
-        return completedSessions
-            .filter { $0.isRealWorkout && $0.startTime >= cutoff && $0.logs.contains { $0.resolvedIsCardio } }
-            .map(\.totalDistanceKm)
-            .reduce(0, +)
-    }
-
     /// Tage seit der juengsten realen Session. `nil` wenn nie trainiert
     /// → triggert reEntry nicht (keine Daten = kein Hinweis).
     ///
@@ -2192,21 +1970,6 @@ public struct DashboardView: View {
         let start = cal.startOfDay(for: latest)
         let today = cal.startOfDay(for: Date())
         return cal.dateComponents([.day], from: start, to: today).day
-    }
-
-    /// Phase E: Tage seit der letzten realen Lauf-/Cardio-Session.
-    /// nil wenn noch keine Cardio-Session geloggt wurde.
-    private var daysSinceLastRunSession: Int? {
-        let runSessions = completedSessions.filter { $0.isRealWorkout && $0.logs.contains { $0.resolvedIsCardio } }
-        guard let latest = runSessions.map(\.endTime).max() else { return nil }
-        let cal = Calendar.current
-        let start = cal.startOfDay(for: latest)
-        let today = cal.startOfDay(for: Date())
-        return cal.dateComponents([.day], from: start, to: today).day
-    }
-
-    private var priorRunSessionCount: Int {
-        completedSessions.filter { $0.isRealWorkout && $0.logs.contains { $0.resolvedIsCardio } }.count
     }
 
     /// True wenn der heutige Plan-Eintrag ein Trainings-Tag ist (kein Rest).
@@ -2259,30 +2022,6 @@ public struct DashboardView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(Color.deltiqOrange)
-                    }
-                    // Paket 3a: CTA öffnet ausschließlich den bestehenden
-                    // Paket-1-Pfad; "Nicht jetzt" lehnt NUR diesen Hinweis ab
-                    // (siehe `MissedRunDaysCardModel.dismiss`).
-                    if showsMissedRunDaysActions {
-                        HStack(spacing: 12) {
-                            if missedRunDaysModel?.coachAdjustment != nil {
-                                Button {
-                                    showingMissedRunAdjustmentPreview = true
-                                } label: {
-                                    Text("dashboard.missedRunDays.reviewButton", bundle: .module)
-                                        .font(.caption.weight(.semibold))
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .tint(Color.deltiqOrange)
-                            }
-                            Button {
-                                withAnimation { dismissMissedRunDaysHint() }
-                            } label: {
-                                Text("dashboard.missedRunDays.dismissButton", bundle: .module)
-                                    .font(.caption.weight(.semibold))
-                            }
-                            .buttonStyle(.bordered)
-                        }
                     }
                 }
                 Spacer(minLength: 0)
@@ -2730,83 +2469,7 @@ public struct DashboardView: View {
         .accessibilityLabel(Text("dashboard.resume.caption", bundle: .module))
     }
 
-    // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"
-
-    /// Widget-Slot fuer Lauf-Coaching: CoachAdjustmentCard (falls aktiver
-    /// Plan + Empfehlung vorhanden), sonst CardioFeasibilityCard als Fallback.
-    /// Leitplanke 6: nie beide gleichzeitig sichtbar (if/else if).
-    @ViewBuilder
-    private var runCoachDashboardCard: some View {
-        // Globaler Coaching-Schalter hat Vorrang — Widget-Eintrag allein
-        // genuegt nicht (Spec: Tabelle "Coaching An/Aus x Widget-Einstellung").
-        if let profile = profiles.first, profile.cardioCoachingEnabled {
-            if let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans),
-               !activePlan.days.isEmpty,
-               let adjustment = CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) {
-                let nextDayName = nextScheduledDay(in: activePlan).displayName
-                laufcoachingAdjustmentCard(adjustment, nextDayName: nextDayName)
-            } else if let model = cardioFeasibilityModel {
-                cardioFeasibilityDashboardCard(model)
-            }
-        }
-    }
-
-    /// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md,
-    /// Abschnitt 9): zeigt die aktuelle Wettkampf-Fortschritts-Einschaetzung.
-    /// Rein lesend - bietet keine Planaenderung an (die bleibt der
-    /// bestehenden Coach-Anpassungs-Karte oben vorbehalten).
-    private var raceProgressModel: RaceProgressCardModel? {
-        profiles.first.flatMap { RaceProgressCardModel.make(for: $0, allSessions: completedSessions) }
-    }
-
-    @ViewBuilder
-    private var raceProgressDashboardCard: some View {
-        if let profile = profiles.first, let model = raceProgressModel,
-           profile.raceProgressDismissedFingerprint != model.dismissalFingerprint {
-            laufCoachCardShell(systemImage: "chart.line.uptrend.xyaxis") {
-                Text(raceProgressOutcomeHeadline(model.assessment.outcome))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                HStack(spacing: 16) {
-                    Button {
-                        showingRaceProgressDetail = true
-                    } label: {
-                        Text("dashboard.missedRunDays.reviewButton", bundle: .module)
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.deltiqOrange)
-                    Button {
-                        withAnimation { model.dismiss(profile: profile) }
-                    } label: {
-                        Text("dashboard.missedRunDays.dismissButton", bundle: .module)
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.Deltiq.textSecondary)
-                }
-            }
-            .task(id: model.configurationFingerprint) {
-                // Migrations-Anker + "als gezeigt markieren" - NIE aus der
-                // `body`-Auswertung selbst, siehe `RaceProgressDueCalculator`-
-                // Doku. `.task(id:)` laeuft erneut, wenn sich die Ziel-/
-                // Renndatum-Konfiguration aendert.
-                RaceProgressDueCalculator.establishObservationAnchorIfNeeded(for: profile, in: modelContext)
-                model.recordAnalysisShown(for: profile, in: modelContext)
-            }
-        }
-    }
-
-    private func raceProgressOutcomeHeadline(_ outcome: RaceProgressAssessment.Outcome) -> String {
-        switch outcome {
-        case .onTrack: return String(localized: "raceProgress.outcome.onTrack", bundle: .module)
-        case .attentionNeeded: return String(localized: "raceProgress.outcome.attentionNeeded", bundle: .module)
-        case .offTrack: return String(localized: "raceProgress.outcome.offTrack", bundle: .module)
-        case .insufficientData: return String(localized: "raceProgress.outcome.insufficientData", bundle: .module)
-        }
-    }
-
-    /// Gemeinsame Karten-Huelle fuer beide Lauf-Coaching-Cards:
+    /// Gemeinsame Karten-Huelle fuer Coaching-Cards:
     /// DeltiqCard > HStack > Image + content + Spacer.
     private func laufCoachCardShell<Content: View>(
         systemImage: String,
@@ -2829,8 +2492,6 @@ public struct DashboardView: View {
 
     // MARK: - Phase 2D: Trainingsbelastungs-Karte
 
-    /// Kompakte Dashboard-Karte für die Trainingsbelastungs-Bewertung.
-    /// Unabhaengig von `cardioCoachingEnabled` — Ticket-Leitplanke.
     @ViewBuilder
     private var trainingLoadDashboardCard: some View {
         if let assessment = cachedDensityAssessment, assessment.outcome != .insufficientData {
@@ -2902,174 +2563,6 @@ public struct DashboardView: View {
             calendar: calendar
         )
         return (TrainingDensityAnalyzer.analyze(input: input), trend)
-    }
-
-    private var planAdjustmentPending: Bool {
-        guard let profile = profiles.first,
-              let activePlan = ActivePlanResolver.cardioRelevantPlan(among: activePlans)
-        else { return false }
-        return CoachAdjustmentCardModel.make(for: profile, activePlan: activePlan) != nil
-    }
-
-    /// Live gerechnet bei jedem Render, keine gespeicherte "ausstehende
-    /// Empfehlung" - Profil, Dashboard und Plan-Tab rufen alle denselben
-    /// `CardioFeasibilityCardModel.make(for:)` auf.
-    private var cardioFeasibilityModel: CardioFeasibilityCardModel? {
-        profiles.first.flatMap(CardioFeasibilityCardModel.make(for:))
-    }
-
-    /// Task 8: "aktiver Plan existiert, Coach-Anpassung verfuegbar"-Karte -
-    /// Dismissible Dashboard-Karte fuer den Lauf-Coach-Anpassungsvorschlag.
-    /// Zeigt: vorgeschlagenes Ziel, naechste geplante Einheit, Tage bis
-    /// Renntag (wenn gesetzt), anpassbare Lauftage im Plan, 5-km-Referenz
-    /// (wenn vorhanden). `plan` und `profile` sind Pflicht fuer die Detail-
-    /// Zeilen; das CTA-Sheet liest Profil/Plan selbst frisch aus der Query.
-    private func laufcoachingAdjustmentCard(_ adjustment: CoachAdjustmentCardModel, nextDayName: String) -> some View {
-        Group {
-            if let profile = profiles.first,
-               profile.cardioAdjustmentCardDismissedFingerprint != adjustment.fingerprint {
-                laufCoachCardShell(systemImage: "arrow.triangle.2.circlepath") {
-                    Text(adjustment.isAlreadyApplied
-                         ? String(localized: "profile.cardio.adjustment.applied", bundle: .module)
-                         : String(localized: "profile.cardio.adjustment.pending", bundle: .module))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-
-                    HStack(spacing: 16) {
-                        Button {
-                            showingMissedRunAdjustmentPreview = true
-                        } label: {
-                            Text("dashboard.missedRunDays.reviewButton", bundle: .module)
-                                .font(.subheadline.weight(.semibold))
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(Color.deltiqOrange)
-                        // Nicht-jetzt nur anbieten, wenn noch nicht uebernommen
-                        if !adjustment.isAlreadyApplied {
-                            Button {
-                                withAnimation { adjustment.dismiss(profile: profile) }
-                            } label: {
-                                Text("dashboard.missedRunDays.dismissButton", bundle: .module)
-                                    .font(.subheadline.weight(.semibold))
-                            }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        if let goal = adjustment.proposedGoal {
-                            Text(String(
-                                format: String(localized: "dashboard.coachAdjustment.proposedGoal", bundle: .module),
-                                String(localized: goal.localizedName)
-                            ))
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                        Text(String(
-                            format: String(localized: "dashboard.coachAdjustment.nextUnit", bundle: .module),
-                            nextDayName
-                        ))
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                        if let raceDate = profile.cardioRaceDate, raceDate > Date() {
-                            let days = Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day ?? 0
-                            Text(String(
-                                format: String(localized: "dashboard.coachAdjustment.daysToRace", bundle: .module),
-                                days
-                            ))
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                        if case .ready(let ids) = adjustment.analysis.cardioAvailability, !ids.isEmpty {
-                            Text(String(
-                                format: String(localized: "dashboard.coachAdjustment.cardioDays", bundle: .module),
-                                ids.count
-                            ))
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                        if let secs = profile.current5kReferenceSeconds {
-                            Text(String(
-                                format: String(localized: "dashboard.coachAdjustment.fiveKRef", bundle: .module),
-                                String(format: "%d:%02d", secs / 60, secs % 60)
-                            ))
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                        }
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
-
-    /// Kompakt-Karte fuer Lauf-Coaching: Ziel, Renntermin, Wochenvolumen,
-    /// Laeufe diese Woche, Fortschritts-Einschaetzung, Plan-Vorschau, CTAs.
-    private func cardioFeasibilityDashboardCard(_ model: CardioFeasibilityCardModel) -> some View {
-        laufCoachCardShell(systemImage: "flag.checkered") {
-            Text(model.verdict.feasible
-                 ? String(localized: "dashboard.cardioFeasibility.feasibleTitle", bundle: .module)
-                 : String(localized: "dashboard.cardioFeasibility.infeasibleTitle", bundle: .module))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-
-            if let profile = profiles.first {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(String(localized: profile.cardioGoal.localizedName))
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                    if let raceDate = profile.cardioRaceDate, raceDate > Date() {
-                        let days = Calendar.current.dateComponents([.day], from: Date(), to: raceDate).day ?? 0
-                        Text(String(
-                            format: String(localized: "dashboard.coachAdjustment.daysToRace", bundle: .module),
-                            days
-                        ))
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                    }
-                    let runCount = last7DaysRunSessionCount
-                    let runVol = last7DaysRunVolumeKm
-                    if runCount > 0 || runVol > 0.1 {
-                        let countStr = String(format: String(localized: "cardioCoach.detail.runsPerWeek", bundle: .module), runCount)
-                        let volStr = String(format: "%.1f km", runVol)
-                        Text("\(countStr) · \(volStr)")
-                            .font(.caption)
-                            .foregroundStyle(Color.Deltiq.textSecondary)
-                    }
-                }
-            }
-
-            Text(model.detailText)
-                .font(.caption)
-                .foregroundStyle(Color.Deltiq.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if model.hasPlan, let days = model.planResult?.days {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(days.prefix(2).enumerated()), id: \.offset) { _, day in
-                        CardioFeasibilityDayRow(day: day)
-                    }
-                }
-            }
-            HStack(spacing: 16) {
-                Button {
-                    navigation.selectedTab = .plan
-                } label: {
-                    Text("dashboard.cardioFeasibility.viewPlan", bundle: .module)
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.deltiqOrange)
-                Button {
-                    showingCardioCoachDetail = true
-                } label: {
-                    Text("dashboard.cardioCoach.details", bundle: .module)
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.deltiqOrange)
-            }
-        }
     }
 
     /// DEL-215: Resume fuer beliebige offene Sessions. Plan-gebundene

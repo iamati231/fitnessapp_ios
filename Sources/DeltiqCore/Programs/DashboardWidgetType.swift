@@ -31,12 +31,6 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     case volumeOverTime    // DEL-178: Wochen-Volume-Trend (BarMark)
     case trainingCalendar  // DEL-197: Monats-Kalender + Wochen-Streak
     case nutrition         // Task 9: Tagesuebersicht-Teaser + "Mahlzeit hinzufuegen"
-    case runCoachCard      // DEL-XXX: Lauf-Coaching-Widget (AdjustmentCard oder FeasibilityCard)
-    /// AI-Running-Coach Phase 1 (Dashboard-Fix "doppelte Coach-Karten"):
-    /// eigener Widget-Typ, nicht laenger fest an `.runCoachCard` gehaengt —
-    /// unabhaengig an-/ausschaltbar und verschiebbar, siehe
-    /// `RaceProgressCardModel`.
-    case raceProgressCard
     /// AI-Running-Coach Phase 2D: Trainingsbelastungs-Karte — zeigt
     /// `TrainingDensityAnalyzer.Assessment` kompakt an und öffnet
     /// eine 9-teilige Detailansicht. UNABHÄNGIG von `cardioCoachingEnabled`
@@ -54,8 +48,6 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     public static var defaultOrder: [DashboardWidgetType] {
         [
             .nextWorkout,
-            .runCoachCard,
-            .raceProgressCard,
             .coachingInsight,
             .weeklyVolume,
             .muscleHeatmap,

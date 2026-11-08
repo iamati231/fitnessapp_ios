@@ -35,21 +35,6 @@ public struct PlansListView: View {
     @State private var showingTemplatePicker = false
     @State private var showingPlanBuilder = false
 
-    /// Nachbesserung (P2.3, Abnahme "keine Duplikate bei mehrfacher
-    /// Bestaetigung"): `CardioFeasibilityCardModel.accept(profile:in:)` ist
-    /// synchron, ohne `await` — schuetzt NUR den direkten "Uebernehmen"-
-    /// Button in `cardioFeasibilitySection`. Der Pfad ueber `PlanBuilderView`
-    /// ("Plan anpassen") ist bereits durch dessen eigenen `isAdopting`-Schutz
-    /// abgedeckt (derselbe Button loest dort sowohl Adopt als auch diese
-    /// Closure aus).
-    @State private var isAcceptingCardioFeasibility = false
-    /// Nachbesserung (Task #197, zweite Runde): Speicherfehler von
-    /// `accept`/`acceptCustom` werden jetzt sichtbar gemacht statt still im
-    /// `nil`-Pfad zu verschwinden — Non-nil zeigt den Alert, "OK" setzt
-    /// zurueck und erlaubt den naechsten Versuch (der Button ist wegen
-    /// `isAcceptingCardioFeasibility` ohnehin erst nach dem Reset wieder
-    /// aktiv).
-    @State private var cardioAcceptErrorMessage: String?
     /// TestingBot-Regressionscheck (Block A, Deltiq-Abnahme): `deletePlans`
     /// verliess sich bislang rein auf SwiftDatas impliziten Context-
     /// Autosave — derselbe Musterfehler wie bei
@@ -60,43 +45,6 @@ public struct PlansListView: View {
     /// Plan UND Session waren nach dem Neustart wieder da. Jetzt expliziter
     /// Save direkt nach dem Delete; non-nil zeigt den Alert unten.
     @State private var deletePlanErrorMessage: String?
-    /// Nachbesserung (zweite Korrekturrunde, Punkt B): `accept` kann nach einem ERFOLGREICHEN
-    /// Speichervorgang trotzdem werfen, wenn NUR die Rueckbindung scheitert
-    /// (`PlanCreationError.createdButRebindFailed`, nach bereits einem internen Retry in
-    /// `createPlan`) - "Speicherfehler" waere dann falsch. Steuert den Alert-Titel. Betrifft NUR
-    /// den direkten "Uebernehmen"-Button; der "Plan anpassen"-Sheet-Pfad zeigt bei diesem Fall
-    /// stattdessen eine eigene Nachricht unter `PlanBuilderView`s generischem Titel (siehe dort).
-    @State private var cardioAcceptErrorIsCreatedButUnresolved = false
-    /// Nachbesserung (Task #197, dritte Korrekturrunde): der tatsaechliche Operationszustand fuer
-    /// den DIREKTEN "Uebernehmen"-Button - einmal committed (Plan persistiert, nur Rueckbindung
-    /// gescheitert), ruft `attempt(...)` fuer diese Instanz NIE WIEDER `model.accept(...)` auf,
-    /// egal wie oft erneut getippt wird (siehe `PlanCreationOperation`-Typ-Doku). Genau das
-    /// verhindert den Duplikat-Fall, den ein einfaches "Flag zuruecksetzen + Button wieder
-    /// aktivieren" nicht verhindert haette.
-    @State private var acceptOperation = PlanCreationOperation()
-    /// Task #197 (Verifikationsrunde): `acceptOperation` ist laut ihrer eigenen Typ-Doku PERMANENT
-    /// fuer ihre Lebensdauer - "ein wirklich neuer Versuch braucht eine neue Instanz". Anders als
-    /// `acceptCustomOperation` (siehe dort: frisch bei jedem Sheet-Oeffnen) lebte `acceptOperation`
-    /// bisher aber ueber die GESAMTE `PlansListView`-Lebensdauer, ohne je ausgetauscht zu werden -
-    /// auf echtem Geraet reproduziert: nach einem erfolgreich angenommenen Cardio-Vorschlag zeigte
-    /// JEDE spaetere, voellig unabhaengige Cardio-Karte (neues Ziel/Renndatum/Volumen, eigener
-    /// `CardioFeasibilityCardModel.fingerprint`) faelschlich "Erneut versuchen" statt "Vorschlag
-    /// annehmen"/"Plan uebernehmen" - UND ein Tap darauf haette nur noch den LAENGST aufgeloesten
-    /// alten Plan erneut aufzuloesen versucht, nie den neuen Vorschlag tatsaechlich angelegt.
-    /// Haelt fest, fuer welchen Fingerprint `acceptOperation` zuletzt (neu erzeugt oder committed)
-    /// stand; weicht die aktuell angezeigte Karte davon ab, ist die Instanz fuer eine ANDERE
-    /// Kombination committed (oder noch nie committed) und muss vor Gebrauch ausgetauscht werden.
-    @State private var acceptOperationFingerprint: String?
-    /// Nachbesserung (Task #197, dritte Korrekturrunde): dieselbe Garantie wie `acceptOperation`,
-    /// aber fuer den "Plan anpassen"-Sheet-Pfad (`acceptCustom`) - eigene, unabhaengige Instanz,
-    /// weil es ein eigener, unabhaengiger Vorgang ist. Wird beim OEFFNEN des Sheets bewusst neu
-    /// erzeugt (siehe Aufrufstelle unten), damit eine neue Bearbeitungssitzung nie den
-    /// committed-Zustand einer fruiheren erbt.
-    @State private var acceptCustomOperation = PlanCreationOperation()
-    /// Nachtrag "Plan anpassen": eigener Zustand, NICHT `showingPlanBuilder`
-    /// wiederverwenden - der haengt am Plus-Menue mit leerem Wizard-Start,
-    /// hier soll er mit dem Machbarkeits-Vorschlag vorbefuellt oeffnen.
-    @State private var showingPlanAdjustSheet = false
 
     public init() {}
 
@@ -151,11 +99,6 @@ public struct PlansListView: View {
                     activeSessionSection(active)
                 }
 
-                if let profile = profiles.first, let model = CardioFeasibilityCardModel.make(for: profile),
-                   CoachAdjustmentCardModel.make(for: profile, activePlan: ActivePlanResolver.cardioRelevantPlan(among: plans.filter(\.isActive))) == nil {
-                    cardioFeasibilitySection(model, profile: profile)
-                }
-
                 plansSection
             }
             .scrollContentBackground(.hidden)
@@ -187,23 +130,6 @@ public struct PlansListView: View {
         }
         .sheet(isPresented: $showingPlanBuilder) {
             PlanBuilderView()
-        }
-        // Nachbesserung (Task #197, zweite Runde): sichtbarer Fehler statt
-        // stillem nil-Pfad, siehe `cardioAcceptErrorMessage`-Doku.
-        // Nachbesserung (zweite Korrekturrunde, Punkt B): Titel haengt vom Fehlerfall ab, siehe
-        // `cardioAcceptErrorIsCreatedButUnresolved`-Doku.
-        .alert(
-            Text(cardioAcceptErrorIsCreatedButUnresolved
-                 ? "cardioFeasibility.error.createdButUnresolved.title"
-                 : "cardioFeasibility.error.saveFailed.title", bundle: .module),
-            isPresented: Binding(
-                get: { cardioAcceptErrorMessage != nil },
-                set: { if !$0 { cardioAcceptErrorMessage = nil } }
-            )
-        ) {
-            Button("OK") { cardioAcceptErrorMessage = nil }
-        } message: {
-            Text(cardioAcceptErrorMessage ?? "")
         }
         .alert(
             Text("plans.delete.error.title", bundle: .module),
@@ -285,179 +211,6 @@ public struct PlansListView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 12, trailing: 16))
-        }
-    }
-
-    // MARK: - Handoff "Lauf-Coaching - Machbarkeits-Check"
-
-    /// Vor den eigenen Plaenen (2.30), bewusst KEIN `DeltiqCard` wie die
-    /// echten Plaene darunter - gestrichelter Rand macht sofort erkennbar
-    /// "das hier laeuft noch nicht". Uebernehmen/Verwerfen direkt hier,
-    /// anders als die verkuerzte Dashboard-Karte (die nur zu dieser Stelle
-    /// verlinkt).
-    private func cardioFeasibilitySection(_ model: CardioFeasibilityCardModel, profile: UserBodyProfile) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "flag.checkered")
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(Color.deltiqOrange)
-                    .font(.title3)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(model.verdict.feasible
-                         ? String(localized: "plans.cardioFeasibility.feasibleTitle", bundle: .module)
-                         : String(localized: "plans.cardioFeasibility.infeasibleTitle", bundle: .module))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                    Text(model.detailText)
-                        .font(.caption)
-                        .foregroundStyle(Color.Deltiq.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            if model.hasPlan, let days = model.planResult?.days {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(days.enumerated()), id: \.offset) { _, day in
-                        CardioFeasibilityDayRow(day: day)
-                    }
-                }
-            }
-            // Nachtrag "Plan anpassen", Layout-Hinweis: die primaere Aktion
-            // steht allein in voller Staerke, "Plan anpassen" und "Ziel
-            // behalten" folgen als gleichrangiges, leiseres Paar darunter.
-            if model.hasPlan {
-                Button {
-                    guard !isAcceptingCardioFeasibility else { return }
-                    // Siehe `acceptOperationFingerprint`-Doku: eine Karte fuer eine ANDERE
-                    // Ziel/Renndatum/Volumen-Kombination als die, fuer die `acceptOperation`
-                    // zuletzt stand, braucht zwingend eine frische Instanz - sonst wuerde dieser
-                    // Tap nur den alten, laengst committeten Vorgang erneut aufloesen statt den
-                    // hier tatsaechlich angezeigten, neuen Vorschlag anzulegen.
-                    if acceptOperationFingerprint != model.fingerprint {
-                        acceptOperation = PlanCreationOperation()
-                        acceptOperationFingerprint = model.fingerprint
-                    }
-                    isAcceptingCardioFeasibility = true
-                    withAnimation {
-                        // Nachbesserung (vierte Korrekturrunde): `model.accept(...using:)` fuehrt
-                        // `resumeIfCommitted`/`attempt` jetzt INTERN aus (siehe
-                        // `CardioFeasibilityCardModel`-Doku) - `nil` bedeutet, dass bereits
-                        // `accept`s eigene Vorbedingungen (z.B. `hasPlan`) nicht erfuellt sind,
-                        // und wird wie `.nothingToCreate` behandelt.
-                        // Task 8 (ledger ruling, siehe `CardioFeasibilityCardModel.accept`-Doku):
-                        // kein `activePlan`-Argument mehr - diese Sektion rendert ohnehin nur, wenn
-                        // `coachAdjustmentModel` (oben) `nil` ist, was bei `cardioCoachingEnabled ==
-                        // true` ausschliesslich bei `activePlan == nil` passiert.
-                        switch model.accept(profile: profile, in: modelContext, using: acceptOperation) {
-                        case .success(let plan):
-                            // Geraete-Fund (TestingBot, Task #197 UI-Pruefumfang): ohne dieses
-                            // Zuruecksetzen blieb der Button nach JEDEM erfolgreichen Uebernehmen
-                            // fuer den Rest der View-Lebensdauer dauerhaft deaktiviert - SwiftUIs
-                            // TabView haelt @State ueber Tab-Wechsel hinweg am Leben, ein spaeterer,
-                            // voellig unabhaengiger Cardio-Vorschlag war dadurch nie mehr per Tap
-                            // annehmbar (nur noch ueber den Umweg "Plan anpassen").
-                            isAcceptingCardioFeasibility = false
-                            navigation.workoutPath.append(plan)
-                        case nil:
-                            isAcceptingCardioFeasibility = false
-                        case .nothingToCreate:
-                            // Nachbesserung (P2.3-Review, Punkt 3): Flag zuruecksetzen - die Karte
-                            // bleibt sichtbar, der Button muss wieder bedienbar sein.
-                            isAcceptingCardioFeasibility = false
-                        case .committedButUnresolved:
-                            // Der Plan WURDE bereits gespeichert - "Speicherfehler" waere falsch,
-                            // Button zeigt ab jetzt "Erneut versuchen" (siehe Label unten).
-                            isAcceptingCardioFeasibility = false
-                            cardioAcceptErrorIsCreatedButUnresolved = true
-                            cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.createdButUnresolved.message", bundle: .module)
-                        case .failedBeforeCommit:
-                            isAcceptingCardioFeasibility = false
-                            cardioAcceptErrorIsCreatedButUnresolved = false
-                            cardioAcceptErrorMessage = String(localized: "cardioFeasibility.error.saveFailed.message", bundle: .module)
-                        }
-                    }
-                } label: {
-                    // Nachbesserung (dritte Korrekturrunde, Punkt 5): im "bereits erstellt, nur
-                    // nicht aufgeloest"-Zustand kein irrefuehrendes erneutes "Uebernehmen" -
-                    // derselbe Button loest dann nur noch eine Aufloesung aus, nie eine Neuanlage.
-                    Text((acceptOperation.committedPlanID != nil && acceptOperationFingerprint == model.fingerprint)
-                         ? String(localized: "plans.cardioFeasibility.retryResolve", bundle: .module)
-                         : (model.verdict.feasible
-                            ? String(localized: "plans.cardioFeasibility.apply", bundle: .module)
-                            : String(localized: "plans.cardioFeasibility.acceptSuggestion", bundle: .module)))
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.deltiqOrange)
-                .disabled(isAcceptingCardioFeasibility)
-            }
-            HStack(spacing: 20) {
-                if model.hasPlan {
-                    Button {
-                        // Nachbesserung (Task #197, dritte Korrekturrunde): frische Instanz pro
-                        // Bearbeitungssitzung - eine neu geoeffnete "Plan anpassen"-Sitzung darf
-                        // NIE den committed-Zustand einer frueheren erben (siehe
-                        // `acceptCustomOperation`-Doku).
-                        acceptCustomOperation = PlanCreationOperation()
-                        showingPlanAdjustSheet = true
-                    } label: {
-                        Text("plans.cardioFeasibility.adjustPlan", bundle: .module)
-                            .font(.subheadline)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.Deltiq.textSecondary)
-                }
-                if !model.verdict.feasible {
-                    Button {
-                        withAnimation { model.dismiss(profile: profile) }
-                    } label: {
-                        Text("plans.cardioFeasibility.keepGoal", bundle: .module)
-                            .font(.subheadline)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.Deltiq.textSecondary)
-                }
-            }
-        }
-        .padding(16)
-        .background(Color.Deltiq.surface)
-        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous)
-                .strokeBorder(Color.deltiqOrange.opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-        )
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-        .sheet(isPresented: $showingPlanAdjustSheet) {
-            if let input = model.planInput {
-                PlanBuilderView(initialInput: input) { adjustedInput, adjustedResult in
-                    // Nachbesserung (Task #197, dritte Korrekturrunde): `acceptCustomOperation`
-                    // (frisch pro Sheet-Oeffnung, siehe Aufrufstelle oben) ersetzt das vorherige
-                    // direkte `do/catch` - einmal `.committedButUnresolved`, ruft diese Instanz
-                    // `model.acceptCustom(...)` NIE WIEDER auf, egal wie oft der Builder-Button
-                    // erneut getippt wird. `PlanBuilderView` leitet ihre eigene lokalisierte
-                    // Nachricht selbst aus dem zurueckgegebenen `PlanBuilderHandoffOutcome` ab -
-                    // hier wird kein fertiger Text mehr uebergeben.
-                    switch model.acceptCustom(
-                        input: adjustedInput, result: adjustedResult, profile: profile,
-                        in: modelContext, using: acceptCustomOperation
-                    ) {
-                    case .success(let plan):
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            navigation.workoutPath.append(plan)
-                        }
-                        return .success
-                    case nil:
-                        return .success
-                    case .nothingToCreate:
-                        return .success
-                    case .committedButUnresolved:
-                        return .committedButUnresolved
-                    case .failedBeforeCommit:
-                        return .failedBeforeCommit
-                    }
-                }
-            }
         }
     }
 

@@ -786,39 +786,6 @@ public enum PlanGenerator {
         }
     }
 
-    /// Laufcoaching-Plan-Integration (Task 3): Dauer-Ziel fuer die
-    /// duration-basierten Zonen (`.easy`/`.tempo`) - skaliert konservativ
-    /// anhand eines bekannten, glaubwuerdigen Wochenvolumens, statt immer
-    /// nur `selection.sessionDurationMinutes` zu uebernehmen. `.interval`
-    /// bleibt bewusst aussen vor (Global Constraint): ruft diese Funktion
-    /// gar nicht erst auf, bleibt distanzbasiert.
-    ///
-    /// Ohne Profil oder ohne (bzw. nicht-positives) `weeklyBaseVolumeKm`
-    /// bleibt es exakt beim heutigen Verhalten - "zu wenig Daten" heisst
-    /// hier konservativ "nichts aendern", nicht "irgendwas annehmen" (siehe
-    /// `CardioBaselineCalculator`-Konvention: `nil` ist "unbekannt", nicht
-    /// "null"). Ist `targetWeeklyVolumeKm(for:)` fuer das Ziel `nil`
-    /// (aktuell nur `.generalFitness`), fehlt ein Referenzpunkt zum Skalieren
-    /// - ebenfalls unveraendert.
-    ///
-    /// shortcut: das Verhaeltnis `weeklyBaseVolumeKm / targetWeeklyVolumeKm`
-    /// wird auf ±20 % gekappt, damit ein extremer Profil-Wert nicht zu einer
-    /// absurd kurzen/langen Einheit fuehrt - eine grobe Faustregel wie
-    /// `PaceZoneCalculator`/`CardioFeasibilityCalculator`, keine
-    /// individuelle Trainingsempfehlung. Zeigt sich an echten Nutzerdaten,
-    /// dass ein breiterer (oder enger gefasster) Korridor noetig ist, hier
-    /// nachziehen.
-    private static func volumeAwareDurationMinutes(for selection: PlanGeneratorTypeSelection) -> Int {
-        guard let profile = selection.cardioRunProfile,
-              let weeklyVolume = profile.weeklyBaseVolumeKm, weeklyVolume > 0,
-              let targetVolume = CardioFeasibilityCalculator.targetWeeklyVolumeKm(for: profile.goal), targetVolume > 0
-        else {
-            return selection.sessionDurationMinutes
-        }
-        let ratio = min(1.2, max(0.8, weeklyVolume / targetVolume))
-        return Int((Double(selection.sessionDurationMinutes) * ratio).rounded())
-    }
-
     private static func cardioCandidates(for selection: PlanGeneratorTypeSelection) -> [Candidate] {
         // README 2.35: Zeitformat-Wahl im Wizard gilt nur fuer Laufen/
         // Radfahren (die vier Kraft-Arten haben keinen Format-Picker in
@@ -862,45 +829,9 @@ public enum PlanGenerator {
 
         // README 2.18/2.20: Reihenfolge so gewaehlt, dass bei genau zwei
         // Tagen niemals zwei harte Einheiten (Tempo/Intervall) zusammen
-        // herauskommen - "ruhig" deckt die Luecke. Bleibt der feste
-        // Default fuer den Fall OHNE `cardioRunProfile` (Review Focus 1) -
-        // byte-fuer-byte unveraendert gegenueber vor Task 3.
-        let zones: [RunZone]
-        if let goal = selection.cardioRunProfile?.goal {
-            // Laufcoaching-Plan-Integration (Task 3): mit bekanntem Ziel
-            // bestimmt `CardioFeasibilityCalculator.runTypeMix` (Task 2) das
-            // Verhaeltnis easy/quality statt des zieleunabhaengigen festen
-            // Zyklus. Fix round 1 (User-Entscheidung nach Review-Fund):
-            // `.quality` deckt laut `RunPurpose`-Doku "sowohl Intervall- als
-            // auch Tempo-Laeufe ab" - ein durchgaengiges `.tempo` hätte
-            // `.interval`-Tage komplett verschwinden lassen, sobald ein
-            // Profil vorliegt (Trainingsinhalt-Regression, v.a. fuer
-            // 5K/10K). Aufeinanderfolgende `.quality`-Vorkommen wechseln
-            // deshalb zwischen `.tempo` und `.interval` (1./3./5. -> Tempo,
-            // 2./4./6. -> Intervall) - gezaehlt ueber die GESAMTE Woche, nicht
-            // nur einmal pro `runTypeMix`-Durchlauf, damit sich bei
-            // mehrfacher Wiederholung des Mix (z.B. Halbmarathon/Marathons
-            // `[.easy, .easy, .quality]` bei 6 Tagen/Woche) beide Reize
-            // tatsaechlich abwechseln statt immer auf denselben Wert zu
-            // fallen. `.interval`s eigene Groessen-/Pace-Logik (0.4 km, kein
-            // Volumen-Skalieren) bleibt davon unberuehrt - nur WELCHE Zone an
-            // welchem Tag steht, aendert sich hier, nicht wie `.interval`
-            // selbst aufgebaut ist.
-            let mix = CardioFeasibilityCalculator.runTypeMix(for: goal)
-            var qualityOccurrences = 0
-            zones = (0..<selection.daysPerWeek).map { dayIndex -> RunZone in
-                switch mix[dayIndex % mix.count] {
-                case .easy:
-                    return .easy
-                case .quality:
-                    qualityOccurrences += 1
-                    return qualityOccurrences.isMultiple(of: 2) ? .interval : .tempo
-                }
-            }
-        } else {
-            let cycle: [RunZone] = [.easy, .interval, .tempo]
-            zones = (0..<selection.daysPerWeek).map { cycle[$0 % cycle.count] }
-        }
+        // herauskommen - "ruhig" deckt die Luecke.
+        let cycle: [RunZone] = [.easy, .interval, .tempo]
+        let zones = (0..<selection.daysPerWeek).map { cycle[$0 % cycle.count] }
 
         var result = (0..<selection.daysPerWeek).map { dayIndex in
             let zone = zones[dayIndex]
@@ -908,12 +839,6 @@ public enum PlanGenerator {
             let exercise: ExerciseSpec
             switch zone {
             case .interval:
-                let intervalRationale: String = {
-                    if let goal = selection.cardioRunProfile?.goal {
-                        return "key:planBuilder.rationale.interval.withGoal|\(goal.rawValue)"
-                    }
-                    return "key:planBuilder.rationale.interval.generic"
-                }()
                 exercise = ExerciseSpec(
                     name: zone.exerciseName,
                     sets: 6, repsMin: 1, repsMax: 1,
@@ -921,40 +846,18 @@ public enum PlanGenerator {
                     isCardio: true,
                     targetDistanceKm: 0.4,
                     enduranceSportKind: .running,
-                    coachingRationale: intervalRationale
+                    coachingRationale: "key:planBuilder.rationale.interval.generic"
                 )
             case .easy, .tempo:
-                // Laufcoaching-Plan-Integration (Task 3): Pace nur gesetzt,
-                // wenn eine 5-km-Referenzzeit bekannt ist - sonst bleibt sie
-                // `nil` (heutiges Verhalten, unveraendert). `.interval`
-                // bleibt bewusst aussen vor (Global Constraint): bleibt
-                // distanzbasiert, kein erfundener Pace-Faktor dafuer.
-                let pace: Double?
-                if let referenceSeconds = selection.cardioRunProfile?.current5kReferenceSeconds {
-                    pace = zone == .easy
-                        ? PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
-                        : PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
-                } else {
-                    pace = nil
-                }
-                let easyTempoRationale: String = {
-                    if let goal = selection.cardioRunProfile?.goal {
-                        return zone == .easy
-                            ? "key:planBuilder.rationale.easy.withGoal|\(goal.rawValue)"
-                            : "key:planBuilder.rationale.tempo.withGoal|\(goal.rawValue)"
-                    }
-                    return zone == .easy
-                        ? "key:planBuilder.rationale.easy.generic"
-                        : "key:planBuilder.rationale.tempo.generic"
-                }()
                 exercise = ExerciseSpec(
                     name: zone.exerciseName,
                     sets: 1, repsMin: 0, repsMax: 0,
                     isCardio: true,
-                    targetDurationMinutes: volumeAwareDurationMinutes(for: selection),
-                    targetPaceMinutesPerKm: pace,
+                    targetDurationMinutes: selection.sessionDurationMinutes,
                     enduranceSportKind: .running,
-                    coachingRationale: easyTempoRationale
+                    coachingRationale: zone == .easy
+                        ? "key:planBuilder.rationale.easy.generic"
+                        : "key:planBuilder.rationale.tempo.generic"
                 )
             }
             return Candidate(

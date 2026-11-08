@@ -39,8 +39,6 @@ final class DashboardWidgetTypeTests: XCTestCase {
         XCTAssertEqual(DashboardWidgetType.compoundLifts.rawValue, "compoundLifts")
         XCTAssertEqual(DashboardWidgetType.cardioPace.rawValue, "cardioPace")
         XCTAssertEqual(DashboardWidgetType.recentWorkouts.rawValue, "recentWorkouts")
-        XCTAssertEqual(DashboardWidgetType.runCoachCard.rawValue, "runCoachCard")
-        XCTAssertEqual(DashboardWidgetType.raceProgressCard.rawValue, "raceProgressCard")
     }
 
     /// Localization-Key-Format ist stabil — Catalog-Lookups bauen darauf.

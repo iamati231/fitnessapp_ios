@@ -37,16 +37,6 @@ struct SetRow: View {
     let previousLog: ExerciseLog?
     /// Task 8 (laufcoaching-remediation-round-2, Decision 1): Laufcoach
     /// an/aus, live aus `ActiveWorkoutView`s `@Query private var profiles`
-    /// durchgereicht (ueber `ExerciseCard`) - NIE auf `content` (dem
-    /// eingefrorenen Session-Inhalt) oder in eigenem State zwischengespeichert,
-    /// damit eine Profil-Aenderung waehrend der offenen Session sofort
-    /// greift. Gleiche Gating-Rolle wie `PlanBuilderView.scopeLine`s
-    /// `cardioCoachingEnabled`-Check (Review Focus 1: Coach aus -> keine
-    /// Verhaltensaenderung).
-    let cardioCoachingEnabled: Bool
-    /// Task 8: 5-km-Referenzzeit, ebenfalls live aus `profiles.first?.
-    /// current5kReferenceSeconds` durchgereicht - siehe `cardioCoachingEnabled`
-    /// oben fuer die "live, nicht eingefroren"-Begruendung.
     let current5kReferenceSeconds: Int?
     /// Fix I-2 (Final-Review, Round 2), korrigiert in Fix-Runde 2: `true`
     /// fuer `session.day?.plan?.generationSource != .manual` (ODER
@@ -1612,8 +1602,7 @@ struct SetRow: View {
     /// Gleiches Muster wie `CardioFeasibilityDayRow.subtitle`, die ebenfalls
     /// das BERECHNETE Pace-Ergebnis prueft, nicht nur die Eingabe.
     private var targetPaceHint: String? {
-        guard content.isCardio, content.targetDurationMinutes != nil, cardioCoachingEnabled,
-              isGeneratorPlan else { return nil }
+        guard content.isCardio, content.targetDurationMinutes != nil, isGeneratorPlan else { return nil }
         let zone = CardioExerciseZone.forExerciseName(content.nameSnapshot)
         guard zone == .easy || zone == .tempo else { return nil }
         let paceMinutesPerKm = current5kReferenceSeconds.flatMap { referenceSeconds in

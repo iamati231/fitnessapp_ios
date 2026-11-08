@@ -2,15 +2,13 @@ import XCTest
 @testable import DeltiqCore
 
 /// Planung-&-Trainingsbegleitung-Epic, P2.0 (docs/PLANUNG_BEGLEITUNG_AUDIT.md,
-/// Abschnitt "P2.0 Datenvertrag ... Abnahme"): deckt die drei dort benannten
+/// Abschnitt "P2.0 Datenvertrag ... Abnahme"): deckt die dort benannten
 /// Validierungsregeln plus die `EnduranceModality`-Bruecke zu
 /// `TrainingTypeKind`.
 final class PlanningContextTests: XCTestCase {
 
     private func makeValidContext(
         goal: TrainingGoal = .hypertrophy,
-        enduranceModality: EnduranceModality? = nil,
-        runCoachEnabled: Bool = false,
         daysPerWeek: Int = 3,
         sessionDurationMinutes: Int = 60,
         scheduling: SchedulingMode = .flexibleOrder,
@@ -20,8 +18,6 @@ final class PlanningContextTests: XCTestCase {
     ) -> PlanningContext {
         PlanningContext(
             goal: goal,
-            enduranceModality: enduranceModality,
-            runCoachEnabled: runCoachEnabled,
             daysPerWeek: daysPerWeek,
             sessionDurationMinutes: sessionDurationMinutes,
             scheduling: scheduling,
@@ -29,39 +25,6 @@ final class PlanningContextTests: XCTestCase {
             equipmentProfile: equipmentProfile,
             equipmentProfileConfirmedComplete: equipmentProfileConfirmedComplete
         )
-    }
-
-    // MARK: - Abnahme 1: runCoachEnabled erfordert .running/.both
-
-    func testRunCoachEnabledWithoutEnduranceModalityIsInvalid() {
-        let context = makeValidContext(enduranceModality: nil, runCoachEnabled: true)
-        XCTAssertFalse(context.isValid)
-        XCTAssertTrue(context.issues.contains(.runCoachRequiresRunningOrBothModality))
-    }
-
-    func testRunCoachEnabledWithCyclingOnlyIsInvalid() {
-        // Audit §5 "kein Radcoach": reines Radfahren darf den Laufcoach nie
-        // tragen — er muss fuer diesen Zustand strukturell ungueltig sein.
-        let context = makeValidContext(enduranceModality: .cycling, runCoachEnabled: true)
-        XCTAssertFalse(context.isValid)
-        XCTAssertTrue(context.issues.contains(.runCoachRequiresRunningOrBothModality))
-    }
-
-    func testRunCoachEnabledWithRunningIsValid() {
-        let context = makeValidContext(enduranceModality: .running, runCoachEnabled: true)
-        XCTAssertTrue(context.issues.isEmpty)
-    }
-
-    func testRunCoachEnabledWithBothIsValid() {
-        let context = makeValidContext(enduranceModality: .both, runCoachEnabled: true)
-        XCTAssertTrue(context.issues.isEmpty)
-    }
-
-    func testRunCoachDisabledIsAlwaysValidRegardlessOfModality() {
-        for modality: EnduranceModality? in [nil, .running, .cycling, .both] {
-            let context = makeValidContext(enduranceModality: modality, runCoachEnabled: false)
-            XCTAssertTrue(context.issues.isEmpty, "runCoachEnabled=false darf nie an der Modalitaet scheitern (\(String(describing: modality)))")
-        }
     }
 
     // MARK: - daysPerWeek: 1...7 unterschiedliche Kalendertage, keine impliziten Mehrfacheinheiten
@@ -182,20 +145,8 @@ final class PlanningContextTests: XCTestCase {
         XCTAssertEqual(EnduranceModality.both.trainingTypeKinds, [.running, .cycling])
     }
 
-    /// P2.5: `supportsRunCoach` muss exakt dieselbe Regel abbilden wie
-    /// `PlanningContextIssue.runCoachRequiresRunningOrBothModality` oben —
-    /// wiederverwendet von `UserBodyProfile.setEnduranceModality`, das keinen
-    /// vollstaendigen `PlanningContext` zur Hand hat (Tage/Dauer/Scheduling
-    /// sind Plan-, nicht Profil-Eigenschaften).
-    func testSupportsRunCoachMatchesPlanningContextInvariant() {
-        XCTAssertTrue(EnduranceModality.running.supportsRunCoach)
-        XCTAssertTrue(EnduranceModality.both.supportsRunCoach)
-        XCTAssertFalse(EnduranceModality.cycling.supportsRunCoach)
-    }
-
-    /// RawValue-Stabilitaet (P2.5): `enduranceModalityRaw` auf
-    /// `UserBodyProfile` persistiert exakt diese drei Strings — eine
-    /// zukuenftige Umbenennung eines Cases wuerde Bestandsdaten brechen.
+    /// RawValue-Stabilitaet: persistiert exakt diese drei Strings —
+    /// eine zukuenftige Umbenennung eines Cases wuerde Bestandsdaten brechen.
     func testEnduranceModalityRawValuesAreStable() {
         XCTAssertEqual(EnduranceModality.running.rawValue, "running")
         XCTAssertEqual(EnduranceModality.cycling.rawValue, "cycling")
@@ -215,8 +166,6 @@ final class PlanningContextTests: XCTestCase {
     func testFullyValidContextHasNoIssues() {
         let context = makeValidContext(
             goal: .hybrid,
-            enduranceModality: .running,
-            runCoachEnabled: true,
             daysPerWeek: 4,
             scheduling: .fixedWeekdays([2, 3, 5, 7]),
             environment: .homeGym,

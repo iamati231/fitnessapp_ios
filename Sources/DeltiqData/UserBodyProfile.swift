@@ -131,145 +131,6 @@ public final class UserBodyProfile {
     /// Lightweight-Migration für Bestand.
     public var weeklyWorkoutGoal: Int = 1
 
-    /// DEL-250: Master-Schalter fuer die Cardio-/Lauf-Ziel-Sektion im
-    /// Profil-Editor. Default `false` — Bestandsnutzer (Update von einer
-    /// Version ohne DEL-250) sehen die Sektion eingeklappt, keine der
-    /// folgenden Felder wird angezeigt oder ausgewertet, bis der User aktiv
-    /// zustimmt. Kein Coaching-Trigger liest dieses Feld aktuell (DEL-250
-    /// ist bewusst auf den Profil-Editor beschraenkt) — rein UI-Zustand.
-    public var cardioCoachingEnabled: Bool = false
-
-    /// Widget-Konfigurationsstatus: `true` sobald der User die Dashboard-
-    /// Widget-Liste explizit angepasst hat (via DashboardSettingsView).
-    /// Steuert, ob `setEnduranceModality` das runCoachCard-Widget auto-einfuegt.
-    /// Default false — Lightweight-Migration: Bestandsnutzer beginnen ohne
-    /// explizite Konfiguration und bekommen das Widget beim naechsten
-    /// Aktivieren automatisch oben platziert.
-    public var cardioWidgetUserConfigured: Bool = false
-
-    /// DEL-250: Lauf-Ziel-Kategorie. Persistiert als String, sodass
-    /// pre-DEL-250-Bestand via Default-Wert lightweight migriert wird
-    /// (identisches Muster wie `coachingToneRaw`/`trainingGoalRaw`).
-    public var cardioGoalRaw: String = CardioGoal.generalFitness.rawValue
-
-    /// DEL-250: Ziel-Renn-Datum. Echt optional (nicht jedes `cardioGoal`
-    /// hat ein konkretes Renn-Datum, z.B. "Allgemeine Fitness") — nil heisst
-    /// "kein Renn-Datum gesetzt", nicht "unbekannt/Fehler". Ergaenzt trotz
-    /// Fehlens im urspruenglichen Ticket-Text: ohne dieses Feld bliebe der
-    /// zurueckgestellte `cardioRaceWeek`-Coaching-Trigger dauerhaft unbaubar.
-    public var cardioRaceDate: Date?
-
-    /// DEL-250: Referenz-Zeit ueber 5 km in Sekunden — Grundlage fuer die
-    /// abgeleiteten Pace-Zonen (`PaceZoneCalculator`). Bewusst eine
-    /// ZEIT-ueber-Referenzdistanz statt einer direkt eingegebenen Pace:
-    /// praeziser fuer eine spaetere `cardioProgressionEarned`-Verfeinerung.
-    /// Nil = kein Referenzwert gepflegt (z.B. "Allgemeine Fitness"-Ziel
-    /// ohne konkrete Zeitmessung).
-    public var current5kReferenceSeconds: Int?
-
-    /// DEL-250: "Start-Laufvolumen" (km/Woche) — optionale Metrik aus dem
-    /// Ticket. Rein deskriptiv, aktuell kein Trigger-Verbraucher (der
-    /// bestehende `cardioVolumeSpike`-Trigger misst tatsaechlich geloggte
-    /// Wochen-KM, keinen statischen Profil-Wert).
-    public var weeklyBaseVolumeKm: Double?
-
-    /// DEL-250: Maximalpuls (bpm) — optionale Metrik aus dem Ticket. Rein
-    /// deskriptiv, kein HR-basierter Coaching-Trigger existiert aktuell.
-    public var maxHeartRateBpm: Int?
-
-    /// Handoff "Lauf-Coaching - Machbarkeits-Check": Fingerprint aus
-    /// Ziel+Renn-Datum+Wochenvolumen, fuer den die Vorschlags-Karte auf
-    /// Profil/Dashboard/Plan-Tab NICHT mehr erscheinen soll — entweder weil
-    /// der Nutzer sie explizit verworfen/das Ziel behalten hat, oder weil er
-    /// den Vorschlag bereits angenommen hat (siehe
-    /// `CardioFeasibilityCalculator.suppressionFingerprint`). Bewusst ein
-    /// SwiftData-Feld statt `@AppStorage` — ein reiner `@AppStorage`-Key
-    /// ueberlebt keine Neuinstallation/Restore (dieselbe Luecke, die
-    /// `deload_until` frueher hatte, siehe DEL-238-Kommentar in
-    /// `DashboardView`); dieses Feld wandert stattdessen normal im Backup mit.
-    /// Nil = noch nie unterdrueckt worden.
-    public var cardioFeasibilityDismissedFingerprint: String?
-
-    /// Paket 1 (Laufcoach-Plananpassung, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
-    /// separates Feld, NICHT identisch mit
-    /// `cardioFeasibilityDismissedFingerprint` oben - geprueft und
-    /// bestaetigt, dass dieses bestehende Feld fuer "wurde diese konkrete
-    /// Kombination tatsaechlich uebernommen" NICHT reicht, weil sowohl
-    /// `dismiss()` als auch `accept()`/`acceptCustom()` denselben
-    /// Fingerprint-WERT hineinschreiben (siehe eigener Kommentar oben:
-    /// "entweder weil der Nutzer sie explizit verworfen ... oder weil er
-    /// den Vorschlag bereits angenommen hat") - aus dem Feld allein ist
-    /// also NICHT ablesbar, ob eine Kombination abgelehnt oder uebernommen
-    /// wurde. Dieses Feld wird AUSSCHLIESSLICH von
-    /// `CoachAdjustmentCardModel.accept(...)` nach einer tatsaechlich
-    /// erfolgreich gespeicherten Plan-Anpassung gesetzt (niemals von
-    /// "beibehalten"/Verwerfen) - Fingerprint-Gleichheit heisst hier
-    /// eindeutig "fuer genau dieses Ziel/Renndatum/Wochenvolumen wurde
-    /// bereits eine Anpassung uebernommen", nicht "irgendetwas ist
-    /// entschieden". `cardioCoachingEnabled` (Praeferenz: Coach an/aus)
-    /// bleibt davon komplett unberuehrt - siehe dortige Doku.
-    public var cardioPlanAdjustmentFingerprint: String? = nil
-
-    /// Paket 3a (Laufversäumnis-Hinweis, docs/DELTIQ_DEVICE_ACCEPTANCE.md):
-    /// "Nicht jetzt" fuer `MissedRunDaysCardModel`. Gleiches Fingerprint-
-    /// Muster wie `cardioFeasibilityDismissedFingerprint`/
-    /// `cardioPlanAdjustmentFingerprint` oben, aber bewusst ein DRITTES,
-    /// eigenes Feld statt eines der beiden bestehenden: dieser Fingerprint
-    /// kodiert etwas anderes (Planfassung + Versaeumnis-Beobachtung ueber
-    /// `CardioCoachingAdvisor.missedRunHintFingerprint`, NICHT Ziel/
-    /// Renndatum/Volumen) und muss unabhaengig von einer Paket-1-Annahme
-    /// ablaufen koennen (Korrektur zum urspruenglichen Scope-Vorschlag: eine
-    /// fruehere Plan-Uebernahme ist KEINE dauerhafte Sperre fuer diesen
-    /// Hinweis). Nil = noch nie abgelehnt worden.
-    ///
-    /// **CSV-Export/-Import-Vertrag (Paket-3a-Restpunkt 3, eigenstaendig
-    /// geprueft — NICHT einfach vom `cardioPlanAdjustmentFingerprint`-
-    /// Praezedenzfall uebernommen): bewusst AUSGESCHLOSSEN.** Dieses Feld
-    /// erscheint WEDER in `DataExportService.buildProfile`s Spaltenliste
-    /// NOCH in `DataImportService`s Zeilen-Mapping — ein Import (egal ob
-    /// `.appendOnly` oder `.replaceAll`) liefert fuer dieses Feld immer den
-    /// Konstruktor-Default `nil`, UNABHAENGIG vom exportierten Zustand.
-    /// Entscheidung: eine bereits abgelehnte Unterdrueckung kann nach einem
-    /// Restore/einer Neuinstallation erneut erscheinen - das ist die
-    /// sicherere Default-Richtung (ein zu Unrecht WEITERHIN unterdrueckter
-    /// echter Versaeumnis-Hinweis waere das schlechtere Fehlverhalten als
-    /// ein einmalig erneut angezeigter, bereits bekannter Hinweis). Siehe
-    /// `DataPortabilityRoundtripTests.
-    /// testMissedRunHintDismissedFingerprintResetsOnImport`/
-    /// `testMissedRunHintDismissedFingerprintDefaultsToNilOnColdStart` fuer
-    /// den tatsaechlichen Nachweis (nicht nur diese Behauptung).
-    public var missedRunHintDismissedFingerprint: String? = nil
-
-    /// Dashboard-CoachAdjustmentCard: "Nicht jetzt" — dieselbe
-    /// Fingerprint-Logik wie `missedRunHintDismissedFingerprint` (bewusst
-    /// NICHT im CSV-Export/Import, identische Begruendung).
-    public var cardioAdjustmentCardDismissedFingerprint: String? = nil
-
-    /// AI-Running-Coach Phase 1 (docs/superpowers/plans/2026-11-06-ai-running-coach-phase1-implementation.md):
-    /// Beginn des Coaching-Beobachtungszeitraums. Grenzt NUR Plateau-/
-    /// Inaktivitaets-/Konsistenz-WARNUNGEN ein (`RaceProgressAssessment`) -
-    /// schneidet NIE die fuer Trend-/Fortschritts-Metriken genutzte
-    /// Laufhistorie ab. Wird beim False->True-Uebergang von
-    /// `cardioCoachingEnabled` gesetzt (siehe `setEnduranceModality`); fuer
-    /// Bestandsnutzer, die den Coach schon vorher aktiv hatten, legt
-    /// `RaceProgressDueCalculator.establishObservationAnchorIfNeeded` ihn
-    /// EINMALIG auf den Zeitpunkt der ersten Auswertung fest - niemals ein
-    /// Datum in die Vergangenheit erfunden.
-    public var cardioCoachingEnabledAt: Date? = nil
-
-    /// Zeitpunkt der letzten `RaceProgressAssessment`-Auswertung.
-    public var raceProgressLastAnalyzedAt: Date? = nil
-
-    /// Ziel+Renndatum-Fingerprint zum Zeitpunkt der letzten Analyse - erkennt
-    /// eine zwischenzeitliche Ziel-/Renndatum-Aenderung
-    /// (`RaceProgressDueCalculator.DueReason.configurationChanged`), ohne
-    /// ein eigenes "letztes Ziel"-Feld zu brauchen.
-    public var raceProgressLastAnalyzedConfigurationFingerprint: String? = nil
-
-    /// Dashboard-Karte: "Nicht jetzt" fuer die Wettkampf-Fortschritts-Karte -
-    /// identische Fingerprint-Logik wie `cardioAdjustmentCardDismissedFingerprint`.
-    public var raceProgressDismissedFingerprint: String? = nil
-
     /// Smart-Onboarding-Epic: verhaltens-/pausenbasierte Track-Einstufung
     /// (Einstieg/Wiedereinstieg/volle Automatik) — separat von
     /// `coachingTone`/`trainingGoal`. Nil = noch nicht hergeleitet (z. B.
@@ -280,84 +141,6 @@ public final class UserBodyProfile {
     /// `coachingToneRaw`: ein drittes, neutrales "nicht gesetzt"-Signal wird
     /// gebraucht, damit der Backfill genau einmal greift.
     public var experienceTrackRaw: String?
-
-    /// Planung-&-Trainingsbegleitung-Epic, P2.5 (docs/NEUE_SPEZIFIKATION_P0_AUDIT.md,
-    /// Vorbedingung für P3/P4): welche Ausdauerform ein `TrainingGoal.endurance`-
-    /// Profil meint (Core-Typ `EnduranceModality`, `PlanningContext.swift`).
-    /// Nil = nicht gesetzt — identisches "noch nicht beantwortet"-Signal wie
-    /// `experienceTrackRaw`, nicht nur fuer Bestandsnutzer, sondern auch fuer
-    /// jedes Profil mit einem ANDEREN `trainingGoal` (die Frage ist dort nicht
-    /// anwendbar).
-    public var enduranceModalityRaw: String?
-
-    /// Typed Accessor, analog `experienceTrack`. Ungueltiger/unbekannter
-    /// Rohwert wird wie dort zu `nil`, nie zu einem erfundenen Default.
-    public var enduranceModality: EnduranceModality? {
-        get { enduranceModalityRaw.flatMap { EnduranceModality(rawValue: $0) } }
-        set { enduranceModalityRaw = newValue?.rawValue }
-    }
-
-    /// Nachbesserung (Deltiq-Weiterentwicklung, "Verbindliche Produktregel":
-    /// "Eine eindeutige fachliche Laufcoach-Aktivierung, keine konkurrierenden
-    /// Schalter"): P2.5 fuehrte kurzzeitig ein EIGENES `runCoachEnabled`-Feld
-    /// ein — das waere GENAU der verbotene zweite Schalter neben dem bereits
-    /// bestehenden `cardioCoachingEnabled` (DEL-250), das fachlich dasselbe
-    /// meint (`CardioGoal` kennt ausschliesslich Laufdistanzen, war also
-    /// faktisch schon immer der Laufcoach-Schalter). Einziger Schreibweg fuer
-    /// `enduranceModality`/`cardioCoachingEnabled` zusammen — erzwingt
-    /// dieselbe Invariante wie `PlanningContextIssue.
-    /// runCoachRequiresRunningOrBothModality` (ueber `EnduranceModality.
-    /// supportsRunCoach`, siehe dortige Doku): der Coach kann nie `true`
-    /// bleiben, wenn die Modalitaet das nicht hergibt (z.B. reines
-    /// Radfahren). Ein direkter Schreibzugriff auf `cardioCoachingEnabled`
-    /// bleibt moeglich (SwiftData-`@Model`-Property, u.a. fuer Bestandscode
-    /// vor P2.5), ist aber fuer Aenderungen an BEIDEN Feldern zusammen nicht
-    /// der vorgesehene Weg — jeder reale Aufrufer (ProfileEditorView) geht
-    /// ueber diese Methode.
-    public func setEnduranceModality(_ modality: EnduranceModality?, runCoachEnabled wantsCoach: Bool) {
-        enduranceModality = modality
-        // `nil` heisst "noch nicht beantwortet", NICHT "Radfahren" - ein
-        // unbeantwortetes Profil (praktisch jeder Bestandsnutzer vor dieser
-        // Aenderung) darf den laengst bestehenden `cardioCoachingEnabled`-
-        // Schalter (DEL-250) weiterhin uneingeschraenkt nutzen. Nur eine
-        // EXPLIZIT gewaehlte, nicht unterstuetzende Modalitaet (`.cycling`)
-        // sperrt den Coach - identischer Default wie `displayedEnduranceModality`
-        // in `ProfileEditorView` (dort `?? .running`, hier aequivalent `?? true`).
-        let wasEnabled = cardioCoachingEnabled
-        cardioCoachingEnabled = wantsCoach && (modality?.supportsRunCoach ?? true)
-        // WP-D: Bei AUS→EIN nur runCoachCard positionieren; alle anderen Widgets
-        // (einschliesslich raceProgressCard) bleiben unveraendert.
-        // Duplikat-Bereinigung erfolgt immer — unabhaengig davon, ob runCoachCard
-        // in top-3 liegt. War der erste Eintrag in top-3, bleibt er exakt dort;
-        // lag er ausserhalb (oder fehlte), wird er an Index 1 (bzw. 0) eingefuegt.
-        if cardioCoachingEnabled && !wasEnabled {
-            var order = activeDashboardWidgets
-            let firstIdx = order.firstIndex(of: .runCoachCard)
-            if let idx = firstIdx, idx < 3 {
-                // Erste Instanz liegt in top-3: Position halten, Duplikate dahinter entfernen.
-                var seen = false
-                order = order.filter { widget in
-                    if widget == .runCoachCard {
-                        if seen { return false }
-                        seen = true
-                    }
-                    return true
-                }
-            } else {
-                // runCoachCard fehlt oder liegt ausserhalb top-3: neu an Index 1 einfuegen.
-                order.removeAll { $0 == .runCoachCard }
-                order.insert(.runCoachCard, at: min(1, order.count))
-            }
-            activeDashboardWidgets = order
-            // AI-Running-Coach Phase 1: markiert den Beginn des Coaching-
-            // Beobachtungszeitraums (siehe cardioCoachingEnabledAt-Doku).
-            // `== nil`-Guard: ein Aus-/Wieder-Einschalten darf einen bereits
-            // bekannten Beobachtungsbeginn nicht verschieben.
-            if cardioCoachingEnabledAt == nil {
-                cardioCoachingEnabledAt = Date()
-            }
-        }
-    }
 
     // MARK: - Start-Check (optionaler Baseline-Check im Onboarding)
     //
@@ -401,13 +184,6 @@ public final class UserBodyProfile {
     /// (TDEEView, MeasurementView, NutritionGoalsView, SettingsView).
     public var ageYears: Int {
         Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0
-    }
-
-    /// Convenience-Accessor mit Default-Fallback, falls jemand einen
-    /// invaliden String reinschreibt.
-    public var cardioGoal: CardioGoal {
-        get { CardioGoal(rawValue: cardioGoalRaw) ?? .generalFitness }
-        set { cardioGoalRaw = newValue.rawValue }
     }
 
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
@@ -708,15 +484,6 @@ public final class UserBodyProfile {
         // DEL-170: optionale Equipment-Präferenzen. Default leer — der Matcher
         // behandelt das wie "nicht gepflegt" und nimmt die Standard-Variante.
         equipmentPreferences: Set<Equipment> = [],
-        // DEL-250: Cardio-Ziele. Default = ausgeschaltet/leer, identisch zum
-        // Lightweight-Migration-Default fuer Bestand (siehe Property-Docs).
-        cardioCoachingEnabled: Bool = false,
-        cardioGoal: CardioGoal = .generalFitness,
-        cardioRaceDate: Date? = nil,
-        current5kReferenceSeconds: Int? = nil,
-        weeklyBaseVolumeKm: Double? = nil,
-        maxHeartRateBpm: Int? = nil,
-        cardioFeasibilityDismissedFingerprint: String? = nil
     ) {
         self.birthDate = birthDate
         self.heightCm = heightCm
@@ -727,26 +494,7 @@ public final class UserBodyProfile {
         self.coachingToneRaw = coachingTone.rawValue
         self.trainingGoalRaw = trainingGoal.rawValue
         self.equipmentPreferencesRaw = equipmentPreferences.map(\.rawValue).sorted()
-        self.cardioCoachingEnabled = cardioCoachingEnabled
-        self.cardioGoalRaw = cardioGoal.rawValue
-        self.cardioRaceDate = cardioRaceDate
-        self.current5kReferenceSeconds = current5kReferenceSeconds
-        self.weeklyBaseVolumeKm = weeklyBaseVolumeKm
-        self.maxHeartRateBpm = maxHeartRateBpm
-        self.cardioFeasibilityDismissedFingerprint = cardioFeasibilityDismissedFingerprint
-        // Neues Profil ohne Lauf-Coaching bekommt runCoachCard nicht im Standard-Set.
-        // Mit Coaching: runCoachCard ganz oben (Spec: "standardmäßig ganz oben").
-        // Nur bei erstmaliger Initialisierung — bestehende Profile werden nie angefasst.
-        if !cardioCoachingEnabled {
-            activeDashboardWidgetsRaw = DashboardWidgetType.defaultOrder
-                .filter { $0 != .runCoachCard && $0 != .raceProgressCard }
-                .map { $0.rawValue }
-        } else {
-            var order = DashboardWidgetType.defaultOrder.filter { $0 != .runCoachCard && $0 != .raceProgressCard }
-            order.insert(.raceProgressCard, at: 0)
-            order.insert(.runCoachCard, at: 0)
-            activeDashboardWidgetsRaw = order.map { $0.rawValue }
-        }
+        activeDashboardWidgetsRaw = DashboardWidgetType.defaultOrder.map { $0.rawValue }
     }
 }
 #endif

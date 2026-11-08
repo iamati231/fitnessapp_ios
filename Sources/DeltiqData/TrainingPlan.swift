@@ -127,11 +127,6 @@ public final class TrainingPlan {
     /// `UserBodyProfile.equipmentPreferencesRaw`.
     public var generatorInputRaw: String?
 
-    /// Handoff "Lauf-Coaching - Machbarkeits-Check": Herkunft dieses Plans.
-    /// Default `.manual`, weil das die einzige Herkunft ist, die kein
-    /// Instantiator explizit setzt (Template-Adopt/Leerer-Plan gehen nicht
-    /// ueber `PlanGeneratorInstantiator`). Gleiches Raw+Computed-Prinzip wie
-    /// `UserBodyProfile.cardioGoalRaw`.
     public var generationSourceRaw: String = GenerationSource.manual.rawValue
 
     @Relationship(deleteRule: .cascade, inverse: \TrainingDay.plan)

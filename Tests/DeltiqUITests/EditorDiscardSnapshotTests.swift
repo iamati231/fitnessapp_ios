@@ -227,34 +227,6 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         XCTAssertEqual(profile.trainingGoal, .hybrid)
     }
 
-    /// Deltiq-Geräteabnahme (C01): Cardio-/Laufziel-Felder haben jetzt einen
-    /// eigenen Save/Cancel-Flow in `CardioGoalEditorView` (siehe dessen
-    /// Typ-Doku) — analog zu `heightCm`/`environment` sind sie deshalb NICHT
-    /// mehr Teil von `ProfileMetaSnapshot`: eine Cardio-Aenderung macht den
-    /// Haupt-Screen nicht dirty, und dessen `apply(to:)` (Verwerfen auf dem
-    /// Haupt-Screen) ruehrt sie nicht an.
-    func testProfileMetaSnapshotExcludesCardioFields() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let profile = UserBodyProfile(
-            birthDate: Date(timeIntervalSince1970: 0), heightCm: 170, profile: .female,
-            cardioCoachingEnabled: false, cardioGoal: .generalFitness
-        )
-        ctx.insert(profile)
-        let snapshot = ProfileMetaSnapshot.capture(from: profile)
-
-        profile.cardioCoachingEnabled = true
-        profile.cardioGoal = .marathon
-        profile.current5kReferenceSeconds = 1500
-        XCTAssertEqual(snapshot, ProfileMetaSnapshot.capture(from: profile),
-                       "Cardio-Aenderungen duerfen den Haupt-Screen nicht dirty machen -- eigener Save/Cancel-Flow in CardioGoalEditorView")
-
-        snapshot.apply(to: profile)
-        XCTAssertTrue(profile.cardioCoachingEnabled, "Verwerfen auf dem Haupt-Screen darf bestaetigte Cardio-Werte nicht zuruecksetzen")
-        XCTAssertEqual(profile.cardioGoal, .marathon)
-        XCTAssertEqual(profile.current5kReferenceSeconds, 1500)
-    }
-
     // MARK: - Korrektur-Runde 3 (V1/V2/V3)
 
     /// Korrektur V2: `rebaselineTargetEnvironment()` (PlanEditorView) macht
