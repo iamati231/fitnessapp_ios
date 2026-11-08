@@ -51,7 +51,6 @@ final class MeasurementDoubleTapGuardTests: XCTestCase {
     private static let guardedEditorFiles = [
         "MeasurementView.swift",
         "Settings/BodyDataEditorView.swift",
-        "Settings/CardioGoalEditorView.swift",
         "Settings/ExerciseLibraryEditorSheet.swift",
         "Settings/GearListView.swift",
         "Settings/PeriodicCheckInView.swift",

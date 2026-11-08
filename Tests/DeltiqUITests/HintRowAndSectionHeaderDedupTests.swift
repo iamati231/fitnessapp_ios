@@ -27,12 +27,10 @@ final class HintRowAndSectionHeaderDedupTests: XCTestCase {
 
     func testNoneOfTheHintRowFilesRedefineIt() throws {
         let files = [
-            "DeltiqUI/Cardio/CardioCoachSetupFields.swift",
             "DeltiqUI/Calculators/OneRepMaxView.swift",
             "DeltiqUI/Calculators/TDEEView.swift",
             "DeltiqUI/Calculators/PlateCalculatorView.swift",
             "DeltiqUI/MeasurementView.swift",
-            "DeltiqUI/Settings/CardioGoalEditorView.swift",
             "DeltiqUI/Settings/DataExportView.swift",
             "DeltiqUI/Settings/BodyDataEditorView.swift",
             "DeltiqUI/Settings/BackupListView.swift",
