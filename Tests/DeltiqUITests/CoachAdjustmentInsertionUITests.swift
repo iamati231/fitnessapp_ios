@@ -195,8 +195,9 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
             "must no longer gate on mere non-emptiness - that offers insertion even when there are too few eligible rest days for the goal"
         )
         XCTAssertTrue(
-            block.contains("model.analysis.insertableRestDays.count >= newCardioDays(for: model).count"),
-            "must gate on having at least as many eligible rest days as the goal needs (newCardioDays(for: model).count), reusing the existing call rather than recomputing it"
+            withoutLineComments(String(block)).contains("normalCapacity >= desired.count") ||
+            withoutLineComments(String(block)).contains("normalCapacity >= newCardioDays(for: model).count"),
+            "must gate on combined (rest+free) capacity being at least as large as the goal needs, not on rest days alone"
         )
     }
 
@@ -305,8 +306,8 @@ final class CoachAdjustmentInsertionUITests: XCTestCase {
             "must size the extra requirement as (needed days - already-eligible days), not the raw needed count"
         )
         XCTAssertTrue(
-            flat.contains("model.analysis.insertableRestDays.count >= extraNeeded"),
-            "must gate on the same eligibility-aggregated count the .noEligibleCardioDay branch already uses, reused not reimplemented"
+            flat.contains("normalCapacity >= extraNeeded"),
+            "must gate on combined (rest+free) capacity covering the extra days needed, same pattern as .noEligibleCardioDay branch"
         )
     }
 

@@ -199,9 +199,11 @@ struct CoachAdjustmentPreviewView: View {
             // goal instead of starting from zero.
             let desiredDays = newCardioDays(for: model)
             let extraNeeded = max(0, desiredDays.count - ids.count)
-            // Stärkekonversion: Gesamtkapazität = Rest + Free + convertibleStrength.
-            let totalCapacity = model.analysis.insertableRestDays.count + model.analysis.freeWeekdaysForNewDays.count + model.analysis.convertibleStrengthDays.count
-            if extraNeeded == 0 || model.analysis.insertableRestDays.count >= extraNeeded {
+            // Kapazitätsregel: Rest + Free kombiniert zählen, nicht jeweils separat (ODER).
+            // Stärkekonversion: Gesamtkapazität = normalCapacity + convertibleStrength.
+            let normalCapacity = model.analysis.insertableRestDays.count + model.analysis.freeWeekdaysForNewDays.count
+            let totalCapacity = normalCapacity + model.analysis.convertibleStrengthDays.count
+            if extraNeeded == 0 || normalCapacity >= extraNeeded {
                 Section {
                     ForEach(Array(activePlan.days.filter { ids.contains($0.persistentModelID) }), id: \.persistentModelID) { day in
                         Text(day.name)
@@ -255,9 +257,10 @@ struct CoachAdjustmentPreviewView: View {
             // Zwei Pfade: isAutoFilledPlaceholder-Ruhetage ersetzen ODER neue
             // Tage auf freien Wochentagen erzeugen (Fallback, wenn Ruhetage
             // manuell geloescht wurden). Beide Pfade laufen in accept().
-            // Stärkekonversion: Gesamtkapazität = Rest + Free + convertibleStrength.
-            let totalCapacity = model.analysis.insertableRestDays.count + model.analysis.freeWeekdaysForNewDays.count + model.analysis.convertibleStrengthDays.count
-            if model.analysis.insertableRestDays.count >= newCardioDays(for: model).count {
+            // Kapazitätsregel: Rest + Free kombiniert zählen (identisch zum .ready-Zweig).
+            let normalCapacity = model.analysis.insertableRestDays.count + model.analysis.freeWeekdaysForNewDays.count
+            let totalCapacity = normalCapacity + model.analysis.convertibleStrengthDays.count
+            if normalCapacity >= desired.count {
                 Section {
                     ForEach(Array(desired.enumerated()), id: \.offset) { _, spec in
                         Text("— → \(spec.name)")
