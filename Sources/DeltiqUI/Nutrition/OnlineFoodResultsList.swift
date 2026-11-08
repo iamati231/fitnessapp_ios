@@ -42,6 +42,7 @@ struct OnlineFoodResultsList: View {
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(candidate.name)
+                        .lineLimit(2)
                         .foregroundStyle(Color.primary)
                     if let brand = candidate.brand {
                         Text(brand)
