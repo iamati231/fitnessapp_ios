@@ -31,7 +31,7 @@ final class CoachingRollbackCSVCompatibilityTests: XCTestCase {
     ///   cardio_feasibility_dismissed_fingerprint
     private static let coachingEraProfileCSV = """
     id,birth_date,height_cm,profile,goal_weight_kg,environment,first_name,coaching_tone,training_goal,equipment_preferences,dashboard_widgets,hero_metric_slots,weekly_workout_goal,experience_track,cardio_coaching_enabled,cardio_goal,cardio_race_date,current_5k_reference_seconds,weekly_base_volume_km,max_heart_rate_bpm,cardio_feasibility_dismissed_fingerprint
-    1,1990-01-15,178.0,male,80.0,gym,Max,analytical,hybrid,,nextWorkout|runCoachCard|cardioPace|raceProgressCard|coachingInsight,weight|bodyFat,3,intermediate,true,race,2027-04-30T00:00:00Z,1800,25.0,185,
+    1,1990-01-15T00:00:00Z,178.0,male,80.0,gym,Max,analytical,hybrid,,nextWorkout|runCoachCard|cardioPace|raceProgressCard|coachingInsight,weight|bodyFat,3,intermediate,true,race,2027-04-30T00:00:00Z,1800,25.0,185,
     """
 
     func testCoachingEraCSVParsesWithoutError() throws {
