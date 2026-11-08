@@ -599,7 +599,11 @@ public enum ProgramTemplates {
         targetEnvironment: .gym,
         iconSystemName: "soccerball",
         targetExperience: [.intermediate],
-        targetGoals: [.hybrid, .strength]
+        // Bewusst kein .hybrid: das ist ein Sport-spezifischer Zusatzplan
+        // ("Ergänzung zum Vereinstraining"), kein allgemeiner Hybrid-Plan.
+        // .hybrid wuerde ihn für jeden Functional/Hybrid-User zum Top-Treffer
+        // machen (kein 2-3-Tage-Hybrid-Template konkurriert), was irreführend ist.
+        targetGoals: [.strength]
     )
 
     // MARK: - 12. Hybrid Athlete — Beginner (DEL-055)
