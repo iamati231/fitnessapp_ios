@@ -137,6 +137,17 @@ let package = Package(
             name: "DeltiqFoodLookupTests",
             dependencies: ["DeltiqFoodLookup"],
             path: "Tests/DeltiqFoodLookupTests"
+        ),
+        .executableTarget(
+            // WP1 (DEL-migration-proof): creates a real coaching-era SwiftData
+            // store (pre-rollback schema) so the migration test can open it with
+            // the current production schema and prove lightweight migration.
+            // SwiftData-dependent code is #if canImport(SwiftData)-gated so the
+            // file compiles on Windows (where SwiftData is unavailable) as a no-op.
+            // Run before `swift test` in CI: swift run CoachingEraFixtureGenerator <path>
+            name: "CoachingEraFixtureGenerator",
+            dependencies: ["DeltiqCore"],
+            path: "Sources/CoachingEraFixtureGenerator"
         )
     ]
 )

@@ -50,6 +50,13 @@ jobs:
       - name: Swift-Package bauen (debug)
         run: swift build
 
+      - name: Coaching-Era Legacy-Fixture erzeugen (WP1)
+        run: |
+          # Creates a real SwiftData store with the pre-rollback coaching schema
+          # (UserBodyProfile + 15 coaching properties) so the migration test below
+          # can open it with the current production schema and prove WP2/WP3.
+          swift run CoachingEraFixtureGenerator /tmp/deltiq_legacy_fixture.sqlite
+
       - name: Swift-Package-Tests ausführen (echte Apple-/SwiftData-Testausführung)
         run: |
           set -o pipefail
