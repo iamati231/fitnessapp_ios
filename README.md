@@ -2,7 +2,7 @@
 
 iOS-App für **Krafttraining, Ausdauer und Körperwerte**: Trainingspläne planen, Workouts Satz für Satz protokollieren, Fortschritt auswerten, Körperzusammensetzung messen und berechnen – alles lokal auf dem Gerät.
 
-*Stand dieser Beschreibung: Oktober 2026 · Version 0.1.x (Beta, Verteilung über TestFlight)*
+*Stand dieser Beschreibung: November 2026 · Version 0.1.x (Beta, Verteilung über TestFlight)*
 
 ## Inhalt
 
@@ -42,7 +42,7 @@ Entstanden ist das Projekt als iOS-Port einer Android-Fitness-App. Die Berechnun
 | 20 | kuratierte Programm-Vorlagen (Ganzkörper, Push-Pull-Legs, Upper/Lower, Powerlifting, Hybrid Athlete, CrossFit, Kettlebell …) |
 | 186 | Übungen in der System-Bibliothek, dazu eigene Übungen |
 | 4 | Zeitformate: AMRAP, EMOM, Auf Zeit, Zirkel |
-| 12 | Dashboard-Widgets (frei ein-/ausblendbar und sortierbar) |
+| 13 | Dashboard-Widgets (frei ein-/ausblendbar und sortierbar) |
 | 3 | Sprachen mit 1806 Texten (DE, EN, TR jeweils vollständig) |
 
 **Was die App kann**
@@ -137,24 +137,25 @@ Möglich im Onboarding, in der Messung, über die gesperrten Dashboard-Karten (R
 
 **Nicht abschaltbar:** die Kachel *Aktuelles Training fortsetzen* (erscheint bei einer offenen Session, die die Plan-Karte nicht abdeckt, z. B. einem spontanen Training) und die *Lauf-Machbarkeitskarte* (nur wenn Lauf-Coaching aktiv ist, siehe [5.5](#55-progression-deload-und-lauf-coaching)).
 
-**Die 12 Widgets** (Vorgabe: alle an, in dieser Reihenfolge):
+**Die 13 Widgets** (Vorgabe: alle an, in dieser Reihenfolge):
 
 | Widget | Inhalt |
 |---|---|
-| **Nächstes Training** | Plan-Tag der Rotation mit bis zu 3 Übungen; Buttons „Direkt starten“ / „Laufendes Training fortsetzen“. An Ruhetagen: „Heute ist Ruhetag“, „Spontanes Training starten“, „Tag im Plan abhaken“. Link „Vom Plan abweichen – Spontanes Training“ (Sätze & Wdh., AMRAP 15 Min., EMOM 12 Min., Auf Zeit, Zirkel 5 Runden/90 s). |
+| **Nächstes Training** | Plan-Tag der Rotation mit bis zu 3 Übungen; Buttons „Direkt starten” / „Laufendes Training fortsetzen”. An Ruhetagen: „Heute ist Ruhetag”, „Spontanes Training starten”, „Tag im Plan abhaken”. Link „Vom Plan abweichen – Spontanes Training” (Sätze & Wdh., AMRAP 15 Min., EMOM 12 Min., Auf Zeit, Zirkel 5 Runden/90 s). |
 | **Coaching-Insight** | ein Hinweis aus der Coaching-Kette (siehe unten); bei aktiver Deload-Woche ersetzt ein Banner die Karte. |
+| **Trainings-Kalender** | Monatsraster, Trainingstage orange; Tippen öffnet die Einheiten des Tages. |
 | **Diese Woche** | Volumen (kg) und Distanz (km) der Kalenderwoche. |
 | **Muskel-Heatmap** | Sätze pro Woche für 10 Muskelgruppen: Untrainiert (0), Erhalt (1–8), Optimal (9–18), Übervolumen (>18). |
-| **Trainings-Kalender** | Monatsraster, Trainingstage orange; Tippen öffnet die Einheiten des Tages. |
 | **Rekorde (Trophy Room)** | Anzahl und letzter Rekord → Rekord-Historie. |
-| **Trainingsverlauf** | Anzahl und letztes Training → Verlauf. |
-| **Gewichts-Trend** | Chart aller Messungen, gestrichelte Prognose „4 / 8 W.“ (ab 3 Messungen), grüne Ziellinie bei gesetztem Zielgewicht. Schwanken die Werte stark (Standardabweichung > 2 kg), entfällt die Prognose. |
+| **Ernährung** | Tagesübersicht-Teaser mit Kalorien und Makros; Button „Mahlzeit hinzufügen”. |
+| **Gewichts-Trend** | Chart aller Messungen, gestrichelte Prognose „4 / 8 W.” (ab 3 Messungen), grüne Ziellinie bei gesetztem Zielgewicht. Schwanken die Werte stark (Standardabweichung > 2 kg), entfällt die Prognose. |
 | **Compound-Lift-Trend** | geschätztes 1RM für Kniebeuge, Bankdrücken, Kreuzheben, Schulterdrücken (stehend), Rudern vorgebeugt; ab 2 Einheiten je Lift; Filter 1M/3M/Max; gestrichelte 4-Wochen-Prognose. |
 | **Volumen-Trend** | Wochenvolumen (nur Kraft) als Balken; Filter 1M/3M/Max. |
-| **Cardio-Pace-Trend** | Pace je Übung und Gerät („min/km, niedriger = besser“); nur mit mindestens zwei Cardio-Einheiten. |
-| **Letzte Trainings** | die 5 jüngsten Einheiten, „Alle anzeigen“. |
+| **Cardio-Pace-Trend** | Pace je Übung und Gerät („min/km, niedriger = besser”); nur mit mindestens zwei Cardio-Einheiten. |
+| **Trainingsverlauf** | Anzahl und letztes Training → Verlauf. |
+| **Letzte Trainings** | die 5 jüngsten Einheiten, „Alle anzeigen”. |
 
-**Dashboard anpassen:** *Mehr → Einstellungen → Präferenzen → Dashboard anpassen* – bis zu 3 Hero-Karten wählen, Widgets ein-/ausblenden und umsortieren. (Sind „Rekorde“ und „Trainingsverlauf“ ausgeblendet, fehlt der direkte Zugang zu diesen Screens.)
+**Dashboard anpassen:** *Mehr → Einstellungen → Erscheinungsbild → Dashboard anpassen* – bis zu 3 Hero-Karten wählen, Widgets ein-/ausblenden und umsortieren. (Sind „Rekorde“ und „Trainingsverlauf“ ausgeblendet, fehlt der direkte Zugang zu diesen Screens.)
 
 **Coaching-Hinweise:** Die Karte zeigt immer höchstens einen Hinweis; der erste zutreffende der Kette gewinnt. Wortlaut und Tonalität hängen von deinem **Coach-Ton** (Analytisch, Motivierend, Streng) und teils vom **Trainingsziel** ab.
 
@@ -326,8 +327,8 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 | Bereich | Inhalt |
 |---|---|
 | **Profil & Ziele** | Zeile mit Geschlecht/Alter/Größe/Ziel → **Profil bearbeiten** (siehe unten) |
-| **Präferenzen** | *Einheiten* (Metrisch/Imperial); *Übungen* (Bibliothek); *Ausrüstung & Schuhe* (Gear); *Dashboard anpassen* |
-| **Erscheinungsbild** | System · Hell · Dunkel (System) |
+| **Präferenzen** | *Einheiten* (Metrisch/Imperial); *Übungen* (Bibliothek); *Ausrüstung & Schuhe* (Gear) |
+| **Erscheinungsbild** | *Dashboard anpassen*; System · Hell · Dunkel (System) |
 | **Pausen-Timer-Feedback** | Ton abspielen (an), Vibrieren (an), Im Hintergrund weiterlaufen (an; Zeitformate bei gesperrtem Bildschirm), PR-Feiern (an), Vorlauf vor dem Start: Aus/5/10/15 s (10) |
 | **Trainings-Verhalten** | Warmup & Cooldown anzeigen (an), RIR-Hilfstexte anzeigen (an), Deload-Vorschläge (an), „Gesenkte Gewichte zurücksetzen (N Übungen)“ |
 | **Erinnerungen** | Wasser erinnern (an) + Häufigkeit: jede Stunde / alle 2 / 3 (Vorgabe) / 4 Stunden; Messung erinnern (an) + Wochentag (Sonntag) + Uhrzeit 6–22 Uhr (8 Uhr) |
