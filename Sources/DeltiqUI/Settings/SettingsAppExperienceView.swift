@@ -118,7 +118,6 @@ public struct SettingsAppExperienceView: View {
                 .minimumScaleFactor(0.8)
                 .accessibilityLabel(Text("settings.preferences.units.label", bundle: .module))
             }
-            dashboardCustomizationRow
             hintRow(String(localized: "settings.units.footer", bundle: .module))
         }
     }
@@ -142,6 +141,7 @@ public struct SettingsAppExperienceView: View {
 
     private var appearanceSection: some View {
         DeltiqSection(String(localized: "settings.appearance.section", bundle: .module).uppercased()) {
+            dashboardCustomizationRow
             DeltiqSegmentedPicker(
                 options: [
                     DeltiqSegmentedOption("system", label: String(localized: "settings.appearance.system", bundle: .module)),

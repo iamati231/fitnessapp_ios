@@ -404,11 +404,9 @@ struct SetRow: View {
             // eigenes, unmittelbar angrenzendes Inline-Label, damit die
             // Kapsel-Bedeutung ohne den (jetzt nicht mehr passenden)
             // Header-Platz eindeutig bleibt.
-            if showRirTooltips {
-                Text("set.column.rirLabel", bundle: .module)
-                    .deltiqLabel()
-                rirCapsule
-            }
+            Text("set.column.rirLabel", bundle: .module)
+                .deltiqLabel()
+            rirCapsule
             checkmarkButton
         }
     }
@@ -469,7 +467,7 @@ struct SetRow: View {
             labeledField(repsCaptionText) { repsInput }
             plateColumn
             Spacer(minLength: 6)
-            if showRirTooltips { rirCapsule }
+            rirCapsule
             checkmarkButton
         }
         .frame(minHeight: 44)
@@ -823,11 +821,13 @@ struct SetRow: View {
             }
             .font(.system(size: 10))
             .foregroundStyle(.tertiary)
-            Text(LocalizedStringKey(RIRTooltipBloop.tooltipKey(for: rir)), bundle: .module)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(minHeight: 32, alignment: .topLeading)
+            if showRirTooltips {
+                Text(LocalizedStringKey(RIRTooltipBloop.tooltipKey(for: rir)), bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(minHeight: 32, alignment: .topLeading)
+            }
         }
     }
 

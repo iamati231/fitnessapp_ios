@@ -208,8 +208,8 @@ public struct SettingsView: View {
             libraryEquipmentSection
             nutritionPreferencesSection
             appExperienceSection
-            appTourSection
             dataConnectionsSection
+            appTourSection
             helpInfoSection
         }
     }
