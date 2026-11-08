@@ -63,6 +63,22 @@ jobs:
           # each. Result: mixed-schema store ready for the lightweight-migration test.
           swift run CoachingEraFixtureEnricher /tmp/deltiq_legacy_fixture.sqlite
 
+      - name: Fixture-Datei vorhanden und nicht leer prüfen (WP5-Gate)
+        run: |
+          # Hard gate: the migration test must NOT silently pass or be skipped
+          # when the fixture is absent. This step fails the entire job first.
+          FIXTURE=/tmp/deltiq_legacy_fixture.sqlite
+          if [ ! -f "$FIXTURE" ]; then
+            echo "FAIL: Legacy fixture not found at $FIXTURE" >&2
+            exit 1
+          fi
+          SIZE=$(wc -c < "$FIXTURE")
+          if [ "$SIZE" -lt 4096 ]; then
+            echo "FAIL: Fixture file is suspiciously small ($SIZE bytes) — likely empty or incomplete." >&2
+            exit 1
+          fi
+          echo "OK: Fixture exists and is ${SIZE} bytes."
+
       - name: Swift-Package-Tests ausführen (echte Apple-/SwiftData-Testausführung)
         run: |
           set -o pipefail

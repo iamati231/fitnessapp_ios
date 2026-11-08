@@ -95,7 +95,10 @@ private final class UserBodyProfile {
     var mealPlanExcludedRecipeIDsRaw: [String] = []
 
     // MARK: - Coaching properties removed in rollback d3b387d
+    // Verified against git show a83c3b8:Sources/DeltiqData/UserBodyProfile.swift
+    // All 16 properties present: 15 cardio/race + enduranceModalityRaw
 
+    var enduranceModalityRaw: String? = nil          // EnduranceModality.rawValue
     var cardioCoachingEnabled: Bool = false
     var cardioWidgetUserConfigured: Bool = false
     var cardioGoalRaw: String = "generalFitness"
@@ -260,7 +263,21 @@ do {
     let checkIn = PeriodicCheckIn(date: now)
     ctx.insert(checkIn)
 
-    // --- DailyMealPlan + PlannedMealAssignment ---
+    // --- FoodCatalogEntry ---
+    // Uses the convenience init for user-created entries — available without
+    // constructing a full FoodCatalogItem with KnownValue machinery.
+    let foodEntry = FoodCatalogEntry(
+        displayName: "Hähnchenbrust (Fixture)",
+        source: .userCreated,
+        category: .meat,
+        kcalPer100g: 165.0,
+        proteinPer100g: 31.0,
+        carbsPer100g: 0.0,
+        fatPer100g: 3.6
+    )
+    ctx.insert(foodEntry)
+
+    // --- DailyMealPlan + PlannedMealAssignment (linked via inverse) ---
     let mealPlan = DailyMealPlan(date: now, generatorWarning: nil)
     ctx.insert(mealPlan)
 
@@ -269,10 +286,11 @@ do {
         mealType: .lunch,
         portionMultiplier: 1.0
     )
+    assignment.plan = mealPlan
     ctx.insert(assignment)
 
     try ctx.save()
-    print("CoachingEraFixtureEnricher: all 17 entity types written to \(outputPath)")
+    print("CoachingEraFixtureEnricher: all 17 entity types written (including FoodCatalogEntry) to \(outputPath)")
 } catch {
     print("CoachingEraFixtureEnricher error: \(error)")
     exit(1)

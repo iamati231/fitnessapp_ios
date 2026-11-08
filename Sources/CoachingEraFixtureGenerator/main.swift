@@ -78,7 +78,10 @@ private final class UserBodyProfile {
     var mealPlanExcludedRecipeIDsRaw: [String] = []
 
     // MARK: - Coaching properties removed in rollback d3b387d
+    // Verified against git show a83c3b8:Sources/DeltiqData/UserBodyProfile.swift
+    // All 16 properties present: 15 cardio/race + enduranceModalityRaw
 
+    var enduranceModalityRaw: String? = nil          // EnduranceModality.rawValue
     var cardioCoachingEnabled: Bool = false
     var cardioWidgetUserConfigured: Bool = false
     var cardioGoalRaw: String = "generalFitness"
@@ -131,7 +134,8 @@ do {
     profile.weeklyWorkoutGoal = 3
     profile.experienceTrackRaw = "intermediate"
 
-    // Coaching fields populated with realistic coaching-era values
+    // Coaching fields: representative coaching-era values (all 16 removed properties)
+    profile.enduranceModalityRaw = "running"
     profile.cardioCoachingEnabled = true
     profile.cardioGoalRaw = "race"
     profile.cardioRaceDate = formatter.date(from: "2027-04-30T00:00:00Z")
