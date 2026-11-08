@@ -916,13 +916,7 @@ public struct PlanBuilderView: View {
             // gewaehlte Zeitformat-Struktur stillschweigend auf "Saetze &
             // Wdh." zuruecksetzen, weil der Memberwise-Reconstruct sonst
             // keinen Wert dafuer mitgibt.
-            timeFormat: current.timeFormat,
-            // Nachbesserung (finales Branch-Review, Fix 4): dieselbe Luecke
-            // wie bei `timeFormat` oben, nur fuer die Pace-Baseline (Task
-            // 3/4) - ohne dieses Feld wuerde jede Aenderung an
-            // Tagen/Dauer/Erfahrung die Pace stillschweigend auf "nach
-            // Gefuehl" zuruecksetzen.
-            cardioRunProfile: current.cardioRunProfile
+            timeFormat: current.timeFormat
         )
     }
 
@@ -939,10 +933,7 @@ public struct PlanBuilderView: View {
             daysPerWeek: current.daysPerWeek,
             sessionDurationMinutes: current.sessionDurationMinutes,
             experience: current.experience,
-            timeFormat: timeFormat,
-            // Nachbesserung (finales Branch-Review, Fix 4): siehe `updateConfig` -
-            // dieselbe Pace-Baseline-Luecke, hier beim Aendern des Zeitformats.
-            cardioRunProfile: current.cardioRunProfile
+            timeFormat: timeFormat
         )
     }
 
@@ -1364,8 +1355,7 @@ public struct PlanBuilderView: View {
                     sessionDurationMinutes: config.sessionDurationMinutes,
                     experience: config.experience,
                     timeFormat: config.timeFormat,
-                    equipmentPool: pool,
-                    cardioRunProfile: config.cardioRunProfile
+                    equipmentPool: pool
                 )
             }
         } else {

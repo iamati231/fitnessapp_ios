@@ -1548,72 +1548,13 @@ struct SetRow: View {
             let previousText = String(format:
                 String(localized: "active.set.previousFormat", bundle: .module),
                 cardioPreviousHint(prev))
-            // Fix I-3 (Final-Review, Round 2): die Ziel-Pace muss NEBEN dem
-            // "letztes Mal"-Hinweis sichtbar bleiben, nicht nur in dessen
-            // Abwesenheit - sonst verschwindet sie dauerhaft, sobald die
-            // Uebung einmal geloggt wurde (jede folgende, noch nicht
-            // geloggte Session traefe sonst immer zuerst diesen Zweig).
-            if let targetPaceHint {
-                let targetText = String(format:
-                    String(localized: "active.set.targetPaceFormat", bundle: .module),
-                    targetPaceHint)
-                Text("\(targetText) · \(previousText)")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                Text(previousText)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        } else if let targetPaceHint {
-            Text(String(format:
-                String(localized: "active.set.targetPaceFormat", bundle: .module),
-                targetPaceHint))
+            Text(previousText)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             Color.clear
         }
-    }
-
-    /// Task 8 (Decision 1 - "Pace muss zum tatsaechlich uebernommenen
-    /// Trainingsinhalt passen"): dieselbe Gating-/Berechnungs-Logik wie
-    /// `PlanBuilderView.scopeLine`/`CardioFeasibilityDayRow.subtitle`
-    /// (Runde 1) - nur bei aktivem Coach, einer der beiden pace-tragenden
-    /// Lauf-Zonen (Easy/Tempo) UND einem Dauer-Ziel (der distanzbasierte
-    /// Intervall-Zweig traegt laut Task 3 nie eine Pace). Klassifiziert
-    /// ZWINGEND ueber `content.nameSnapshot` (stabiler Anker), NIE ueber
-    /// `content.customNameSnapshot` (user-umbenennbar) - Task 1s
-    /// Reviewer-Hinweis fuer genau diese Stelle.
-    ///
-    /// Fix round 1 (Review): der Fallback auf `cardioFeasibility.day.
-    /// paceUnknown` haengt am Ergebnis von `PaceZoneCalculator`, nicht nur
-    /// daran, ob `current5kReferenceSeconds` `nil` war - eine nicht-positive
-    /// Referenzzeit (`0`, oder kaputte/importierte Daten, siehe
-    /// `DataImportService.swift:746`) liess `PaceZoneCalculator.
-    /// easyPaceMinutesPerKm`/`.tempoPaceMinutesPerKm` ebenfalls `nil`
-    /// liefern (Divisions-Sicherheit, `CardioProfile.swift`), wodurch vorher
-    /// `PaceCalculator.formatPace(nil)` den rohen "—:—— /km"-Platzhalter
-    /// zurückgab statt des qualitativen Fallbacks - "keine falsch-praezise
-    /// Pace ohne Referenzzeit" gilt auch fuer eine UNBRAUCHBARE Referenzzeit.
-    /// Gleiches Muster wie `CardioFeasibilityDayRow.subtitle`, die ebenfalls
-    /// das BERECHNETE Pace-Ergebnis prueft, nicht nur die Eingabe.
-    private var targetPaceHint: String? {
-        guard content.isCardio, content.targetDurationMinutes != nil, isGeneratorPlan else { return nil }
-        let zone = CardioExerciseZone.forExerciseName(content.nameSnapshot)
-        guard zone == .easy || zone == .tempo else { return nil }
-        let paceMinutesPerKm = current5kReferenceSeconds.flatMap { referenceSeconds in
-            zone == .easy
-                ? PaceZoneCalculator.easyPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
-                : PaceZoneCalculator.tempoPaceMinutesPerKm(fiveKReferenceSeconds: referenceSeconds)
-        }
-        guard let paceMinutesPerKm else {
-            return String(localized: "cardioFeasibility.day.paceUnknown", bundle: .module)
-        }
-        return PaceCalculator.formatPace(paceMinutesPerKm)
     }
 
     private func cardioCompletedSummary(_ log: ExerciseLog) -> String {
