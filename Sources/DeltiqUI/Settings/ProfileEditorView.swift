@@ -38,7 +38,6 @@ public struct ProfileEditorView: View {
     /// `trainingLocationCard`).
     @State private var showingBodyDataEditor = false
     @State private var showingTrainingLocationEditor = false
-    @State private var showingCoachAdjustmentPreview = false
 
     /// Settings-Epic Phase 3: fuer die Gewicht-mit-Datum-Zeile in
     /// `bodyDataCard`s Zusammenfassung — derselbe Query wie in
