@@ -139,7 +139,6 @@ public struct DashboardSettingsView: View {
             if editMode?.wrappedValue.isEditing == true {
                 reorderButtons(for: widget, in: profile.activeDashboardWidgets) { newOrder in
                     profile.activeDashboardWidgets = newOrder
-                    profile.cardioWidgetUserConfigured = true
                 }
             }
             #endif
@@ -153,7 +152,6 @@ public struct DashboardSettingsView: View {
                         var copy = profile.activeDashboardWidgets
                         copy.removeAll { $0 == widget }
                         profile.activeDashboardWidgets = copy
-                        profile.cardioWidgetUserConfigured = true
                     }
                 }
             ))
@@ -217,7 +215,6 @@ public struct DashboardSettingsView: View {
         var arr = profile.activeDashboardWidgets
         arr.move(fromOffsets: source, toOffset: destination)
         profile.activeDashboardWidgets = arr
-        profile.cardioWidgetUserConfigured = true
     }
 
     // MARK: - DEL-132 Hero-Sektion (Hero-Metric-Slots, max 3)
@@ -374,7 +371,6 @@ public struct DashboardSettingsView: View {
                             var arr = profile.activeDashboardWidgets
                             arr.append(widget)
                             profile.activeDashboardWidgets = arr
-                            profile.cardioWidgetUserConfigured = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundStyle(Color.deltiqOrange)
