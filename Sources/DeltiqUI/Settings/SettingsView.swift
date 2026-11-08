@@ -94,6 +94,14 @@ public struct SettingsView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix (schwarze View im Mehr-Tab): nach dem Zurueckswipen von einer
+        // Sub-View, die .deltiqSwipeBackEnabled() hat, bleibt
+        // interactivePopGestureRecognizer.isEnabled == true auf der Root-View.
+        // Der native iOS-Recognizer feuert dann beim naechsten Edge-Swipe und
+        // startet eine Pop-Transition ohne Ziel — Navigation-Stack inkonsistent.
+        // SwipeBackController.viewWillAppear setzt isEnabled=false jedes Mal,
+        // wenn SettingsView sichtbar wird, auch nach einem Back-Swipe.
+        .deltiqSwipeBackEnabled(false)
         .alert(
             Text("settings.reset.errorTitle", bundle: .module),
             isPresented: Binding(

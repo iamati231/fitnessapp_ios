@@ -83,6 +83,32 @@ final class MehrInformationArchitectureTests: XCTestCase {
         )
     }
 
+    // MARK: - Swipe-Back-Regressionstest (schwarze View im Mehr-Tab)
+
+    /// SettingsView ist die Root-View des Mehr-Tabs. Nach dem Zurueckswipen
+    /// von einer Sub-View, die `.deltiqSwipeBackEnabled()` (enabled=true) gesetzt
+    /// hat, muss SettingsView den `interactivePopGestureRecognizer` explizit
+    /// deaktivieren — sonst bleibt isEnabled=true und der native iOS-Recognizer
+    /// kann auf der Root-View eine Pop-Transition starten, die zu einem schwarzen,
+    /// inhaltsleeren Screen fuehrt.
+    ///
+    /// Manueller Regressionstest:
+    /// 1. Mehr-Tab oeffnen → SettingsView.
+    /// 2. Beliebige Unterseite oeffnen (z.B. "Bibliothek & Ausruestung").
+    /// 3. Mehrfach zurueckswipen bis SettingsView.
+    /// 4. Tab wechseln (z.B. Heute), dann Mehr erneut auswaehlen.
+    /// 5. Erneut Unterseite oeffnen und zurueckswipen.
+    /// Erwartung: SettingsView bleibt immer vollstaendig gerendert, kein schwarzer Screen.
+    func testSettingsViewDisablesSwipeBackGestureAtRoot() throws {
+        let source = try contents(of: "Settings/SettingsView.swift")
+        XCTAssertTrue(
+            source.contains(".deltiqSwipeBackEnabled(false)"),
+            "SettingsView (Mehr-Tab-Root) muss .deltiqSwipeBackEnabled(false) setzen, " +
+            "damit interactivePopGestureRecognizer.isEnabled auf der Root-View false bleibt " +
+            "und kein schwarzer Screen nach wiederholtem Zurueckswipen entsteht."
+        )
+    }
+
     /// `planBuilder.exerciseLibrary.action` ist die einzige neue Resource für
     /// diesen kontextuellen Zugang - DE/EN/TR müssen vollständig sein.
     func testExerciseLibraryActionLabelIsFullyLocalized() throws {
