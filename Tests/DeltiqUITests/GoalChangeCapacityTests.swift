@@ -120,7 +120,7 @@ final class GoalChangeCapacityTests: XCTestCase {
     /// accept() muss im else-Zweig (eligibleRestDays < remainderCount) Rest UND freie
     /// Wochentage GEMEINSAM nutzen statt nur freie Wochentage allein zu versuchen.
     func testAcceptElseBranch_combinesRestDaysAndFreeWeekdays() throws {
-        let src = cardModelSource()
+        let src = try cardModelSource()
         // After fix: when eligibleRestDays.count < remainderCount, the code must use
         // both rest days AND free weekdays — indicated by a combined sufficiency check.
         // The buggy pattern: guard selectedWds.count >= remainderCount (tries free alone).
