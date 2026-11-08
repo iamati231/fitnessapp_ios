@@ -42,19 +42,22 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     /// optisch zu 100% identisch beginnt.
     public static var defaultOrder: [DashboardWidgetType] {
         [
+            // Aktionskarten — was tue ich heute?
             .nextWorkout,
             .coachingInsight,
+            .trainingCalendar,
             .weeklyVolume,
             .muscleHeatmap,
-            .trainingCalendar,
             .trophyRoom,
-            .workoutHistory,
+            .nutrition,
+            // Trend-Analytik
             .weightTrend,
             .compoundLifts,
             .volumeOverTime,
             .cardioPace,
+            // Archiv
+            .workoutHistory,
             .recentWorkouts,
-            .nutrition,
         ]
     }
 }
