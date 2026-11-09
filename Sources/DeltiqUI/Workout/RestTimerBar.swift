@@ -173,7 +173,7 @@ struct RestTimerBar: View {
         #if canImport(UserNotifications) && canImport(UIKit) && !os(watchOS)
         let content = UNMutableNotificationContent()
         content.body = String(localized: "rest.timer.notification.body", bundle: .module)
-        content.sound = timerSoundEnabled ? .default : .default  // .default vibriert immer
+        content.sound = timerSoundEnabled ? .default : .none
         let fireIn = max(0.5, endDate.timeIntervalSinceNow)
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: fireIn, repeats: false)
         let request = UNNotificationRequest(
