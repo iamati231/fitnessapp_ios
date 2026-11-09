@@ -55,7 +55,7 @@ final class OnlineFoodLookupSettingPersistenceTests: XCTestCase {
         )
         for key in ["settings.foodLookup.toggle.footer.off", "settings.foodLookup.toggle.footer.on"] {
             XCTAssertTrue(
-                strings.contains("\"\(key)\": {"),
+                strings.contains("\"\(key)\":  {"),
                 "Localizable.xcstrings muss den Key \(key) enthalten."
             )
         }
