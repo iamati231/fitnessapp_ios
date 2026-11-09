@@ -163,13 +163,17 @@ struct RestTimerBar: View {
     private func triggerEndOfRestFeedback() {
         #if canImport(UIKit) && !os(watchOS)
         if timerHapticsEnabled {
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            // prepare() notwendig — ohne es feuert der Taptic Engine im Vordergrund
+            // nicht zuverlaessig (kein Warmup = Feedback faellt aus oder ist zu schwach).
+            let gen = UINotificationFeedbackGenerator()
+            gen.prepare()
+            gen.notificationOccurred(.success)
         }
         #endif
         #if canImport(AudioToolbox)
         if timerHapticsEnabled {
-            // kSystemSoundID_Vibrate ignoriert den Silent-Switch — spuerbar auch
-            // wenn das iPhone lautlos geschaltet ist.
+            // kSystemSoundID_Vibrate als Fallback fuer Hintergrund (Bildschirm gesperrt);
+            // auf iOS 15+ im Vordergrund mit Silent-Switch nicht mehr zuverlaessig.
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
         }
         if timerSoundEnabled {
