@@ -2,7 +2,7 @@
 
 iOS-App für Krafttraining, Ausdauer und Körperwerte. Alles lokal auf dem Gerät – kein Konto, kein Cloud-Sync.
 
-**Status:** Beta · TestFlight · `com.atamya.Deltiq`
+**Status:** Beta · TestFlight · `com.deltiq.Deltiq`
 
 ---
 
@@ -11,7 +11,7 @@ iOS-App für Krafttraining, Ausdauer und Körperwerte. Alles lokal auf dem Gerä
 - **Pläne** – 20 Programm-Vorlagen, eigene Pläne, Assistent „Plan bauen"
 - **Training** – Satz-Logging, Pausen-Timer, Live Activity, AMRAP / EMOM / Auf Zeit / Zirkel
 - **Auswertung** – Rekorde, Trends (1RM, Volumen, Cardio-Pace, Gewicht), Kalender, Heatmap
-- **Coaching** – Smart Progression, Deload-Vorschlag, Lauf-Coaching, Wiedereinstiegs-Hilfe
+- **Coaching** – Smart Progression, Deload-Vorschlag, Wiedereinstiegs-Hilfe
 - **Messung** – Körperfett (Navy + Deurenberg), FFMI, BMI, Grundumsatz
 - **Werkzeuge** – Hantel-Rechner, 1RM-Rechner, TDEE-Rechner, Wasser-Tracker
 - **Apple Health** – lesen und schreiben; Workout-Import (Laufen/Radfahren)
@@ -52,7 +52,7 @@ Xcode 16+, iOS 17 SDK, Apple-Developer-Account mit HealthKit- und ActivityKit-Be
 open fitnessapp_ios.xcodeproj
 ```
 
-Pausen-Timer und Wasser-Widget benötigen App-Group `group.com.atamya.Deltiq` – in signierten Builds automatisch aktiv, im Simulator nicht verfügbar.
+Pausen-Timer und Wasser-Widget benötigen App-Group `group.com.deltiq.Deltiq` – in signierten Builds automatisch aktiv, im Simulator nicht verfügbar.
 
 ---
 
