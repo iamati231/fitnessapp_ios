@@ -453,7 +453,12 @@ public struct AddMealView: View {
     /// sich dieselbe Zeilen-Darstellung).
     private func catalogRow(_ entry: FoodCatalogEntry) -> some View {
         Button {
-            selectEntry(entry)
+            if selectedEntry?.catalogID == entry.catalogID {
+                selectedEntry = nil
+                quantity = nil
+            } else {
+                selectEntry(entry)
+            }
         } label: {
             HStack {
                 Text(resolvedName(for: entry))
