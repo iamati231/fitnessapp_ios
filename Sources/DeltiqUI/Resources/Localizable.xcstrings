@@ -22266,7 +22266,7 @@
         }
       }
     },
-    "settings.group.appExperience": {
+    "settings.group.appExperience":  {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -60914,7 +60914,7 @@
         }
       }
     },
-    "settings.foodLookup.toggle.footer.off": {
+    "settings.foodLookup.toggle.footer.off":  {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -60937,7 +60937,7 @@
         }
       }
     },
-    "settings.foodLookup.toggle.footer.on": {
+    "settings.foodLookup.toggle.footer.on":  {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -61052,7 +61052,7 @@
         }
       }
     },
-    "settings.credits.onlineFoodLookup.copyright": {
+    "settings.credits.onlineFoodLookup.copyright":  {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -61075,7 +61075,7 @@
         }
       }
     },
-    "nutrition.addMeal.onlineSearch.attribution": {
+    "nutrition.addMeal.onlineSearch.attribution":  {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -61834,22 +61834,22 @@
         }
       }
     },
-    "planBuilder.exerciseLibrary.action": {
+    "planBuilder.exerciseLibrary.action":  {
       "extractionState": "manual",
       "localizations": {
-        "de": {
+        "de":  {
           "stringUnit": {
             "state": "translated",
             "value": "Übungsbibliothek"
           }
         },
-        "en": {
+        "en":  {
           "stringUnit": {
             "state": "translated",
             "value": "Exercise Library"
           }
         },
-        "tr": {
+        "tr":  {
           "stringUnit": {
             "state": "translated",
             "value": "Hareket Kütüphanesi"
