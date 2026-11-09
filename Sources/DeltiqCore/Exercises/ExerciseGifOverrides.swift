@@ -33,7 +33,7 @@ public enum ExerciseGifOverrides {
             ("cable woodchopper", "0862-fhZQPlV.gif"),
             ("chest supported row kh", "0327-7vG5o25.gif"),
             ("crosstrainer", "2141-rjtuP6X.gif"),
-            ("crunches bw", "0274-TFqbd8t.gif"),
+            ("crunches bw", "0001-2gPfomN.gif"),
             ("dip assistiert", "0009-PAgTVaK.gif"),
             ("dips brust", "0251-9WTm7dq.gif"),
             ("dips trizeps", "0814-X6C6i5Y.gif"),
