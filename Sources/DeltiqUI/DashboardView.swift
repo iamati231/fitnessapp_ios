@@ -113,6 +113,9 @@ public struct DashboardView: View {
     @AppStorage("dashboard.cardioChartRange") private var cardioChartRange: ChartTimeRange = .oneMonth
     @State private var hiddenCompoundSeries: Set<String> = []
     @State private var hiddenCardioSeries: Set<String> = []
+    @State private var selectedTrendDate: Date?
+    @State private var selectedCompoundDate: Date?
+    @State private var selectedCardioDate: Date?
     /// DEL-178: Wochen-Volume-Trend-Chart. Eigener Range, damit der User
     /// pro Chart unabhängig zoomen kann (Compound-Trend evtl. 1M, Volume
     /// langfristig 3M etc.).
@@ -1130,6 +1133,9 @@ public struct DashboardView: View {
                 // lbs umgestellt war - derselbe Screen haette dann zwei
                 // widerspruechliche Einheiten gleichzeitig gezeigt.
                 let weightSeriesLabel = weightUnitRaw == "lbs" ? "Gewicht (lbs)" : "Gewicht (kg)"
+                let selectedTrendPoint: (date: Date, weight: Double)? = selectedTrendDate.flatMap { sel in
+                    historicalPoints.min(by: { abs($0.date.timeIntervalSince(sel)) < abs($1.date.timeIntervalSince(sel)) })
+                }
                 Chart {
                     // Historical points + connecting line.
                     ForEach(historicalPoints, id: \.date) { p in
@@ -1178,7 +1184,31 @@ public struct DashboardView: View {
                                     .foregroundStyle(.green)
                             }
                     }
+                    if let point = selectedTrendPoint {
+                        RuleMark(x: .value("Datum", point.date))
+                            .foregroundStyle(Color.secondary.opacity(0.3))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
+                            .annotation(position: .top, spacing: 4,
+                                        overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(point.date, style: .date)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    HStack(spacing: 2) {
+                                        Text(point.weight.truncated(to: 1).formattedOneDecimal)
+                                            .font(.caption.weight(.semibold))
+                                        Text(weightUnitRaw == "lbs" ? "lbs" : "kg")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 4)
+                                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                            }
+                    }
                 }
+                .chartXSelection(value: $selectedTrendDate)
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                         AxisGridLine()
@@ -2952,6 +2982,14 @@ public struct DashboardView: View {
                 )
             } else {
                 ChartTimeRangePicker(selection: $compoundChartRange)
+                let selectedCompoundValues: [(name: String, color: Color, value: Double)] = {
+                    guard let sel = selectedCompoundDate else { return [] }
+                    return visibleCompound.compactMap { s in
+                        guard let p = s.points.min(by: { abs($0.date.timeIntervalSince(sel)) < abs($1.date.timeIntervalSince(sel)) }) else { return nil }
+                        let c = zip(colorScale.domain, colorScale.range).first(where: { $0.0 == s.exerciseName })?.1 ?? Color.secondary
+                        return (s.exerciseName, c, p.oneRM)
+                    }
+                }()
                 Chart {
                     ForEach(visibleCompound) { line in
                         ForEach(line.points) { point in
@@ -3037,7 +3075,37 @@ public struct DashboardView: View {
                                     .foregroundStyle(.secondary)
                             }
                     }
+                    if let sel = selectedCompoundDate, !selectedCompoundValues.isEmpty {
+                        RuleMark(x: .value("Datum", sel))
+                            .foregroundStyle(Color.secondary.opacity(0.3))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
+                            .annotation(position: .top, spacing: 4,
+                                        overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(sel, style: .date)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    ForEach(selectedCompoundValues, id: \.name) { entry in
+                                        HStack(spacing: 4) {
+                                            Circle().fill(entry.color).frame(width: 6, height: 6)
+                                            Text(entry.name)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                                .lineLimit(1)
+                                            Spacer(minLength: 8)
+                                            Text("\(entry.value.truncated(to: 1).formattedOneDecimal) kg")
+                                                .font(.caption.weight(.semibold))
+                                        }
+                                    }
+                                }
+                                .frame(minWidth: 140)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 4)
+                                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                            }
+                    }
                 }
+                .chartXSelection(value: $selectedCompoundDate)
                 .chartForegroundStyleScale(domain: colorScale.domain, range: colorScale.range)
                 .chartXScale(domain: domain)
                 .chartXAxis {
@@ -3593,6 +3661,14 @@ public struct DashboardView: View {
                     .font(.headline)
 
                 ChartTimeRangePicker(selection: $cardioChartRange)
+                let selectedCardioValues: [(name: String, color: Color, paceMinPerKm: Double)] = {
+                    guard let sel = selectedCardioDate else { return [] }
+                    return visibleCardio.compactMap { s in
+                        guard let p = s.points.min(by: { abs($0.date.timeIntervalSince(sel)) < abs($1.date.timeIntervalSince(sel)) }) else { return nil }
+                        let c = zip(cardioScale.domain, cardioScale.range).first(where: { $0.0 == s.exerciseName })?.1 ?? Color.secondary
+                        return (s.exerciseName, c, p.paceMinPerKm)
+                    }
+                }()
                 Chart {
                     ForEach(visibleCardio) { line in
                         ForEach(line.points) { point in
@@ -3616,7 +3692,34 @@ public struct DashboardView: View {
                                 .symbolSize(40)
                         }
                     }
+                    if !selectedCardioValues.isEmpty, let sel = selectedCardioDate {
+                        RuleMark(x: .value("Datum", sel))
+                            .foregroundStyle(Color.secondary.opacity(0.3))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
+                            .annotation(position: .top, spacing: 4,
+                                        overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(sel, style: .date)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    ForEach(selectedCardioValues, id: \.name) { entry in
+                                        HStack(spacing: 4) {
+                                            Circle()
+                                                .fill(entry.color)
+                                                .frame(width: 6, height: 6)
+                                            let total = Int((entry.paceMinPerKm * 60.0).rounded())
+                                            Text(String(format: "%d:%02d /km", total / 60, total % 60))
+                                                .font(.caption.weight(.semibold))
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 4)
+                                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 6))
+                            }
+                    }
                 }
+                .chartXSelection(value: $selectedCardioDate)
                 .chartXScale(domain: domain)
                 .chartXAxis {
                     // DEL-153: feste Kalender-Anker (siehe Compound-Chart).
