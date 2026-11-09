@@ -76,7 +76,7 @@ public enum ExerciseGifOverrides {
             ("kabel reverse fly liegend", "0240-PQcUlDi.gif"),
             ("kabelzug baissrudern", "0176-cd9e5fd.gif"),
             ("kabelzug frontheben", "0198-8bae7cf.gif"),
-            ("kabelzug latissimus strecken", "0221-56c6613.gif"),
+            ("kabelzug latissimus strecken", "0238-62a8d04.gif"),
             ("kabelzug rudern ez", "0222-0cf0613.gif"),
             ("kabelzug rudern sitzend", "0174-2028d95.gif"),
             ("kabelzug rudern stehend", "0180-a410115.gif"),
