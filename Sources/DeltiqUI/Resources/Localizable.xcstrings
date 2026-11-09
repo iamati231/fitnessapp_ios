@@ -9093,19 +9093,19 @@
                                                                            "de":  {
                                                                                       "stringUnit":  {
                                                                                                          "state":  "translated",
-                                                                                                         "value":  "Mehr Werte über mind. 1 Woche für eine Prognose nötig."
+                                                                                                         "value":  "Mehr Messungen über mind. 3 Wochen für eine Prognose nötig."
                                                                                                      }
                                                                                   },
                                                                            "en":  {
                                                                                       "stringUnit":  {
                                                                                                          "state":  "translated",
-                                                                                                         "value":  "More values over at least 1 week needed for a forecast."
+                                                                                                         "value":  "More measurements spread over at least 3 weeks needed for a forecast."
                                                                                                      }
                                                                                   },
                                                                            "tr":  {
                                                                                       "stringUnit":  {
                                                                                                          "state":  "translated",
-                                                                                                         "value":  "Tahmin için en az 1 hafta boyunca daha fazla değer gerekli."
+                                                                                                         "value":  "Tahmin için en az 3 hafta boyunca daha fazla ölçüm gerekli."
                                                                                                      }
                                                                                   }
                                                                        }
@@ -9116,19 +9116,19 @@
                                                                                "de":  {
                                                                                           "stringUnit":  {
                                                                                                              "state":  "translated",
-                                                                                                             "value":  "%lld von 3 nötigen Messungen — Linear-Regression startet ab 3 Werten über mind. 1 Woche."
+                                                                                                             "value":  "%lld von 3 nötigen Messungen — Prognose erscheint ab 3 Werten über mind. 3 Wochen."
                                                                                                          }
                                                                                       },
                                                                                "en":  {
                                                                                           "stringUnit":  {
                                                                                                              "state":  "translated",
-                                                                                                             "value":  "%lld of 3 required measurements — linear regression starts at 3 values over at least 1 week."
+                                                                                                             "value":  "%lld of 3 required measurements — forecast appears at 3 values spread over at least 3 weeks."
                                                                                                          }
                                                                                       },
                                                                                "tr":  {
                                                                                           "stringUnit":  {
                                                                                                              "state":  "translated",
-                                                                                                             "value":  "%lld / 3 gerekli ölçüm — doğrusal regresyon en az 1 hafta üzerinden 3 değerle başlar."
+                                                                                                             "value":  "%lld / 3 gerekli ölçüm — tahmin, en az 3 hafta yayılan 3 değerden itibaren görünür."
                                                                                                          }
                                                                                       }
                                                                            }
