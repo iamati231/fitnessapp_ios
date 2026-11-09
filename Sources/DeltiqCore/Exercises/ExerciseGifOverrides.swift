@@ -52,7 +52,7 @@ public enum ExerciseGifOverrides {
             ("gehen einlaufen", "0684-y5p0H8a.gif"),
             ("gesprungene ausfallschritte", "3582-PM1PZjg.gif"),
             ("glute bridge bw", "3013-u0cNiij.gif"),
-            ("goblet squat", "0353-e8ec67e.gif"),
+            ("goblet squat", "1760-yn8yg1r.gif"),
             ("good morning lh", "0044-XlZ4lAC.gif"),
             ("hack squat", "0743-Qa55kX1.gif"),
             ("hack squat lh", "0046-5VCj6iH.gif"),
