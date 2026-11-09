@@ -61328,6 +61328,29 @@
                                                                                          }
                                                                               }
                                                         },
+                    "nutrition.onlineImport.sugarLabel":  {
+                                                            "extractionState":  "manual",
+                                                            "localizations":  {
+                                                                                  "de":  {
+                                                                                             "stringUnit":  {
+                                                                                                                "state":  "translated",
+                                                                                                                "value":  "davon Zucker (g/100g)"
+                                                                                                            }
+                                                                                         },
+                                                                                  "en":  {
+                                                                                             "stringUnit":  {
+                                                                                                                "state":  "translated",
+                                                                                                                "value":  "of which sugars (g/100g)"
+                                                                                                            }
+                                                                                         },
+                                                                                  "tr":  {
+                                                                                             "stringUnit":  {
+                                                                                                                "state":  "translated",
+                                                                                                                "value":  "bunun şeker (g/100g)"
+                                                                                                            }
+                                                                                         }
+                                                                              }
+                                                        },
                     "nutrition.addMeal.customFood.action":  {
                                                                 "extractionState":  "manual",
                                                                 "localizations":  {
