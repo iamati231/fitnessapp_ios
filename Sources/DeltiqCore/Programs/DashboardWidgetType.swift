@@ -27,7 +27,6 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
     case weightTrend       // Gewichts-Trend-Chart
     case compoundLifts     // Compound-Lift-1RM-Trend
     case cardioPace        // Cardio-Pace-Trend
-    case recentWorkouts    // "Letzte Workouts"-Liste
     case volumeOverTime    // DEL-178: Wochen-Volume-Trend (BarMark)
     case trainingCalendar  // DEL-197: Monats-Kalender + Wochen-Streak
     case nutrition         // Task 9: Tagesuebersicht-Teaser + "Mahlzeit hinzufuegen"
@@ -57,7 +56,6 @@ public enum DashboardWidgetType: String, Codable, Sendable, CaseIterable {
             .cardioPace,
             // Archiv
             .workoutHistory,
-            .recentWorkouts,
         ]
     }
 }

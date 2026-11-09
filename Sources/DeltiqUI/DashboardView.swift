@@ -273,7 +273,6 @@ public struct DashboardView: View {
                         case .weightTrend:     trendChart
                         case .compoundLifts:   compoundLiftChart
                         case .cardioPace:      cardioPaceChart
-                        case .recentWorkouts:  recentWorkoutsCard
                         case .volumeOverTime:  volumeOverTimeChart
                         case .trainingCalendar: trainingCalendarCard
                         case .nutrition:       nutritionCard
@@ -3629,60 +3628,6 @@ public struct DashboardView: View {
         // und blendet sich einfach aus, wenn keine Cardio-Daten existieren.
     }
 
-    // MARK: - Recent workouts
-
-    private var recentWorkoutsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("dashboard.recent.title", bundle: .module)
-                    .font(.headline)
-                Spacer()
-                if completedSessions.contains(where: { !$0.isRestDay }) {
-                    NavigationLink {
-                        WorkoutHistoryView()
-                    } label: {
-                        Text("dashboard.recent.viewAll", bundle: .module)
-                            .font(.subheadline)
-                    }
-                }
-            }
-
-            // Rest-day-marker sessions don't count as "Trainingseinheiten".
-            let realRecentSessions = completedSessions.filter { !$0.isRestDay }
-            if realRecentSessions.isEmpty {
-                // UX-201: Premium-Empty-State mit CTA (vorher: kompaktes
-                // Icon+2-Liner ohne Aktion).
-                DashboardEmptyState(
-                    icon: "dumbbell.fill",
-                    title: "dashboard.recent.empty.title",
-                    description: "dashboard.recent.empty.description",
-                    ctaTitle: "dashboard.empty.cta.startWorkout",
-                    ctaAction: { navigation.selectedTab = .plan }
-                )
-            } else {
-                let recent = Array(realRecentSessions.prefix(5))
-                // DEL-103: Rows sitzen direkt auf der Bento-Surface — keine
-                // doppelte Container-Schachtelung mehr. Divider trennen die
-                // Eintraege visuell.
-                VStack(spacing: 0) {
-                    ForEach(Array(recent.enumerated()), id: \.element.persistentModelID) { idx, session in
-                        NavigationLink {
-                            WorkoutSummaryView(session: session, isReadOnly: true)
-                        } label: {
-                            DashboardSessionRow(session: session)
-                        }
-                        .buttonStyle(.plain)
-
-                        if idx < recent.count - 1 {
-                            Divider().opacity(0.5)
-                        }
-                    }
-                }
-            }
-        }
-        // DEL-103: Bento-Card als outer Container.
-        .deltiqCardStyle()
-    }
 }
 
 // MARK: - Compound Lift Chart data
