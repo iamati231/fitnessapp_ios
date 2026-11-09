@@ -111,6 +111,8 @@ public struct DashboardView: View {
     /// unterschiedliche Spannweiten haben, der User stellt sie unabhaengig ein.
     @AppStorage("dashboard.compoundChartRange") private var compoundChartRange: ChartTimeRange = .oneMonth
     @AppStorage("dashboard.cardioChartRange") private var cardioChartRange: ChartTimeRange = .oneMonth
+    @State private var hiddenCompoundSeries: Set<String> = []
+    @State private var hiddenCardioSeries: Set<String> = []
     /// DEL-178: Wochen-Volume-Trend-Chart. Eigener Range, damit der User
     /// pro Chart unabhängig zoomen kann (Compound-Trend evtl. 1M, Volume
     /// langfristig 3M etc.).
@@ -2769,6 +2771,12 @@ public struct DashboardView: View {
         return (domain: pairs.map(\.0), range: pairs.map(\.1))
     }
 
+    private func cardioColorScale(for series: [CardioPaceSeries]) -> (domain: [String], range: [Color]) {
+        let palette = Self.compoundLiftColors
+        let names = series.map(\.exerciseName)
+        return (domain: names, range: names.indices.map { palette[$0 % palette.count] })
+    }
+
     /// One series per compound lift. Each series carries one point per session
     /// (the best estimated 1RM of any set in that session). Lifts with fewer
     /// than 2 data points are dropped — a "trend" needs at least two sessions.
@@ -2914,7 +2922,8 @@ public struct DashboardView: View {
             let allCompound = compoundSeries
             let oldestCompound = allCompound.flatMap(\.points).map(\.date).min()
             let series = filteredCompound(allCompound, cutoff: compoundChartRange.cutoff())
-            let forecastSamples = compoundForecastPoints(for: series)
+            let visibleCompound = hiddenCompoundSeries.isEmpty ? series : series.filter { !hiddenCompoundSeries.contains($0.exerciseName) }
+            let forecastSamples = compoundForecastPoints(for: visibleCompound)
             let domain = compoundDomain(
                 base: compoundChartRange.domain(oldestDataDate: oldestCompound),
                 forecastPoints: forecastSamples
@@ -2944,7 +2953,7 @@ public struct DashboardView: View {
             } else {
                 ChartTimeRangePicker(selection: $compoundChartRange)
                 Chart {
-                    ForEach(series) { line in
+                    ForEach(visibleCompound) { line in
                         ForEach(line.points) { point in
                             // Gleicher Fix wie beim Forecast-Segment unten:
                             // LineMark(x:y:series:) plus zwei weitere
@@ -3058,12 +3067,34 @@ public struct DashboardView: View {
                     }
                 }
                 .chartYScale(domain: yDomain)
-                .chartLegend(position: .bottom, alignment: .leading)
-                // Signature-Geruest 2.16: 220 -> 260, damit bei bis zu fuenf
-                // Serien (Farbe + Symbol je Eintrag) die Legende umbrechen
-                // kann, ohne die Plot-Flaeche zusammenzudruecken.
+                .chartLegend(.hidden)
                 .frame(height: 260)
                 .fitnessNumberStyle()
+
+                // Tappable legend: tap to toggle series visibility
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), alignment: .leading)], alignment: .leading, spacing: 4) {
+                    ForEach(Array(zip(colorScale.domain, colorScale.range)), id: \.0) { name, color in
+                        let hidden = hiddenCompoundSeries.contains(name)
+                        Button {
+                            if hidden {
+                                hiddenCompoundSeries.remove(name)
+                            } else if visibleCompound.count > 1 {
+                                hiddenCompoundSeries.insert(name)
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(hidden ? Color.secondary.opacity(0.3) : color)
+                                    .frame(width: 8, height: 8)
+                                Text(name)
+                                    .font(.caption)
+                                    .foregroundStyle(hidden ? .tertiary : .secondary)
+                                    .strikethrough(hidden)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
         // DEL-103: Bento-Card als outer Container.
@@ -3550,24 +3581,20 @@ public struct DashboardView: View {
         let oldestCardio = allCardio.flatMap(\.points).map(\.date).min()
         let domain = cardioChartRange.domain(oldestDataDate: oldestCardio)
         let series = filteredCardio(allCardio, cutoff: cardioChartRange.cutoff())
+        let visibleCardio = hiddenCardioSeries.isEmpty ? series : series.filter { !hiddenCardioSeries.contains($0.exerciseName) }
+        let cardioScale = cardioColorScale(for: series)
         // Sichtbarkeit haengt an der Gesamt-Datenlage (shouldShowCardioChart +
         // ungefilterte Serien), nicht am gewaehlten Zeitfilter — sonst wuerde
         // ein leerer 1M-Bereich den ganzen Chart verschwinden lassen statt
         // eine leere Achse zu zeigen.
         if shouldShowCardioChart, !allCardio.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("dashboard.cardioChart.title", bundle: .module)
-                        .font(.headline)
-                    Spacer()
-                    Text("dashboard.cardioChart.legend", bundle: .module)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text("dashboard.cardioChart.title", bundle: .module)
+                    .font(.headline)
 
                 ChartTimeRangePicker(selection: $cardioChartRange)
                 Chart {
-                    ForEach(series) { line in
+                    ForEach(visibleCardio) { line in
                         ForEach(line.points) { point in
                             // Gleicher Type-Checker-Fix wie beim Compound-
                             // Lift-Chart oben: LineMark(x:y:series:) plus
@@ -3616,10 +3643,37 @@ public struct DashboardView: View {
                         }
                     }
                 }
+                .chartForegroundStyleScale(domain: cardioScale.domain, range: cardioScale.range)
+                .chartLegend(.hidden)
                 .frame(height: 180)
                 // DEL-103: Achsen-Tick-Labels (sowohl Datum als auch Pace)
                 // bekommen den rounded/monospaced Numerik-Stil.
                 .fitnessNumberStyle()
+
+                // Tappable legend: tap to toggle series visibility
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), alignment: .leading)], alignment: .leading, spacing: 4) {
+                    ForEach(Array(zip(cardioScale.domain, cardioScale.range)), id: \.0) { name, color in
+                        let hidden = hiddenCardioSeries.contains(name)
+                        Button {
+                            if hidden {
+                                hiddenCardioSeries.remove(name)
+                            } else if visibleCardio.count > 1 {
+                                hiddenCardioSeries.insert(name)
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(hidden ? Color.secondary.opacity(0.3) : color)
+                                    .frame(width: 8, height: 8)
+                                Text(name)
+                                    .font(.caption)
+                                    .foregroundStyle(hidden ? .tertiary : .secondary)
+                                    .strikethrough(hidden)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
             // DEL-103: Bento-Card.
             .deltiqCardStyle()
