@@ -546,17 +546,17 @@ public enum ProgramTemplates {
         focusKey: "plan.template.powerlifting3x5.focus",
         daysPerWeek: 3,
         days: [
-            DaySpec(name: "Tag 1 – Kniebeuge-Tag", localizationKey: "plan.day.squatDay", type: .fullBody, sequenceIndex: 1, exercises: [
+            DaySpec(name: "Kniebeuge-Tag", localizationKey: "plan.day.squatDay", type: .fullBody, sequenceIndex: 1, exercises: [
                 ExerciseSpec(name: "Kniebeuge",                    sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 240, targetRir: 1.5),
                 ExerciseSpec(name: "Bankdrücken",                 sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 210, targetRir: 1.5),
                 ExerciseSpec(name: "Rudern vorgebeugt",            sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 150, targetRir: 2.5)
             ]),
-            DaySpec(name: "Tag 2 – Bankdrück-Tag", localizationKey: "plan.day.benchDay", type: .fullBody, sequenceIndex: 2, exercises: [
+            DaySpec(name: "Bankdrück-Tag", localizationKey: "plan.day.benchDay", type: .fullBody, sequenceIndex: 2, exercises: [
                 ExerciseSpec(name: "Bankdrücken",                 sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 240, targetRir: 1.5),
                 ExerciseSpec(name: "Kniebeuge",                    sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 180, targetRir: 2.5),
                 ExerciseSpec(name: "Klimmzüge (weit)",            sets: 3, repsMin: 5,  repsMax: 8,  restSeconds: 150, targetRir: 2.5)
             ]),
-            DaySpec(name: "Tag 3 – Kreuzhebe-Tag", localizationKey: "plan.day.deadliftDay", type: .fullBody, sequenceIndex: 3, exercises: [
+            DaySpec(name: "Kreuzhebe-Tag", localizationKey: "plan.day.deadliftDay", type: .fullBody, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 240, targetRir: 1.5),
                 ExerciseSpec(name: "Front Squat",                  sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 180, targetRir: 2.5),
                 ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 180, targetRir: 2.5)

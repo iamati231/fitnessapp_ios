@@ -15027,19 +15027,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag 1 – Kniebeuge-Tag"
+            "value": "Kniebeuge-Tag"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Day 1 - Squat Day"
+            "value": "Squat Day"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gün 1 - Squat Günü"
+            "value": "Squat Günü"
           }
         }
       }
@@ -15050,19 +15050,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag 2 – Bankdrück-Tag"
+            "value": "Bankdrück-Tag"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Day 2 - Bench Day"
+            "value": "Bench Day"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gün 2 - Bench Günü"
+            "value": "Bench Günü"
           }
         }
       }
@@ -15073,19 +15073,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag 3 – Kreuzhebe-Tag"
+            "value": "Kreuzhebe-Tag"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Day 3 - Deadlift Day"
+            "value": "Deadlift Day"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gün 3 - Deadlift Günü"
+            "value": "Deadlift Günü"
           }
         }
       }
