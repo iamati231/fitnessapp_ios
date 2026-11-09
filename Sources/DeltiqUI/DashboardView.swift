@@ -116,13 +116,7 @@ public struct DashboardView: View {
     @State private var selectedTrendDate: Date?
     @State private var selectedCompoundDate: Date?
     @State private var selectedCardioDate: Date?
-    @State private var compoundZoomScale: CGFloat = 1.0
-    @State private var compoundZoomStartScale: CGFloat = 1.0
-    @State private var cardioZoomScale: CGFloat = 1.0
-    @State private var cardioZoomStartScale: CGFloat = 1.0
-    @State private var trendZoomScale: CGFloat = 1.0
-    @State private var trendZoomStartScale: CGFloat = 1.0
-    /// DEL-178: Wochen-Volume-Trend-Chart. Eigener Range, damit der User
+/// DEL-178: Wochen-Volume-Trend-Chart. Eigener Range, damit der User
     /// pro Chart unabhängig zoomen kann (Compound-Trend evtl. 1M, Volume
     /// langfristig 3M etc.).
     @AppStorage("dashboard.volumeChartRange") private var volumeChartRange: ChartTimeRange = .threeMonths
@@ -1150,10 +1144,7 @@ public struct DashboardView: View {
                 }
                 let trendDomainStart = historicalPoints.first?.date ?? Date()
                 let trendDomainEnd = ([historicalPoints.last?.date, forecastPoints.last?.date].compactMap { $0 }.max()) ?? Date()
-                let trendBaseDomainLen = max(1, trendDomainEnd.timeIntervalSince(trendDomainStart))
-                let trendXDomain: ClosedRange<Date> = trendZoomScale > 1
-                    ? trendDomainEnd.addingTimeInterval(-trendBaseDomainLen / Double(trendZoomScale))...trendDomainEnd
-                    : trendDomainStart...trendDomainEnd
+                let trendXDomain: ClosedRange<Date> = trendDomainStart...trendDomainEnd
                 Chart {
                     // Historical points + connecting line.
                     ForEach(historicalPoints, id: \.date) { p in
@@ -1243,10 +1234,6 @@ public struct DashboardView: View {
                                     if let d: Date = proxy.value(atX: v.location.x) { selectedTrendDate = d }
                                 }
                                 .onEnded { _ in selectedTrendDate = nil }
-                            )
-                            .simultaneousGesture(MagnificationGesture()
-                                .onChanged { s in trendZoomScale = max(1, min(10, trendZoomStartScale * s)) }
-                                .onEnded { s in trendZoomStartScale = max(1, min(10, trendZoomStartScale * s)) }
                             )
                     }
                 }
@@ -2992,11 +2979,7 @@ public struct DashboardView: View {
                 base: compoundChartRange.domain(oldestDataDate: oldestCompound),
                 forecastPoints: forecastSamples
             )
-            let domain: ClosedRange<Date> = {
-                guard compoundZoomScale > 1 else { return baseDomainCompound }
-                let len = baseDomainCompound.upperBound.timeIntervalSince(baseDomainCompound.lowerBound) / Double(compoundZoomScale)
-                return baseDomainCompound.upperBound.addingTimeInterval(-len)...baseDomainCompound.upperBound
-            }()
+            let domain = baseDomainCompound
             let colorScale = compoundColorScale(for: series)
             // Signature-Geruest 2.16: datengetriebene y-Achse statt Swift-
             // Charts-Automatik - die rundete bei Werten zwischen 60-110 kg
@@ -3021,7 +3004,6 @@ public struct DashboardView: View {
                 )
             } else {
                 ChartTimeRangePicker(selection: $compoundChartRange)
-                    .onChange(of: compoundChartRange) { _, _ in compoundZoomScale = 1; compoundZoomStartScale = 1 }
                 let compoundTooltipThreshold: TimeInterval = compoundChartRange == .oneMonth ? 7 * 86_400 : compoundChartRange == .threeMonths ? 14 * 86_400 : 30 * 86_400
                 let selectedCompoundValues: [(name: String, color: Color, value: Double)] = {
                     guard let sel = selectedCompoundDate else { return [] }
@@ -3157,10 +3139,6 @@ public struct DashboardView: View {
                                     if let d: Date = proxy.value(atX: v.location.x) { selectedCompoundDate = d }
                                 }
                                 .onEnded { _ in selectedCompoundDate = nil }
-                            )
-                            .simultaneousGesture(MagnificationGesture()
-                                .onChanged { s in compoundZoomScale = max(1, min(10, compoundZoomStartScale * s)) }
-                                .onEnded { s in compoundZoomStartScale = max(1, min(10, compoundZoomStartScale * s)) }
                             )
                     }
                 }
@@ -3705,11 +3683,7 @@ public struct DashboardView: View {
         let allCardio = cardioSeries
         let oldestCardio = allCardio.flatMap(\.points).map(\.date).min()
         let baseDomainCardio = cardioChartRange.domain(oldestDataDate: oldestCardio)
-        let domain: ClosedRange<Date> = {
-            guard cardioZoomScale > 1 else { return baseDomainCardio }
-            let len = baseDomainCardio.upperBound.timeIntervalSince(baseDomainCardio.lowerBound) / Double(cardioZoomScale)
-            return baseDomainCardio.upperBound.addingTimeInterval(-len)...baseDomainCardio.upperBound
-        }()
+        let domain = baseDomainCardio
         let series = filteredCardio(allCardio, cutoff: cardioChartRange.cutoff())
         let visibleCardio = hiddenCardioSeries.isEmpty ? series : series.filter { !hiddenCardioSeries.contains($0.exerciseName) }
         let cardioScale = cardioColorScale(for: series)
@@ -3723,7 +3697,6 @@ public struct DashboardView: View {
                     .font(.headline)
 
                 ChartTimeRangePicker(selection: $cardioChartRange)
-                    .onChange(of: cardioChartRange) { _, _ in cardioZoomScale = 1; cardioZoomStartScale = 1 }
                 let selectedCardioValues: [(name: String, color: Color, paceMinPerKm: Double)] = {
                     guard let sel = selectedCardioDate else { return [] }
                     return visibleCardio.compactMap { s in
@@ -3795,10 +3768,6 @@ public struct DashboardView: View {
                                     if let d: Date = proxy.value(atX: v.location.x) { selectedCardioDate = d }
                                 }
                                 .onEnded { _ in selectedCardioDate = nil }
-                            )
-                            .simultaneousGesture(MagnificationGesture()
-                                .onChanged { s in cardioZoomScale = max(1, min(10, cardioZoomStartScale * s)) }
-                                .onEnded { s in cardioZoomStartScale = max(1, min(10, cardioZoomStartScale * s)) }
                             )
                     }
                 }
