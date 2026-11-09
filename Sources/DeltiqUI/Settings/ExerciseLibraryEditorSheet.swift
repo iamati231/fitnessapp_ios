@@ -212,6 +212,15 @@ struct ExerciseLibraryEditorSheet: View {
                 Text("customExercise.field.muscle", bundle: .module)
             }
             .listRowBackground(Color.Deltiq.surface)
+            if let secondaryMuscles = ExerciseSecondaryMuscles.byNormalizedName[ExerciseMediaProvider.normalizedKey(for: existing?.name ?? trimmedName)], !secondaryMuscles.isEmpty {
+                LabeledContent {
+                    Text(secondaryMuscles.map(\.localizedName).joined(separator: ", "))
+                        .multilineTextAlignment(.trailing)
+                } label: {
+                    Text("customExercise.field.secondaryMuscles", bundle: .module)
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            }
             LabeledContent {
                 Text(equipment.localizedName)
             } label: {

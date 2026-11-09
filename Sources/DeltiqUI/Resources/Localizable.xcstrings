@@ -2026,6 +2026,29 @@
         }
       }
     },
+    "customExercise.field.secondaryMuscles": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nebenmuskeln"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secondary muscles"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yardımcı kaslar"
+          }
+        }
+      }
+    },
     "customExercise.field.equipment": {
       "extractionState": "manual",
       "localizations": {
