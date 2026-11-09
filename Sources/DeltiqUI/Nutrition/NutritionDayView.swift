@@ -177,9 +177,7 @@ public struct NutritionDayView: View {
         // Bug-Fix: .navigationBarBackButtonHidden(true) nimmt auf iOS die
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
-        // isTabRoot: als Stack-Root des Ernaehrungs-Tabs kein Screen zum
-        // Zurueckswipen — Recognizer muss disabled sein, sonst schwarzes Bild.
-        .deltiqSwipeBackEnabled(!isTabRoot)
+        .deltiqSwipeBackEnabled()
         // Fix-Runde 1 (Finding 1): als Tab-Root ueberlebt dieser Screen
         // TabView-Selektionswechsel (siehe `isTabRoot`-Doku oben) -
         // `selectedDate` wurde daher nie auf "heute" zurueckgesetzt, wenn
