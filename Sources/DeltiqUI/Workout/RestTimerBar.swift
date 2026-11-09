@@ -3,9 +3,6 @@ import SwiftUI
 #if canImport(UIKit)
 import UIKit
 #endif
-#if canImport(AudioToolbox)
-import AudioToolbox
-#endif
 #if canImport(UserNotifications)
 import UserNotifications
 #endif
@@ -208,11 +205,6 @@ struct RestTimerBar: View {
             let gen = UINotificationFeedbackGenerator()
             gen.prepare()
             gen.notificationOccurred(.warning)
-        }
-        #endif
-        #if canImport(AudioToolbox)
-        if timerHapticsEnabled {
-            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
         }
         #endif
         if timerSoundEnabled {
