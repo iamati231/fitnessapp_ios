@@ -116,6 +116,12 @@ public struct DashboardView: View {
     @State private var selectedTrendDate: Date?
     @State private var selectedCompoundDate: Date?
     @State private var selectedCardioDate: Date?
+    @State private var compoundZoomScale: CGFloat = 1.0
+    @State private var compoundZoomStartScale: CGFloat = 1.0
+    @State private var cardioZoomScale: CGFloat = 1.0
+    @State private var cardioZoomStartScale: CGFloat = 1.0
+    @State private var trendZoomScale: CGFloat = 1.0
+    @State private var trendZoomStartScale: CGFloat = 1.0
     /// DEL-178: Wochen-Volume-Trend-Chart. Eigener Range, damit der User
     /// pro Chart unabhängig zoomen kann (Compound-Trend evtl. 1M, Volume
     /// langfristig 3M etc.).
@@ -1142,6 +1148,12 @@ public struct DashboardView: View {
                 let selectedTrendPoint: (date: Date, weight: Double)? = selectedTrendDate.flatMap { sel in
                     historicalPoints.min(by: { abs($0.date.timeIntervalSince(sel)) < abs($1.date.timeIntervalSince(sel)) })
                 }
+                let trendDomainStart = historicalPoints.first?.date ?? Date()
+                let trendDomainEnd = ([historicalPoints.last?.date, forecastPoints.last?.date].compactMap { $0 }.max()) ?? Date()
+                let trendBaseDomainLen = max(1, trendDomainEnd.timeIntervalSince(trendDomainStart))
+                let trendXDomain: ClosedRange<Date> = trendZoomScale > 1
+                    ? trendDomainEnd.addingTimeInterval(-trendBaseDomainLen / Double(trendZoomScale))...trendDomainEnd
+                    : trendDomainStart...trendDomainEnd
                 Chart {
                     // Historical points + connecting line.
                     ForEach(historicalPoints, id: \.date) { p in
@@ -1214,12 +1226,28 @@ public struct DashboardView: View {
                             }
                     }
                 }
-                .chartXSelection(value: $selectedTrendDate)
+                .chartXScale(domain: trendXDomain)
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                         AxisGridLine()
                         AxisTick()
                         AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                    }
+                }
+                .chartOverlay { proxy in
+                    GeometryReader { _ in
+                        Color.clear.contentShape(Rectangle())
+                            .gesture(DragGesture(minimumDistance: 10)
+                                .onChanged { v in
+                                    guard abs(v.translation.width) >= abs(v.translation.height) else { selectedTrendDate = nil; return }
+                                    if let d: Date = proxy.value(atX: v.location.x) { selectedTrendDate = d }
+                                }
+                                .onEnded { _ in selectedTrendDate = nil }
+                            )
+                            .simultaneousGesture(MagnificationGesture()
+                                .onChanged { s in trendZoomScale = max(1, min(10, trendZoomStartScale * s)) }
+                                .onEnded { s in trendZoomStartScale = max(1, min(10, trendZoomStartScale * s)) }
+                            )
                     }
                 }
                 .frame(height: 220)
@@ -2960,10 +2988,15 @@ public struct DashboardView: View {
             let series = filteredCompound(allCompound, cutoff: compoundChartRange.cutoff())
             let visibleCompound = hiddenCompoundSeries.isEmpty ? series : series.filter { !hiddenCompoundSeries.contains($0.exerciseName) }
             let forecastSamples = compoundForecastPoints(for: visibleCompound)
-            let domain = compoundDomain(
+            let baseDomainCompound = compoundDomain(
                 base: compoundChartRange.domain(oldestDataDate: oldestCompound),
                 forecastPoints: forecastSamples
             )
+            let domain: ClosedRange<Date> = {
+                guard compoundZoomScale > 1 else { return baseDomainCompound }
+                let len = baseDomainCompound.upperBound.timeIntervalSince(baseDomainCompound.lowerBound) / Double(compoundZoomScale)
+                return baseDomainCompound.upperBound.addingTimeInterval(-len)...baseDomainCompound.upperBound
+            }()
             let colorScale = compoundColorScale(for: series)
             // Signature-Geruest 2.16: datengetriebene y-Achse statt Swift-
             // Charts-Automatik - die rundete bei Werten zwischen 60-110 kg
@@ -2988,6 +3021,7 @@ public struct DashboardView: View {
                 )
             } else {
                 ChartTimeRangePicker(selection: $compoundChartRange)
+                    .onChange(of: compoundChartRange) { _, _ in compoundZoomScale = 1; compoundZoomStartScale = 1 }
                 let compoundTooltipThreshold: TimeInterval = compoundChartRange == .oneMonth ? 7 * 86_400 : compoundChartRange == .threeMonths ? 14 * 86_400 : 30 * 86_400
                 let selectedCompoundValues: [(name: String, color: Color, value: Double)] = {
                     guard let sel = selectedCompoundDate else { return [] }
@@ -3113,8 +3147,23 @@ public struct DashboardView: View {
                             }
                     }
                 }
-                .chartXSelection(value: $selectedCompoundDate)
                 .chartForegroundStyleScale(domain: colorScale.domain, range: colorScale.range)
+                .chartOverlay { proxy in
+                    GeometryReader { _ in
+                        Color.clear.contentShape(Rectangle())
+                            .gesture(DragGesture(minimumDistance: 10)
+                                .onChanged { v in
+                                    guard abs(v.translation.width) >= abs(v.translation.height) else { selectedCompoundDate = nil; return }
+                                    if let d: Date = proxy.value(atX: v.location.x) { selectedCompoundDate = d }
+                                }
+                                .onEnded { _ in selectedCompoundDate = nil }
+                            )
+                            .simultaneousGesture(MagnificationGesture()
+                                .onChanged { s in compoundZoomScale = max(1, min(10, compoundZoomStartScale * s)) }
+                                .onEnded { s in compoundZoomStartScale = max(1, min(10, compoundZoomStartScale * s)) }
+                            )
+                    }
+                }
                 .chartXScale(domain: domain)
                 .chartXAxis {
                     // DEL-153: feste Kalender-Anker statt daten-getriebener
@@ -3655,7 +3704,12 @@ public struct DashboardView: View {
         // aeltesten Cardio-Datenpunkt als linke Kante.
         let allCardio = cardioSeries
         let oldestCardio = allCardio.flatMap(\.points).map(\.date).min()
-        let domain = cardioChartRange.domain(oldestDataDate: oldestCardio)
+        let baseDomainCardio = cardioChartRange.domain(oldestDataDate: oldestCardio)
+        let domain: ClosedRange<Date> = {
+            guard cardioZoomScale > 1 else { return baseDomainCardio }
+            let len = baseDomainCardio.upperBound.timeIntervalSince(baseDomainCardio.lowerBound) / Double(cardioZoomScale)
+            return baseDomainCardio.upperBound.addingTimeInterval(-len)...baseDomainCardio.upperBound
+        }()
         let series = filteredCardio(allCardio, cutoff: cardioChartRange.cutoff())
         let visibleCardio = hiddenCardioSeries.isEmpty ? series : series.filter { !hiddenCardioSeries.contains($0.exerciseName) }
         let cardioScale = cardioColorScale(for: series)
@@ -3669,6 +3723,7 @@ public struct DashboardView: View {
                     .font(.headline)
 
                 ChartTimeRangePicker(selection: $cardioChartRange)
+                    .onChange(of: cardioChartRange) { _, _ in cardioZoomScale = 1; cardioZoomStartScale = 1 }
                 let cardioTooltipThreshold: TimeInterval = cardioChartRange == .oneMonth ? 7 * 86_400 : cardioChartRange == .threeMonths ? 14 * 86_400 : 30 * 86_400
                 let selectedCardioValues: [(name: String, color: Color, paceMinPerKm: Double)] = {
                     guard let sel = selectedCardioDate else { return [] }
@@ -3729,8 +3784,23 @@ public struct DashboardView: View {
                             }
                     }
                 }
-                .chartXSelection(value: $selectedCardioDate)
                 .chartXScale(domain: domain)
+                .chartOverlay { proxy in
+                    GeometryReader { _ in
+                        Color.clear.contentShape(Rectangle())
+                            .gesture(DragGesture(minimumDistance: 10)
+                                .onChanged { v in
+                                    guard abs(v.translation.width) >= abs(v.translation.height) else { selectedCardioDate = nil; return }
+                                    if let d: Date = proxy.value(atX: v.location.x) { selectedCardioDate = d }
+                                }
+                                .onEnded { _ in selectedCardioDate = nil }
+                            )
+                            .simultaneousGesture(MagnificationGesture()
+                                .onChanged { s in cardioZoomScale = max(1, min(10, cardioZoomStartScale * s)) }
+                                .onEnded { s in cardioZoomStartScale = max(1, min(10, cardioZoomStartScale * s)) }
+                            )
+                    }
+                }
                 .chartXAxis {
                     // DEL-153: feste Kalender-Anker (siehe Compound-Chart).
                     if let dates = cardioChartRange.axisDates() {
