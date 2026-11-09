@@ -125,6 +125,11 @@ public struct PlansListView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix (schwarzes Bild beim Edge-Swipe auf Tab-Root): PlansListView
+        // ist Stack-Root des Training-Tabs — interactivePopGestureRecognizer
+        // muss hier auf false stehen, sonst schwarzes Bild nach Rueckkehr von
+        // einer Sub-View. Analoges Fix wie SettingsView.
+        .deltiqSwipeBackEnabled(false)
         .sheet(isPresented: $showingTemplatePicker) {
             ProgramTemplatePickerView()
         }

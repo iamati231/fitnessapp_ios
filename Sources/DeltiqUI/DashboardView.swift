@@ -307,6 +307,12 @@ public struct DashboardView: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .navigationBarBackButtonHidden(true)
+        // Bug-Fix (schwarzes Bild beim Edge-Swipe auf Tab-Root): Dashboard ist
+        // immer Stack-Root — kein Screen zum Zurueckswipen. Ohne diesen Aufruf
+        // bleibt interactivePopGestureRecognizer.isEnabled == true (geerbt von
+        // einer vorherigen Sub-View), startet beim naechsten Swipe eine
+        // Pop-Transition ohne Ziel und zeigt ein schwarzes Bild.
+        .deltiqSwipeBackEnabled(false)
         .navigationDestination(isPresented: $showingNewMeasurement) {
             MeasurementView()
         }
