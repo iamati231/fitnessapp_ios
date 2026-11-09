@@ -361,6 +361,10 @@ struct MainTabView: View {
                         switch route {
                         case .overview:
                             ProgressOverviewView()
+                        case .prHistory:
+                            PRHistoryView()
+                        case .workoutHistory:
+                            WorkoutHistoryView()
                         }
                     }
             }

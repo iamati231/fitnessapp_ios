@@ -188,6 +188,20 @@ public struct SettingsView: View {
                 DeltiqRow(
                     icon: "ruler",
                     label: String(localized: "settings.group.progress", bundle: .module),
+                    showsChevron: true
+                )
+            }
+            NavigationLink(value: ProgressRoute.prHistory) {
+                DeltiqRow(
+                    icon: "trophy.fill",
+                    label: String(localized: "widget.trophyRoom.name", bundle: .module),
+                    showsChevron: true
+                )
+            }
+            NavigationLink(value: ProgressRoute.workoutHistory) {
+                DeltiqRow(
+                    icon: "calendar.badge.clock",
+                    label: String(localized: "widget.workoutHistory.name", bundle: .module),
                     showsChevron: true,
                     showsDivider: false
                 )
@@ -556,6 +570,10 @@ public struct SettingsView: View {
                 switch route {
                 case .overview:
                     ProgressOverviewView()
+                case .prHistory:
+                    PRHistoryView()
+                case .workoutHistory:
+                    WorkoutHistoryView()
                 }
             }
     }
@@ -580,6 +598,10 @@ public struct SettingsView: View {
                 switch route {
                 case .overview:
                     ProgressOverviewView()
+                case .prHistory:
+                    PRHistoryView()
+                case .workoutHistory:
+                    WorkoutHistoryView()
                 }
             }
     }
