@@ -207,7 +207,7 @@ struct RestTimerBar: View {
             // nicht zuverlaessig (kein Warmup = Feedback faellt aus oder ist zu schwach).
             let gen = UINotificationFeedbackGenerator()
             gen.prepare()
-            gen.notificationOccurred(.success)
+            gen.notificationOccurred(.warning)
         }
         #endif
         #if canImport(AudioToolbox)
@@ -217,8 +217,8 @@ struct RestTimerBar: View {
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
         }
         if timerSoundEnabled {
-            // SystemSoundID 1005 = "New Mail"-Ding (kurz, klar, nicht aufdringlich).
-            AudioServicesPlaySystemSound(1005)
+            // SystemSoundID 1057 = "Tock" (sehr kurzes Bip, ein einzelner Ton).
+            AudioServicesPlaySystemSound(1057)
         }
         #endif
     }

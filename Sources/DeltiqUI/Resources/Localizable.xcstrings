@@ -46662,7 +46662,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nutze die Pause zum Durchatmen - die naechste Runde startet automatisch, sobald die Zeit um ist."
+            "value": "Nutze die Pause zum Durchatmen - die nächste Runde startet automatisch, sobald die Zeit um ist."
           }
         },
         "en": {
@@ -46685,7 +46685,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hake jede Uebung ab, sobald du ihr Ziel fuer diese Runde geschafft hast."
+            "value": "Hake jede Übung ab, sobald du ihr Ziel für diese Runde geschafft hast."
           }
         },
         "en": {
@@ -46708,7 +46708,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wiederhole die Sequenz, bis keine sauberen Wiederholungen mehr moeglich sind, dann \"Runde beenden\" antippen."
+            "value": "Wiederhole die Sequenz, bis keine sauberen Wiederholungen mehr möglich sind, dann \"Runde beenden\" antippen."
           }
         },
         "en": {
@@ -61689,7 +61689,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Optional — ohne Angabe bietet die Mengenauswahl spaeter nur Gramm an."
+            "value": "Optional — ohne Angabe bietet die Mengenauswahl später nur Gramm an."
           }
         },
         "en": {
