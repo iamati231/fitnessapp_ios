@@ -747,6 +747,14 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Kabelzug Frontheben",                       equipment: .cable,      primaryMuscle: .shoulders),
         ExerciseTemplateSpec(name: "Kabelzug Latissimus Strecken",              equipment: .cable,      primaryMuscle: .back),
         ExerciseTemplateSpec(name: "Kabelzug Rudern EZ",                        equipment: .cable,      primaryMuscle: .back),
+
+        // Bodyweight / Plyometrics
+        ExerciseTemplateSpec(name: "Box Jump",                                   equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .intermediate),
+
+        // Kettlebell (Programm-Template-Referenzen)
+        ExerciseTemplateSpec(name: "Kettlebell Halo",                            equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .intermediate),
+        ExerciseTemplateSpec(name: "Kettlebell Clean to Front Squat",            equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .advanced),
+        ExerciseTemplateSpec(name: "Kettlebell Uppercut Rotation",               equipment: .kettlebell, primaryMuscle: .core,      difficultyLevel: .intermediate),
     ]
 
     /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem
