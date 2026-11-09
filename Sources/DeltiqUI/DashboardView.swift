@@ -3724,12 +3724,13 @@ public struct DashboardView: View {
 
                 ChartTimeRangePicker(selection: $cardioChartRange)
                     .onChange(of: cardioChartRange) { _, _ in cardioZoomScale = 1; cardioZoomStartScale = 1 }
-                let cardioTooltipThreshold: TimeInterval = cardioChartRange == .oneMonth ? 7 * 86_400 : cardioChartRange == .threeMonths ? 14 * 86_400 : 30 * 86_400
                 let selectedCardioValues: [(name: String, color: Color, paceMinPerKm: Double)] = {
                     guard let sel = selectedCardioDate else { return [] }
                     return visibleCardio.compactMap { s in
-                        guard let p = s.points.min(by: { abs($0.date.timeIntervalSince(sel)) < abs($1.date.timeIntervalSince(sel)) }),
-                              abs(p.date.timeIntervalSince(sel)) <= cardioTooltipThreshold else { return nil }
+                        // Serie nur zeigen wenn sie Punkte im sichtbaren Domain-Bereich hat
+                        // (verhindert veraltete Serien ohne fixen Zeitabstand-Threshold).
+                        guard s.points.contains(where: { domain.contains($0.date) }),
+                              let p = s.points.min(by: { abs($0.date.timeIntervalSince(sel)) < abs($1.date.timeIntervalSince(sel)) }) else { return nil }
                         let c = zip(cardioScale.domain, cardioScale.range).first(where: { $0.0 == s.exerciseName })?.1 ?? Color.secondary
                         return (s.exerciseName, c, p.paceMinPerKm)
                     }
