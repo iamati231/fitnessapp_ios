@@ -67078,6 +67078,29 @@
                                                                                  }
                                                                       }
                                                 },
+                    "settings.progress.overview.label":  {
+                                                             "extractionState":  "manual",
+                                                             "localizations":  {
+                                                                                   "de":  {
+                                                                                              "stringUnit":  {
+                                                                                                                 "state":  "translated",
+                                                                                                                 "value":  "Körpermessungen"
+                                                                                                             }
+                                                                                          },
+                                                                                   "en":  {
+                                                                                              "stringUnit":  {
+                                                                                                                 "state":  "translated",
+                                                                                                                 "value":  "Body Measurements"
+                                                                                                             }
+                                                                                          },
+                                                                                   "tr":  {
+                                                                                              "stringUnit":  {
+                                                                                                                 "state":  "translated",
+                                                                                                                 "value":  "Vücut Ölçümleri"
+                                                                                                             }
+                                                                                          }
+                                                                               }
+                                                         },
                     "progress.section.current.title":  {
                                                            "extractionState":  "manual",
                                                            "localizations":  {
