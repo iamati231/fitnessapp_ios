@@ -208,7 +208,7 @@ public struct DashboardView: View {
                     // bessere Aktion existiert, lasse die Position lieber
                     // ohne Ersatzaktion"): dieselbe, weiterhin nuetzliche
                     // Aktion bleibt erhalten, nur das irrefuehrende Icon
-                    DeltiqHeaderAction(systemImage: "plus") {
+                    DeltiqHeaderAction(systemImage: "plus", menu: {
                         Button(String(localized: "dashboard.quickAdd.workout", bundle: .module)) {
                             startAdHocWorkout()
                         }
@@ -218,7 +218,7 @@ public struct DashboardView: View {
                         Button(String(localized: "dashboard.quickAdd.measurement", bundle: .module)) {
                             showingNewMeasurement = true
                         }
-                    }
+                    })
                 ]
             )
 

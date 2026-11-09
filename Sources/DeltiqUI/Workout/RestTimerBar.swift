@@ -6,6 +6,9 @@ import UIKit
 #if canImport(AudioToolbox)
 import AudioToolbox
 #endif
+#if canImport(UserNotifications)
+import UserNotifications
+#endif
 
 /// Sticky rest-timer bar that lives in the safe-area-inset of `ActiveWorkoutView`.
 /// Counts down from the most recent set's `restSeconds`, fires a success haptic at
@@ -149,6 +152,12 @@ struct RestTimerBar: View {
                 onDismiss(.completed)
             }
         }
+        .onAppear {
+            scheduleRestEndNotification()
+        }
+        .onDisappear {
+            cancelRestEndNotification()
+        }
     }
 
     private func formatTime(_ seconds: Int) -> String {
@@ -157,10 +166,41 @@ struct RestTimerBar: View {
         return String(format: "%d:%02d", mins, secs)
     }
 
+    /// Lokale Notification fuer den Bildschirm-gesperrt-Fall: `kSystemSoundID_Vibrate`
+    /// und `UINotificationFeedbackGenerator` funktionieren nicht zuverlaessig wenn
+    /// der Bildschirm ausgeschaltet ist. Die Notification feuert Vibration + Sound
+    /// auch im Hintergrund. Wird in `triggerEndOfRestFeedback()` sofort storniert,
+    /// sodass sie nur bei gesperrtem/Hintergrund-Bildschirm ankommt.
+    private func scheduleRestEndNotification() {
+        guard timerHapticsEnabled else { return }
+        #if canImport(UserNotifications) && canImport(UIKit) && !os(watchOS)
+        let content = UNMutableNotificationContent()
+        content.body = String(localized: "rest.timer.notification.body", bundle: .module)
+        content.sound = timerSoundEnabled ? .default : .default  // .default vibriert immer
+        let fireIn = max(0.5, endDate.timeIntervalSinceNow)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: fireIn, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "deltiq.rest_timer_end",
+            content: content,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request)
+        #endif
+    }
+
+    private func cancelRestEndNotification() {
+        #if canImport(UserNotifications) && !os(watchOS)
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: ["deltiq.rest_timer_end"])
+        #endif
+    }
+
     /// DEL-041: Sound + Haptic-Burst beim Pausen-Ende. Beides an die User-
     /// Praeferenzen aus DEL-018 gekoppelt — wer Sound/Haptics in Settings
     /// abgestellt hat, bekommt nur das jeweils andere (oder gar nichts).
     private func triggerEndOfRestFeedback() {
+        // Notification stornieren — ab hier uebernimmt der In-App-Pfad.
+        cancelRestEndNotification()
         #if canImport(UIKit) && !os(watchOS)
         if timerHapticsEnabled {
             // prepare() notwendig — ohne es feuert der Taptic Engine im Vordergrund

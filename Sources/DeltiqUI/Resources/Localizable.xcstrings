@@ -34075,6 +34075,29 @@
         }
       }
     },
+    "rest.timer.notification.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Pause ist vorbei."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your rest is over."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Molan bitti."
+          }
+        }
+      }
+    },
     "active.restTimer.setLabel": {
       "extractionState": "manual",
       "localizations": {
