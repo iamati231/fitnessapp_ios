@@ -34,6 +34,7 @@ struct ExerciseLibraryEditorSheet: View {
     /// Task 5: sichtbare Fehlermeldung statt des bisher verschluckten
     /// `try? modelContext.save()`-Fehlers.
     @State private var saveErrorMessage: String?
+    @State private var showGifSheet = false
 
     init(template: ExerciseTemplate?) {
         self.existing = template
@@ -121,6 +122,12 @@ struct ExerciseLibraryEditorSheet: View {
             // Dialog vorbei. Read-Only (System-Template) hat nichts zu
             // verlieren — dort bleibt Wegziehen frei moeglich.
             .interactiveDismissDisabled(isReadOnly ? false : isDirty)
+            .sheet(isPresented: $showGifSheet) {
+                ExerciseGifSheet(
+                    exerciseName: existing?.name ?? trimmedName,
+                    displayName: titleText
+                )
+            }
         }
     }
 
@@ -192,6 +199,7 @@ struct ExerciseLibraryEditorSheet: View {
                 Spacer()
                 ExerciseGifView(exerciseName: existing?.name ?? trimmedName, displayName: titleText)
                     .frame(width: 140, height: 140)
+                    .onTapGesture { showGifSheet = true }
                 Spacer()
             }
             .listRowBackground(Color.clear)
