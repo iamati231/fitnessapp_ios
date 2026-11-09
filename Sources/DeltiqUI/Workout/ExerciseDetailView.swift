@@ -62,6 +62,9 @@ struct ExerciseDetailView: View {
                     }
                     recentSetsSection
                 }
+                if let steps = instructionSteps {
+                    instructionsSection(steps)
+                }
             }
             .deltiqScreen()
         }
@@ -279,6 +282,33 @@ struct ExerciseDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
+    }
+
+    // MARK: - Ausführung
+
+    private var instructionSteps: ExerciseInstructionsProvider.Steps? {
+        let key = ExerciseMediaProvider.normalizedKey(for: systemName)
+        return ExerciseInstructionsProvider.steps(for: key)
+    }
+
+    private func instructionsSection(_ steps: ExerciseInstructionsProvider.Steps) -> some View {
+        let preferred = steps.preferred()
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("exercise.detail.instructions.title", bundle: .module)
+                .font(.headline)
+            ForEach(Array(preferred.enumerated()), id: \.offset) { index, step in
+                HStack(alignment: .top, spacing: 10) {
+                    Text("\(index + 1).")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.deltiqOrange)
+                        .frame(minWidth: 20, alignment: .leading)
+                    Text(step)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .deltiqCardStyle()
     }
 
     // MARK: - Formatter
