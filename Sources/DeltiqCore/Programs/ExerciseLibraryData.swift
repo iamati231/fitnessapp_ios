@@ -749,6 +749,7 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Kabelzug Rudern EZ",                        equipment: .cable,      primaryMuscle: .back),
 
         // Bodyweight / Plyometrics
+        ExerciseTemplateSpec(name: "3/4 Sit-Up",                                 equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner),
         ExerciseTemplateSpec(name: "Box Jump",                                   equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .intermediate),
 
         // Kettlebell (Programm-Template-Referenzen)
