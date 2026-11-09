@@ -212,15 +212,13 @@ struct RestTimerBar: View {
         #endif
         #if canImport(AudioToolbox)
         if timerHapticsEnabled {
-            // kSystemSoundID_Vibrate als Fallback fuer Hintergrund (Bildschirm gesperrt);
-            // auf iOS 15+ im Vordergrund mit Silent-Switch nicht mehr zuverlaessig.
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
         }
-        if timerSoundEnabled {
-            // SystemSoundID 1057 = "Tock" (sehr kurzes Bip, ein einzelner Ton).
-            AudioServicesPlaySystemSound(1057)
-        }
         #endif
+        if timerSoundEnabled {
+            // TimerSoundPlayer nutzt AVAudioSession.playback — ueberbrueckt Silent-Switch.
+            TimerSoundPlayer.shared.playLong()
+        }
     }
 }
 #endif
