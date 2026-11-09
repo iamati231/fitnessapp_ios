@@ -710,6 +710,43 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .item(.barbell)),
         ExerciseTemplateSpec(name: "Kettlebell Clean & Jerk einarmig", equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellOneArmCleanAndJerk",
                              equipmentRequirement: .item(.kettlebell)),
+
+        // ── DEL-NEW: Kettlebell-Erweiterung + Standard-Übungen ──────────────
+        // Kettlebell
+        ExerciseTemplateSpec(name: "Kettlebell Advanced Windmill",              equipment: .kettlebell, primaryMuscle: .core,      difficultyLevel: .advanced),
+        ExerciseTemplateSpec(name: "Kettlebell Alternating Hang Clean",         equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced),
+        ExerciseTemplateSpec(name: "Kettlebell Alternating Press",              equipment: .kettlebell, primaryMuscle: .shoulders),
+        ExerciseTemplateSpec(name: "Kettlebell Alternating Press Liegend",      equipment: .kettlebell, primaryMuscle: .chest),
+        ExerciseTemplateSpec(name: "Kettlebell Alternating Row",                equipment: .kettlebell, primaryMuscle: .back),
+        ExerciseTemplateSpec(name: "Kettlebell Bottoms-Up Clean",               equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced),
+        ExerciseTemplateSpec(name: "Kettlebell Double Hang Clean",              equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced,  equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
+        ExerciseTemplateSpec(name: "Kettlebell Double Jerk",                    equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced,  equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
+        ExerciseTemplateSpec(name: "Kettlebell Double Snatch",                  equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced,  equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
+        ExerciseTemplateSpec(name: "Kettlebell Double Windmill",                equipment: .kettlebell, primaryMuscle: .core,      difficultyLevel: .advanced,  equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
+        ExerciseTemplateSpec(name: "Kettlebell Figure 8",                       equipment: .kettlebell, primaryMuscle: .core,      difficultyLevel: .intermediate),
+        ExerciseTemplateSpec(name: "Kettlebell Hang Clean",                     equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .intermediate),
+        ExerciseTemplateSpec(name: "Kettlebell Lunge mit Durchreichen",         equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .intermediate),
+        ExerciseTemplateSpec(name: "Kettlebell Seesaw Press",                   equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .intermediate, equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
+        ExerciseTemplateSpec(name: "Kettlebell Two Arm Clean",                  equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .intermediate, equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
+        ExerciseTemplateSpec(name: "Kettlebell Rudern (beide Arme)",            equipment: .kettlebell, primaryMuscle: .back,      equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
+        ExerciseTemplateSpec(name: "Kettlebell Schulterdrücken Sitzend (beide Arme)", equipment: .kettlebell, primaryMuscle: .shoulders, equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
+
+        // Barbell
+        ExerciseTemplateSpec(name: "Schulterdrücken (LH, sitzend)",            equipment: .barbell,    primaryMuscle: .shoulders, equipmentRequirement: .all([.item(.barbell), .item(.adjustableBench)])),
+        ExerciseTemplateSpec(name: "Upright Row (LH)",                          equipment: .barbell,    primaryMuscle: .shoulders, equipmentRequirement: .item(.barbell)),
+        ExerciseTemplateSpec(name: "Pullover (LH)",                             equipment: .barbell,    primaryMuscle: .back,      equipmentRequirement: .all([.item(.barbell), .item(.flatBench)])),
+
+        // Dumbbell
+        ExerciseTemplateSpec(name: "Schrägbankrudern (KH)",                    equipment: .dumbbell,   primaryMuscle: .back,      equipmentRequirement: .all([.item(.dumbbell), .item(.adjustableBench)])),
+
+        // Cable
+        ExerciseTemplateSpec(name: "Hammer Curl Kabel (Seil)",                  equipment: .cable,      primaryMuscle: .biceps),
+        ExerciseTemplateSpec(name: "Kabelzug Baissrudern",                      equipment: .cable,      primaryMuscle: .back),
+        ExerciseTemplateSpec(name: "Kabelzug Schulterdrücken",                  equipment: .cable,      primaryMuscle: .shoulders),
+        ExerciseTemplateSpec(name: "Kabelzug Rudern (stehend)",                 equipment: .cable,      primaryMuscle: .back),
+        ExerciseTemplateSpec(name: "Kabelzug Frontheben",                       equipment: .cable,      primaryMuscle: .shoulders),
+        ExerciseTemplateSpec(name: "Kabelzug Latissimus Strecken",              equipment: .cable,      primaryMuscle: .back),
+        ExerciseTemplateSpec(name: "Kabelzug Rudern EZ",                        equipment: .cable,      primaryMuscle: .back),
     ]
 
     /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem
