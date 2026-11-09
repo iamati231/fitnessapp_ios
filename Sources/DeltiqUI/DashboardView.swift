@@ -173,7 +173,6 @@ public struct DashboardView: View {
     /// Plus-Knopf pusht daher programmatisch statt ueber einen
     /// NavigationLink im `.toolbar`.
     @State private var showingNewMeasurement = false
-    @State private var showingQuickAdd = false
 
     /// Task 9: `nutritionCard`'s "Mahlzeit hinzufuegen"-Button oeffnet
     /// `AddMealView` als Sheet — analog zu `showingNewMeasurement` oben.
@@ -210,7 +209,15 @@ public struct DashboardView: View {
                     // ohne Ersatzaktion"): dieselbe, weiterhin nuetzliche
                     // Aktion bleibt erhalten, nur das irrefuehrende Icon
                     DeltiqHeaderAction(systemImage: "plus") {
-                        showingQuickAdd = true
+                        Button(String(localized: "dashboard.quickAdd.workout", bundle: .module)) {
+                            startAdHocWorkout()
+                        }
+                        Button(String(localized: "dashboard.quickAdd.meal", bundle: .module)) {
+                            showingAddMealFromDashboard = true
+                        }
+                        Button(String(localized: "dashboard.quickAdd.measurement", bundle: .module)) {
+                            showingNewMeasurement = true
+                        }
                     }
                 ]
             )
@@ -308,22 +315,6 @@ public struct DashboardView: View {
         // Task 9: `nutritionCard`'s "Mahlzeit hinzufuegen"-Button.
         .sheet(isPresented: $showingAddMealFromDashboard) {
             AddMealView()
-        }
-        .confirmationDialog(
-            Text("dashboard.quickAdd.title", bundle: .module),
-            isPresented: $showingQuickAdd,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "dashboard.quickAdd.workout", bundle: .module)) {
-                startAdHocWorkout()
-            }
-            Button(String(localized: "dashboard.quickAdd.meal", bundle: .module)) {
-                showingAddMealFromDashboard = true
-            }
-            Button(String(localized: "dashboard.quickAdd.measurement", bundle: .module)) {
-                showingNewMeasurement = true
-            }
-            Button(String(localized: "common.cancel", bundle: .module), role: .cancel) {}
         }
         // DEL-132 (Phase 3): HealthKit-Werte fuer aktive Hero-Slots
         // ziehen. `.task(id:)` schiesst neu, sobald sich die Slot-Liste
