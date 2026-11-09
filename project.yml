@@ -1,7 +1,7 @@
 # XcodeGen project specification.
 #
 # Why this exists: we develop on Windows without Xcode. XcodeGen reads this YAML
-# at CI time and emits `FitnessApp.xcodeproj` on the macOS runner — we never
+# at CI time and emits `Deltiq.xcodeproj` on the macOS runner — we never
 # commit an .xcodeproj. Editing project settings = editing this file.
 #
 # Codemagic runs `brew install xcodegen` then `xcodegen generate`, then
@@ -9,10 +9,10 @@
 #
 # Docs: https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md
 
-name: FitnessApp
+name: Deltiq
 
 options:
-  bundleIdPrefix: com.atamya
+  bundleIdPrefix: com.deltiq
   deploymentTarget:
     iOS: '17.0'
   developmentLanguage: en
@@ -45,65 +45,65 @@ settings:
 # Local Swift Package at the repo root — same package the rest of the conversation
 # already lives in. Each target below references products from this package.
 packages:
-  FitnessApp:
+  Deltiq:
     path: .
 
 targets:
   # ─────────────────────────────────────────────────────────────────────────
   # Main App
   # ─────────────────────────────────────────────────────────────────────────
-  FitnessApp:
+  Deltiq:
     type: application
     platform: iOS
     sources:
-      - App/FitnessApp
+      - App/Deltiq
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.atamya.FitnessApp
+        PRODUCT_BUNDLE_IDENTIFIER: com.deltiq.Deltiq
         TARGETED_DEVICE_FAMILY: '1,2'      # iPhone + iPad
-        INFOPLIST_FILE: App/FitnessApp/Info.plist
-        CODE_SIGN_ENTITLEMENTS: App/FitnessApp/FitnessApp.entitlements
+        INFOPLIST_FILE: App/Deltiq/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/Deltiq/Deltiq.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ENABLE_PREVIEWS: YES
         SWIFT_EMIT_LOC_STRINGS: YES
     dependencies:
-      - package: FitnessApp
-        product: FitnessAppCore
-      - package: FitnessApp
-        product: FitnessAppData
-      - package: FitnessApp
-        product: FitnessAppHealth
-      - package: FitnessApp
-        product: FitnessAppActivities
-      - package: FitnessApp
-        product: FitnessAppUI
+      - package: Deltiq
+        product: DeltiqCore
+      - package: Deltiq
+        product: DeltiqData
+      - package: Deltiq
+        product: DeltiqHealth
+      - package: Deltiq
+        product: DeltiqActivities
+      - package: Deltiq
+        product: DeltiqUI
       # Optional on-device AI (Foundation Models); runtime-gated, iOS 17 still launches.
-      - package: FitnessApp
-        product: FitnessAppAI
-      - target: FitnessAppWidgets
+      - package: Deltiq
+        product: DeltiqAI
+      - target: DeltiqWidgets
         embed: true                        # bundles the widget into the app
 
   # ─────────────────────────────────────────────────────────────────────────
   # Widget Extension (Live Activity)
   # ─────────────────────────────────────────────────────────────────────────
-  FitnessAppWidgets:
+  DeltiqWidgets:
     type: app-extension
     platform: iOS
     sources:
-      - App/FitnessAppWidgets
+      - App/DeltiqWidgets
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.atamya.FitnessApp.widgets
-        INFOPLIST_FILE: App/FitnessAppWidgets/Info.plist
-        CODE_SIGN_ENTITLEMENTS: App/FitnessAppWidgets/FitnessAppWidgets.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.deltiq.Deltiq.widgets
+        INFOPLIST_FILE: App/DeltiqWidgets/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/DeltiqWidgets/DeltiqWidgets.entitlements
         SWIFT_EMIT_LOC_STRINGS: YES
     dependencies:
-      - package: FitnessApp
-        product: FitnessAppActivities
+      - package: Deltiq
+        product: DeltiqActivities
       # DEL-216: Wasser-Widget liest/schreibt den App-Group-SwiftData-Store
-      # (FitnessAppData) und rechnet das Tagesziel (FitnessAppCore).
-      - package: FitnessApp
-        product: FitnessAppCore
-      - package: FitnessApp
-        product: FitnessAppData
+      # (DeltiqData) und rechnet das Tagesziel (DeltiqCore).
+      - package: Deltiq
+        product: DeltiqCore
+      - package: Deltiq
+        product: DeltiqData

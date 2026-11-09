@@ -20,7 +20,7 @@ jetzt erfüllt.
 
 **Der exakte Übergabepunkt** steht im Code selbst, als "vom Nutzer
 ausdrücklich festgelegt" markiert
-(`Sources/FitnessAppCore/Analytics/FourWeekReviewDueCalculator.swift:7-19`):
+(`Sources/DeltiqCore/Analytics/FourWeekReviewDueCalculator.swift:7-19`):
 
 > "Genau EIN Fälligkeitspunkt, der ERSTE Rückblick, `dueIntervalDays`
 > (28 Tage, [...] eine festgelegte PRODUKTREGEL, keine wissenschaftliche
@@ -102,7 +102,7 @@ AUSSCHLIESSLICH, was bei Session-Start geplant war. Sie sind kein
 Nachweis für eine gespeicherte Progressions- oder Plateau-Historie —
 eine solche existiert im Code schlicht nicht:
 
-- `plateauDetected` (`Sources/FitnessAppCore/Coaching/CoachingTypes.swift:198`)
+- `plateauDetected` (`Sources/DeltiqCore/Coaching/CoachingTypes.swift:198`)
   hat bis heute **keinen einzigen Emitter** — nur Lokalisierungstext.
 - `ProgressionApplicator` verwirft `.hold`-Ausgänge explizit (drei
   Code-Stellen, `if case .hold = action { continue }`), statt sie zu
@@ -267,9 +267,9 @@ einem erfundenen Schwellenwert gefüllt.
 
 **Status:** Implementiert gemäß den sechs vom Auftraggeber getroffenen
 Entscheidungen (nicht mehr nur vorgeschlagen). Core-Logik auf Linux
-verifiziert (1075/1075 `FitnessAppCoreTests` grün, inkl. 5 neuer
+verifiziert (1075/1075 `DeltiqCoreTests` grün, inkl. 5 neuer
 `BlockReviewRecordTests` + 1 neuer `FourWeekReviewDueCalculatorTests`-
-Fall). SwiftData/SwiftUI-Teile (FitnessAppData/FitnessAppUI) sind auf
+Fall). SwiftData/SwiftUI-Teile (DeltiqData/DeltiqUI) sind auf
 Linux nicht typprüfbar (`#if canImport(SwiftData)`/`canImport(SwiftUI)`
 evaluiert dort `false`) — verifiziert per sorgfältiger manueller
 Durchsicht + neuer gezielter Apple-CI-Tests, noch NICHT per echtem

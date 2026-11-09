@@ -18,7 +18,7 @@ mittlerweile veraltet sind (z. B. "cardioCoachingEnabled nirgends gesetzt" stimm
 Das ist der einzige Punkt, den ich nicht einseitig auflöse, sondern als Entscheidung vorlege
 (Doc00: "Bei echten fachlichen Widersprüchen nicht eigenmächtig eine Vorgabe verwerfen").
 
-- `ProgramInstantiator.instantiate(...)` (`Sources/FitnessAppData/ProgramInstantiator.swift:84-86`)
+- `ProgramInstantiator.instantiate(...)` (`Sources/DeltiqData/ProgramInstantiator.swift:84-86`)
   deaktiviert **ausnahmslos alle** bestehenden Pläne, bevor ein neuer aktiviert wird — ungefragt,
   bei jeder Planerstellung über Onboarding, Template-Picker und Builder. Der Code kommentiert das
   selbst als "unveraendertes Bestandsverhalten, keine neue Policy" und fordert für den künftigen
@@ -102,7 +102,7 @@ Bausteine sind bereits fertig, als die bisherige Taskliste vermuten ließ:
 
 | Punkt | Ist | Status |
 |---|---|---|
-| Entwurf/Berechnung/Persistenz getrennt | `PlanDraft`/`PlanningContext` komplett SwiftData-frei (0 `import SwiftData` in `FitnessAppCore`), genau ein Instantiator-Einstiegspunkt | **erfüllt** |
+| Entwurf/Berechnung/Persistenz getrennt | `PlanDraft`/`PlanningContext` komplett SwiftData-frei (0 `import SwiftData` in `DeltiqCore`), genau ein Instantiator-Einstiegspunkt | **erfüllt** |
 | Kein früher Insert vor Bestätigung | Alle `.insert`-Stellen für Plan/Day geprüft, keine vor explizitem Button-Tap | **erfüllt** |
 | Stabile Exercise-Referenz | ID-first für Logs/PRs vollständig; **eine kleine Lücke**: `DashboardView.CardioGroupKey` gruppiert Cardio-Trends noch über `name` statt ID | **teilweise** (kleine, nicht historienkritische Lücke) |
 | Export/Import-Vollständigkeit | Equipment-Tristate, Cardio-Ziele, stabile IDs — alles im CSV-Roundtrip geführt (Stichprobe ohne Lücke) | **erfüllt** (nur Stichprobe, kein Vollabgleich) |
@@ -127,7 +127,7 @@ Bausteine sind bereits fertig, als die bisherige Taskliste vermuten ließ:
 (Wocheneditor-Kernlogik) und D (Verwerfen/Dirty-Tracking) — direkt in `PlanDraftTests.swift` und
 `EditorDiscardSnapshotTests.swift` belegt. Am schwächsten: Serie F (Reviews, 0/8 — erwartungsgemäß,
 da das Feature nicht existiert) und Serie E (UI-Edge-Cases, praktisch 0/8), strukturell bedingt
-durch das **weiterhin fehlende echte UI-Test-Target** (`Tests/FitnessAppUITests` ist ein normales
+durch das **weiterhin fehlende echte UI-Test-Target** (`Tests/DeltiqUITests` ist ein normales
 SwiftPM-Testziel ohne `XCUIApplication`, kein `.xctestplan` im Repo). Letzter vollständiger grüner
 Apple-CI-Lauf: Commit `a2ca5ff`, 1240/1240, manuell per Codemagic-API getriggert (kein
 Auto-Trigger bei Push in diesem Repo).
@@ -158,7 +158,7 @@ Dateien, tatsächlich ausgeführte Tests, Apple-Ergebnis, UI-Ergebnis, Risiken, 
 
 Konsolidierter Codemagic-Build über alle 4 Commits zusammen (`3da2506`, `d6710eb`, `d0cb503`,
 `53b23a1`): `6ad3c031` — Build (debug), `swift test --parallel`, Simulator-Build für alle 5 Targets
-(FitnessAppCore/Data/Health/Activities/UI) alle `success`. Task #202 damit vollstaendig abgeschlossen,
+(DeltiqCore/Data/Health/Activities/UI) alle `success`. Task #202 damit vollstaendig abgeschlossen,
 Apple-seitig bestaetigt.
 
 **P2.5 — PlanningContext/EnduranceModality verdrahten (klein-mittel, Vorbedingung für P3/P4):** ✅
@@ -525,7 +525,7 @@ umgesetzt (Task #203, 2026-10-17).
   Tests bestanden + UI-verifiziert. Equipment-Save in `TrainingLocationEquipmentEditorView`
   löst — analog zum bestehenden `envSwap`-Dialog in `ProfileEditorView` — einen
   Vorschau/Ersatzvorschlag für bestehende, bereits instanziierte Pläne aus.
-  Neuer Typ `PlanEquipmentAdaptationApplier` (FitnessAppData) bringt die bestehende
+  Neuer Typ `PlanEquipmentAdaptationApplier` (DeltiqData) bringt die bestehende
   `PlanEquipmentChecker`/`ExerciseSubstitutionEngine`-Logik (Smart-Onboarding-Epic
   Phase 5, bisher ausschliesslich VOR der Instanziierung in `TemplatePreviewView`/
   `PlanBuilderView` genutzt) erstmals auf einen bereits LIVE gespeicherten `TrainingPlan`
@@ -632,7 +632,7 @@ umgesetzt (Task #203, 2026-10-17).
   Uebung unveraendert (Regressionsschutz fuer die drei unveraenderten Aufrufer); MIT `generatorGoal`
   wird sie ueber eine echte, bereits reviewte Regel ("Kniebeuge" → "Goblet Squat") tatsaechlich im
   materialisierten `TrainingPlan` ersetzt — bewiesen end-to-end gegen einen echten `ModelContext`,
-  nicht nur gegen eine separate Vorschau. Wie alle `FitnessAppDataTests` (SwiftData) kompilieren
+  nicht nur gegen eine separate Vorschau. Wie alle `DeltiqDataTests` (SwiftData) kompilieren
   diese auf Linux, laufen dort aber nicht (bestehende Projekt-Einschraenkung).
   **Apple-kompiliert:** erster Versuch (Commit `dc92d36`) schlug auf Codemagic `swift-package` real
   fehl — `PlanBuilderView.swift:1283: cannot convert value of type 'String' to expected argument
@@ -727,7 +727,7 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   ausgelassen.
 - P6.2 ✅ **vollständig abgenommen** (Commit `06075eb`, 2026-10-18): Implementiert + Apple-kompiliert
   + Tests bestanden + UI-verifiziert (nicht zutreffend, begründet unten).
-  `PlanParticipationEvaluator` (`Sources/FitnessAppCore/Analytics/`): reine, deterministische
+  `PlanParticipationEvaluator` (`Sources/DeltiqCore/Analytics/`): reine, deterministische
   Core-Funktion — kein SwiftData, kein `Date()`/`Calendar.current` im Code-Pfad, Auswertungsdatum
   und `Calendar` werden immer injiziert. Deckt exakt die acht vom Gesamtmandat verbindlich
   benannten Fälle ab:
@@ -805,7 +805,7 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   Durchreich-Wert auf, bewusst ohne eigene `Concern`-Logik dafür (offene, separate Entscheidung).
 
   **Code/Data-Abnahme (Implementiert + Apple-kompiliert + Tests bestanden): ✅**
-  Neues eigenständiges Modell `PeriodicCheckIn` (`Sources/FitnessAppData/`) ergänzt
+  Neues eigenständiges Modell `PeriodicCheckIn` (`Sources/DeltiqData/`) ergänzt
   `WorkoutSession.sessionFeeling` (deckt nur "Belastung" ab) um die vier laut Audit fehlenden
   Fragen aus Dok03 §4: Häufigkeit/Dauer/Beschwerden/Ziel-noch-aktuell. Bewusst **user-global**,
   nicht an eine einzelne `TrainingPlan`-Instanz gebunden — "Ist dein Ziel noch aktuell?" betrifft
@@ -990,7 +990,7 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   **Code/Data-Abnahme ✅, UI-Abnahme ⏳ noch ausstehend, getrennt ausgewiesen:**
 
   **Code/Data-Abnahme (Implementiert + Apple-kompiliert + Tests bestanden): ✅**
-  `FourWeekReviewAssembler` (`Sources/FitnessAppData/`) übersetzt reale SwiftData-Objekte in die
+  `FourWeekReviewAssembler` (`Sources/DeltiqData/`) übersetzt reale SwiftData-Objekte in die
   Eingabe von `FourWeekReviewOrchestrator` (P7.1) — reiner Daten-Zubringer, trifft selbst KEINE
   Progressions-/Deload-Entscheidung. Verwendet ausschließlich bereits bestehende, produktiv
   genutzte Bausteine: `PlanParticipationEvaluator` (P6.2) für den Soll-Ist-Vergleich,
@@ -999,7 +999,7 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
   (bereits produktiv für den Trainings-Start-Comeback-Dialog genutzt) für das Comeback-Signal, und
   den zuletzt gespeicherten `PeriodicCheckIn` (P6.3) — explizit **keine neue, konkurrierende
   Progressions-/Deload-Logik**.
-  `FourWeekReviewView` (`Sources/FitnessAppUI/`) zeigt das Ergebnis. Bewusst **kein `@Query`** auf
+  `FourWeekReviewView` (`Sources/DeltiqUI/`) zeigt das Ergebnis. Bewusst **kein `@Query`** auf
   dieser View — Lehre direkt aus dem gerade behobenen P6.3-Blocker (`@Query` als
   `NavigationLink`-Destination verursachte dort die Render-Endlosschleife); stattdessen einmaliger
   Fetch über `.task { FourWeekReviewAssembler.assemble(in:) }`. "Plan passt – beibehalten"
@@ -1254,7 +1254,7 @@ Diagnoseweg). P7 läuft bereits parallel/danach weiter.
     Prinzip wie `activatedAt`), keine globale Variable.
 
   **Implementiert:**
-  - `FourWeekReviewDueCalculator` (Core, `Sources/FitnessAppCore/Analytics/`): reine Funktion wie
+  - `FourWeekReviewDueCalculator` (Core, `Sources/DeltiqCore/Analytics/`): reine Funktion wie
     `PlanParticipationEvaluator`/`DeloadAdvisor` — kein SwiftData/`Date()` im Code-Pfad.
     `.due(since:)`/`.notYetDue(dueAt:)`/`.completed(at:decision:)`/`.unknown` (fehlender Zeitanker
     — niemals stillschweigend als "nicht fällig" fehlinterpretiert, sondern explizit benannt).

@@ -1,0 +1,565 @@
+#if canImport(SwiftData)
+import Foundation
+import SwiftData
+import DeltiqCore
+
+/// DEL-142: Heuristischer Tages-Analyzer.
+///
+/// Nimmt eine Liste von `Exercise`-Models (typischerweise
+/// `day.activeExercises`) und liefert ein `DayAnalysis`-Value-Bundle.
+/// Pure-Berechnung ohne Side-Effects; ideal fuer Live-Updates im
+/// SwiftUI-Layer (View-Compute auf jeden Render).
+///
+/// **Heuristik-Modell** (Ticket-Scope V1):
+///   * Pro Satz → 1.0 Reizpunkte auf den Primärmuskel der Übung.
+///     Compound-Lift bekommt zusätzlich `compoundBonusFactor = 1.15`,
+///     weil ein Compound mehrere Muskeln gleichzeitig belastet.
+///     Sekundärmuskel-Bonus kommt mit V2 wenn die Library
+///     `secondaryMuscles`-Annotation hat.
+///   * Pro Übung × Satz → Last-Score-Beitrag basierend auf den
+///     DEL-098-Belastungsfaktoren (systemicFatigue + localMuscleDamage
+///     + cnsDemand + technicalComplexity, gewichtet).
+///   * Pro Übung Dauer = Sätze × (Arbeitszeit + Pause) + Wechselzeit.
+///   * Recovery-Bucket = max-Stimulus-Muskel × Erholungs-Multiplikator
+///     (siehe `recoveryRangeForTopStimulus`).
+///
+/// **Edge Cases:**
+///   * Leere Übungs-Liste → `nil` (Caller rendert Empty-State).
+///   * Cardio-only-Tag → CardioCoachNote + Duration-fokussiert,
+///     Muskel-Focus wird auf core/quads/calves abstrahiert weil die
+///     Library keine running-spezifischen Muskeln traegt.
+///   * Custom-Übung ohne Library-Match → fließt in Last- + Dauer-
+///     Score ein, aber kein Muscle-Focus-Beitrag (kein primaryMuscle
+///     resolvable).
+@MainActor
+public enum DayAnalyzer {
+
+    /// - Parameters:
+    ///   - timeFormat: gesetzt fuer AMRAP/EMOM/Auf-Zeit-Tage (README 2.13).
+    ///     Schaltet auf eine dauerbasierte Berechnung um, da Saetze x Wdh x
+    ///     Pause fuer diese Tage keine Bedeutung hat (die Uhr entscheidet,
+    ///     nicht eine feste Pausen-Angabe).
+    ///   - timeCapMinutes: der Zeit-Deckel, wenn einer gesetzt ist. Bei Auf
+    ///     Zeit meist `nil` - dann bestimmt das Pensum die Dauer, und das
+    ///     Ergebnis ist wieder eine echte Schaetzung (`isEstimated = true`).
+    ///   - circuitRounds/circuitRestSeconds: nur bei `timeFormat == .circuit`
+    ///     gesetzt - Zirkel hat (anders als die anderen drei Formate) eine
+    ///     ECHTE feste Pause zwischen den Runden, die in die Dauer-Schaetzung
+    ///     einfliessen muss.
+    public static func analyze(
+        exercises: [Exercise],
+        timeFormat: WorkoutTimeFormat? = nil,
+        timeCapMinutes: Int? = nil,
+        circuitRounds: Int? = nil,
+        circuitRestSeconds: Int? = nil
+    ) -> DayAnalysis? {
+        // Nur aktive Working-Sets fliessen in die Analyse — Warmup +
+        // Cooldown werden vom User als optional erlebt und sollen die
+        // Dauer/Belastung nicht aufblasen.
+        let working = exercises.filter {
+            !$0.isArchived && $0.role == .workingSet
+        }
+        guard !working.isEmpty else { return nil }
+
+        if let timeFormat {
+            return analyzeTimedFormat(
+                working: working, format: timeFormat, capMinutes: timeCapMinutes,
+                circuitRounds: circuitRounds, circuitRestSeconds: circuitRestSeconds
+            )
+        }
+
+        let isCardioOnly = working.allSatisfy { $0.isCardio }
+
+        // ── 1) Muscle-Focus ────────────────────────────────────────────
+        let muscleFocus = computeMuscleFocus(working: working)
+
+        // ── 2) Load-Score ──────────────────────────────────────────────
+        let loadScore = computeLoadScore(working: working)
+        let loadCategory = categorize(loadScore: loadScore)
+
+        // ── 3) Systemic-Load (separate Achse) ──────────────────────────
+        let systemicScore = computeSystemicScore(working: working)
+        let systemicLoad = categorize(loadScore: systemicScore, scale: .systemic)
+
+        // ── 4) Dauer-Range ─────────────────────────────────────────────
+        let durationRange = computeDurationRange(working: working)
+
+        // ── 5) Recovery-Range (lokal, Top-Muskel) ──────────────────────
+        let recoveryRange = recoveryRangeForTopStimulus(
+            muscleFocus: muscleFocus,
+            isCardioOnly: isCardioOnly,
+            systemicLoad: systemicLoad
+        )
+
+        // ── 6) Coach-Note ──────────────────────────────────────────────
+        let coachNote = selectCoachNote(
+            loadCategory: loadCategory,
+            systemicLoad: systemicLoad,
+            muscleFocus: muscleFocus,
+            isCardioOnly: isCardioOnly
+        )
+
+        // ── 7) "Estimated"-Flag ────────────────────────────────────────
+        // Wenn irgendeine Übung 0 Sätze oder repsMin=0 hat, kennzeichnen
+        // wir die Analyse als grobe Schätzung.
+        let isEstimated = working.contains { $0.sets <= 0 || $0.repsMin <= 0 }
+
+        return DayAnalysis(
+            loadScore: loadScore,
+            loadCategory: loadCategory,
+            muscleFocus: muscleFocus,
+            estimatedDurationMinutes: durationRange,
+            localRecoveryHours: recoveryRange,
+            systemicLoad: systemicLoad,
+            coachNote: coachNote,
+            isEstimated: isEstimated
+        )
+    }
+
+    // MARK: - Zeitformate (README 2.13)
+
+    /// AMRAP/EMOM/Auf-Zeit-Tage rechnen aus der Dauer statt aus Saetze x
+    /// Wdh x Pause - eine feste Pausen-Angabe existiert bei diesen Formaten
+    /// gar nicht, die Uhr (bzw. das Pensum bei Auf Zeit ohne Deckel)
+    /// entscheidet ueber die Dauer. Muscle-Focus bleibt unveraendert aus den
+    /// Uebungen, unabhaengig vom Format.
+    private static func analyzeTimedFormat(
+        working: [Exercise],
+        format: WorkoutTimeFormat,
+        capMinutes: Int?,
+        circuitRounds: Int? = nil,
+        circuitRestSeconds: Int? = nil
+    ) -> DayAnalysis {
+        let muscleFocus = computeMuscleFocus(working: working, timeFormat: format)
+        let isCardioOnly = working.allSatisfy { $0.isCardio }
+
+        let durationRange: ClosedRange<Int>
+        let isEstimated: Bool
+        if format == .circuit {
+            // Zirkel hat (anders als Auf Zeit) eine ECHTE feste Pause
+            // zwischen den Runden - eigene Schaetzung statt
+            // `computeForTimeDurationEstimate`, die bewusst KEINE Pause
+            // addiert.
+            durationRange = computeCircuitDurationEstimate(
+                working: working,
+                rounds: circuitRounds ?? defaultCircuitRounds(),
+                restSeconds: circuitRestSeconds ?? defaultCircuitRestSeconds()
+            )
+            isEstimated = true
+        } else if let capMinutes {
+            // Ein gesetzter Deckel IST die Dauer, keine Schaetzung.
+            durationRange = capMinutes...capMinutes
+            isEstimated = false
+        } else {
+            // Auf Zeit meist ohne Deckel (README 2.9) - das Pensum
+            // (Runden x Ziel pro Runde) bestimmt die Dauer, wieder als
+            // echte Schaetzung mit Range.
+            durationRange = computeForTimeDurationEstimate(working: working)
+            isEstimated = true
+        }
+
+        let representativeMinutes = (durationRange.lowerBound + durationRange.upperBound) / 2
+        let loadCategory = categorizeByDuration(representativeMinutes)
+        // EMOM ist eine Stufe milder als sein eigener loadCategory - die
+        // Pause steckt bereits in jeder Minute, anders als bei AMRAP/Auf
+        // Zeit, die durchgehend ohne Pause laufen.
+        // Review-Fund (Zirkel-Feature): Zirkel gehoert in dieselbe Kategorie
+        // wie EMOM, nicht wie AMRAP/Auf Zeit - `computeCircuitDurationEstimate`
+        // rechnet die Pause zwischen den Runden bereits explizit in die
+        // Dauer-Schaetzung ein, das Format laeuft also gerade NICHT
+        // durchgehend ohne Pause.
+        let systemicLoad = (format == .emom || format == .circuit) ? stepDown(loadCategory) : loadCategory
+
+        let recoveryRange = recoveryRangeForTopStimulus(
+            muscleFocus: muscleFocus,
+            isCardioOnly: isCardioOnly,
+            systemicLoad: systemicLoad
+        )
+
+        return DayAnalysis(
+            loadScore: Double(representativeMinutes),
+            loadCategory: loadCategory,
+            muscleFocus: muscleFocus,
+            estimatedDurationMinutes: durationRange,
+            localRecoveryHours: recoveryRange,
+            systemicLoad: systemicLoad,
+            coachNote: .metabolicDensity,
+            isEstimated: isEstimated,
+            timeFormat: format
+        )
+    }
+
+    /// Schwellen fuer Zeitformat-Tage (Vorschlag README 2.13, kalibriert auf
+    /// die Dauer statt auf Saetze x Wdh x Pause): "Leicht" wird fuer
+    /// Zeitformate nicht vergeben - selbst ein kurzes AMRAP ist durchgehende
+    /// Belastung ohne Pause, nie ein Leicht-Tag.
+    private static func categorizeByDuration(_ minutes: Int) -> LoadCategory {
+        switch minutes {
+        case ...10:   return .moderate
+        case 11...20: return .high
+        default:      return .veryHigh
+        }
+    }
+
+    /// Eine Stufe milder - fuer EMOMs `systemicLoad` (README 2.13). Anders
+    /// als `loadCategory` darf das hier bis auf "Leicht" absinken: die Pause
+    /// steckt bereits in jeder Minute, das ist eine echte Erleichterung
+    /// gegenueber dem Gesamt-Eindruck des Tages.
+    private static func stepDown(_ category: LoadCategory) -> LoadCategory {
+        switch category {
+        case .veryHigh: return .high
+        case .high:     return .moderate
+        case .moderate: return .low
+        case .low:      return .low
+        }
+    }
+
+    /// README 2.13, "Auf Zeit ohne Deckel": ohne Zeit-Deckel bestimmt das
+    /// Pensum (Runden x Ziel pro Runde) die Dauer. Anders als
+    /// `computeDurationRange` (normale Krafttage) wird KEINE Pause
+    /// addiert - Auf Zeit laeuft durchgehend, das ist gerade der Punkt des
+    /// Formats. Wiederverwendet `workTimePerSet` fuer die Pro-Runde-Zeit,
+    /// `exercise.sets` ist bei Auf Zeit die Rundenzahl.
+    private static func computeForTimeDurationEstimate(working: [Exercise]) -> ClosedRange<Int> {
+        var minSec = 0
+        var maxSec = 0
+        for ex in working {
+            let perRound = workTimePerSet(exercise: ex)
+            let rounds = max(ex.sets, 1)
+            minSec += perRound.lower * rounds
+            maxSec += perRound.upper * rounds
+            // Kurzer Wechsel zur naechsten Uebung, keine echte Pause dazwischen.
+            minSec += 15
+            maxSec += 30
+        }
+        let minMin = max(1, minSec / 60)
+        let maxMin = max(minMin, maxSec / 60 + 1)
+        return minMin...maxMin
+    }
+
+    /// Zirkel: anders als Auf Zeit HAT das Format eine echte feste Pause
+    /// zwischen den Runden - die muss zur reinen Arbeitszeit dazu, sonst
+    /// unterschaetzt die Range die tatsaechliche Dauer systematisch.
+    /// Rundenzahl kommt aus `TrainingDay.circuitRounds` (nicht aus
+    /// `exercise.sets`, das hier nur redundant denselben Wert traegt, siehe
+    /// `timedFormatCircuitLabel` in DeltiqUI) - `rounds - 1` Pausen fuer
+    /// `rounds` Runden, die letzte Runde endet ohne weitere Pause.
+    private static func computeCircuitDurationEstimate(working: [Exercise], rounds: Int, restSeconds: Int) -> ClosedRange<Int> {
+        var perRoundMinSec = 0
+        var perRoundMaxSec = 0
+        for ex in working {
+            let perRound = workTimePerSet(exercise: ex)
+            perRoundMinSec += perRound.lower
+            perRoundMaxSec += perRound.upper
+        }
+        let roundCount = max(rounds, 1)
+        let restTotal = max(0, roundCount - 1) * max(restSeconds, 0)
+        let minSec = perRoundMinSec * roundCount + restTotal
+        let maxSec = perRoundMaxSec * roundCount + restTotal
+        let minMin = max(1, minSec / 60)
+        let maxMin = max(minMin, maxSec / 60 + 1)
+        return minMin...maxMin
+    }
+
+    // MARK: - Muscle Focus
+
+    /// Aggregiert Primärmuskel-Stimulus über alle Übungen, sortiert
+    /// nach Punktzahl absteigend, klassifiziert in 3 Tiers.
+    ///
+    /// README 2.13 Nachtrag: bei AMRAP/EMOM steht `exercise.sets` immer auf 1
+    /// (die Uhr entscheidet ueber die Runden, nicht eine feste Satzzahl) -
+    /// als Mengenfaktor wuerde das jede Uebung auf denselben winzigen Wert
+    /// setzen, alle landen in "Primaer" und `recoveryRangeForTopStimulus`
+    /// faellt immer in den niedrigsten Eimer, unabhaengig von der echten
+    /// Tagesdauer. Bei gesetztem `timeFormat` tritt `repsMin` (Wdh. pro
+    /// Runde) an die Stelle von `sets`; bei Auf Zeit ist `sets` aber
+    /// tatsaechlich die Rundenzahl, dort zaehlt das Produkt aus beidem.
+    private static func computeMuscleFocus(working: [Exercise], timeFormat: WorkoutTimeFormat? = nil) -> [MuscleStimulus] {
+        var perMuscle: [MuscleGroup: Double] = [:]
+
+        for exercise in working {
+            guard let primary = primaryMuscle(for: exercise) else { continue }
+            // Ein Compound-Satz beruehrt mehr Muskelgewebe als Iso —
+            // kleiner Bonus damit das visuell durchschlaegt.
+            let compoundBonus = exercise.isCompound ? 1.15 : 1.0
+            // Intensitaets-Faktor: niedrigerer Target-RIR (naeher am
+            // Versagen) verursacht mehr lokalen Reiz.
+            let intensityFactor = intensityMultiplier(targetRir: exercise.targetRir)
+            let perSet = compoundBonus * intensityFactor
+            let quantity: Double
+            switch timeFormat {
+            case nil:
+                quantity = Double(exercise.sets)
+            case .amrap, .emom:
+                // Wdh. pro Runde statt der immer-1 Satzzahl.
+                quantity = Double(exercise.repsMin)
+            case .forTime, .circuit, .enduranceIntervals:
+                // `sets` ist bei Auf Zeit UND Zirkel die echte Rundenzahl -
+                // Produkt aus beidem. Bei einer Ausbelastungs-Runde (Zirkel
+                // .toFailure) ist `repsMin` nur die Reps EINES Durchgangs
+                // der Mini-Sequenz, keine feste Gesamtzahl - als grobe
+                // Naeherung trotzdem besser als eine willkuerliche Konstante.
+                // Paket 2 (`.enduranceIntervals`): strukturell unerreichbar
+                // hier - alle Uebungen eines Ausdauer-Tages sind `isCardio`
+                // und haben bereits KEIN `primaryMuscle` (siehe Guard oben),
+                // dieser Zweig wird fuer sie nie erreicht.
+                quantity = Double(exercise.sets) * Double(exercise.repsMin)
+            }
+            let total = quantity * perSet
+            perMuscle[primary, default: 0] += total
+        }
+        guard let maxPoints = perMuscle.values.max(), maxPoints > 0 else {
+            return []
+        }
+        // Tier-Bucketing relativ zum Maximum:
+        //   >= 70% → primary, >= 30% → secondary, sonst tertiary.
+        let sorted = perMuscle
+            .map { ($0.key, $0.value) }
+            .sorted { $0.1 > $1.1 }
+        return sorted.map { (muscle, points) in
+            let ratio = points / maxPoints
+            let tier: MuscleStimulus.Tier
+            if ratio >= 0.7      { tier = .primary }
+            else if ratio >= 0.3 { tier = .secondary }
+            else                 { tier = .tertiary }
+            return MuscleStimulus(muscle: muscle, points: points, tier: tier)
+        }
+    }
+
+    /// Library-Lookup für den Primärmuskel via `exercise.name`. Custom-
+    /// Übungen ohne Library-Match liefern nil → Muscle-Focus erhält
+    /// keinen Beitrag, die anderen Achsen (Load/Dauer) zaehlen sie aber
+    /// normal mit. Cardio-Übungen → nil (kein klassischer Hypertrophie-
+    /// Muskel, die Card hat einen Cardio-Fokus-Hint statt Heatmap).
+    private static func primaryMuscle(for exercise: Exercise) -> MuscleGroup? {
+        if exercise.isCardio { return nil }
+        // DEL-159: Custom-Override gewinnt vor dem Library-Lookup. Damit
+        // tragen frei angelegte Uebungen (kein Library-Match) ihren beim
+        // Erstellen gewaehlten Zielmuskel in den Muscle-Focus.
+        if let override = exercise.primaryMuscle { return override }
+        return ExerciseLibraryData.all
+            .first(where: { $0.name == exercise.name })?
+            .primaryMuscle
+    }
+
+    // MARK: - Load Score (Gesamtbelastung)
+
+    /// Gewichtete Summe ueber alle Sätze. Setzt sich primaer aus den
+    /// DEL-098-Faktoren zusammen (siehe `Exercise.systemicFatigueFactor`
+    /// etc.). Range typischerweise 0...80; das Categorize-Mapping
+    /// (siehe `categorize(loadScore:)`) kennt die Tages-Schwellen.
+    private static func computeLoadScore(working: [Exercise]) -> Double {
+        var score: Double = 0
+        for ex in working {
+            // Komposit-Faktor pro Satz aus den 4 Achsen.
+            let perSet =
+                ex.systemicFatigueFactor    * 0.30 +
+                ex.localMuscleDamageFactor  * 0.30 +
+                ex.cnsDemandFactor          * 0.20 +
+                ex.technicalComplexityFactor * 0.10 +
+                ex.axialLoadFactor           * 0.10
+            let intensity = intensityMultiplier(targetRir: ex.targetRir)
+            score += Double(ex.sets) * perSet * intensity * 10.0
+        }
+        return score
+    }
+
+    /// Separate System-Achse: berücksichtigt nur CNS- + systemicFatigue-
+    /// Faktoren + axialLoad. Wird zur Recovery-Empfehlung herangezogen.
+    ///
+    /// **Iteration 2026-05-22**: Der naive ungedaempfte Score liess Tage
+    /// mit vielen Isolationen (Curls, Face Pulls, Calf Raises) auf
+    /// "Sehr hoch" hochpoppen, obwohl ZNS-Belastung dort minimal ist.
+    /// Drei-Wege-Branch:
+    ///   * Cardio: pauschaler Mini-Beitrag (0.5 pro Satz). Cardio
+    ///     belastet das ZNS anders als schwere Compounds — Ausnahme
+    ///     waeren HIIT-Intervalle, die hier aber nicht separat
+    ///     klassifiziert sind.
+    ///   * Compound-Lift: voller perSet × intensity-Score.
+    ///   * Isolation: gleicher perSet, aber durch `0.15`-Dampener stark
+    ///     gedrosselt. Curls + Maschinen belasten das ZNS kaum.
+    ///
+    /// Resultat: ein Tag mit 4 Compound-Saetzen liefert deutlich
+    /// hoeheren systemicScore als ein Tag mit 12 Iso-Saetzen — was die
+    /// Realitaet matched.
+    private static func computeSystemicScore(working: [Exercise]) -> Double {
+        var score: Double = 0
+        for ex in working {
+            if ex.isCardio {
+                score += Double(ex.sets) * 0.5
+                continue
+            }
+            let isolationDampener: Double = ex.isCompound ? 1.0 : 0.15
+            let perSet =
+                ex.systemicFatigueFactor * 0.45 +
+                ex.cnsDemandFactor       * 0.35 +
+                ex.axialLoadFactor       * 0.20
+            let intensity = intensityMultiplier(targetRir: ex.targetRir)
+            score += Double(ex.sets) * perSet * isolationDampener * intensity * 10.0
+        }
+        return score
+    }
+
+    /// Intensität → niedrigerer Target-RIR ist näher am Versagen, also
+    /// mehr Last pro Satz. Skala: RIR 0 → 1.2, RIR 2 → 1.0 (Default),
+    /// RIR 4 → 0.85, RIR 5+ → 0.75.
+    private static func intensityMultiplier(targetRir: Float) -> Double {
+        switch targetRir {
+        case ...0.5:           return 1.20
+        case 0.5...1.5:        return 1.10
+        case 1.5...2.5:        return 1.00
+        case 2.5...3.5:        return 0.90
+        case 3.5...4.5:        return 0.85
+        default:               return 0.75
+        }
+    }
+
+    /// Bucketing-Schwellen. Kalibriert nach User-Smoke-Test (DEL-146,
+    /// 2026-05-22): die ursprünglichen Werte (12/24/40 total, 8/16/28
+    /// systemic) liessen 9-Satz-Workouts mit 3 Übungen schon auf
+    /// "Sehr hoch" hochpoppen, was die Skala entwertet. Neue Kalibrierung:
+    ///
+    ///   * **total:** 25 / 50 / 85
+    ///     - low < 25: kurze/leichte Tage (z.B. 9 Sätze Iso bei RIR 3)
+    ///     - moderate < 50: typischer Hypertrophie-Tag
+    ///     - high < 85: harter Compound-Tag mit hohem Volumen
+    ///     - veryHigh: nur echte Heavy-Days (20+ Sätze nah am Versagen)
+    ///
+    ///   * **systemic:** 15 / 30 / 55
+    ///     - Iso/Arm-Tage erreichen max moderate
+    ///     - schwere Compounds-Days koennen high/veryHigh erreichen
+    ///
+    /// `scale: .systemic` verwendet engere Schwellen weil System-Score
+    /// per Definition niedriger ausfaellt als Total-Score (cardio + iso
+    /// werden gedaempft, siehe `computeSystemicScore`).
+    private static func categorize(loadScore: Double, scale: CategorizeScale = .total) -> LoadCategory {
+        switch scale {
+        case .total:
+            switch loadScore {
+            case ..<25:  return .low
+            case ..<50:  return .moderate
+            case ..<85:  return .high
+            default:     return .veryHigh
+            }
+        case .systemic:
+            switch loadScore {
+            case ..<15:  return .low
+            case ..<30:  return .moderate
+            case ..<55:  return .high
+            default:     return .veryHigh
+            }
+        }
+    }
+
+    private enum CategorizeScale { case total, systemic }
+
+    // MARK: - Duration
+
+    /// Untere/obere Schätzung basierend auf Sätzen × (Arbeitszeit +
+    /// Pause) + Wechsel zwischen Übungen. Untere Grenze = effizienter
+    /// User, obere = entspanntes Tempo mit echten Pausen.
+    private static func computeDurationRange(working: [Exercise]) -> ClosedRange<Int> {
+        var minSec: Int = 0
+        var maxSec: Int = 0
+
+        for ex in working {
+            let perSetWork = workTimePerSet(exercise: ex)
+            let restMin = max(ex.restSeconds - 15, 30)
+            let restMax = ex.restSeconds + 15
+            for _ in 0..<ex.sets {
+                minSec += perSetWork.lower + restMin
+                maxSec += perSetWork.upper + restMax
+            }
+            // Wechselzeit zur naechsten Übung
+            minSec += 30
+            maxSec += 60
+        }
+        // Last-rest wird nicht voll gezaehlt (User geht nach letztem
+        // Satz direkt zur naechsten Übung statt zu rasten).
+        let minMin = max(1, minSec / 60 - 1)
+        let maxMin = max(minMin, maxSec / 60 + 1)
+        return minMin...maxMin
+    }
+
+    /// Arbeitszeit pro Satz, range. Cardio nutzt targetDurationMinutes
+    /// wenn gesetzt; sonst Default-Range basierend auf Typ.
+    private static func workTimePerSet(exercise ex: Exercise) -> (lower: Int, upper: Int) {
+        if ex.isCardio {
+            // Cardio: Dauer ist die Übung selbst, nicht ein Satz × Pause.
+            // Wir mappen targetDurationMinutes auf eine ungefähre Range.
+            let mins = ex.targetDurationMinutes ?? 20
+            let totalSec = mins * 60
+            return (lower: totalSec, upper: totalSec + 60)
+        }
+        if ex.isTimeBased {
+            // Time-Based (Plank, Wall-Sit): Sekunden = repsMin Range.
+            let avgSec = max((ex.repsMin + ex.repsMax) / 2, 20)
+            return (lower: max(avgSec - 5, 15), upper: avgSec + 5)
+        }
+        // Strength: 30-60 Sek pro Satz typisch (compound länger, iso kürzer).
+        let baseLower = ex.isCompound ? 40 : 25
+        let baseUpper = ex.isCompound ? 60 : 45
+        return (lower: baseLower, upper: baseUpper)
+    }
+
+    // MARK: - Recovery
+
+    /// Recovery-Range fuer den Top-Stimulus-Muskel. Mappt das Stimulus-
+    /// Volumen auf eine Stunden-Range basierend auf der Heuristik aus
+    /// dem Ticket (18-72h Buckets).
+    ///
+    /// Cardio-only-Tag bekommt eine separate Range (24-36h fuer typische
+    /// easy/moderate-Cardio-Sessions).
+    private static func recoveryRangeForTopStimulus(
+        muscleFocus: [MuscleStimulus],
+        isCardioOnly: Bool,
+        systemicLoad: LoadCategory
+    ) -> ClosedRange<Int> {
+        if isCardioOnly {
+            switch systemicLoad {
+            case .low:      return 12...24
+            case .moderate: return 18...30
+            case .high:     return 24...36
+            case .veryHigh: return 36...48
+            }
+        }
+        let topPoints = muscleFocus.first?.points ?? 0
+        // Top-Points-Buckets (kalibriert via Probe-Berechnung):
+        //  <  6 Punkte → light       18-30h
+        //  <  12       → moderate    24-48h
+        //  <  20       → high        36-60h
+        //  >= 20       → veryHigh    48-72h
+        switch topPoints {
+        case ..<6:   return 18...30
+        case ..<12:  return 24...48
+        case ..<20:  return 36...60
+        default:     return 48...72
+        }
+    }
+
+    // MARK: - Coach-Note Selection
+
+    /// Wählt ONE Coach-Note basierend auf der Konstellation. Reihenfolge
+    /// der Branches kodiert die Priorität — sehr-hohe Last und Cardio-
+    /// only haben Vorrang vor generischen Templates.
+    private static func selectCoachNote(
+        loadCategory: LoadCategory,
+        systemicLoad: LoadCategory,
+        muscleFocus: [MuscleStimulus],
+        isCardioOnly: Bool
+    ) -> CoachNoteKind {
+        if isCardioOnly { return .cardioFocused }
+        if loadCategory == .veryHigh || systemicLoad == .veryHigh {
+            return .veryHighStress
+        }
+        if loadCategory == .low { return .lightDeload }
+        if systemicLoad == .high && loadCategory == .high {
+            return .compoundHeavy
+        }
+        if loadCategory == .high && systemicLoad == .moderate {
+            return .highLocal
+        }
+        return .balanced
+    }
+}
+#endif

@@ -159,7 +159,7 @@ Alle übrigen Funde aus Teil 1 sind entweder bereits durch die Vorgabe selbst en
 - `PlanEnvironmentMigrator` selbst: unverändert, keine neue Bulk-Substitutionslogik (Vorgabe wörtlich).
 
 **Tests/Build — getrennt berichtet (Punkt 7):**
-- **Core (reines Swift, kein SwiftData/SwiftUI):** `fallbackMeasurement`/`fallbackDate`-Logik in `DashboardView` nur code-gelesen, nicht isoliert unit-getestet (sitzt in einer SwiftUI-View-Methode, nicht in `FitnessAppCore`) — kein Core-Test ergänzt.
+- **Core (reines Swift, kein SwiftData/SwiftUI):** `fallbackMeasurement`/`fallbackDate`-Logik in `DashboardView` nur code-gelesen, nicht isoliert unit-getestet (sitzt in einer SwiftUI-View-Methode, nicht in `DeltiqCore`) — kein Core-Test ergänzt.
 - **SwiftData/SwiftUI (Linux):** `swift build`/`swift test` grün, 961 Bestandstests unverändert grün. **Das ist KEIN Beleg für die neue UI selbst** — `BodyDataEditorView.swift`/`TrainingLocationEquipmentEditorView.swift`/`ProfileEditorView.swift`/`MeasurementView.swift`/`SettingsView.swift`+Gruppen-Seiten sind alle `#if canImport(SwiftUI) && canImport(SwiftData)`-gated; auf diesem Linux-Toolchain ist SwiftData nicht importierbar, der Compiler parst diese Dateien nur oberflächlich (bestätigt: `echo 'import SwiftData' | swift -` → "no such module"), ohne echte Typ-Prüfung. Keine neuen automatisierten Tests für die beiden neuen Draft-Editoren ergänzt (dieselbe Einschränkung, die auch bestehende SwiftUI-Screens in diesem Projekt nicht unit-testet).
 - **Apple-Build/iOS-Abnahme:** **nicht durchgeführt in dieser Session** (kein Zugriff auf Xcode/echtes iOS-Target). Insbesondere ungeprüft: Keyboard-Dismiss-Verhalten, VoiceOver-Ansagen, Dynamic-Type-Verhalten der neuen Sheets, tatsächliches Layout auf kleinen Displays. Das reale, verbindliche Signal bleibt der naechste Codemagic-Lauf — wie bei jeder vorherigen Phase dieses Epics wird ein dort auftretender Fehler anhand des Logs diagnostiziert und gezielt behoben.
 
@@ -179,8 +179,8 @@ Alle sechs Befunde aus der Vorgabe (`REM-01`, `REM-02`, Health-Terminologie, `PE
 
 **Kleine, fachlich begründete Extraktionen (für Testbarkeit, keine Architekturänderung):**
 - `HealthKitController.init(userDefaults:)` injizierbar gemacht (Default `.standard`, wie `ReminderPreferences.load(from:)`); `lastSyncDateDefaultsKey` von `private` auf Modul-intern geändert, damit der Test denselben Key referenziert statt ihn zu duplizieren.
-- `OnboardingHealthSnapshot.hasApplicableProfileFields` (neu, `FitnessAppHealth`): die "lohnt sich ein Bestätigungsdialog?"-Prüfung aus `requestHealthPull()` 1:1 herausgezogen (reine Werte-Prüfung, Gewicht zählt bewusst nicht mit).
-- `NotificationPermissionDisplayState` (neu, `FitnessAppCore`): die dreistufige `Bool?`→Zustand-Ableitung hinter `reminderPermissionStatusRow`, als plattformneutraler Typ statt Inline-`switch` in der SwiftUI-View.
+- `OnboardingHealthSnapshot.hasApplicableProfileFields` (neu, `DeltiqHealth`): die "lohnt sich ein Bestätigungsdialog?"-Prüfung aus `requestHealthPull()` 1:1 herausgezogen (reine Werte-Prüfung, Gewicht zählt bewusst nicht mit).
+- `NotificationPermissionDisplayState` (neu, `DeltiqCore`): die dreistufige `Bool?`→Zustand-Ableitung hinter `reminderPermissionStatusRow`, als plattformneutraler Typ statt Inline-`switch` in der SwiftUI-View.
 
 **Bewusst unverändert gelassen (nicht Teil dieser Phase):**
 - Allgemeines Reset-/Backup-Verhalten (`RS-02`/`RS-03a` etc.) — explizit Phase 5.
@@ -188,9 +188,9 @@ Alle sechs Befunde aus der Vorgabe (`REM-01`, `REM-02`, Health-Terminologie, `PE
 
 **Tests/Build — getrennt berichtet:**
 - **Core (reines Swift, kein SwiftData/SwiftUI/HealthKit):** 3 neue Testdateien, 14 neue Tests, alle grün:
-  - `NotificationPermissionDisplayStateTests` (`FitnessAppCoreTests`, 3 Tests): `Bool?` → `granted`/`denied`/`notDetermined`, inkl. `nil` ≠ "verweigert".
-  - `OnboardingHealthSnapshotTests` (`FitnessAppHealthTests`, 9 Tests): `hasApplicableProfileFields` für leer/Geburtsdatum/männlich/weiblich/`.other`/`.notSet`/Größe>0/Größe≤0 (inkl. negativ)/nur-Gewicht (muss `false` bleiben)/alle Felder.
-  - `HealthKitControllerLastSyncTests` (`FitnessAppHealthTests`, 2 Tests): `init(userDefaults:)` lädt einen zuvor gespeicherten Zeitstempel korrekt; bleibt `nil`, wenn nie gespeichert. `HealthKitController` selbst ist (anders als die meisten UI-Dateien) **nicht** SwiftUI/SwiftData-gated, nur `#if canImport(HealthKit)`-Gates um den Service — lief deshalb echt, nicht nur oberflächlich geparst.
+  - `NotificationPermissionDisplayStateTests` (`DeltiqCoreTests`, 3 Tests): `Bool?` → `granted`/`denied`/`notDetermined`, inkl. `nil` ≠ "verweigert".
+  - `OnboardingHealthSnapshotTests` (`DeltiqHealthTests`, 9 Tests): `hasApplicableProfileFields` für leer/Geburtsdatum/männlich/weiblich/`.other`/`.notSet`/Größe>0/Größe≤0 (inkl. negativ)/nur-Gewicht (muss `false` bleiben)/alle Felder.
+  - `HealthKitControllerLastSyncTests` (`DeltiqHealthTests`, 2 Tests): `init(userDefaults:)` lädt einen zuvor gespeicherten Zeitstempel korrekt; bleibt `nil`, wenn nie gespeichert. `HealthKitController` selbst ist (anders als die meisten UI-Dateien) **nicht** SwiftUI/SwiftData-gated, nur `#if canImport(HealthKit)`-Gates um den Service — lief deshalb echt, nicht nur oberflächlich geparst.
   - `ReminderPreferencesTests` (bereits vorhanden, unverändert): deckt die "Key fehlt vs. explizit gespeichert"-Unterscheidung bereits vollständig ab, auf der `REM-02`s Fix (`OnboardingView.init()`) beruht — kein neuer Test nötig, da `OnboardingView.init()` selbst keine weitere Verzweigung enthält.
   - Gesamt: `swift test` — **975 Tests, 0 Fehler** (961 Bestand aus Phase 3 + 14 neu).
 - **SwiftUI/SwiftData/HealthKit (Linux-Toolchain, oberflächlich geparst):** `swift build` grün für alle geänderten Dateien (`HealthKitController.swift`, `HealthKitTypes.swift`, `OnboardingView.swift`, `AppSettingsLink.swift` (neu), `SettingsAppExperienceView.swift`, `HealthWorkoutWriteView.swift`, `ProfileEditorView.swift`, `SettingsDataConnectionsView.swift`). **Das ist kein Beleg für echtes Typchecking dieser SwiftUI-Oberflächen** — `#if canImport(SwiftUI) && canImport(SwiftData)`-gated Dateien werden auf diesem Linux-Toolchain nur oberflächlich geparst (SwiftData nicht importierbar: `echo 'import SwiftData' | swift -` → "no such module"). Insbesondere ungeprüft auf diesem Weg: `reminderPermissionStatusRow`s tatsächliches Rendering, der neue `confirmationDialog` in `ProfileEditorView`, das `DisclosureGroup`-Verhalten in `HealthWorkoutWriteView`, die neuen Caption-Zeilen in `SettingsDataConnectionsView`.
@@ -210,15 +210,15 @@ Alle sieben Punkte der Vorgabe (Export/Backup-Erstellung, Import, Backup-Liste, 
 
 **Umgesetzt:**
 
-1. **Export/Backup-Erstellung ohne Main-Thread-Blockade (`DX-02c`/`BL-07`)** — `DataExportService.makeExport` in `makeFilesSnapshot` (Fetch + CSV-Bau, bleibt zwingend auf dem Actor von `context` — `ModelContext` ist nicht `Sendable`, `id(_:)` braucht die lebenden Objekt-Referenzen fuer die FK-Map) und `buildBundle` (meta.json + ZIP-Kompression, reine Byte-Arbeit auf einem `Sendable` `FilesSnapshot`) aufgeteilt. Neue `makeExportAsync`/`BackupService.createBackupAsync` fuer User-initiierte Aufrufe fuehren `buildBundle`/`store` ueber `Task.detached` aus — dort steckt kein `ModelContext` und kein lebendes SwiftData-Objekt mehr drin. Die bestehenden synchronen `makeExport`/`createBackup` bleiben unveraendert fuer den automatischen Hintergrund-Backup-Lauf (`BackupService.runAutomaticBackupIfDue`, ausgeloest in `FitnessAppApp.swift` beim App→Background-Wechsel) — dort ist ein kurzer synchroner Schreibvorgang weiterhin bewusst gewollt (siehe dortiger Kommentar). `BackupListView.createNow`/`restore` nutzen jetzt echte `Task{}`+`createBackupAsync`/`performImport`.
+1. **Export/Backup-Erstellung ohne Main-Thread-Blockade (`DX-02c`/`BL-07`)** — `DataExportService.makeExport` in `makeFilesSnapshot` (Fetch + CSV-Bau, bleibt zwingend auf dem Actor von `context` — `ModelContext` ist nicht `Sendable`, `id(_:)` braucht die lebenden Objekt-Referenzen fuer die FK-Map) und `buildBundle` (meta.json + ZIP-Kompression, reine Byte-Arbeit auf einem `Sendable` `FilesSnapshot`) aufgeteilt. Neue `makeExportAsync`/`BackupService.createBackupAsync` fuer User-initiierte Aufrufe fuehren `buildBundle`/`store` ueber `Task.detached` aus — dort steckt kein `ModelContext` und kein lebendes SwiftData-Objekt mehr drin. Die bestehenden synchronen `makeExport`/`createBackup` bleiben unveraendert fuer den automatischen Hintergrund-Backup-Lauf (`BackupService.runAutomaticBackupIfDue`, ausgeloest in `DeltiqApp.swift` beim App→Background-Wechsel) — dort ist ein kurzer synchroner Schreibvorgang weiterhin bewusst gewollt (siehe dortiger Kommentar). `BackupListView.createNow`/`restore` nutzen jetzt echte `Task{}`+`createBackupAsync`/`performImport`.
 2. **Import ohne UI-Blockade (`DI-03`/`DI-09`)** — `DataImportView.loadPreview` laeuft jetzt per `Task.detached` (die gesamte Vorschau — Entpacken, CSV-Zeilenzaehlung — beruehrt gar keinen `ModelContext`: `DataImportService.preview(zipData:)` nimmt keinen Context entgegen). `DataImportService.performImport` ist jetzt `async`: der reine Entpack-/Validierungsschritt (`extractAndValidate`, kein SwiftData-Zugriff) laeuft per `Task.detached`, die SwiftData-Schreibphase (`runImport`) ist explizit `@MainActor` und `yield`et nach jedem Fortschritts-Tick (`Task.yield()`), damit der Fortschrittsbalken tatsaechlich sichtbar mitlaeuft statt erst am Ende zu springen. Vorschau, Append-/Replace-Bestaetigung und Vorab-Sicherung (`preImport`) unveraendert erhalten. **Zusaetzlich gefunden und behoben:** `runImport` rief bei `.replace` bisher `context.save()` direkt nach dem Wipe auf — das widersprach dem eigenen Doc-Kommentar auf `wipeAllUserData` ("ein einziges save(), das Wipe und Merge atomisch committet") und schuf genau die Luecke, vor der dieser Kommentar warnte: ein Abbruch zwischen Wipe-Save und Merge-Ende haette einen leeren UND unvollstaendig importierten Bestand hinterlassen. Jetzt committet ausschliesslich das finale `context.save()` (Schritt 7) Wipe und Merge atomisch zusammen.
 3. **Backup-Liste Fehler-/Zustaende (`BL-03`/`BL-05`/`BL-08`)** — `BackupService.listGenerations()` wirft jetzt bei einem echten `contentsOfDirectory`-Fehler (vorher `try?` → `[]`, ununterscheidbar von "noch nie gesichert"); `BackupListView` zeigt dafuer eine eigene `loadErrorCard` mit "Erneut versuchen"-Button, getrennt von der Empty-State-Karte. Loeschen verlangt jetzt denselben `confirmationDialog` wie Wiederherstellen (vorher ein ungesicherter Tap) und zeigt Fehler statt sie mit `try?` zu verschlucken. Neues `Operation`-Enum (`idle`/`creating`/`restoring`/`deleting`) ersetzt das gemeinsame `isWorking: Bool` — der Status-Text zeigte vorher bei JEDER laufenden Operation "Wird wiederhergestellt…". Tap-Ziel-Vergroesserung (32×32pt) bewusst NICHT mitgemacht — das ist Accessibility-Politur, Phase-6-Scope.
 4. **`lastDataExportAt`-Semantik (`DX-03`/`DX-04`/`DX-05`)** — bedeutet jetzt verbindlich "lokale Sicherung erfolgreich gespeichert" und wird nur gesetzt, wenn `BackupService.store` nach dem Teilen-faehigen Export auch wirklich erfolgreich war. Scheitert NUR die lokale Zusatzsicherung, bleibt Teilen weiterhin moeglich — der Teilfehler erscheint als eigener, nicht-blockierender Hinweis (`backupWarning`) statt stillschweigend verschluckt zu werden. Eine externe Sicherung (User hat tatsaechlich per Share-Sheet geteilt) wird nach wie vor nicht behauptet — das bleibt bewusst unbelegt, da `UIActivityViewController` keinen zuverlaessigen Completion-Status fuer alle Ziele liefert (AirDrop/Mail/Drittanbieter-Apps).
-5. **App-Reset Vorab-Backup + geteilte Loeschlogik (`RS-02`/`RS-03a`/`SV-F01`)** — `resetApp()` erzeugt jetzt zuerst eine `BackupService.createBackupAsync(reason: .preReset)`-Sicherung (neuer `BackupFilename.Reason`-Fall, eigener Label in der Backup-Liste). Schlaegt sie fehl, kehrt `resetApp` VOR `isResetting = true` und vor jeder Mutation zurueck und zeigt den Fehler — es wird nicht trotzdem geloescht. Die neue Sicherung liegt in `Documents/Backups`, einem von der SwiftData-Loeschung voellig unabhaengigen Verzeichnis (verifiziert, nicht nur angenommen) und kann vom Reset nicht mitgeloescht werden. Neue `UserDataWipe` (Core/`FitnessAppData`) buendelt die 10 Typen, deren Loeschumfang zwischen Reset und destruktivem Replace-Import tatsaechlich identisch ist (PersonalRecordEntry, ExerciseLog, WorkoutSession, Exercise, TrainingDay, TrainingPlan, WaterEntry, BodyMeasurement, Gear, UserBodyProfile) — `ExerciseTemplate` bleibt an BEIDEN Call-Sites bewusst separat (Reset loescht+reseedet alle Templates, Replace-Import nur Custom-Templates: zwei tatsaechlich unterschiedliche Umfaenge, nicht in eine Funktion gezwungen). `SettingsView.deleteAll<T>` (Duplikat von `DataImportService.deleteEach<T>`) entfernt. `weight_unit` nicht mehr Teil der Reset-Loeschliste (`SV-F01`) — es ist laut `SettingsPortability`-Whitelist eine echte Praeferenz, widersprach sich mit Resets eigenem Kommentar ("Nutzer loescht Daten, nicht Einstellungen").
-6. **Praeferenzen/Sessions/Live-Activities/Health bei Reset** — `pref_water_reminder*`/`pref_measurement_reminder*` waren bereits NICHT Teil der Reset-Loeschliste (verifiziert, keine Code-Aenderung noetig — Phase-4-Vertrag haelt). `TimedWorkoutBackground.shared.endAll()` (Zeitformat-Lauf) wurde bereits VOR der Loeschung aufgerufen (verifiziert, korrekt). **Neu gefunden und behoben:** der per-Satz-Pausentimer (`RestTimerActivityController`, eigene Live Activity, unabhaengig vom Zeitformat-Lauf) wurde von `resetApp()` bisher gar nicht referenziert — eine laufende Pause-Activity ueberlebte den Reset unbeendet. `SettingsView` liest jetzt `@Environment(RestTimerActivityController.self)` (dieselbe von `RootView` injizierte Instanz) und ruft `endRestTimer(reason: .skipped)` im selben Zug wie `TimedWorkoutBackground.endAll()`. Ein aktives/laufendes Workout selbst ist bereits durch den bestehenden Crash-Safe-Mechanismus (`navigation.workoutPath`-Reset + `isResetting`-Gate + verzoegertes `DispatchQueue.main.async`-Delete) kontrolliert behandelt — keine Aenderung noetig, nur verifiziert. Apple-Health-Daten bleiben unangetastet (verifiziert: `resetApp()` referenziert keinerlei `FitnessAppHealth`-Symbol).
+5. **App-Reset Vorab-Backup + geteilte Loeschlogik (`RS-02`/`RS-03a`/`SV-F01`)** — `resetApp()` erzeugt jetzt zuerst eine `BackupService.createBackupAsync(reason: .preReset)`-Sicherung (neuer `BackupFilename.Reason`-Fall, eigener Label in der Backup-Liste). Schlaegt sie fehl, kehrt `resetApp` VOR `isResetting = true` und vor jeder Mutation zurueck und zeigt den Fehler — es wird nicht trotzdem geloescht. Die neue Sicherung liegt in `Documents/Backups`, einem von der SwiftData-Loeschung voellig unabhaengigen Verzeichnis (verifiziert, nicht nur angenommen) und kann vom Reset nicht mitgeloescht werden. Neue `UserDataWipe` (Core/`DeltiqData`) buendelt die 10 Typen, deren Loeschumfang zwischen Reset und destruktivem Replace-Import tatsaechlich identisch ist (PersonalRecordEntry, ExerciseLog, WorkoutSession, Exercise, TrainingDay, TrainingPlan, WaterEntry, BodyMeasurement, Gear, UserBodyProfile) — `ExerciseTemplate` bleibt an BEIDEN Call-Sites bewusst separat (Reset loescht+reseedet alle Templates, Replace-Import nur Custom-Templates: zwei tatsaechlich unterschiedliche Umfaenge, nicht in eine Funktion gezwungen). `SettingsView.deleteAll<T>` (Duplikat von `DataImportService.deleteEach<T>`) entfernt. `weight_unit` nicht mehr Teil der Reset-Loeschliste (`SV-F01`) — es ist laut `SettingsPortability`-Whitelist eine echte Praeferenz, widersprach sich mit Resets eigenem Kommentar ("Nutzer loescht Daten, nicht Einstellungen").
+6. **Praeferenzen/Sessions/Live-Activities/Health bei Reset** — `pref_water_reminder*`/`pref_measurement_reminder*` waren bereits NICHT Teil der Reset-Loeschliste (verifiziert, keine Code-Aenderung noetig — Phase-4-Vertrag haelt). `TimedWorkoutBackground.shared.endAll()` (Zeitformat-Lauf) wurde bereits VOR der Loeschung aufgerufen (verifiziert, korrekt). **Neu gefunden und behoben:** der per-Satz-Pausentimer (`RestTimerActivityController`, eigene Live Activity, unabhaengig vom Zeitformat-Lauf) wurde von `resetApp()` bisher gar nicht referenziert — eine laufende Pause-Activity ueberlebte den Reset unbeendet. `SettingsView` liest jetzt `@Environment(RestTimerActivityController.self)` (dieselbe von `RootView` injizierte Instanz) und ruft `endRestTimer(reason: .skipped)` im selben Zug wie `TimedWorkoutBackground.endAll()`. Ein aktives/laufendes Workout selbst ist bereits durch den bestehenden Crash-Safe-Mechanismus (`navigation.workoutPath`-Reset + `isResetting`-Gate + verzoegertes `DispatchQueue.main.async`-Delete) kontrolliert behandelt — keine Aenderung noetig, nur verifiziert. Apple-Health-Daten bleiben unangetastet (verifiziert: `resetApp()` referenziert keinerlei `DeltiqHealth`-Symbol).
 
 **Kleine, fachlich begruendete Extraktionen (fuer Testbarkeit/Wiederverwendung, keine Architekturaenderung):**
-- `UserDataWipe` (neu, `FitnessAppData`): buendelt die zwischen Reset und Replace-Import identischen 10 Loesch-Typen — direkte Antwort auf `RS-03a`, kein Selbstzweck.
+- `UserDataWipe` (neu, `DeltiqData`): buendelt die zwischen Reset und Replace-Import identischen 10 Loesch-Typen — direkte Antwort auf `RS-03a`, kein Selbstzweck.
 - `DataExportService.FilesSnapshot`/`makeFilesSnapshot`/`buildBundle`: der Sendable-Grenzzug selbst, zentral fuer `DX-02c`.
 
 **Bewusst unveraendert gelassen (nicht Teil dieser Phase):**
@@ -332,7 +332,7 @@ Keine Code-Aenderung noetig, nur der lokalisierte Textinhalt.
 
 **6. DI-Seams fuer Phase-5-Fehlerpfade:** zwei gezielte, additive Oeffnungen,
 keine Architekturaenderung. `SharedStore.health`: `private(set)` →
-`internal(set)` — `@testable import FitnessAppData` kann den Zustand jetzt
+`internal(set)` — `@testable import DeltiqData` kann den Zustand jetzt
 direkt auf `.fellBackAfterGroupStoreFailure` setzen, ohne einen echten
 App-Group-Fehler zu provozieren. `BackupService.backupsDirectoryOverride:
 URL?` (neu, `internal`, Default `nil` = unveraendertes Verhalten): Tests
@@ -350,7 +350,7 @@ via nicht-existentem Pfad.
   Phase 5 + 4 neue `PRDetectorTests` fuer die ID-first-Gruppierung: Umbenennen-
   ueberlebt-via-ID, unterschiedliche-IDs-trotz-gleichem-Namen-bleiben-getrennt,
   Nil-ID-faellt-auf-Namen-zurueck, ID-und-Nil-werden-nie-gemischt). `LiftAttempt`/
-  `PersonalRecord`/`PRDetector` liegen in `FitnessAppCore` OHNE SwiftData-Gate —
+  `PersonalRecord`/`PRDetector` liegen in `DeltiqCore` OHNE SwiftData-Gate —
   diese 4 Tests sind also ECHT auf diesem Linux-Toolchain ausgefuehrt, nicht
   nur geparst.
 - **SwiftData (Linux-Toolchain, nur oberflaechlich geparst, `#if canImport(SwiftData)`
@@ -360,12 +360,12 @@ via nicht-existentem Pfad.
     `testDeletingTemplateNeverCascadesToExerciseLogsOrPRs`,
     `testCustomExerciseTemplateIDSurvivesExportImportRoundtrip`,
     `testCustomExerciseTemplateIDResolvesThroughDedupOnReimport`.
-  - Neue `Tests/FitnessAppUITests/ExerciseTemplateIDBackfillTests.swift` (dort,
-    nicht in `FitnessAppDataTests`, weil `ExerciseTemplateIDBackfill` wie sein
-    Vorbild `ExerciseNameBackfill` in `FitnessAppUI` liegt — `FitnessAppUITests`
-    bekam dafuer `FitnessAppData` als neue Test-only-Dependency in `Package.swift`):
+  - Neue `Tests/DeltiqUITests/ExerciseTemplateIDBackfillTests.swift` (dort,
+    nicht in `DeltiqDataTests`, weil `ExerciseTemplateIDBackfill` wie sein
+    Vorbild `ExerciseNameBackfill` in `DeltiqUI` liegt — `DeltiqUITests`
+    bekam dafuer `DeltiqData` als neue Test-only-Dependency in `Package.swift`):
     `testBackfillConnectsOnlyUniqueNameMatches`, `testBackfillConnectsSystemExerciseByName`.
-  - Neue `Tests/FitnessAppDataTests/BackupServiceFailurePathTests.swift` (4 Tests,
+  - Neue `Tests/DeltiqDataTests/BackupServiceFailurePathTests.swift` (4 Tests,
     siehe Punkt 6 oben).
 - **Nicht durch Unit-Tests abgedeckt, nur durch Code-Lektuere verifiziert:**
   - "Abgebrochene Bestaetigung"/"Doppeltippen" fuer den neuen Gear-Lösch-Dialog:
@@ -446,7 +446,7 @@ wird hier behauptet.**
 nach tatsächlicher Prüftiefe:
 
 - **Echt typegecheckt + echt ausgeführt** (kein `#if canImport(SwiftData/
-  SwiftUI)`-Gate, da reines `FitnessAppCore`): die komplette ID-first-
+  SwiftUI)`-Gate, da reines `DeltiqCore`): die komplette ID-first-
   Gruppierungslogik in `PRDetector`/`LiftAttempt`/`PersonalRecord` inkl. der 4
   neuen Phase-6-Tests (Umbenennen überlebt via ID, unterschiedliche IDs bei
   gleichem Namen bleiben getrennt, nil-ID fällt auf Namen zurück, ID/nil
@@ -625,25 +625,25 @@ User anstoßen bzw. einsehen kann.
 
 Der User hat ein zweites, neueres Codemagic-Log bereitgestellt (`testflight`,
 "Run unit tests (Release-Gate)"), diesmal mit zwei neuen, voneinander
-unabhängigen Fehlern in `FitnessAppUI` — wieder ein Modul, das auf Linux nur
+unabhängigen Fehlern in `DeltiqUI` — wieder ein Modul, das auf Linux nur
 geparst, nie typegecheckt wird. `.legs`-Fix aus Teil 10 taucht in diesem Log
 nicht mehr auf (behoben), stattdessen zwei neue, bisher unentdeckte Fehler:
 
 **Fund 1 — fehlender Import:** `SettingsAppExperienceView.swift` nutzt
 `PRNotificationCenter` (Zeile 18) und `ReminderScheduler` (4 Stellen,
-Zeilen 393–404), beide in `FitnessAppActivities` deklariert, importierte
-dieses Modul aber nicht (nur `SwiftUI`/`SwiftData`/`FitnessAppCore`/
-`FitnessAppData`). Die gemeldete `.onChange(of: scenePhase) { _, newPhase in`
+Zeilen 393–404), beide in `DeltiqActivities` deklariert, importierte
+dieses Modul aber nicht (nur `SwiftUI`/`SwiftData`/`DeltiqCore`/
+`DeltiqData`). Die gemeldete `.onChange(of: scenePhase) { _, newPhase in`
 -Arity-Fehlermeldung (Zeile 81, "expects 1 argument, but 2 were used") ist
 eine Folgediagnose desselben Fehlers — sobald `prNotifications` nicht
 aufgeloest werden kann, destabilisiert das die Typpruefung des ganzen
 `body`, inkl. Overload-Resolution fuer das direkt danach stehende
 `.onChange`. Andere Dateien im selben Ordner (`SettingsView.swift`,
 `DataImportView.swift`, `ReminderPreferencesApplier.swift`) importieren
-`FitnessAppActivities` bereits korrekt. **Eingefuehrt in Phase 3** (Commit
+`DeltiqActivities` bereits korrekt. **Eingefuehrt in Phase 3** (Commit
 `50d7e65`, beim Herausloesen dieser Datei aus `SettingsView.swift`) — der
 Import ist beim Verschieben verlorengegangen. **Fix:** `import
-FitnessAppActivities` ergaenzt.
+DeltiqActivities` ergaenzt.
 
 **Fund 2 — fehlendes `@ViewBuilder`:** `ExerciseLibraryView.swift:274`,
 `customSection: some View { let customs = ...; if !customs.isEmpty {
@@ -659,7 +659,7 @@ Fehler, den erst dieser zweite echte Apple-Typecheck aufgedeckt hat. **Fix:**
 
 **Keine Breitenwirkung bestätigt:** vor dem Fix wurde geprüft, ob dasselbe
 Muster (computed `some View`-Property/-Funktion ohne `@ViewBuilder` mit
-riskantem `if`/`switch`-Körper) anderswo in `FitnessAppUI` vorkommt — ein
+riskantem `if`/`switch`-Körper) anderswo in `DeltiqUI` vorkommt — ein
 Scan fand 26 oberflächlich ähnliche Kandidaten (u. a. in `DashboardView.swift`,
 `WorkoutSummaryView.swift`, `TimedWorkoutPlayerView.swift`,
 `PlanBuilderView.swift`). Das Log selbst widerlegt diese Kandidaten aber:
@@ -683,7 +683,7 @@ Log oder einen erneuten Codemagic-Lauf.
 
 ## Teil 12 — Codemagic-Nachtrag 3 (erster Lauf mit echten SwiftData-Tests)
 
-Drittes Log vom User: `FitnessAppUI` kompiliert jetzt fehlerfrei — zum
+Drittes Log vom User: `DeltiqUI` kompiliert jetzt fehlerfrei — zum
 ersten Mal in dieser Epic laufen die SwiftData-Tests dieses Pakets
 tatsaechlich auf echter Apple-Hardware (`swift test --parallel`, Xcode
 26.6, macOS arm64). Ergebnis: **4 Tests stuerzten den Testprozess ab**
@@ -1244,8 +1244,8 @@ pruefen nicht, ob dieser PR-Inhalt selbst richtig ist (die Datei wird auf
 Linux mangels SwiftUI/SwiftData schlicht uebersprungen). Das war bereits
 in Teil 15 so benannt, wird hier aber konkretisiert statt nur wiederholt:
 
-- **Neue gezielte Tests:** `Tests/FitnessAppUITests/EditorDiscardSnapshotTests.swift`
-  (`@testable import FitnessAppUI`, gleiches `#if canImport`-Gate wie die
+- **Neue gezielte Tests:** `Tests/DeltiqUITests/EditorDiscardSnapshotTests.swift`
+  (`@testable import DeltiqUI`, gleiches `#if canImport`-Gate wie die
   Produktionsdateien). Dafuer wurden `ExerciseSnapshot`/`TrainingDaySnapshot`/
   `PlanMetaSnapshot`/`ProfileMetaSnapshot` von `private` auf `internal`
   gestellt (keine funktionale Aenderung, nur Sichtbarkeit innerhalb des
@@ -1267,7 +1267,7 @@ in Teil 15 so benannt, wird hier aber konkretisiert statt nur wiederholt:
   automatisch einen `mac_mini_m2`-Lauf mit echtem Xcode: `swift build`/
   `swift test --parallel` auf macOS (wo `canImport(SwiftUI)` wahr ist —
   die neuen Tests liefen dort also tatsaechlich) PLUS
-  `xcodebuild -scheme FitnessAppUI -destination 'generic/platform=iOS
+  `xcodebuild -scheme DeltiqUI -destination 'generic/platform=iOS
   Simulator'` fuer alle Library-Targets PLUS den vollen App+Widget-Build
   via `ios-app`. Diese Session kann den Lauf weder selbst anstossen noch
   einsehen, aber er passiert automatisch durch das Pushen dieses Commits —
@@ -1635,12 +1635,12 @@ verifiziert statt nur angenommen: ein kleines Probe-Skript
 dieser Linux-Umgebung `false` sind. Das bedeutet konkret:
 
 - **Jede** Datei, die mit `#if canImport(SwiftUI)` beginnt — das betrifft
-  ausnahmslos ALLE `.swift`-Dateien in `FitnessAppUI` (inkl. `Theme.swift`
+  ausnahmslos ALLE `.swift`-Dateien in `DeltiqUI` (inkl. `Theme.swift`
   selbst, also auch V7) UND die dazugehoerigen Testdateien — kompiliert
   auf Linux zu einer LEEREN Uebersetzungseinheit. `swift build`/`swift
   test` gruen beweist fuer diese Dateien NICHTS ausser "der Rest des
   Pakets kompiliert weiterhin".
-- Fuer `FitnessAppData`-Dateien (`#if canImport(SwiftData)`, kein
+- Fuer `DeltiqData`-Dateien (`#if canImport(SwiftData)`, kein
   `SwiftUI`-Erfordernis) gilt dasselbe — auch `UserBodyProfile.swift`,
   `DataExportService.swift`, `DataImportService.swift` und ihre
   Testdateien (V5) liefen auf Linux NICHT tatsaechlich durch den
@@ -1801,7 +1801,7 @@ isExerciseOrderDirty(comparedTo:)` auf — das ist exakt Finding 1, aber
 schwerwiegender als eine Stilfrage: Xcode meldet einen harten Compile-
 Fehler ("cannot call value of non-function type 'Bool'", "inaccessible due
 to 'private' protection level"), weil der Name zur privaten `Bool`-Property
-statt zur `internal func` aufloeste. Das gesamte `FitnessAppUITests`-Target
+statt zur `internal func` aufloeste. Das gesamte `DeltiqUITests`-Target
 baute deshalb nicht — Release-Gate komplett rot, 0 Tests gelaufen,
 einschliesslich der 979 Bestandstests. Log enthielt keine der Finding-1/2/3-
 Funktionsnamen und bestaetigt damit den Vor-Fix-Stand.

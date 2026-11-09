@@ -21,7 +21,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 CATALOG = REPO / "Sources" / "FitnessAppUI" / "Resources" / "Localizable.xcstrings"
 
-data = json.loads(CATALOG.read_text(encoding="utf-8"))
+data = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
 catalog_keys = set(data["strings"].keys())
 
 # Concatenate ALL Swift source code into one big text blob

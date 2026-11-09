@@ -39,7 +39,7 @@ Globale Sperren (gelten VOR jeder Einzel-Regel, nie uebersteuerbar):
 Substitutions-Paare. Die Vorgabe nennt 7 Kandidaten als Start-Set; dabei
 bleibt es bewusst, statt den Scope eigenstaendig zu erweitern.
 
-## 2. Architektur (Core, `FitnessAppCore/Programs/Substitution/`)
+## 2. Architektur (Core, `DeltiqCore/Programs/Substitution/`)
 
 - `PlanEquipmentChecker.fullReport(days:against:)` (NEU, additiv): liefert
   JEDE nicht-erfuellte Uebung mit Slot-Position, getrennt nach `missing`
@@ -206,7 +206,7 @@ gezeigt, NIE still uebergangen oder falsch ersetzt):
 
 **Tests, tatsaechlich ausgefuehrt (Linux).** Phase 5 fuegt 25 neue
 Core-Tests hinzu (`ExerciseSubstitutionEngineTests` 21, `PlanSelectionResolverTests`
-4) — Teil der 903 in `FitnessAppCoreTests` insgesamt ausgefuehrten Tests.
+4) — Teil der 903 in `DeltiqCoreTests` insgesamt ausgefuehrten Tests.
 Projekt gesamt: **944/944 gruen** (903 Core + 38 Health + 3 UI), per
 `swift test --parallel` auf Linux tatsaechlich gelaufen und verifiziert
 (zuletzt direkt vor diesem Commit erneut bestaetigt).
@@ -216,7 +216,7 @@ Projekt gesamt: **944/944 gruen** (903 Core + 38 Health + 3 UI), per
 19/20/24 sind reine UI-/Verhaltensfragen ohne sinnvollen SwiftData-Test;
 23 entfaellt, siehe Abschnitt 4: keine neuen Herkunfts-Felder). Zusammen mit
 den 3 Phase-4-Tests (`ProgramInstantiatorEquipmentTests`) liegen damit 7
-`FitnessAppDataTests` vor, die auf Linux kompilieren (`swift build
+`DeltiqDataTests` vor, die auf Linux kompilieren (`swift build
 --build-tests` erfolgreich) aber laut `swift test list` mit 0 Treffern NICHT
 discovered/ausgefuehrt werden (bekannte, seit Phase 4 dokumentierte
 SwiftData-Einschraenkung dieser Linux-Toolchain).
@@ -230,12 +230,12 @@ SubstitutionContext(...)` die Klassen-Property `context: ModelContext`
 desselben Namens — `ProgramInstantiator.instantiate(..., in: context, ...)`
 erhielt dadurch den falschen Typ. Gefixt (lokale Variable auf
 `substitutionContext` umbenannt). `grep -r "let context = " Tests/
-FitnessAppDataTests` bestaetigt: kein weiteres Vorkommen dieses Musters im
+DeltiqDataTests` bestaetigt: kein weiteres Vorkommen dieses Musters im
 Target.
 
 Grund, warum Linux das nie haette fangen koennen: `SwiftData` ist auf dieser
 Linux-Toolchain NICHT importierbar (`echo 'import SwiftData' | swift -`
-schlaegt mit "no such module" fehl) — jede `FitnessAppDataTests`-Datei steht
+schlaegt mit "no such module" fehl) — jede `DeltiqDataTests`-Datei steht
 komplett hinter `#if canImport(SwiftData)`, das hier `false` ist. "Kompiliert
 auf Linux" bedeutete fuer diese Dateien bisher NUR "parst als syntaktisch
 gueltiges Swift", NICHT "der Datei-Inhalt wurde typgeprueft" — der
@@ -248,12 +248,12 @@ die echten Signaturen verifiziert (`ProgramInstantiator.instantiate`,
 gegengeprueft, mehrere Konstruktions-Muster zusaetzlich 1:1 gegen bereits auf
 Linux ausgefuehrten Core-Code abgeglichen). Danach erneut `swift build
 --build-tests` + `swift test --parallel`: weiterhin 944/944 gruen.
-**Fuer kuenftige Phasen:** "FitnessAppDataTests kompiliert auf Linux" wird ab
+**Fuer kuenftige Phasen:** "DeltiqDataTests kompiliert auf Linux" wird ab
 jetzt NICHT mehr als Typpruefungs-Nachweis dargestellt — nur noch als
 Syntax-Check. Echte Typsicherheit fuer diese Dateien gibt es ausschliesslich
 durch einen echten Codemagic/Apple-Lauf.
 
-**Keine UI-Tests.** Es wurden fuer Phase 5 keine `FitnessAppUITests`
+**Keine UI-Tests.** Es wurden fuer Phase 5 keine `DeltiqUITests`
 ergaenzt — die neue Vorschau-/Freigabe-UI (`adaptedEquipmentBanner`,
 `DisclosureGroup`) wurde ausschliesslich durch Code-Review + die
 Core/Data-Tests der darunterliegenden Logik abgesichert, nicht durch einen
@@ -266,7 +266,7 @@ Pull Request fuer diesen Branch. Diese Session hat KEINE Sicht auf
 Codemagic-Build-/Test-Ergebnisse. Wie in jedem vorherigen Phasenbericht:
 Linux-kompilierter SwiftData-/SwiftUI-Code wird hier nicht als
 "Apple-getestet" dargestellt — die Phase-4- UND jetzt Phase-5-
-Apple-Validierung (echter `mac_mini_m2`-Build inkl. der 7 `FitnessAppDataTests`
+Apple-Validierung (echter `mac_mini_m2`-Build inkl. der 7 `DeltiqDataTests`
 und einer manuellen Pruefung der neuen UI) bleibt eine offene
 Release-Voraussetzung.
 

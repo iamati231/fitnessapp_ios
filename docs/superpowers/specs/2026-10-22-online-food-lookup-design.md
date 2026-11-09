@@ -25,12 +25,12 @@ Beide Wege erzeugen denselben Ergebnistyp (einen neuen, lokal
 gespeicherten `FoodCatalogEntry`) über denselben erweiterten Mechanismus
 — siehe "`FoodCatalogEntry` — additive Erweiterung" unten.
 
-Dieses Feature ist bewusst **unabhängig von `FitnessAppAI`/Foundation
+Dieses Feature ist bewusst **unabhängig von `DeltiqAI`/Foundation
 Models** (Tasks D-F dieses Repos): es braucht kein Apple-Intelligence-
 fähiges Gerät, funktioniert auf jedem iOS 17+-Gerät mit Internetzugang,
-und bricht — anders als `FitnessAppAI` — bewusst mit dem Grundsatz
+und bricht — anders als `DeltiqAI` — bewusst mit dem Grundsatz
 "KI ist strikt lokal", weshalb es eine eigene, klar abgegrenzte
-Netzwerk-Komponente bekommt statt in `FitnessAppAI` eingebaut zu werden.
+Netzwerk-Komponente bekommt statt in `DeltiqAI` eingebaut zu werden.
 
 ## Datenquelle: Open Food Facts
 
@@ -50,14 +50,14 @@ Netzwerk-Komponente bekommt statt in `FitnessAppAI` eingebaut zu werden.
 
 ## Architektur
 
-### Neues Modul: `FitnessAppFoodLookup`
+### Neues Modul: `DeltiqFoodLookup`
 
-Eigenständiges SPM-Target, analog zur Isolation von `FitnessAppAI`:
+Eigenständiges SPM-Target, analog zur Isolation von `DeltiqAI`:
 
-- Abhängigkeiten: nur `FitnessAppCore` (für `FoodCatalogItem`-ähnliche
-  Werttypen), **keine** Abhängigkeit zu `FitnessAppAI` und umgekehrt — die
+- Abhängigkeiten: nur `DeltiqCore` (für `FoodCatalogItem`-ähnliche
+  Werttypen), **keine** Abhängigkeit zu `DeltiqAI` und umgekehrt — die
   beiden Module bleiben vollständig getrennt, damit ein Reviewer an der
-  Modul-Struktur ablesen kann: genau `FitnessAppFoodLookup` darf
+  Modul-Struktur ablesen kann: genau `DeltiqFoodLookup` darf
   Netzwerkzugriffe machen, sonst niemand.
 - Nutzt `URLSession` (bisher **nirgendwo** im Repo verwendet — dies ist der
   erste Netzwerk-Code der ganzen App; App Transport Security/Info.plist
@@ -118,7 +118,7 @@ bereits seedierten Zeilen beim ersten Start nach dem Update automatisch
 Einträge mit `source != .seeded` (also `.onlineImported` UND
 `.userCreated`) gelten als **Nutzerdaten**, nicht als Katalogdaten:
 
-- `Sources/FitnessAppData/Export/UserDataWipe.swift`: `deleteSharedUserData`
+- `Sources/DeltiqData/Export/UserDataWipe.swift`: `deleteSharedUserData`
   löscht `FoodCatalogEntry`-Zeilen mit `source != .seeded` mit (die
   seedierten ~100 Einträge bleiben unberührt — kein globales Löschen aller
   `FoodCatalogEntry`).
@@ -131,7 +131,7 @@ Einträge mit `source != .seeded` (also `.onlineImported` UND
 
 ### Opt-in-Einstellung
 
-- Neuer Toggle in `Sources/FitnessAppUI/Settings/SettingsDataConnectionsView.swift`
+- Neuer Toggle in `Sources/DeltiqUI/Settings/SettingsDataConnectionsView.swift`
   (thematisch passend — bestehender `externalWorkoutImportEnabled`-Toggle
   ist das Vorbild für Stil/Persistenz-Pattern), Default **aus**.
 - Name/Copy z.B. "Online-Suche für unbekannte Lebensmittel" mit kurzem
@@ -143,7 +143,7 @@ Einträge mit `source != .seeded` (also `.onlineImported` UND
 ### Attribution
 
 Neuer kurzer Abschnitt, nach dem Vorbild von
-`Sources/FitnessAppUI/Settings/ExerciseMediaCreditsView.swift` (dort wird
+`Sources/DeltiqUI/Settings/ExerciseMediaCreditsView.swift` (dort wird
 bereits eine pflichtgemäße Attribution für die Übungs-GIFs gezeigt) — z.B.
 ergänzt in derselben oder einer benachbarten Credits-Ansicht: Open-Food-
 Facts-Namen, ODbL-Lizenzhinweis, Link zur Projektseite. Wird nur relevant
@@ -248,8 +248,8 @@ Lebensmittel anlegen kann.
 
 ## Global Constraints (dieses Feature)
 
-- Netzwerkzugriff NUR in `FitnessAppFoodLookup`, nie in `FitnessAppAI`,
-  `FitnessAppCore`, `FitnessAppData` oder UI-Code direkt. "Eigenes
+- Netzwerkzugriff NUR in `DeltiqFoodLookup`, nie in `DeltiqAI`,
+  `DeltiqCore`, `DeltiqData` oder UI-Code direkt. "Eigenes
   Lebensmittel anlegen" macht NIE einen Netzwerkzugriff — rein lokale
   SwiftData-Persistenz.
 - Netzwerkzugriff (Online-Suche) NUR nach explizitem Opt-in — Standard

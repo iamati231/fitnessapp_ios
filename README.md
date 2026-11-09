@@ -2,7 +2,7 @@
 
 iOS-App für **Krafttraining, Ausdauer und Körperwerte**: Trainingspläne planen, Workouts Satz für Satz protokollieren, Fortschritt auswerten, Körperzusammensetzung messen und berechnen – alles lokal auf dem Gerät.
 
-*Stand dieser Beschreibung: Oktober 2026 · Version 0.1.x (Beta, Verteilung über TestFlight)*
+*Stand dieser Beschreibung: November 2026 · Version 0.1.x (Beta, Verteilung über TestFlight)*
 
 ## Inhalt
 
@@ -21,11 +21,11 @@ iOS-App für **Krafttraining, Ausdauer und Körperwerte**: Trainingspläne plane
 
 ## 1. Was ist Deltiq?
 
-Deltiq begleitet dich von der Planung bis zur Auswertung: Du wählst oder baust einen Trainingsplan, führst das Training mit Satz-Logging, Pausen-Timer und Zeitformaten (AMRAP, EMOM, Auf Zeit, Zirkel) durch, siehst Rekorde, Trends und Coaching-Hinweise und behältst Gewicht, Körperfett und Wasserzufuhr im Blick. Die App braucht kein Konto und keinen Cloud-Dienst; der Quellcode enthält keine Netzwerkzugriffe.
+Deltiq begleitet dich von der Planung bis zur Auswertung: Du wählst oder baust einen Trainingsplan, führst das Training mit Satz-Logging, Pausen-Timer und Zeitformaten (AMRAP, EMOM, Auf Zeit, Zirkel) durch, siehst Rekorde, Trends und Coaching-Hinweise und behältst Gewicht, Körperfett und Wasserzufuhr im Blick. Die App braucht kein Konto und keinen Cloud-Dienst und ist lokal ausgerichtet; einzige Ausnahme ist die optionale Online-Lebensmittelsuche, die nach Aktivierung Suchanfragen per HTTPS an Open Food Facts sendet.
 
 | | |
 |---|---|
-| App-Name | **Deltiq** (Bundle-ID `com.atamya.FitnessApp`) |
+| App-Name | **Deltiq** (Bundle-ID `com.atamya.Deltiq`) |
 | Plattform | iOS 17.0 oder neuer · iPhone (nur Hochformat) und iPad |
 | Sprachen | Deutsch, Englisch, Türkisch (folgt der iOS-Systemsprache) |
 | Technik | SwiftUI, SwiftData, HealthKit, ActivityKit, WidgetKit |
@@ -42,7 +42,7 @@ Entstanden ist das Projekt als iOS-Port einer Android-Fitness-App. Die Berechnun
 | 20 | kuratierte Programm-Vorlagen (Ganzkörper, Push-Pull-Legs, Upper/Lower, Powerlifting, Hybrid Athlete, CrossFit, Kettlebell …) |
 | 186 | Übungen in der System-Bibliothek, dazu eigene Übungen |
 | 4 | Zeitformate: AMRAP, EMOM, Auf Zeit, Zirkel |
-| 12 | Dashboard-Widgets (frei ein-/ausblendbar und sortierbar) |
+| 13 | Dashboard-Widgets (frei ein-/ausblendbar und sortierbar) |
 | 3 | Sprachen mit 1806 Texten (DE, EN, TR jeweils vollständig) |
 
 **Was die App kann**
@@ -137,24 +137,25 @@ Möglich im Onboarding, in der Messung, über die gesperrten Dashboard-Karten (R
 
 **Nicht abschaltbar:** die Kachel *Aktuelles Training fortsetzen* (erscheint bei einer offenen Session, die die Plan-Karte nicht abdeckt, z. B. einem spontanen Training) und die *Lauf-Machbarkeitskarte* (nur wenn Lauf-Coaching aktiv ist, siehe [5.5](#55-progression-deload-und-lauf-coaching)).
 
-**Die 12 Widgets** (Vorgabe: alle an, in dieser Reihenfolge):
+**Die 13 Widgets** (Vorgabe: alle an, in dieser Reihenfolge):
 
 | Widget | Inhalt |
 |---|---|
-| **Nächstes Training** | Plan-Tag der Rotation mit bis zu 3 Übungen; Buttons „Direkt starten“ / „Laufendes Training fortsetzen“. An Ruhetagen: „Heute ist Ruhetag“, „Spontanes Training starten“, „Tag im Plan abhaken“. Link „Vom Plan abweichen – Spontanes Training“ (Sätze & Wdh., AMRAP 15 Min., EMOM 12 Min., Auf Zeit, Zirkel 5 Runden/90 s). |
+| **Nächstes Training** | Plan-Tag der Rotation mit bis zu 3 Übungen; Buttons „Direkt starten” / „Laufendes Training fortsetzen”. An Ruhetagen: „Heute ist Ruhetag”, „Spontanes Training starten”, „Tag im Plan abhaken”. Link „Vom Plan abweichen – Spontanes Training” (Sätze & Wdh., AMRAP 15 Min., EMOM 12 Min., Auf Zeit, Zirkel 5 Runden/90 s). |
 | **Coaching-Insight** | ein Hinweis aus der Coaching-Kette (siehe unten); bei aktiver Deload-Woche ersetzt ein Banner die Karte. |
+| **Trainings-Kalender** | Monatsraster, Trainingstage orange; Tippen öffnet die Einheiten des Tages. |
 | **Diese Woche** | Volumen (kg) und Distanz (km) der Kalenderwoche. |
 | **Muskel-Heatmap** | Sätze pro Woche für 10 Muskelgruppen: Untrainiert (0), Erhalt (1–8), Optimal (9–18), Übervolumen (>18). |
-| **Trainings-Kalender** | Monatsraster, Trainingstage orange; Tippen öffnet die Einheiten des Tages. |
 | **Rekorde (Trophy Room)** | Anzahl und letzter Rekord → Rekord-Historie. |
-| **Trainingsverlauf** | Anzahl und letztes Training → Verlauf. |
-| **Gewichts-Trend** | Chart aller Messungen, gestrichelte Prognose „4 / 8 W.“ (ab 3 Messungen), grüne Ziellinie bei gesetztem Zielgewicht. Schwanken die Werte stark (Standardabweichung > 2 kg), entfällt die Prognose. |
+| **Ernährung** | Tagesübersicht-Teaser mit Kalorien und Makros; Button „Mahlzeit hinzufügen”. |
+| **Gewichts-Trend** | Chart aller Messungen, gestrichelte Prognose „4 / 8 W.” (ab 3 Messungen), grüne Ziellinie bei gesetztem Zielgewicht. Schwanken die Werte stark (Standardabweichung > 2 kg), entfällt die Prognose. |
 | **Compound-Lift-Trend** | geschätztes 1RM für Kniebeuge, Bankdrücken, Kreuzheben, Schulterdrücken (stehend), Rudern vorgebeugt; ab 2 Einheiten je Lift; Filter 1M/3M/Max; gestrichelte 4-Wochen-Prognose. |
 | **Volumen-Trend** | Wochenvolumen (nur Kraft) als Balken; Filter 1M/3M/Max. |
-| **Cardio-Pace-Trend** | Pace je Übung und Gerät („min/km, niedriger = besser“); nur mit mindestens zwei Cardio-Einheiten. |
-| **Letzte Trainings** | die 5 jüngsten Einheiten, „Alle anzeigen“. |
+| **Cardio-Pace-Trend** | Pace je Übung und Gerät („min/km, niedriger = besser”); nur mit mindestens zwei Cardio-Einheiten. |
+| **Trainingsverlauf** | Anzahl und letztes Training → Verlauf. |
+| **Letzte Trainings** | die 5 jüngsten Einheiten, „Alle anzeigen”. |
 
-**Dashboard anpassen:** *Mehr → Einstellungen → Präferenzen → Dashboard anpassen* – bis zu 3 Hero-Karten wählen, Widgets ein-/ausblenden und umsortieren. (Sind „Rekorde“ und „Trainingsverlauf“ ausgeblendet, fehlt der direkte Zugang zu diesen Screens.)
+**Dashboard anpassen:** *Mehr → Einstellungen → Erscheinungsbild → Dashboard anpassen* – bis zu 3 Hero-Karten wählen, Widgets ein-/ausblenden und umsortieren. (Sind „Rekorde“ und „Trainingsverlauf“ ausgeblendet, fehlt der direkte Zugang zu diesen Screens.)
 
 **Coaching-Hinweise:** Die Karte zeigt immer höchstens einen Hinweis; der erste zutreffende der Kette gewinnt. Wortlaut und Tonalität hängen von deinem **Coach-Ton** (Analytisch, Motivierend, Streng) und teils vom **Trainingsziel** ab.
 
@@ -326,8 +327,8 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 | Bereich | Inhalt |
 |---|---|
 | **Profil & Ziele** | Zeile mit Geschlecht/Alter/Größe/Ziel → **Profil bearbeiten** (siehe unten) |
-| **Präferenzen** | *Einheiten* (Metrisch/Imperial); *Übungen* (Bibliothek); *Ausrüstung & Schuhe* (Gear); *Dashboard anpassen* |
-| **Erscheinungsbild** | System · Hell · Dunkel (System) |
+| **Präferenzen** | *Einheiten* (Metrisch/Imperial); *Übungen* (Bibliothek); *Ausrüstung & Schuhe* (Gear) |
+| **Erscheinungsbild** | *Dashboard anpassen*; System · Hell · Dunkel (System) |
 | **Pausen-Timer-Feedback** | Ton abspielen (an), Vibrieren (an), Im Hintergrund weiterlaufen (an; Zeitformate bei gesperrtem Bildschirm), PR-Feiern (an), Vorlauf vor dem Start: Aus/5/10/15 s (10) |
 | **Trainings-Verhalten** | Warmup & Cooldown anzeigen (an), RIR-Hilfstexte anzeigen (an), Deload-Vorschläge (an), „Gesenkte Gewichte zurücksetzen (N Übungen)“ |
 | **Erinnerungen** | Wasser erinnern (an) + Häufigkeit: jede Stunde / alle 2 / 3 (Vorgabe) / 4 Stunden; Messung erinnern (an) + Wochentag (Sonntag) + Uhrzeit 6–22 Uhr (8 Uhr) |
@@ -359,7 +360,7 @@ Gemeinsam: Vorlauf-Countdown (*Einstellungen → Pausen-Timer-Feedback → Vorla
 - **Krafttraining schreiben** (Vorgabe: an): Kraft-Einheiten und die Zeitformate AMRAP, EMOM, Auf Zeit und Zirkel werden als *Krafttraining* gespeichert (indoor; Sätze und Volumen nur, wenn geloggt, dazu die Übungsnamen – siehe unten). Ein Zeitformat-Tag, der nur aus Cardio-Übungen besteht (z. B. Lauf-/Rad-Intervalle, Rudern), zählt zu *Cardio* (als gemischtes Cardio ohne Distanz).
 - **Cardio schreiben** (Vorgabe: aus): Laufen, Radfahren, Gehen und gemischtes Cardio, die du in Deltiq selbst erfasst. Aus bleibt es für alle, deren Läufe schon eine andere App (z. B. Adidas Running) nach Health schreibt. Die Art wird aus den Einträgen abgeleitet (Ausrüstung vor Namen; Laufband = indoor), eine Distanz bekommen nur Laufen und Gehen.
 - Geschrieben werden Start, Dauer, Art und die Zusatzfelder unten – **keine Kalorien und kein Puls** (Deltiq erfindet keine Gesundheitsdaten). Die Dauer ist die der Einheit in Deltiq; bei nachgetragenem Krafttraining ist sie eine Schätzung aus der Satzzahl (siehe [5.3](#53-training-durchführen)) und geht so nach Health – ohne Kennzeichnung. Bei einem einzelnen Lauf geht seine Laufzeit auf die Sekunde nach Health (4,51 km in 25:56 ergeben 25:56, nicht 25:00), auch bei alten Einheiten, deren Beginn und Ende nicht dazu passen: Der Eintrag beginnt zum Beginn der Einheit und dauert so lang wie der Lauf. Aus anderen Apps importierte Einheiten werden **nie** zurückgeschrieben. Trainings unter einer Minute, über sechs Stunden, in der Zukunft oder ohne Einträge werden nicht geschrieben.
-- **Zusatzfelder in den Eintragsdetails von Health:** Health zeigt eigene Felder unter ihrem Schlüssel wörtlich an, deshalb heißen sie kurz und lesbar – in der App-Sprache zum Zeitpunkt des Schreibens (Deutsch: *Übungen*, *Sätze*, *Volumen (kg)*, *Distanz (km)*, *Ø Pace (min/km)*; Englisch: *Exercises*, *Sets*, *Volume (kg)*, *Distance (km)*, *Avg. pace (min/km)*) – und die Zahlen sind gerundet, weil Health sie roh druckt. *Sätze* nur, wenn Sätze geloggt wurden, und *Volumen (kg)* nur bei einem Volumen über 0 (ein Zeitformat zeigt kein „0 Sätze“, eine reine Körpergewichts-Einheit hat Sätze, aber kein Volumen), bei jedem Cardio mit km *Distanz (km)* (auf Meter) und bei Laufen und Gehen zusätzlich *Ø Pace (min/km)* auf **zwei Nachkommastellen** in Dezimalminuten (5.75 sind 5:45 /km), bei Krafttraining *Übungen*: die **Namen der Übungen** ohne Sätze, Wiederholungen und Gewichte, in der Reihenfolge, in der sie gemacht wurden („Bankdrücken, Kniebeuge, Rudern“); bei Zeitformaten die Arbeits-Übungen des Tages, sofern er noch existiert. Eine sehr lange Liste endet mit „+N“ (höchstens 240 Byte). Die Zusatzfelder sind ein Bonus: Scheitert das Schreiben mit ihnen (HealthKit nennt weder Grenzen für Text noch Regeln für eigene Schlüssel), wird das Training einmal ohne sie geschrieben – mit Typ, Zeit, Indoor-Angabe und ggf. Distanz. Das gilt nur bei einer Ablehnung oder einem allgemeinen Speicherfehler (nicht bei fehlender Berechtigung oder gesperrtem Gerät) und bei Läufen mit Distanz nur, solange noch kein Distanz-Sample geschrieben war. Schon geschriebene Einträge behalten ihre alten Felder (früher mit dem Paketnamen `com.atamya.FitnessApp.…` als Beschriftung): in Health löschen und „Neu mit Health abgleichen“.
+- **Zusatzfelder in den Eintragsdetails von Health:** Health zeigt eigene Felder unter ihrem Schlüssel wörtlich an, deshalb heißen sie kurz und lesbar – in der App-Sprache zum Zeitpunkt des Schreibens (Deutsch: *Übungen*, *Sätze*, *Volumen (kg)*, *Distanz (km)*, *Ø Pace (min/km)*; Englisch: *Exercises*, *Sets*, *Volume (kg)*, *Distance (km)*, *Avg. pace (min/km)*) – und die Zahlen sind gerundet, weil Health sie roh druckt. *Sätze* nur, wenn Sätze geloggt wurden, und *Volumen (kg)* nur bei einem Volumen über 0 (ein Zeitformat zeigt kein „0 Sätze“, eine reine Körpergewichts-Einheit hat Sätze, aber kein Volumen), bei jedem Cardio mit km *Distanz (km)* (auf Meter) und bei Laufen und Gehen zusätzlich *Ø Pace (min/km)* auf **zwei Nachkommastellen** in Dezimalminuten (5.75 sind 5:45 /km), bei Krafttraining *Übungen*: die **Namen der Übungen** ohne Sätze, Wiederholungen und Gewichte, in der Reihenfolge, in der sie gemacht wurden („Bankdrücken, Kniebeuge, Rudern“); bei Zeitformaten die Arbeits-Übungen des Tages, sofern er noch existiert. Eine sehr lange Liste endet mit „+N“ (höchstens 240 Byte). Die Zusatzfelder sind ein Bonus: Scheitert das Schreiben mit ihnen (HealthKit nennt weder Grenzen für Text noch Regeln für eigene Schlüssel), wird das Training einmal ohne sie geschrieben – mit Typ, Zeit, Indoor-Angabe und ggf. Distanz. Das gilt nur bei einer Ablehnung oder einem allgemeinen Speicherfehler (nicht bei fehlender Berechtigung oder gesperrtem Gerät) und bei Läufen mit Distanz nur, solange noch kein Distanz-Sample geschrieben war. Schon geschriebene Einträge behalten ihre alten Felder (früher mit dem Paketnamen `com.atamya.Deltiq.…` als Beschriftung): in Health löschen und „Neu mit Health abgleichen“.
 - **Frühere Trainings:** „Trainings prüfen“ zeigt zuerst eine Vorschau (wie viele würden geschrieben, wie viele stehen schon in Health, wie viele sind nicht exportierbar); erst nach der Bestätigung wird geschrieben, neueste zuerst, mit Fortschritt und Abbruch. Die Vorschau verfällt, wenn du die App verlässt oder den Bildschirm schließt. Enthält der Export Läufe mit Distanz, fragt Deltiq vor dem Schreiben die Distanz-Freigabe an (nur, wenn sie noch offen ist) – später lässt sich kein Distanz-Sample mehr nachtragen, weil die Trainings dann als behandelt gelten. Der Export ist wiederholbar: Was in Health schon steht, wird erkannt und übersprungen. Der Abgleich sieht fremde Trainings nur mit Leseerlaubnis – ohne sie warnt der Bildschirm vor möglichen Doppelten.
 - Der Export-Merker („behandelt“) liegt nur auf dem Gerät und gehört nicht zum CSV-Export. Er ist maßgeblich: Ein markiertes Training wird nie wieder exportiert, auch wenn du den Eintrag später in Health löschst – dann meldet der Bildschirm „Nichts zu exportieren“. Den Ausweg bietet **„Neu mit Health abgleichen“** (sichtbar, solange Trainings als gesendet gelten; dazu steht dort, wie viele): Deltiq vergisst den Merker und prüft alle Trainings neu – was Deltiq in Health noch findet (eigene Einträge immer, Trainings anderer Apps oder Uhren nur mit Leseerlaubnis), wird nicht doppelt geschrieben, was fehlt, zeigt die Vorschau zum erneuten Senden (geschrieben wird erst nach der Bestätigung). Ein verlorener Merker (Zurücksetzen, Backup-Wiederherstellung) führt über den Abgleich mit Health nicht zu Doppelten. Direkt nach dem Beenden geschriebene Trainings bekommen den Merker sofort; ändert man Beginn oder Dauer danach im Verlauf, bleibt der alte Health-Eintrag bestehen und es entsteht kein zweiter.
 
@@ -401,9 +402,9 @@ Die Erinnerungen werden nach dem Onboarding, nach Imports und Backup-Wiederherst
 
 ### 5.12 Sprache, Design und Datenschutz
 
-- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1806 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/FitnessApp/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Rest-Timer-Live-Activity (die Live Activity der Zeitformate folgt der App-Sprache), einige Hinweis- und Fehlermeldungen.
+- **Sprachen:** Deutsch, Englisch, Türkisch – die App folgt der iOS-Systemsprache (kein In-App-Wechsel). Der Katalog enthält 1806 Texte, alle in drei Sprachen vollständig; die Texte der Apple-Health-Berechtigungsdialoge stehen getrennt in `App/Deltiq/InfoPlist.xcstrings` (ebenfalls DE/EN/TR). Nur auf Deutsch (nicht lokalisiert): Wasser-/Mess-Erinnerungstexte, Widget und Rest-Timer-Live-Activity (die Live Activity der Zeitformate folgt der App-Sprache), einige Hinweis- und Fehlermeldungen.
 - **Design:** Akzentfarbe Orange; Erscheinungsbild System, Hell oder Dunkel.
-- **Datenschutz:** alle Daten bleiben lokal. Die App fragt **keinen** Zugriff auf Kamera, Fotos, Standort oder Mikrofon an und nutzt kein Netzwerk. Berechtigungen im Überblick: [6.2](#62-voraussetzungen-und-berechtigungen).
+- **Datenschutz:** alle Daten bleiben lokal. Die App fragt **keinen** Zugriff auf Kamera, Fotos, Standort oder Mikrofon an und braucht standardmäßig kein Netzwerk; nur die optionale Online-Lebensmittelsuche (Einstellungen → Verbindungen) sendet nach Aktivierung Suchanfragen an Open Food Facts. Berechtigungen im Überblick: [6.2](#62-voraussetzungen-und-berechtigungen).
 
 ---
 
@@ -432,7 +433,7 @@ Hinweise: Für *interne* Tester verlangt Apple einen Eintrag im App-Store-Connec
 | Apple Health – Trainings lesen | gehört zum Verbinden-Dialog (zusammen mit dem Schreiben); beim Einschalten von *Workout-Import* nur, wenn iOS „Trainings“ noch nicht gefragt hat | Läufe/Radfahrten anderer Apps importieren; Doppelte beim Export vermeiden |
 | Live Activities | in den iOS-Einstellungen | Pausen-Timer auf Sperrbildschirm/Dynamic Island |
 
-Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder Netzwerk.
+Keine Berechtigung benötigt die App für Kamera, Fotos, Standort oder Mikrofon. Netzwerk braucht nur die optionale, standardmäßig deaktivierte Online-Lebensmittelsuche (Einstellungen → Verbindungen) – ohne OS-Berechtigungsdialog, da HTTPS-Anfragen auf iOS keine gesonderte Freigabe erfordern.
 
 ### 6.3 Was es zu testen gibt – Checkliste
 
@@ -495,7 +496,7 @@ Keine Berechtigung benötigt die App für Kamera, Fotos, Standort, Mikrofon oder
 - [ ] Export früherer Trainings mit Läufen ohne Distanz-Freigabe (*Cardio schreiben* aus): in der Vorschau Cardio zuschalten, bestätigen → die Distanz-Abfrage erscheint vor dem Schreiben; bei Ablehnung steht „ohne Distanz gespeichert“ im Ergebnis
 - [ ] Training beenden, danach im Verlauf die Dauer deutlich verlängern (oder den Beginn um einen Tag zurücksetzen) → Export prüfen: kein zweiter Health-Eintrag
 - [ ] Export früherer Trainings: „Trainings prüfen“ → Vorschau stimmt (direkt beim Beenden bestätigt geschriebene Einheiten tragen schon den Merker und erscheinen gar nicht; „Schon in Health erkannt“ zählt Trainings ohne Merker, die in Health stehen, z. B. von anderer App/Uhr), schreiben, Ergebnis; Export direkt wiederholen → nichts Neues, keine Doppelten; Abbrechen mitten drin → beim nächsten Mal geht es weiter
-- [ ] Health-Details eines neu geschriebenen Trainings: Krafttraining zeigt *Übungen* mit den Übungsnamen in der gemachten Reihenfolge (ohne Sätze/Gewichte), ein AMRAP/EMOM/Zirkel die Übungen des Tages und kein „Sätze 0“; die Beschriftungen sind kurze Texte statt `com.atamya.FitnessApp.…` und folgen der App-Sprache (Test in Deutsch und Englisch); ein Lauf zeigt *Ø Pace (min/km)* mit höchstens zwei Nachkommastellen (z. B. 5.75) und *Distanz (km)* ohne Rechenrauschen; ein Training mit sehr vielen Übungen endet die Liste mit „+N“
+- [ ] Health-Details eines neu geschriebenen Trainings: Krafttraining zeigt *Übungen* mit den Übungsnamen in der gemachten Reihenfolge (ohne Sätze/Gewichte), ein AMRAP/EMOM/Zirkel die Übungen des Tages und kein „Sätze 0“; die Beschriftungen sind kurze Texte statt `com.atamya.Deltiq.…` und folgen der App-Sprache (Test in Deutsch und Englisch); ein Lauf zeigt *Ø Pace (min/km)* mit höchstens zwei Nachkommastellen (z. B. 5.75) und *Distanz (km)* ohne Rechenrauschen; ein Training mit sehr vielen Übungen endet die Liste mit „+N“
 - [ ] Alles in Health löschen (Health → Profil → Apps → Deltiq → „Alle Daten löschen“, oder nur einzelne Trainings), danach „Trainings prüfen“ → „Nichts zu exportieren“, darunter „N Trainings gelten als schon an Health gesendet …“ und „Neu mit Health abgleichen“; antippen → Vorschau mit den fehlenden Trainings, schreiben → sie stehen wieder in Health; die neu geschriebenen Läufe haben in Health ihre genaue Laufzeit (z. B. 25:56, nicht 1 Min und nicht 25:00); ohne vorheriges Löschen in Health → alle „Schon in Health“, nichts doppelt (Leseerlaubnis vorausgesetzt); aus Health importierte Einheiten (Adidas Running …) werden nicht mitgezählt und nie zurückgeschrieben
 - [ ] Export mit Trainings einer anderen App/Uhr im selben Zeitraum: mit Leseerlaubnis keine Doppelten; ohne Leseerlaubnis erscheint die Warnung
 - [ ] Hantel-, 1RM-, Kalorien-Rechner mit den Referenzwerten unten
@@ -586,25 +587,25 @@ fitnessapp_ios/
 |-- Package.swift                # Swift Package (iOS 17+, macOS 14+), Abhängigkeit: ZIPFoundation
 |-- codemagic.yaml               # CI: swift-package, ios-app, testflight
 |-- App/
-|   |-- FitnessApp/              # App-Einstieg, AppDelegate, Info.plist (+ InfoPlist.xcstrings), Entitlements, Assets
-|   `-- FitnessAppWidgets/       # Wasser-Widget + Live Activities (Rest-Timer, Zeitformate)
+|   |-- Deltiq/              # App-Einstieg, AppDelegate, Info.plist (+ InfoPlist.xcstrings), Entitlements, Assets
+|   `-- DeltiqWidgets/       # Wasser-Widget + Live Activities (Rest-Timer, Zeitformate)
 |-- Sources/
-|   |-- FitnessAppCore/          # reine Logik (nur Foundation): Analytics, Programs (Vorlagen,
+|   |-- DeltiqCore/          # reine Logik (nur Foundation): Analytics, Programs (Vorlagen,
 |   |                            #   Bibliothek, Plan-Generator), Records, BodyComposition,
 |   |                            #   Exercises, Progression, Nutrition, Coaching, DataPortability
-|   |-- FitnessAppData/          # SwiftData-Modelle, Export/Import/Backup, SharedStore (App Group)
-|   |-- FitnessAppHealth/        # HealthKit-Service + plattformneutraler Controller
-|   |-- FitnessAppActivities/    # ActivityKit (Rest-Timer, Zeitformate), Erinnerungen, Deep-Links, Notification-Routing
-|   `-- FitnessAppUI/            # alle SwiftUI-Views, Theme, Lokalisierung (Localizable.xcstrings)
+|   |-- DeltiqData/          # SwiftData-Modelle, Export/Import/Backup, SharedStore (App Group)
+|   |-- DeltiqHealth/        # HealthKit-Service + plattformneutraler Controller
+|   |-- DeltiqActivities/    # ActivityKit (Rest-Timer, Zeitformate), Erinnerungen, Deep-Links, Notification-Routing
+|   `-- DeltiqUI/            # alle SwiftUI-Views, Theme, Lokalisierung (Localizable.xcstrings)
 |-- Tests/
-|   |-- FitnessAppCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 700 Tests)
-|   |-- FitnessAppDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 80 Tests)
-|   `-- FitnessAppHealthTests/   # Zustandslogik der Health-Berechtigungen, Health-Metadaten (ca. 35 Tests)
+|   |-- DeltiqCoreTests/     # Rechner, Analytik, Plan-Generator, CSV, Backup (ca. 700 Tests)
+|   |-- DeltiqDataTests/     # SwiftData in-memory, Export/Import-Roundtrip (ca. 80 Tests)
+|   `-- DeltiqHealthTests/   # Zustandslogik der Health-Berechtigungen, Health-Metadaten (ca. 35 Tests)
 |-- .claude/                     # Claude-Code-Subagents (14 Agents aus „agency-agents“, MIT) + Herkunftshinweis
 `-- .scripts/                    # Python-Werkzeuge für den String-Katalog, Kopierskript für die Agents
 ```
 
-Modul-Abhängigkeiten: `FitnessAppData → FitnessAppCore`; `FitnessAppActivities → FitnessAppCore` (die Live Activity der Zeitformate trägt `TimedLiveContent`); `FitnessAppUI` hängt von allen vier anderen ab; `FitnessAppHealth` ist eigenständig. Alle SwiftUI-/SwiftData-Dateien sind mit `#if canImport(...)` gekapselt, damit `FitnessAppCore` überall kompiliert.
+Modul-Abhängigkeiten: `DeltiqData → DeltiqCore`; `DeltiqActivities → DeltiqCore` (die Live Activity der Zeitformate trägt `TimedLiveContent`); `DeltiqUI` hängt von allen vier anderen ab; `DeltiqHealth` ist eigenständig. Alle SwiftUI-/SwiftData-Dateien sind mit `#if canImport(...)` gekapselt, damit `DeltiqCore` überall kompiliert.
 
 ### 8.2 Architektur-Invarianten
 
@@ -624,13 +625,13 @@ swift test --parallel            # wie in der CI
 # App-Target (macOS mit Xcode):
 brew install xcodegen
 xcodegen generate
-xcodebuild -project FitnessApp.xcodeproj -scheme FitnessApp \
+xcodebuild -project Deltiq.xcodeproj -scheme Deltiq \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
 - `DEVELOPMENT_TEAM` ist leer – das ergibt Simulator-Builds ohne Signing; Signing und Versionsnummern setzt die CI.
 - `STRING_CATALOG_GENERATE_SYMBOLS: NO` ist in `project.yml` gesetzt, weil der Symbol-Generator von Xcode 26.4.1 am Katalog scheitert.
-- Es gibt keine UI- oder Activities-Tests; Logik, die testbar sein soll, gehört nach `FitnessAppCore`. Für Health gibt es nur Tests der plattformneutralen Logik (Zustand der Berechtigungen, Metadaten; `FitnessAppHealthTests`); das Verhalten von HealthKit selbst lässt sich nur auf dem Gerät prüfen.
+- Es gibt keine UI- oder Activities-Tests; Logik, die testbar sein soll, gehört nach `DeltiqCore`. Für Health gibt es nur Tests der plattformneutralen Logik (Zustand der Berechtigungen, Metadaten; `DeltiqHealthTests`); das Verhalten von HealthKit selbst lässt sich nur auf dem Gerät prüfen.
 - Entwickelt wird ohne lokalen Mac (Windows + Codemagic); `swift test` läuft auf macOS und Linux (auf Linux nur der Core- und der Health-Teil).
 
 ### 8.4 CI und Release
@@ -649,7 +650,7 @@ Einrichtung des TestFlight-Flows: [`TestFlightSetup.md`](./TestFlightSetup.md). 
 
 Ausführlich in [`CONTRIBUTING.md`](./CONTRIBUTING.md). Kurzfassung:
 
-- **String-Katalog** (`Sources/FitnessAppUI/Resources/Localizable.xcstrings`) ist die einzige Quelle für App-Texte; DE, EN und TR immer vollständig (Ausnahme: die Berechtigungstexte in `App/FitnessApp/InfoPlist.xcstrings`, Fallback = englischer Info.plist-Wert). Keys: `domain.subdomain.purpose` mit camelCase-Suffix (keine Parent-Leaf-Kollisionen); Plural über `.one`/`.other`-Keys statt `variations`; mehrere Format-Argumente positional (`%1$@`).
+- **String-Katalog** (`Sources/DeltiqUI/Resources/Localizable.xcstrings`) ist die einzige Quelle für App-Texte; DE, EN und TR immer vollständig (Ausnahme: die Berechtigungstexte in `App/Deltiq/InfoPlist.xcstrings`, Fallback = englischer Info.plist-Wert). Keys: `domain.subdomain.purpose` mit camelCase-Suffix (keine Parent-Leaf-Kollisionen); Plural über `.one`/`.other`-Keys statt `variations`; mehrere Format-Argumente positional (`%1$@`).
 - Nach Refactors `python .scripts/dead_catalog_v3.py` (Ziel `UNUSED: 0`) und `python .scripts/generate_translations_md.py` – im selben Commit wie die Änderung.
 - Neue Binärformate zuerst in `.gitattributes` eintragen.
 - Commit-Prefix `DEL-…` oder `UX-…` mit kurzer Beschreibung.
