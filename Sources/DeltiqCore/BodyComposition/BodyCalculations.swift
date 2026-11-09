@@ -136,7 +136,8 @@ public enum BodyCalculations {
         let firstDate = points.first!.date
         let lastDate = points.last!.date
         let spanWeeks = lastDate.timeIntervalSince(firstDate) / secondsPerWeek
-        guard spanWeeks >= 1.0 / 7.0 else { return nil }
+        // shortcut: requires 3 weeks of spread; daily weigh-ins over <3w produce unreliable 4-8w projections
+        guard spanWeeks >= 3.0 else { return nil }
 
         let xValues = points.map { $0.date.timeIntervalSince(firstDate) / secondsPerWeek }
         let yValues = points.map { $0.weightKg }
