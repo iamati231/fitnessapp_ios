@@ -3,6 +3,8 @@ import WidgetKit
 import SwiftUI
 import DeltiqActivities
 
+private let deltiqOrange = Color(red: 1.0, green: 159 / 255, blue: 10 / 255)
+
 /// Live Activity for the in-workout rest timer.
 ///
 /// Renders three surfaces driven by the same `RestTimerAttributes` declared in
@@ -45,7 +47,7 @@ struct RestTimerLiveActivity: Widget {
                     } else {
                         Text(context.state.isFinished ? context.state.texts.pauseOver : context.state.texts.pauseRunning)
                             .font(.caption)
-                            .foregroundStyle(context.state.isFinished ? .green : .cyan)
+                            .foregroundStyle(context.state.isFinished ? .green : deltiqOrange)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
@@ -55,16 +57,22 @@ struct RestTimerLiveActivity: Widget {
                             .foregroundStyle(.yellow)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
+                    } else if context.state.isFinished {
+                        Text("0:00")
+                            .font(.system(size: 36, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.green)
+                            .multilineTextAlignment(.center)
                     } else {
                         Text(timerInterval: Date()...context.state.endDate, countsDown: true)
                             .font(.system(size: 36, weight: .bold, design: .monospaced))
-                            .foregroundStyle(context.state.isFinished ? .green : .cyan)
+                            .foregroundStyle(deltiqOrange)
                             .multilineTextAlignment(.center)
                     }
                 }
             } compactLeading: {
-                Image(systemName: context.state.prMessage != nil ? "trophy.fill" : "timer")
-                    .foregroundStyle(context.state.prMessage != nil ? .yellow : .cyan)
+                let isPR = context.state.prMessage != nil
+                Image(systemName: isPR ? "trophy.fill" : (context.state.isFinished ? "checkmark.circle.fill" : "timer"))
+                    .foregroundStyle(isPR ? .yellow : (context.state.isFinished ? Color.green : deltiqOrange))
             } compactTrailing: {
                 if let prMessage = context.state.prMessage {
                     Text(prMessage)
@@ -72,19 +80,24 @@ struct RestTimerLiveActivity: Widget {
                         .foregroundStyle(.yellow)
                         .lineLimit(1)
                         .frame(maxWidth: 120)
+                } else if context.state.isFinished {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.green)
+                        .frame(width: 44)
                 } else {
                     Text(timerInterval: Date()...context.state.endDate, countsDown: true)
                         .monospacedDigit()
                         .frame(width: 44)            // verhindert Wackeln beim Sekundenwechsel
                 }
             } minimal: {
-                Image(systemName: context.state.prMessage != nil ? "trophy.fill" : "timer")
-                    .foregroundStyle(context.state.prMessage != nil ? .yellow : .cyan)
+                let isPR = context.state.prMessage != nil
+                Image(systemName: isPR ? "trophy.fill" : (context.state.isFinished ? "checkmark.circle.fill" : "timer"))
+                    .foregroundStyle(isPR ? .yellow : (context.state.isFinished ? Color.green : deltiqOrange))
             }
             // Tap → opens the app at fitnessapp://workout/active.
             // Custom URL scheme is registered in App/Deltiq/Info.plist.
             .widgetURL(DeltiqDeepLink.activeWorkout)
-            .keylineTint(context.state.prMessage != nil ? .yellow : .cyan)
+            .keylineTint(context.state.prMessage != nil ? .yellow : deltiqOrange)
         }
     }
 }
@@ -159,16 +172,27 @@ private struct LockScreenTimerView: View {
                 Text(context.state.isFinished ? context.state.texts.pauseOver : context.state.texts.pauseRunning)
                     .font(.subheadline)
                 Spacer()
-                Text(timerInterval: Date()...context.state.endDate, countsDown: true)
-                    .font(.system(.title, design: .monospaced, weight: .bold))
-                    .foregroundStyle(context.state.isFinished ? .green : .cyan)
+                if context.state.isFinished {
+                    Text("0:00")
+                        .font(.system(.title, design: .monospaced, weight: .bold))
+                        .foregroundStyle(Color.green)
+                } else {
+                    Text(timerInterval: Date()...context.state.endDate, countsDown: true)
+                        .font(.system(.title, design: .monospaced, weight: .bold))
+                        .foregroundStyle(deltiqOrange)
+                }
             }
 
-            ProgressView(
-                timerInterval: Date()...context.state.endDate,
-                countsDown: true
-            )
-            .tint(context.state.isFinished ? .green : .cyan)
+            if context.state.isFinished {
+                ProgressView(value: 1.0)
+                    .tint(Color.green)
+            } else {
+                ProgressView(
+                    timerInterval: Date()...context.state.endDate,
+                    countsDown: true
+                )
+                .tint(deltiqOrange)
+            }
         }
         .padding()
         .activityBackgroundTint(Color.black.opacity(0.85))

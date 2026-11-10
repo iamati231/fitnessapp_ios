@@ -187,7 +187,7 @@ public struct SettingsView: View {
             NavigationLink(value: ProgressRoute.overview) {
                 DeltiqRow(
                     icon: "ruler",
-                    label: String(localized: "settings.group.progress", bundle: .module),
+                    label: String(localized: "settings.progress.overview.label", bundle: .module),
                     showsChevron: true
                 )
             }

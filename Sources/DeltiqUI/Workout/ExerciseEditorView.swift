@@ -267,6 +267,10 @@ public struct ExerciseEditorView: View {
             }
             .listRowSeparatorTint(Color.Deltiq.divider)
 
+            if !exercise.isCardio, let steps = instructionSteps {
+                instructionsSection(steps)
+            }
+
             // DEL-160: Loeschen nur fuer Custom-Uebungen. System-Library-
             // Eintraege duerfen nicht entfernt werden.
             if isCustomExercise {
@@ -651,6 +655,33 @@ public struct ExerciseEditorView: View {
             get: { ProgressionStep(closestTo: exercise.progressionStep) },
             set: { exercise.progressionStep = $0.rawValue }
         )
+    }
+
+    // MARK: - Ausführung
+
+    private var instructionSteps: ExerciseInstructionsProvider.Steps? {
+        ExerciseInstructionsProvider.steps(for: ExerciseMediaProvider.normalizedKey(for: exercise.name))
+    }
+
+    private func instructionsSection(_ steps: ExerciseInstructionsProvider.Steps) -> some View {
+        let preferred = steps.preferred()
+        return Section {
+            ForEach(Array(preferred.enumerated()), id: \.offset) { index, step in
+                HStack(alignment: .top, spacing: 10) {
+                    Text("\(index + 1).")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.deltiqOrange)
+                        .frame(minWidth: 20, alignment: .leading)
+                    Text(step)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            }
+        } header: {
+            Text("exercise.detail.instructions.title", bundle: .module)
+        }
+        .listRowSeparatorTint(Color.Deltiq.divider)
     }
 }
 

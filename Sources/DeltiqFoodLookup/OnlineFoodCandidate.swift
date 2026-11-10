@@ -14,6 +14,7 @@ public struct OnlineFoodCandidate: Sendable, Equatable, Identifiable {
     public let proteinPer100g: Double?
     public let carbsPer100g: Double?
     public let fatPer100g: Double?
+    public let sugarPer100g: Double?
 
     public init(
         id: String,
@@ -22,7 +23,8 @@ public struct OnlineFoodCandidate: Sendable, Equatable, Identifiable {
         kcalPer100g: Double?,
         proteinPer100g: Double?,
         carbsPer100g: Double?,
-        fatPer100g: Double?
+        fatPer100g: Double?,
+        sugarPer100g: Double? = nil
     ) {
         self.id = id
         self.name = name
@@ -31,5 +33,6 @@ public struct OnlineFoodCandidate: Sendable, Equatable, Identifiable {
         self.proteinPer100g = proteinPer100g
         self.carbsPer100g = carbsPer100g
         self.fatPer100g = fatPer100g
+        self.sugarPer100g = sugarPer100g
     }
 }
