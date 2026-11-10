@@ -231,13 +231,11 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Dips (Brust)",                     equipment: .bodyweight, primaryMuscle: .chest, localizationKey: "exercise.name.chestDip"),
         ExerciseTemplateSpec(name: "Dips (Trizeps)",                   equipment: .bodyweight, primaryMuscle: .triceps, localizationKey: "exercise.name.tricepDip"),
-                             equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Handstand-Liegestütze",           equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.handstandPushup",
                              equipmentRequirement: .all([])),
 
 
         // ── BODYWEIGHT · LOWER ─────────────────────────────────────────────
-                             equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Jump Squat",                       equipment: .bodyweight, primaryMuscle: .quads, localizationKey: "exercise.name.jumpSquat",
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Ausfallschritte (BW)",             equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner, localizationKey: "exercise.name.bodyweightLunge",
@@ -251,9 +249,6 @@ public enum ExerciseLibraryData {
         // DEL-098: Wall Sit = isometrische Quad-Belastung. Lokales DOMS hoch,
         // CNS / systemic eher niedrig (kein Bewegungsablauf, keine schweren
         // Lasten).
-                             systemicFatigueFactor: 0.35, localMuscleDamageFactor: 0.70, cnsDemandFactor: 0.20, axialLoadFactor: 0.15, technicalComplexityFactor: 0.10, recoveryClass: .low,
-                             localizationKey: "exercise.name.wallSit",
-                             equipmentRequirement: .all([])),
         // Beste BW-Quad-Isolation — als Substitute fuer Beinstrecker (Maschine).
         ExerciseTemplateSpec(name: "Sissy Squats (BW)",                equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .advanced, localizationKey: "exercise.name.sissySquat",
                              equipmentRequirement: .all([])),
@@ -302,8 +297,6 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .item(.machineStation)),
 
         // ── MACHINE / CABLE · BACK ─────────────────────────────────────────
-                             localizationKey: "exercise.name.latpulldown",
-                             equipmentRequirement: .item(.machineStation)),
         ExerciseTemplateSpec(name: "Latzug (eng)",                     equipment: .machine,  primaryMuscle: .back,        difficultyLevel: .beginner, localizationKey: "exercise.name.latPulldownClose",
                              equipmentRequirement: .item(.machineStation)),
         ExerciseTemplateSpec(name: "Kabelrudern sitzend",              equipment: .cable,    primaryMuscle: .back,        difficultyLevel: .beginner, localizationKey: "exercise.name.seatedCableRow",
@@ -372,14 +365,12 @@ public enum ExerciseLibraryData {
         // die bisher nur in `ProgramTemplates` als roher Name standen, ohne
         // Library-Match — jetzt offiziell im Catalog, gleiches Muster wie
         // die "Cardio · Hybrid-Plan-Lifts"-Promotion oben (DEL-116).
-                             equipmentRequirement: .item(.kettlebell)),
         ExerciseTemplateSpec(name: "Kettlebell Front Squat",           equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellFrontSquat",
                              equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
         // Unilaterale Snatch-Variante fuer EMOM-Wechsel Links/Rechts pro
         // Minute (kettlebellAdvanced Tag 1) — dieselbe Bewegung wie das
         // bestehende "Kettlebell Snatch", nur seitengetrennt als eigene
         // Uebung, weil ein Tag im Datenmodell keine Seiten-Alternation kennt.
-                             equipmentRequirement: .item(.kettlebell)),
         // Nutzer-Upload (13. August, zweite Runde): 5 Kettlebell-Komplexe
         // ("Athletik beginnt hier") - sechs neue Bewegungen, die noch keine
         // Library-Entsprechung hatten (siehe Kommentare je Zeile fuer die
@@ -387,20 +378,14 @@ public enum ExerciseLibraryData {
 
         // Anders als "Pullover (KH)" oben (Kurzhantel, beidhaendig): mit
         // EINER Kettlebell, ansonsten dieselbe Bewegung.
-                             equipmentRequirement: .item(.kettlebell)),
         // Einarmige KB-Variante von "Thruster (KH)" oben (Zweihand-Kurzhantel)
         // - gleiche Faktoren wie dort, ein Komplex mit Kniebeuge+Drueck ist
         // aehnlich fordernd, unabhaengig vom Geraet.
-                             systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.60, cnsDemandFactor: 0.65, axialLoadFactor: 0.45, technicalComplexityFactor: 0.55, recoveryClass: .high,
-                             localizationKey: "exercise.name.kettlebellThrusterSingleArm",
-                             equipmentRequirement: .item(.kettlebell)),
         // Anders als "Sit-ups" oben (Bodyweight): der Overhead-Hold macht es
         // zu einer eigenstaendigen Core-Stabilitaets-Uebung, kein reiner
         // Bodyweight-Bauchmuskel-Move mehr.
-                             equipmentRequirement: .item(.kettlebell)),
         // Anders als "Diamant-Liegestütze" oben (Boden): Haende auf dem
         // Kettlebell-Griff, instabiler als eine feste Bodenflaeche.
-                             equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
 
         // ── CARDIO (DEL-080 — Ad-Hoc-Optionen fuer Hybrid-/freie Trainings) ─
         // Alle `isCardio: true` damit der DayEditor beim Picker-Pick die
@@ -426,9 +411,6 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.30, cnsDemandFactor: 0.20, axialLoadFactor: 0.05, technicalComplexityFactor: 0.05, recoveryClass: .medium,
                              localizationKey: "exercise.name.stationaryBike",
                              equipmentRequirement: .item(.machineStation)),
-                             systemicFatigueFactor: 0.65, localMuscleDamageFactor: 0.55, cnsDemandFactor: 0.35, axialLoadFactor: 0.20, technicalComplexityFactor: 0.25, recoveryClass: .medium,
-                             localizationKey: "exercise.name.rowingMachine",
-                             equipmentRequirement: .item(.machineStation)),
         ExerciseTemplateSpec(name: "Crosstrainer",                     equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
                              systemicFatigueFactor: 0.45, localMuscleDamageFactor: 0.30, cnsDemandFactor: 0.20, axialLoadFactor: 0.05, technicalComplexityFactor: 0.05, recoveryClass: .medium,
                              localizationKey: "exercise.name.elliptical",
@@ -437,9 +419,6 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.40, cnsDemandFactor: 0.20, axialLoadFactor: 0.10, technicalComplexityFactor: 0.05, recoveryClass: .medium,
                              localizationKey: "exercise.name.stairStepper",
                              equipmentRequirement: .item(.machineStation)),
-                             systemicFatigueFactor: 0.55, localMuscleDamageFactor: 0.35, cnsDemandFactor: 0.25, axialLoadFactor: 0.05, technicalComplexityFactor: 0.30, recoveryClass: .medium,
-                             localizationKey: "exercise.name.swimming",
-                             equipmentRequirement: .all([])),
         // ── CARDIO · HYBRID-PLAN-LIFTS (DEL-116) ───────────────────────────
         // DEL-116: Promoted aus den ProgramTemplates-Orphans. Vorher waren
         // "Easy Run", "Long Run", "Intervalle", "Gehen / Einlaufen" inline
