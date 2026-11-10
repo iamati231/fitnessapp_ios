@@ -4544,8 +4544,24 @@
       "Reverse the motion and slowly return your arms to the starting position, keeping tension on your chest muscles throughout.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Befestige die Griffe an den unteren Rollen einer Kabelmaschine und wähle ein passendes Gewicht.",
+      "Stelle dich in die Mitte der Maschine, Füße hüftbreit, leichte Kniebeugung.",
+      "Fasse die Griffe im Obergriff, Arme seitlich ausgestreckt, leichte Beugung in den Ellbogen.",
+      "Führe die Arme in einer schwingenden Bewegung nach vorne zusammen und kreuze sie vor dem Körper.",
+      "Halte kurz an der Endposition und spüre die Dehnung in der Brustmuskulatur.",
+      "Kehre langsam zur Ausgangsposition zurück, Spannung in der Brust halten.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Kablo makinesinin alt makaralarına tutamaçları takın ve uygun ağırlığı seçin.",
+      "Makinenin ortasında durun, ayaklar omuz genişliğinde, dizler hafif bükülü.",
+      "Tutamaçları üstten kavrayın, kollar yanlara açık, dirsekler hafif bükülü.",
+      "Kollarınızı yay hareketi yaparak öne getirin ve vücudunuzun önünde çaprazlayın.",
+      "Hareketin zirvesinde bir an duraksayın ve göğüs kaslarındaki gerilimi hissedin.",
+      "Yavaşça başlangıç pozisyonuna dönün, göğüste gerilimi koruyun.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "kabelzug flyes stehend": {
     "en": [
@@ -4559,8 +4575,24 @@
       "Slowly reverse the movement, returning your arms to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stelle beide Kabelzug-Rollen auf mittlere Höhe ein und wähle beidseitig das gleiche Gewicht.",
+      "Stelle dich mittig zwischen die Stationen, Füße schulterbreit, leichte Kniebeugung.",
+      "Fasse beide Griffe und bringe die Arme seitlich auf Schulterhöhe.",
+      "Führe die Arme in einer Umarmungsbewegung vor dem Körper zusammen.",
+      "Halte kurz an der Endposition und kontrahiere die Brustmuskulatur.",
+      "Kehre langsam und kontrolliert zur Ausgangsposition zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Her iki kablo makarasını orta yüksekliğe ayarlayın ve her iki tarafta eşit ağırlık seçin.",
+      "İstasyonların ortasında durun, ayaklar omuz genişliğinde, dizler hafif bükülü.",
+      "Her iki tutamacı kavrayın ve kolları omuz hizasında yanlara uzatın.",
+      "Kolları vücudun önünde kucaklama hareketi yaparak birleştirin.",
+      "Bitiş noktasında kısa süre duraksayın ve göğüs kaslarını sıkıştırın.",
+      "Yavaş ve kontrollü bir şekilde başlangıç pozisyonuna dönün.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "liegestutz abwarts": {
     "en": [
@@ -4570,8 +4602,22 @@
       "Push through your palms to extend your arms and return to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich in die Liegestütze-Position mit den Füßen auf einer erhöhten Fläche (Bank oder Stufe).",
+      "Platziere die Hände etwas breiter als schulterbreit auf dem Boden.",
+      "Halte den Körper in einer geraden Linie von Kopf bis Hüfte.",
+      "Senke die Brust kontrolliert Richtung Boden, Ellbogen leicht angewinkelt nach außen.",
+      "Drücke dich explosiv zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Ayaklarınızı yükseltilmiş bir yüzeye (bank veya basamak) koyarak şınav pozisyonuna geçin.",
+      "Ellerinizi omuz genişliğinden biraz daha geniş şekilde yere yerleştirin.",
+      "Vücudunuzu baştan kalçaya kadar düz bir çizgide tutun.",
+      "Göğsünüzü kontrollü şekilde yere doğru indirin, dirsekler hafifçe dışa açık.",
+      "Patlayıcı bir hareketle başlangıç pozisyonuna geri itin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "liegestutz aufwarts": {
     "en": [
@@ -4581,8 +4627,20 @@
       "Pause for a moment at the bottom, then push yourself back up to the starting position by straightening your arms.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Platziere die Hände auf einer erhöhten Fläche (Bank oder Stufe), etwas breiter als schulterbreit.",
+      "Strecke die Beine nach hinten aus, Körper bildet eine gerade Linie.",
+      "Senke die Brust kontrolliert zur erhöhten Fläche, Ellbogen nah am Körper.",
+      "Drücke dich zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Ellerinizi yükseltilmiş bir yüzeye (bank veya basamak) omuz genişliğinden biraz geniş koyun.",
+      "Bacaklarınızı arkaya uzatın, vücut düz bir çizgi oluştursun.",
+      "Göğsünüzü kontrollü şekilde yükseltilmiş yüzeye doğru indirin, dirsekler vücuda yakın.",
+      "Başlangıç pozisyonuna geri itin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "dips brust stange": {
     "en": [
@@ -4595,8 +4653,20 @@
       "Push through your palms and extend your elbows to raise your body back up to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Greife die parallelen Stangen und stütze dich mit gestreckten Armen auf.",
+      "Lehne den Oberkörper leicht nach vorne, um die Brustmuskulatur stärker zu aktivieren.",
+      "Senke dich kontrolliert herab, bis die Ellbogen einen 90-Grad-Winkel erreichen.",
+      "Drücke dich kraftvoll zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Paralel çubukları kavrayın ve uzatılmış kollarla kendinizi destekleyin.",
+      "Göğüs kaslarını daha fazla aktive etmek için gövdeyi hafifçe öne eğin.",
+      "Dirsekler 90 dereceye ulaşana kadar kontrollü şekilde inin.",
+      "Güçlü bir hareketle başlangıç pozisyonuna geri itin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "dips weiter griff brust": {
     "en": [
@@ -4605,8 +4675,20 @@
       "Pause for a moment, then push yourself back up to the starting position by straightening your arms.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Greife die hohen Parallelbarren in einem breiten Griffabstand.",
+      "Stütze dich mit gestreckten Armen auf und lehne den Oberkörper nach vorne.",
+      "Senke dich langsam ab, bis die Ellbogen etwa 90 Grad gebeugt sind.",
+      "Drücke dich kraftvoll zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Yüksek paralel çubukları geniş bir tutuşla kavrayın.",
+      "Uzatılmış kollarla kendinizi destekleyin ve gövdeyi öne eğin.",
+      "Dirsekler yaklaşık 90 dereceye gelene kadar yavaşça inin.",
+      "Güçlü bir hareketle başlangıç pozisyonuna geri itin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "rudern einarmig vorgebeugt lh": {
     "en": [
@@ -4616,8 +4698,22 @@
       "Lower the barbell back down to the starting position in a controlled manner.",
       "Repeat for the desired number of repetitions, then switch to the other arm."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stelle dich seitlich neben eine Langhantel mit gestrecktem Arm.",
+      "Beuge den Oberkörper bei geradem Rücken nach vorne, Knie leicht gebeugt.",
+      "Greife die Langhantel mit einem Arm im Untergriff.",
+      "Ziehe die Stange explosiv bis zur Hüfte, Ellbogen nah am Körper.",
+      "Senke die Stange langsam zur Ausgangsposition zurück.",
+      "Wiederhole und tausche dann die Seite."
+    ],
+    "tr": [
+      "Uzatılmış kollu bir barbeelin yanında durun.",
+      "Sırtınızı düz tutarak gövdenizi öne eğin, dizler hafif bükülü.",
+      "Barbeeli alt tutuşla bir elinizle kavrayın.",
+      "Barbeeli kalça hizasına kadar patlayıcı şekilde çekin, dirsek vücuda yakın.",
+      "Barbeeli yavaşça başlangıç pozisyonuna indirin.",
+      "Tekrarlayın, ardından tarafları değiştirin."
+    ]
   },
   "latzug voll kabel": {
     "en": [
@@ -4628,8 +4724,22 @@
       "Pause for a moment at the bottom of the movement, then slowly release the bar back to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich an die Kabelzugmaschine und fasse die breite Stange im Obergriff.",
+      "Strecke die Arme vollständig über den Kopf aus.",
+      "Ziehe die Stange mit einer vollständigen Bewegungsamplitude zur Oberbrust herab.",
+      "Halte kurz an und spüre die Kontraktion in den Rückenmuskeln.",
+      "Strecke die Arme vollständig zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Lat makinesi koltuğuna oturun ve geniş çubuğu üstten kavrayın.",
+      "Kolları başın üzerinde tamamen uzatın.",
+      "Çubuğu tam hareket açıklığıyla üst göğse doğru çekin.",
+      "Kısa süre duraksayın ve sırt kaslarındaki kasılmayı hissedin.",
+      "Kolları başlangıç pozisyonuna tamamen geri uzatın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "latzug kabel": {
     "en": [
@@ -4641,8 +4751,22 @@
       "Pause for a moment at the bottom of the movement, then slowly release the bar back to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich an die Kabelzugmaschine und fasse die Stange schulterbreit.",
+      "Halte den Rücken gerade und lehne dich leicht zurück.",
+      "Ziehe die Stange zur Oberbrust, Ellbogen nach unten und hinten.",
+      "Halte kurz an und kontrahiere die Rückenmuskulatur.",
+      "Strecke die Arme kontrolliert zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Lat makinesi koltuğuna oturun ve çubuğu omuz genişliğinde kavrayın.",
+      "Sırtınızı düz tutun ve hafifçe geriye yaslanın.",
+      "Çubuğu üst göğse doğru çekin, dirsekler aşağı ve arkaya.",
+      "Kısa süre duraksayın ve sırt kaslarını sıkıştırın.",
+      "Kolları kontrollü şekilde başlangıç pozisyonuna geri uzatın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "klimmzug supinationsgriff": {
     "en": [
@@ -4653,8 +4777,22 @@
       "Pause for a moment at the top, then slowly lower your body back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Greife die Klimmzugstange im Untergriff (Supination), Hände schulterbreit.",
+      "Hänge frei mit gestreckten Armen.",
+      "Ziehe dich hoch bis das Kinn über die Stange kommt, Ellbogen nach unten ziehen.",
+      "Halte kurz an der Endposition.",
+      "Senke dich kontrolliert zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Barı alt tutuşla (supinasyon) omuz genişliğinde kavrayın.",
+      "Kollar tam uzanmış şekilde serbest asılın.",
+      "Çeneniz barın üzerine gelene kadar çekilin, dirsekleri aşağı çekin.",
+      "Bitiş noktasında kısaca duraksayın.",
+      "Kontrollü şekilde başlangıç pozisyonuna inin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "trx rudern": {
     "en": [
@@ -4666,8 +4804,22 @@
       "Pause for a moment at the top, then slowly lower yourself back to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Halte die TRX-Griffe in Hüfthöhe und lehne den Körper schräg nach hinten.",
+      "Strecke die Arme vollständig aus, Körper bildet eine diagonale Linie.",
+      "Ziehe dich mit geradem Körper zu den Griffen hinauf.",
+      "Halte kurz an, wenn die Brust die Griffe erreicht.",
+      "Senke dich kontrolliert zur Ausgangsposition zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "TRX tutamaçlarını kalça hizasında tutun ve vücudu geriye doğru eğin.",
+      "Kolları tam uzatın, vücut diyagonal bir çizgi oluştursun.",
+      "Vücudu düz tutarak tutamaçlara doğru çekilin.",
+      "Göğüs tutamaçlara ulaştığında kısaca duraksayın.",
+      "Kontrollü şekilde başlangıç pozisyonuna inin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "latzug vorn maschine": {
     "en": [
@@ -4678,8 +4830,22 @@
       "Pause for a moment at the bottom of the movement, then slowly release the handles back to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich an die Maschine und passe die Oberschenkelpolster an.",
+      "Fasse die Griffe im Obergriff, Hände weiter als schulterbreit.",
+      "Ziehe die Griffe vor dem Gesicht herab bis zur Oberbrust.",
+      "Halte kurz an und spüre die Latissimuskontraktion.",
+      "Strecke die Arme kontrolliert zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Makineye oturun ve uyluk pedlerini ayarlayın.",
+      "Tutamaçları omuz genişliğinden geniş şekilde üstten kavrayın.",
+      "Tutamaçları yüzün önünden üst göğse doğru çekin.",
+      "Kısa süre duraksayın ve lat kasının kasılmasını hissedin.",
+      "Kolları kontrollü şekilde başlangıç pozisyonuna geri uzatın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "hyperextension": {
     "en": [
@@ -4689,8 +4855,22 @@
       "Pause for a moment at the bottom, then raise your upper body back up until it is in line with your legs.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich auf das Rückenstreck-Gerät, Hüfte an der Polsterkante.",
+      "Verschränke die Arme vor der Brust oder halte sie hinter dem Kopf.",
+      "Senke den Oberkörper kontrolliert nach unten.",
+      "Hebe den Oberkörper durch Anspannung der unteren Rückenmuskulatur wieder an.",
+      "Halte kurz an der Endposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Hiperekstansiyon aletine uzanın, kalça ped kenarında olsun.",
+      "Kolları göğüste çaprazlayın veya başın arkasında tutun.",
+      "Gövdeyi kontrollü şekilde aşağıya indirin.",
+      "Alt sırt kaslarını sıkıştırarak gövdeyi tekrar kaldırın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "smith press stehend": {
     "en": [
@@ -4701,8 +4881,22 @@
       "Pause for a moment at the top, then slowly lower the barbell back down to shoulder level.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stelle die Smith-Maschinen-Stange auf Schulterhöhe ein und stehe darunter.",
+      "Fasse die Stange etwas breiter als schulterbreit im Obergriff.",
+      "Hebe die Stange aus der Halterung und stelle die Füße schulterbreit.",
+      "Drücke die Stange explosiv über den Kopf, bis die Arme vollständig gestreckt sind.",
+      "Senke die Stange kontrolliert zur Ausgangsposition zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Smith makinesi çubuğunu omuz hizasına ayarlayın ve altına geçin.",
+      "Çubuğu omuz genişliğinden biraz geniş şekilde üstten kavrayın.",
+      "Çubuğu tutucudan kaldırın ve ayakları omuz genişliğine getirin.",
+      "Çubuğu kollar tam uzanana kadar patlayıcı şekilde yukarı itin.",
+      "Çubuğu kontrollü şekilde başlangıç pozisyonuna indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "seitheben einarmig kh": {
     "en": [
@@ -4713,8 +4907,20 @@
       "Pause for a moment at the top, then slowly lower the dumbbell back to the starting position.",
       "Repeat for the desired number of repetitions, then switch to the other arm."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Halte eine Kurzhantel in einer Hand, stehe aufrecht.",
+      "Hebe den Arm seitlich auf Schulterhöhe an, leichte Beugung im Ellbogen.",
+      "Halte kurz an der Endposition.",
+      "Senke den Arm kontrolliert zurück zur Ausgangsposition.",
+      "Wiederhole und tausche dann die Seite."
+    ],
+    "tr": [
+      "Bir elinize dumbbell tutun, dik durun.",
+      "Kolu omuz hizasına kadar yanlara kaldırın, dirsekte hafif bükme.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Kolu kontrollü şekilde başlangıç pozisyonuna indirin.",
+      "Tekrarlayın, ardından tarafları değiştirin."
+    ]
   },
   "hinteres seitheben kh": {
     "en": [
@@ -4725,8 +4931,22 @@
       "Pause for a moment at the top, then slowly lower your arms back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Halte zwei Kurzhanteln, beuge den Oberkörper bis zur Waagerechten vor.",
+      "Strecke die Arme senkrecht nach unten, Handflächen zueinander.",
+      "Hebe beide Arme seitlich bis auf Schulterhöhe an, Ellbogen leicht gebeugt.",
+      "Halte kurz an und spüre die Kontraktion in den hinteren Schultermuskeln.",
+      "Senke die Arme kontrolliert zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "İki dumbbell tutun ve gövdeyi yataya kadar öne eğin.",
+      "Kolları aşağı doğru uzatın, avuç içleri birbirine baksın.",
+      "Her iki kolu omuz hizasına kadar yanlara kaldırın, dirsekler hafif bükülü.",
+      "Kısa süre duraksayın ve arka omuz kaslarındaki kasılmayı hissedin.",
+      "Kolları kontrollü şekilde başlangıç pozisyonuna indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "reverse flyes schrag kh": {
     "en": [
@@ -4737,8 +4957,22 @@
       "Pause for a moment at the top, then slowly lower your arms back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich auf eine schräge Bank mit dem Gesicht nach unten.",
+      "Halte die Kurzhanteln mit gestreckten Armen senkrecht nach unten.",
+      "Hebe die Arme seitlich bis auf Schulterhöhe an.",
+      "Halte kurz an der Endposition.",
+      "Senke die Arme kontrolliert zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Yüzüstü eğimli banka uzanın.",
+      "Dumbbell'ları uzatılmış kollarla aşağı doğru tutun.",
+      "Kolları omuz hizasına kadar yanlara kaldırın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Kolları kontrollü şekilde indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "einarmiges overhead carry kh": {
     "en": [
@@ -4748,8 +4982,20 @@
       "Continue walking for the desired distance or time.",
       "Switch hands and repeat the exercise."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Hebe eine Kurzhantel mit einem Arm über den Kopf, Arm vollständig gestreckt.",
+      "Stehe aufrecht, Blick geradeaus, Kern angespannt.",
+      "Gehe eine definierte Strecke, die Kurzhantel dabei stets senkrecht über dem Kopf.",
+      "Halte Rumpf und Schultern stabil, vermeide seitliches Kippen.",
+      "Wiederhole und tausche dann die Seite."
+    ],
+    "tr": [
+      "Bir dumbbell'ı bir elinizle başın üzerine kaldırın, kol tam uzanmış.",
+      "Dik durun, gözler düzde, core kasılı.",
+      "Belirlenen mesafeyi yürüyün, dumbbell her zaman başın üzerinde dik.",
+      "Gövde ve omuzları stabil tutun, yana eğilmekten kaçının.",
+      "Tekrarlayın, ardından tarafları değiştirin."
+    ]
   },
   "reverse flyes maschine": {
     "en": [
@@ -4759,8 +5005,22 @@
       "Pause for a moment at the peak contraction, then inhale and slowly return to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich verkehrt herum auf die Maschine, Brust gegen die Polsterung.",
+      "Fasse die Griffe vor dem Körper.",
+      "Öffne die Arme seitlich nach hinten, Ellbogen leicht gebeugt.",
+      "Halte kurz an der Endposition und kontrahiere die hinteren Schultermuskeln.",
+      "Kehre langsam zur Ausgangsposition zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Makineye ters oturun, göğsünüz mindere daysın.",
+      "Tutamaçları vücudun önünde kavrayın.",
+      "Kolları yanlara arkaya açın, dirsekler hafif bükülü.",
+      "Kısa süre duraksayın ve arka omuz kaslarını sıkıştırın.",
+      "Yavaşça başlangıç pozisyonuna dönün.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "bizeps curl alternierend lh": {
     "en": [
@@ -4771,8 +5031,20 @@
       "Inhale as you slowly begin to lower the barbells back to the starting position.",
       "Repeat for the desired number of repetitions, alternating arms."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht, halte die Langhantel mit schulterbreit gehaltenem Untergriff.",
+      "Curle die Stange abwechselnd auf jeder Seite — wechsle nach jeder Wiederholung den Arm.",
+      "Führe die Kurzhantel bis zur Schulter heran.",
+      "Senke langsam zurück zur Ausgangsposition.",
+      "Wiederhole alternierend für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Dik durun, barbeeli omuz genişliğinde alt tutuşla tutun.",
+      "Çubuğu her seferinde bir tarafta curl yaparak dönüşümlü olarak kaldırın.",
+      "Dumbbell'ı omuza doğru kaldırın.",
+      "Yavaşça başlangıç pozisyonuna indirin.",
+      "Dönüşümlü olarak istenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "bizeps curl schrag vorgebeugt lh": {
     "en": [
@@ -4786,8 +5058,22 @@
       "Inhale and slowly begin to lower the barbell back to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich mit dem Bauch auf eine schräge Bank.",
+      "Halte die Langhantel mit Untergriff, Arme hängen senkrecht nach unten.",
+      "Curle die Stange vollständig zur Schulter hinauf.",
+      "Halte kurz an der Endposition.",
+      "Senke langsam zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Karın üstü eğimli banka uzanın.",
+      "Barbeeli alt tutuşla tutun, kollar aşağı sarkık.",
+      "Çubuğu omuza doğru tamamen curl yapın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Yavaşça başlangıç pozisyonuna indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "bizeps curl alternierend kh": {
     "en": [
@@ -4798,8 +5084,20 @@
       "Inhale and slowly begin to lower the dumbbells back to the starting position.",
       "Repeat for the desired number of repetitions, alternating arms."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht, halte eine Kurzhantel in jeder Hand.",
+      "Curle einen Arm zur Schulter, dabei die Handfläche nach oben drehen.",
+      "Senke den Arm zurück und curle dann den anderen Arm.",
+      "Halte den Oberkörper dabei stabil und ohne Schwung.",
+      "Wiederhole alternierend für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Dik durun, her elinizde bir dumbbell tutun.",
+      "Bir kolu omuza doğru curl yapın, avuç içini yukarı çevirin.",
+      "Kolu indirin ve ardından diğer kolu curl yapın.",
+      "Bu esnada gövdeyi stabil tutun, sallama yapmayın.",
+      "Dönüşümlü olarak istenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "bizeps curl sitzend kh": {
     "en": [
@@ -4809,8 +5107,22 @@
       "Pause for a moment at the top, then inhale and slowly lower the dumbbells back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich aufrecht auf eine Bank, Kurzhanteln in jeder Hand.",
+      "Lass die Arme vollständig neben dem Körper hängen.",
+      "Curle beide Kurzhanteln gleichzeitig zur Schulter.",
+      "Halte kurz an der Endposition.",
+      "Senke langsam zur Ausgangsposition zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Bir bankta dik oturun, her elinizde dumbbell tutun.",
+      "Kolları vücudun yanında tamamen sarkık bırakın.",
+      "Her iki dumbbell'ı aynı anda omuza doğru curl yapın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Yavaşça başlangıç pozisyonuna indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "cross body hammer curl kh": {
     "en": [
@@ -4822,8 +5134,20 @@
       "Inhale and slowly begin to lower the dumbbells back to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht, halte eine Kurzhantel in jeder Hand, Handflächen zueinander.",
+      "Curle eine Kurzhantel diagonal zur gegenüberliegenden Schulter.",
+      "Halte kurz an der Endposition.",
+      "Senke langsam zurück und wiederhole mit dem anderen Arm.",
+      "Führe die Übung abwechselnd durch."
+    ],
+    "tr": [
+      "Dik durun, her elinizde avuç içleri birbirine bakan dumbbell tutun.",
+      "Bir dumbbell'ı karşı omuza doğru çapraz curl yapın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Yavaşça indirin ve diğer kolda tekrarlayın.",
+      "Dönüşümlü olarak yapın."
+    ]
   },
   "skull crusher enger griff lh": {
     "en": [
@@ -4834,8 +5158,20 @@
       "Pause for a moment at the bottom, then extend your arms back to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich auf eine flache Bank, halte die Langhantel mit engem Griffabstand.",
+      "Strecke die Arme senkrecht über die Brust.",
+      "Beuge die Ellbogen und führe die Stange zur Stirn hinunter.",
+      "Strecke die Arme explosiv zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Düz banka uzanın, barbeeli dar tutuşla tutun.",
+      "Kolları göğsün üzerinde dik uzatın.",
+      "Dirsekleri bükerek çubuğu alna doğru indirin.",
+      "Kolları patlayıcı şekilde başlangıç pozisyonuna geri uzatın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "trizeps overhead extension sitzend lh": {
     "en": [
@@ -4845,8 +5181,20 @@
       "Pause for a moment, then extend your arms to raise the barbell back to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich aufrecht auf eine Bank mit einem Rückenteil.",
+      "Halte eine Langhantel mit engem Griff über den Kopf, Arme gestreckt.",
+      "Beuge die Ellbogen und führe die Stange hinter den Kopf.",
+      "Strecke die Arme explosiv zurück nach oben.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Sırtı olan bankta dik oturun.",
+      "Barbeeli dar tutuşla başın üzerinde tutun, kollar uzanmış.",
+      "Dirsekleri bükerek çubuğu başın arkasına indirin.",
+      "Kolları patlayıcı şekilde yukarı geri uzatın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "trizeps overhead extension stehend lh": {
     "en": [
@@ -4856,8 +5204,20 @@
       "Pause for a moment, then raise the barbell back to the starting position by extending your arms.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht, halte eine Langhantel mit engem Griff über den Kopf.",
+      "Beuge die Ellbogen und führe die Stange hinter den Kopf herab.",
+      "Halte die Oberarme senkrecht und stabil.",
+      "Strecke die Arme explosiv zurück nach oben.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Dik durun, barbeeli dar tutuşla başın üzerinde tutun.",
+      "Dirsekleri bükerek çubuğu başın arkasına indirin.",
+      "Üst kolları dik ve stabil tutun.",
+      "Kolları patlayıcı şekilde yukarı geri uzatın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "trizepsdrucken stange kabel": {
     "en": [
@@ -4869,8 +5229,22 @@
       "Pause for a moment, then inhale and slowly return the bar to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe vor der Kabelmaschine, fasse die Stange im Obergriff.",
+      "Halte die Oberarme nah am Körper, leicht nach vorne geneigt.",
+      "Drücke die Stange nach unten, bis die Arme vollständig gestreckt sind.",
+      "Halte kurz an der Endposition.",
+      "Lasse die Stange kontrolliert zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Kablo makinesi önünde durun, çubuğu üstten kavrayın.",
+      "Üst kolları vücuda yakın, hafifçe öne eğik tutun.",
+      "Kollar tam uzanana kadar çubuğu aşağı itin.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Çubuğu kontrollü şekilde başlangıç pozisyonuna geri bırakın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "trizepsdrucken seil kabel": {
     "en": [
@@ -4882,8 +5256,22 @@
       "Pause for a moment, then inhale and slowly return to the starting position by allowing your elbows to flex.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe vor der Kabelmaschine, fasse das Seil mit beiden Händen.",
+      "Halte die Oberarme nah am Körper.",
+      "Drücke das Seil nach unten und spreize dabei die Enden auseinander.",
+      "Halte kurz an bei vollständig gestreckten Armen.",
+      "Lasse das Seil kontrolliert zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Kablo makinesi önünde durun, ipi her iki elinizle kavrayın.",
+      "Üst kolları vücuda yakın tutun.",
+      "İpi aşağıya iterken uçları ayırın.",
+      "Kollar tam uzanmışken kısa süre duraksayın.",
+      "İpi kontrollü şekilde başlangıç pozisyonuna geri bırakın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "trizeps overhead seil kabel": {
     "en": [
@@ -4895,8 +5283,22 @@
       "Pause for a moment, then extend your arms back up to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Befestige das Seil an der unteren Rolle der Kabelmaschine.",
+      "Stehe mit dem Rücken zur Maschine und halte das Seil mit beiden Händen hinter dem Kopf.",
+      "Strecke die Arme nach vorne-oben, bis sie vollständig gestreckt sind.",
+      "Halte kurz an der Endposition.",
+      "Senke das Seil kontrolliert zurück hinter den Kopf.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "İpi kablo makinesinin alt makarasına takın.",
+      "Makineye sırtınız dönük durun ve ipi her iki elinizle başın arkasında tutun.",
+      "Kollar tam uzanana kadar ileriye-yukarıya doğru uzatın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "İpi kontrollü şekilde başın arkasına geri indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "trizeps extension stehend kh": {
     "en": [
@@ -4906,8 +5308,20 @@
       "Extend your arm back up to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht, halte eine Kurzhantel mit beiden Händen über den Kopf.",
+      "Beuge die Ellbogen und führe die Kurzhantel hinter den Kopf.",
+      "Strecke die Arme explosiv zurück nach oben.",
+      "Halte kurz an der Endposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Dik durun, bir dumbbell'ı her iki elinizle başın üzerinde tutun.",
+      "Dirsekleri bükerek dumbbell'ı başın arkasına indirin.",
+      "Kolları patlayıcı şekilde yukarı geri uzatın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "skull crusher kh": {
     "en": [
@@ -4917,8 +5331,20 @@
       "Pause for a moment, then extend your arms back up to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich auf eine flache Bank, halte eine Kurzhantel in jeder Hand.",
+      "Strecke die Arme senkrecht über die Brust.",
+      "Beuge die Ellbogen und führe die Kurzhanteln zur Stirn.",
+      "Strecke die Arme explosiv zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Düz banka uzanın, her elinizde bir dumbbell tutun.",
+      "Kolları göğsün üzerinde dik uzatın.",
+      "Dirsekleri bükerek dumbbell'ları alna doğru indirin.",
+      "Kolları patlayıcı şekilde başlangıç pozisyonuna geri uzatın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "handgelenk curl einarmig kh": {
     "en": [
@@ -4928,8 +5354,22 @@
       "Slowly curl your wrist back up, bringing the dumbbell towards your forearm.",
       "Repeat for the desired number of repetitions, then switch to the other hand."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich auf eine Bank, lege den Unterarm auf den Oberschenkel.",
+      "Halte eine Kurzhantel im Untergriff, Handgelenk hängt über dem Knie.",
+      "Curle die Kurzhantel aufwärts durch Beugung des Handgelenks.",
+      "Halte kurz an der Endposition.",
+      "Senke langsam zurück zur Ausgangsposition.",
+      "Wiederhole und tausche dann die Seite."
+    ],
+    "tr": [
+      "Bir bankta oturun, ön kolu uyluğun üzerine koyun.",
+      "Alt tutuşla bir dumbbell tutun, bilek dizin üzerinde sarkık.",
+      "Bileği bükerek dumbbell'ı yukarı curl yapın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Yavaşça başlangıç pozisyonuna indirin.",
+      "Tekrarlayın, ardından tarafları değiştirin."
+    ]
   },
   "handgelenk roller": {
     "en": [
@@ -4940,8 +5380,20 @@
       "Pause for a moment at the top, then slowly lower the weight back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Halte den Handgelenk-Roller mit ausgestreckten Armen vor dem Körper.",
+      "Rolle das Gewicht durch abwechselndes Handgelenkbeugen aufwärts.",
+      "Rolle dann das Gewicht wieder abwärts zur Ausgangsposition.",
+      "Führe die Übung langsam und kontrolliert aus.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Bilek rulolarını kollar önde uzatılmış şekilde tutun.",
+      "Dönüşümlü bilek bükmeleriyle ağırlığı yukarı sarın.",
+      "Ardından ağırlığı başlangıç pozisyonuna geri sarın.",
+      "Egzersizi yavaş ve kontrollü yapın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "kniebeuge tief lh": {
     "en": [
@@ -4954,8 +5406,22 @@
       "Drive through your heels to stand back up, extending your hips and knees.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege die Langhantel auf dem oberen Rücken (High Bar oder Low Bar Position).",
+      "Stelle die Füße etwas breiter als schulterbreit, Zehen leicht auswärts.",
+      "Beuge Knie und Hüfte gleichzeitig und senke dich tief ab — Oberschenkel mindestens parallel zum Boden.",
+      "Halte den Rücken gerade und das Gewicht auf den Fersen.",
+      "Drücke dich explosiv zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Barbeeli üst sırta yerleştirin (High Bar veya Low Bar pozisyonu).",
+      "Ayakları omuz genişliğinden biraz geniş koyun, parmaklar hafifçe dışa.",
+      "Diz ve kalçayı aynı anda bükerek derin çökün — uyluklar en az yere paralel olsun.",
+      "Sırtı düz tutun ve ağırlığı topuklarda hissedin.",
+      "Patlayıcı şekilde başlangıç pozisyonuna geri itin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "front kniebeuge clean griff lh": {
     "en": [
@@ -4966,8 +5432,22 @@
       "Pause for a moment at the bottom, then push through your heels to stand back up, extending your hips and knees.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege die Langhantel auf den vorderen Schultern, Ellbogen hoch angehoben (Clean-Griff).",
+      "Stelle die Füße schulterbreit, Zehen leicht auswärts.",
+      "Beuge Knie und Hüfte, Oberkörper aufrecht, und senke dich ab.",
+      "Halte die Ellbogen in der gesamten Bewegung hoch.",
+      "Drücke dich zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Barbeeli ön omuzlara yerleştirin, dirsekler yüksek (Clean tutumu).",
+      "Ayakları omuz genişliğinde koyun, parmaklar hafifçe dışa.",
+      "Diz ve kalçayı bükerek gövdeyi dik tutarak çökün.",
+      "Tüm hareket boyunca dirsekleri yüksek tutun.",
+      "Başlangıç pozisyonuna geri itin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "walking ausfallschritt": {
     "en": [
@@ -4978,8 +5458,20 @@
       "Continue alternating legs and walking forward, maintaining a controlled and steady pace.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht, Füße hüftbreit.",
+      "Mache einen großen Schritt nach vorne und senke das hintere Knie Richtung Boden.",
+      "Das vordere Knie sollte direkt über dem Fuß bleiben.",
+      "Drücke dich ab und bringe den hinteren Fuß nach vorne in den nächsten Ausfallschritt.",
+      "Führe die gewünschte Anzahl an Wiederholungen auf jeder Seite aus."
+    ],
+    "tr": [
+      "Dik durun, ayaklar kalça genişliğinde.",
+      "Büyük bir adım atın ve arka dizi yere doğru indirin.",
+      "Ön diz ayağın hemen üzerinde olsun.",
+      "İterekte arka ayağı öne getirerek bir sonraki çıkışa geçin.",
+      "Her tarafta istenen tekrar sayısı kadar yapın."
+    ]
   },
   "split squat": {
     "en": [
@@ -4990,8 +5482,20 @@
       "Pause for a moment, then push through your front heel to return to the starting position.",
       "Repeat for the desired number of repetitions, then switch legs and repeat."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stelle einen Fuß nach vorne, den anderen nach hinten (Schrittstellung).",
+      "Halte den Oberkörper aufrecht, Kern angespannt.",
+      "Senke das hintere Knie kontrolliert Richtung Boden.",
+      "Drücke dich über die vordere Ferse zurück in die Ausgangsposition.",
+      "Führe alle Wiederholungen auf einer Seite aus, dann wechsle."
+    ],
+    "tr": [
+      "Bir ayağı öne, diğerini arkaya alın (makas duruşu).",
+      "Gövdeyi dik tutun, core kasılı.",
+      "Arka dizi kontrollü şekilde yere doğru indirin.",
+      "Ön topuk üzerinden başlangıç pozisyonuna geri itin.",
+      "Bir tarafta tüm tekrarları yapın, ardından değiştirin."
+    ]
   },
   "beinpresse 45": {
     "en": [
@@ -5003,8 +5507,20 @@
       "Pause for a moment at the top of the movement, then slowly lower the footplate back towards your body by bending your knees.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich in die 45-Grad-Beinpresse, Rücken und Hüfte flach an der Auflage.",
+      "Stelle die Füße hüftbreit auf der Plattform, leicht nach oben versetzt.",
+      "Löse die Sicherungen und senke die Plattform kontrolliert ab.",
+      "Drücke die Plattform explosiv zurück, bis die Beine fast gestreckt sind.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "45 derece bacak pres makinasına oturun, sırt ve kalça mindere yaslanmış.",
+      "Ayakları kalça genişliğinde platforma, hafifçe yukarıda koyun.",
+      "Kilitleri açın ve platformu kontrollü şekilde indirin.",
+      "Platformu patlayıcı şekilde bacaklar neredeyse uzanana kadar itin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "beinpresse 45 weiter stand": {
     "en": [
@@ -5015,8 +5531,20 @@
       "Pause for a moment at the end of the movement, then slowly bend your knees to return to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich in die 45-Grad-Beinpresse, Füße weiter als schulterbreit auf der Plattform.",
+      "Löse die Sicherungen und senke die Plattform kontrolliert ab.",
+      "Drücke die Plattform durch Druck auf die Fersen zurück.",
+      "Halte kurz bei fast gestreckten Beinen an.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "45 derece bacak pres makinasına oturun, ayakları omuzdan geniş platforma koyun.",
+      "Kilitleri açın ve platformu kontrollü şekilde indirin.",
+      "Topuklar üzerinden baskı yaparak platformu geri itin.",
+      "Bacaklar neredeyse uzanmışken kısa süre duraksayın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "glute bridge auf bank": {
     "en": [
@@ -5026,8 +5554,22 @@
       "Pause for a moment at the top, then slowly lower your hips back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege den Oberkörper auf eine Bank, Füße flach auf dem Boden.",
+      "Lasse die Hüfte absinken.",
+      "Hebe die Hüfte an, bis Oberschenkel und Oberkörper eine gerade Linie bilden.",
+      "Spanne die Gesäßmuskeln oben kräftig an.",
+      "Senke die Hüfte langsam zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Gövdenizi bir bankta yatırın, ayaklar düz yerde.",
+      "Kalçayı aşağıya bırakın.",
+      "Uyluk ve gövde düz bir çizgi oluşturana kadar kalçayı kaldırın.",
+      "Üstte kalça kaslarını güçlü şekilde sıkıştırın.",
+      "Kalçayı yavaşça başlangıç pozisyonuna indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "einbeiniges kreuzheben kh": {
     "en": [
@@ -5039,8 +5581,22 @@
       "Pause for a moment, then engage your glutes and hamstrings to return to the starting position.",
       "Repeat for the desired number of repetitions, then switch sides."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe auf einem Bein, halte eine Kurzhantel im gegenüberliegenden Arm.",
+      "Beuge leicht das Standbein und halte den Rücken gerade.",
+      "Beuge den Oberkörper nach vorne und strecke das freie Bein nach hinten.",
+      "Senke die Kurzhantel am Standbein herab, bis du eine Dehnung im hinteren Oberschenkel spürst.",
+      "Kehre zur Ausgangsposition zurück.",
+      "Wiederhole und tausche dann die Seite."
+    ],
+    "tr": [
+      "Bir bacak üzerinde durun, karşı elinizde bir dumbbell tutun.",
+      "Destek bacağını hafifçe büküp sırtı düz tutun.",
+      "Gövdeyi öne eğerken serbest bacağı arkaya uzatın.",
+      "Dumbbell'ı destek bacağı boyunca arka uylukta gerilme hissedene kadar indirin.",
+      "Başlangıç pozisyonuna dönün.",
+      "Tekrarlayın, ardından tarafları değiştirin."
+    ]
   },
   "steifbeiniges kreuzheben lh": {
     "en": [
@@ -5051,8 +5607,22 @@
       "Engage your hamstrings and glutes to lift the barbell back up to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht, halte die Langhantel im Hüftgriff vor den Oberschenkeln.",
+      "Halte die Beine fast gestreckt, leichte Kniebeugung.",
+      "Beuge den Oberkörper nach vorne und führe die Stange an den Beinen entlang nach unten.",
+      "Senke ab, bis du eine starke Dehnung im hinteren Oberschenkel spürst.",
+      "Kehre zur Ausgangsposition zurück, Rücken dabei stets gerade.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Dik durun, barbeeli kalça tutuşuyla önde tutun.",
+      "Bacakları neredeyse uzanmış tutun, hafif diz bükümü.",
+      "Gövdeyi öne eğerek çubuğu bacaklar boyunca aşağı indirin.",
+      "Arka uylukta güçlü bir gerilme hissedene kadar indirin.",
+      "Sırtı her zaman düz tutarak başlangıç pozisyonuna dönün.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "overhead kniebeuge lh": {
     "en": [
@@ -5062,8 +5632,20 @@
       "Pause for a moment at the bottom, then push through your heels to return to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Halte die Langhantel mit weitem Griff vollständig über den Kopf gestreckt.",
+      "Stelle die Füße schulterbreit, Zehen leicht auswärts.",
+      "Senke dich in die tiefe Kniebeuge — Rücken gerade, Arme die ganze Zeit gestreckt.",
+      "Drücke dich zurück in die Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Barbeeli geniş tutuşla başın tam üzerinde tutun.",
+      "Ayakları omuz genişliğinde koyun, parmaklar hafifçe dışa.",
+      "Derin çöküşe inin — sırt düz, kollar her zaman uzanmış.",
+      "Başlangıç pozisyonuna geri itin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "steifbeiniges kreuzheben kh": {
     "en": [
@@ -5072,8 +5654,22 @@
       "Lower the dumbbells until you feel a stretch in your hamstrings, then squeeze your glutes and push through your heels to return to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht, halte eine Kurzhantel in jeder Hand vor den Oberschenkeln.",
+      "Halte die Beine fast gestreckt, leichte Kniebeugung.",
+      "Beuge den Oberkörper nach vorne und führe die Kurzhanteln an den Beinen herab.",
+      "Senke ab, bis du eine Dehnung im hinteren Oberschenkel spürst.",
+      "Kehre zur Ausgangsposition zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Dik durun, her elinizde önde dumbbell tutun.",
+      "Bacakları neredeyse uzanmış tutun, hafif diz bükümü.",
+      "Gövdeyi öne eğerek dumbbell'ları bacaklar boyunca indirin.",
+      "Arka uylukta gerilme hissedene kadar indirin.",
+      "Başlangıç pozisyonuna dönün.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "trx split squat": {
     "en": [
@@ -5083,8 +5679,20 @@
       "Push through your heel to return to the starting position.",
       "Repeat for the desired number of repetitions, then switch legs."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Hänge einen Fuß in die TRX-Schlaufen hinter dir.",
+      "Stelle den anderen Fuß nach vorne und halte den Oberkörper aufrecht.",
+      "Senke das hintere Knie kontrolliert Richtung Boden.",
+      "Drücke dich über die vordere Ferse zurück.",
+      "Führe alle Wiederholungen auf einer Seite aus, dann wechsle."
+    ],
+    "tr": [
+      "Bir ayağınızı arkanızdaki TRX kayışına asın.",
+      "Diğer ayağı öne alın ve gövdeyi dik tutun.",
+      "Arka dizi kontrollü şekilde yere doğru indirin.",
+      "Ön topuk üzerinden geri itin.",
+      "Bir tarafta tüm tekrarları yapın, ardından değiştirin."
+    ]
   },
   "wadenheben stufe": {
     "en": [
@@ -5094,8 +5702,22 @@
       "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stelle dich mit den Fußballen auf eine Stufe oder Erhöhung.",
+      "Die Fersen hängen frei in der Luft.",
+      "Senke die Fersen kontrolliert unter die Stufenebene (Dehnung der Wade).",
+      "Hebe die Fersen explosiv an, so hoch wie möglich.",
+      "Halte kurz an der Endposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Ayak tabanlarınızı bir basamak veya yükseltiye koyun.",
+      "Topuklar havada serbest salsın.",
+      "Topukları basamak seviyesinin altına kontrollü indirin (baldır germe).",
+      "Topukları mümkün olduğunca yüksek kaldırın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "wadenpresse 45": {
     "en": [
@@ -5105,8 +5727,20 @@
       "Pause for a moment at the top, then slowly lower the sled platform back to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich in die 45-Grad-Beinpresse und stelle die Zehen auf die untere Kante der Plattform.",
+      "Strecke die Beine vollständig aus.",
+      "Beuge die Fußgelenke und drücke die Zehen von dir weg (Plantarflexion).",
+      "Ziehe die Zehen dann zu dir heran (Dorsalflexion).",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "45 derece bacak pres makinasına oturun ve parmak uçlarını platformun alt kenarına koyun.",
+      "Bacakları tamamen uzatın.",
+      "Ayak bileklerini bükerek parmakları uzaklaştırın (plantar fleksiyon).",
+      "Ardından parmakları kendinize doğru çekin (dorsifleksiyon).",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "wadenpresse beinpresse": {
     "en": [
@@ -5116,8 +5750,22 @@
       "Pause for a moment at the top of the movement, then slowly lower the sled back down by bending your knees and ankles.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich in die Beinpresse und stelle die Zehen auf die untere Kante der Plattform.",
+      "Strecke die Beine vollständig aus.",
+      "Drücke die Plattform durch Strecken der Füße weg.",
+      "Halte kurz an der gestreckten Position.",
+      "Ziehe die Füße zu dir heran.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Bacak pres makinasına oturun ve parmak uçlarını platformun alt kenarına koyun.",
+      "Bacakları tamamen uzatın.",
+      "Ayakları uzatarak platformu itin.",
+      "Uzanmış pozisyonda kısa süre duraksayın.",
+      "Ayakları kendinize çekin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "wadenheben esel": {
     "en": [
@@ -5127,8 +5775,20 @@
       "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Beuge dich an einer erhöhten Fläche nach vorne und stütze dich ab.",
+      "Stelle die Fußballen auf eine Erhöhung, Fersen frei.",
+      "Senke die Fersen kontrolliert bis unter die Ebene der Erhöhung.",
+      "Hebe die Fersen so hoch wie möglich an.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Yükseltilmiş bir yüzeyde öne eğilin ve kendinizi destekleyin.",
+      "Ayak tabanlarını bir yükseltiye koyun, topuklar serbest.",
+      "Topukları yükseltinin seviyesinin altına kontrollü indirin.",
+      "Topukları mümkün olduğunca yüksek kaldırın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "dead bug": {
     "en": [
@@ -5140,8 +5800,22 @@
       "Repeat the movement with your left arm and right leg.",
       "Continue alternating sides for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich auf den Rücken, Arme senkrecht nach oben gestreckt, Hüfte und Knie 90 Grad gebeugt.",
+      "Drücke den unteren Rücken flach auf den Boden.",
+      "Strecke gleichzeitig einen Arm über den Kopf und das gegenüberliegende Bein aus.",
+      "Halte kurz an bei vollständiger Streckung.",
+      "Kehre zur Ausgangsposition zurück.",
+      "Wiederhole alternierend für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Sırt üstü uzanın, kollar dik yukarı uzanmış, kalça ve diz 90 derece bükülü.",
+      "Alt sırtı yere bastırın.",
+      "Aynı anda bir kolu başın üzerine ve karşı bacağı uzatın.",
+      "Tam uzanmışken kısa süre duraksayın.",
+      "Başlangıç pozisyonuna dönün.",
+      "Dönüşümlü olarak istenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "russian twist gewichtet": {
     "en": [
@@ -5152,8 +5826,20 @@
       "Pause for a moment, then twist your torso to the left, bringing the weight or medicine ball towards the floor on your left side.",
       "Continue alternating sides for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich auf den Boden, Knie leicht gebeugt, Oberkörper leicht zurückgeneigt.",
+      "Halte ein Gewicht mit beiden Händen vor der Brust.",
+      "Rotiere den Oberkörper abwechselnd nach links und rechts.",
+      "Tippe bei jeder Seite kurz mit dem Gewicht auf den Boden.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Yere oturun, dizler hafif bükülü, gövde hafifçe geriye eğik.",
+      "Her iki elinizle göğsün önünde bir ağırlık tutun.",
+      "Gövdeyi sola ve sağa dönüşümlü olarak döndürün.",
+      "Her tarafta ağırlıkla kısaca zemine dokunun.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "beinheben gestreckt hangend": {
     "en": [
@@ -5163,8 +5849,22 @@
       "Pause for a moment at the top, then slowly lower your legs back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Hänge frei an einer Klimmzugstange oder ähnlichem.",
+      "Halte die Beine gestreckt.",
+      "Hebe beide Beine mit gestreckten Knien auf Hüfthöhe oder höher.",
+      "Halte kurz an der Endposition.",
+      "Senke die Beine langsam zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Bir bardan veya benzeri bir yerden serbest asılın.",
+      "Bacakları uzatılmış tutun.",
+      "Her iki bacağı dizler uzanmış şekilde kalça hizasına veya yukarısına kaldırın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Bacakları yavaşça başlangıç pozisyonuna indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "beinheben senkrecht dips stange": {
     "en": [
@@ -5174,8 +5874,20 @@
       "Pause for a moment at the top, then slowly lower your legs back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stütze dich auf den Dip-Stangen und halte den Körper aufrecht.",
+      "Hebe beide Beine gestreckt nach vorne auf Hüfthöhe oder höher.",
+      "Halte kurz an der Endposition.",
+      "Senke die Beine langsam zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Dips çubuklarında kendinizi destekleyin ve vücudu dik tutun.",
+      "Her iki bacağı uzanmış şekilde öne kalça hizasına veya yukarısına kaldırın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Bacakları yavaşça başlangıç pozisyonuna indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "beinheben gestreckt stutz": {
     "en": [
@@ -5186,8 +5898,22 @@
       "Pause for a moment at the top, then slowly lower your legs back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stütze dich auf dem Captain's Chair mit dem Rücken an der Polsterung.",
+      "Hänge die Beine gestreckt nach unten.",
+      "Hebe beide Beine mit gestreckten Knien auf Hüfthöhe.",
+      "Halte kurz an der Endposition.",
+      "Senke die Beine langsam zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Captain's Chair'da kendinizi destekleyin, sırtınız mindere dayansın.",
+      "Bacakları uzanmış şekilde aşağı sarkıtın.",
+      "Her iki bacağı dizler uzanmış şekilde kalça hizasına kaldırın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Bacakları yavaşça indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "plank mit rotation": {
     "en": [
@@ -5199,8 +5925,20 @@
       "Repeat the twist on the left side.",
       "Continue alternating sides for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Beginne in der Standard-Plank-Position auf den Unterarmen.",
+      "Rotiere die Hüfte abwechselnd zur Seite und tippe fast den Boden.",
+      "Halte den Kern die ganze Zeit angespannt.",
+      "Kehre zur Mitte zurück und rotiere zur anderen Seite.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Standart önkol plank pozisyonunda başlayın.",
+      "Kalçayı dönüşümlü olarak yana döndürün ve neredeyse zemine değin.",
+      "Core'u her zaman kasılı tutun.",
+      "Ortaya dönün ve diğer tarafa döndürün.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "schrager seitstutz": {
     "en": [
@@ -5210,8 +5948,20 @@
       "Hold this position for the desired amount of time.",
       "Lower your hips back down to the ground and repeat on the other side."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich seitlich auf eine schräge Bank.",
+      "Stütze dich auf den Unterarm, Körper in einer diagonalen Linie.",
+      "Hebe die Hüfte an und halte den Körper gerade.",
+      "Halte die Position für die gewünschte Dauer.",
+      "Senke langsam zurück und wechsle die Seite."
+    ],
+    "tr": [
+      "Eğimli banka yan yatın.",
+      "Önkol üzerinde kendinizi destekleyin, vücut diyagonal çizgide.",
+      "Kalçayı kaldırın ve vücudu düz tutun.",
+      "Pozisyonu istenen süre boyunca tutun.",
+      "Yavaşça indirin ve tarafları değiştirin."
+    ]
   },
   "plank gewichtet": {
     "en": [
@@ -5224,8 +5974,20 @@
       "Lower your body back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Beginne in der Standard-Plank-Position auf den Unterarmen.",
+      "Lasse einen Trainingspartner eine Gewichtsplatte auf den oberen Rücken legen.",
+      "Halte den Körper in einer geraden Linie, Kern angespannt.",
+      "Halte die Position für die gewünschte Dauer.",
+      "Senke langsam zurück zur Ausgangsposition."
+    ],
+    "tr": [
+      "Standart önkol plank pozisyonunda başlayın.",
+      "Bir antrenman arkadaşının üst sırtınıza bir ağırlık levhası koymasına izin verin.",
+      "Vücudu düz çizgide tutun, core kasılı.",
+      "Pozisyonu istenen süre boyunca tutun.",
+      "Yavaşça başlangıç pozisyonuna indirin."
+    ]
   },
   "crunch schrag": {
     "en": [
@@ -5236,8 +5998,20 @@
       "Repeat on the other side, bringing your left elbow towards your right knee.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich auf den Rücken, Knie gebeugt, Hände hinter dem Kopf.",
+      "Hebe die Schultern vom Boden ab und rotiere gleichzeitig zur gegenüberliegenden Seite.",
+      "Führe den Ellbogen zur gegenüberliegenden Knie.",
+      "Senke langsam zurück zur Ausgangsposition.",
+      "Wechsle die Seite und wiederhole alternierend."
+    ],
+    "tr": [
+      "Sırt üstü uzanın, dizler bükülü, eller başın arkasında.",
+      "Omuzları yerden kaldırın ve aynı anda karşı tarafa döndürün.",
+      "Dirseği karşı dize doğru götürün.",
+      "Yavaşça başlangıç pozisyonuna indirin.",
+      "Tarafları değiştirerek dönüşümlü tekrarlayın."
+    ]
   },
   "fahrradcrunch band": {
     "en": [
@@ -5247,8 +6021,22 @@
       "Continue alternating the twisting motion, as if you are pedaling a bicycle, while keeping your core engaged throughout the movement.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Befestige ein Widerstandsband und lege dich auf den Rücken.",
+      "Halte das Band an den Händen hinter dem Kopf.",
+      "Führe eine Fahrradbewegung mit den Beinen aus.",
+      "Rotiere dabei den Oberkörper abwechselnd zur jeweiligen Seite.",
+      "Halte den Kern angespannt und die Bewegung kontrolliert.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Bir direnç bandı takın ve sırt üstü uzanın.",
+      "Bandı her iki elinizle başın arkasında tutun.",
+      "Bacaklarla bisiklet hareketi yapın.",
+      "Bu esnada gövdeyi dönüşümlü olarak her tarafa döndürün.",
+      "Core'u kasılı tutun ve hareketi kontrollü yapın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "jackknife sit up": {
     "en": [
@@ -5257,8 +6045,22 @@
       "Pause for a moment at the top, then slowly lower your legs and upper body back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich flach auf den Rücken, Arme über dem Kopf ausgestreckt.",
+      "Hebe gleichzeitig Oberkörper und Beine an, um sie in der Mitte zu treffen.",
+      "Tippe mit den Fingern an die Zehen oder Schienenbeine.",
+      "Halte kurz an der Endposition.",
+      "Kehre langsam zur Ausgangsposition zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Sırt üstü düz uzanın, kollar başın üzerinde uzanmış.",
+      "Gövde ve bacakları aynı anda kaldırarak ortada buluşturun.",
+      "Parmaklarla parmak uçlarına veya kaval kemiklerine değin.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Yavaşça başlangıç pozisyonuna dönün.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "rollout stehend": {
     "en": [
@@ -5268,8 +6070,20 @@
       "Pause for a moment, then slowly roll the wheel back towards your body, returning to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Halte das Rollout-Rad mit beiden Händen und stehe aufrecht.",
+      "Rolle das Rad langsam nach vorne und strecke dabei den Körper.",
+      "Senke den Körper so weit wie möglich ab, Kern angespannt.",
+      "Rolle das Rad zurück zur Ausgangsposition, indem du den Kern kontrahierst.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Rollout çarkını her iki elinizle tutun ve dik durun.",
+      "Çarkı yavaşça öne yuvarlayarak vücudu uzatın.",
+      "Core kasılı şekilde vücudu mümkün olduğunca indirin.",
+      "Core'u sıkıştırarak çarkı başlangıç pozisyonuna geri yuvarlayın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "rollout lh": {
     "en": [
@@ -5279,8 +6093,20 @@
       "Pause for a moment, then slowly roll the barbell back towards your knees, maintaining control.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Knie auf dem Boden, halte die Langhantel mit schulterbreitem Griff.",
+      "Rolle die Stange langsam nach vorne und strecke dabei den Körper.",
+      "Senke den Körper so weit wie möglich ab, Kern angespannt.",
+      "Rolle die Stange zurück zur Ausgangsposition durch Kontraktion des Kerns.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Yerde dizlerinizin üzerine çökün, barbeeli omuz genişliğinde tutun.",
+      "Çubuğu yavaşça öne yuvarlayarak vücudu uzatın.",
+      "Core kasılı şekilde vücudu mümkün olduğunca indirin.",
+      "Core'u sıkıştırarak çubuğu başlangıç pozisyonuna geri yuvarlayın.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "body saw rolle": {
     "en": [
@@ -5289,8 +6115,20 @@
       "Pause for a moment at the furthest point, then slowly roll the roller back towards your starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Beginne in der Plank-Position auf den Unterarmen mit den Füßen auf einer Rolle.",
+      "Schiebe den Körper durch Druck auf die Unterarme nach hinten.",
+      "Ziehe den Körper wieder nach vorne zur Ausgangsposition.",
+      "Halte den Kern die ganze Zeit angespannt.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Önkol plank pozisyonunda başlayın, ayaklar rulo üzerinde.",
+      "Önkollara baskı yaparak vücudu geriye itin.",
+      "Vücudu tekrar başlangıç pozisyonuna öne çekin.",
+      "Core'u her zaman kasılı tutun.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "butt ups": {
     "en": [
@@ -5301,8 +6139,20 @@
       "Slowly lower your legs back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Beginne in der Plank-Position auf den Unterarmen.",
+      "Hebe die Hüfte explosiv so hoch wie möglich an.",
+      "Halte kurz an der Endposition.",
+      "Senke die Hüfte langsam zurück zur Plank-Position.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Önkol plank pozisyonunda başlayın.",
+      "Kalçayı patlayıcı şekilde mümkün olduğunca yükseğe kaldırın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Kalçayı yavaşça plank pozisyonuna indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "beinheben sitzend": {
     "en": [
@@ -5312,8 +6162,22 @@
       "Pause for a moment at the top, then slowly lower your legs back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Sitze auf dem Rand einer Bank, Hände seitlich für Stabilität.",
+      "Halte die Beine gestreckt oder leicht gebeugt.",
+      "Hebe beide Beine gleichzeitig auf Hüfthöhe an.",
+      "Halte kurz an der Endposition.",
+      "Senke die Beine langsam zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Bir bankın kenarında oturun, eller stabilite için yanda.",
+      "Bacakları uzanmış veya hafif bükülü tutun.",
+      "Her iki bacağı aynı anda kalça hizasına kaldırın.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Bacakları yavaşça indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "hangender pike": {
     "en": [
@@ -5323,8 +6187,20 @@
       "Hold the position for a moment, then slowly lower your legs back down to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Hänge frei an einer Klimmzugstange.",
+      "Hebe beide Beine gestreckt so weit wie möglich auf, ziele mit den Zehen zur Stange.",
+      "Halte kurz an der Endposition.",
+      "Senke die Beine langsam zur Ausgangsposition zurück.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "Bir bardan serbest asılın.",
+      "Her iki bacağı uzanmış şekilde mümkün olduğunca yukarı kaldırın, parmak uçlarını bara doğru götürün.",
+      "Bitiş noktasında kısa süre duraksayın.",
+      "Bacakları yavaşça başlangıç pozisyonuna indirin.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "trx fallout": {
     "en": [
@@ -5335,8 +6211,20 @@
       "Pause for a moment at the bottom, then slowly raise your body back up to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Halte die TRX-Griffe mit ausgestreckten Armen vor dem Körper.",
+      "Lehne dich nach vorne und führe die Arme über den Kopf.",
+      "Strecke den Körper so weit wie möglich aus, Kern angespannt.",
+      "Ziehe dich durch Kontraktion des Kerns zurück zur Ausgangsposition.",
+      "Wiederhole für die gewünschte Anzahl an Wiederholungen."
+    ],
+    "tr": [
+      "TRX tutamaçlarını kollar öne uzanmış şekilde tutun.",
+      "Öne eğilerek kolları başın üzerine götürün.",
+      "Core kasılı şekilde vücudu mümkün olduğunca uzatın.",
+      "Core'u sıkıştırarak başlangıç pozisyonuna dönün.",
+      "İstenen tekrar sayısı kadar tekrarlayın."
+    ]
   },
   "seilspringen": {
     "en": [
@@ -5346,8 +6234,20 @@
       "Land softly on the balls of your feet and repeat the jump as the rope comes around again.",
       "Continue jumping for the desired duration or number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Halte das Springseil in beiden Händen, Arme seitlich neben dem Körper.",
+      "Springe mit beiden Beinen gleichzeitig und führe das Seil über den Kopf.",
+      "Lande weich auf den Fußballen.",
+      "Halte ein gleichmäßiges Tempo bei.",
+      "Wiederhole für die gewünschte Dauer oder Anzahl an Sprüngen."
+    ],
+    "tr": [
+      "Atlama ipini her iki elinizde tutun, kollar gövdenin yanında.",
+      "İki bacakla aynı anda zıplayın ve ipi başın üzerinden geçirin.",
+      "Ayak tabanlarına yumuşak inin.",
+      "Düzenli bir tempo koruyun.",
+      "İstenen süre veya atlama sayısı kadar tekrarlayın."
+    ]
   },
   "crosstrainer rad": {
     "en": [
@@ -5357,8 +6257,20 @@
       "Maintain a steady pace and increase the resistance if desired.",
       "Continue pedaling for the desired duration of your cardio workout."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich auf den Crosstrainer und stelle Sitzhöhe und Lenker ein.",
+      "Lege die Füße auf die Pedale und greife die Lenker.",
+      "Starte mit einem niedrigen Widerstand und trete im gleichmäßigen Rhythmus.",
+      "Halte ein gerades Rückgrat und entspannte Schultern.",
+      "Trainiere für die gewünschte Dauer."
+    ],
+    "tr": [
+      "Crosstrainerın koltuğuna oturun ve koltuk yüksekliği ile gidon ayarlayın.",
+      "Ayakları pedallara koyun ve gidonları tutun.",
+      "Düşük bir dirençle başlayın ve düzenli ritimde pedallayin.",
+      "Dik bir sırt ve rahat omuzlar koruyun.",
+      "İstenen süre boyunca antrenman yapın."
+    ]
   },
   "ergometer leicht": {
     "en": [
@@ -5370,8 +6282,20 @@
       "Cool down by gradually reducing your pace and resistance level.",
       "Stretch your leg muscles after the workout to prevent tightness and promote recovery."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Setze dich auf das Ergometer und passe Sattel und Lenker an.",
+      "Stelle einen niedrigen Widerstand ein.",
+      "Trete in einem gleichmäßigen, ruhigen Rhythmus.",
+      "Halte eine aufrechte Sitzposition.",
+      "Trainiere für die gewünschte Dauer."
+    ],
+    "tr": [
+      "Ergometreye oturun ve sele ile gidonları ayarlayın.",
+      "Düşük bir direnç ayarlayın.",
+      "Düzenli, sakin bir ritimde pedallayın.",
+      "Dik bir oturma pozisyonu koruyun.",
+      "İstenen süre boyunca antrenman yapın."
+    ]
   },
   "barenkrabbeln": {
     "en": [
@@ -5382,8 +6306,20 @@
       "Maintain a steady pace and keep your core tight throughout the exercise.",
       "Continue for the desired distance or time."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Beginne in einer vierfüßigen Position, Hüfte auf Kniehöhe angehoben.",
+      "Bewege dich vorwärts, indem du abwechselnd gegenüberliegende Hand-Fuß-Paare bewegst.",
+      "Halte die Hüfte niedrig und stabil.",
+      "Bewege dich über eine definierte Strecke.",
+      "Wiederhole in die entgegengesetzte Richtung."
+    ],
+    "tr": [
+      "Dört ayaklı pozisyonda başlayın, kalça diz seviyesinde.",
+      "Dönüşümlü olarak karşı el-ayak çiftlerini hareket ettirerek ilerleyin.",
+      "Kalçayı alçak ve stabil tutun.",
+      "Belirlenen mesafede ilerleyin.",
+      "Ters yönde tekrarlayın."
+    ]
   },
   "skater sprunge": {
     "en": [
@@ -5395,8 +6331,20 @@
       "Continue alternating sides, jumping and tapping the ground with each leg.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe auf einem Bein, leicht in die Knie gebeugt.",
+      "Springe seitlich und lande auf dem anderen Bein.",
+      "Schwinge das andere Bein hinter dem Standbein durch.",
+      "Springe sofort zurück zur anderen Seite.",
+      "Wiederhole für die gewünschte Dauer oder Anzahl."
+    ],
+    "tr": [
+      "Bir bacak üzerinde durun, hafif diz bükümüyle.",
+      "Yana zıplayın ve diğer bacak üzerine inin.",
+      "Diğer bacağı destek bacağının arkasından savurun.",
+      "Hemen karşı tarafa geri zıplayın.",
+      "İstenen süre veya sayı kadar tekrarlayın."
+    ]
   },
   "hampelmann": {
     "en": [
@@ -5406,8 +6354,20 @@
       "Land softly on the balls of your feet with your knees slightly bent.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht, Füße zusammen, Arme seitlich.",
+      "Springe und spreize dabei die Füße schulterbreit auseinander und hebe die Arme über den Kopf.",
+      "Springe zurück in die Ausgangsposition.",
+      "Halte ein gleichmäßiges Tempo.",
+      "Wiederhole für die gewünschte Dauer oder Anzahl."
+    ],
+    "tr": [
+      "Dik durun, ayaklar bitişik, kollar yanda.",
+      "Zıplayarak ayakları omuz genişliğine açın ve kolları başın üzerine kaldırın.",
+      "Zıplayarak başlangıç pozisyonuna dönün.",
+      "Düzenli bir tempo koruyun.",
+      "İstenen süre veya sayı kadar tekrarlayın."
+    ]
   },
   "knieheben an der wand": {
     "en": [
@@ -5419,8 +6379,20 @@
       "Maintain a fast pace and keep your upper body stable throughout the exercise.",
       "Repeat for the desired duration or number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht vor einer Wand, Hände flach an die Wand gelegt.",
+      "Hebe abwechselnd die Knie so hoch wie möglich an.",
+      "Halte ein schnelles, rhythmisches Tempo.",
+      "Halte den Kern angespannt und die Hüfte stabil.",
+      "Wiederhole für die gewünschte Dauer."
+    ],
+    "tr": [
+      "Bir duvarın önünde dik durun, eller duvara düz dayalı.",
+      "Diz mümkün olduğunca yüksek gelecek şekilde dönüşümlü kaldırın.",
+      "Hızlı, ritmik bir tempo koruyun.",
+      "Core'u kasılı ve kalçayı stabil tutun.",
+      "İstenen süre boyunca tekrarlayın."
+    ]
   },
   "oberschenkel dehnung": {
     "en": [
@@ -5430,8 +6402,20 @@
       "Hold the stretch for 20-30 seconds, then return to the starting position.",
       "Repeat on the other side."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Sitze auf dem Boden mit ausgestreckten Beinen.",
+      "Beuge ein Knie und bringe den Fuß zur Innenseite des anderen Oberschenkels.",
+      "Beuge den Oberkörper nach vorne über das gestreckte Bein.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wechsle die Seite."
+    ],
+    "tr": [
+      "Bacakları uzanmış şekilde yere oturun.",
+      "Bir dizi bükerek ayağı diğer uyluğun iç yanına getirin.",
+      "Gövdeyi uzanmış bacak üzerine öne eğin.",
+      "Germeyi 20-30 saniye tutun.",
+      "Tarafları değiştirin."
+    ]
   },
   "wadendehnung an der wand": {
     "en": [
@@ -5442,8 +6426,20 @@
       "Hold the stretch for 20-30 seconds.",
       "Switch legs and repeat the stretch."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stelle dich vor eine Wand und lege die Hände auf Schulterhöhe an die Wand.",
+      "Stelle einen Fuß nach hinten und halte das Bein gestreckt.",
+      "Drücke die hintere Ferse in den Boden.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wechsle die Seite."
+    ],
+    "tr": [
+      "Bir duvarın önüne geçin ve elleri omuz hizasında duvara koyun.",
+      "Bir ayağı arkaya alın ve bacağı uzatılmış tutun.",
+      "Arka topuğu yere bastırın.",
+      "Germeyi 20-30 saniye tutun.",
+      "Tarafları değiştirin."
+    ]
   },
   "wadendehnung schritt an der wand": {
     "en": [
@@ -5454,8 +6450,20 @@
       "Hold the stretch for 20-30 seconds.",
       "Switch legs and repeat the stretch."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stelle dich vor eine Wand, lege die Hände an die Wand.",
+      "Stelle einen Fuß im Ausfallschritt nach hinten.",
+      "Beuge leicht das vordere Knie und drücke die hintere Ferse in den Boden.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wechsle die Seite."
+    ],
+    "tr": [
+      "Bir duvarın önüne geçin, elleri duvara koyun.",
+      "Bir ayağı makas adımıyla geriye alın.",
+      "Ön dizi hafifçe büküp arka topuğu yere bastırın.",
+      "Germeyi 20-30 saniye tutun.",
+      "Tarafları değiştirin."
+    ]
   },
   "huftbeuger dehnung ball": {
     "en": [
@@ -5465,8 +6473,20 @@
       "Lean forward, pushing your hips towards the stability ball, until you feel a stretch in your right hip flexor.",
       "Hold the stretch for 20-30 seconds, then switch sides and repeat."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Knie auf dem Boden, lege die Hände auf einen Gymball vor dir.",
+      "Stelle einen Fuß nach vorne in eine Ausfallschrittposition.",
+      "Verlagere das Gewicht nach vorne und dehne den Hüftbeuger des hinteren Beins.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wechsle die Seite."
+    ],
+    "tr": [
+      "Yerde dizlerinizin üzerine çökün, elleri önünüzdeki jimnastik topuna koyun.",
+      "Bir ayağı öne makas pozisyonuna alın.",
+      "Ağırlığı öne vererek arka bacağın kalça fleksörünü gerin.",
+      "Germeyi 20-30 saniye tutun.",
+      "Tarafları değiştirin."
+    ]
   },
   "lat dehnung kniend": {
     "en": [
@@ -5477,8 +6497,20 @@
       "Repeat the stretch on the left side, leaning to the left and feeling a stretch in your right lat muscle.",
       "Continue alternating sides for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Knie vor einem Tisch oder einer Bank.",
+      "Lege beide Arme auf der Oberfläche ab, Ellbogen schulterbreit.",
+      "Senke den Kopf und die Brust nach unten zwischen die Arme.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wiederhole 2-3 Mal."
+    ],
+    "tr": [
+      "Bir masa veya bankın önünde dizlerinizin üzerine çökün.",
+      "Her iki kolu yüzeye koyun, dirsekler omuz genişliğinde.",
+      "Baş ve göğsü kolların arasına aşağı indirin.",
+      "Germeyi 20-30 saniye tutun.",
+      "2-3 kez tekrarlayın."
+    ]
   },
   "brust dehnung ball": {
     "en": [
@@ -5488,8 +6520,20 @@
       "Hold the stretch for a few seconds, then slowly return to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege dich auf einen Gymball, der unter dem oberen Rücken liegt.",
+      "Strecke die Arme seitlich aus.",
+      "Lass die Brust sich durch die Schwerkraft dehnen.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Rolle leicht zur Seite um zu beenden."
+    ],
+    "tr": [
+      "Üst sırtın altına gelen bir jimnastik topunun üzerine uzanın.",
+      "Kolları yanlara açın.",
+      "Göğsün yerçekimiyle gerilmesine izin verin.",
+      "Germeyi 20-30 saniye tutun.",
+      "Bitirmek için yana yavaşça yuvarlayın."
+    ]
   },
   "trizeps dehnung": {
     "en": [
@@ -5499,8 +6543,18 @@
       "Hold the stretch for 15-30 seconds, then release.",
       "Repeat on the other side."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Hebe einen Arm über den Kopf und beuge den Ellbogen so, dass die Hand hinter den Kopf zeigt.",
+      "Greife mit der anderen Hand den Ellbogen und ziehe ihn sanft nach innen.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wechsle die Seite."
+    ],
+    "tr": [
+      "Bir kolu başın üzerine kaldırın ve dirseği bükerek elin başın arkasını göstermesini sağlayın.",
+      "Diğer elinizle dirseği kavrayın ve nazikçe içe çekin.",
+      "Germeyi 20-30 saniye tutun.",
+      "Tarafları değiştirin."
+    ]
   },
   "nacken dehnung seitlich": {
     "en": [
@@ -5510,8 +6564,20 @@
       "Repeat on the other side.",
       "Perform 2-4 sets on each side."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Sitze oder stehe aufrecht.",
+      "Neige den Kopf sanft zur Seite, Ohr Richtung Schulter.",
+      "Lege optional die Hand auf den Kopf und übe leichten Druck aus.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wechsle die Seite."
+    ],
+    "tr": [
+      "Dik oturun veya durun.",
+      "Başı nazikçe yana eğin, kulak omuza doğru.",
+      "İsteğe bağlı olarak eli başa koyun ve hafif baskı uygulayın.",
+      "Germeyi 20-30 saniye tutun.",
+      "Tarafları değiştirin."
+    ]
   },
   "piriformis dehnung sitzend": {
     "en": [
@@ -5520,8 +6586,20 @@
       "Place your left elbow on the outside of your right knee and gently twist your torso to the right.",
       "Hold the stretch for 20-30 seconds, then switch sides and repeat."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Sitze auf einem Stuhl oder dem Boden.",
+      "Lege das Knöchelgelenk eines Fußes auf das Knie des anderen Beins.",
+      "Beuge leicht nach vorne, bis du eine Dehnung in der Gesäßregion spürst.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wechsle die Seite."
+    ],
+    "tr": [
+      "Bir sandalyeye veya yere oturun.",
+      "Bir ayağın bileğini diğer bacağın dizinin üzerine koyun.",
+      "Kalça bölgesinde gerilme hissedene kadar hafifçe öne eğilin.",
+      "Germeyi 20-30 saniye tutun.",
+      "Tarafları değiştirin."
+    ]
   },
   "laufer dehnung": {
     "en": [
@@ -5531,8 +6609,20 @@
       "Place your hands on your right thigh for support.",
       "Hold the stretch for 20-30 seconds, then switch sides and repeat."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Mache einen großen Ausfallschritt nach vorne.",
+      "Senke die Hüfte nach unten und vorne.",
+      "Halte den vorderen Fuß flach auf dem Boden, das hintere Knie auf dem Boden.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wechsle die Seite."
+    ],
+    "tr": [
+      "Büyük bir makas adımı atın.",
+      "Kalçayı aşağı ve öne indirin.",
+      "Ön ayağı düz yerde, arka dizi yerde tutun.",
+      "Germeyi 20-30 saniye tutun.",
+      "Tarafları değiştirin."
+    ]
   },
   "wirbelsaulen dehnung": {
     "en": [
@@ -5543,8 +6633,20 @@
       "Hold the stretch for a few seconds, then slowly return to the starting position.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Sitze aufrecht auf dem Boden, Beine ausgestreckt oder im Schneidersitz.",
+      "Strecke die Arme nach vorne aus und beuge den Oberkörper nach vorne.",
+      "Dehne die Wirbelsäule durch Verlängerung vom Scheitel bis zum Steißbein.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Kehre langsam zur aufrechten Position zurück."
+    ],
+    "tr": [
+      "Yerde dik oturun, bacaklar uzanmış veya bağdaş kurulmuş.",
+      "Kolları öne uzatın ve gövdeyi öne eğin.",
+      "Tepeden kuyruk sokumuna kadar uzanarak omurgayı gerin.",
+      "Germeyi 20-30 saniye tutun.",
+      "Yavaşça dik pozisyona dönün."
+    ]
   },
   "brust rucken dehnung": {
     "en": [
@@ -5556,8 +6658,20 @@
       "Hold the stretch for 15-30 seconds, then release.",
       "Repeat on the opposite side."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Stehe aufrecht und verschränke die Hände hinter dem Rücken.",
+      "Strecke die Arme nach unten und öffne dabei die Brust.",
+      "Ziehe die Schulterblätter zusammen.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Löse die Position und wiederhole 2-3 Mal."
+    ],
+    "tr": [
+      "Dik durun ve elleri sırtın arkasında kenetleyin.",
+      "Kolları aşağı uzatın ve göğsü açın.",
+      "Kürek kemiklerini birbirine yaklaştırın.",
+      "Germeyi 20-30 saniye tutun.",
+      "Pozisyonu bırakın ve 2-3 kez tekrarlayın."
+    ]
   },
   "brust dehnung hinter kopf": {
     "en": [
@@ -5567,8 +6681,18 @@
       "Hold the stretch for 15-30 seconds.",
       "Release the stretch and repeat as desired."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Lege die Hände hinter den Kopf und öffne die Ellbogen weit zur Seite.",
+      "Ziehe die Ellbogen nach hinten und spüre die Dehnung in der Brust.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wiederhole 2-3 Mal."
+    ],
+    "tr": [
+      "Elleri başın arkasına koyun ve dirsekleri iyice yanlara açın.",
+      "Dirsekleri arkaya çekin ve göğüsteki gerilmeyi hissedin.",
+      "Germeyi 20-30 saniye tutun.",
+      "2-3 kez tekrarlayın."
+    ]
   },
   "rucken dehnung sitzend": {
     "en": [
@@ -5578,8 +6702,20 @@
       "Feel the stretch in your lower back and hold for 20-30 seconds.",
       "Slowly return to the starting position and repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Sitze auf dem Boden, Knie leicht gebeugt.",
+      "Halte die Knie und runde den Rücken.",
+      "Lehne dich langsam zurück und dehne die untere Rückenpartie.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Kehre langsam zur aufrechten Position zurück."
+    ],
+    "tr": [
+      "Yerde oturun, dizler hafif bükülü.",
+      "Dizleri tutun ve sırtı yuvarlayın.",
+      "Yavaşça geriye yaslanın ve alt sırtı gerin.",
+      "Germeyi 20-30 saniye tutun.",
+      "Yavaşça dik pozisyona dönün."
+    ]
   },
   "peroneus dehnung": {
     "en": [
@@ -5590,7 +6726,19 @@
       "Release the tension on the rope and repeat the stretch on the other leg.",
       "Repeat for the desired number of repetitions."
     ],
-    "de": [],
-    "tr": []
+    "de": [
+      "Sitze auf dem Boden oder einem Stuhl.",
+      "Lege einen Knöchel auf das andere Knie.",
+      "Drehe den Fuß leicht nach innen und drücke sanft nach unten.",
+      "Halte die Dehnung für 20-30 Sekunden.",
+      "Wechsle die Seite."
+    ],
+    "tr": [
+      "Yere veya bir sandalyeye oturun.",
+      "Bir bileği diğer dizin üzerine koyun.",
+      "Ayağı hafifçe içe çevirin ve nazikçe aşağıya bastırın.",
+      "Germeyi 20-30 saniye tutun.",
+      "Tarafları değiştirin."
+    ]
   }
 }
