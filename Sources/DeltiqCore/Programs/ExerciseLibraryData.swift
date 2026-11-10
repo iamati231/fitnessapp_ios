@@ -59,7 +59,6 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.60, localMuscleDamageFactor: 0.55, cnsDemandFactor: 0.55, axialLoadFactor: 0.55, technicalComplexityFactor: 0.55, recoveryClass: .high,
                              localizationKey: "exercise.name.overheadpress",
                              equipmentRequirement: .item(.barbell)),
-        ExerciseTemplateSpec(name: "Push Press",                       equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .advanced, localizationKey: "exercise.name.pushPress",
                              equipmentRequirement: .item(.barbell)),
         ExerciseTemplateSpec(name: "Nackendrücken",                   equipment: .barbell, primaryMuscle: .shoulders,  difficultyLevel: .advanced, localizationKey: "exercise.name.behindNeckPress",
                              equipmentRequirement: .item(.barbell)),
@@ -85,7 +84,6 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.75, localMuscleDamageFactor: 0.80, cnsDemandFactor: 0.65, axialLoadFactor: 0.80, technicalComplexityFactor: 0.65, recoveryClass: .high,
                              localizationKey: "exercise.name.romanianDeadlift",
                              equipmentRequirement: .item(.barbell)),
-        ExerciseTemplateSpec(name: "Hip Thrust (LH)",                  equipment: .barbell, primaryMuscle: .glutes, localizationKey: "exercise.name.barbellHipThrust",
                              equipmentRequirement: .all([.item(.barbell), .any([.item(.flatBench), .item(.adjustableBench)])])),
         ExerciseTemplateSpec(name: "Ausfallschritte (LH)",             equipment: .barbell, primaryMuscle: .quads, localizationKey: "exercise.name.barbellLunge",
                              equipmentRequirement: .all([.item(.barbell), .item(.rack)])),
@@ -177,9 +175,7 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.60, cnsDemandFactor: 0.65, axialLoadFactor: 0.45, technicalComplexityFactor: 0.55, recoveryClass: .high,
                              localizationKey: "exercise.name.dumbbellThruster",
                              equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
-        ExerciseTemplateSpec(name: "Hip Thrust (KH)",                    equipment: .dumbbell, primaryMuscle: .glutes,     difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellHipThrust",
                              equipmentRequirement: .all([.item(.dumbbell), .any([.item(.flatBench), .item(.adjustableBench)])])),
-        ExerciseTemplateSpec(name: "Wadenheben (KH)",                    equipment: .dumbbell, primaryMuscle: .calves,     difficultyLevel: .beginner, localizationKey: "exercise.name.dumbbellCalfRaise",
                              equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
 
         // ── DUMBBELL · ARMS ────────────────────────────────────────────────
@@ -196,7 +192,6 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .all([.item(.dumbbell), .item(.adjustableBench)])),
         ExerciseTemplateSpec(name: "Konzentrations-Curl (KH)",              equipment: .dumbbell, primaryMuscle: .biceps,     difficultyLevel: .beginner, localizationKey: "exercise.name.concentrationCurl",
                              equipmentRequirement: .item(.dumbbell)),
-        ExerciseTemplateSpec(name: "Trizepsstrecker über Kopf (KH)",     equipment: .dumbbell, primaryMuscle: .triceps, localizationKey: "exercise.name.dumbbellOverheadTricepExtension",
                              equipmentRequirement: .item(.dumbbell)),
         ExerciseTemplateSpec(name: "Trizepskickback (KH)",             equipment: .dumbbell, primaryMuscle: .triceps, localizationKey: "exercise.name.dumbbellTricepKickback",
                              equipmentRequirement: .item(.dumbbell)),
@@ -241,14 +236,12 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Dips (Brust)",                     equipment: .bodyweight, primaryMuscle: .chest, localizationKey: "exercise.name.chestDip"),
         ExerciseTemplateSpec(name: "Dips (Trizeps)",                   equipment: .bodyweight, primaryMuscle: .triceps, localizationKey: "exercise.name.tricepDip"),
-        ExerciseTemplateSpec(name: "Pike Liegestütze",                equipment: .bodyweight, primaryMuscle: .shoulders, localizationKey: "exercise.name.pikePushup",
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Handstand-Liegestütze",           equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.handstandPushup",
                              equipmentRequirement: .all([])),
 
 
         // ── BODYWEIGHT · LOWER ─────────────────────────────────────────────
-        ExerciseTemplateSpec(name: "Kniebeuge (BW)",                   equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner, localizationKey: "exercise.name.bodyweightSquat",
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Jump Squat",                       equipment: .bodyweight, primaryMuscle: .quads, localizationKey: "exercise.name.jumpSquat",
                              equipmentRequirement: .all([])),
@@ -263,17 +256,14 @@ public enum ExerciseLibraryData {
         // DEL-098: Wall Sit = isometrische Quad-Belastung. Lokales DOMS hoch,
         // CNS / systemic eher niedrig (kein Bewegungsablauf, keine schweren
         // Lasten).
-        ExerciseTemplateSpec(name: "Wall Sit",                         equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner, isTimeBased: true,
                              systemicFatigueFactor: 0.35, localMuscleDamageFactor: 0.70, cnsDemandFactor: 0.20, axialLoadFactor: 0.15, technicalComplexityFactor: 0.10, recoveryClass: .low,
                              localizationKey: "exercise.name.wallSit",
                              equipmentRequirement: .all([])),
         // Beste BW-Quad-Isolation — als Substitute fuer Beinstrecker (Maschine).
         ExerciseTemplateSpec(name: "Sissy Squats (BW)",                equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .advanced, localizationKey: "exercise.name.sissySquat",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Nordic Curls",                     equipment: .bodyweight, primaryMuscle: .hamstrings, localizationKey: "exercise.name.nordicCurl"),
         ExerciseTemplateSpec(name: "Glute Bridge (BW)",                equipment: .bodyweight, primaryMuscle: .glutes,    difficultyLevel: .beginner, localizationKey: "exercise.name.gluteBridge",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Hip Thrust (BW)",                  equipment: .bodyweight, primaryMuscle: .glutes,    difficultyLevel: .beginner, localizationKey: "exercise.name.bodyweightHipThrust",
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Wadenheben (BW)",                  equipment: .bodyweight, primaryMuscle: .calves,    difficultyLevel: .beginner, localizationKey: "exercise.name.bodyweightCalfRaise",
                              equipmentRequirement: .all([])),
@@ -300,7 +290,6 @@ public enum ExerciseLibraryData {
         // Standard-Substitutes fuer Kabel-Crunches und haengendes Beinheben.
         ExerciseTemplateSpec(name: "Crunches (BW)",                    equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, localizationKey: "exercise.name.crunch",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Beinheben (liegend)",              equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, localizationKey: "exercise.name.lyingLegRaise",
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Sit-ups",                          equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, localizationKey: "exercise.name.situp",
                              equipmentRequirement: .all([])),
@@ -320,7 +309,6 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .item(.machineStation)),
 
         // ── MACHINE / CABLE · BACK ─────────────────────────────────────────
-        ExerciseTemplateSpec(name: "Latzug (weit)",                    equipment: .machine,  primaryMuscle: .back,        difficultyLevel: .beginner,
                              localizationKey: "exercise.name.latpulldown",
                              equipmentRequirement: .item(.machineStation)),
         ExerciseTemplateSpec(name: "Latzug (eng)",                     equipment: .machine,  primaryMuscle: .back,        difficultyLevel: .beginner, localizationKey: "exercise.name.latPulldownClose",
@@ -331,7 +319,6 @@ public enum ExerciseLibraryData {
         // ── MACHINE / CABLE · SHOULDERS ────────────────────────────────────
         ExerciseTemplateSpec(name: "Kabel Seitheben",                  equipment: .cable,    primaryMuscle: .shoulders,   difficultyLevel: .beginner, localizationKey: "exercise.name.cableLateralRaise",
                              equipmentRequirement: .item(.cableStation)),
-        ExerciseTemplateSpec(name: "Face Pull",                        equipment: .cable,    primaryMuscle: .shoulders, localizationKey: "exercise.name.facePull",
                              equipmentRequirement: .item(.cableStation)),
         ExerciseTemplateSpec(name: "Schulterdrücken (Maschine)",          equipment: .machine,  primaryMuscle: .shoulders,   difficultyLevel: .beginner, localizationKey: "exercise.name.shoulderPressMachine",
                              equipmentRequirement: .item(.machineStation)),
@@ -374,7 +361,6 @@ public enum ExerciseLibraryData {
         // ── KETTLEBELL ─────────────────────────────────────────────────────
         ExerciseTemplateSpec(name: "Kettlebell Swing",                 equipment: .kettlebell, primaryMuscle: .glutes, localizationKey: "exercise.name.kettlebellSwing",
                              equipmentRequirement: .item(.kettlebell)),
-        ExerciseTemplateSpec(name: "Turkish Get-Up",                   equipment: .kettlebell, primaryMuscle: .core,      difficultyLevel: .advanced, localizationKey: "exercise.name.turkishGetUp",
                              equipmentRequirement: .item(.kettlebell)),
         ExerciseTemplateSpec(name: "Kettlebell Goblet Squat",          equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellGobletSquat",
                              equipmentRequirement: .any([.item(.kettlebell), .item(.dumbbell)])),
@@ -391,19 +377,14 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .item(.kettlebell)),
         ExerciseTemplateSpec(name: "Kettlebell Row einarmig",          equipment: .kettlebell, primaryMuscle: .back,      difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellRowSingleArm",
                              equipmentRequirement: .item(.kettlebell)),
-        ExerciseTemplateSpec(name: "Kettlebell RDL",                   equipment: .kettlebell, primaryMuscle: .hamstrings, difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellRDL",
                              equipmentRequirement: .item(.kettlebell)),
-        ExerciseTemplateSpec(name: "Kettlebell Push Press",            equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced,    localizationKey: "exercise.name.kettlebellPushPress",
                              equipmentRequirement: .item(.kettlebell)),
-        ExerciseTemplateSpec(name: "Kettlebell Suitcase Carry",        equipment: .kettlebell, primaryMuscle: .core,      difficultyLevel: .beginner, isTimeBased: true, localizationKey: "exercise.name.kettlebellSuitcaseCarry",
                              equipmentRequirement: .item(.kettlebell)),
         // Übungen der CrossFit-/Kettlebell-Trainingspläne (README 2.9 Phase 6),
         // die bisher nur in `ProgramTemplates` als roher Name standen, ohne
         // Library-Match — jetzt offiziell im Catalog, gleiches Muster wie
         // die "Cardio · Hybrid-Plan-Lifts"-Promotion oben (DEL-116).
-        ExerciseTemplateSpec(name: "Kettlebell Kreuzheben",            equipment: .kettlebell, primaryMuscle: .back,      difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellDeadlift",
                              equipmentRequirement: .item(.kettlebell)),
-        ExerciseTemplateSpec(name: "Kettlebell Overhead Press",        equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellOverheadPress",
                              equipmentRequirement: .item(.kettlebell)),
         ExerciseTemplateSpec(name: "Kettlebell Front Squat",           equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellFrontSquat",
                              equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
@@ -411,9 +392,7 @@ public enum ExerciseLibraryData {
         // Minute (kettlebellAdvanced Tag 1) — dieselbe Bewegung wie das
         // bestehende "Kettlebell Snatch", nur seitengetrennt als eigene
         // Uebung, weil ein Tag im Datenmodell keine Seiten-Alternation kennt.
-        ExerciseTemplateSpec(name: "Kettlebell Snatch (Links)",        equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellSnatchLeft",
                              equipmentRequirement: .item(.kettlebell)),
-        ExerciseTemplateSpec(name: "Kettlebell Snatch (Rechts)",       equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellSnatchRight",
                              equipmentRequirement: .item(.kettlebell)),
         // Nutzer-Upload (13. August, zweite Runde): 5 Kettlebell-Komplexe
         // ("Athletik beginnt hier") - sechs neue Bewegungen, die noch keine
@@ -422,23 +401,19 @@ public enum ExerciseLibraryData {
 
         // Anders als "Pullover (KH)" oben (Kurzhantel, beidhaendig): mit
         // EINER Kettlebell, ansonsten dieselbe Bewegung.
-        ExerciseTemplateSpec(name: "Kettlebell Pullover",              equipment: .kettlebell, primaryMuscle: .back,     difficultyLevel: .beginner, localizationKey: "exercise.name.kettlebellPullover",
                              equipmentRequirement: .item(.kettlebell)),
         // Einarmige KB-Variante von "Thruster (KH)" oben (Zweihand-Kurzhantel)
         // - gleiche Faktoren wie dort, ein Komplex mit Kniebeuge+Drueck ist
         // aehnlich fordernd, unabhaengig vom Geraet.
-        ExerciseTemplateSpec(name: "Kettlebell Thruster einarmig",     equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .intermediate,
                              systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.60, cnsDemandFactor: 0.65, axialLoadFactor: 0.45, technicalComplexityFactor: 0.55, recoveryClass: .high,
                              localizationKey: "exercise.name.kettlebellThrusterSingleArm",
                              equipmentRequirement: .item(.kettlebell)),
         // Anders als "Sit-ups" oben (Bodyweight): der Overhead-Hold macht es
         // zu einer eigenstaendigen Core-Stabilitaets-Uebung, kein reiner
         // Bodyweight-Bauchmuskel-Move mehr.
-        ExerciseTemplateSpec(name: "Kettlebell Sit-Up (Overhead Hold)", equipment: .kettlebell, primaryMuscle: .core,     difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellSitUpOverhead",
                              equipmentRequirement: .item(.kettlebell)),
         // Anders als "Diamant-Liegestütze" oben (Boden): Haende auf dem
         // Kettlebell-Griff, instabiler als eine feste Bodenflaeche.
-        ExerciseTemplateSpec(name: "Liegestütze auf Kettlebell",       equipment: .kettlebell, primaryMuscle: .triceps,  difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellPushup",
                              equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
 
         // ── CARDIO (DEL-080 — Ad-Hoc-Optionen fuer Hybrid-/freie Trainings) ─
@@ -465,7 +440,6 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.30, cnsDemandFactor: 0.20, axialLoadFactor: 0.05, technicalComplexityFactor: 0.05, recoveryClass: .medium,
                              localizationKey: "exercise.name.stationaryBike",
                              equipmentRequirement: .item(.machineStation)),
-        ExerciseTemplateSpec(name: "Rudermaschine",                    equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
                              systemicFatigueFactor: 0.65, localMuscleDamageFactor: 0.55, cnsDemandFactor: 0.35, axialLoadFactor: 0.20, technicalComplexityFactor: 0.25, recoveryClass: .medium,
                              localizationKey: "exercise.name.rowingMachine",
                              equipmentRequirement: .item(.machineStation)),
@@ -477,7 +451,6 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.40, cnsDemandFactor: 0.20, axialLoadFactor: 0.10, technicalComplexityFactor: 0.05, recoveryClass: .medium,
                              localizationKey: "exercise.name.stairStepper",
                              equipmentRequirement: .item(.machineStation)),
-        ExerciseTemplateSpec(name: "Schwimmen",                        equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
                              systemicFatigueFactor: 0.55, localMuscleDamageFactor: 0.35, cnsDemandFactor: 0.25, axialLoadFactor: 0.05, technicalComplexityFactor: 0.30, recoveryClass: .medium,
                              localizationKey: "exercise.name.swimming",
                              equipmentRequirement: .all([])),
@@ -544,7 +517,6 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .all([.item(.dumbbell, minimumCount: 2), .any([.item(.flatBench), .item(.adjustableBench)])])),
 
         // Rows
-        ExerciseTemplateSpec(name: "Meadows Row", equipment: .barbell, primaryMuscle: .back, difficultyLevel: .intermediate, localizationKey: "exercise.name.meadowsRow"),
         ExerciseTemplateSpec(name: "Inverted Row", equipment: .bodyweight, primaryMuscle: .back, difficultyLevel: .beginner, localizationKey: "exercise.name.invertedRow"),
 
         // Cable
@@ -552,7 +524,6 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .item(.cableStation)),
         ExerciseTemplateSpec(name: "Cable Woodchopper", equipment: .cable, primaryMuscle: .core, difficultyLevel: .intermediate, localizationKey: "exercise.name.cableWoodchopper",
                              equipmentRequirement: .item(.cableStation)),
-        ExerciseTemplateSpec(name: "Bayesian Curl", equipment: .cable, primaryMuscle: .biceps, difficultyLevel: .intermediate, localizationKey: "exercise.name.bayesianCurl",
                              equipmentRequirement: .item(.cableStation)),
         ExerciseTemplateSpec(name: "Reverse Cable Fly", equipment: .cable, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.reverseCableFly",
                              equipmentRequirement: .item(.cableStation)),
@@ -576,7 +547,6 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Muscle-Up", equipment: .bodyweight, primaryMuscle: .back, difficultyLevel: .advanced, localizationKey: "exercise.name.muscleUp",
                              equipmentRequirement: .item(.pullUpBar)),
-        ExerciseTemplateSpec(name: "Reverse Nordic Curl", equipment: .bodyweight, primaryMuscle: .quads, difficultyLevel: .intermediate, localizationKey: "exercise.name.reverseNordicCurl",
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Medizinball-Slam", equipment: .bodyweight, primaryMuscle: .core, difficultyLevel: .intermediate, localizationKey: "exercise.name.medicineBallSlam"),
 
@@ -681,7 +651,6 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .item(.dumbbell)),
         // Abschnitt 3: eigene Volltext-Tiefensuche, je ein eindeutiger
         // Einzel-Kandidat mit abweichendem Equipment.
-        ExerciseTemplateSpec(name: "Beincurl stehend (BW)", equipment: .bodyweight, primaryMuscle: .hamstrings, difficultyLevel: .beginner, localizationKey: "exercise.name.standingSingleLegCurlBodyweight"),
         ExerciseTemplateSpec(name: "Renegade Row (Kettlebell)", equipment: .kettlebell, primaryMuscle: .back, difficultyLevel: .advanced, localizationKey: "exercise.name.kettlebellRenegadeRow",
                              equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
         ExerciseTemplateSpec(name: "Latzug eng (Band)", equipment: .band, primaryMuscle: .back, difficultyLevel: .beginner, localizationKey: "exercise.name.bandCloseGripPulldown",
@@ -733,7 +702,6 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Pullover (LH)",                             equipment: .barbell,    primaryMuscle: .back,      localizationKey: "exercise.name.barbellPullover",              equipmentRequirement: .all([.item(.barbell), .item(.flatBench)])),
 
         // Dumbbell
-        ExerciseTemplateSpec(name: "Schrägbankrudern (KH)",                    equipment: .dumbbell,   primaryMuscle: .back,      localizationKey: "exercise.name.inclineDumbbellRow",           equipmentRequirement: .all([.item(.dumbbell), .item(.adjustableBench)])),
 
         // Cable
         ExerciseTemplateSpec(name: "Hammer Curl Kabel (Seil)",                  equipment: .cable,      primaryMuscle: .biceps,    localizationKey: "exercise.name.cableRopeHammerCurl"),
@@ -746,12 +714,8 @@ public enum ExerciseLibraryData {
 
         // Bodyweight / Plyometrics
         ExerciseTemplateSpec(name: "3/4 Sit-Up",                                 equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner,    localizationKey: "exercise.name.threeQuarterSitUp"),
-        ExerciseTemplateSpec(name: "Box Jump",                                   equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .intermediate, localizationKey: "exercise.name.boxJump"),
 
         // Kettlebell (Programm-Template-Referenzen)
-        ExerciseTemplateSpec(name: "Kettlebell Halo",                            equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellHalo",             equipmentRequirement: .item(.kettlebell)),
-        ExerciseTemplateSpec(name: "Kettlebell Clean to Front Squat",            equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .advanced,    localizationKey: "exercise.name.kettlebellCleanToFrontSquat"),
-        ExerciseTemplateSpec(name: "Kettlebell Uppercut Rotation",               equipment: .kettlebell, primaryMuscle: .core,      difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellUppercutRotation"),
     ]
 
     /// Alternative-Mapping fuer den Environment-Swap (DEL-022). Bei einem
