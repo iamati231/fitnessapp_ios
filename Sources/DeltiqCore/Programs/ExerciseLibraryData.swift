@@ -1091,6 +1091,7 @@ public enum ExerciseLibraryData {
         ],
         "Trizepskickback (KH)": [
             .noEquipment: "Diamant-Liegestütze"
+        ]
     ]
 
     /// Resolves the best alternative for `exerciseName` in `environment`. Returns:
