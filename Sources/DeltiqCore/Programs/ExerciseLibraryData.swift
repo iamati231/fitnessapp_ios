@@ -83,7 +83,6 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.75, localMuscleDamageFactor: 0.80, cnsDemandFactor: 0.65, axialLoadFactor: 0.80, technicalComplexityFactor: 0.65, recoveryClass: .high,
                              localizationKey: "exercise.name.romanianDeadlift",
                              equipmentRequirement: .item(.barbell)),
-                             equipmentRequirement: .all([.item(.barbell), .any([.item(.flatBench), .item(.adjustableBench)])])),
         ExerciseTemplateSpec(name: "Ausfallschritte (LH)",             equipment: .barbell, primaryMuscle: .quads, localizationKey: "exercise.name.barbellLunge",
                              equipmentRequirement: .all([.item(.barbell), .item(.rack)])),
         ExerciseTemplateSpec(name: "Good Morning",                     equipment: .barbell, primaryMuscle: .hamstrings, difficultyLevel: .advanced, localizationKey: "exercise.name.goodMorning",
