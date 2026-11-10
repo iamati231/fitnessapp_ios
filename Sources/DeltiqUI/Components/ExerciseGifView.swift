@@ -143,6 +143,8 @@ struct GifImageView: UIViewRepresentable {
         let imageView = UIImageView()
         imageView.contentMode = contentMode
         imageView.clipsToBounds = true
+        // UIImageView würde sonst SwiftUI-onTapGesture-Aufrufer blockieren
+        imageView.isUserInteractionEnabled = false
         return imageView
     }
 

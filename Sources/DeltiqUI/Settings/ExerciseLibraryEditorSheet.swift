@@ -192,6 +192,7 @@ struct ExerciseLibraryEditorSheet: View {
                 Spacer()
                 ExerciseGifView(exerciseName: existing?.name ?? trimmedName, displayName: titleText)
                     .frame(width: 140, height: 140)
+                    .onTapGesture { showGifSheet = true }
                 Spacer()
             }
             .listRowBackground(Color.clear)
@@ -204,6 +205,15 @@ struct ExerciseLibraryEditorSheet: View {
                 Text("customExercise.field.muscle", bundle: .module)
             }
             .listRowBackground(Color.Deltiq.surface)
+            if let secondaryMuscles = ExerciseSecondaryMuscles.byNormalizedName[ExerciseMediaProvider.normalizedKey(for: existing?.name ?? trimmedName)], !secondaryMuscles.isEmpty {
+                LabeledContent {
+                    Text(secondaryMuscles.map { String(localized: $0.localizedName) }.joined(separator: ", "))
+                        .multilineTextAlignment(.trailing)
+                } label: {
+                    Text("customExercise.field.secondaryMuscles", bundle: .module)
+                }
+                .listRowBackground(Color.Deltiq.surface)
+            }
             LabeledContent {
                 Text(equipment.localizedName)
             } label: {
@@ -222,6 +232,31 @@ struct ExerciseLibraryEditorSheet: View {
             Text("library.readOnlyFooter", bundle: .module)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+        if let steps = ExerciseInstructionsProvider.steps(
+            for: ExerciseMediaProvider.normalizedKey(for: existing?.name ?? trimmedName)
+        ) {
+            let preferred = steps.preferred()
+            if !preferred.isEmpty {
+                Section {
+                    ForEach(Array(preferred.enumerated()), id: \.offset) { index, step in
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("\(index + 1).")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(Color.deltiqOrange)
+                                .frame(minWidth: 20, alignment: .leading)
+                            Text(step)
+                                .font(.subheadline)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .listRowBackground(Color.Deltiq.surface)
+                        }
+                        .listRowBackground(Color.Deltiq.surface)
+                    }
+                } header: {
+                    Text("exercise.detail.instructions.title", bundle: .module)
+                }
+                .listRowSeparatorTint(Color.Deltiq.divider)
+            }
+        }
     }
 
     // MARK: Save
