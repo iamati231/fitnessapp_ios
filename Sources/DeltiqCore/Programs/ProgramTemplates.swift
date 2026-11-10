@@ -740,7 +740,7 @@ public enum ProgramTemplates {
             [
                 TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)"],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 150),
-                TemplateSlot(defaultExerciseName: "Schulterdrücken (KH)", reviewedAlternatives: ["Kettlebell Doppel-Push-Press"],
+                TemplateSlot(defaultExerciseName: "Schulterdrücken (KH)", reviewedAlternatives: ["Kettlebell Schulterdrücken sitzend"],
                              sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
                 TemplateSlot(defaultExerciseName: "Latzug (Kabel)", reviewedAlternatives: ["Chest Supported Row (KH)", "Kettlebell Row einarmig"],
                              sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
@@ -883,7 +883,7 @@ public enum ProgramTemplates {
             [
                 TemplateSlot(defaultExerciseName: "Bankdrücken", reviewedAlternatives: ["Bankdrücken (KH)", "Kettlebell Floor Press"],
                              sets: 4, repsMin: 6, repsMax: 8, restSeconds: 150),
-                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Doppel-Push-Press"],
+                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Schulterdrücken sitzend"],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
                 TemplateSlot(defaultExerciseName: "Schrägbankdrücken (aufwärts)", reviewedAlternatives: ["Schrägbankdrücken aufwärts (KH)", "Kettlebell Clean & Press"],
                              sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
@@ -1058,7 +1058,7 @@ public enum ProgramTemplates {
             [
                 TemplateSlot(defaultExerciseName: "Bankdrücken", reviewedAlternatives: ["Bankdrücken (KH)", "Kettlebell Floor Press"],
                              sets: 4, repsMin: 5, repsMax: 8, restSeconds: 180),
-                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Doppel-Push-Press"],
+                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Schulterdrücken sitzend"],
                              sets: 3, repsMin: 6, repsMax: 10, restSeconds: 150),
                 TemplateSlot(defaultExerciseName: "Schrägbankdrücken (aufwärts)", reviewedAlternatives: ["Schrägbankdrücken aufwärts (KH)", "Kettlebell Clean & Press"],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
@@ -1311,7 +1311,7 @@ public enum ProgramTemplates {
                     exercises: [
                         ExerciseSpec(name: "Kettlebell Clean & Press",  sets: 6, repsMin: 8,  repsMax: 8,  restSeconds: 120),
                         ExerciseSpec(name: "Kettlebell Front Squat",    sets: 4, repsMin: 10, repsMax: 10, restSeconds: 90),
-                        ExerciseSpec(name: "Renegade Row",               sets: 4, repsMin: 12, repsMax: 12, restSeconds: 90)
+                        ExerciseSpec(name: "Kettlebell Row einarmig",     sets: 4, repsMin: 12, repsMax: 12, restSeconds: 90)
                     ]),
             DaySpec(name: "Metabolic Conditioning", localizationKey: "plan.day.kbMetcon", type: .fullBody, sequenceIndex: 3,
                     exercises: [

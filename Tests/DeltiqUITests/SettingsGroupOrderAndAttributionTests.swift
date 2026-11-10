@@ -117,7 +117,7 @@ final class SettingsGroupOrderAndAttributionTests: XCTestCase {
     /// App-Verhaltens: Einheiten, Darstellung, Timer, Erinnerungen, ...).
     func testAppExperienceGroupIsRenamedToAppSettingsInAllThreeLanguages() throws {
         let strings = try contents(of: "Resources/Localizable.xcstrings")
-        guard let keyRange = strings.range(of: "\"settings.group.appExperience\":  {") else {
+        guard let keyRange = strings.range(of: "\"settings.group.appExperience\": {") else {
             XCTFail("settings.group.appExperience nicht gefunden")
             return
         }
@@ -188,7 +188,7 @@ final class SettingsGroupOrderAndAttributionTests: XCTestCase {
 
         let strings = try contents(of: "Resources/Localizable.xcstrings")
         for key in ["settings.credits.onlineFoodLookup.copyright", "nutrition.addMeal.onlineSearch.attribution"] {
-            XCTAssertTrue(strings.contains("\"\(key)\":  {"), "Localizable.xcstrings muss den Key \(key) enthalten.")
+            XCTAssertTrue(strings.contains("\"\(key)\": {"), "Localizable.xcstrings muss den Key \(key) enthalten.")
         }
         XCTAssertTrue(strings.contains("(c) Open Food Facts contributors"))
     }

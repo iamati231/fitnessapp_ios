@@ -153,9 +153,9 @@ final class HybridTemplateSlotParityTests: XCTestCase {
                 dayIndex: 2, dayLabel: "Strength Ganzkörper B",
                 base: ["Rumänisches Kreuzheben", "Schulterdrücken (KH)", "Latzug (Kabel)", "Bizeps-Curl (KH)"],
                 dumbbellOnly: ["Rumänisches Kreuzheben (KH)", "Schulterdrücken (KH)", "Chest Supported Row (KH)", "Bizeps-Curl (KH)"],
-                // "Bizeps-Curl (KH)" has no KB alternative → gap; resolver keeps
-                // the DEFAULT exercise name in the day output.
-                kettlebellOnly: ["Rumänisches Kreuzheben", "Kettlebell Doppel-Push-Press", "Kettlebell Row einarmig", "Bizeps-Curl (KH)"]
+                // "Rumänisches Kreuzheben" and "Bizeps-Curl (KH)" have no KB alternatives
+                // → gaps; resolver keeps the DEFAULT exercise name in the day output.
+                kettlebellOnly: ["Rumänisches Kreuzheben", "Kettlebell Schulterdrücken sitzend", "Kettlebell Row einarmig", "Bizeps-Curl (KH)"]
             )
         ], expectedKettlebellGaps: ["Bizeps-Curl (KH)", "Rumänisches Kreuzheben"])
     }
@@ -169,7 +169,7 @@ final class HybridTemplateSlotParityTests: XCTestCase {
                 base: ["Bankdrücken", "Schulterdrücken (stehend)", "Schrägbankdrücken (aufwärts)", "Trizepsdrücken (Kabel)"],
                 dumbbellOnly: ["Bankdrücken (KH)", "Schulterdrücken (KH)", "Schrägbankdrücken aufwärts (KH)", "Sitzendes Trizepsstrecken (KH)"],
                 // "Trizepsdrücken (Kabel)" has no KB alternative → gap; default name kept.
-                kettlebellOnly: ["Kettlebell Floor Press", "Kettlebell Doppel-Push-Press", "Kettlebell Clean & Press", "Trizepsdrücken (Kabel)"]
+                kettlebellOnly: ["Kettlebell Floor Press", "Kettlebell Schulterdrücken sitzend", "Kettlebell Clean & Press", "Trizepsdrücken (Kabel)"]
             ),
             DayExpectation(
                 dayIndex: 2, dayLabel: "Strength Pull",
@@ -200,7 +200,7 @@ final class HybridTemplateSlotParityTests: XCTestCase {
                 dumbbellOnly: ["Bankdrücken (KH)", "Schulterdrücken (KH)", "Schrägbankdrücken aufwärts (KH)", "Seitheben", "Sitzendes Trizepsstrecken (KH)"],
                 // "Seitheben" and "Trizepsdrücken (Kabel)" have no KB alternatives → gaps;
                 // default names kept in the resolved day.
-                kettlebellOnly: ["Kettlebell Floor Press", "Kettlebell Doppel-Push-Press", "Kettlebell Clean & Press", "Seitheben", "Trizepsdrücken (Kabel)"]
+                kettlebellOnly: ["Kettlebell Floor Press", "Kettlebell Schulterdrücken sitzend", "Kettlebell Clean & Press", "Seitheben", "Trizepsdrücken (Kabel)"]
             ),
             DayExpectation(
                 dayIndex: 2, dayLabel: "Strength Legs",
