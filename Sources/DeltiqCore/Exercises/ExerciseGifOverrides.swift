@@ -292,7 +292,7 @@ public enum ExerciseGifOverrides {
             ("wadenheben stufe", "1490.gif"),
             ("wadenpresse 45", "0738.gif"),
             ("wadenpresse beinpresse", "1391.gif"),
-            ("wadenpresse beinpresse", "1391.gif"),
+            ("wadenpresse schragpresse", "1391.gif"),
             ("wadenpresse sitzend", "2335.gif"),
             ("walking ausfallschritt", "1460.gif"),
             ("wand sitz mit marschieren", "0624.gif"),

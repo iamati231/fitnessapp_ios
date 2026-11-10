@@ -232,6 +232,7 @@ public enum ExerciseSecondaryMuscles {
             ("wadenheben esel", [.hamstrings, .glutes]),
             ("wadenpresse 45", [.hamstrings]),
             ("wadenpresse beinpresse", [.hamstrings, .quads]),
+            ("wadenpresse schragpresse", [.hamstrings, .quads]),
             ("walking ausfallschritt", [.quads, .hamstrings, .calves]),
             ("wand sitz mit marschieren", [.quads, .hamstrings, .calves]),
             ("wirbelsaulen dehnung", [.hamstrings, .glutes])

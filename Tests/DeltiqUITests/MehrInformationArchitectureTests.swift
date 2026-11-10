@@ -113,7 +113,7 @@ final class MehrInformationArchitectureTests: XCTestCase {
     /// diesen kontextuellen Zugang - DE/EN/TR müssen vollständig sein.
     func testExerciseLibraryActionLabelIsFullyLocalized() throws {
         let strings = try contents(of: "Resources/Localizable.xcstrings")
-        guard let keyRange = strings.range(of: "\"planBuilder.exerciseLibrary.action\":  {") else {
+        guard let keyRange = strings.range(of: "\"planBuilder.exerciseLibrary.action\": {") else {
             XCTFail("planBuilder.exerciseLibrary.action nicht gefunden")
             return
         }
@@ -121,7 +121,7 @@ final class MehrInformationArchitectureTests: XCTestCase {
         // Textmusters - dieser Key kann (und tut es hier) der letzte Eintrag
         // der Datei sein, dessen schliessende Klammer KEIN Komma traegt.
         let block = try XCTUnwrap(Self.matchingBraceBlock(in: strings, afterOpenBrace: keyRange.upperBound))
-        for language in ["\"de\":  {", "\"en\":  {", "\"tr\":  {"] {
+        for language in ["\"de\": {", "\"en\": {", "\"tr\": {"] {
             XCTAssertTrue(block.contains(language), "fehlende Lokalisierung: \(language)")
         }
     }

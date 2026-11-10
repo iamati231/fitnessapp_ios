@@ -728,7 +728,7 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "TRX Split Squat", equipment: .bodyweight, primaryMuscle: .quads, localizationKey: "exercise.name.suspendedSplitSquat", equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Wadenheben (Stufe)", equipment: .bodyweight, primaryMuscle: .calves, localizationKey: "exercise.name.stairCaseCalfRaise", equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Wadenpresse 45°", equipment: .machine, primaryMuscle: .calves, localizationKey: "exercise.name.sled45CalfPress", equipmentRequirement: .item(.machineStation)),
-        ExerciseTemplateSpec(name: "Wadenpresse Beinpresse", equipment: .machine, primaryMuscle: .calves, localizationKey: "exercise.name.sledCalfPressLegPress", equipmentRequirement: .item(.machineStation)),
+        ExerciseTemplateSpec(name: "Wadenpresse Schrägpresse", equipment: .machine, primaryMuscle: .calves, localizationKey: "exercise.name.sledCalfPressLegPress", equipmentRequirement: .item(.machineStation)),
         ExerciseTemplateSpec(name: "Wadenheben Esel", equipment: .bodyweight, primaryMuscle: .calves, localizationKey: "exercise.name.donkeyCalfRaise", equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Dead Bug", equipment: .bodyweight, primaryMuscle: .core, localizationKey: "exercise.name.deadBug", equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Russian Twist (gewichtet)", equipment: .bodyweight, primaryMuscle: .core, localizationKey: "exercise.name.weightedRussianTwist", equipmentRequirement: .all([])),
