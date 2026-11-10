@@ -32,12 +32,12 @@ public enum ProgramTemplates {
             DaySpec(name: "Ganzkörper B", localizationKey: "plan.day.fullBodyB", type: .fullBody, sequenceIndex: 2, exercises: [
                 ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 150),
                 ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
-                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Latzug (Kabel)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Seitheben",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 2, repsMin: 10, repsMax: 15, restSeconds: 75)
             ]),
             DaySpec(name: "Ganzkörper C", localizationKey: "plan.day.fullBodyC", type: .fullBody, sequenceIndex: 3, exercises: [
-                ExerciseSpec(name: "Hip Thrust (LH)",              sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Glute Bridge (auf Bank)",              sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Beinbeuger liegend",           sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90),
                 ExerciseSpec(name: "Rudern einarmig (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Hammer Curl",                  sets: 2, repsMin: 10, repsMax: 15, restSeconds: 60),
@@ -74,14 +74,14 @@ public enum ProgramTemplates {
             ]),
             DaySpec(name: "Ganzkörper Zug", localizationKey: "plan.day.fullBodyZug", type: .fullBody, sequenceIndex: 2, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)", sets: 4, repsMin: 3, repsMax: 5,  restSeconds: 240, targetRir: 1),
-                ExerciseSpec(name: "Latzug (weit)",              sets: 4, repsMin: 6, repsMax: 10, restSeconds: 120, targetRir: 2),
+                ExerciseSpec(name: "Latzug (Kabel)",              sets: 4, repsMin: 6, repsMax: 10, restSeconds: 120, targetRir: 2),
                 ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120, targetRir: 2),
-                ExerciseSpec(name: "Face Pull",                  sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Reverse Cable Fly",                  sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Hammer Curl",                sets: 3, repsMin: 10, repsMax: 12, restSeconds: 75)
             ]),
             DaySpec(name: "Ganzkörper Volumen", localizationKey: "plan.day.fullBodyVolumen", type: .fullBody, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Hack Squat",                 sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2),
-                ExerciseSpec(name: "Hip Thrust (LH)",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2),
+                ExerciseSpec(name: "Glute Bridge (auf Bank)",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2),
                 ExerciseSpec(name: "Kabelrudern sitzend",        sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 2),
                 ExerciseSpec(name: "Schulterdrücken (KH)",       sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90,  targetRir: 2),
                 ExerciseSpec(name: "Seitheben",                  sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
@@ -125,13 +125,13 @@ public enum ProgramTemplates {
             DaySpec(name: "Fatburn B", localizationKey: "plan.day.fatBurnB", type: .fullBody, sequenceIndex: 2, exercises: [
                 ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 150),
                 ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
-                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Latzug (Kabel)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Hammer Curl",                  sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 2, repsMin: 8,  repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Fahrradergometer",    sets: 1, repsMin: 15, repsMax: 15, restSeconds: 0, targetRir: 0, isCardio: true)
             ]),
             DaySpec(name: "Fatburn C", localizationKey: "plan.day.fatBurnC", type: .fullBody, sequenceIndex: 3, exercises: [
-                ExerciseSpec(name: "Hip Thrust (LH)",              sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Glute Bridge (auf Bank)",              sets: 3, repsMin: 6,  repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Kabelrudern sitzend",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Bankdrücken (KH)",              sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Seitheben",                    sets: 2, repsMin: 10, repsMax: 15, restSeconds: 60),
@@ -172,7 +172,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Chest Supported Row (KH)",     sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Hammer Curl",                  sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60)
+                ExerciseSpec(name: "Sitzendes Trizepsstrecken (KH)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60)
             ]),
             DaySpec(name: "Ganzkörper C", localizationKey: "plan.day.fullBodyC", type: .fullBody, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",         sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
@@ -205,16 +205,16 @@ public enum ProgramTemplates {
         days: [
             DaySpec(name: "Push & Core", localizationKey: "plan.day.pushAndCore", type: .push, sequenceIndex: 1, exercises: [
                 ExerciseSpec(name: "Liegestütze",                 sets: 4, repsMin: 10, repsMax: 15, restSeconds: 60),
-                ExerciseSpec(name: "Pike Liegestütze",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 60),
+                ExerciseSpec(name: "Liegestütz aufwärts",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 60),
                 ExerciseSpec(name: "Diamant-Liegestütze",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 60),
                 ExerciseSpec(name: "Plank",                        sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60, targetRir: 3.0),
                 ExerciseSpec(name: "Mountain Climbers",            sets: 3, repsMin: 20, repsMax: 30, restSeconds: 60)
             ]),
             DaySpec(name: "Pull & Beine", localizationKey: "plan.day.pullAndLegs", type: .fullBody, sequenceIndex: 2, exercises: [
                 ExerciseSpec(name: "Handtuch-Rudern (Türrahmen)", sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 75),
-                ExerciseSpec(name: "Kniebeuge (BW)",               sets: 4, repsMin: 15, repsMax: 20, restSeconds: 60),
+                ExerciseSpec(name: "Ausfallschritte (BW)",               sets: 4, repsMin: 15, repsMax: 20, restSeconds: 60),
                 ExerciseSpec(name: "Ausfallschritte (BW)",         sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60),
-                ExerciseSpec(name: "Hip Thrust (BW)",              sets: 3, repsMin: 15, repsMax: 20, restSeconds: 60),
+                ExerciseSpec(name: "Glute Bridge (auf Bank)",              sets: 3, repsMin: 15, repsMax: 20, restSeconds: 60),
                 ExerciseSpec(name: "Seitstütz",                   sets: 3, repsMin: 20, repsMax: 30, restSeconds: 60, targetRir: 3.0)
             ]),
             DaySpec(name: "Ganzkörper HIIT", localizationKey: "plan.day.fullBodyHIIT", type: .fullBody, sequenceIndex: 3, exercises: [
@@ -251,13 +251,13 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Schrägbankdrücken (aufwärts)", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Seitheben",                    sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75)
+                ExerciseSpec(name: "Sitzendes Trizepsstrecken (KH)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75)
             ]),
             DaySpec(name: "Pull A", localizationKey: "plan.day.pullA", type: .pull, sequenceIndex: 2, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 4,  repsMax: 6,  restSeconds: 180),
                 ExerciseSpec(name: "Rudern vorgebeugt",            sets: 4, repsMin: 6,  repsMax: 8,  restSeconds: 120),
                 ExerciseSpec(name: "Klimmzüge (weit)",            sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120),
-                ExerciseSpec(name: "Face Pull",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Reverse Cable Fly",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Bizeps-Curl (LH)",              sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Hammer Curl",                  sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75)
             ]),
@@ -277,7 +277,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Dips (Trizeps)",               sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90)
             ]),
             DaySpec(name: "Pull B", localizationKey: "plan.day.pullB", type: .pull, sequenceIndex: 5, exercises: [
-                ExerciseSpec(name: "Latzug (weit)",                sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Latzug (Kabel)",                sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Kabelrudern sitzend",          sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Rudern einarmig (KH)",           sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Reverse Flyes (KH)",           sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
@@ -286,9 +286,9 @@ public enum ProgramTemplates {
             ]),
             DaySpec(name: "Beine B", localizationKey: "plan.day.legsB", type: .legs, sequenceIndex: 6, exercises: [
                 ExerciseSpec(name: "Front Squat",                  sets: 4, repsMin: 6,  repsMax: 8,  restSeconds: 180),
-                ExerciseSpec(name: "Hip Thrust (LH)",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Glute Bridge (auf Bank)",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Beinpresse",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90),
-                ExerciseSpec(name: "Nordic Curls",                 sets: 3, repsMin: 4,  repsMax: 8,  restSeconds: 120),
+                ExerciseSpec(name: "Beinbeuger liegend",                 sets: 3, repsMin: 4,  repsMax: 8,  restSeconds: 120),
                 ExerciseSpec(name: "Beinstrecker",                 sets: 3, repsMin: 12, repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Wadenpresse (sitzend)",        sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
             ])
@@ -332,7 +332,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 4, repsMin: 8, repsMax: 12, restSeconds: 120),
                 ExerciseSpec(name: "Kabelrudern sitzend",          sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Pec Deck (Butterfly)",         sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Latzug (Kabel)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
                 ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Hammer Curl",                  sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60)
@@ -340,8 +340,8 @@ public enum ProgramTemplates {
             DaySpec(name: "Unterkörper B (Volumen)", localizationKey: "plan.day.lowerBVolume", type: .lower, sequenceIndex: 4, exercises: [
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 3, repsMin: 3,  repsMax: 5,  restSeconds: 210),
                 ExerciseSpec(name: "Beinpresse",                   sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
-                ExerciseSpec(name: "Hip Thrust (LH)",              sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Nordic Curls",                 sets: 3, repsMin: 4,  repsMax: 8,  restSeconds: 120),
+                ExerciseSpec(name: "Glute Bridge (auf Bank)",              sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Beinbeuger liegend",                 sets: 3, repsMin: 4,  repsMax: 8,  restSeconds: 120),
                 ExerciseSpec(name: "Beinstrecker",                 sets: 3, repsMin: 12, repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Wadenpresse (sitzend)",        sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
             ])
@@ -396,21 +396,21 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Schrägbankdrücken (aufwärts)", sets: 4, repsMin: 8, repsMax: 12, restSeconds: 120, targetRir: 1.5),
                 ExerciseSpec(name: "Rudern einarmig (KH)",           sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 1.0),
                 ExerciseSpec(name: "Pec Deck (Butterfly)",         sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0.5),
-                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 0.5),
+                ExerciseSpec(name: "Latzug (Kabel)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 0.5),
                 ExerciseSpec(name: "Brustdrücken (Maschine)",         sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0.5),
-                ExerciseSpec(name: "Face Pull",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0.5)
+                ExerciseSpec(name: "Reverse Cable Fly",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0.5)
             ]),
             DaySpec(name: "Schultern & Arme B", localizationKey: "plan.day.shouldersArmsB", type: .upper, sequenceIndex: 5, exercises: [
                 ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 1.0),
                 ExerciseSpec(name: "Kabel Seitheben",              sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0),
                 ExerciseSpec(name: "Kabel Curl",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0),
-                ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0),
+                ExerciseSpec(name: "Sitzendes Trizepsstrecken (KH)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0),
                 ExerciseSpec(name: "Konzentrations-Curl (KH)",          sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0),
                 ExerciseSpec(name: "Trizepsstrecker über Kopf (Kabel)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60, targetRir: 0)
             ]),
             DaySpec(name: "Beine B", localizationKey: "plan.day.legsB", type: .legs, sequenceIndex: 6, exercises: [
                 ExerciseSpec(name: "Front Squat",                  sets: 4, repsMin: 6,  repsMax: 8,  restSeconds: 180, targetRir: 1.5),
-                ExerciseSpec(name: "Hip Thrust (LH)",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 1.0),
+                ExerciseSpec(name: "Glute Bridge (auf Bank)",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 1.0),
                 ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90,  targetRir: 1.0),
                 ExerciseSpec(name: "Beinbeuger liegend",           sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0.5),
                 ExerciseSpec(name: "Wadenpresse (sitzend)",        sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60,  targetRir: 0)
@@ -444,7 +444,7 @@ public enum ProgramTemplates {
             DaySpec(name: "Brust", localizationKey: "plan.day.chest", type: .chest, sequenceIndex: 1, exercises: [
                 // DEL-087: Warmup — Rotatoren + leichte Aktivierung vor
                 // schwerem Bankdruecken.
-                ExerciseSpec(name: "Face Pull",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
+                ExerciseSpec(name: "Reverse Cable Fly",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
                 ExerciseSpec(name: "Bankdrücken",                 sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 1.5),
                 ExerciseSpec(name: "Schrägbankdrücken (aufwärts)", sets: 4, repsMin: 8, repsMax: 12, restSeconds: 120, targetRir: 1.5),
                 ExerciseSpec(name: "Flyes Schrägbank (KH)",       sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90,  targetRir: 0.5),
@@ -461,7 +461,7 @@ public enum ProgramTemplates {
             DaySpec(name: "Schultern", localizationKey: "plan.day.shoulders", type: .shoulders, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 1.5),
                 ExerciseSpec(name: "Seitheben",                    sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0),
-                ExerciseSpec(name: "Face Pull",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0.5),
+                ExerciseSpec(name: "Reverse Cable Fly",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0.5),
                 ExerciseSpec(name: "Frontheben",                   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0),
                 ExerciseSpec(name: "Reverse Flyes (KH)",           sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0)
             ]),
@@ -471,7 +471,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Schrägbank-Curl (KH)",             sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75,  targetRir: 0),
                 ExerciseSpec(name: "Skull Crusher",                sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90,  targetRir: 0.5),
                 ExerciseSpec(name: "Trizepsdrücken (Kabel)",      sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 0),
-                ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0)
+                ExerciseSpec(name: "Sitzendes Trizepsstrecken (KH)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60,  targetRir: 0)
             ]),
             DaySpec(name: "Beine", localizationKey: "plan.day.legs", type: .legs, sequenceIndex: 5, exercises: [
                 ExerciseSpec(name: "Kniebeuge",                    sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 180, targetRir: 1.5),
@@ -508,19 +508,19 @@ public enum ProgramTemplates {
             // Alle Warmup-Sätze tragen `role: .warmup` — sie werden vom
             // Progressions-Algorithmus geskippt und im UI grau gerendert.
             DaySpec(name: "Workout A", localizationKey: "plan.day.workoutA", type: .fullBody, sequenceIndex: 1, exercises: [
-                ExerciseSpec(name: "Face Pull",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
+                ExerciseSpec(name: "Reverse Cable Fly",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
                 ExerciseSpec(name: "Kniebeuge",                    sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 210),
                 ExerciseSpec(name: "Bankdrücken",                 sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 180),
                 ExerciseSpec(name: "Rudern vorgebeugt",            sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 150)
             ]),
             DaySpec(name: "Workout B", localizationKey: "plan.day.workoutB", type: .fullBody, sequenceIndex: 2, exercises: [
-                ExerciseSpec(name: "Face Pull",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
+                ExerciseSpec(name: "Reverse Cable Fly",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
                 ExerciseSpec(name: "Kniebeuge",                    sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 210),
                 ExerciseSpec(name: "Schulterdrücken (stehend)",   sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 180),
                 ExerciseSpec(name: "Kreuzheben (konventionell)",   sets: 1, repsMin: 5,  repsMax: 5,  restSeconds: 210)
             ]),
             DaySpec(name: "Workout A", localizationKey: "plan.day.workoutA", type: .fullBody, sequenceIndex: 3, exercises: [
-                ExerciseSpec(name: "Face Pull",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
+                ExerciseSpec(name: "Reverse Cable Fly",                    sets: 2, repsMin: 12, repsMax: 15, restSeconds: 45, targetRir: 3, role: .warmup),
                 ExerciseSpec(name: "Kniebeuge",                    sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 210),
                 ExerciseSpec(name: "Bankdrücken",                 sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 180),
                 ExerciseSpec(name: "Rudern vorgebeugt",            sets: 5, repsMin: 5,  repsMax: 5,  restSeconds: 150)
@@ -585,7 +585,7 @@ public enum ProgramTemplates {
             DaySpec(name: "Unterkörper & Core", localizationKey: "plan.day.lowerAndCore", type: .legs, sequenceIndex: 1, exercises: [
                 ExerciseSpec(name: "Kniebeuge",                    sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 150, targetRir: 2.5),
                 ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",   sets: 3, repsMin: 8,  repsMax: 8,  restSeconds: 120, targetRir: 2.5),
-                ExerciseSpec(name: "Nordic Curls",                 sets: 3, repsMin: 5,  repsMax: 8,  restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Beinbeuger liegend",                 sets: 3, repsMin: 5,  repsMax: 8,  restSeconds: 120, targetRir: 2.5),
                 ExerciseSpec(name: "Wadenheben (stehend, LH)",     sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 2.5),
                 ExerciseSpec(name: "Plank",                        sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60,  targetRir: 3.5)
             ]),
@@ -593,7 +593,7 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Bankdrücken",                 sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
                 ExerciseSpec(name: "Klimmzüge (weit)",            sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
                 ExerciseSpec(name: "Seitstütz",                   sets: 3, repsMin: 20, repsMax: 30, restSeconds: 60,  targetRir: 3.5),
-                ExerciseSpec(name: "Box Jump",                     sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 120, targetRir: 3.5)
+                ExerciseSpec(name: "Jump Squat",                     sets: 3, repsMin: 5,  repsMax: 5,  restSeconds: 120, targetRir: 3.5)
             ])
         ],
         targetEnvironment: .gym,
@@ -636,7 +636,7 @@ public enum ProgramTemplates {
             DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
                 ExerciseSpec(name: "Rumänisches Kreuzheben",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
                 ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
-                ExerciseSpec(name: "Latzug (weit)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
+                ExerciseSpec(name: "Latzug (Kabel)",                sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
                 ExerciseSpec(name: "Bizeps-Curl (KH)",                      sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
             ]),
             DaySpec(name: "Long Run", localizationKey: "plan.day.longRun", type: .cardio, sequenceIndex: 4, exercises: [
@@ -698,8 +698,8 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 5.0, targetDurationMinutes: 30, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Ganzkörper B", localizationKey: "plan.day.strengthFullBodyB", type: .fullBody, sequenceIndex: 3, exercises: [
-                    ExerciseSpec(name: "Kettlebell RDL",                sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
-                    ExerciseSpec(name: "Kettlebell Push Press",         sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",                sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Doppel-Push-Press",         sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Kettlebell Row einarmig",       sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Bizeps-Curl (KH)",              sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
@@ -738,11 +738,11 @@ public enum ProgramTemplates {
             ],
             [], // Easy Run — Cardio, keine Equipment-Variation.
             [
-                TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)"],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 150),
-                TemplateSlot(defaultExerciseName: "Schulterdrücken (KH)", reviewedAlternatives: ["Kettlebell Push Press"],
+                TemplateSlot(defaultExerciseName: "Schulterdrücken (KH)", reviewedAlternatives: ["Kettlebell Doppel-Push-Press"],
                              sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
-                TemplateSlot(defaultExerciseName: "Latzug (weit)", reviewedAlternatives: ["Chest Supported Row (KH)", "Kettlebell Row einarmig"],
+                TemplateSlot(defaultExerciseName: "Latzug (Kabel)", reviewedAlternatives: ["Chest Supported Row (KH)", "Kettlebell Row einarmig"],
                              sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
                 TemplateSlot(defaultExerciseName: "Bizeps-Curl (KH)", reviewedAlternatives: [],
                              sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60)
@@ -824,7 +824,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Bankdrücken (KH)",                sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
                     ExerciseSpec(name: "Schulterdrücken (KH)",            sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
-                    ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)",  sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                    ExerciseSpec(name: "Sitzendes Trizepsstrecken (KH)",  sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
                     ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
@@ -852,7 +852,7 @@ public enum ProgramTemplates {
             EquipmentVariant(profile: .kettlebellOnly, days: [
                 DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
                     ExerciseSpec(name: "Kettlebell Floor Press",          sets: 4, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
-                    ExerciseSpec(name: "Kettlebell Push Press",           sets: 3, repsMin: 6,  repsMax: 8,  restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Doppel-Push-Press",           sets: 3, repsMin: 6,  repsMax: 8,  restSeconds: 150, targetRir: 2.5),
                     ExerciseSpec(name: "Kettlebell Clean & Press",        sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Trizepsdrücken (Kabel)",         sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
@@ -860,7 +860,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Easy Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDistanceKm: 6.0, targetDurationMinutes: 35, enduranceSportKind: .running)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 3, exercises: [
-                    ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",                  sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
                     ExerciseSpec(name: "Kettlebell Row einarmig",         sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Rudern vorgebeugt",               sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Bizeps-Curl (KH)",                sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
@@ -870,7 +870,7 @@ public enum ProgramTemplates {
                 ]),
                 DaySpec(name: "Strength Legs (Light)", localizationKey: "plan.day.strengthLegsLight", type: .legs, sequenceIndex: 5, exercises: [
                     ExerciseSpec(name: "Kettlebell Goblet Squat",         sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
-                    ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",                  sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Wadenheben (stehend, LH)",        sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 2.0),
                     ExerciseSpec(name: "Plank",                           sets: 3, repsMin: 30, repsMax: 60, restSeconds: 60,  targetRir: 3.0)
                 ])
@@ -883,16 +883,16 @@ public enum ProgramTemplates {
             [
                 TemplateSlot(defaultExerciseName: "Bankdrücken", reviewedAlternatives: ["Bankdrücken (KH)", "Kettlebell Floor Press"],
                              sets: 4, repsMin: 6, repsMax: 8, restSeconds: 150),
-                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Push Press"],
+                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Doppel-Push-Press"],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
                 TemplateSlot(defaultExerciseName: "Schrägbankdrücken (aufwärts)", reviewedAlternatives: ["Schrägbankdrücken aufwärts (KH)", "Kettlebell Clean & Press"],
                              sets: 3, repsMin: 8, repsMax: 12, restSeconds: 120),
-                TemplateSlot(defaultExerciseName: "Trizepsdrücken (Kabel)", reviewedAlternatives: ["Trizepsstrecker über Kopf (KH)"],
+                TemplateSlot(defaultExerciseName: "Trizepsdrücken (Kabel)", reviewedAlternatives: ["Sitzendes Trizepsstrecken (KH)"],
                              sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60)
             ],
             [], // Easy Run — Cardio, keine Equipment-Variation.
             [
-                TemplateSlot(defaultExerciseName: "Kreuzheben (konventionell)", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                TemplateSlot(defaultExerciseName: "Kreuzheben (konventionell)", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)"],
                              sets: 3, repsMin: 5, repsMax: 6, restSeconds: 180),
                 TemplateSlot(defaultExerciseName: "Klimmzüge (weit)", reviewedAlternatives: ["Rudern einarmig (KH)", "Kettlebell Row einarmig"],
                              sets: 3, repsMin: 6, repsMax: 10, restSeconds: 120),
@@ -905,7 +905,7 @@ public enum ProgramTemplates {
             [
                 TemplateSlot(defaultExerciseName: "Bulgarische Kniebeuge (KH)", reviewedAlternatives: ["Kettlebell Goblet Squat"],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
-                TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)"],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
                 TemplateSlot(defaultExerciseName: "Wadenheben (stehend, LH)", reviewedAlternatives: ["Ausfallschritte (KH)"],
                              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
@@ -990,7 +990,7 @@ public enum ProgramTemplates {
                     ExerciseSpec(name: "Schulterdrücken (KH)",          sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Seitheben",                    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 1.5),
-                    ExerciseSpec(name: "Trizepsstrecker über Kopf (KH)", sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
+                    ExerciseSpec(name: "Sitzendes Trizepsstrecken (KH)", sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
                 ]),
                 DaySpec(name: "Easy Run", localizationKey: "plan.day.easyRun", type: .cardio, sequenceIndex: 2, exercises: [
                     ExerciseSpec(name: "Gehen / Einlaufen",            sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, targetRir: 0, isCardio: true, targetDurationMinutes: 5, role: .warmup, enduranceSportKind: .running),
@@ -1022,7 +1022,7 @@ public enum ProgramTemplates {
             EquipmentVariant(profile: .kettlebellOnly, days: [
                 DaySpec(name: "Strength Push", localizationKey: "plan.day.strengthPush", type: .push, sequenceIndex: 1, exercises: [
                     ExerciseSpec(name: "Kettlebell Floor Press",          sets: 4, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
-                    ExerciseSpec(name: "Kettlebell Push Press",           sets: 3, repsMin: 6,  repsMax: 8,  restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Kettlebell Doppel-Push-Press",           sets: 3, repsMin: 6,  repsMax: 8,  restSeconds: 150, targetRir: 2.5),
                     ExerciseSpec(name: "Kettlebell Clean & Press",        sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Seitheben",                      sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 1.5),
                     ExerciseSpec(name: "Trizepsdrücken (Kabel)",         sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
@@ -1033,12 +1033,12 @@ public enum ProgramTemplates {
                 ]),
                 DaySpec(name: "Strength Legs", localizationKey: "plan.day.strengthLegs", type: .legs, sequenceIndex: 3, exercises: [
                     ExerciseSpec(name: "Kettlebell Goblet Squat",         sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 150, targetRir: 2.5),
-                    ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",                  sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 150, targetRir: 2.5),
                     ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",      sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Wadenheben (stehend, LH)",        sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,  targetRir: 2.0)
                 ]),
                 DaySpec(name: "Strength Pull", localizationKey: "plan.day.strengthPull", type: .pull, sequenceIndex: 4, exercises: [
-                    ExerciseSpec(name: "Kettlebell RDL",                  sets: 3, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
+                    ExerciseSpec(name: "Rumänisches Kreuzheben (KH)",                  sets: 3, repsMin: 5,  repsMax: 8,  restSeconds: 180, targetRir: 2.5),
                     ExerciseSpec(name: "Kettlebell Row einarmig",         sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Rudern vorgebeugt",               sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 120, targetRir: 2.5),
                     ExerciseSpec(name: "Bizeps-Curl (KH)",                sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,  targetRir: 1.0)
@@ -1058,13 +1058,13 @@ public enum ProgramTemplates {
             [
                 TemplateSlot(defaultExerciseName: "Bankdrücken", reviewedAlternatives: ["Bankdrücken (KH)", "Kettlebell Floor Press"],
                              sets: 4, repsMin: 5, repsMax: 8, restSeconds: 180),
-                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Push Press"],
+                TemplateSlot(defaultExerciseName: "Schulterdrücken (stehend)", reviewedAlternatives: ["Schulterdrücken (KH)", "Kettlebell Doppel-Push-Press"],
                              sets: 3, repsMin: 6, repsMax: 10, restSeconds: 150),
                 TemplateSlot(defaultExerciseName: "Schrägbankdrücken (aufwärts)", reviewedAlternatives: ["Schrägbankdrücken aufwärts (KH)", "Kettlebell Clean & Press"],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
                 TemplateSlot(defaultExerciseName: "Seitheben", reviewedAlternatives: [],
                              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
-                TemplateSlot(defaultExerciseName: "Trizepsdrücken (Kabel)", reviewedAlternatives: ["Trizepsstrecker über Kopf (KH)"],
+                TemplateSlot(defaultExerciseName: "Trizepsdrücken (Kabel)", reviewedAlternatives: ["Sitzendes Trizepsstrecken (KH)"],
                              sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60)
             ],
             [], // Easy Run — Cardio, keine Equipment-Variation.
@@ -1075,7 +1075,7 @@ public enum ProgramTemplates {
                 // profiles here too.
                 TemplateSlot(defaultExerciseName: "Kniebeuge", reviewedAlternatives: ["Kettlebell Goblet Squat", "Goblet Squat"],
                              sets: 4, repsMin: 5, repsMax: 8, restSeconds: 180),
-                TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                TemplateSlot(defaultExerciseName: "Rumänisches Kreuzheben", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)"],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 150),
                 TemplateSlot(defaultExerciseName: "Bulgarische Kniebeuge (KH)", reviewedAlternatives: [],
                              sets: 3, repsMin: 8, repsMax: 10, restSeconds: 120),
@@ -1083,7 +1083,7 @@ public enum ProgramTemplates {
                              sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60)
             ],
             [
-                TemplateSlot(defaultExerciseName: "Kreuzheben (konventionell)", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)", "Kettlebell RDL"],
+                TemplateSlot(defaultExerciseName: "Kreuzheben (konventionell)", reviewedAlternatives: ["Rumänisches Kreuzheben (KH)"],
                              sets: 3, repsMin: 4, repsMax: 6, restSeconds: 210),
                 TemplateSlot(defaultExerciseName: "Klimmzüge (weit)", reviewedAlternatives: ["Rudern einarmig (KH)", "Kettlebell Row einarmig"],
                              sets: 4, repsMin: 6, repsMax: 10, restSeconds: 120),
@@ -1125,7 +1125,7 @@ public enum ProgramTemplates {
                     exercises: [
                         ExerciseSpec(name: "Klimmzüge",        sets: 1, repsMin: 5,  repsMax: 5),
                         ExerciseSpec(name: "Liegestütze",      sets: 1, repsMin: 10, repsMax: 10),
-                        ExerciseSpec(name: "Kniebeuge (BW)",   sets: 1, repsMin: 15, repsMax: 15)
+                        ExerciseSpec(name: "Ausfallschritte (BW)",   sets: 1, repsMin: 15, repsMax: 15)
                     ],
                     timeFormat: .amrap, timeCapMinutes: 20),
             DaySpec(name: "EMOM Intensität", localizationKey: "plan.day.emomIntensityRx", type: .fullBody, sequenceIndex: 2,
@@ -1137,7 +1137,7 @@ public enum ProgramTemplates {
             DaySpec(name: "Auf Zeit: Sit-ups & Squats", localizationKey: "plan.day.forTimeSitupsSquatsRx", type: .fullBody, sequenceIndex: 3,
                     exercises: [
                         ExerciseSpec(name: "Sit-ups",          sets: 5, repsMin: 30, repsMax: 30),
-                        ExerciseSpec(name: "Kniebeuge (BW)",   sets: 5, repsMin: 30, repsMax: 30)
+                        ExerciseSpec(name: "Ausfallschritte (BW)",   sets: 5, repsMin: 30, repsMax: 30)
                     ],
                     timeFormat: .forTime)
         ],
@@ -1165,7 +1165,7 @@ public enum ProgramTemplates {
                     exercises: [
                         ExerciseSpec(name: "Handtuch-Rudern (Türrahmen)",  sets: 1, repsMin: 5,  repsMax: 5),
                         ExerciseSpec(name: "Liegestütze (Knie)",           sets: 1, repsMin: 10, repsMax: 10),
-                        ExerciseSpec(name: "Kniebeuge (BW)",               sets: 1, repsMin: 15, repsMax: 15)
+                        ExerciseSpec(name: "Ausfallschritte (BW)",               sets: 1, repsMin: 15, repsMax: 15)
                     ],
                     timeFormat: .amrap, timeCapMinutes: 20),
             DaySpec(name: "EMOM Intensität (Scaled)", localizationKey: "plan.day.emomIntensityScaled", type: .fullBody, sequenceIndex: 2,
@@ -1177,7 +1177,7 @@ public enum ProgramTemplates {
             DaySpec(name: "Auf Zeit: Sit-ups & Squats (Scaled)", localizationKey: "plan.day.forTimeSitupsSquatsScaled", type: .fullBody, sequenceIndex: 3,
                     exercises: [
                         ExerciseSpec(name: "Sit-ups",        sets: 3, repsMin: 20, repsMax: 20),
-                        ExerciseSpec(name: "Kniebeuge (BW)", sets: 3, repsMin: 20, repsMax: 20)
+                        ExerciseSpec(name: "Ausfallschritte (BW)", sets: 3, repsMin: 20, repsMax: 20)
                     ],
                     timeFormat: .forTime)
         ],
@@ -1250,14 +1250,14 @@ public enum ProgramTemplates {
         days: [
             DaySpec(name: "Grundlagen-Zirkel", localizationKey: "plan.day.kbFoundationsCircuit", type: .fullBody, sequenceIndex: 1,
                     exercises: [
-                        ExerciseSpec(name: "Kettlebell Kreuzheben",       sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
+                        ExerciseSpec(name: "Kreuzheben (KH)",       sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
                         ExerciseSpec(name: "Kettlebell Goblet Squat",     sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60),
                         ExerciseSpec(name: "Plank",                       sets: 3, repsMin: 30, repsMax: 45, restSeconds: 60)
                     ]),
             DaySpec(name: "Push, Pull & Core", localizationKey: "plan.day.kbPushPullCore", type: .fullBody, sequenceIndex: 2,
                     exercises: [
                         ExerciseSpec(name: "Kettlebell Row einarmig",      sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 60),
-                        ExerciseSpec(name: "Kettlebell Overhead Press",    sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 60),
+                        ExerciseSpec(name: "Kettlebell Schulterdrücken sitzend",    sets: 3, repsMin: 8,  repsMax: 10, restSeconds: 60),
                         ExerciseSpec(name: "Sit-ups",                      sets: 3, repsMin: 15, repsMax: 15, restSeconds: 60)
                     ]),
             DaySpec(name: "Schwung & Ausdauer", localizationKey: "plan.day.kbSwingEndurance", type: .fullBody, sequenceIndex: 3,
@@ -1303,8 +1303,8 @@ public enum ProgramTemplates {
         days: [
             DaySpec(name: "Heavy Pull: EMOM Snatch", localizationKey: "plan.day.kbHeavyPullEmom", type: .fullBody, sequenceIndex: 1,
                     exercises: [
-                        ExerciseSpec(name: "Kettlebell Snatch (Links)",   sets: 1, repsMin: 6, repsMax: 8),
-                        ExerciseSpec(name: "Kettlebell Snatch (Rechts)",  sets: 1, repsMin: 6, repsMax: 8)
+                        ExerciseSpec(name: "Kettlebell Snatch",   sets: 1, repsMin: 6, repsMax: 8),
+                        ExerciseSpec(name: "Kettlebell Snatch",  sets: 1, repsMin: 6, repsMax: 8)
                     ],
                     timeFormat: .emom, timeCapMinutes: 10),
             DaySpec(name: "Heavy Push & Squat", localizationKey: "plan.day.kbHeavyPushSquat", type: .fullBody, sequenceIndex: 2,
@@ -1354,18 +1354,18 @@ public enum ProgramTemplates {
         days: [
             DaySpec(name: "Ganzkörper-Komplex", localizationKey: "plan.day.kbComplexFullBody", type: .fullBody, sequenceIndex: 1,
                     exercises: [
-                        ExerciseSpec(name: "Kettlebell Clean to Front Squat", sets: 5, repsMin: 7,  repsMax: 7),
-                        ExerciseSpec(name: "Kettlebell Thruster einarmig",   sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Kettlebell Front Squat", sets: 5, repsMin: 7,  repsMax: 7),
+                        ExerciseSpec(name: "Kettlebell Thruster",   sets: 5, repsMin: 7,  repsMax: 7),
                         ExerciseSpec(name: "Kettlebell Swing",               sets: 5, repsMin: 7,  repsMax: 7),
                         ExerciseSpec(name: "Kettlebell Row einarmig",        sets: 5, repsMin: 7,  repsMax: 7),
-                        ExerciseSpec(name: "Liegestütze auf Kettlebell",     sets: 5, repsMin: 14, repsMax: 14)
+                        ExerciseSpec(name: "Kettlebell Plyo-Liegestütze",     sets: 5, repsMin: 14, repsMax: 14)
                     ],
                     timeFormat: .circuit, circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps),
             DaySpec(name: "Schulter & Core", localizationKey: "plan.day.kbComplexShoulderCore", type: .fullBody, sequenceIndex: 2,
                     exercises: [
-                        ExerciseSpec(name: "Kettlebell Halo",     sets: 10, repsMin: 2, repsMax: 2),
-                        ExerciseSpec(name: "Kettlebell Pullover",  sets: 10, repsMin: 2, repsMax: 2),
-                        ExerciseSpec(name: "Kettlebell Halo",     sets: 10, repsMin: 2, repsMax: 2)
+                        ExerciseSpec(name: "Kettlebell Windmill",     sets: 10, repsMin: 2, repsMax: 2),
+                        ExerciseSpec(name: "Pullover (KH)",  sets: 10, repsMin: 2, repsMax: 2),
+                        ExerciseSpec(name: "Kettlebell Windmill",     sets: 10, repsMin: 2, repsMax: 2)
                     ],
                     timeFormat: .circuit, circuitRounds: 10, circuitRestSeconds: 90, circuitMode: .toFailure),
             DaySpec(name: "Explosivität", localizationKey: "plan.day.kbComplexExplosive", type: .fullBody, sequenceIndex: 3,
@@ -1380,17 +1380,17 @@ public enum ProgramTemplates {
             // 15-Minuten-AMRAP, exakt das bestehende Zeitformat.
             DaySpec(name: "Seated Control", localizationKey: "plan.day.kbComplexSeatedControl", type: .fullBody, sequenceIndex: 4,
                     exercises: [
-                        ExerciseSpec(name: "Kettlebell Uppercut Rotation",     sets: 1, repsMin: 10, repsMax: 10),
-                        ExerciseSpec(name: "Kettlebell Halo",                 sets: 1, repsMin: 10, repsMax: 10),
-                        ExerciseSpec(name: "Kettlebell Overhead Press",       sets: 1, repsMin: 10, repsMax: 10),
-                        ExerciseSpec(name: "Kettlebell Sit-Up (Overhead Hold)", sets: 1, repsMin: 10, repsMax: 10)
+                        ExerciseSpec(name: "Kettlebell Figure 8",     sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Windmill",                 sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Kettlebell Schulterdrücken sitzend",       sets: 1, repsMin: 10, repsMax: 10),
+                        ExerciseSpec(name: "Sit-ups", sets: 1, repsMin: 10, repsMax: 10)
                     ],
                     timeFormat: .amrap, timeCapMinutes: 15),
             DaySpec(name: "Kraftausdauer", localizationKey: "plan.day.kbComplexEndurance", type: .fullBody, sequenceIndex: 5,
                     exercises: [
                         ExerciseSpec(name: "Kettlebell Row einarmig",      sets: 5, repsMin: 5,  repsMax: 5),
                         ExerciseSpec(name: "Kettlebell Swing",             sets: 5, repsMin: 5,  repsMax: 5),
-                        ExerciseSpec(name: "Kettlebell Thruster einarmig", sets: 5, repsMin: 5,  repsMax: 5),
+                        ExerciseSpec(name: "Kettlebell Thruster", sets: 5, repsMin: 5,  repsMax: 5),
                         ExerciseSpec(name: "Liegestütze",                  sets: 5, repsMin: 10, repsMax: 10)
                     ],
                     timeFormat: .circuit, circuitRounds: 5, circuitRestSeconds: 90, circuitMode: .fixedReps)
