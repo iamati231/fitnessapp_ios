@@ -195,7 +195,8 @@ private struct Hit: Decodable {
             kcalPer100g: nutriments?.kcalPer100g,
             proteinPer100g: nutriments?.proteins100g,
             carbsPer100g: nutriments?.carbohydrates100g,
-            fatPer100g: nutriments?.fat100g
+            fatPer100g: nutriments?.fat100g,
+            sugarPer100g: nutriments?.sugars100g
         )
     }
 }
@@ -206,6 +207,7 @@ private struct Nutriments: Decodable {
     let proteins100g: Double?
     let carbohydrates100g: Double?
     let fat100g: Double?
+    let sugars100g: Double?
 
     enum CodingKeys: String, CodingKey {
         case energyKcal100g = "energy-kcal_100g"
@@ -213,6 +215,7 @@ private struct Nutriments: Decodable {
         case proteins100g = "proteins_100g"
         case carbohydrates100g = "carbohydrates_100g"
         case fat100g = "fat_100g"
+        case sugars100g = "sugars_100g"
     }
 
     // Some real OFF products report energy only in kJ; converting (standard

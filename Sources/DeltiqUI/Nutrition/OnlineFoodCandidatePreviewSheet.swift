@@ -78,6 +78,7 @@ struct OnlineFoodCandidatePreviewSheet: View {
     @State private var proteinPer100g: Double?
     @State private var carbsPer100g: Double?
     @State private var fatPer100g: Double?
+    @State private var sugarPer100g: Double?
 
     init(
         candidate: OnlineFoodCandidate,
@@ -93,6 +94,7 @@ struct OnlineFoodCandidatePreviewSheet: View {
         _proteinPer100g = State(initialValue: candidate.proteinPer100g)
         _carbsPer100g = State(initialValue: candidate.carbsPer100g)
         _fatPer100g = State(initialValue: candidate.fatPer100g)
+        _sugarPer100g = State(initialValue: candidate.sugarPer100g)
     }
 
     var body: some View {
@@ -115,6 +117,7 @@ struct OnlineFoodCandidatePreviewSheet: View {
                     macroRow("nutrition.onlineImport.kcalLabel", value: $kcalPer100g, accessibilityKey: "nutrition.onlineImport.kcalLabel")
                     macroRow("nutrition.onlineImport.proteinLabel", value: $proteinPer100g, accessibilityKey: "nutrition.onlineImport.proteinLabel")
                     macroRow("nutrition.onlineImport.carbsLabel", value: $carbsPer100g, accessibilityKey: "nutrition.onlineImport.carbsLabel")
+                    macroRow("nutrition.onlineImport.sugarLabel", value: $sugarPer100g, accessibilityKey: "nutrition.onlineImport.sugarLabel")
                     macroRow("nutrition.onlineImport.fatLabel", value: $fatPer100g, accessibilityKey: "nutrition.onlineImport.fatLabel")
                 } footer: {
                     VStack(alignment: .leading, spacing: 4) {

@@ -405,6 +405,10 @@ public struct ExerciseLibraryView: View {
 
     private var filtered: [ExerciseTemplate] {
         var list = templates
+        // System-Übungen ohne GIF-Zuordnung ausblenden.
+        list = list.filter {
+            $0.isCustom || ExerciseMediaProvider.gifFileName(forExerciseName: $0.name) != nil
+        }
         // DEL-048 (portiert): Env-Filter VOR der Suche. Custom-Übungen
         // sind ausgenommen — die hat der User bewusst angelegt.
         if let env = planEnvironment, filterToPlanEnv {
