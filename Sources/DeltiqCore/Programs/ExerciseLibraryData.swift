@@ -540,15 +540,11 @@ public enum ExerciseLibraryData {
                              localizationKey: "exercise.name.trapBarDeadlift"),
 
         // Barbell / Dumbbell Press-Varianten
-        ExerciseTemplateSpec(name: "Floor Press", equipment: .barbell, primaryMuscle: .chest, difficultyLevel: .intermediate, localizationKey: "exercise.name.floorPress",
-                             equipmentRequirement: .item(.barbell)),
         ExerciseTemplateSpec(name: "Tate Press", equipment: .dumbbell, primaryMuscle: .triceps, difficultyLevel: .intermediate, localizationKey: "exercise.name.tatePress",
                              equipmentRequirement: .all([.item(.dumbbell, minimumCount: 2), .any([.item(.flatBench), .item(.adjustableBench)])])),
 
         // Rows
         ExerciseTemplateSpec(name: "Meadows Row", equipment: .barbell, primaryMuscle: .back, difficultyLevel: .intermediate, localizationKey: "exercise.name.meadowsRow"),
-        ExerciseTemplateSpec(name: "Renegade Row", equipment: .dumbbell, primaryMuscle: .back, difficultyLevel: .advanced, localizationKey: "exercise.name.renegadeRow",
-                             equipmentRequirement: .item(.dumbbell, minimumCount: 2)),
         ExerciseTemplateSpec(name: "Inverted Row", equipment: .bodyweight, primaryMuscle: .back, difficultyLevel: .beginner, localizationKey: "exercise.name.invertedRow"),
 
         // Cable

@@ -13354,7 +13354,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Close-Grip Lat Pulldown"
+            "value": "Reverse Grip Machine Lat Pulldown"
           }
         },
         "tr": {
@@ -13377,7 +13377,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seated Cable Row"
+            "value": "Cable Seated Row"
           }
         },
         "tr": {
@@ -13906,7 +13906,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kettlebell Floor Press"
+            "value": "Kettlebell One Arm Floor Press"
           }
         },
         "tr": {
@@ -22289,7 +22289,7 @@
         }
       }
     },
-    "settings.group.appExperience":  {
+    "settings.group.appExperience": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -60937,7 +60937,7 @@
         }
       }
     },
-    "settings.foodLookup.toggle.footer.off":  {
+    "settings.foodLookup.toggle.footer.off": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -60960,7 +60960,7 @@
         }
       }
     },
-    "settings.foodLookup.toggle.footer.on":  {
+    "settings.foodLookup.toggle.footer.on": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -61075,7 +61075,7 @@
         }
       }
     },
-    "settings.credits.onlineFoodLookup.copyright":  {
+    "settings.credits.onlineFoodLookup.copyright": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -61098,7 +61098,7 @@
         }
       }
     },
-    "nutrition.addMeal.onlineSearch.attribution":  {
+    "nutrition.addMeal.onlineSearch.attribution": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -61857,22 +61857,22 @@
         }
       }
     },
-    "planBuilder.exerciseLibrary.action":  {
+    "planBuilder.exerciseLibrary.action": {
       "extractionState": "manual",
       "localizations": {
-        "de":  {
+        "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Übungsbibliothek"
           }
         },
-        "en":  {
+        "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Exercise Library"
           }
         },
-        "tr":  {
+        "tr": {
           "stringUnit": {
             "state": "translated",
             "value": "Hareket Kütüphanesi"
@@ -68884,7 +68884,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable EZ Row"
+            "value": "Cable Seated Wide-Grip Row"
           }
         },
         "tr": {
@@ -68953,7 +68953,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable Low Row"
+            "value": "Cable Low Seated Row"
           }
         },
         "tr": {
@@ -69045,7 +69045,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Dumbbell Row"
+            "value": "Dumbbell Incline Row"
           }
         },
         "tr": {

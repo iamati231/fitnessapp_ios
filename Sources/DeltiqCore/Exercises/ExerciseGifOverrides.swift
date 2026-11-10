@@ -1,4 +1,4 @@
-﻿// Generiert von .scripts/build_exercise_gif_map.py — nicht von Hand editieren.
+// Generiert von .scripts/build_exercise_gif_map.py — nicht von Hand editieren.
 // Aus exercise_gif_overrides.json — dort pflegen, nicht hier.
 
 public enum ExerciseGifOverrides {
@@ -40,7 +40,6 @@ public enum ExerciseGifOverrides {
             ("enges bankdrucken", "0030-J6Dx1Mu.gif"),
             ("fahrradergometer", "2138-H1PESYI.gif"),
             ("farmer s walk", "2133-qPEzJjA.gif"),
-            ("floor press", "0065-vtusOWT.gif"),
             ("floor press einarmig lh", "0065-vtusOWT.gif"),
             ("flyes flach kh", "0308-yz9nUhF.gif"),
             ("freier lauf", "0685-oLrKqDH.gif"),
@@ -67,7 +66,7 @@ public enum ExerciseGifOverrides {
             ("kabelzug frontheben", "0162-2ba3fb1.gif"),
             ("kabelzug latissimus strecken", "0238-62a8d04.gif"),
             ("kabelzug rudern ez", "0218-d972dc8.gif"),
-            ("kabelzug rudern stehend", "0180-a410115.gif"),
+            ("kabelzug rudern stehend", "0234-4f8RXP8.gif"),
             ("kabelzug schulterdrucken", "0219-7b40946.gif"),
             ("kettlebell advanced windmill", "0517-88a50b8.gif"),
             ("kettlebell alternating hang clean", "0518-a867538.gif"),
@@ -118,6 +117,7 @@ public enum ExerciseGifOverrides {
             ("low bar kniebeuge lh", "1435-bTpEUcm.gif"),
             ("medizinball slam", "1354-oHg8eop.gif"),
             ("mountain climbers", "0630-RJgzwny.gif"),
+            ("muscle up", "1401-Af0EW2I.gif"),
             ("nackendrucken", "0788-xDh0lJr.gif"),
             ("pec deck butterfly", "0596-v3xmPAR.gif"),
             ("pistol squat", "1759-nqs5HGV.gif"),
@@ -128,7 +128,6 @@ public enum ExerciseGifOverrides {
             ("push press", "1457-Kyd9Rz5.gif"),
             ("rad intervall", "2138-H1PESYI.gif"),
             ("radfahren outdoor", "2138-H1PESYI.gif"),
-            ("renegade row", "0521-b9kqlBy.gif"),
             ("renegade row kettlebell", "0521-b9kqlBy.gif"),
             ("reverse cable fly", "0154-aqvSOQE.gif"),
             ("reverse crunch", "0872-nCU1Ekp.gif"),
