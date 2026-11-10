@@ -214,7 +214,7 @@ struct ExerciseLibraryEditorSheet: View {
             .listRowBackground(Color.Deltiq.surface)
             if let secondaryMuscles = ExerciseSecondaryMuscles.byNormalizedName[ExerciseMediaProvider.normalizedKey(for: existing?.name ?? trimmedName)], !secondaryMuscles.isEmpty {
                 LabeledContent {
-                    Text(secondaryMuscles.map(\.localizedName).joined(separator: ", "))
+                    Text(secondaryMuscles.map { String(localized: $0.localizedName) }.joined(separator: ", "))
                         .multilineTextAlignment(.trailing)
                 } label: {
                     Text("customExercise.field.secondaryMuscles", bundle: .module)
