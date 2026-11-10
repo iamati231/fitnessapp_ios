@@ -6021,5 +6021,1061 @@
       "Germeyi 20-30 saniye tutun.",
       "Tarafları değiştirin."
     ]
+  },
+  "bankdrucken": {
+    "de": [
+      "Lege dich flach auf die Bank, Füße fest auf dem Boden.",
+      "Greife die Stange etwas schulterbreiter als deine Schultern.",
+      "Senke die Stange kontrolliert zur Brust, Ellbogen 45–75° abgewinkelt.",
+      "Drücke die Stange explosiv zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Lie flat on the bench with your feet firmly on the floor.",
+      "Grip the bar slightly wider than shoulder-width.",
+      "Unrack the bar and position it over your chest.",
+      "Lower the bar slowly to your chest, keeping elbows at 45–75°.",
+      "Press the bar back up explosively until arms are fully extended.",
+      "Keep your back slightly arched and shoulder blades retracted throughout."
+    ],
+    "tr": [
+      "Sırtınız bankta düz yatın, ayaklarınız yerde sağlam dursun.",
+      "Barı omuz genişliğinden biraz daha geniş kavrayın.",
+      "Barı raftan çıkarın ve göğsünüzün üzerinde konumlandırın.",
+      "Barı yavaşça göğsünüze indirin, dirsekler 45–75° açıda.",
+      "Barı kollar tam uzanana kadar patlatarak yukarı itin.",
+      "Kürek kemiklerinizi birbirine yakın tutun ve sırtınızı hafif kavislendirin."
+    ]
+  },
+  "bankdrucken kh": {
+    "de": [
+      "Setze dich auf eine flache Bank, Kurzhanteln auf den Oberschenkeln.",
+      "Lege dich zurück und halte die Kurzhanteln auf Brusthöhe.",
+      "Drücke beide Hanteln nach oben, bis die Arme gestreckt sind.",
+      "Senke sie kontrolliert zurück zur Ausgangsposition."
+    ],
+    "en": [
+      "Sit at the end of a flat bench with dumbbells resting on your thighs.",
+      "Lie back and bring the dumbbells to chest height with palms facing forward.",
+      "Press both dumbbells straight up until arms are fully extended.",
+      "Lower slowly back to the starting position, controlling the descent.",
+      "Keep the dumbbells in line with your lower chest throughout.",
+      "Avoid locking out the elbows completely at the top."
+    ],
+    "tr": [
+      "Düz bankın ucuna oturun, dambılları uyluklarınıza koyun.",
+      "Uzanın ve dambılları göğüs hizasına getirin, avuçlar öne baksin.",
+      "Her iki dambılı kollar tam uzanana kadar düz yukarı itin.",
+      "Yavaşça başlangıç pozisyonuna dönerek hareketi kontrol edin.",
+      "Dambılları tüm hareket boyunca göğüs alt hizasında tutun.",
+      "Üstte dirseği tamamen kilitlemekten kaçının."
+    ]
+  },
+  "beinbeuger liegend": {
+    "de": [
+      "Lege dich bäuchlings auf die Maschine, Polster knapp über den Fersen.",
+      "Halte die Griffe für Stabilität.",
+      "Beuge die Knie und ziehe die Fersen Richtung Gesäß.",
+      "Senke die Unterschenkel kontrolliert zurück."
+    ],
+    "en": [
+      "Lie face down on the leg curl machine, ankles under the pad.",
+      "Grip the handles and keep hips pressed into the bench.",
+      "Curl your legs up toward your glutes in a smooth arc.",
+      "Squeeze your hamstrings at the top of the movement.",
+      "Lower your legs slowly back to the starting position.",
+      "Avoid lifting your hips off the bench during the movement."
+    ],
+    "tr": [
+      "Bacak bükme makinesine yüz üstü uzanın, bilekler yastığın altında.",
+      "Tutamaçları tutun ve kalçanızı banka bastırın.",
+      "Bacaklarınızı yumuşak bir yay çizerek kalçanıza doğru kıvırın.",
+      "Hareketin üst noktasında arka uyluk kaslarınızı sıkın.",
+      "Bacaklarınızı yavaşça başlangıç pozisyonuna indirin.",
+      "Hareket sırasında kalçanızı banktan kaldırmaktan kaçının."
+    ]
+  },
+  "beincurl sitzend": {
+    "de": [
+      "Setze dich aufrecht auf die Maschine, Polster auf den Unterschenkeln.",
+      "Halte die Griffe und halte den Rücken gerade.",
+      "Beuge die Knie und ziehe die Unterschenkel nach unten hinten.",
+      "Führe die Unterschenkel kontrolliert in die Ausgangsposition zurück."
+    ],
+    "en": [
+      "Sit upright in the seated leg curl machine, shin pad on lower shins.",
+      "Grip the handles and press your back firmly into the seat.",
+      "Curl your legs down and back as far as the machine allows.",
+      "Squeeze your hamstrings at the end of the movement.",
+      "Return to the starting position in a slow, controlled manner.",
+      "Keep your thighs flat on the seat pad throughout."
+    ],
+    "tr": [
+      "Oturarak bacak bükme makinesine dik oturun, bacak yastığı inciklerinizde.",
+      "Tutamaçları tutun ve sırtınızı koltuğa sıkıca bastırın.",
+      "Bacaklarınızı makinenin izin verdiği kadar aşağı ve geri kıvırın.",
+      "Hareketin sonunda arka uyluk kaslarınızı sıkın.",
+      "Yavaş ve kontrollü bir şekilde başlangıç pozisyonuna dönün.",
+      "Tüm hareket boyunca uyluklarınızı oturma minderi üzerinde düz tutun."
+    ]
+  },
+  "beinpresse": {
+    "de": [
+      "Setze dich in die Beinpresse, Füße hüftbreit auf der Plattform.",
+      "Löse die Sicherungen und halte den Rücken an der Rückenlehne.",
+      "Beuge die Knie kontrolliert bis ca. 90°, Knie in Fußrichtung.",
+      "Drücke die Plattform explosiv zurück, ohne die Knie zu überstrecken."
+    ],
+    "en": [
+      "Sit in the leg press machine with feet hip-width apart on the platform.",
+      "Release the safety handles and lower the platform by bending your knees.",
+      "Bring your knees to about 90° or as deep as comfortable.",
+      "Keep your knees tracking over your toes throughout.",
+      "Drive the platform back up explosively without locking the knees.",
+      "Re-engage the safety handles after completing your set."
+    ],
+    "tr": [
+      "Bacak presi makinesine oturun, ayaklar platformda kalça genişliğinde.",
+      "Güvenlik kollarını serbest bırakın ve dizleri bükerek platformu indirin.",
+      "Dizlerinizi yaklaşık 90°'ye veya rahat hissedilen derinliğe getirin.",
+      "Dizlerinizin tüm hareket boyunca ayak parmaklarının üzerinde kalmasını sağlayın.",
+      "Platformu patlatarak geri itin, dizleri tam kilitlemeden.",
+      "Seti tamamladıktan sonra güvenlik kollarını tekrar yerine takın."
+    ]
+  },
+  "beinstrecker": {
+    "de": [
+      "Setze dich aufrecht, Polster auf den Fußknöcheln.",
+      "Strecke die Beine explosiv bis kurz vor die volle Streckung.",
+      "Halte oben kurz an und spanne den Quadrizeps an.",
+      "Senke kontrolliert zurück, ohne das Gewicht aufzulegen."
+    ],
+    "en": [
+      "Sit upright in the leg extension machine, shin pad over your ankles.",
+      "Grip the handles and keep your back flat against the backrest.",
+      "Extend your legs upward in a smooth arc until nearly straight.",
+      "Squeeze your quadriceps hard at the top of the movement.",
+      "Lower slowly back to the starting position with control.",
+      "Avoid swinging or using momentum to lift the weight."
+    ],
+    "tr": [
+      "Bacak uzatma makinesine dik oturun, bacak yastığı bileklerinizin üzerinde.",
+      "Tutamaçları kavrayın ve sırtınızı arkalığa düz bastırın.",
+      "Bacaklarınızı yumuşak bir yay çizerek neredeyse düz olana kadar kaldırın.",
+      "Hareketin üst noktasında uyluk ön kaslarınızı sıkın.",
+      "Yavaşça ve kontrollü olarak başlangıç pozisyonuna dönün.",
+      "Ağırlığı kaldırmak için sallanmaktan veya momentum kullanmaktan kaçının."
+    ]
+  },
+  "bizeps curl lh": {
+    "de": [
+      "Stehe aufrecht, Langhantel mit Untergriff, Hände schulterbreit.",
+      "Ellbogen bleiben seitlich am Körper.",
+      "Beuge die Arme und führe die Stange zur Brust.",
+      "Senke kontrolliert zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Stand upright holding a barbell with an underhand grip, hands shoulder-width.",
+      "Keep your elbows pinned to your sides throughout.",
+      "Curl the barbell up toward your chest in a smooth arc.",
+      "Squeeze your biceps hard at the top.",
+      "Lower the bar slowly back to the starting position.",
+      "Avoid swinging your torso to lift the weight."
+    ],
+    "tr": [
+      "Dik durun, barı alt kavrayışla omuz genişliğinde tutun.",
+      "Dirseklerinizi tüm hareket boyunca yanlarınıza sabitlenmiş tutun.",
+      "Barı göğsünüze doğru yumuşak bir yay çizerek kaldırın.",
+      "Üstte bisepslerinizi sıkın.",
+      "Barı yavaşça başlangıç pozisyonuna indirin.",
+      "Ağırlığı kaldırmak için gövdenizi sallamaktan kaçının."
+    ]
+  },
+  "diamant liegestutze": {
+    "de": [
+      "Stütze in Liegestützposition, Hände unter der Brust zum Diamant geformt.",
+      "Körper von Kopf bis Ferse in einer Linie.",
+      "Beuge die Ellbogen und senke die Brust zur Handfläche.",
+      "Drücke explosiv zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Start in a push-up position with hands close together under your chest.",
+      "Form a diamond shape with your thumbs and index fingers.",
+      "Keep your body in a straight line from head to heels.",
+      "Lower your chest toward your hands by bending the elbows.",
+      "Press back up to the starting position.",
+      "This variation emphasizes the triceps more than standard push-ups."
+    ],
+    "tr": [
+      "Şınav pozisyonunda başlayın, elleri göğsünüzün altında yakın tutun.",
+      "Baş parmaklarınız ve işaret parmaklarınızla elmas şekli oluşturun.",
+      "Vücudunuzu baştan topuklara düz bir çizgide tutun.",
+      "Dirseğinizi bükerek göğsünüzü ellerinize doğru indirin.",
+      "Başlangıç pozisyonuna geri itin.",
+      "Bu varyasyon standart şınava göre trisepsleri daha fazla çalıştırır."
+    ]
+  },
+  "flyes schragbank kh": {
+    "de": [
+      "Lege dich auf eine schräge Bank (30–45°), Kurzhanteln über der Brust.",
+      "Arme leicht gebeugt, Ellbogen weich.",
+      "Senke die Hanteln seitwärts in einem weiten Bogen.",
+      "Führe die Hanteln zurück nach oben, als würdest du einen Baum umarmen."
+    ],
+    "en": [
+      "Lie on an incline bench set to 30–45°, holding dumbbells over your chest.",
+      "Keep a slight bend in your elbows throughout the movement.",
+      "Open your arms wide, lowering the dumbbells in a wide arc.",
+      "Feel a stretch in your chest at the bottom.",
+      "Bring the dumbbells back together above your chest as if hugging a tree.",
+      "Focus on squeezing the chest at the top, not the shoulders."
+    ],
+    "tr": [
+      "30–45° eğimli bankta uzanın, dambılları göğsünüzün üzerinde tutun.",
+      "Tüm hareket boyunca dirseklerinizde hafif bir bükme olsun.",
+      "Kollarınızı geniş bir yay çizerek yanlarına açın ve dambılları indirin.",
+      "Altta göğsünüzde bir esneme hissedin.",
+      "Bir ağacı kucaklıyormuş gibi dambılları göğsünüzün üzerinde geri getirin.",
+      "Üstte omuzu değil, göğsü sıkmaya odaklanın."
+    ]
+  },
+  "front squat": {
+    "de": [
+      "Stange auf den vorderen Schultern, Ellbogen hoch, Griff locker.",
+      "Füße schulterbreit, Zehen leicht nach außen.",
+      "Beuge Knie und Hüfte gleichzeitig und senke dich tief ab.",
+      "Drücke durch die Fersen zurück in den Stand."
+    ],
+    "en": [
+      "Place the bar on your front deltoids with elbows high and fingers loose.",
+      "Stand with feet shoulder-width apart, toes slightly out.",
+      "Brace your core and keep your chest upright throughout.",
+      "Squat down by bending the knees and hips simultaneously.",
+      "Keep the bar over your midfoot and elbows up.",
+      "Drive through your heels to return to standing."
+    ],
+    "tr": [
+      "Barı ön deltoidlerinizin üzerine koyun, dirsekler yüksek ve parmaklar serbest.",
+      "Ayaklar omuz genişliğinde, ayak parmakları hafifçe dışarı.",
+      "Göbeğinizi çekin ve tüm hareket boyunca göğsünüzü dik tutun.",
+      "Diz ve kalçaları aynı anda bükerek aşağı çömelin.",
+      "Barı ayak ortasının üzerinde ve dirseği yukarıda tutun.",
+      "Topuklarınıza basarak ayağa kalkın."
+    ]
+  },
+  "handgelenk curl umgekehrt": {
+    "de": [
+      "Sitze auf einer Bank, Unterarme auf den Oberschenkeln, Obergiff.",
+      "Handgelenke hängen über die Knie.",
+      "Strecke die Handgelenke kontrolliert nach unten.",
+      "Beuge die Handgelenke wieder nach oben gegen den Widerstand."
+    ],
+    "en": [
+      "Sit on a bench with forearms resting on your thighs, using an overhand grip.",
+      "Let your wrists hang off the edge of your knees.",
+      "Lower the bar by extending your wrists downward.",
+      "Curl the bar back up by flexing your wrists.",
+      "Keep the range of motion slow and controlled.",
+      "This targets the wrist extensors and forearm muscles."
+    ],
+    "tr": [
+      "Bir bankta oturun, önkollar uyluklara yaslansın, üst kavrayış kullanın.",
+      "Bileklerinizin dizlerinizin kenarından sarkmasına izin verin.",
+      "Bileklerinizi aşağı uzatarak barı indirin.",
+      "Bileklerinizi bükerek barı geri yukarı kıvırın.",
+      "Hareket aralığını yavaş ve kontrollü tutun.",
+      "Bu hareket, bilek uzatıcılarını ve ön kol kaslarını çalıştırır."
+    ]
+  },
+  "handstand liegestutze": {
+    "de": [
+      "Stelle dich schulterbreit vor eine Wand und gehe in den Handstand.",
+      "Fersen an die Wand, Körper gerade.",
+      "Beuge die Ellbogen und senke den Kopf kontrolliert Richtung Boden.",
+      "Drücke explosiv zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Kick up into a handstand with your heels against a wall for support.",
+      "Position hands shoulder-width apart with fingers spread.",
+      "Keep your body in a straight line and core braced.",
+      "Lower your head toward the floor by bending your elbows.",
+      "Press back up to the starting position.",
+      "Build up to full range of motion gradually for safety."
+    ],
+    "tr": [
+      "Destek için topuklarınız duvarda olacak şekilde el duruşuna geçin.",
+      "Elleri omuz genişliğinde, parmaklar açık konumda yerleştirin.",
+      "Vücudunuzu düz bir çizgide tutun ve göbeği çekin.",
+      "Dirseği bükerek başınızı yere doğru indirin.",
+      "Başlangıç pozisyonuna geri itin.",
+      "Güvenlik için tam hareket aralığına kademeli olarak ulaşın."
+    ]
+  },
+  "hanging leg raises": {
+    "de": [
+      "Hänge an einer Stange, Schultern aktiv nach unten ziehen.",
+      "Halte Beine gestreckt oder leicht gebeugt.",
+      "Hebe die Beine kontrolliert bis zur Waagrechten oder höher.",
+      "Senke sie kontrolliert zurück, ohne zu schwingen."
+    ],
+    "en": [
+      "Hang from a pull-up bar with an overhand grip, arms fully extended.",
+      "Engage your shoulders by pulling them down slightly.",
+      "Keep your legs straight or slightly bent.",
+      "Raise your legs by flexing your hips until they are parallel to the floor.",
+      "Lower your legs slowly back to the starting position.",
+      "Avoid swinging your body to generate momentum."
+    ],
+    "tr": [
+      "Bardan üst kavrayışla asılın, kollar tam uzanmış.",
+      "Omuzlarınızı hafifçe aşağı çekerek aktive edin.",
+      "Bacaklarınızı düz veya hafifçe bükülü tutun.",
+      "Kalçalarınızı bükerek bacaklarınızı yerle paralel olana kadar kaldırın.",
+      "Bacaklarınızı yavaşça başlangıç pozisyonuna indirin.",
+      "Momentum oluşturmak için vücudunuzu sallamaktan kaçının."
+    ]
+  },
+  "inverted row": {
+    "de": [
+      "Lege dich unter eine niedrige Stange, Griff schulterbreit.",
+      "Strecke den Körper gerade, Fersen auf dem Boden.",
+      "Ziehe die Brust zur Stange, Ellbogen nah am Körper.",
+      "Senke dich kontrolliert zurück."
+    ],
+    "en": [
+      "Set a bar at waist height and lie underneath it, gripping it shoulder-width.",
+      "Extend your body in a straight line with heels on the floor.",
+      "Keep your core tight and body rigid.",
+      "Pull your chest up to the bar by retracting your shoulder blades.",
+      "Lower yourself slowly back to the starting position.",
+      "Make it harder by elevating your feet on a bench."
+    ],
+    "tr": [
+      "Bel yüksekliğinde bir bar ayarlayın ve altına uzanın, omuz genişliğinde tutun.",
+      "Topuklarınız yerde, vücudunuzu düz bir çizgide uzatın.",
+      "Göbeği çekin ve vücudu sert tutun.",
+      "Kürek kemiklerini geriye çekerek göğsünüzü bara doğru çekin.",
+      "Yavaşça başlangıç pozisyonuna dönün.",
+      "Ayaklarınızı banka koyarak daha zorlu hale getirebilirsiniz."
+    ]
+  },
+  "jump squat": {
+    "de": [
+      "Stehe schulterbreit, Hände vor der Brust oder am Kopf.",
+      "Beuge Knie und Hüfte in eine tiefe Kniebeuge.",
+      "Springe explosiv nach oben, Arme helfen beim Abschwung.",
+      "Lande weich mit leicht gebeugten Knien."
+    ],
+    "en": [
+      "Stand with feet shoulder-width apart, hands in front of your chest.",
+      "Lower into a squat by bending at the hips and knees.",
+      "Explosively drive upward, extending through hips, knees, and ankles.",
+      "Leave the ground and reach full extension at the top.",
+      "Land softly with bent knees to absorb the impact.",
+      "Immediately transition into the next rep for plyometric benefit."
+    ],
+    "tr": [
+      "Ayaklar omuz genişliğinde, eller göğüsünüzün önünde durun.",
+      "Kalça ve dizleri bükerek çömelme pozisyonuna inin.",
+      "Kalça, diz ve bilekler üzerinden patlatarak yukarı doğru sıçrayın.",
+      "Havada tam uzanmaya ulaşın.",
+      "Darbeyi emmek için dizleri bükerek yumuşak bir şekilde inin.",
+      "Pliometrik etki için hemen bir sonraki tekrara geçin."
+    ]
+  },
+  "kabelzug tiefrudern": {
+    "de": [
+      "Stelle das Kabel auf die unterste Position, sitze aufrecht davor.",
+      "Greife den Griff mit beiden Händen, Rücken aufrecht.",
+      "Ziehe den Griff zur unteren Bauchgegend, Ellbogen nah am Körper.",
+      "Strecke die Arme kontrolliert zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Set the cable to the lowest position and sit facing the machine.",
+      "Grip the handle with both hands and sit upright with a slight forward lean.",
+      "Pull the handle toward your lower abdomen, squeezing your back.",
+      "Keep your elbows close to your body throughout.",
+      "Extend your arms back fully under control.",
+      "Avoid rounding your lower back during the movement."
+    ],
+    "tr": [
+      "Kabloyu en alçak konuma ayarlayın ve makineye karşı oturun.",
+      "Tutacağı her iki elinizle tutun ve hafif öne eğilerek dik oturun.",
+      "Tutacağı alt karın bölgenize çekerek sırtınızı sıkın.",
+      "Tüm hareket boyunca dirseklerinizi vücudunuza yakın tutun.",
+      "Kollarınızı kontrollü bir şekilde tam olarak geri uzatın.",
+      "Hareket sırasında bel bölgesini yuvarlamaktan kaçının."
+    ]
+  },
+  "kettlebell front squat": {
+    "de": [
+      "Halte zwei Kettlebells in Rack-Position (Hörner nach oben, Ellbogen hoch).",
+      "Füße schulterbreit, Zehen leicht nach außen.",
+      "Senke dich in eine tiefe Kniebeuge, Rücken aufrecht.",
+      "Drücke durch die Fersen zurück in den Stand."
+    ],
+    "en": [
+      "Clean two kettlebells to the rack position, bells resting on forearms.",
+      "Keep elbows up and chest tall throughout.",
+      "Stand with feet shoulder-width apart, toes slightly out.",
+      "Squat down by bending hips and knees simultaneously.",
+      "Keep your torso upright and knees tracking over your toes.",
+      "Drive through your heels to return to standing."
+    ],
+    "tr": [
+      "İki kettlebell'ı rack pozisyonuna getirin, bell ön kolların üzerinde dursun.",
+      "Tüm hareket boyunca dirseği yukarı ve göğsü dik tutun.",
+      "Ayaklar omuz genişliğinde, ayak parmakları hafifçe dışarı.",
+      "Kalça ve dizleri aynı anda bükerek aşağı çömelin.",
+      "Gövdeyi dik tutun ve dizlerin ayak parmaklarının üzerinde olmasını sağlayın.",
+      "Topuklarınıza basarak ayağa kalkın."
+    ]
+  },
+  "kettlebell goblet squat": {
+    "de": [
+      "Halte eine Kettlebell mit beiden Händen an der Brust (Horns up).",
+      "Füße etwas breiter als schulterbreit, Zehen nach außen.",
+      "Senke dich tief in die Kniebeuge, Ellbogen innen an den Knien.",
+      "Drücke durch die Fersen zurück in den Stand."
+    ],
+    "en": [
+      "Hold a kettlebell vertically at chest height with both hands cupping the horns.",
+      "Stand with feet slightly wider than shoulder-width, toes turned out.",
+      "Squat down deeply, keeping your elbows inside your knees.",
+      "Keep your chest tall and back straight throughout.",
+      "Drive through your heels to return to standing.",
+      "This squat variation improves mobility and depth."
+    ],
+    "tr": [
+      "Bir kettlebell'ı her iki elinizle yatay tutarak göğüs hizasında tutun.",
+      "Ayaklar omuz genişliğinden biraz geniş, ayak parmakları dışarı dönük.",
+      "Derine çömelin, dirsekleriniz dizlerinizin içinde olsun.",
+      "Tüm hareket boyunca göğsü dik ve sırtı düz tutun.",
+      "Topuklarınıza basarak ayağa kalkın.",
+      "Bu çömelme varyasyonu hareketliliği ve derinliği geliştirir."
+    ]
+  },
+  "kettlebell swing": {
+    "de": [
+      "Stehe über der Kettlebell, Füße schulterbreit.",
+      "Beuge die Hüfte (Hinge), nicht die Knie, und greife die Kettlebell.",
+      "Schwinge sie zwischen den Beinen hindurch, dann explosiv nach vorne.",
+      "Strecke Hüfte und Knie, die Bell schwingt bis Schulterhöhe."
+    ],
+    "en": [
+      "Stand over the kettlebell with feet shoulder-width apart.",
+      "Hinge at the hips and grip the bell with both hands.",
+      "Swing the bell back between your legs like a pendulum.",
+      "Drive your hips forward explosively to swing the bell to shoulder height.",
+      "Let the bell float at the top, then guide it back between your legs.",
+      "Power comes from the hips, not the arms or shoulders."
+    ],
+    "tr": [
+      "Kettlebell'ın üzerinde ayaklar omuz genişliğinde durun.",
+      "Kalçadan eğilin ve bell'i her iki elinizle tutun.",
+      "Bell'i bir sarkaç gibi bacaklarınızın arasında arkaya savurun.",
+      "Kalçanızı patlatarak bell'i omuz yüksekliğine savurun.",
+      "Üstte bell'in süzülmesine izin verin, ardından bacaklar arasına geri yönlendirin.",
+      "Güç kollardan değil, kalçadan gelir."
+    ]
+  },
+  "klimmzug assistiert": {
+    "de": [
+      "Stelle das Gewicht an der Assistenzmaschine ein.",
+      "Knie oder Füße auf die Stütze, Griff schulterbreit.",
+      "Ziehe den Körper nach oben, bis die Brust die Stange berührt.",
+      "Senke dich kontrolliert zurück."
+    ],
+    "en": [
+      "Set the assistance weight on the machine (more weight = easier).",
+      "Kneel or stand on the support platform and grip the bar shoulder-width.",
+      "Pull yourself up until your chin clears the bar.",
+      "Squeeze your back and biceps at the top.",
+      "Lower slowly back to full arm extension.",
+      "Gradually reduce the assistance weight as you get stronger."
+    ],
+    "tr": [
+      "Makinede yardım ağırlığını ayarlayın (daha fazla ağırlık = daha kolay).",
+      "Destek platformuna diz çökün veya ayakta durun, barı omuz genişliğinde tutun.",
+      "Çeneniz barın üzerine geçene kadar kendinizi yukarı çekin.",
+      "Üstte sırtınızı ve bisepslerinizi sıkın.",
+      "Kollar tam uzanana kadar yavaşça inin.",
+      "Güçlendikçe yardım ağırlığını kademeli olarak azaltın."
+    ]
+  },
+  "klimmzuge": {
+    "de": [
+      "Hänge an der Stange, Griff schulterbreit, Obergriff.",
+      "Ziehe die Schulterblätter nach unten und hinten.",
+      "Ziehe den Körper hoch, bis das Kinn über die Stange kommt.",
+      "Senke dich kontrolliert bis zur vollen Armstreckung."
+    ],
+    "en": [
+      "Hang from a pull-up bar with an overhand grip, hands shoulder-width.",
+      "Start by depressing your shoulder blades downward.",
+      "Pull yourself up by driving elbows toward your hips.",
+      "Continue until your chin clears the bar.",
+      "Lower yourself slowly to full arm extension.",
+      "Avoid kipping or swinging to build genuine strength."
+    ],
+    "tr": [
+      "Bardan üst kavrayışla asılın, eller omuz genişliğinde.",
+      "Kürek kemiklerini aşağı ve arkaya çekerek başlayın.",
+      "Dirseği kalçanıza doğru sürerek kendinizi yukarı çekin.",
+      "Çeneniz barın üzerine geçene kadar devam edin.",
+      "Kollar tam uzanana kadar yavaşça inin.",
+      "Gerçek güç geliştirmek için sallantı veya momentum kullanmaktan kaçının."
+    ]
+  },
+  "klimmzuge eng chin up": {
+    "de": [
+      "Hänge an der Stange, Untergriff, Hände schulterbreit.",
+      "Ziehe die Schulterblätter nach unten und hinten.",
+      "Ziehe den Körper hoch, bis das Kinn über die Stange kommt.",
+      "Senke dich kontrolliert bis zur vollen Armstreckung."
+    ],
+    "en": [
+      "Hang from a bar with an underhand (supinated) grip, hands shoulder-width.",
+      "Engage your core and depress your shoulder blades.",
+      "Pull yourself up by curling your elbows toward your hips.",
+      "Bring your chin over the bar at the top.",
+      "Lower slowly to a full hang.",
+      "The underhand grip recruits more biceps than a standard pull-up."
+    ],
+    "tr": [
+      "Bardan alt kavrayışla (supinated) asılın, eller omuz genişliğinde.",
+      "Göbeğinizi çekin ve kürek kemiklerini bastırın.",
+      "Dirseklerinizi kalçanıza doğru kıvırarak kendinizi yukarı çekin.",
+      "Çenenizi üstte barın üzerine getirin.",
+      "Yavaşça tam asılı konuma inin.",
+      "Alt kavrayış, standart pull-up'a göre bisepsleri daha fazla çalıştırır."
+    ]
+  },
+  "klimmzuge weit": {
+    "de": [
+      "Hänge an der Stange, Griff deutlich weiter als Schulterbreit, Obergriff.",
+      "Ziehe die Schulterblätter nach unten.",
+      "Ziehe den Körper hoch, bis die Brust die Stange berührt.",
+      "Senke kontrolliert zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Hang from a bar with a wide overhand grip, hands well outside shoulder-width.",
+      "Depress and retract your shoulder blades before pulling.",
+      "Pull yourself up by driving your elbows down and back.",
+      "Aim to bring your upper chest to the bar.",
+      "Lower slowly back to a full hang.",
+      "Wide grip emphasizes the latissimus dorsi more than standard pull-ups."
+    ],
+    "tr": [
+      "Bardan geniş üst kavrayışla asılın, eller omuz genişliğinin çok dışında.",
+      "Çekmeden önce kürek kemiklerini bastırın ve geriye çekin.",
+      "Dirseği aşağı ve arkaya sürerek kendinizi yukarı çekin.",
+      "Üst göğsünüzü bara getirmeyi hedefleyin.",
+      "Yavaşça tam asılı konuma dönün.",
+      "Geniş kavrayış, standart pull-up'a göre latissimus dorsi'yi daha fazla çalıştırır."
+    ]
+  },
+  "konzentrations curl kh": {
+    "de": [
+      "Sitze auf einer Bank, Ellbogen auf dem Oberschenkel abgestützt.",
+      "Halte eine Kurzhantel mit Untergriff.",
+      "Beuge den Arm und führe die Hantel kontrolliert zur Schulter.",
+      "Senke kontrolliert zurück, Ellbogen bleibt auf dem Oberschenkel."
+    ],
+    "en": [
+      "Sit on a bench, spread your legs and lean forward slightly.",
+      "Rest your elbow against the inside of your thigh, holding a dumbbell.",
+      "Curl the dumbbell up toward your shoulder with a slow, controlled motion.",
+      "Squeeze your biceps at the top of the movement.",
+      "Lower slowly back to the starting position.",
+      "Avoid rotating your wrist at the top; keep it neutral."
+    ],
+    "tr": [
+      "Bir bankta oturun, bacaklarınızı açın ve hafifçe öne eğilin.",
+      "Dirseğinizi uyluğunuzun iç kısmına yaslayın, bir dambıl tutun.",
+      "Dambılı yavaş ve kontrollü bir hareketle omzunuza doğru kaldırın.",
+      "Hareketin üst noktasında bisepslerinizi sıkın.",
+      "Yavaşça başlangıç pozisyonuna indirin.",
+      "Üstte bileğinizi döndürmekten kaçının; nötr tutun."
+    ]
+  },
+  "kreuzheben kh": {
+    "de": [
+      "Stelle dich über die Kurzhanteln, Füße hüftbreit.",
+      "Beuge Hüfte und Knie, greife die Hanteln mit geradem Rücken.",
+      "Strecke Hüfte und Knie gleichzeitig und stehe auf.",
+      "Senke kontrolliert zurück mit neutralem Rücken."
+    ],
+    "en": [
+      "Stand with dumbbells in front of you, feet hip-width apart.",
+      "Hinge at the hips and bend your knees, grip the dumbbells.",
+      "Keep a neutral spine and chest up.",
+      "Drive through your heels to extend your hips and knees simultaneously.",
+      "Stand tall at the top, hips fully extended.",
+      "Lower the dumbbells back down in a controlled manner."
+    ],
+    "tr": [
+      "Dambılların önünde durun, ayaklar kalça genişliğinde.",
+      "Kalçadan eğilin ve dizleri bükerek dambılları tutun.",
+      "Nötral omurga ve göğüs yukarıda tutun.",
+      "Topuklarınıza basarak kalça ve dizleri aynı anda uzatın.",
+      "Üstte dik durun, kalçalar tam uzanmış.",
+      "Dambılları kontrollü bir şekilde geri indirin."
+    ]
+  },
+  "liegestutze": {
+    "de": [
+      "Stütze auf den Händen, Körper von Kopf bis Ferse gerade.",
+      "Hände etwas breiter als schulterbreit.",
+      "Senke die Brust zur Bodennahe, Ellbogen 45° abgewinkelt.",
+      "Drücke explosiv zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Start in a high plank with hands slightly wider than shoulder-width.",
+      "Keep your body in a straight line from head to heels.",
+      "Lower your chest toward the floor, elbows at about 45°.",
+      "Keep your core tight and avoid letting your hips drop.",
+      "Press back up to full arm extension.",
+      "Breathe in on the way down, out on the way up."
+    ],
+    "tr": [
+      "Eller omuz genişliğinden biraz geniş olacak şekilde yüksek plank pozisyonuna geçin.",
+      "Vücudunuzu baştan topuklara düz bir çizgide tutun.",
+      "Göğsünüzü yere doğru indirin, dirsekler yaklaşık 45°.",
+      "Göbeği çekin ve kalçanın düşmesine izin vermeyin.",
+      "Kollar tam uzanana kadar geri itin.",
+      "İnerken nefes alın, çıkarken verin."
+    ]
+  },
+  "muscle up": {
+    "de": [
+      "Hänge an Ringen oder Stange, Schultern aktiv.",
+      "Führe einen explosiven Klimmzug aus, der über die Stange geht.",
+      "Beim Übergang stütze die Ellbogen auf Stangenhöhe ab.",
+      "Drücke in den Dip, bis die Arme gestreckt sind."
+    ],
+    "en": [
+      "Hang from rings or a bar with an overhand grip.",
+      "Build momentum with a slight hollow body swing if needed.",
+      "Perform an explosive pull, aiming to get your hips to bar level.",
+      "Transition your grip as you pass the bar, rotating wrists forward.",
+      "Press into a dip position until arms are fully extended.",
+      "Lower yourself under control back to a hang."
+    ],
+    "tr": [
+      "Halka veya bardan üst kavrayışla asılın.",
+      "Gerekiyorsa hafif bir hollow body salınımıyla momentum oluşturun.",
+      "Kalçanızı bar seviyesine getirmeyi hedefleyerek patlayıcı bir çekiş yapın.",
+      "Barı geçerken kavrayışınızı değiştirin, bilekleri öne döndürün.",
+      "Kollar tam uzanana kadar dip pozisyonuna itin.",
+      "Kontrollü bir şekilde asılı konuma inin."
+    ]
+  },
+  "pendlay row": {
+    "de": [
+      "Stange auf dem Boden, Hüfte parallel zur Stange, Rücken parallel zum Boden.",
+      "Greife die Stange schulterbreit, Obergriff.",
+      "Ziehe die Stange explosiv zur unteren Brust.",
+      "Lege sie kontrolliert zurück auf den Boden."
+    ],
+    "en": [
+      "Set up with the barbell on the floor, body horizontal, back parallel to the ground.",
+      "Grip the bar shoulder-width with an overhand grip.",
+      "Explosively row the bar to your lower chest or upper abdomen.",
+      "Let the bar return to the floor completely between reps.",
+      "Reset your position before each rep for a strict start.",
+      "The dead-stop removes momentum, making each rep harder."
+    ],
+    "tr": [
+      "Barbell yerde, vücut yatay, sırt yere paralel konumda kurun.",
+      "Barı omuz genişliğinde üst kavrayışla tutun.",
+      "Barı alt göğsünüze veya üst karın bölgesine doğru patlayıcı şekilde çekin.",
+      "Tekrarlardaki arasında barı tamamen yere bırakın.",
+      "Sıkı bir başlangıç için her tekrarda pozisyonu sıfırlayın.",
+      "Ölü durağı momentum'u ortadan kaldırır, her tekraru daha zorlu kılar."
+    ]
+  },
+  "pullover kh": {
+    "de": [
+      "Lege dich quer auf eine Bank, Schulterblätter auf der Bank.",
+      "Halte eine Kurzhantel mit beiden Händen über der Brust.",
+      "Senke die Kurzhantel in einem weiten Bogen hinter den Kopf.",
+      "Führe sie zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Lie across a bench with your shoulder blades on the bench, hips low.",
+      "Hold a dumbbell vertically with both hands above your chest.",
+      "Lower the dumbbell back in a wide arc, feeling a stretch in the chest.",
+      "Keep a slight bend in the elbows throughout.",
+      "Return the dumbbell to the starting position above your chest.",
+      "Keep your hips low to maximize the lat and chest stretch."
+    ],
+    "tr": [
+      "Kürek kemikleriniz bankta olacak şekilde banka çapraz uzanın, kalçalar alçakta.",
+      "Dambılı her iki elinizle dikey olarak göğsünüzün üzerinde tutun.",
+      "Dambılı geniş bir yay çizerek başınızın arkasına indirin, göğüste germe hissedin.",
+      "Tüm hareket boyunca dirseğinizde hafif bir bükme olsun.",
+      "Dambılı göğsünüzün üzerindeki başlangıç pozisyonuna geri getirin.",
+      "Lat ve göğüs esnemeyi en üst düzeye çıkarmak için kalçanızı alçak tutun."
+    ]
+  },
+  "push press kh": {
+    "de": [
+      "Halte Kurzhanteln in Schulterhöhe, Füße schulterbreit.",
+      "Führe einen leichten Kniebeuge-Dip aus, dann strecke explosiv.",
+      "Nutze den Schwung und drücke die Hanteln über den Kopf.",
+      "Senke die Hanteln kontrolliert zurück zur Schulter."
+    ],
+    "en": [
+      "Hold dumbbells at shoulder height with palms facing forward.",
+      "Stand with feet shoulder-width apart.",
+      "Dip slightly by bending the knees, then drive upward explosively.",
+      "Use the momentum from your legs to press the dumbbells overhead.",
+      "Lock out your arms at the top.",
+      "Lower the dumbbells slowly back to shoulder height."
+    ],
+    "tr": [
+      "Dambılları omuz yüksekliğinde, avuçlar öne bakacak şekilde tutun.",
+      "Ayaklar omuz genişliğinde durun.",
+      "Dizleri hafifçe bükerek hafif çömelme yapın, sonra patlayıcı şekilde yukarı itin.",
+      "Bacaklardan gelen momentumu kullanarak dambılları başınızın üzerine itin.",
+      "Üstte kollarınızı kilitleyin.",
+      "Dambılları yavaşça omuz yüksekliğine indirin."
+    ]
+  },
+  "reverse curl": {
+    "de": [
+      "Stehe aufrecht, Langhantel mit Obergriff, Hände schulterbreit.",
+      "Ellbogen bleiben seitlich am Körper.",
+      "Beuge die Arme und führe die Stange zur Brust.",
+      "Senke kontrolliert zurück, Unterarme und Streckmuskeln arbeiten."
+    ],
+    "en": [
+      "Stand upright holding a barbell with an overhand (pronated) grip.",
+      "Keep elbows fixed at your sides throughout.",
+      "Curl the bar upward toward your chest.",
+      "Squeeze your brachialis and brachioradialis at the top.",
+      "Lower slowly back to the starting position.",
+      "This grip emphasizes the brachialis and forearm extensors."
+    ],
+    "tr": [
+      "Dik durun, barı üst kavrayışla (pronated) tutun.",
+      "Tüm hareket boyunca dirseğinizi yanlarınıza sabitlenmiş tutun.",
+      "Barı göğsünüze doğru yukarı kıvırın.",
+      "Üstte brachialis ve brachioradialis kaslarınızı sıkın.",
+      "Yavaşça başlangıç pozisyonuna indirin.",
+      "Bu kavrayış brachialis ve ön kol uzatıcılarını vurgular."
+    ]
+  },
+  "rudern vorgebeugt": {
+    "de": [
+      "Stehe mit leicht gebeugten Knien, Oberkörper ~45° vorgebeugt.",
+      "Greife die Stange schulterbreit, Rücken neutral.",
+      "Ziehe die Stange zur unteren Brust, Ellbogen nah am Körper.",
+      "Senke kontrolliert zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Stand with knees slightly bent and hinge forward to about 45°.",
+      "Hold the barbell with an overhand grip, hands shoulder-width.",
+      "Keep your back neutral and core braced.",
+      "Row the bar toward your lower chest, squeezing your shoulder blades.",
+      "Keep elbows close to your body throughout.",
+      "Lower the bar slowly back to the starting position."
+    ],
+    "tr": [
+      "Dizleri hafifçe bükerek ve yaklaşık 45° öne eğilerek durun.",
+      "Barı omuz genişliğinde üst kavrayışla tutun.",
+      "Sırtınızı nötr tutun ve göbeği sıkın.",
+      "Barı alt göğsünüze doğru çekin, kürek kemiklerini sıkıştırın.",
+      "Tüm hareket boyunca dirseği vücuda yakın tutun.",
+      "Barı yavaşça başlangıç pozisyonuna indirin."
+    ]
+  },
+  "russian twists": {
+    "de": [
+      "Sitze auf dem Boden, Knie gebeugt, Oberkörper leicht zurückgeneigt.",
+      "Halte ein Gewicht oder verschränke die Hände vor der Brust.",
+      "Drehe den Oberkörper kontrolliert von Seite zu Seite.",
+      "Bleibe auf beiden Seiten kurz stabil, bevor du zur anderen drehst."
+    ],
+    "en": [
+      "Sit on the floor with knees bent and lean back at about 45°.",
+      "Hold a weight plate or clasp your hands in front of your chest.",
+      "Lift your feet slightly off the floor for added difficulty.",
+      "Rotate your torso to the right, bringing the weight to that side.",
+      "Return to the center and rotate to the left.",
+      "Keep the movement controlled, using your obliques not momentum."
+    ],
+    "tr": [
+      "Yerde oturun, dizleri bükün ve yaklaşık 45° arkaya yaslanın.",
+      "Bir ağırlık plakası tutun veya ellerinizi göğsünüzün önünde birleştirin.",
+      "Zorluk için ayaklarınızı yerden hafifçe kaldırın.",
+      "Gövdenizi sağa döndürün, ağırlığı o tarafa getirin.",
+      "Merkeze dönün ve sola döndürün.",
+      "Hareketi momentum yerine yan karın kaslarını kullanarak kontrollü tutun."
+    ]
+  },
+  "schragbank curl kh": {
+    "de": [
+      "Lege dich auf eine schräge Bank (45°), Arme hängen senkrecht.",
+      "Halte Kurzhanteln mit Untergriff.",
+      "Beuge die Arme und führe die Hanteln zur Schulter.",
+      "Strecke langsam zurück, maximale Dehnung des Bizeps."
+    ],
+    "en": [
+      "Lie back on an incline bench set to 45°, arms hanging straight down.",
+      "Hold dumbbells with an underhand grip.",
+      "Curl both dumbbells up toward your shoulders simultaneously.",
+      "Squeeze your biceps hard at the top.",
+      "Lower slowly back to the starting position, feeling the stretch.",
+      "The incline angle increases the range of motion for the biceps."
+    ],
+    "tr": [
+      "45° eğimli bankta uzanın, kollar düz aşağı sarksın.",
+      "Dambılları alt kavrayışla tutun.",
+      "Her iki dambılı aynı anda omuzlarınıza doğru kıvırın.",
+      "Üstte bisepslerinizi sıkın.",
+      "Esnemeyi hissederek yavaşça başlangıç pozisyonuna indirin.",
+      "Eğik açı, bisepsler için hareket aralığını artırır."
+    ]
+  },
+  "schragbankdrucken abwarts": {
+    "de": [
+      "Lege dich auf eine nach unten geneigte Bank (15–30°).",
+      "Greife die Stange etwas breiter als schulterbreit.",
+      "Senke die Stange zur unteren Brust, Ellbogen 45–75°.",
+      "Drücke explosiv zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Lie on a decline bench set to 15–30°, feet secured under the pad.",
+      "Grip the bar slightly wider than shoulder-width.",
+      "Unrack and lower the bar to your lower chest with control.",
+      "Keep elbows at 45–75° from your torso.",
+      "Press the bar back up explosively.",
+      "Decline press places more emphasis on the lower chest."
+    ],
+    "tr": [
+      "15–30° eğimli bankta uzanın, ayaklar pedlin altında sabitlenmiş.",
+      "Barı omuz genişliğinden biraz daha geniş kavrayın.",
+      "Barı raftan çıkarın ve alt göğsünüze kontrollü bir şekilde indirin.",
+      "Dirseği gövdeden 45–75° açıda tutun.",
+      "Barı patlatarak geri itin.",
+      "Ters eğim basması alt göğse daha fazla vurgu yapar."
+    ]
+  },
+  "shrug kh": {
+    "de": [
+      "Stehe aufrecht, Kurzhanteln seitlich des Körpers.",
+      "Ziehe die Schultern gerade nach oben, so hoch wie möglich.",
+      "Halte oben kurz an und spanne den Trapezius an.",
+      "Senke kontrolliert zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Stand upright holding dumbbells at your sides, palms facing in.",
+      "Keep your arms straight throughout.",
+      "Shrug your shoulders straight up toward your ears as high as possible.",
+      "Hold at the top and squeeze your traps.",
+      "Lower your shoulders slowly back down.",
+      "Avoid rolling your shoulders; move straight up and down."
+    ],
+    "tr": [
+      "Dambılları yanlarınızda tutarak dik durun, avuçlar içe baksin.",
+      "Kollarınızı tüm hareket boyunca düz tutun.",
+      "Omuzlarınızı mümkün olduğunca kulağınıza doğru düz yukarı çekin.",
+      "Üstte tutun ve trapez kaslarınızı sıkın.",
+      "Omuzlarınızı yavaşça aşağı indirin.",
+      "Omuzları döndürmekten kaçının; düz yukarı ve aşağı hareket edin."
+    ]
+  },
+  "sissy squats bw": {
+    "de": [
+      "Stehe aufrecht, halte dich leicht an einer Stütze fest.",
+      "Hebe dich auf die Zehenspitzen und beuge die Knie nach vorne.",
+      "Neige den Oberkörper nach hinten, Knie über die Fußspitzen.",
+      "Drücke durch die Zehenspitzen zurück in den Stand."
+    ],
+    "en": [
+      "Stand with feet shoulder-width apart, lightly holding a support.",
+      "Rise onto your toes and begin bending your knees forward.",
+      "Lean your torso back as your knees travel forward over your toes.",
+      "Lower until your thighs are parallel to your shins.",
+      "Drive back up through your toes to the starting position.",
+      "This move isolates the quadriceps through a unique range of motion."
+    ],
+    "tr": [
+      "Ayaklar omuz genişliğinde durun, bir desteğe hafifçe tutunun.",
+      "Parmak uçlarınıza yükselip dizlerinizi öne doğru bükün.",
+      "Dizleriniz ayak parmaklarınızın üzerinde ilerlerken gövdenizi geriye eğin.",
+      "Uyluklarınız inciklerinizle paralel olana kadar inin.",
+      "Parmak uçlarından başlangıç pozisyonuna geri itin.",
+      "Bu hareket, uyluk ön kaslarını benzersiz bir hareket aralığıyla izole eder."
+    ]
+  },
+  "step up kh": {
+    "de": [
+      "Stehe vor einer Box oder Stufe, Kurzhanteln in den Händen.",
+      "Stelle einen Fuß fest auf die Box.",
+      "Drücke durch die Ferse und strecke das Standbein.",
+      "Führe das Spielbein kontrolliert zurück auf den Boden."
+    ],
+    "en": [
+      "Stand facing a box or bench with dumbbells at your sides.",
+      "Place one foot firmly on the box, ensuring it's fully on the surface.",
+      "Drive through your heel to extend your hip and knee and step up.",
+      "Bring your trailing leg up to meet the other at the top.",
+      "Step back down with control, one foot at a time.",
+      "Alternate legs each rep or complete all reps on one side first."
+    ],
+    "tr": [
+      "Dambıllar yanlarınızda, bir kutu veya bankın önünde durun.",
+      "Bir ayağınızı kutuya sağlam bir şekilde koyun, tamamen yüzey üzerinde olsun.",
+      "Topuğunuza basarak kalça ve dizi uzatın ve yukarı çıkın.",
+      "Üstte diğer ayağınızı getirin.",
+      "Kontrollü bir şekilde bir adım geri inin.",
+      "Her tekrarda bacakları değiştirin veya önce bir tarafı tamamlayın."
+    ]
+  },
+  "sumo kreuzheben": {
+    "de": [
+      "Stelle dich weit auseinander, Zehen stark nach außen gedreht.",
+      "Greife die Stange innen, Rücken neutral.",
+      "Strecke Hüfte und Knie gleichzeitig und stehe auf.",
+      "Senke kontrolliert zurück mit neutralem Rücken."
+    ],
+    "en": [
+      "Stand with a wide stance, toes pointed out at 45–60°.",
+      "Grip the bar inside your knees with an overhand or mixed grip.",
+      "Keep your chest up, back neutral, and hips low.",
+      "Drive the floor away and extend your hips and knees simultaneously.",
+      "Lock out at the top with hips fully extended.",
+      "Lower the bar back down under control."
+    ],
+    "tr": [
+      "Geniş duruşla durun, ayak parmakları 45–60° dışarı dönük.",
+      "Barı dizlerinizin içinden üst veya karışık kavrayışla tutun.",
+      "Göğsü yukarı, sırtı nötr ve kalçayı alçak tutun.",
+      "Zemini iterek kalça ve dizleri aynı anda uzatın.",
+      "Kalçalar tam uzanmış olarak üstte kilitleyin.",
+      "Barı kontrollü bir şekilde geri indirin."
+    ]
+  },
+  "tate press": {
+    "de": [
+      "Lege dich flach, Kurzhanteln senkrecht über der Brust.",
+      "Ellbogen zeigen nach außen.",
+      "Beuge die Ellbogen und führe die Hanteln zur Brust.",
+      "Strecke explosiv zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Lie flat on a bench, holding dumbbells vertically over your chest.",
+      "Point your elbows outward to the sides.",
+      "Lower the dumbbells by bending your elbows, bringing them to your chest.",
+      "Keep the dumbbells close together throughout.",
+      "Press back up by extending the elbows.",
+      "This movement primarily targets the triceps."
+    ],
+    "tr": [
+      "Bankta düz uzanın, dambılları göğsünüzün üzerinde dikey tutun.",
+      "Dirseklerinizi yanlara doğru yönlendirin.",
+      "Dirseği bükerek dambılları göğsünüze indirin.",
+      "Dambılları tüm hareket boyunca birbirine yakın tutun.",
+      "Dirseği uzatarak geri itin.",
+      "Bu hareket öncelikli olarak trisepsleri çalıştırır."
+    ]
+  },
+  "trap bar kreuzheben": {
+    "de": [
+      "Stehe in der Trap-Bar, Füße hüftbreit, Griffe mittig.",
+      "Beuge Hüfte und Knie, Rücken neutral, Brust hoch.",
+      "Strecke Hüfte und Knie gleichzeitig und stehe auf.",
+      "Senke kontrolliert zurück in die Ausgangsposition."
+    ],
+    "en": [
+      "Step inside the trap bar and stand with feet hip-width apart.",
+      "Hinge at the hips and bend your knees to grip the handles.",
+      "Keep your chest up and back in a neutral position.",
+      "Drive through your heels to extend hips and knees simultaneously.",
+      "Stand tall at the top with hips fully extended.",
+      "The trap bar shifts load onto your quads compared to a straight bar."
+    ],
+    "tr": [
+      "Trap barın içine girin ve ayaklar kalça genişliğinde durun.",
+      "Kalçadan eğilin ve tutamaçları kavramak için dizleri bükün.",
+      "Göğsü yukarı ve sırtı nötr pozisyonda tutun.",
+      "Topuklarınıza basarak kalça ve dizleri aynı anda uzatın.",
+      "Kalçalar tam uzanmış olarak üstte dik durun.",
+      "Trap bar, düz bara kıyasla yükü uyluk ön kaslarına kaydırır."
+    ]
+  },
+  "wadenheben stehend lh": {
+    "de": [
+      "Stehe mit einer Langhantel auf den Schultern.",
+      "Fußballen auf einer Erhöhung, Fersen hängen frei.",
+      "Hebe dich auf die Zehenspitzen, Waden maximal anspannen.",
+      "Senke kontrolliert bis zur Dehnung."
+    ],
+    "en": [
+      "Stand with a barbell on your upper back, balls of feet on a raised platform.",
+      "Keep your legs straight or with just a slight bend in the knees.",
+      "Rise as high as possible onto the balls of your feet.",
+      "Squeeze your calves hard at the top.",
+      "Lower your heels back down past the platform level for a full stretch.",
+      "Perform each rep slowly to maximize muscle tension."
+    ],
+    "tr": [
+      "Üst sırtınızda barbell ile ayak toplarınız yükseltilmiş bir platform üzerinde durun.",
+      "Bacaklarınızı düz veya dizlerde çok hafif bükülü tutun.",
+      "Ayak parmaklarınızın üzerine mümkün olduğunca yükseğe kalkın.",
+      "Üstte baldır kaslarınızı sıkın.",
+      "Topuklarınızı tam esneme için platform seviyesinin altına indirin.",
+      "Kas gerilimini maksimize etmek için her tekraru yavaşça yapın."
+    ]
+  },
+  "wadenpresse sitzend": {
+    "de": [
+      "Sitze in der Beinpresse, Fußballen auf dem unteren Teil der Plattform.",
+      "Strecke die Plattform leicht heraus, ohne Knieschloss.",
+      "Drücke die Plattform durch Strecken der Fußknöchel nach oben.",
+      "Senke kontrolliert zurück, Fersen tiefer als Fußballen."
+    ],
+    "en": [
+      "Sit in the leg press machine with the balls of your feet on the lower edge.",
+      "Extend your legs slightly without locking the knees.",
+      "Press the platform by extending your ankles (plantarflexion).",
+      "Squeeze your calves at the top of the movement.",
+      "Lower your heels below the platform level for a full stretch.",
+      "Keep toes pointing forward throughout."
+    ],
+    "tr": [
+      "Bacak presi makinesinde oturun, ayak toplarınız platformun alt kenarında.",
+      "Dizleri kilitlemeden bacaklarınızı hafifçe uzatın.",
+      "Ayak bileklerini uzatarak (plantar fleksiyon) platformu itin.",
+      "Hareketin üst noktasında baldır kaslarınızı sıkın.",
+      "Tam esneme için topuklarınızı platform seviyesinin altına indirin.",
+      "Tüm hareket boyunca ayak parmaklarını öne yönelik tutun."
+    ]
+  },
+  "zercher squat": {
+    "de": [
+      "Halte die Stange in den Ellbeugen, verschränke die Arme.",
+      "Füße schulterbreit, Zehen leicht nach außen.",
+      "Senke dich in die Kniebeuge, Oberkörper aufrecht.",
+      "Drücke durch die Fersen zurück in den Stand."
+    ],
+    "en": [
+      "Hold the barbell in the crook of your elbows, arms crossed.",
+      "Stand with feet shoulder-width apart, toes slightly out.",
+      "Keep your chest tall and core braced throughout.",
+      "Squat down, allowing the bar to remain close to your body.",
+      "Drive through your heels to return to standing.",
+      "The zercher position emphasizes the upper back and core heavily."
+    ],
+    "tr": [
+      "Barbell'ı dirsek içinde tutun, kollar çaprazlanmış.",
+      "Ayaklar omuz genişliğinde, ayak parmakları hafifçe dışarı.",
+      "Tüm hareket boyunca göğsü dik ve göbeği çekili tutun.",
+      "Barı vücudunuza yakın tutarak aşağı çömelin.",
+      "Topuklarınıza basarak ayağa kalkın.",
+      "Zercher pozisyonu üst sırt ve çekirdeği yoğun bir şekilde çalıştırır."
+    ]
   }
 }
