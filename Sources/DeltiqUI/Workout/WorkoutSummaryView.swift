@@ -2508,7 +2508,7 @@ private struct SetSummaryRow: View {
     private var cardioDurationFields: some View {
         HStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 2) {
-                TextField("min",
+                TextField(String(localized: "unit.minutes.short", bundle: .module),
                           value: Binding(
                             get: { (log.durationSeconds ?? 0) / 60 },
                             set: { newMin in
@@ -2524,14 +2524,14 @@ private struct SetSummaryRow: View {
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
-                Text("min").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
+                Text(String(localized: "unit.minutes.short", bundle: .module)).font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
             }
             Text(":")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .offset(y: -8)   // optisch zur Minuten-Zahl ausgerichtet, nicht zur Caption
             VStack(alignment: .leading, spacing: 2) {
-                TextField("sec",
+                TextField(String(localized: "unit.seconds.short", bundle: .module),
                           value: Binding(
                             get: { (log.durationSeconds ?? 0) % 60 },
                             set: { newSec in
@@ -2549,7 +2549,7 @@ private struct SetSummaryRow: View {
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
-                Text("sec").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
+                Text(String(localized: "unit.seconds.short", bundle: .module)).font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
             }
         }
     }

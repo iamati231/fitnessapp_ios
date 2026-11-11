@@ -405,7 +405,7 @@ private struct ExerciseTrophySection: View {
         let series = chartPoints
         if series.count >= 2 {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(PRKindStyle.shortLabel(chartKind)) - Verlauf")
+                Text("\(PRKindStyle.shortLabel(chartKind)) - \(String(localized: "trophy.chart.suffix", bundle: .module))")
                     .font(.caption)
                     .foregroundStyle(Color.Deltiq.textSecondary)
                 Chart {
