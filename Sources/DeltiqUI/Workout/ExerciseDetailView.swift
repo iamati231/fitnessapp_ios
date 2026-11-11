@@ -37,6 +37,7 @@ struct ExerciseDetailView: View {
 
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
     @Environment(\.dismiss) private var dismiss
+    @State private var showGifSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -50,6 +51,15 @@ struct ExerciseDetailView: View {
             )
 
             VStack(alignment: .leading, spacing: 18) {
+                if ExerciseMediaProvider.gifFileName(forExerciseName: systemName) != nil {
+                    HStack {
+                        Spacer()
+                        ExerciseGifView(exerciseName: systemName, displayName: displayName)
+                            .frame(width: 120, height: 120)
+                            .onTapGesture { showGifSheet = true }
+                        Spacer()
+                    }
+                }
                 if logs.isEmpty {
                     emptyState
                 } else {
@@ -61,9 +71,6 @@ struct ExerciseDetailView: View {
                         prSection
                     }
                     recentSetsSection
-                }
-                if let steps = instructionSteps {
-                    instructionsSection(steps)
                 }
             }
             .deltiqScreen()
@@ -77,6 +84,9 @@ struct ExerciseDetailView: View {
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
         .deltiqSwipeBackEnabled()
+        .sheet(isPresented: $showGifSheet) {
+            ExerciseGifSheet(exerciseName: systemName, displayName: displayName)
+        }
     }
 
     // MARK: - Daten
@@ -282,33 +292,6 @@ struct ExerciseDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
-    }
-
-    // MARK: - Ausführung
-
-    private var instructionSteps: ExerciseInstructionsProvider.Steps? {
-        let key = ExerciseMediaProvider.normalizedKey(for: systemName)
-        return ExerciseInstructionsProvider.steps(for: key)
-    }
-
-    private func instructionsSection(_ steps: ExerciseInstructionsProvider.Steps) -> some View {
-        let preferred = steps.preferred()
-        return VStack(alignment: .leading, spacing: 10) {
-            Text("exercise.detail.instructions.title", bundle: .module)
-                .font(.headline)
-            ForEach(Array(preferred.enumerated()), id: \.offset) { index, step in
-                HStack(alignment: .top, spacing: 10) {
-                    Text("\(index + 1).")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(Color.deltiqOrange)
-                        .frame(minWidth: 20, alignment: .leading)
-                    Text(step)
-                        .font(.subheadline)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .deltiqCardStyle()
     }
 
     // MARK: - Formatter
