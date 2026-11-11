@@ -55,6 +55,17 @@ struct TrainingLocationEquipmentEditorView: View {
     /// Adaptations` (Plan-Uebungs-Tausch) darf erst feuern, NACHDEM dieser
     /// Save tatsaechlich bestaetigt ist — siehe `save()`.
     @State private var saveErrorMessage: String?
+    /// Analog `ProfileEditorView.pendingProfileEnvSwap`: non-nil zeigt den
+    /// Env-Wechsel-Dialog. Muss hier leben statt in `ProfileEditorView`,
+    /// weil `dismiss()` und `confirmationDialog` nicht gleichzeitig korrekt
+    /// funktionieren (Sheet-Dismiss-Animation blockiert neuen Dialog).
+    @State private var pendingEnvSwap: PendingEnvSwap?
+    @State private var pendingEnvRestore: PendingEnvSwap?
+
+    private struct PendingEnvSwap: Equatable {
+        let oldEnv: EnvironmentType
+        let newEnv: EnvironmentType
+    }
 
     init(profile: UserBodyProfile) {
         self.profile = profile
@@ -109,7 +120,7 @@ struct TrainingLocationEquipmentEditorView: View {
             // Sheets ist sonst ein ungesicherter Verlassen-Weg am Discard-
             // Dialog vorbei. Ohne Aenderungen (`!isDirty`) bleibt es normal
             // moeglich (direktes Schliessen).
-            .interactiveDismissDisabled(isDirty || pendingEquipmentAdaptation != nil)
+            .interactiveDismissDisabled(isDirty || pendingEquipmentAdaptation != nil || pendingEnvSwap != nil || pendingEnvRestore != nil)
             .onAppear {
                 if draftEnvironment == .gym, !profile.equipmentProfileConfirmedComplete {
                     equipmentTouched = true
@@ -178,6 +189,57 @@ struct TrainingLocationEquipmentEditorView: View {
                 }
             } message: {
                 Text("profile.equipmentSwap.message", bundle: .module)
+            }
+            .confirmationDialog(
+                Text("profile.envSwap.title", bundle: .module),
+                isPresented: Binding(
+                    get: { pendingEnvSwap != nil },
+                    set: { if !$0 { pendingEnvSwap = nil } }
+                ),
+                titleVisibility: .visible,
+                presenting: pendingEnvSwap
+            ) { swap in
+                Button {
+                    applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                    pendingEnvSwap = nil
+                    dismiss()
+                } label: {
+                    Text("profile.envSwap.confirm", bundle: .module)
+                }
+                Button(role: .cancel) {
+                    pendingEnvSwap = nil
+                    dismiss()
+                } label: {
+                    Text("profile.envSwap.keep", bundle: .module)
+                }
+            } message: { swap in
+                Text(String(format: String(localized: "profile.envSwap.message", bundle: .module), String(localized: swap.newEnv.localizedName)))
+            }
+            .confirmationDialog(
+                Text("profile.envRestore.title", bundle: .module),
+                isPresented: Binding(
+                    get: { pendingEnvRestore != nil },
+                    set: { if !$0 { pendingEnvRestore = nil } }
+                ),
+                titleVisibility: .visible,
+                presenting: pendingEnvRestore
+            ) { swap in
+                Button {
+                    applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
+                    pendingEnvRestore = nil
+                    dismiss()
+                } label: {
+                    Text("profile.envRestore.confirm", bundle: .module)
+                }
+                Button {
+                    applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                    pendingEnvRestore = nil
+                    dismiss()
+                } label: {
+                    Text("profile.envRestore.adjustNew", bundle: .module)
+                }
+            } message: { _ in
+                Text("profile.envRestore.message", bundle: .module)
             }
         }
     }
@@ -281,6 +343,23 @@ struct TrainingLocationEquipmentEditorView: View {
             return
         }
 
+        // Env-Wechsel-Dialog muss VOR dismiss() gezeigt werden — iOS kann
+        // keinen neuen Dialog zeigen, waehrend das Sheet-Dismiss animiert.
+        // Wenn der Env sich geaendert hat und es nicht-leere Plaene gibt,
+        // zeigen wir den envSwap/envRestore-Dialog hier (nicht in
+        // ProfileEditorView.onChange wie urspruenglich geplant).
+        let environmentChanged = originalEnvironment != draftEnvironment
+        if environmentChanged, plans.contains(where: { $0.days.contains(where: { !$0.activeExercises.isEmpty }) }) {
+            let pending = PendingEnvSwap(oldEnv: originalEnvironment, newEnv: draftEnvironment)
+            if PlanEnvironmentMigrator.hasAnyRestorableOriginals(plans: plans, forEnvironment: draftEnvironment) {
+                pendingEnvRestore = pending
+            } else {
+                pendingEnvSwap = pending
+            }
+            isSaving = false
+            return
+        }
+
         // Ab hier IMMER `profile.equipmentProfile` verwenden, nie mehr den
         // lokalen `draftEquipmentProfile` — bei `equipmentTouched` hat
         // `confirmEquipmentProfileComplete()` oben jedes noch unberuehrte
@@ -327,6 +406,14 @@ struct TrainingLocationEquipmentEditorView: View {
             guard !draft.replacements.isEmpty else { continue }
             PlanEquipmentAdaptationApplier.apply(plan: plan, draft: draft, modelContext: modelContext)
         }
+    }
+
+    private func applyEnvironmentSwapToAllPlans(newEnv: EnvironmentType) {
+        _ = PlanEnvironmentMigrator.migrateAll(plans: plans, toEnvironment: newEnv, modelContext: modelContext)
+    }
+
+    private func applyEnvironmentRestoreToAllPlans(newEnv: EnvironmentType) {
+        _ = PlanEnvironmentMigrator.restoreAll(plans: plans, toEnvironment: newEnv, modelContext: modelContext)
     }
 
     /// Task 5: identisches Inline-Fehler-Muster wie `GearListView.gearCard`.
