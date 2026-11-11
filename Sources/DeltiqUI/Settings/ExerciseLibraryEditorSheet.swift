@@ -197,9 +197,11 @@ struct ExerciseLibraryEditorSheet: View {
         Section {
             HStack {
                 Spacer()
-                ExerciseGifView(exerciseName: existing?.name ?? trimmedName, displayName: titleText)
-                    .frame(width: 140, height: 140)
-                    .onTapGesture { showGifSheet = true }
+                Button { showGifSheet = true } label: {
+                    ExerciseGifView(exerciseName: existing?.name ?? trimmedName, displayName: titleText)
+                        .frame(width: 140, height: 140)
+                }
+                .buttonStyle(.plain)
                 Spacer()
             }
             .listRowBackground(Color.clear)

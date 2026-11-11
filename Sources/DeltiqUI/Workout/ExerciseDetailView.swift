@@ -37,7 +37,6 @@ struct ExerciseDetailView: View {
 
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
     @Environment(\.dismiss) private var dismiss
-    @State private var showGifSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,15 +50,6 @@ struct ExerciseDetailView: View {
             )
 
             VStack(alignment: .leading, spacing: 18) {
-                if ExerciseMediaProvider.gifFileName(forExerciseName: systemName) != nil {
-                    HStack {
-                        Spacer()
-                        ExerciseGifView(exerciseName: systemName, displayName: displayName)
-                            .frame(width: 120, height: 120)
-                            .onTapGesture { showGifSheet = true }
-                        Spacer()
-                    }
-                }
                 if logs.isEmpty {
                     emptyState
                 } else {
@@ -84,9 +74,6 @@ struct ExerciseDetailView: View {
         // Swipe-Back-Geste als Nebenwirkung mit runter - siehe
         // deltiqSwipeBackEnabled()-Dokumentation in Theme.swift.
         .deltiqSwipeBackEnabled()
-        .sheet(isPresented: $showGifSheet) {
-            ExerciseGifSheet(exerciseName: systemName, displayName: displayName)
-        }
     }
 
     // MARK: - Daten
