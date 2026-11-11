@@ -187,6 +187,7 @@ public struct DashboardView: View {
     /// aktualisiert, sodass die O(n·m)-Berechnung nur einmal pro Datenaenderung laeuft
     /// statt bis zu 4× pro SwiftUI-Render-Pass.
     @State private var cachedPlateauFinding: PlateauDetector.Finding?
+    @State private var dashScrollID: String?
 
     public init() {}
 
@@ -232,6 +233,7 @@ public struct DashboardView: View {
             ScrollView(.vertical) {
                 // Signature-Geruest 1.1: Sektionsabstand 18 statt 16.
                 VStack(alignment: .leading, spacing: 18) {
+                    Color.clear.frame(height: 0).id("dashboard-top")
                     // Signature-Geruest 1.3: Kontextzeile mit aktivem Plan
                     // (Marke) + Wochen-Streak (neutral), plus Haarlinie.
                     dashboardContextRow
@@ -296,6 +298,11 @@ public struct DashboardView: View {
                 .containerRelativeFrame(.horizontal)
             }
             .scrollContentBackground(.hidden)
+            .scrollPosition(id: $dashScrollID, anchor: .top)
+            .onChange(of: navigation.scrollToTopTrigger[.dashboard]) { _, _ in
+                dashScrollID = nil
+                Task { @MainActor in dashScrollID = "dashboard-top" }
+            }
         }
         // DEL-102: Off-Weiss / Off-Schwarz-Background, gegen den die
         // Bento-Cards (Surface) abheben. Im Light-Mode identisch zu

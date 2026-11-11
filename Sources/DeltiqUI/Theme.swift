@@ -407,10 +407,14 @@ public extension View {
 /// unabhaengig davon, ob eine `DeltiqContextRow` vorhanden ist.
 public struct DeltiqScreenModifier: ViewModifier {
     public var extraBottomInset: Bool
+    public var scrollToTopTrigger: UUID?
 
-    public init(extraBottomInset: Bool = false) {
+    public init(extraBottomInset: Bool = false, scrollToTopTrigger: UUID? = nil) {
         self.extraBottomInset = extraBottomInset
+        self.scrollToTopTrigger = scrollToTopTrigger
     }
+
+    @State private var scrollID: String?
 
     public func body(content: Content) -> some View {
         // ScrollView(.vertical) + containerRelativeFrame: verhindert horizontales
@@ -421,15 +425,21 @@ public struct DeltiqScreenModifier: ViewModifier {
                 .padding(.top, 12)
                 .padding(.bottom, extraBottomInset ? 140 : 100)
                 .containerRelativeFrame(.horizontal)
+                .id("deltiq-screen-top")
         }
         .scrollContentBackground(.hidden)
         .background(Color.Deltiq.background.ignoresSafeArea())
+        .scrollPosition(id: $scrollID, anchor: .top)
+        .onChange(of: scrollToTopTrigger) { _, _ in
+            scrollID = nil
+            Task { @MainActor in scrollID = "deltiq-screen-top" }
+        }
     }
 }
 
 public extension View {
-    func deltiqScreen(extraBottomInset: Bool = false) -> some View {
-        modifier(DeltiqScreenModifier(extraBottomInset: extraBottomInset))
+    func deltiqScreen(extraBottomInset: Bool = false, scrollToTopTrigger: UUID? = nil) -> some View {
+        modifier(DeltiqScreenModifier(extraBottomInset: extraBottomInset, scrollToTopTrigger: scrollToTopTrigger))
     }
 }
 

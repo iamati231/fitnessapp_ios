@@ -29,8 +29,13 @@ public final class AppNavigation {
     public var nutritionPath = NavigationPath()
     public var showingTour: Bool = false
     public var tourStartsFromInvitation: Bool = false
+    public var scrollToTopTrigger: [AppTab: UUID] = [:]
 
     public init() {}
+
+    public func triggerScrollToTop(for tab: AppTab) {
+        scrollToTopTrigger[tab] = UUID()
+    }
 
     /// Pop the workout stack to its root and switch to the dashboard. Used by
     /// `WorkoutSummaryView` after the user taps "Speichern & zum Dashboard".

@@ -167,7 +167,7 @@ public struct NutritionDayView: View {
                     insightSection
                 }
             }
-            .deltiqScreen()
+            .deltiqScreen(scrollToTopTrigger: navigation.scrollToTopTrigger[.nutrition])
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
