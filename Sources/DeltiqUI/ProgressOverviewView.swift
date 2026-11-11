@@ -241,14 +241,14 @@ public struct ProgressOverviewView: View {
         return Chart {
             ForEach(points, id: \.date) { p in
                 LineMark(
-                    x: .value("Datum", p.date),
+                    x: .value(String(localized: "chart.axis.date", bundle: .module), p.date),
                     y: .value(seriesLabel, p.weight)
                 )
                 .interpolationMethod(.monotone)
                 .foregroundStyle(Color.deltiqOrange)
 
                 PointMark(
-                    x: .value("Datum", p.date),
+                    x: .value(String(localized: "chart.axis.date", bundle: .module), p.date),
                     y: .value(seriesLabel, p.weight)
                 )
                 .foregroundStyle(Color.deltiqOrange)

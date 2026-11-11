@@ -185,13 +185,13 @@ struct ExerciseDetailView: View {
                 .font(.headline)
             Chart(chartPoints) { point in
                 LineMark(
-                    x: .value("Datum", point.date),
+                    x: .value(String(localized: "chart.axis.date", bundle: .module), point.date),
                     y: .value("e1RM", point.oneRM)
                 )
                 .interpolationMethod(.monotone)
                 .foregroundStyle(Color.deltiqOrange)
                 PointMark(
-                    x: .value("Datum", point.date),
+                    x: .value(String(localized: "chart.axis.date", bundle: .module), point.date),
                     y: .value("e1RM", point.oneRM)
                 )
                 .foregroundStyle(Color.deltiqOrange)

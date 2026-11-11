@@ -411,14 +411,14 @@ private struct ExerciseTrophySection: View {
                 Chart {
                     ForEach(series) { point in
                         LineMark(
-                            x: .value("Datum", point.date),
+                            x: .value(String(localized: "chart.axis.date", bundle: .module), point.date),
                             y: .value(PRKindStyle.yAxisLabel(chartKind), point.value)
                         )
                         .interpolationMethod(.monotone)
                         .foregroundStyle(Color.deltiqOrange)
 
                         PointMark(
-                            x: .value("Datum", point.date),
+                            x: .value(String(localized: "chart.axis.date", bundle: .module), point.date),
                             y: .value(PRKindStyle.yAxisLabel(chartKind), point.value)
                         )
                         .foregroundStyle(Color.deltiqOrange)

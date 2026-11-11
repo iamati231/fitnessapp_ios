@@ -394,8 +394,8 @@ public struct PlanEditorView: View {
         // Toast mit dem Aggregat-Ergebnis der OTHERS (ohne diesen Plan,
         // der durch den Folge-Dialog gleich noch eigene Counts erzeugt).
         var parts: [String] = []
-        parts.append("\(outcome.plansTouched) andere\(outcome.plansTouched == 1 ? "r Plan" : " Pläne") synchronisiert")
-        if outcome.result.swapped > 0 { parts.append("\(outcome.result.swapped) ersetzt") }
+        parts.append(String(format: String(localized: "planEditor.sync.plansCount", bundle: .module), outcome.plansTouched))
+        if outcome.result.swapped > 0 { parts.append(String(format: String(localized: "planEditor.result.swapped", bundle: .module), outcome.result.swapped)) }
         let message = parts.joined(separator: " · ")
         withAnimation(.easeOut(duration: 0.2)) {
             swapResultToast = message
@@ -1158,11 +1158,11 @@ public struct PlanEditorView: View {
 
     private func showSwapToast(result: PlanEnvironmentSwapResult) {
         var parts: [String] = []
-        if result.restored > 0   { parts.append("\(result.restored) wiederhergestellt") }
-        if result.swapped > 0    { parts.append("\(result.swapped) ersetzt") }
-        if result.kept > 0       { parts.append("\(result.kept) ohne Alternative") }
-        if result.compatible > 0 { parts.append("\(result.compatible) unverändert") }
-        let message = parts.isEmpty ? "Keine Übungen zum Anpassen" : parts.joined(separator: " · ")
+        if result.restored > 0   { parts.append(String(format: String(localized: "planEditor.result.restored", bundle: .module), result.restored)) }
+        if result.swapped > 0    { parts.append(String(format: String(localized: "planEditor.result.swapped", bundle: .module), result.swapped)) }
+        if result.kept > 0       { parts.append(String(format: String(localized: "planEditor.result.noAlternative", bundle: .module), result.kept)) }
+        if result.compatible > 0 { parts.append(String(format: String(localized: "planEditor.result.unchanged", bundle: .module), result.compatible)) }
+        let message = parts.isEmpty ? String(localized: "planEditor.result.none", bundle: .module) : parts.joined(separator: " · ")
 
         withAnimation(.easeOut(duration: 0.2)) {
             swapResultToast = message

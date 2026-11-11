@@ -2477,7 +2477,7 @@ private struct SetSummaryRow: View {
     /// Eingaben ("1" → "12") korrekt komponieren; Clamp auf 0 als Schutz.
     private var cardioDistanceField: some View {
         VStack(alignment: .leading, spacing: 2) {
-            TextField("km",
+            TextField(String(localized: "unit.km.lower", bundle: .module),
                       value: Binding(
                         get: { log.distanceKm },
                         set: { newValue in
@@ -2495,7 +2495,7 @@ private struct SetSummaryRow: View {
                 .font(.system(size: 18, weight: .semibold))
                 .fitnessNumberStyle()
                 .decimalKeyboard()
-            Text("km").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
+            Text(String(localized: "unit.km.lower", bundle: .module)).font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 
@@ -2556,13 +2556,13 @@ private struct SetSummaryRow: View {
 
     private var weightField: some View {
         VStack(alignment: .leading, spacing: 2) {
-            TextField("kg", value: $log.weight, format: .number)
+            TextField(String(localized: "unit.kg.lower", bundle: .module), value: $log.weight, format: .number)
                 .frame(width: 56)
                 .multilineTextAlignment(.leading)
                 .font(.system(size: 18, weight: .semibold))
                 .fitnessNumberStyle()
                 .decimalKeyboard()
-            Text("kg").font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
+            Text(String(localized: "unit.kg.lower", bundle: .module)).font(.system(size: 10)).foregroundStyle(Color.Deltiq.textSecondary)
         }
     }
 

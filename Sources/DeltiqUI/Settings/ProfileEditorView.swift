@@ -275,11 +275,11 @@ public struct ProfileEditorView: View {
 
     private func showAggregateToast(plansTouched: Int, result r: PlanEnvironmentSwapResult) {
         var parts: [String] = []
-        parts.append("\(plansTouched) Plan\(plansTouched == 1 ? "" : "e")")
-        if r.restored > 0   { parts.append("\(r.restored) wiederhergestellt") }
-        if r.swapped > 0    { parts.append("\(r.swapped) ersetzt") }
-        if r.kept > 0       { parts.append("\(r.kept) ohne Alternative") }
-        if r.compatible > 0 { parts.append("\(r.compatible) unverändert") }
+        parts.append(String(format: String(localized: "profile.sync.plansCount", bundle: .module), plansTouched))
+        if r.restored > 0   { parts.append(String(format: String(localized: "planEditor.result.restored", bundle: .module), r.restored)) }
+        if r.swapped > 0    { parts.append(String(format: String(localized: "planEditor.result.swapped", bundle: .module), r.swapped)) }
+        if r.kept > 0       { parts.append(String(format: String(localized: "planEditor.result.noAlternative", bundle: .module), r.kept)) }
+        if r.compatible > 0 { parts.append(String(format: String(localized: "planEditor.result.unchanged", bundle: .module), r.compatible)) }
         let message = parts.joined(separator: " · ")
 
         withAnimation(.easeOut(duration: 0.2)) {
@@ -460,21 +460,21 @@ public struct ProfileEditorView: View {
         var filled: Set<String> = []
         if let dob = snapshot.dateOfBirth {
             profile.birthDate = dob
-            filled.insert("Geburtsdatum")
+            filled.insert(String(localized: "profile.health.field.birthday", bundle: .module))
         }
         switch snapshot.sex {
         case .male:
             profile.profile = .male
-            filled.insert("Geschlecht")
+            filled.insert(String(localized: "profile.health.field.gender", bundle: .module))
         case .female:
             profile.profile = .female
-            filled.insert("Geschlecht")
+            filled.insert(String(localized: "profile.health.field.gender", bundle: .module))
         case .other, .notSet:
             break
         }
         if let h = snapshot.heightCm, h > 0 {
             profile.heightCm = h
-            filled.insert("Größe")
+            filled.insert(String(localized: "profile.health.field.height", bundle: .module))
         }
         healthKitFilledFields = filled
     }

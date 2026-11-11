@@ -243,26 +243,6 @@ public enum ActivityLevel: String, CaseIterable, Sendable {
         }
     }
 
-    public var label: String {
-        switch self {
-        case .sedentary:  return "Bürojob (1.2)"
-        case .light:      return "Leicht aktiv (1.375)"
-        case .moderate:   return "Moderat (1.55)"
-        case .active:     return "Aktiv (1.725)"
-        case .veryActive: return "Sehr aktiv (1.9)"
-        }
-    }
-
-    public var description: String {
-        switch self {
-        case .sedentary:  return "Bürojob, kaum Bewegung neben dem Alltag."
-        case .light:      return "1-2 leichte Trainings pro Woche."
-        case .moderate:   return "3-5 Trainings pro Woche (Default für Hobby-Lifter)."
-        case .active:     return "6-7 Trainings pro Woche oder körperlicher Beruf."
-        case .veryActive: return "Tag-täglich intensives Training oder schwere körperliche Arbeit."
-        }
-    }
-
     // DEL-120: lokalisierte Varianten von label + description.
     public var localizedName: LocalizedStringResource {
         switch self {

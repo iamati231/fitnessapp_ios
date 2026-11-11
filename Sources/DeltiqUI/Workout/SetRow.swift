@@ -942,7 +942,7 @@ struct SetRow: View {
         .background(Color.secondary.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .opacity(0.85)
-        .accessibilityLabel(blockingMessage + ". Beende die laufende Übung zuerst.")
+        .accessibilityLabel(blockingMessage + ". " + String(localized: "setRow.blocking.suffix", bundle: .module))
     }
 
     /// DEL-097 + DEL-108: True wenn der Session-weite Time-Set-Lock von
@@ -979,9 +979,9 @@ struct SetRow: View {
     /// gerade ist, und weiss, was er als naechstes machen muss.
     private var blockingMessage: String {
         if let name = activeTimedSet?.exerciseName, !name.isEmpty {
-            return "„\(name)“ läuft bereits"
+            return String(format: String(localized: “setRow.blocking.isRunning”, bundle: .module), name)
         }
-        return "Eine andere zeitbasierte Übung läuft bereits"
+        return String(localized: “setRow.blocking.otherRunning”, bundle: .module)
     }
 
     private func holdCountdownView(secondsLeft: Int) -> some View {
@@ -1468,7 +1468,7 @@ struct SetRow: View {
                 .multilineTextAlignment(.center)
                 .disabled(isCompleted)
                 .opacity(isCompleted ? 0.6 : 1.0)
-            Text("KM")
+            Text(String(localized: "unit.km.upper", bundle: .module))
                 .deltiqLabel()
                 .frame(width: 22, alignment: .leading)   // fix → kein Cut
         }

@@ -1149,15 +1149,15 @@ public struct DashboardView: View {
                     // Historical points + connecting line.
                     ForEach(historicalPoints, id: \.date) { p in
                         LineMark(
-                            x: .value("Datum", p.date),
+                            x: .value(String(localized: "chart.axis.date", bundle: .module), p.date),
                             y: .value(weightSeriesLabel, p.weight),
-                            series: .value("Serie", "Tatsächlich")
+                            series: .value(String(localized: "chart.series", bundle: .module), String(localized: "chart.series.actual", bundle: .module))
                         )
                         .interpolationMethod(.monotone)
                         .foregroundStyle(Color.deltiqOrange)
 
                         PointMark(
-                            x: .value("Datum", p.date),
+                            x: .value(String(localized: "chart.axis.date", bundle: .module), p.date),
                             y: .value(weightSeriesLabel, p.weight)
                         )
                         .foregroundStyle(Color.deltiqOrange)
@@ -1169,9 +1169,9 @@ public struct DashboardView: View {
                     if !forecastPoints.isEmpty {
                         ForEach(forecastPoints, id: \.date) { p in
                             LineMark(
-                                x: .value("Datum", p.date),
+                                x: .value(String(localized: "chart.axis.date", bundle: .module), p.date),
                                 y: .value(weightSeriesLabel, p.weight),
-                                series: .value("Serie", "Prognose")
+                                series: .value(String(localized: "chart.series", bundle: .module), String(localized: "chart.series.forecast", bundle: .module))
                             )
                             .foregroundStyle(.orange)
                             .lineStyle(StrokeStyle(lineWidth: 2, dash: [6, 4]))
@@ -1182,7 +1182,7 @@ public struct DashboardView: View {
                     if let goal = profiles.first?.goalWeightKg {
                         let goalDisplay = dashboardWeightUnit.fromKg(goal)
                         let goalLineKey = weightUnitRaw == "lbs" ? "dashboard.goal.line.lbs" : "dashboard.goal.line"
-                        RuleMark(y: .value("Ziel", goalDisplay))
+                        RuleMark(y: .value(String(localized: "chart.axis.goal", bundle: .module), goalDisplay))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
                             .foregroundStyle(.green.opacity(0.7))
                             .annotation(position: .top, alignment: .leading) {
@@ -1194,7 +1194,7 @@ public struct DashboardView: View {
                             }
                     }
                     if let point = selectedTrendPoint {
-                        RuleMark(x: .value("Datum", point.date))
+                        RuleMark(x: .value(String(localized: "chart.axis.date", bundle: .module), point.date))
                             .foregroundStyle(Color.secondary.opacity(0.3))
                             .lineStyle(StrokeStyle(lineWidth: 1))
                             .annotation(position: .top, spacing: 4,
@@ -2794,7 +2794,7 @@ public struct DashboardView: View {
               deltiqDark: Color(red: 0.835, green: 0.318, blue: 0.506))
     ]
 
-    /// Bindet jeden Lift-NAMEN (lokalisiert, wie er auch als `.value("Lift",
+    /// Bindet jeden Lift-NAMEN (lokalisiert, wie er auch als `.value(String(localized: "chart.series.lift", bundle: .module),
     /// ...)`-Plot-Key verwendet wird) an eine feste Farbe aus
     /// `compoundLiftColors` - `chartForegroundStyleScale` braucht eine
     /// garantierte Zuordnung, sonst kann Swift Charts Farben zwischen
@@ -3025,10 +3025,10 @@ public struct DashboardView: View {
                             // aufzuloesen - erst als eigene, typisierte
                             // `let`s vorab macht jede Aufloesung billig und
                             // unabhaengig.
-                            let xValue: PlottableValue<Date> = .value("Datum", point.date)
+                            let xValue: PlottableValue<Date> = .value(String(localized: "chart.axis.date", bundle: .module), point.date)
                             let yValue: PlottableValue<Double> = .value("1RM (kg)", point.oneRM)
-                            let seriesValue: PlottableValue<String> = .value("Lift", line.exerciseName)
-                            let liftStyleValue: PlottableValue<String> = .value("Lift", line.exerciseName)
+                            let seriesValue: PlottableValue<String> = .value(String(localized: "chart.series.lift", bundle: .module), line.exerciseName)
+                            let liftStyleValue: PlottableValue<String> = .value(String(localized: "chart.series.lift", bundle: .module), line.exerciseName)
                             LineMark(x: xValue, y: yValue, series: seriesValue)
                                 .interpolationMethod(.monotone)
                                 .foregroundStyle(by: liftStyleValue)
@@ -3057,7 +3057,7 @@ public struct DashboardView: View {
                         // gleich unten ist ein GESCHWISTER-Statement der
                         // inneren ForEach, braucht also seinen eigenen
                         // Zugriff auf denselben Wert.
-                        let liftStyleValue: PlottableValue<String> = .value("Lift", line.exerciseName)
+                        let liftStyleValue: PlottableValue<String> = .value(String(localized: "chart.series.lift", bundle: .module), line.exerciseName)
                         ForEach(line.points) { point in
                             // Fix Runde 2 (Release-Gate-Log): das Auslagern
                             // der Serien-Strings allein reichte nicht - der
@@ -3067,9 +3067,9 @@ public struct DashboardView: View {
                             // vorab einzeln binden trennt die Ueberladungs-
                             // Aufloesung in drei billige Einzelschritte statt
                             // einem gemeinsamen.
-                            let xValue: PlottableValue<Date> = .value("Datum", point.date)
+                            let xValue: PlottableValue<Date> = .value(String(localized: "chart.axis.date", bundle: .module), point.date)
                             let yValue: PlottableValue<Double> = .value("1RM (kg)", point.oneRM)
-                            let seriesValue: PlottableValue<String> = .value("Serie", forecastSeriesKey)
+                            let seriesValue: PlottableValue<String> = .value(String(localized: "chart.series", bundle: .module), forecastSeriesKey)
                             LineMark(x: xValue, y: yValue, series: seriesValue)
                                 .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
                                 .foregroundStyle(by: liftStyleValue)
@@ -3078,7 +3078,7 @@ public struct DashboardView: View {
                         // Forecast-Endpunkt als hohler Ring — visuell als
                         // "Projektion" erkennbar, kein voller PointMark.
                         if let last = line.points.last {
-                            let lastXValue: PlottableValue<Date> = .value("Datum", last.date)
+                            let lastXValue: PlottableValue<Date> = .value(String(localized: "chart.axis.date", bundle: .module), last.date)
                             let lastYValue: PlottableValue<Double> = .value("1RM (kg)", last.oneRM)
                             PointMark(x: lastXValue, y: lastYValue)
                                 .symbol(.circle.strokeBorder(lineWidth: 1.5))
@@ -3090,7 +3090,7 @@ public struct DashboardView: View {
                     // Signature-Geruest 2.16: "Heute"-Markierung, damit
                     // gemessene und projizierte Punkte unterscheidbar bleiben.
                     if !forecastSamples.isEmpty {
-                        RuleMark(x: .value("Heute", Date()))
+                        RuleMark(x: .value(String(localized: "chart.axis.today", bundle: .module), Date()))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
                             .foregroundStyle(.secondary)
                             .annotation(position: .top, alignment: .trailing) {
@@ -3100,7 +3100,7 @@ public struct DashboardView: View {
                             }
                     }
                     if let sel = selectedCompoundDate, !selectedCompoundValues.isEmpty {
-                        RuleMark(x: .value("Datum", sel))
+                        RuleMark(x: .value(String(localized: "chart.axis.date", bundle: .module), sel))
                             .foregroundStyle(Color.secondary.opacity(0.3))
                             .lineStyle(StrokeStyle(lineWidth: 1))
                             .annotation(position: .top, spacing: 4,
@@ -3366,8 +3366,8 @@ public struct DashboardView: View {
                             // bündig + sehe wackelig aus, wenn der erste
                             // sichtbare Bucket teilweise außerhalb der
                             // Domain liegt).
-                            x: .value("Woche", point.weekStart.addingTimeInterval(2.5 * 86_400)),
-                            y: .value("Volumen (kg)", point.volumeKg)
+                            x: .value(String(localized: "chart.axis.week", bundle: .module), point.weekStart.addingTimeInterval(2.5 * 86_400)),
+                            y: .value(String(localized: "chart.axis.volume", bundle: .module), point.volumeKg)
                         )
                         .foregroundStyle(point.volumeKg > 0
                                          ? Color.deltiqOrange.gradient
@@ -3717,10 +3717,10 @@ public struct DashboardView: View {
                             // in `.foregroundStyle(by:)`/`.symbol(by:)`
                             // erst als eigene, typisierte `let`s vorab
                             // aufloesen statt gemeinsam inline.
-                            let xValue: PlottableValue<Date> = .value("Datum", point.date)
-                            let yValue: PlottableValue<Double> = .value("Pace (min/km)", point.paceMinPerKm)
-                            let seriesValue: PlottableValue<String> = .value("Lauf", line.exerciseName)
-                            let runStyleValue: PlottableValue<String> = .value("Lauf", line.exerciseName)
+                            let xValue: PlottableValue<Date> = .value(String(localized: "chart.axis.date", bundle: .module), point.date)
+                            let yValue: PlottableValue<Double> = .value(String(localized: "chart.axis.pace", bundle: .module), point.paceMinPerKm)
+                            let seriesValue: PlottableValue<String> = .value(String(localized: "chart.series.run", bundle: .module), line.exerciseName)
+                            let runStyleValue: PlottableValue<String> = .value(String(localized: "chart.series.run", bundle: .module), line.exerciseName)
                             LineMark(x: xValue, y: yValue, series: seriesValue)
                                 .interpolationMethod(.monotone)
                                 .foregroundStyle(by: runStyleValue)
@@ -3732,7 +3732,7 @@ public struct DashboardView: View {
                         }
                     }
                     if !selectedCardioValues.isEmpty, let sel = selectedCardioDate {
-                        RuleMark(x: .value("Datum", sel))
+                        RuleMark(x: .value(String(localized: "chart.axis.date", bundle: .module), sel))
                             .foregroundStyle(Color.secondary.opacity(0.3))
                             .lineStyle(StrokeStyle(lineWidth: 1))
                             .annotation(position: .top, spacing: 4,
