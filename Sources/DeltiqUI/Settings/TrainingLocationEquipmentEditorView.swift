@@ -109,16 +109,24 @@ struct TrainingLocationEquipmentEditorView: View {
             // Sheets ist sonst ein ungesicherter Verlassen-Weg am Discard-
             // Dialog vorbei. Ohne Aenderungen (`!isDirty`) bleibt es normal
             // moeglich (direktes Schliessen).
-            .interactiveDismissDisabled(isDirty)
+            .interactiveDismissDisabled(isDirty || pendingEquipmentAdaptation != nil)
             .onAppear {
                 if draftEnvironment == .gym, !profile.equipmentProfileConfirmedComplete {
                     equipmentTouched = true
                 }
             }
             .onChange(of: draftEnvironment) { _, newValue in
-                if newValue == .gym {
+                switch newValue {
+                case .gym:
                     draftEquipmentProfile = .gymFull
                     equipmentTouched = true
+                case .noEquipment:
+                    var bodyweight = UserEquipmentProfile()
+                    bodyweight.confirmRemainingAsUnavailable()
+                    draftEquipmentProfile = bodyweight
+                    equipmentTouched = true
+                case .homeGym:
+                    break
                 }
             }
             // P5.1: analog `ProfileEditorView`s `envSwap`-Dialog (siehe
@@ -202,7 +210,7 @@ struct TrainingLocationEquipmentEditorView: View {
             EquipmentProfileEditor(equipmentProfile: Binding(
                 get: { draftEquipmentProfile },
                 set: { draftEquipmentProfile = $0; equipmentTouched = true }
-            ))
+            ), showsCounts: draftEnvironment != .gym)
             .padding(.horizontal, 14)
             .padding(.bottom, 12)
         }
