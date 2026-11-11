@@ -126,7 +126,7 @@ public struct PlansListView: View {
                 .listSectionSpacing(.compact)
                 #endif
                 .onChange(of: navigation.scrollToTopTrigger[.plan]) { _, _ in
-                    withAnimation { proxy.scrollTo("plans-top", anchor: .top) }
+                    withAnimation(.smooth(duration: 0.5)) { proxy.scrollTo("plans-top", anchor: .top) }
                 }
             }
         }

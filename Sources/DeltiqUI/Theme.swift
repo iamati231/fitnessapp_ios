@@ -432,7 +432,7 @@ public struct DeltiqScreenModifier: ViewModifier {
         .scrollPosition(id: $scrollID, anchor: .top)
         .onChange(of: scrollToTopTrigger) { _, _ in
             scrollID = nil
-            Task { @MainActor in scrollID = "deltiq-screen-top" }
+            Task { @MainActor in withAnimation(.smooth(duration: 0.5)) { scrollID = "deltiq-screen-top" } }
         }
     }
 }

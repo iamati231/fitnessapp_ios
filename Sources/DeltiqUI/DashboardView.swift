@@ -319,7 +319,7 @@ public struct DashboardView: View {
             .scrollPosition(id: $dashScrollID, anchor: .top)
             .onChange(of: navigation.scrollToTopTrigger[.dashboard]) { _, _ in
                 dashScrollID = nil
-                Task { @MainActor in dashScrollID = "dashboard-top" }
+                Task { @MainActor in withAnimation(.smooth(duration: 0.5)) { dashScrollID = "dashboard-top" } }
             }
         }
         // DEL-102: Off-Weiss / Off-Schwarz-Background, gegen den die

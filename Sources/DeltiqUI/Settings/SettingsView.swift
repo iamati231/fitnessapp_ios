@@ -93,7 +93,7 @@ public struct SettingsView: View {
             .scrollPosition(id: $settingsScrollID, anchor: .top)
             .onChange(of: navigation.scrollToTopTrigger[.settings]) { _, _ in
                 settingsScrollID = nil
-                Task { @MainActor in settingsScrollID = "settings-top" }
+                Task { @MainActor in withAnimation(.smooth(duration: 0.5)) { settingsScrollID = "settings-top" } }
             }
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
