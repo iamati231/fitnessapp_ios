@@ -10600,7 +10600,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ters Cable Fly"
+            "value": "Reverse Cable Fly"
           }
         }
       }
@@ -10617,13 +10617,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Neutral-Grip Lat Pulldown"
+            "value": "Cable Lat Pulldown Neutral Grip"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nötr Tutuş Lat Çekiş"
+            "value": "Cable Lat Pulldown Neutral Grip"
           }
         }
       }
@@ -10646,7 +10646,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oturarak Bacak Curl"
+            "value": "Seated Leg Curl"
           }
         }
       }
@@ -10669,7 +10669,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayakta Bacak Curl"
+            "value": "Standing Leg Curl"
           }
         }
       }
@@ -10686,13 +10686,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calf Press (Leg Press)"
+            "value": "Leg Press Calf Raise"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baldır Press (Leg Press)"
+            "value": "Leg Press Calf Raise"
           }
         }
       }
@@ -10807,7 +10807,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sağlık Topu Slam"
+            "value": "Medicine Ball Slam"
           }
         }
       }
@@ -10853,7 +10853,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bilek Curl"
+            "value": "Wrist Curl"
           }
         }
       }
@@ -10876,7 +10876,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ters Bilek Curl"
+            "value": "Reverse Wrist Curl"
           }
         }
       }
@@ -11037,7 +11037,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kum Torbası Taşıma"
+            "value": "Sandbag Carry"
           }
         }
       }
@@ -11060,7 +11060,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kızak İtme"
+            "value": "Sled Push"
           }
         }
       }
@@ -11083,7 +11083,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kızak Çekme"
+            "value": "Sled Pull"
           }
         }
       }
@@ -11106,7 +11106,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Battle Ropes (Halat)"
+            "value": "Battle Ropes"
           }
         }
       }
@@ -11192,13 +11192,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bent-Over Row"
+            "value": "Barbell Bent-Over Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bent-Over Row"
+            "value": "Barbell Bent-Over Row"
           }
         }
       }
@@ -11359,7 +11359,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu"
+            "value": "Outdoor Run"
           }
         }
       }
@@ -11675,13 +11675,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standing Calf Raise (Barbell)"
+            "value": "Barbell Standing Calf Raise"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standing Calf Raise"
+            "value": "Barbell Standing Calf Raise"
           }
         }
       }
@@ -11790,13 +11790,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Dumbbell Bench Press"
+            "value": "Dumbbell Incline Bench Press"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Dumbbell Bench Press"
+            "value": "Dumbbell Incline Bench Press"
           }
         }
       }
@@ -11813,13 +11813,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Flat Dumbbell Fly"
+            "value": "Dumbbell Flat Fly"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Flat Dumbbell Fly"
+            "value": "Dumbbell Flat Fly"
           }
         }
       }
@@ -11836,13 +11836,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Dumbbell Fly"
+            "value": "Dumbbell Incline Fly"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Dumbbell Fly"
+            "value": "Dumbbell Incline Fly"
           }
         }
       }
@@ -11859,13 +11859,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-Arm Dumbbell Row"
+            "value": "Dumbbell One-Arm Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-Arm Dumbbell Row"
+            "value": "Dumbbell One-Arm Row"
           }
         }
       }
@@ -12394,7 +12394,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Şınav"
+            "value": "Push-Up"
           }
         }
       }
@@ -12417,7 +12417,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diz Üstü Şınav"
+            "value": "Knee Push-Up"
           }
         }
       }
@@ -13475,7 +13475,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kettlebell Tek Kol Row"
+            "value": "Kettlebell Single-Arm Row"
           }
         }
       }
@@ -13521,7 +13521,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu Bandı"
+            "value": "Treadmill"
           }
         }
       }
@@ -13544,7 +13544,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bisiklet"
+            "value": "Outdoor Cycling"
           }
         }
       }
@@ -13567,7 +13567,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Egzersiz Bisikleti"
+            "value": "Exercise Bike"
           }
         }
       }
@@ -14648,7 +14648,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kolay Koşu"
+            "value": "Easy Run"
           }
         }
       }
@@ -14671,7 +14671,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uzun Koşu"
+            "value": "Long Run"
           }
         }
       }
@@ -14694,7 +14694,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tempo Koşusu"
+            "value": "Tempo Run"
           }
         }
       }
@@ -14717,7 +14717,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "İnterval"
+            "value": "Intervals"
           }
         }
       }
@@ -14740,7 +14740,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu İnterval"
+            "value": "Run Interval"
           }
         }
       }
@@ -14763,7 +14763,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bisiklet İnterval"
+            "value": "Cycling Interval"
           }
         }
       }
@@ -14786,7 +14786,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Isınma Yürüyüşü"
+            "value": "Warm-Up Walk"
           }
         }
       }
@@ -68654,13 +68654,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Low Cable Fly"
+            "value": "Cable Low Fly"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alt Halat Fly"
+            "value": "Cable Low Fly"
           }
         }
       }
@@ -68683,7 +68683,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayakta Halat Fly"
+            "value": "Cable Standing Fly"
           }
         }
       }
@@ -68706,7 +68706,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eğimli Şınav"
+            "value": "Decline Push-Up"
           }
         }
       }
@@ -68729,7 +68729,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yükseltilmiş Şınav"
+            "value": "Incline Push-Up"
           }
         }
       }
@@ -68752,7 +68752,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Göğüs Dips"
+            "value": "Chest Dip (Bar)"
           }
         }
       }
@@ -68775,7 +68775,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Geniş Tutuş Göğüs Dips"
+            "value": "Wide-Grip Chest Dip"
           }
         }
       }
@@ -68792,13 +68792,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-Arm Bent-Over Row (Barbell)"
+            "value": "Barbell One-Arm Bent-Over Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tek Kol Öne Eğik Rowing"
+            "value": "Barbell One-Arm Bent-Over Row"
           }
         }
       }
@@ -68821,7 +68821,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kablo Lat Çekişi (Tam Hareket)"
+            "value": "Cable Lat Pulldown (Full ROM)"
           }
         }
       }
@@ -68867,7 +68867,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ters Tutuş Çekiş"
+            "value": "Reverse-Grip Pull-Up"
           }
         }
       }
@@ -68890,7 +68890,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Askılı Rowing"
+            "value": "Suspended Row (TRX)"
           }
         }
       }
@@ -68913,7 +68913,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Makine Ön Latzug"
+            "value": "Machine Front Pulldown"
           }
         }
       }
@@ -68959,7 +68959,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Smith Makinesi Ayakta Press"
+            "value": "Smith Machine Standing Press"
           }
         }
       }
@@ -68976,13 +68976,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-Arm Lateral Raise"
+            "value": "Dumbbell One-Arm Lateral Raise"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tek Kol Yan Kaldırma"
+            "value": "Dumbbell One-Arm Lateral Raise"
           }
         }
       }
@@ -68999,13 +68999,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rear Delt Fly"
+            "value": "Dumbbell Rear Delt Fly"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Arka Omuz Fly"
+            "value": "Dumbbell Rear Delt Fly"
           }
         }
       }
@@ -69022,13 +69022,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Rear Lateral Raise"
+            "value": "Dumbbell Incline Rear Lateral Raise"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eğimli Arka Lateral Kaldırma"
+            "value": "Dumbbell Incline Rear Lateral Raise"
           }
         }
       }
@@ -69045,13 +69045,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Single-Arm Overhead Carry"
+            "value": "Dumbbell Single-Arm Overhead Carry"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tek Kol Baş Üstü Taşıma"
+            "value": "Dumbbell Single-Arm Overhead Carry"
           }
         }
       }
@@ -69074,7 +69074,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Makine Arka Fly"
+            "value": "Machine Reverse Fly"
           }
         }
       }
@@ -69091,13 +69091,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alternating Barbell Curl"
+            "value": "Barbell Alternating Curl"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Almaşık Halter Curl"
+            "value": "Barbell Alternating Curl"
           }
         }
       }
@@ -69114,13 +69114,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prone Incline Curl (Barbell)"
+            "value": "Barbell Prone Incline Curl"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Öne Eğik Halter Curl"
+            "value": "Barbell Prone Incline Curl"
           }
         }
       }
@@ -69137,13 +69137,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alternating Dumbbell Curl"
+            "value": "Dumbbell Alternating Curl"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Almaşık Dumbbell Curl"
+            "value": "Dumbbell Alternating Curl"
           }
         }
       }
@@ -69160,13 +69160,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seated Dumbbell Curl"
+            "value": "Dumbbell Seated Curl"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oturarak Dumbbell Curl"
+            "value": "Dumbbell Seated Curl"
           }
         }
       }
@@ -69183,13 +69183,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cross-Body Hammer Curl"
+            "value": "Dumbbell Cross-Body Hammer Curl"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Çapraz Hammer Curl"
+            "value": "Dumbbell Cross-Body Hammer Curl"
           }
         }
       }
@@ -69206,13 +69206,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Close-Grip Skull Crusher"
+            "value": "Barbell Close-Grip Skull Crusher"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dar Tutuş Skull Crusher"
+            "value": "Barbell Close-Grip Skull Crusher"
           }
         }
       }
@@ -69229,13 +69229,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seated Overhead Triceps Extension"
+            "value": "Barbell Seated Overhead Triceps Extension"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oturarak Triceps Uzatma"
+            "value": "Barbell Seated Overhead Triceps Extension"
           }
         }
       }
@@ -69252,13 +69252,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standing Overhead Triceps Extension"
+            "value": "Barbell Standing Overhead Triceps Extension"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayakta Triceps Uzatma"
+            "value": "Barbell Standing Overhead Triceps Extension"
           }
         }
       }
@@ -69304,7 +69304,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kablo Triceps Basma (İp)"
+            "value": "Cable Pushdown (Rope)"
           }
         }
       }
@@ -69327,7 +69327,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kablo Üst Triceps Uzatma"
+            "value": "Cable Overhead Triceps Ext. (Rope)"
           }
         }
       }
@@ -69344,13 +69344,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standing Triceps Extension"
+            "value": "Dumbbell Standing Triceps Extension"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayakta Triceps Uzatma"
+            "value": "Dumbbell Standing Triceps Extension"
           }
         }
       }
@@ -69367,13 +69367,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lying Triceps Extension"
+            "value": "Dumbbell Lying Triceps Extension"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yatarak Triceps Uzatma"
+            "value": "Dumbbell Lying Triceps Extension"
           }
         }
       }
@@ -69390,13 +69390,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-Arm Wrist Curl"
+            "value": "Dumbbell One-Arm Wrist Curl"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tek Kol Bilek Curl"
+            "value": "Dumbbell One-Arm Wrist Curl"
           }
         }
       }
@@ -69419,7 +69419,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bilek Rulosu"
+            "value": "Wrist Roller"
           }
         }
       }
@@ -69436,13 +69436,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Full Squat (Barbell)"
+            "value": "Barbell Full Squat"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tam Squat (Halter)"
+            "value": "Barbell Full Squat"
           }
         }
       }
@@ -69459,13 +69459,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clean-Grip Front Squat"
+            "value": "Barbell Clean-Grip Front Squat"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clean Tutuşlu Ön Squat"
+            "value": "Barbell Clean-Grip Front Squat"
           }
         }
       }
@@ -69488,7 +69488,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yürüyüş Çıkışı"
+            "value": "Walking Lunge"
           }
         }
       }
@@ -69557,7 +69557,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "45° Geniş Duruş Bacak Presi"
+            "value": "45° Wide-Stance Leg Press"
           }
         }
       }
@@ -69597,13 +69597,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Single-Leg Deadlift"
+            "value": "Dumbbell Single-Leg Deadlift"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tek Bacak Deadlift"
+            "value": "Dumbbell Single-Leg Deadlift"
           }
         }
       }
@@ -69620,13 +69620,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Straight-Leg Deadlift"
+            "value": "Barbell Straight-Leg Deadlift"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Düz Bacak Deadlift"
+            "value": "Barbell Straight-Leg Deadlift"
           }
         }
       }
@@ -69643,13 +69643,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Overhead Squat"
+            "value": "Barbell Overhead Squat"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Overhead Squat"
+            "value": "Barbell Overhead Squat"
           }
         }
       }
@@ -69666,13 +69666,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stiff-Leg Deadlift"
+            "value": "Dumbbell Stiff-Leg Deadlift"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sert Bacak Deadlift"
+            "value": "Dumbbell Stiff-Leg Deadlift"
           }
         }
       }
@@ -69695,7 +69695,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Askılı Split Squat"
+            "value": "Suspended Split Squat"
           }
         }
       }
@@ -69718,7 +69718,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Merdiven Baldır Kaldırma"
+            "value": "Calf Raise (Staircase)"
           }
         }
       }
@@ -69741,7 +69741,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "45° Baldır Presi"
+            "value": "45° Calf Press"
           }
         }
       }
@@ -69764,7 +69764,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bacak Presi Baldır Kaldırma"
+            "value": "Leg Press Calf Raise"
           }
         }
       }
@@ -69787,7 +69787,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eşek Baldır Kaldırma"
+            "value": "Donkey Calf Raise"
           }
         }
       }
@@ -69833,7 +69833,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ağırlıklı Russian Twist"
+            "value": "Weighted Russian Twist"
           }
         }
       }
@@ -69856,7 +69856,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Asılı Düz Bacak Kaldırma"
+            "value": "Hanging Straight Leg Raise"
           }
         }
       }
@@ -69879,7 +69879,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dikey Bacak Kaldırma"
+            "value": "Vertical Leg Raise"
           }
         }
       }
@@ -69902,7 +69902,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kaptan Koltuğu Bacak Kaldırma"
+            "value": "Captain's Chair Straight Leg Raise"
           }
         }
       }
@@ -69925,7 +69925,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dönüşlü Plank"
+            "value": "Plank with Twist"
           }
         }
       }
@@ -69948,7 +69948,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eğimli Yan Plank"
+            "value": "Incline Side Plank"
           }
         }
       }
@@ -69971,7 +69971,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ağırlıklı Plank"
+            "value": "Weighted Plank"
           }
         }
       }
@@ -69994,7 +69994,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Çapraz Crunch"
+            "value": "Cross-Body Crunch"
           }
         }
       }
@@ -70017,7 +70017,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bantlı Bisiklet Crunch"
+            "value": "Band Bicycle Crunch"
           }
         }
       }
@@ -70063,7 +70063,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayakta Tekerlek Rollout"
+            "value": "Standing Wheel Rollout"
           }
         }
       }
@@ -70155,7 +70155,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oturarak Bacak Kaldırma"
+            "value": "Seated Leg Raise"
           }
         }
       }
@@ -70178,7 +70178,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Asılı Pike"
+            "value": "Hanging Pike"
           }
         }
       }
@@ -70201,7 +70201,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Askılı Karın Fallout"
+            "value": "Suspended Abdominal Fallout"
           }
         }
       }
@@ -70224,7 +70224,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "İp Atlama"
+            "value": "Jump Rope"
           }
         }
       }
@@ -70247,7 +70247,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Crosstrainer (Bisiklet)"
+            "value": "Cross Trainer (Cycling)"
           }
         }
       }
@@ -70270,7 +70270,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sabit Bisiklet (Hafif)"
+            "value": "Stationary Bike (Easy)"
           }
         }
       }
@@ -70293,7 +70293,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayı Yürüyüşü"
+            "value": "Bear Crawl"
           }
         }
       }
@@ -70316,7 +70316,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skater Atlamaları"
+            "value": "Skater Hops"
           }
         }
       }
@@ -70339,7 +70339,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yıldız Atlama"
+            "value": "Star Jump"
           }
         }
       }
@@ -70362,7 +70362,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Duvara Karşı Yüksek Diz"
+            "value": "High Knee Against Wall"
           }
         }
       }
@@ -70408,7 +70408,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baldır Germe (Duvara)"
+            "value": "Calf Stretch (Wall)"
           }
         }
       }
@@ -70431,7 +70431,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adımlı Baldır Germe"
+            "value": "Calf Push Stretch (Wall)"
           }
         }
       }
@@ -70454,7 +70454,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kalça Fleksör Germe"
+            "value": "Hip Flexor Stretch (Ball)"
           }
         }
       }
@@ -70477,7 +70477,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diz Çökerek Lat Germe"
+            "value": "Kneeling Lat Stretch"
           }
         }
       }
@@ -70500,7 +70500,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Göğüs Germe (Topla)"
+            "value": "Chest Stretch (Ball)"
           }
         }
       }
@@ -70569,7 +70569,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oturarak Piriformis Germe"
+            "value": "Seated Piriformis Stretch"
           }
         }
       }
@@ -70592,7 +70592,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşucu Germe"
+            "value": "Runner's Stretch"
           }
         }
       }
@@ -70638,7 +70638,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sırt ve Göğüs Germe"
+            "value": "Back & Pec Stretch"
           }
         }
       }
@@ -70661,7 +70661,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baş Arkası Göğüs Germe"
+            "value": "Behind-Head Chest Stretch"
           }
         }
       }
@@ -70684,7 +70684,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oturarak Bel Germe"
+            "value": "Seated Lower Back Stretch"
           }
         }
       }
