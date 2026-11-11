@@ -436,6 +436,11 @@ public struct ProfileEditorView: View {
         }
     }
 
+    // DEL-118: same helper as SettingsView — routes through .localizedName.
+    private func environmentLabel(_ env: EnvironmentType) -> String {
+        String(localized: env.localizedName)
+    }
+
     /// Smart-Onboarding-Epic Phase 6 (docs/PLAN_LOCATION_EQUIPMENT_ONBOARDING.md
     /// §1): ein nicht individuell eingerichtetes Gym-Profil zeigt NIE
     /// "nicht erfasst" — dort gilt die Standard-Gym-Planungsannahme

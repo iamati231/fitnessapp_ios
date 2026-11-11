@@ -59586,19 +59586,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KI-Analyse"
+            "value": "Ernährungscoach"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "AI insights"
+            "value": "Nutrition coach"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yapay zeka analizi"
+            "value": "Beslenme koçu"
           }
         }
       }

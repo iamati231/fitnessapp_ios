@@ -130,21 +130,30 @@ public struct NutritionInsightGenerator: Sendable {
 
     private static let baseInstructions = """
     You summarize one day's already-computed nutrition numbers for the user. \
+    These totals are ACTUAL consumed amounts for the day — what was actually \
+    logged and eaten, not planned or target values. \
     Use ONLY the numbers given to you below — never calculate, estimate, \
     convert, or guess any number yourself. Any value stated as "unknown" means \
     the data is incomplete for that nutrient: never treat it as zero, never \
-    mention a number for it, and never claim the goal was reached or missed. Some goals are marked "not set": \
-    for those, never state a number and never say the goal was reached or \
-    missed — simply don't mention that goal at all. When a "Progress toward \
-    goals" line gives a percentage for a nutrient, that percentage — never \
-    your own judgment of the raw numbers — decides your tone for it: below \
-    roughly 50% with a meaningful amount still remaining, describe it as \
-    early or in-progress and encourage without calling it sufficient, \
-    "excellent", "great job", or "super", as if the goal were already nearly \
-    met. Only once the stated percentage is close to or at/over 100% is a \
-    clearly positive, congratulatory tone appropriate. Give only brief, \
-    general, non-medical observations and encouragement. Never give a \
-    diagnosis, a treatment recommendation, or any other medical advice.
+    mention a number for it, and never claim the goal was reached or missed. \
+    Some goals are marked "not set": for those, never state a number and never \
+    say the goal was reached or missed — simply don't mention that goal at all. \
+    When a progress line is marked "[EXCEEDED]", that goal was surpassed — \
+    always describe this clearly and positively; NEVER say the goal has not \
+    been reached when the stated percentage is at or above 100. \
+    When a "Progress toward goals" line gives a percentage for a nutrient, \
+    that percentage — never your own judgment of the raw numbers — decides \
+    your tone for it: below roughly 50% with a meaningful amount still \
+    remaining, describe it as early or in-progress and encourage without \
+    calling it sufficient, "excellent", "great job", or "super", as if the \
+    goal were already nearly met. Only once the stated percentage is close to \
+    or at/over 100% is a clearly positive, congratulatory tone appropriate. \
+    Respond in 2 to 4 sentences only. Do not list or repeat the raw numbers \
+    from above — focus on what they mean for the user and give at most one \
+    practical suggestion. Do not use markdown formatting (no bold, no bullet \
+    points, no headers). Give only brief, general, non-medical observations \
+    and encouragement. Never give a diagnosis, a treatment recommendation, or \
+    any other medical advice.
     """
 
     /// I2 fix: a plain "respond in the user's language" instruction left the
@@ -241,6 +250,9 @@ public struct NutritionInsightGenerator: Sendable {
         let goalsHeading, calorieGoal, proteinGoal, carbGoal, fatGoal: String
         let progressHeading, of, goalWord, reached, remaining: String
         let unknown, notSet: String
+        // Status label appended to a progress line when the goal was exceeded
+        // (percent >= 100) — makes the fact unambiguous for the model.
+        let exceeded: String
 
         static func forLanguageCode(_ code: String) -> PromptStrings {
             switch code {
@@ -252,7 +264,8 @@ public struct NutritionInsightGenerator: Sendable {
                     carbGoal: "Kohlenhydratziel", fatGoal: "Fettziel",
                     progressHeading: "Fortschritt zu den Zielen:", of: "von", goalWord: "Ziel",
                     reached: "erreicht", remaining: "verbleibend",
-                    unknown: "unbekannt", notSet: "nicht gesetzt"
+                    unknown: "unbekannt", notSet: "nicht gesetzt",
+                    exceeded: "EXCEEDED"
                 )
             case "tr":
                 return PromptStrings(
@@ -262,7 +275,8 @@ public struct NutritionInsightGenerator: Sendable {
                     carbGoal: "Karbonhidrat hedefi", fatGoal: "Yağ hedefi",
                     progressHeading: "Hedeflere doğru ilerleme:", of: "/", goalWord: "hedef",
                     reached: "ulaşıldı", remaining: "kaldı",
-                    unknown: "bilinmiyor", notSet: "belirlenmedi"
+                    unknown: "bilinmiyor", notSet: "belirlenmedi",
+                    exceeded: "EXCEEDED"
                 )
             default:
                 return PromptStrings(
@@ -272,7 +286,8 @@ public struct NutritionInsightGenerator: Sendable {
                     carbGoal: "Carb goal", fatGoal: "Fat goal",
                     progressHeading: "Progress toward goals:", of: "of", goalWord: "goal",
                     reached: "reached", remaining: "remaining",
-                    unknown: "unknown", notSet: "not set"
+                    unknown: "unknown", notSet: "not set",
+                    exceeded: "EXCEEDED"
                 )
             }
         }
@@ -335,7 +350,10 @@ public struct NutritionInsightGenerator: Sendable {
 
     private static func progressLine(label: String, current: Int?, goal: Int?, unit: String, progress: NutritionInsightInput.GoalProgress?, strings: PromptStrings) -> String? {
         guard let current, let goal, let progress else { return nil }
-        return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached), \(safeInt(progress.remaining)) \(unit) \(strings.remaining))"
+        // Append an explicit status tag when the goal was exceeded so the model
+        // never has to infer "328% means exceeded" from the number alone.
+        let status = progress.percent >= 100 ? " [\(strings.exceeded)]" : ""
+        return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached), \(safeInt(progress.remaining)) \(unit) \(strings.remaining))\(status)"
     }
 
     /// M1 fix: `Int(Double)` traps on NaN/infinity/out-of-range magnitudes.
