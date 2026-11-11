@@ -979,9 +979,9 @@ struct SetRow: View {
     /// gerade ist, und weiss, was er als naechstes machen muss.
     private var blockingMessage: String {
         if let name = activeTimedSet?.exerciseName, !name.isEmpty {
-            return String(format: String(localized: “setRow.blocking.isRunning”, bundle: .module), name)
+            return String(format: String(localized: "setRow.blocking.isRunning", bundle: .module), name)
         }
-        return String(localized: “setRow.blocking.otherRunning”, bundle: .module)
+        return String(localized: "setRow.blocking.otherRunning", bundle: .module)
     }
 
     private func holdCountdownView(secondsLeft: Int) -> some View {
