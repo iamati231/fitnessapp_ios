@@ -500,10 +500,8 @@ private struct ExerciseTrophySection: View {
     }
 
     private var visibleEntries: [PersonalRecordEntry] {
-        if let selected = selectedKind {
-            return group.entries.filter { $0.kind == selected }
-        }
-        return group.entries
+        let kind = selectedKind ?? chartKind
+        return group.entries.filter { $0.kind == kind }
     }
 }
 

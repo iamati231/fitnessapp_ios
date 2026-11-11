@@ -215,14 +215,32 @@ public struct DashboardView: View {
                     // ohne Ersatzaktion"): dieselbe, weiterhin nuetzliche
                     // Aktion bleibt erhalten, nur das irrefuehrende Icon
                     DeltiqHeaderAction(systemImage: "plus", menu: {
-                        Button(String(localized: "dashboard.quickAdd.workout", bundle: .module)) {
+                        Button {
                             startAdHocWorkout()
+                        } label: {
+                            Label {
+                                Text("dashboard.quickAdd.workout", bundle: .module)
+                            } icon: {
+                                Image(systemName: "figure.strengthtraining.traditional")
+                            }
                         }
-                        Button(String(localized: "dashboard.quickAdd.meal", bundle: .module)) {
+                        Button {
                             showingAddMealFromDashboard = true
+                        } label: {
+                            Label {
+                                Text("dashboard.quickAdd.meal", bundle: .module)
+                            } icon: {
+                                Image(systemName: "fork.knife")
+                            }
                         }
-                        Button(String(localized: "dashboard.quickAdd.measurement", bundle: .module)) {
+                        Button {
                             showingNewMeasurement = true
+                        } label: {
+                            Label {
+                                Text("dashboard.quickAdd.measurement", bundle: .module)
+                            } icon: {
+                                Image(systemName: "scalemass.fill")
+                            }
                         }
                     })
                 ]
@@ -4028,9 +4046,6 @@ private struct DashboardSessionRow: View {
                 .monospacedDigit()
             }
             Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())

@@ -106,6 +106,7 @@ public struct PlansListView: View {
 
                     plansSection
                 }
+                .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 // Nachtrag 6. August (README 2.6): plansContextRow sass vorher als
                 // erste List-Row hier drin - 12pt eigener Top-Inset plus der
