@@ -1,8 +1,8 @@
 // Generiert von .scripts/build_secondary_muscles.py — nicht von Hand editieren.
 
 public enum ExerciseSecondaryMuscles {
-    public static let byNormalizedName: [String: [MuscleGroup]] = Dictionary(
-        uniqueKeysWithValues: [
+    public static let byNormalizedName: [String: [MuscleGroup]] = {
+        let pairs: [(String, [MuscleGroup])] = [
             ("3 4 sit up", [.core, .back]),
             ("arnold press kettlebell", [.triceps, .back]),
             ("arnold press kh", [.triceps]),
@@ -283,5 +283,6 @@ public enum ExerciseSecondaryMuscles {
             ("wirbelsaulen dehnung", [.hamstrings, .glutes]),
             ("zercher squat", [.hamstrings, .glutes, .calves, .core]),
         ]
-    )
+        return Dictionary(uniqueKeysWithValues: pairs)
+    }()
 }
