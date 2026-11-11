@@ -61,6 +61,9 @@ struct TrainingLocationEquipmentEditorView: View {
     /// funktionieren (Sheet-Dismiss-Animation blockiert neuen Dialog).
     @State private var pendingEnvSwap: PendingEnvSwap?
     @State private var pendingEnvRestore: PendingEnvSwap?
+    /// Zwischengespeichertes Flag aus `save()` — nach dem env-frühen Return
+    /// wissen die Dialog-Handler nicht mehr, ob Equipment auch geändert wurde.
+    @State private var equipmentChangedOnSave = false
 
     private struct PendingEnvSwap: Equatable {
         let oldEnv: EnvironmentType
@@ -202,13 +205,13 @@ struct TrainingLocationEquipmentEditorView: View {
                 Button {
                     applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
                     pendingEnvSwap = nil
-                    dismiss()
+                    checkAndHandleEquipmentGap()
                 } label: {
                     Text("profile.envSwap.confirm", bundle: .module)
                 }
                 Button(role: .cancel) {
                     pendingEnvSwap = nil
-                    dismiss()
+                    checkAndHandleEquipmentGap()
                 } label: {
                     Text("profile.envSwap.keep", bundle: .module)
                 }
@@ -227,14 +230,14 @@ struct TrainingLocationEquipmentEditorView: View {
                 Button {
                     applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
                     pendingEnvRestore = nil
-                    dismiss()
+                    checkAndHandleEquipmentGap()
                 } label: {
                     Text("profile.envRestore.confirm", bundle: .module)
                 }
                 Button {
                     applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
                     pendingEnvRestore = nil
-                    dismiss()
+                    checkAndHandleEquipmentGap()
                 } label: {
                     Text("profile.envRestore.adjustNew", bundle: .module)
                 }
@@ -351,6 +354,9 @@ struct TrainingLocationEquipmentEditorView: View {
         let environmentChanged = originalEnvironment != draftEnvironment
         if environmentChanged, plans.contains(where: { $0.days.contains(where: { !$0.activeExercises.isEmpty }) }) {
             let pending = PendingEnvSwap(oldEnv: originalEnvironment, newEnv: draftEnvironment)
+            // Für die Dialog-Handler merken, ob Equipment ebenfalls geändert wurde —
+            // nach dem frühen Return ist `equipmentChanged` aus dem Dialog nicht mehr zugänglich.
+            equipmentChangedOnSave = equipmentChanged
             if PlanEnvironmentMigrator.hasAnyRestorableOriginals(plans: plans, forEnvironment: draftEnvironment) {
                 pendingEnvRestore = pending
             } else {
@@ -392,6 +398,17 @@ struct TrainingLocationEquipmentEditorView: View {
         plans.contains { plan in
             guard plan.days.contains(where: { !$0.activeExercises.isEmpty }) else { return false }
             return !PlanEquipmentAdaptationApplier.check(plan: plan, against: newProfile).isAvailable
+        }
+    }
+
+    /// Nach einem Env-Dialog: Equipment-Gap-Prüfung, die `save()` wegen des
+    /// frühen Returns nicht mehr erreicht hat.
+    private func checkAndHandleEquipmentGap() {
+        let resolvedProfile = profile.equipmentProfile
+        if equipmentChangedOnSave, hasAnyPlanWithEquipmentGap(against: resolvedProfile) {
+            pendingEquipmentAdaptation = resolvedProfile
+        } else {
+            dismiss()
         }
     }
 
