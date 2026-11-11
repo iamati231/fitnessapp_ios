@@ -10370,7 +10370,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Snatch (Koparma)"
+            "value": "Snatch"
           }
         }
       }
@@ -10393,7 +10393,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clean & Jerk (Silkme)"
+            "value": "Clean & Jerk"
           }
         }
       }
@@ -10577,7 +10577,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable Woodchopper (Odun Kesme)"
+            "value": "Cable Woodchopper"
           }
         }
       }
@@ -10715,7 +10715,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Destekli Barfiks"
+            "value": "Assisted Pull-Up"
           }
         }
       }
@@ -10738,7 +10738,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Destekli Dip"
+            "value": "Assisted Dip"
           }
         }
       }
@@ -10899,7 +10899,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Boyun Curl"
+            "value": "Neck Curl"
           }
         }
       }
@@ -10922,7 +10922,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Boyun Ekstansiyonu"
+            "value": "Neck Extension"
           }
         }
       }
@@ -11221,7 +11221,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Barfiks (Chin-Up)"
+            "value": "Chin-Up"
           }
         }
       }
@@ -11244,7 +11244,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Barfiks"
+            "value": "Pull-Up"
           }
         }
       }
@@ -12371,7 +12371,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Towel Row"
+            "value": "Towel Row (Doorframe)"
           }
         }
       }
@@ -12785,7 +12785,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mekik"
+            "value": "Crunches"
           }
         }
       }
@@ -12969,7 +12969,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Close-Grip Lat Pulldown"
+            "value": "Reverse Grip Machine Lat Pulldown"
           }
         }
       }
@@ -12992,7 +12992,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seated Cable Row"
+            "value": "Cable Seated Row"
           }
         }
       }
@@ -13452,7 +13452,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kettlebell Floor Press"
+            "value": "Kettlebell One Arm Floor Press"
           }
         }
       }
@@ -13590,7 +13590,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eliptik"
+            "value": "Elliptical"
           }
         }
       }
@@ -13613,7 +13613,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stepper"
+            "value": "Stair Stepper"
           }
         }
       }
@@ -68085,7 +68085,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable EZ Row"
+            "value": "Cable Seated Wide-Grip Row"
           }
         }
       }
@@ -68154,7 +68154,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable Low Row"
+            "value": "Cable Low Seated Row"
           }
         }
       }
@@ -68844,7 +68844,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kablo Pulldown"
+            "value": "Cable Pulldown"
           }
         }
       }
@@ -69281,7 +69281,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kablo Triceps Basma (Bar)"
+            "value": "Cable Pushdown (Bar)"
           }
         }
       }
@@ -69534,7 +69534,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "45° Bacak Presi"
+            "value": "45° Leg Press"
           }
         }
       }
@@ -69580,7 +69580,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Glute Bridge (Bankta)"
+            "value": "Glute Bridge (on Bench)"
           }
         }
       }
@@ -70086,7 +70086,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Halter Rollout"
+            "value": "Barbell Rollout"
           }
         }
       }
@@ -70109,7 +70109,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rulo Body Saw"
+            "value": "Roller Body Saw"
           }
         }
       }
@@ -70385,7 +70385,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hamstring Germe"
+            "value": "Hamstring Stretch"
           }
         }
       }
@@ -70523,7 +70523,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Triceps Germe"
+            "value": "Overhead Triceps Stretch"
           }
         }
       }
@@ -70546,7 +70546,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Boyun Yan Germe"
+            "value": "Neck Side Stretch"
           }
         }
       }
@@ -70615,7 +70615,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Omurga Germe"
+            "value": "Spine Stretch"
           }
         }
       }
@@ -70707,7 +70707,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Peroneal Germe"
+            "value": "Peroneals Stretch"
           }
         }
       }

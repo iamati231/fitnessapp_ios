@@ -1718,7 +1718,7 @@ public struct DashboardView: View {
             )
             if !msg.isEmpty {
                 if context == .plateauDetected, let finding = activePlateauFinding {
-                    return "\(finding.exerciseName): \(msg)"
+                    return "\(Exercise.resolvedDisplayName(forStoredName: finding.exerciseName)): \(msg)"
                 }
                 return msg
             }
