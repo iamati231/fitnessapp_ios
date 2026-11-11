@@ -50,33 +50,6 @@ public struct ProfileEditorView: View {
     /// nach Umstellung auf Imperial.
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
 
-    // DEL-047: aktive Plaene laden, damit wir bei einer Trainingsort-Aenderung
-    // einen Sync-Prompt anbieten koennen. Wir laden alle Plaene (auch
-    // inaktive) — der User-Erwartung nach soll sich "mein Trainingsort" auch
-    // auf seine Programm-Bibliothek auswirken, nicht nur den aktuell aktiven
-    // Plan.
-    @Query(sort: \TrainingPlan.name)
-    private var allPlans: [TrainingPlan]
-
-    /// DEL-047: gehaltete `oldEnv`-Referenz fuer den Confirmation-Dialog. Wenn
-    /// non-nil, wird der Dialog angezeigt; alle drei Dialog-Aktionen setzen
-    /// das Feld wieder auf nil zurueck.
-    @State private var pendingProfileEnvSwap: PendingProfileEnvSwap?
-
-    /// DEL-049: Urlaubs-Modus-Restore-Dialog. Separat vom adapt-Pfad, weil
-    /// das UI-Wording grundlegend anders ist ("wiederherstellen?" vs.
-    /// "anpassen?").
-    @State private var pendingProfileEnvRestore: PendingProfileEnvSwap?
-
-    /// Optionaler Ergebnis-Toast nach erfolgreichem Bulk-Sync, analog zum
-    /// PlanEditor-Toast. Nil = nichts anzeigen.
-    @State private var profileSwapToast: String?
-
-    private struct PendingProfileEnvSwap: Equatable {
-        let oldEnv: EnvironmentType
-        let newEnv: EnvironmentType
-    }
-
     /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
     /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
     /// wird, statt sofort zu schliessen.
@@ -130,85 +103,6 @@ public struct ProfileEditorView: View {
             revertToSnapshot()
             dismiss()
         }
-        // DEL-047 + DEL-049: Trainingsort-Aenderung im Profil triggert einen
-        // Adapt- oder Restore-Prompt ueber die Uebungen. Adapt bei "frischer"
-        // Aenderung, Restore wenn irgendein Plan archivierte Originale hat,
-        // die im neuen Env wieder passen.
-        //
-        // Settings-Epic Phase 2 (docs/SETTINGS_UX_AUDIT.md, Befund PE-G2):
-        // es gab hier zusaetzlich einen unbedingten, promptlosen
-        // "Top-Down-Sync" (DEL-050), der `targetEnvironment` auf JEDEM Plan —
-        // auch archivierten, auch ohne jede Uebung — sofort umschrieb, noch
-        // bevor der User die Frage unten ueberhaupt sieht. Effekt: "Nein, so
-        // lassen" stellte den Ursprungszustand NICHT wieder her, es gab
-        // keinen Undo-Pfad. Entfernt wie von der Vorgabe verlangt — die
-        // Uebungs-Anpassung unten bleibt die einzige Stelle, die
-        // `targetEnvironment` tatsaechlich aendert, und tut das nur nach
-        // expliziter Bestaetigung.
-        .onChange(of: profile.environment) { oldValue, newValue in
-            guard oldValue != newValue else { return }
-
-            guard allPlans.contains(where: { plan in
-                plan.days.contains(where: { !$0.activeExercises.isEmpty })
-            }) else { return }
-            let pending = PendingProfileEnvSwap(oldEnv: oldValue, newEnv: newValue)
-            if PlanEnvironmentMigrator.hasAnyRestorableOriginals(
-                plans: allPlans, forEnvironment: newValue
-            ) {
-                pendingProfileEnvRestore = pending
-            } else {
-                pendingProfileEnvSwap = pending
-            }
-        }
-        .confirmationDialog(
-            Text("profile.envSwap.title", bundle: .module),
-            isPresented: Binding(
-                get: { pendingProfileEnvSwap != nil },
-                set: { if !$0 { pendingProfileEnvSwap = nil } }
-            ),
-            titleVisibility: .visible,
-            presenting: pendingProfileEnvSwap
-        ) { swap in
-            Button {
-                applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
-                pendingProfileEnvSwap = nil
-            } label: {
-                Text("profile.envSwap.confirm", bundle: .module)
-            }
-            Button {
-                pendingProfileEnvSwap = nil
-            } label: {
-                Text("profile.envSwap.keep", bundle: .module)
-            }
-        } message: { swap in
-            Text(String(format: String(localized: "profile.envSwap.message", bundle: .module), environmentLabel(swap.newEnv)))
-        }
-        // DEL-049 "Urlaub zu Ende": ein anderer Dialog, weil der User
-        // gespeicherte Gym-Originale aus dem Urlaubs-Modus zurueckholen will.
-        .confirmationDialog(
-            Text("profile.envRestore.title", bundle: .module),
-            isPresented: Binding(
-                get: { pendingProfileEnvRestore != nil },
-                set: { if !$0 { pendingProfileEnvRestore = nil } }
-            ),
-            titleVisibility: .visible,
-            presenting: pendingProfileEnvRestore
-        ) { swap in
-            Button {
-                applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
-                pendingProfileEnvRestore = nil
-            } label: {
-                Text("profile.envRestore.confirm", bundle: .module)
-            }
-            Button {
-                applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
-                pendingProfileEnvRestore = nil
-            } label: {
-                Text("profile.envRestore.adjustNew", bundle: .module)
-            }
-        } message: { swap in
-            Text("profile.envRestore.message", bundle: .module)
-        }
         // Settings-Epic Phase 4 (Befund PE-H1): zeigt NUR die tatsaechlich
         // verfuegbaren Felder mit ihrem konkreten Wert, bevor Geburtsdatum/
         // Geschlecht/Groesse ueberschrieben werden. "Abbrechen" (bzw. Wegtippen)
@@ -236,65 +130,6 @@ public struct ProfileEditorView: View {
         } message: { snapshot in
             Text(healthPullPreviewMessage(snapshot))
         }
-        .overlay(alignment: .bottom) {
-            if let msg = profileSwapToast {
-                Label(msg, systemImage: "checkmark.seal.fill")
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
-                    .padding(.bottom, 24)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-    }
-
-    /// DEL-047: bulk-migration ueber den `PlanEnvironmentMigrator`. Setzt jedem
-    /// Plan das neue `targetEnvironment` und ersetzt Uebungen, die im neuen
-    /// Env nicht gehen, durch die Alternative-Liste. Ergebnis-Toast zeigt
-    /// die Aggregat-Counts.
-    private func applyEnvironmentSwapToAllPlans(newEnv: EnvironmentType) {
-        let outcome = PlanEnvironmentMigrator.migrateAll(
-            plans: allPlans,
-            toEnvironment: newEnv,
-            modelContext: modelContext
-        )
-        showAggregateToast(plansTouched: outcome.plansTouched, result: outcome.result)
-    }
-
-    /// DEL-049: gegen-Operation. Restored alle Urlaubs-Modus-Originale ueber
-    /// alle Plaene. Plaene ohne Originale werden trotzdem auf `targetEnvironment`
-    /// gesetzt, sodass der User nicht hinterher noch eine Inkonsistenz hat.
-    private func applyEnvironmentRestoreToAllPlans(newEnv: EnvironmentType) {
-        let outcome = PlanEnvironmentMigrator.restoreAll(
-            plans: allPlans,
-            toEnvironment: newEnv,
-            modelContext: modelContext
-        )
-        showAggregateToast(plansTouched: outcome.plansTouched, result: outcome.result)
-    }
-
-    private func showAggregateToast(plansTouched: Int, result r: PlanEnvironmentSwapResult) {
-        var parts: [String] = []
-        parts.append(String(format: String(localized: "profile.sync.plansCount", bundle: .module), plansTouched))
-        if r.restored > 0   { parts.append(String(format: String(localized: "planEditor.result.restored", bundle: .module), r.restored)) }
-        if r.swapped > 0    { parts.append(String(format: String(localized: "planEditor.result.swapped", bundle: .module), r.swapped)) }
-        if r.kept > 0       { parts.append(String(format: String(localized: "planEditor.result.noAlternative", bundle: .module), r.kept)) }
-        if r.compatible > 0 { parts.append(String(format: String(localized: "planEditor.result.unchanged", bundle: .module), r.compatible)) }
-        let message = parts.joined(separator: " · ")
-
-        withAnimation(.easeOut(duration: 0.2)) {
-            profileSwapToast = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-            withAnimation(.easeIn(duration: 0.2)) {
-                profileSwapToast = nil
-            }
-        }
-    }
-
-    // DEL-118: route durch die zentrale .localizedName-Extension.
-    private func environmentLabel(_ env: EnvironmentType) -> String {
-        String(localized: env.localizedName)
     }
 
     // MARK: - UI-Refactor (DeltiqHeader-Muster)

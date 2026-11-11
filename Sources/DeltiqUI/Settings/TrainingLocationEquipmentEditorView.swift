@@ -10,11 +10,11 @@ import DeltiqData
 /// Reiner Profil-Editor: Speichern aendert ausschliesslich `profile.environment`/
 /// `equipmentProfile`/`equipmentProfileConfirmedComplete` — NIE bestehende
 /// Plaene direkt. Die Plan-Anpassung (`PlanEnvironmentMigrator` ueber die
-/// `envSwap`/`envRestore`-Dialoge) bleibt vollstaendig unveraendert in
-/// `ProfileEditorView.onChange(of: profile.environment)`: die feuert
-/// weiterhin genau einmal, sobald `save()` unten `profile.environment`
-/// tatsaechlich schreibt — eine separate, ausdruecklich vom User bestaetigte
-/// Aktion, keine neue Bulk-Logik in diesem Editor.
+/// `envSwap`/`envRestore`-Dialoge) lebt vollstaendig in DIESEM Editor: die
+/// `pendingEnvSwap`/`pendingEnvRestore`-Dialoge unten werden in `save()` gesetzt,
+/// sobald `profile.environment` tatsaechlich geschrieben wird — eine separate,
+/// ausdruecklich vom User bestaetigte Aktion. `ProfileEditorView` haelt keinen
+/// eigenen `onChange`-Handler mehr (waere ein Doppeltrigger desselben Dialogs).
 ///
 /// Lokaler Draft mit explizitem Speichern/Abbrechen (Vorgabe Punkt 3). Die
 /// bestehende `EquipmentProfileEditor`-Komponente (Phase 6, EINZIGE UI fuer
