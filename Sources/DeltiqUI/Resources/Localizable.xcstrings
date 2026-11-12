@@ -2131,9 +2131,9 @@
     "customExercise.media.youTubeInvalid": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Ungültige YouTube-URL" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Invalid YouTube URL" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "Geçersiz YouTube URL'si" } }
+        "de": { "stringUnit": { "state": "translated", "value": "Nur YouTube-Shorts-URLs erlaubt (youtube.com/shorts/…)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Only YouTube Shorts URLs allowed (youtube.com/shorts/…)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yalnızca YouTube Shorts URL'leri izinli (youtube.com/shorts/…)" } }
       }
     },
     "customExercise.media.importError": {

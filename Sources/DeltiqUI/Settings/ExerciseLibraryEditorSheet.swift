@@ -154,7 +154,7 @@ struct ExerciseLibraryEditorSheet: View {
                 String(localized: "customExercise.media.youTubePromptTitle", bundle: .module),
                 isPresented: $showYouTubeAlert
             ) {
-                TextField("https://youtube.com/watch?v=…", text: $youtubeInput)
+                TextField("https://youtube.com/shorts/…", text: $youtubeInput)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                 Button(String(localized: "common.done", bundle: .module)) {
@@ -603,8 +603,10 @@ struct ExerciseLibraryEditorSheet: View {
     }
 
     private func isValidYouTube(_ s: String) -> Bool {
-        guard let host = URL(string: s)?.host?.lowercased() else { return false }
-        return ["youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"].contains(host)
+        guard let url = URL(string: s),
+              let host = url.host?.lowercased(),
+              ["youtube.com", "www.youtube.com", "m.youtube.com"].contains(host) else { return false }
+        return url.path.hasPrefix("/shorts/")
     }
 }
 
