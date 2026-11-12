@@ -6,10 +6,8 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 # Workflow "deploy": XcodeGen → Build → Sign → TestFlight
 # Auto-increment: $BITRISE_BUILD_NUMBER (Bitrise erhöht bei jedem Build)
 #
-# Secrets in Bitrise UI (Settings → Secret Environment Variables):
-#   APP_STORE_CONNECT_KEY_IDENTIFIER   Key ID aus App Store Connect
-#   APP_STORE_CONNECT_ISSUER_ID        Issuer ID aus App Store Connect
-#   APP_STORE_CONNECT_PRIVATE_KEY      Inhalt der .p8-Datei (mehrzeilig)
+# Bitrise Integrations → App Store Connect → API key muss verbunden sein.
+# Secret in Bitrise UI (Settings → Secret Environment Variables):
 #   APP_STORE_CONNECT_CERTIFICATE_KEY  Signing-Key PEM (derselbe wie Codemagic)
 
 app:
@@ -65,22 +63,9 @@ workflows:
                 xcodegen generate
                 ls -la Deltiq.xcodeproj
 
-      - script@1:
-          title: Write App Store Connect API key
-          inputs:
-            - content: |
-                set -e
-                mkdir -p /tmp/asc_keys
-                printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/asc_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
-                chmod 600 /tmp/asc_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
-                envman add --key BITRISEIO_P8_KEY_PATH --value "/tmp/asc_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8"
-
       - ios-auto-provision-appstoreconnect@1:
           inputs:
-            - connection: 'off'
-            - api_key_path: $BITRISEIO_P8_KEY_PATH
-            - api_key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-            - api_key_issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+            - connection: 'api-key'
             - certificate_url_list: $APP_STORE_CONNECT_CERTIFICATE_KEY
             - distribution_type: app-store
             - project_path: $BITRISE_PROJECT_PATH
@@ -96,17 +81,8 @@ workflows:
 
       - deploy-to-itunesconnect-deliver@2:
           inputs:
-            - connection: 'off'
-            - api_key_path: $BITRISEIO_P8_KEY_PATH
-            - api_key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-            - api_key_issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+            - connection: 'api-key'
             - submit_for_review: 'no'
             - skip_screenshots: 'yes'
             - skip_app_version_update: 'yes'
             - is_remove_generated_dsyms: 'no'
-
-      - script@1:
-          title: Cleanup key
-          is_always_run: true
-          inputs:
-            - content: rm -rf /tmp/asc_keys
