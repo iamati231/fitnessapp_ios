@@ -1,5 +1,6 @@
-format_version: '11'
+format_version: "26"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: ios
 
 # Bitrise CI/CD — Deltiq iOS App
 #
@@ -7,8 +8,12 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 # Auto-increment: $BITRISE_BUILD_NUMBER (Bitrise erhöht bei jedem Build)
 #
 # Bitrise Integrations → App Store Connect → API key muss verbunden sein.
-# Secret in Bitrise UI (Settings → Secret Environment Variables):
-#   APP_STORE_CONNECT_CERTIFICATE_KEY  Signing-Key PEM (derselbe wie Codemagic)
+# Keine weiteren Secrets nötig — Bitrise holt Certificates automatisch.
+
+meta:
+  bitrise.io:
+    stack: osx-xcode-27.2.x
+    machine_type_id: g2.mac.large
 
 app:
   envs:
@@ -19,10 +24,6 @@ app:
 
 workflows:
   deploy:
-    meta:
-      bitrise.io:
-        stack: osx-xcode-27.2.x
-        machine_type_id: g2-m1.8core
     steps:
       - activate-ssh-key@4: {}
 
@@ -43,11 +44,9 @@ workflows:
           inputs:
             - content: |
                 set -e
-                # Build number: Bitrise auto-increments BITRISE_BUILD_NUMBER
                 sed -i '' "s/CURRENT_PROJECT_VERSION: '[0-9]*'/CURRENT_PROJECT_VERSION: '$BITRISE_BUILD_NUMBER'/" project.yml
                 echo "Build number: $BITRISE_BUILD_NUMBER"
 
-                # Marketing version: aus Tag ableiten (z.B. v0.1.76 → 0.1.76)
                 VERSION=$(printf '%s' "${BITRISE_GIT_TAG:-}" | sed -E 's/^v//' | grep -oE '^[0-9]+\.[0-9]+(\.[0-9]+)?' || true)
                 if [ -n "$VERSION" ]; then
                   sed -i '' "s/MARKETING_VERSION: '[^']*'/MARKETING_VERSION: '$VERSION'/" project.yml
@@ -66,7 +65,6 @@ workflows:
       - ios-auto-provision-appstoreconnect@1:
           inputs:
             - connection: 'api-key'
-            - certificate_url_list: $APP_STORE_CONNECT_CERTIFICATE_KEY
             - distribution_type: app-store
             - project_path: $BITRISE_PROJECT_PATH
             - scheme: $BITRISE_SCHEME
