@@ -23,7 +23,7 @@ settings:
   base:
     SWIFT_VERSION: '5.9'
     MARKETING_VERSION: '0.1.0'
-    CURRENT_PROJECT_VERSION: '34'
+    CURRENT_PROJECT_VERSION: '35'
     # Empty DEVELOPMENT_TEAM means simulator-only builds. Once an Apple Developer
     # account exists, this gets injected via Codemagic env-vars and the iOS-device
     # archive build path lights up.

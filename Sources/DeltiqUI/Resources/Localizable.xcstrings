@@ -2072,6 +2072,86 @@
         }
       }
     },
+    "customExercise.section.media": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Anleitung / Medien" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Instructions / Media" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Talimatlar / Medya" } }
+      }
+    },
+    "customExercise.media.addVideo": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Video aus Dateien" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Video from Files" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dosyadan Video" } }
+      }
+    },
+    "customExercise.media.addGif": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "GIF aus Dateien" } },
+        "en": { "stringUnit": { "state": "translated", "value": "GIF from Files" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dosyadan GIF" } }
+      }
+    },
+    "customExercise.media.addYouTube": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "YouTube-Link" } },
+        "en": { "stringUnit": { "state": "translated", "value": "YouTube link" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "YouTube bağlantısı" } }
+      }
+    },
+    "customExercise.media.remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Entfernen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Remove" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kaldır" } }
+      }
+    },
+    "customExercise.media.openYouTube": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "In YouTube öffnen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Open in YouTube" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "YouTube'da aç" } }
+      }
+    },
+    "customExercise.media.youTubePromptTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "YouTube-URL eingeben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Enter YouTube URL" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "YouTube URL'si girin" } }
+      }
+    },
+    "customExercise.media.youTubeInvalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ungültige YouTube-URL" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Invalid YouTube URL" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Geçersiz YouTube URL'si" } }
+      }
+    },
+    "customExercise.media.importError": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Import fehlgeschlagen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Import failed" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İçe aktarma başarısız" } }
+      }
+    },
+    "customExercise.media.fileTooLarge": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Datei zu groß (max. 100 MB)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "File too large (max. 100 MB)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dosya çok büyük (maks. 100 MB)" } }
+      }
+    },
     "common.yes": {
       "extractionState": "manual",
       "localizations": {

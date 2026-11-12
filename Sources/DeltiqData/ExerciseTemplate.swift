@@ -54,6 +54,16 @@ public final class ExerciseTemplate {
     /// mit `isSystemProvided: false` erzeugt).
     public var isSystemProvided: Bool = true
 
+    // MARK: - Issue #9 Custom exercise media
+
+    /// Relative filename stored in `<app documents>/custom_exercise_media/`.
+    /// Nil = no local media. Lightweight migration: nil default.
+    public var customMediaFilename: String? = nil
+
+    /// Validated YouTube URL string for demonstration video.
+    /// Nil = no YouTube link. Lightweight migration: nil default.
+    public var customYouTubeURL: String? = nil
+
     // MARK: - DEL-098 Training-Intelligence-Metadaten
     //
     // Statische Belastungsfaktoren, die vom `LibrarySeeder` aus dem

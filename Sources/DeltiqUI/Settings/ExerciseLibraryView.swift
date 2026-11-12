@@ -436,6 +436,10 @@ public struct ExerciseLibraryView: View {
     /// name, Felder kopiert) — es wird nichts kaskadiert.
     private func deleteTemplate(_ template: ExerciseTemplate) {
         guard template.isCustom else { return }
+        // Clean up local media file before deleting the template record
+        if let filename = template.customMediaFilename {
+            CustomExerciseMediaStore.delete(filename: filename)
+        }
         let tid = template.id
         let prDesc = FetchDescriptor<PersonalRecordEntry>(
             predicate: #Predicate { $0.exerciseTemplateID == tid }
