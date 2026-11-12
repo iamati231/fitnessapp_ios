@@ -582,7 +582,7 @@ public struct NutritionDayView: View {
         let prot = Int(ctx.total.proteinG.value ?? -1)
         let carb = Int(ctx.total.carbsG.value ?? -1)
         let fat  = Int(ctx.total.fatG.value ?? -1)
-        return "nut_insight_v1_\(day)_\(kcal)_\(prot)_\(carb)_\(fat)_\(ctx.calorieGoal ?? -1)_\(Int(ctx.proteinGoal ?? -1))_\(Int(ctx.carbGoal ?? -1))_\(Int(ctx.fatGoal ?? -1))"
+        return "nut_insight_v2_\(day)_\(kcal)_\(prot)_\(carb)_\(fat)_\(ctx.calorieGoal ?? -1)_\(Int(ctx.proteinGoal ?? -1))_\(Int(ctx.carbGoal ?? -1))_\(Int(ctx.fatGoal ?? -1))"
     }
 
     /// Computes the deterministic percent-of-goal/remaining fact for one
@@ -595,7 +595,8 @@ public struct NutritionDayView: View {
         guard let current = currentValue.value,
               let goal,
               let progress = NutritionCalculations.goalProgress(current: current, goal: goal) else { return nil }
-        return NutritionInsightInput.GoalProgress(percent: progress.percent, remaining: progress.remaining)
+        let overage = max(current - goal, 0)
+        return NutritionInsightInput.GoalProgress(percent: progress.percent, remaining: progress.remaining, overage: overage)
     }
 
     /// Minimal context only (Brief: "nur die fuer DIESE Analyse noetigen
@@ -615,6 +616,8 @@ public struct NutritionDayView: View {
         }
 
         insightText = nil
+        let isToday = Calendar.current.isDateInToday(context.day)
+        let hourOfDay = isToday ? Calendar.current.component(.hour, from: Date()) : nil
         let input = NutritionInsightInput(
             totalKcal: context.total.kcal.value,
             totalProteinG: context.total.proteinG.value,
@@ -627,7 +630,8 @@ public struct NutritionDayView: View {
             calorieGoalProgress: insightGoalProgress(current: context.total.kcal, goal: context.calorieGoal.map(Double.init)),
             proteinGoalProgress: insightGoalProgress(current: context.total.proteinG, goal: context.proteinGoal),
             carbGoalProgress: insightGoalProgress(current: context.total.carbsG, goal: context.carbGoal),
-            fatGoalProgress: insightGoalProgress(current: context.total.fatG, goal: context.fatGoal)
+            fatGoalProgress: insightGoalProgress(current: context.total.fatG, goal: context.fatGoal),
+            timeOfDayHour: hourOfDay
         )
         isGeneratingInsight = true
         // `.unavailable` can't happen here (just checked by `showsInsightSection`

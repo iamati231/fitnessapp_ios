@@ -43,13 +43,22 @@ public struct NutritionInsightInput: Sendable, Equatable {
     /// a goal that was never set.
     public struct GoalProgress: Sendable, Equatable {
         public let percent: Int
+        /// Floored at 0; use `overage` for the exceeded amount.
         public let remaining: Double
+        /// How much current exceeds the goal (current − goal); 0 when not exceeded.
+        public let overage: Double
 
-        public init(percent: Int, remaining: Double) {
+        public init(percent: Int, remaining: Double, overage: Double = 0) {
             self.percent = percent
             self.remaining = remaining
+            self.overage = overage
         }
     }
+
+    /// Hour of day (0–23) for the selected date; `nil` for past days.
+    /// Tells the model whether the day is still in progress so it doesn't
+    /// evaluate a mid-afternoon snapshot as an end-of-day result.
+    public let timeOfDayHour: Int?
 
     public init(
         totalKcal: Double?,
@@ -63,7 +72,8 @@ public struct NutritionInsightInput: Sendable, Equatable {
         calorieGoalProgress: GoalProgress? = nil,
         proteinGoalProgress: GoalProgress? = nil,
         carbGoalProgress: GoalProgress? = nil,
-        fatGoalProgress: GoalProgress? = nil
+        fatGoalProgress: GoalProgress? = nil,
+        timeOfDayHour: Int? = nil
     ) {
         self.totalKcal = totalKcal
         self.totalProteinG = totalProteinG
@@ -77,6 +87,7 @@ public struct NutritionInsightInput: Sendable, Equatable {
         self.proteinGoalProgress = proteinGoalProgress
         self.carbGoalProgress = carbGoalProgress
         self.fatGoalProgress = fatGoalProgress
+        self.timeOfDayHour = timeOfDayHour
     }
 }
 
@@ -130,30 +141,30 @@ public struct NutritionInsightGenerator: Sendable {
 
     private static let baseInstructions = """
     You summarize one day's already-computed nutrition numbers for the user. \
-    These totals are ACTUAL consumed amounts for the day — what was actually \
-    logged and eaten, not planned or target values. \
-    Use ONLY the numbers given to you below — never calculate, estimate, \
-    convert, or guess any number yourself. Any value stated as "unknown" means \
-    the data is incomplete for that nutrient: never treat it as zero, never \
-    mention a number for it, and never claim the goal was reached or missed. \
-    Some goals are marked "not set": for those, never state a number and never \
-    say the goal was reached or missed — simply don't mention that goal at all. \
+    These totals are ACTUAL consumed amounts — what was logged and eaten, not \
+    planned or target values. \
+    Use ONLY the numbers given to you — never calculate, estimate, convert, or \
+    guess any number yourself. Any value stated as "unknown" means the data is \
+    incomplete: never treat it as zero, never mention a number for it, never \
+    claim the goal was reached or missed. \
+    Goals marked "not set": never mention a number or outcome for them. \
     When a progress line is marked "[EXCEEDED]", that goal was surpassed — \
-    always describe this clearly and positively; NEVER say the goal has not \
-    been reached when the stated percentage is at or above 100. \
-    When a "Progress toward goals" line gives a percentage for a nutrient, \
-    that percentage — never your own judgment of the raw numbers — decides \
-    your tone for it: below roughly 50% with a meaningful amount still \
-    remaining, describe it as early or in-progress and encourage without \
-    calling it sufficient, "excellent", "great job", or "super", as if the \
-    goal were already nearly met. Only once the stated percentage is close to \
-    or at/over 100% is a clearly positive, congratulatory tone appropriate. \
-    Respond in 2 to 4 sentences only. Do not list or repeat the raw numbers \
-    from above — focus on what they mean for the user and give at most one \
-    practical suggestion. Do not use markdown formatting (no bold, no bullet \
-    points, no headers). Give only brief, general, non-medical observations \
-    and encouragement. Never give a diagnosis, a treatment recommendation, or \
-    any other medical advice.
+    state this positively and factually; NEVER say the goal has not been reached \
+    when the percentage is at or above 100. The phrase "over goal" after a \
+    number tells you exactly by how much. \
+    When a progress line gives a percentage, that percentage — never your own \
+    judgment — decides tone: below ~50% with meaningful amount remaining, \
+    describe as in-progress; at/above 100% a positive tone is appropriate. \
+    If the prompt includes a "Day context" line saying the day is still in \
+    progress (morning or afternoon), do not evaluate unmet goals as failures — \
+    say "so far" or "at this point" instead of implying the day is over. \
+    Give exactly 1 key observation and at most 2 short practical tips — \
+    1 to 3 sentences total. Do not list or repeat all four nutrient values in \
+    sequence. Do not use phrases like "great job", "super", "excellent", \
+    "fantastic", "amazing" for routine progress. \
+    No markdown (no bold, no bullets, no headers). Give only brief, general, \
+    non-medical observations. Never give a diagnosis, treatment recommendation, \
+    or any other medical advice.
     """
 
     /// I2 fix: a plain "respond in the user's language" instruction left the
@@ -220,13 +231,14 @@ public struct NutritionInsightGenerator: Sendable {
         if let goal = input.proteinGoalG.map(safeInt) { numbers.insert(goal) }
         if let goal = input.carbGoalG.map(safeInt) { numbers.insert(goal) }
         if let goal = input.fatGoalG.map(safeInt) { numbers.insert(goal) }
-        // The percent/remaining facts stated in the "Progress toward goals"
+        // The percent/remaining/overage facts stated in the "Progress toward goals"
         // block are real, pre-computed numbers too — the model repeating one
         // back verbatim is not a fabrication (see `prompt(for:)` below).
         for progress in [input.calorieGoalProgress, input.proteinGoalProgress, input.carbGoalProgress, input.fatGoalProgress] {
             guard let progress else { continue }
             numbers.insert(progress.percent)
             numbers.insert(safeInt(progress.remaining))
+            if progress.overage > 0 { numbers.insert(safeInt(progress.overage)) }
         }
         return numbers
     }
@@ -248,11 +260,13 @@ public struct NutritionInsightGenerator: Sendable {
     private struct PromptStrings {
         let totalsHeading, calories, protein, carbs, fat: String
         let goalsHeading, calorieGoal, proteinGoal, carbGoal, fatGoal: String
-        let progressHeading, of, goalWord, reached, remaining: String
+        let progressHeading, of, goalWord, reached, remaining, overGoal: String
         let unknown, notSet: String
         // Status label appended to a progress line when the goal was exceeded
         // (percent >= 100) — makes the fact unambiguous for the model.
         let exceeded: String
+        // Time-of-day context labels (no times/numbers — avoids allowedNumbers clash).
+        let dayContextHeading, dayMorning, dayMidday, dayAfternoon, dayEvening: String
 
         static func forLanguageCode(_ code: String) -> PromptStrings {
             switch code {
@@ -263,9 +277,14 @@ public struct NutritionInsightGenerator: Sendable {
                     goalsHeading: "Ziele:", calorieGoal: "Kalorienziel", proteinGoal: "Proteinziel",
                     carbGoal: "Kohlenhydratziel", fatGoal: "Fettziel",
                     progressHeading: "Fortschritt zu den Zielen:", of: "von", goalWord: "Ziel",
-                    reached: "erreicht", remaining: "verbleibend",
+                    reached: "erreicht", remaining: "verbleibend", overGoal: "über Ziel",
                     unknown: "unbekannt", notSet: "nicht gesetzt",
-                    exceeded: "EXCEEDED"
+                    exceeded: "EXCEEDED",
+                    dayContextHeading: "Tageskontext:",
+                    dayMorning: "Morgen — Tag noch in Gange",
+                    dayMidday: "Mittag — Tag noch in Gange",
+                    dayAfternoon: "Nachmittag — Tag noch in Gange",
+                    dayEvening: "Abend — Tag fast abgeschlossen"
                 )
             case "tr":
                 return PromptStrings(
@@ -274,9 +293,14 @@ public struct NutritionInsightGenerator: Sendable {
                     goalsHeading: "Hedefler:", calorieGoal: "Kalori hedefi", proteinGoal: "Protein hedefi",
                     carbGoal: "Karbonhidrat hedefi", fatGoal: "Yağ hedefi",
                     progressHeading: "Hedeflere doğru ilerleme:", of: "/", goalWord: "hedef",
-                    reached: "ulaşıldı", remaining: "kaldı",
+                    reached: "ulaşıldı", remaining: "kaldı", overGoal: "hedef üstünde",
                     unknown: "bilinmiyor", notSet: "belirlenmedi",
-                    exceeded: "EXCEEDED"
+                    exceeded: "EXCEEDED",
+                    dayContextHeading: "Gün bağlamı:",
+                    dayMorning: "Sabah — gün devam ediyor",
+                    dayMidday: "Öğle — gün devam ediyor",
+                    dayAfternoon: "Öğleden sonra — gün devam ediyor",
+                    dayEvening: "Akşam — gün neredeyse bitti"
                 )
             default:
                 return PromptStrings(
@@ -285,9 +309,14 @@ public struct NutritionInsightGenerator: Sendable {
                     goalsHeading: "Goals:", calorieGoal: "Calorie goal", proteinGoal: "Protein goal",
                     carbGoal: "Carb goal", fatGoal: "Fat goal",
                     progressHeading: "Progress toward goals:", of: "of", goalWord: "goal",
-                    reached: "reached", remaining: "remaining",
+                    reached: "reached", remaining: "remaining", overGoal: "over goal",
                     unknown: "unknown", notSet: "not set",
-                    exceeded: "EXCEEDED"
+                    exceeded: "EXCEEDED",
+                    dayContextHeading: "Day context:",
+                    dayMorning: "Morning — day still in progress",
+                    dayMidday: "Midday — day still in progress",
+                    dayAfternoon: "Afternoon — day still in progress",
+                    dayEvening: "Evening — day nearly complete"
                 )
             }
         }
@@ -314,6 +343,9 @@ public struct NutritionInsightGenerator: Sendable {
         let progressLines = progressLines(for: input, strings: s)
         if !progressLines.isEmpty {
             text += "\n\n\(s.progressHeading)\n" + progressLines.joined(separator: "\n")
+        }
+        if let hour = input.timeOfDayHour {
+            text += "\n\n\(s.dayContextHeading) \(dayContextLabel(hour: hour, strings: s))"
         }
         return text
     }
@@ -350,10 +382,22 @@ public struct NutritionInsightGenerator: Sendable {
 
     private static func progressLine(label: String, current: Int?, goal: Int?, unit: String, progress: NutritionInsightInput.GoalProgress?, strings: PromptStrings) -> String? {
         guard let current, let goal, let progress else { return nil }
-        // Append an explicit status tag when the goal was exceeded so the model
-        // never has to infer "328% means exceeded" from the number alone.
-        let status = progress.percent >= 100 ? " [\(strings.exceeded)]" : ""
-        return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached), \(safeInt(progress.remaining)) \(unit) \(strings.remaining))\(status)"
+        if progress.percent >= 100 {
+            // Show overage instead of "0 remaining" — the clamped `remaining`
+            // field is 0 by design for exceeded goals, which misleads the model.
+            let overageStr = progress.overage > 0 ? ", \(safeInt(progress.overage)) \(unit) \(strings.overGoal)" : ""
+            return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached)\(overageStr)) [\(strings.exceeded)]"
+        }
+        return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached), \(safeInt(progress.remaining)) \(unit) \(strings.remaining))"
+    }
+
+    private static func dayContextLabel(hour: Int, strings: PromptStrings) -> String {
+        switch hour {
+        case 0..<11: return strings.dayMorning
+        case 11..<14: return strings.dayMidday
+        case 14..<19: return strings.dayAfternoon
+        default: return strings.dayEvening
+        }
     }
 
     /// M1 fix: `Int(Double)` traps on NaN/infinity/out-of-range magnitudes.
