@@ -176,7 +176,7 @@ public struct PlansListView: View {
             ].compactMap { $0 })
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 0, trailing: 16))
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 16))
         }
     }
 

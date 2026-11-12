@@ -205,15 +205,31 @@ struct TrainingLocationEquipmentEditorView: View {
                 Button {
                     applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
                     pendingEnvSwap = nil
+                    // Kritischer Fix: ohne expliziten Save bleiben Übungstausche
+                    // nur im RAM und gehen beim Kaltstart verloren.
+                    do { try modelContext.save() } catch {
+                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                    }
                     checkAndHandleEquipmentGap()
                 } label: {
                     Text("profile.envSwap.confirm", bundle: .module)
                 }
-                Button(role: .cancel) {
+                Button {
                     pendingEnvSwap = nil
                     checkAndHandleEquipmentGap()
                 } label: {
                     Text("profile.envSwap.keep", bundle: .module)
+                }
+                Button(role: .cancel) {
+                    // Env-Wechsel wirklich rückgängig machen (nicht nur Pläne behalten)
+                    profile.environment = swap.oldEnv
+                    do { try modelContext.save() } catch {
+                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                    }
+                    pendingEnvSwap = nil
+                    dismiss()
+                } label: {
+                    Text("common.cancel", bundle: .module)
                 }
             } message: { swap in
                 Text(String(format: String(localized: "profile.envSwap.message", bundle: .module), String(localized: swap.newEnv.localizedName)))
@@ -230,6 +246,9 @@ struct TrainingLocationEquipmentEditorView: View {
                 Button {
                     applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
                     pendingEnvRestore = nil
+                    do { try modelContext.save() } catch {
+                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                    }
                     checkAndHandleEquipmentGap()
                 } label: {
                     Text("profile.envRestore.confirm", bundle: .module)
@@ -237,9 +256,22 @@ struct TrainingLocationEquipmentEditorView: View {
                 Button {
                     applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
                     pendingEnvRestore = nil
+                    do { try modelContext.save() } catch {
+                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                    }
                     checkAndHandleEquipmentGap()
                 } label: {
                     Text("profile.envRestore.adjustNew", bundle: .module)
+                }
+                Button(role: .cancel) {
+                    profile.environment = swap.oldEnv
+                    do { try modelContext.save() } catch {
+                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                    }
+                    pendingEnvRestore = nil
+                    dismiss()
+                } label: {
+                    Text("common.cancel", bundle: .module)
                 }
             } message: { _ in
                 Text("profile.envRestore.message", bundle: .module)
