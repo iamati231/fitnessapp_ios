@@ -320,7 +320,7 @@ public enum DataExportService {
             "daily_carb_goal_g", "daily_fat_goal_g"
         ])
         for p in profiles {
-            w.appendRow([
+            var row: [String] = [
                 id(p),
                 CSVWriter.iso8601(p.birthDate),
                 CSVWriter.decimal(p.heightCm),
@@ -362,7 +362,8 @@ public enum DataExportService {
                 p.dailyProteinGoalG.map { CSVWriter.decimal($0) } ?? "",
                 p.dailyCarbGoalG.map { CSVWriter.decimal($0) } ?? "",
                 p.dailyFatGoalG.map { CSVWriter.decimal($0) } ?? ""
-            ])
+            ]
+            w.appendRow(row)
         }
         return w.data()
     }
@@ -804,7 +805,7 @@ public enum DataExportService {
             "content_snapshot_json", "content_snapshot_captured_at_utc"
         ])
         for s in items {
-            w.appendRow([
+            var row: [String] = [
                 id(s),
                 CSVWriter.iso8601(s.startTime),
                 CSVWriter.iso8601(s.endTime),
@@ -824,7 +825,9 @@ public enum DataExportService {
                 s.roundsCompleted.map(String.init) ?? "",
                 s.partialReps.map(String.init) ?? "",
                 s.partialRepsExerciseName ?? "",
-                s.finishTimeSeconds.map(String.init) ?? "",
+                s.finishTimeSeconds.map(String.init) ?? ""
+            ]
+            row += [
                 s.forTimeCheckedRoundsRaw ?? "",
                 s.completedMinuteCount.map(String.init) ?? "",
                 s.circuitRoundsCompleted.map(String.init) ?? "",
@@ -842,7 +845,8 @@ public enum DataExportService {
                 s.healthKitSampleUUID ?? "",
                 s.contentSnapshotJSON ?? "",
                 s.contentSnapshotCapturedAt.map { CSVWriter.iso8601($0) } ?? ""
-            ])
+            ]
+            w.appendRow(row)
         }
         return w.data()
     }
