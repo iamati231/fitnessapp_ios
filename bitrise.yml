@@ -21,6 +21,10 @@ app:
 
 workflows:
   deploy:
+    meta:
+      bitrise.io:
+        stack: osx-xcode-27.2.x
+        machine_type_id: g2-m1.8core
     steps:
       - activate-ssh-key@4: {}
 
