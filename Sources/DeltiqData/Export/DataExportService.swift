@@ -827,25 +827,23 @@ public enum DataExportService {
                 s.partialRepsExerciseName ?? "",
                 s.finishTimeSeconds.map(String.init) ?? ""
             ]
-            row += [
-                s.forTimeCheckedRoundsRaw ?? "",
-                s.completedMinuteCount.map(String.init) ?? "",
-                s.circuitRoundsCompleted.map(String.init) ?? "",
-                s.circuitRestEndDate.map { CSVWriter.iso8601($0) } ?? "",
-                s.circuitCurrentRoundCheckedRaw ?? "",
-                CSVWriter.bool(s.completedTarget),
-                s.endurancePhase?.rawValue ?? "",
-                s.enduranceCurrentRoundNumber.map(String.init) ?? "",
-                s.enduranceRoundsCompleted.map(String.init) ?? "",
-                s.endurancePhaseEndDate.map { CSVWriter.iso8601($0) } ?? "",
-                s.endurancePausedRemainingSeconds.map(String.init) ?? "",
-                CSVWriter.bool(s.enduranceWarmupSkipped),
-                CSVWriter.bool(s.enduranceCooldownSkipped),
-                s.importSourceName ?? "",
-                s.healthKitSampleUUID ?? "",
-                s.contentSnapshotJSON ?? "",
-                s.contentSnapshotCapturedAt.map { CSVWriter.iso8601($0) } ?? ""
-            ]
+            row.append(s.forTimeCheckedRoundsRaw ?? "")
+            row.append(s.completedMinuteCount.map(String.init) ?? "")
+            row.append(s.circuitRoundsCompleted.map(String.init) ?? "")
+            row.append(s.circuitRestEndDate.map { CSVWriter.iso8601($0) } ?? "")
+            row.append(s.circuitCurrentRoundCheckedRaw ?? "")
+            row.append(CSVWriter.bool(s.completedTarget))
+            row.append(s.endurancePhase?.rawValue ?? "")
+            row.append(s.enduranceCurrentRoundNumber.map(String.init) ?? "")
+            row.append(s.enduranceRoundsCompleted.map(String.init) ?? "")
+            row.append(s.endurancePhaseEndDate.map { CSVWriter.iso8601($0) } ?? "")
+            row.append(s.endurancePausedRemainingSeconds.map(String.init) ?? "")
+            row.append(CSVWriter.bool(s.enduranceWarmupSkipped))
+            row.append(CSVWriter.bool(s.enduranceCooldownSkipped))
+            row.append(s.importSourceName ?? "")
+            row.append(s.healthKitSampleUUID ?? "")
+            row.append(s.contentSnapshotJSON ?? "")
+            row.append(s.contentSnapshotCapturedAt.map { CSVWriter.iso8601($0) } ?? "")
             w.appendRow(row)
         }
         return w.data()
