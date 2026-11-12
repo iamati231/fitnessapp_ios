@@ -246,21 +246,21 @@ public enum ActivityLevel: String, CaseIterable, Sendable {
     // DEL-120: lokalisierte Varianten von label + description.
     public var localizedName: LocalizedStringResource {
         switch self {
-        case .sedentary:  LocalizedStringResource("activity.sedentary.label",  bundle: .module)
-        case .light:      LocalizedStringResource("activity.light.label",      bundle: .module)
-        case .moderate:   LocalizedStringResource("activity.moderate.label",   bundle: .module)
-        case .active:     LocalizedStringResource("activity.active.label",     bundle: .module)
-        case .veryActive: LocalizedStringResource("activity.veryActive.label", bundle: .module)
+        case .sedentary:  LocalizedStringResource("activity.sedentary.label",  bundle: .atURL(Bundle.module.bundleURL))
+        case .light:      LocalizedStringResource("activity.light.label",      bundle: .atURL(Bundle.module.bundleURL))
+        case .moderate:   LocalizedStringResource("activity.moderate.label",   bundle: .atURL(Bundle.module.bundleURL))
+        case .active:     LocalizedStringResource("activity.active.label",     bundle: .atURL(Bundle.module.bundleURL))
+        case .veryActive: LocalizedStringResource("activity.veryActive.label", bundle: .atURL(Bundle.module.bundleURL))
         }
     }
 
     public var localizedDescription: LocalizedStringResource {
         switch self {
-        case .sedentary:  LocalizedStringResource("activity.sedentary.description",  bundle: .module)
-        case .light:      LocalizedStringResource("activity.light.description",      bundle: .module)
-        case .moderate:   LocalizedStringResource("activity.moderate.description",   bundle: .module)
-        case .active:     LocalizedStringResource("activity.active.description",     bundle: .module)
-        case .veryActive: LocalizedStringResource("activity.veryActive.description", bundle: .module)
+        case .sedentary:  LocalizedStringResource("activity.sedentary.description",  bundle: .atURL(Bundle.module.bundleURL))
+        case .light:      LocalizedStringResource("activity.light.description",      bundle: .atURL(Bundle.module.bundleURL))
+        case .moderate:   LocalizedStringResource("activity.moderate.description",   bundle: .atURL(Bundle.module.bundleURL))
+        case .active:     LocalizedStringResource("activity.active.description",     bundle: .atURL(Bundle.module.bundleURL))
+        case .veryActive: LocalizedStringResource("activity.veryActive.description", bundle: .atURL(Bundle.module.bundleURL))
         }
     }
 }
@@ -314,9 +314,9 @@ public enum CalorieGoalType: String, CaseIterable, Sendable {
 
     public var localizedName: LocalizedStringResource {
         switch self {
-        case .cut:         LocalizedStringResource("calc.tdee.cut",         bundle: .module)
-        case .maintenance: LocalizedStringResource("calc.tdee.maintenance", bundle: .module)
-        case .bulk:        LocalizedStringResource("calc.tdee.bulk",        bundle: .module)
+        case .cut:         LocalizedStringResource("calc.tdee.cut",         bundle: .atURL(Bundle.module.bundleURL))
+        case .maintenance: LocalizedStringResource("calc.tdee.maintenance", bundle: .atURL(Bundle.module.bundleURL))
+        case .bulk:        LocalizedStringResource("calc.tdee.bulk",        bundle: .atURL(Bundle.module.bundleURL))
         }
     }
 }
