@@ -347,8 +347,17 @@ public struct ExerciseLibraryView: View {
             }
         } label: {
             HStack(spacing: 12) {
-                ExerciseGifView(exerciseName: template.name, displayName: template.displayName, animated: false)
+                if template.isCustom, let filename = template.customMediaFilename {
+                    CustomMediaThumbnailView(
+                        url: CustomExerciseMediaStore.url(forFilename: filename),
+                        isGif: filename.lowercased().hasSuffix(".gif"),
+                        cornerRadius: Deltiq.Radius.input
+                    )
                     .frame(width: 40, height: 40)
+                } else {
+                    ExerciseGifView(exerciseName: template.name, displayName: template.displayName, animated: false)
+                        .frame(width: 40, height: 40)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(template.displayName)

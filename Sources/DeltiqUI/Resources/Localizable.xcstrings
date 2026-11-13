@@ -2152,6 +2152,14 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Dosya çok büyük (maks. 100 MB)" } }
       }
     },
+    "customExercise.media.videoTooLong": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Video zu lang (max. 15 Sekunden)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Video too long (max. 15 seconds)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Video çok uzun (maks. 15 saniye)" } }
+      }
+    },
     "common.yes": {
       "extractionState": "manual",
       "localizations": {

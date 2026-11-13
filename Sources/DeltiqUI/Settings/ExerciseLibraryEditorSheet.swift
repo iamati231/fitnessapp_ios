@@ -351,25 +351,12 @@ struct ExerciseLibraryEditorSheet: View {
 
     @ViewBuilder
     private func mediaThumb(filename: String) -> some View {
-        let url = CustomExerciseMediaStore.url(forFilename: filename)
-        Group {
-            if filename.lowercased().hasSuffix(".gif") {
-                #if canImport(UIKit)
-                GifImageView(url: url, contentMode: .scaleAspectFit)
-                #else
-                Image(systemName: "photo.fill")
-                    .font(.title2)
-                    .foregroundStyle(Color.deltiqOrange)
-                #endif
-            } else {
-                Image(systemName: "video.fill")
-                    .font(.title2)
-                    .foregroundStyle(Color.deltiqOrange)
-            }
-        }
+        CustomMediaThumbnailView(
+            url: CustomExerciseMediaStore.url(forFilename: filename),
+            isGif: filename.lowercased().hasSuffix(".gif"),
+            cornerRadius: Deltiq.Radius.input
+        )
         .frame(width: 60, height: 60)
-        .background(Color.Deltiq.fill)
-        .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
     }
 
     @ViewBuilder
