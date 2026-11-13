@@ -11,6 +11,7 @@ on:
 jobs:
   upload:
     runs-on: macos-latest
+    environment: appstore-release
     steps:
       - name: Download .ipa
         run: |
