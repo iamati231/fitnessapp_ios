@@ -202,22 +202,7 @@ struct TrainingLocationEquipmentEditorView: View {
                     guard !isPresented else { return }
                     // Button-Handler nullen pendingEnvSwap vor dem Dismiss;
                     // non-nil hier ⟹ Swipe-Dismiss ohne Auswahl → rollback.
-                    if let swap = pendingEnvSwap {
-                        profile.environment = swap.oldEnv
-                        draftEnvironment = swap.oldEnv
-                        if let ep = preSaveEquipmentProfile {
-                            profile.equipmentProfile = ep
-                            draftEquipmentProfile = ep
-                        }
-                        if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
-                        if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
-                        do {
-                            try modelContext.save()
-                            dismiss()
-                        } catch {
-                            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
-                        }
-                    }
+                    if let swap = pendingEnvSwap { rollbackEnvChange(to: swap.oldEnv) }
                     pendingEnvSwap = nil
                 }
             )) {
@@ -241,15 +226,9 @@ struct TrainingLocationEquipmentEditorView: View {
                             checkAndHandleEquipmentGap()
                         },
                         onCancel: {
-                            profile.environment = swap.oldEnv
-                            if let ep = preSaveEquipmentProfile { profile.equipmentProfile = ep }
-                            if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
-                            if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
-                            do { try modelContext.save() } catch {
-                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
-                            }
-                            pendingEnvSwap = nil
-                            dismiss()
+                            let oldEnv = swap.oldEnv
+                            pendingEnvSwap = nil  // Sheet schließen; Binding.set findet nil → kein Rollback
+                            rollbackEnvChange(to: oldEnv)
                         }
                     )
                 }
@@ -258,22 +237,7 @@ struct TrainingLocationEquipmentEditorView: View {
                 get: { pendingEnvRestore != nil },
                 set: { isPresented in
                     guard !isPresented else { return }
-                    if let swap = pendingEnvRestore {
-                        profile.environment = swap.oldEnv
-                        draftEnvironment = swap.oldEnv
-                        if let ep = preSaveEquipmentProfile {
-                            profile.equipmentProfile = ep
-                            draftEquipmentProfile = ep
-                        }
-                        if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
-                        if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
-                        do {
-                            try modelContext.save()
-                            dismiss()
-                        } catch {
-                            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
-                        }
-                    }
+                    if let swap = pendingEnvRestore { rollbackEnvChange(to: swap.oldEnv) }
                     pendingEnvRestore = nil
                 }
             )) {
@@ -303,15 +267,9 @@ struct TrainingLocationEquipmentEditorView: View {
                             }
                         },
                         onCancel: {
-                            profile.environment = swap.oldEnv
-                            if let ep = preSaveEquipmentProfile { profile.equipmentProfile = ep }
-                            if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
-                            if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
-                            do { try modelContext.save() } catch {
-                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
-                            }
-                            pendingEnvRestore = nil
-                            dismiss()
+                            let oldEnv = swap.oldEnv
+                            pendingEnvRestore = nil  // Sheet schließen; Binding.set findet nil → kein Rollback
+                            rollbackEnvChange(to: oldEnv)
                         }
                     )
                 }
@@ -321,6 +279,26 @@ struct TrainingLocationEquipmentEditorView: View {
 
     /// UI-Refactor (DeltiqHeader-Muster): `UserEquipmentProfile`/`EnvironmentType`
     /// sind beide `Equatable` — reiner Wertevergleich gegen den Ausgangszustand.
+    /// Gemeinsamer Rollback für Swipe-Dismiss und Cancel-Button beider EnvChange-Sheets.
+    /// Stellt alle vier Profil-Felder und Draft-State auf oldEnv zurück, speichert und
+    /// dismisst den Editor nur bei erfolgreichem Save — kein stiller Zustandsbruch.
+    private func rollbackEnvChange(to oldEnv: EnvironmentType) {
+        profile.environment = oldEnv
+        draftEnvironment = oldEnv
+        if let ep = preSaveEquipmentProfile {
+            profile.equipmentProfile = ep
+            draftEquipmentProfile = ep
+        }
+        if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
+        if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
+    }
+
     private var isDirty: Bool {
         draftEnvironment != profile.environment || draftEquipmentProfile != profile.equipmentProfile
     }
