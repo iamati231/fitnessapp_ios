@@ -77,4 +77,69 @@ final class EquipmentCompatibilityRegressionTests: XCTestCase {
     func testLiegestuetzeIsCompatibleWithHomeGym() {
         XCTAssertTrue(ExerciseLibraryData.isCompatibleWith(exerciseName: "Liegestütze", environment: .homeGym))
     }
+
+    // MARK: - 4. P2-Regression: Dips brauchen Gerät (Issue #11)
+
+    func testDipsBrustIsIncompatibleWithNoEquipment() {
+        XCTAssertFalse(
+            ExerciseLibraryData.isCompatibleWith(exerciseName: "Dips (Brust)", environment: .noEquipment),
+            "Dips (Brust) benötigt Stange/Parallelbarren — darf nicht noEquipment-kompatibel sein"
+        )
+    }
+
+    func testDipsTrizepsIsIncompatibleWithNoEquipment() {
+        XCTAssertFalse(
+            ExerciseLibraryData.isCompatibleWith(exerciseName: "Dips (Trizeps)", environment: .noEquipment),
+            "Dips (Trizeps) benötigt Stange/Parallelbarren — darf nicht noEquipment-kompatibel sein"
+        )
+    }
+
+    func testDipsBrustStangeIsIncompatibleWithNoEquipment() {
+        XCTAssertFalse(
+            ExerciseLibraryData.isCompatibleWith(exerciseName: "Dips Brust (Stange)", environment: .noEquipment),
+            "Dips Brust (Stange) benötigt Stange — darf nicht noEquipment-kompatibel sein"
+        )
+    }
+
+    func testKlimmzugSupinationsgrifIsIncompatibleWithNoEquipment() {
+        XCTAssertFalse(
+            ExerciseLibraryData.isCompatibleWith(exerciseName: "Klimmzug Supinationsgriff", environment: .noEquipment),
+            "Klimmzug Supinationsgriff benötigt Klimmzugstange — darf nicht noEquipment-kompatibel sein"
+        )
+    }
+
+    // MARK: - 5. P2-Regression: Alternative-Mappings zeigen gerätefreie Übungen (Issue #11)
+
+    func testSchraegbankAbwaertsNoEquipAlternativeIsLiegestuetzAbwaerts() {
+        let result = ExerciseLibraryData.resolveAlternative(
+            forExerciseName: "Schrägbankdrücken (abwärts)", targetEnvironment: .noEquipment)
+        if case .swap(let spec) = result {
+            XCTAssertEqual(spec.name, "Liegestütz abwärts",
+                           "Schrägbankdrücken (abwärts) → noEquipment muss 'Liegestütz abwärts' sein, nicht Dips")
+        } else {
+            XCTFail("Erwartet .swap, got \(result)")
+        }
+    }
+
+    func testTrizepsDrueckenUeberKopfKabelAlternativeIsDiamantLiegestuetze() {
+        let result = ExerciseLibraryData.resolveAlternative(
+            forExerciseName: "Trizeps-Drücken über Kopf (Kabel)", targetEnvironment: .noEquipment)
+        if case .swap(let spec) = result {
+            XCTAssertEqual(spec.name, "Diamant-Liegestütze",
+                           "Trizeps-Drücken über Kopf (Kabel) → noEquipment muss 'Diamant-Liegestütze' sein")
+        } else {
+            XCTFail("Erwartet .swap, got \(result)")
+        }
+    }
+
+    func testTrizepsstreckkerUeberKopfKHAlternativeIsDiamantLiegestuetze() {
+        let result = ExerciseLibraryData.resolveAlternative(
+            forExerciseName: "Trizepsstrecker über Kopf (KH)", targetEnvironment: .noEquipment)
+        if case .swap(let spec) = result {
+            XCTAssertEqual(spec.name, "Diamant-Liegestütze",
+                           "Trizepsstrecker über Kopf (KH) → noEquipment muss 'Diamant-Liegestütze' sein")
+        } else {
+            XCTFail("Erwartet .swap, got \(result)")
+        }
+    }
 }

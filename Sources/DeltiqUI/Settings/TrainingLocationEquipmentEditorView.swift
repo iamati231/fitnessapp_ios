@@ -72,6 +72,9 @@ struct TrainingLocationEquipmentEditorView: View {
     @State private var preSaveEquipmentPreferences: Set<Equipment>? = nil
     /// Vollständige Vorschau-Daten für EquipmentAdaptationPreviewSheet.
     @State private var adaptationDrafts: [(planName: String, replacements: [(original: String, replacement: String)], unresolved: [String])] = []
+    /// Env-Swap/Restore-Previews — vor Mutation berechnet (Issue #11, P1).
+    @State private var envSwapPreviews: [EnvSwapPlanPreview] = []
+    @State private var envRestorePreviews: [EnvSwapPlanPreview] = []
 
     private struct PendingEnvSwap: Equatable {
         let oldEnv: EnvironmentType
@@ -191,97 +194,87 @@ struct TrainingLocationEquipmentEditorView: View {
                     }
                 )
             }
-            .confirmationDialog(
-                Text("profile.envSwap.title", bundle: .module),
-                isPresented: Binding(
-                    get: { pendingEnvSwap != nil },
-                    set: { if !$0 { pendingEnvSwap = nil } }
-                ),
-                titleVisibility: .visible,
-                presenting: pendingEnvSwap
-            ) { swap in
-                Button {
-                    applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
-                    pendingEnvSwap = nil
-                    // Kritischer Fix: ohne expliziten Save bleiben Übungstausche
-                    // nur im RAM und gehen beim Kaltstart verloren.
-                    do { try modelContext.save() } catch {
-                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
-                    }
-                    checkAndHandleEquipmentGap()
-                } label: {
-                    Text("profile.envSwap.confirm", bundle: .module)
+            // Issue #11 P1: Env-Swap zeigt vollständige Vorschau VOR jeder Mutation.
+            // Issue #11 P3: checkAndHandleEquipmentGap() nur nach erfolgreichem save().
+            .sheet(isPresented: Binding(
+                get: { pendingEnvSwap != nil },
+                set: { if !$0 { pendingEnvSwap = nil } }
+            )) {
+                if let swap = pendingEnvSwap {
+                    EnvChangePreviewSheet(
+                        newEnv: swap.newEnv,
+                        previews: envSwapPreviews,
+                        mode: .swap,
+                        onConfirm: {
+                            applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                            pendingEnvSwap = nil
+                            do {
+                                try modelContext.save()
+                                checkAndHandleEquipmentGap()
+                            } catch {
+                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                            }
+                        },
+                        onSecondary: {
+                            pendingEnvSwap = nil
+                            checkAndHandleEquipmentGap()
+                        },
+                        onCancel: {
+                            profile.environment = swap.oldEnv
+                            if let ep = preSaveEquipmentProfile { profile.equipmentProfile = ep }
+                            if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
+                            if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
+                            do { try modelContext.save() } catch {
+                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                            }
+                            pendingEnvSwap = nil
+                            dismiss()
+                        }
+                    )
                 }
-                Button {
-                    pendingEnvSwap = nil
-                    checkAndHandleEquipmentGap()
-                } label: {
-                    Text("profile.envSwap.keep", bundle: .module)
-                }
-                Button(role: .cancel) {
-                    // Env-Wechsel vollständig rückgängig machen — alle vier Felder,
-                    // nicht nur environment (Issue #11, 3/4).
-                    profile.environment = swap.oldEnv
-                    if let ep = preSaveEquipmentProfile { profile.equipmentProfile = ep }
-                    if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
-                    if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
-                    do { try modelContext.save() } catch {
-                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
-                    }
-                    pendingEnvSwap = nil
-                    dismiss()
-                } label: {
-                    Text("common.cancel", bundle: .module)
-                }
-            } message: { swap in
-                Text(String(format: String(localized: "profile.envSwap.message", bundle: .module), String(localized: swap.newEnv.localizedName)))
             }
-            .confirmationDialog(
-                Text("profile.envRestore.title", bundle: .module),
-                isPresented: Binding(
-                    get: { pendingEnvRestore != nil },
-                    set: { if !$0 { pendingEnvRestore = nil } }
-                ),
-                titleVisibility: .visible,
-                presenting: pendingEnvRestore
-            ) { swap in
-                Button {
-                    applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
-                    pendingEnvRestore = nil
-                    do { try modelContext.save() } catch {
-                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
-                    }
-                    checkAndHandleEquipmentGap()
-                } label: {
-                    Text("profile.envRestore.confirm", bundle: .module)
+            .sheet(isPresented: Binding(
+                get: { pendingEnvRestore != nil },
+                set: { if !$0 { pendingEnvRestore = nil } }
+            )) {
+                if let swap = pendingEnvRestore {
+                    EnvChangePreviewSheet(
+                        newEnv: swap.newEnv,
+                        previews: envRestorePreviews,
+                        mode: .restore,
+                        onConfirm: {
+                            applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
+                            pendingEnvRestore = nil
+                            do {
+                                try modelContext.save()
+                                checkAndHandleEquipmentGap()
+                            } catch {
+                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                            }
+                        },
+                        onSecondary: {
+                            applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                            pendingEnvRestore = nil
+                            do {
+                                try modelContext.save()
+                                checkAndHandleEquipmentGap()
+                            } catch {
+                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                            }
+                        },
+                        onCancel: {
+                            profile.environment = swap.oldEnv
+                            if let ep = preSaveEquipmentProfile { profile.equipmentProfile = ep }
+                            if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
+                            if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
+                            do { try modelContext.save() } catch {
+                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                            }
+                            pendingEnvRestore = nil
+                            dismiss()
+                        }
+                    )
                 }
-                Button {
-                    applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
-                    pendingEnvRestore = nil
-                    do { try modelContext.save() } catch {
-                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
-                    }
-                    checkAndHandleEquipmentGap()
-                } label: {
-                    Text("profile.envRestore.adjustNew", bundle: .module)
-                }
-                Button(role: .cancel) {
-                    // Env-Wechsel vollständig rückgängig machen — alle vier Felder
-                    // (Issue #11, 3/4).
-                    profile.environment = swap.oldEnv
-                    if let ep = preSaveEquipmentProfile { profile.equipmentProfile = ep }
-                    if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
-                    if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
-                    do { try modelContext.save() } catch {
-                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
-                    }
-                    pendingEnvRestore = nil
-                    dismiss()
-                } label: {
-                    Text("common.cancel", bundle: .module)
-                }
-            } message: { _ in
-                Text("profile.envRestore.message", bundle: .module)
             }
         }
     }
@@ -402,8 +395,10 @@ struct TrainingLocationEquipmentEditorView: View {
             // nach dem frühen Return ist `equipmentChanged` aus dem Dialog nicht mehr zugänglich.
             equipmentChangedOnSave = equipmentChanged
             if PlanEnvironmentMigrator.hasAnyRestorableOriginals(plans: plans, forEnvironment: draftEnvironment) {
+                envRestorePreviews = PlanEnvironmentMigrator.previewRestoreAll(plans: plans, toEnvironment: draftEnvironment)
                 pendingEnvRestore = pending
             } else {
+                envSwapPreviews = PlanEnvironmentMigrator.previewMigrateAll(plans: plans, toEnvironment: draftEnvironment)
                 pendingEnvSwap = pending
             }
             isSaving = false
@@ -552,6 +547,74 @@ private struct EquipmentAdaptationPreviewSheet: View {
                         Text("profile.envSwap.confirm", bundle: .module)
                     }
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Env-Change Preview-Sheet (Issue #11 P1)
+
+@available(iOS 17.0, macOS 14.0, *)
+private struct EnvChangePreviewSheet: View {
+    enum Mode { case swap, restore }
+
+    let newEnv: EnvironmentType
+    let previews: [EnvSwapPlanPreview]
+    let mode: Mode
+    var onConfirm: () -> Void
+    var onSecondary: () -> Void
+    var onCancel: () -> Void
+
+    private var confirmKey: LocalizedStringKey {
+        mode == .swap ? "profile.envSwap.confirm" : "profile.envRestore.confirm"
+    }
+    private var secondaryKey: LocalizedStringKey {
+        mode == .swap ? "profile.envSwap.keep" : "profile.envRestore.adjustNew"
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(previews) { preview in
+                    Section(preview.planName) {
+                        ForEach(preview.swaps, id: \.original) { swap in
+                            HStack(spacing: 6) {
+                                Text(swap.original).foregroundStyle(.secondary)
+                                Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
+                                Text(swap.replacement)
+                            }
+                            .font(.subheadline)
+                        }
+                        ForEach(preview.archived, id: \.self) { name in
+                            Label(name, systemImage: "archivebox")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.Deltiq.error)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(mode == .swap
+                ? Text("profile.envSwap.title", bundle: .module)
+                : Text("profile.envRestore.title", bundle: .module))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(role: .cancel, action: onCancel) {
+                        Text("common.cancel", bundle: .module)
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(action: onConfirm) {
+                        Text(confirmKey, bundle: .module)
+                    }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                Button(action: onSecondary) {
+                    Text(secondaryKey, bundle: .module)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderless)
+                .padding()
             }
         }
     }

@@ -33,6 +33,21 @@ enum CustomExerciseMediaStore {
         FileManager.default.fileExists(atPath: url(forFilename: filename).path)
     }
 
+    // MARK: - Testable pure validation
+
+    #if canImport(AVFoundation)
+    /// Reines Boundary-Gate — kein I/O, direkt testbar mit CMTime-Werten.
+    static func validateDuration(_ duration: CMTime) throws {
+        let secs = duration.seconds
+        guard duration.isValid, !duration.isIndefinite, secs.isFinite, secs > 0 else {
+            throw CustomMediaError.invalidDuration
+        }
+        if secs > maxVideoSeconds {
+            throw CustomMediaError.tooLong
+        }
+    }
+    #endif
+
     // MARK: - Write / Delete
 
     static func delete(filename: String) {
@@ -63,14 +78,7 @@ enum CustomExerciseMediaStore {
         #if canImport(AVFoundation)
         if ext != "gif" {
             let asset = AVURLAsset(url: url)
-            let duration = asset.duration
-            let secs = duration.seconds
-            guard duration.isValid, !duration.isIndefinite, secs.isFinite, secs > 0 else {
-                throw CustomMediaError.invalidDuration
-            }
-            if secs > maxVideoSeconds {
-                throw CustomMediaError.tooLong
-            }
+            try validateDuration(asset.duration)
         }
         #endif
 

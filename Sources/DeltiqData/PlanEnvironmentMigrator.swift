@@ -3,6 +3,29 @@ import Foundation
 import SwiftData
 import DeltiqCore
 
+/// Vorschau-Daten für einen einzelnen Plan vor einem Env-Swap oder -Restore.
+/// Wird in der Preview-Sheet angezeigt, bevor irgendeine Mutation stattfindet.
+public struct EnvSwapPlanPreview: Identifiable, Sendable {
+    public struct Swap: Sendable {
+        public let original: String
+        public let replacement: String
+    }
+    public let id: UUID
+    public let planName: String
+    /// Für Swap: original→Ersatz. Für Restore: temp-Name→original-Name.
+    public let swaps: [Swap]
+    /// Übungen ohne kompatible Alternative — werden archiviert.
+    public let archived: [String]
+    public var hasChanges: Bool { !swaps.isEmpty || !archived.isEmpty }
+
+    public init(id: UUID = UUID(), planName: String, swaps: [Swap], archived: [String]) {
+        self.id = id
+        self.planName = planName
+        self.swaps = swaps
+        self.archived = archived
+    }
+}
+
 /// Result-Tuple eines Environment-Swap-Laufs. UI nutzt die drei Zahlen fuer den
 /// Toast/Confirmation-Output ("3 ersetzt · 1 ohne Alternative · 2 unveraendert").
 public struct PlanEnvironmentSwapResult: Equatable, Sendable {
@@ -127,6 +150,9 @@ public enum PlanEnvironmentMigrator {
                     modelContext.insert(newExercise)
                     swapped += 1
                 case .keep:
+                    // Inkompatibel + keine Alternative → archivieren statt aktiv lassen.
+                    // restore() holt sie NICHT zurück (kein swappedFromOriginal-Link).
+                    exercise.isArchived = true
                     kept += 1
                 case .stayCompatible:
                     compatible += 1
@@ -230,6 +256,54 @@ public enum PlanEnvironmentMigrator {
             }
         }
         return (touched, aggregate)
+    }
+
+    // MARK: - Dry-Run Previews (keine Mutation)
+
+    /// Berechnet was `migrateAll` täte, ohne etwas zu mutieren.
+    public static func previewMigrateAll(
+        plans: [TrainingPlan],
+        toEnvironment newEnv: EnvironmentType
+    ) -> [EnvSwapPlanPreview] {
+        plans.compactMap { plan -> EnvSwapPlanPreview? in
+            guard plan.days.contains(where: { !$0.activeExercises.isEmpty }) else { return nil }
+            var swaps: [EnvSwapPlanPreview.Swap] = []
+            var archived: [String] = []
+            for day in plan.days {
+                for exercise in day.activeExercises.sorted(by: { $0.orderIndex < $1.orderIndex }) {
+                    switch ExerciseLibraryData.resolveAlternative(forExerciseName: exercise.name, targetEnvironment: newEnv) {
+                    case .swap(let spec):
+                        swaps.append(.init(original: exercise.name, replacement: spec.name))
+                    case .keep:
+                        archived.append(exercise.name)
+                    case .stayCompatible:
+                        break
+                    }
+                }
+            }
+            guard !swaps.isEmpty || !archived.isEmpty else { return nil }
+            return EnvSwapPlanPreview(planName: plan.name, swaps: swaps, archived: archived)
+        }
+    }
+
+    /// Berechnet was `restoreAll` täte, ohne etwas zu mutieren.
+    /// "swaps" = temporärer-Name → Original-Name.
+    public static func previewRestoreAll(
+        plans: [TrainingPlan],
+        toEnvironment newEnv: EnvironmentType
+    ) -> [EnvSwapPlanPreview] {
+        plans.compactMap { plan -> EnvSwapPlanPreview? in
+            var swaps: [EnvSwapPlanPreview.Swap] = []
+            for day in plan.days {
+                for current in day.activeExercises {
+                    guard let original = current.swappedFromOriginal,
+                          isOriginalCompatible(original, with: newEnv) else { continue }
+                    swaps.append(.init(original: current.name, replacement: original.name))
+                }
+            }
+            guard !swaps.isEmpty else { return nil }
+            return EnvSwapPlanPreview(planName: plan.name, swaps: swaps, archived: [])
+        }
     }
 
     /// Schnell-Check: hat dieser Plan mindestens eine aktive Uebung mit einem
