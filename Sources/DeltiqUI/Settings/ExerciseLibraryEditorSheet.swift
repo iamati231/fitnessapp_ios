@@ -32,6 +32,9 @@ struct ExerciseLibraryEditorSheet: View {
     @State private var isSaving = false
     @State private var saveErrorMessage: String?
     @State private var showGifSheet = false
+    /// DEL-xxx: Custom-Templates starten in der Detailansicht (false); Create-
+    /// Modus und System-Templates ignorieren diesen State.
+    @State private var isEditing: Bool
 
     // MARK: Issue #9 — Custom media state
     @State private var mediaFilename: String?
@@ -53,11 +56,14 @@ struct ExerciseLibraryEditorSheet: View {
         _isCompound = State(initialValue: template?.isSystemCompound ?? false)
         _mediaFilename = State(initialValue: template?.customMediaFilename)
         _youtubeURL = State(initialValue: template?.customYouTubeURL)
+        _isEditing = State(initialValue: template == nil)
     }
 
+    /// Read-Only: System-Templates immer; Custom-Templates bis `isEditing = true`.
     private var isReadOnly: Bool {
         guard let existing else { return false }
-        return !existing.isCustom
+        if !existing.isCustom { return true }
+        return !isEditing
     }
 
     private var isCreate: Bool { existing == nil }
@@ -80,21 +86,27 @@ struct ExerciseLibraryEditorSheet: View {
                     eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
                     title: titleText,
                     onBack: {
-                        if !isReadOnly && isDirty {
+                        if isEditing && isDirty {
                             showingDiscardConfirm = true
+                        } else if isEditing && !isCreate {
+                            isEditing = false
                         } else {
                             dismiss()
                         }
                     },
-                    actions: isReadOnly ? [] : [
-                        DeltiqHeaderAction(
-                            systemImage: "checkmark",
-                            isDisabled: trimmedName.isEmpty || isSaving,
-                            accessibilityLabel: String(localized: isCreate ? "customExercise.add" : "common.done", bundle: .module)
-                        ) {
-                            save()
-                        }
-                    ]
+                    actions: isReadOnly
+                        ? (existing?.isCustom == true ? [
+                            DeltiqHeaderAction(systemImage: "pencil") { isEditing = true }
+                          ] : [])
+                        : [
+                            DeltiqHeaderAction(
+                                systemImage: "checkmark",
+                                isDisabled: trimmedName.isEmpty || isSaving,
+                                accessibilityLabel: String(localized: isCreate ? "customExercise.add" : "common.done", bundle: .module)
+                            ) {
+                                save()
+                            }
+                          ]
                 )
                 Form {
                     if isReadOnly {
@@ -119,7 +131,12 @@ struct ExerciseLibraryEditorSheet: View {
             #endif
             .navigationBarBackButtonHidden(true)
             .discardChangesConfirmation(isPresented: $showingDiscardConfirm) {
-                dismiss()
+                if !isCreate {
+                    resetFields()
+                    isEditing = false
+                } else {
+                    dismiss()
+                }
             }
             .interactiveDismissDisabled(isReadOnly ? false : isDirty)
             // System-exercise GIF fullscreen
@@ -451,7 +468,9 @@ struct ExerciseLibraryEditorSheet: View {
         } header: {
             Text("customExercise.section.metadata", bundle: .module)
         } footer: {
-            Text("library.readOnlyFooter", bundle: .module)
+            if existing?.isCustom != true {
+                Text("library.readOnlyFooter", bundle: .module)
+            }
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
         if let steps = ExerciseInstructionsProvider.steps(
@@ -545,8 +564,22 @@ struct ExerciseLibraryEditorSheet: View {
             isSaving = false
             return
         }
-        isSaved = true
-        dismiss()
+        if isCreate {
+            isSaved = true
+            dismiss()
+        } else {
+            isEditing = false
+            isSaving = false
+        }
+    }
+
+    private func resetFields() {
+        name = existing?.name ?? ""
+        muscle = existing?.primaryMuscle ?? .chest
+        equipment = existing?.equipment ?? .bodyweight
+        isCompound = existing?.isSystemCompound ?? false
+        mediaFilename = existing?.customMediaFilename
+        youtubeURL = existing?.customYouTubeURL
     }
 
     // MARK: - Helpers
