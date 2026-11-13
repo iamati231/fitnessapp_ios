@@ -130,4 +130,29 @@ final class MeasurementDoubleTapGuardTests: XCTestCase {
                 + "dauerhaft deaktiviert."
         )
     }
+
+    func testSwipeDismissRollbackDismissesOnlyOnSuccessfulSave() throws {
+        // Befund #2: dismiss() im Swipe-Dismiss-Rollback muss atomar mit
+        // modelContext.save() sein — nur bei Erfolg dismissen, nicht bei
+        // catch. Sonst bleibt nach einem fehlgeschlagenen Rollback-Save
+        // der neue Trainingsort persistiert, aber der Editor ist geschlossen.
+        // Korrektes Muster: try modelContext.save() und dismiss() beide im do-Block.
+        let source = try contents(of: "Settings/TrainingLocationEquipmentEditorView.swift")
+
+        // Das schlechte Muster: dismiss() direkt nach dem Rollback-catch
+        // "}\n                        dismiss()" unmittelbar vor pendingEnvSwap/Restore = nil.
+        XCTAssertFalse(
+            source.contains("}\n                        dismiss()\n                    }\n                    pendingEnvSwap = nil"),
+            "envSwap-Swipe-Rollback: dismiss() muss inside des do-Blocks stehen (atomar mit save)"
+        )
+        XCTAssertFalse(
+            source.contains("}\n                        dismiss()\n                    }\n                    pendingEnvRestore = nil"),
+            "envRestore-Swipe-Rollback: dismiss() muss inside des do-Blocks stehen (atomar mit save)"
+        )
+        // Positiv-Check: beide Rollback-Closures enthalten dismiss() nach try modelContext.save()
+        XCTAssertTrue(
+            source.contains("try modelContext.save()\n                            dismiss()"),
+            "Rollback-Closures: dismiss() muss direkt nach try modelContext.save() stehen"
+        )
+    }
 }

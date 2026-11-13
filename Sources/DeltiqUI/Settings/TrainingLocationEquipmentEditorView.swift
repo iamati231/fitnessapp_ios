@@ -211,10 +211,12 @@ struct TrainingLocationEquipmentEditorView: View {
                         }
                         if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
                         if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
-                        do { try modelContext.save() } catch {
+                        do {
+                            try modelContext.save()
+                            dismiss()
+                        } catch {
                             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                         }
-                        dismiss()
                     }
                     pendingEnvSwap = nil
                 }
@@ -265,10 +267,12 @@ struct TrainingLocationEquipmentEditorView: View {
                         }
                         if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
                         if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
-                        do { try modelContext.save() } catch {
+                        do {
+                            try modelContext.save()
+                            dismiss()
+                        } catch {
                             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                         }
-                        dismiss()
                     }
                     pendingEnvRestore = nil
                 }
