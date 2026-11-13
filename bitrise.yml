@@ -4,11 +4,14 @@ project_type: ios
 
 # Bitrise CI/CD — Deltiq iOS App
 #
-# Workflow "deploy": XcodeGen → Build → Sign → TestFlight
+# Workflow "deploy": XcodeGen → codemagic-cli-tools Signing → Build → TestFlight
 # Auto-increment: $BITRISE_BUILD_NUMBER (Bitrise erhöht bei jedem Build)
 #
-# Bitrise Integrations → App Store Connect → API key muss verbunden sein.
-# Keine weiteren Secrets nötig — Bitrise holt Certificates automatisch.
+# Bitrise Secrets (Settings → Env Vars → app_store_credentials Gruppe):
+#   APP_STORE_CONNECT_KEY_IDENTIFIER
+#   APP_STORE_CONNECT_ISSUER_ID
+#   APP_STORE_CONNECT_PRIVATE_KEY
+#   APP_STORE_CONNECT_CERTIFICATE_KEY
 
 meta:
   bitrise.io:
@@ -25,19 +28,17 @@ app:
 workflows:
   deploy:
     steps:
-      - activate-ssh-key@4: {}
-
       - git-clone@8: {}
 
       - script@1:
-          title: Install XcodeGen
+          title: Install tools
           inputs:
             - content: |
                 set -e
+                pip3 install --break-system-packages codemagic-cli-tools
                 if ! command -v xcodegen >/dev/null 2>&1; then
                   brew install xcodegen
                 fi
-                xcodegen --version
 
       - script@1:
           title: Set build number + marketing version
@@ -46,11 +47,9 @@ workflows:
                 set -e
                 sed -i '' "s/CURRENT_PROJECT_VERSION: '[0-9]*'/CURRENT_PROJECT_VERSION: '$BITRISE_BUILD_NUMBER'/" project.yml
                 echo "Build number: $BITRISE_BUILD_NUMBER"
-
                 VERSION=$(printf '%s' "${BITRISE_GIT_TAG:-}" | sed -E 's/^v//' | grep -oE '^[0-9]+\.[0-9]+(\.[0-9]+)?' || true)
                 if [ -n "$VERSION" ]; then
                   sed -i '' "s/MARKETING_VERSION: '[^']*'/MARKETING_VERSION: '$VERSION'/" project.yml
-                  echo "Marketing version: $VERSION"
                 fi
                 grep -E "CURRENT_PROJECT_VERSION|MARKETING_VERSION" project.yml
 
@@ -60,27 +59,43 @@ workflows:
             - content: |
                 set -e
                 xcodegen generate
-                ls -la Deltiq.xcodeproj
 
-      - ios-auto-provision-appstoreconnect@1:
+      - script@1:
+          title: Code Signing
           inputs:
-            - connection: 'api-key'
-            - distribution_type: app-store
-            - project_path: $BITRISE_PROJECT_PATH
-            - scheme: $BITRISE_SCHEME
+            - content: |
+                set -e
+                keychain initialize
+                app-store-connect fetch-signing-files "$BUNDLE_ID" \
+                  --type IOS_APP_STORE \
+                  --certificate-key=@env:APP_STORE_CONNECT_CERTIFICATE_KEY \
+                  --create
+                app-store-connect fetch-signing-files "$WIDGET_BUNDLE_ID" \
+                  --type IOS_APP_STORE \
+                  --certificate-key=@env:APP_STORE_CONNECT_CERTIFICATE_KEY \
+                  --create
+                keychain add-certificates
+                xcode-project use-profiles
 
-      - xcode-archive@5:
+      - script@1:
+          title: Build .ipa
           inputs:
-            - project_path: $BITRISE_PROJECT_PATH
-            - scheme: $BITRISE_SCHEME
-            - configuration: Release
-            - export_method: app-store
-            - xcconfig_content: "STRING_CATALOG_GENERATE_SYMBOLS = NO"
+            - content: |
+                set -e
+                set -o pipefail
+                xcode-project build-ipa \
+                  --project "$BITRISE_PROJECT_PATH" \
+                  --scheme "$BITRISE_SCHEME" \
+                  --config Release \
+                  --archive-flags 'STRING_CATALOG_GENERATE_SYMBOLS=NO'
 
-      - deploy-to-itunesconnect-deliver@2:
+      - script@1:
+          title: Upload to TestFlight
           inputs:
-            - connection: 'api-key'
-            - submit_for_review: 'no'
-            - skip_screenshots: 'yes'
-            - skip_app_version_update: 'yes'
-            - is_remove_generated_dsyms: 'no'
+            - content: |
+                set -e
+                IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
+                echo "Uploading: $IPA_PATH"
+                app-store-connect publish --path "$IPA_PATH"
+
+      - deploy-to-bitrise-io@2: {}
