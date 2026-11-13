@@ -2160,6 +2160,14 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Video çok uzun (maks. 15 saniye)" } }
       }
     },
+    "customExercise.media.invalidDuration": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Video-Dauer konnte nicht gelesen werden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Video duration could not be read" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Video süresi okunamadı" } }
+      }
+    },
     "common.yes": {
       "extractionState": "manual",
       "localizations": {
@@ -52091,6 +52099,14 @@
             "value": "Alternatif bulunamadığı için kaldırılan egzersizler:"
           }
         }
+      }
+    },
+    "profile.equipmentAdaptation.preview.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Werden archiviert (kein Ersatz):" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Will be archived (no substitute):" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Arşivlenecek (alternatif yok):" } }
       }
     },
     "settings.periodicCheckIn.row": {

@@ -64,6 +64,14 @@ struct TrainingLocationEquipmentEditorView: View {
     /// Zwischengespeichertes Flag aus `save()` — nach dem env-frühen Return
     /// wissen die Dialog-Handler nicht mehr, ob Equipment auch geändert wurde.
     @State private var equipmentChangedOnSave = false
+    /// Snapshots der drei Equipment-Felder vor dem letzten save() —
+    /// damit envSwap/envRestore-Abbrechen alle vier Felder wiederherstellt,
+    /// nicht nur profile.environment.
+    @State private var preSaveEquipmentProfile: UserEquipmentProfile? = nil
+    @State private var preSaveEquipmentConfirmed: Bool? = nil
+    @State private var preSaveEquipmentPreferences: Set<Equipment>? = nil
+    /// Vorschau: unersetzbare Übungen aus der letzten Adaptation-Vorausberechnung.
+    @State private var adaptationPreviewUnresolved: [String] = []
 
     private struct PendingEnvSwap: Equatable {
         let oldEnv: EnvironmentType
@@ -200,7 +208,7 @@ struct TrainingLocationEquipmentEditorView: View {
                     Text("profile.envSwap.keep", bundle: .module)
                 }
             } message: {
-                Text("profile.equipmentSwap.message", bundle: .module)
+                Text(adaptationPreviewMessage)
             }
             .confirmationDialog(
                 Text("profile.envSwap.title", bundle: .module),
@@ -230,8 +238,12 @@ struct TrainingLocationEquipmentEditorView: View {
                     Text("profile.envSwap.keep", bundle: .module)
                 }
                 Button(role: .cancel) {
-                    // Env-Wechsel wirklich rückgängig machen (nicht nur Pläne behalten)
+                    // Env-Wechsel vollständig rückgängig machen — alle vier Felder,
+                    // nicht nur environment (Issue #11, 3/4).
                     profile.environment = swap.oldEnv
+                    if let ep = preSaveEquipmentProfile { profile.equipmentProfile = ep }
+                    if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
+                    if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
                     do { try modelContext.save() } catch {
                         saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                     }
@@ -273,7 +285,12 @@ struct TrainingLocationEquipmentEditorView: View {
                     Text("profile.envRestore.adjustNew", bundle: .module)
                 }
                 Button(role: .cancel) {
+                    // Env-Wechsel vollständig rückgängig machen — alle vier Felder
+                    // (Issue #11, 3/4).
                     profile.environment = swap.oldEnv
+                    if let ep = preSaveEquipmentProfile { profile.equipmentProfile = ep }
+                    if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
+                    if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
                     do { try modelContext.save() } catch {
                         saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                     }
@@ -360,6 +377,11 @@ struct TrainingLocationEquipmentEditorView: View {
         let originalEquipmentProfileConfirmedComplete = profile.equipmentProfileConfirmedComplete
         let originalEquipmentPreferences = profile.equipmentPreferences
 
+        // Vor der Mutation snapshot für env-Dialog-Cancel-Handler.
+        preSaveEquipmentProfile = originalEquipmentProfile
+        preSaveEquipmentConfirmed = originalEquipmentProfileConfirmedComplete
+        preSaveEquipmentPreferences = originalEquipmentPreferences
+
         profile.environment = draftEnvironment
         profile.equipmentProfile = draftEquipmentProfile
         if equipmentTouched {
@@ -420,33 +442,56 @@ struct TrainingLocationEquipmentEditorView: View {
         // dieselbe (noch unbestaetigte) Uebung erneut nur als "ungeklaert"
         // einstuft.
         let resolvedProfile = profile.equipmentProfile
-        if equipmentChanged, hasAnyPlanWithEquipmentGap(against: resolvedProfile) {
-            pendingEquipmentAdaptation = resolvedProfile
-            // Fix-Runde 1 (Befund 1): dieser Zweig dismisst NICHT -- der
-            // `confirmationDialog` unten kann durch Wegtippen (ausserhalb,
-            // ohne Confirm/Cancel-Button) geschlossen werden, ohne dass
-            // `dismiss()` je aufgerufen wird. Ohne dieses Reset bliebe der
-            // Speichern-Haken dann fuer immer deaktiviert.
-            isSaving = false
-            return
+        if equipmentChanged {
+            let previewResult = computeAdaptationPreview(against: resolvedProfile)
+            if previewResult.haGap {
+                adaptationPreviewUnresolved = previewResult.unresolvedNames
+                pendingEquipmentAdaptation = resolvedProfile
+                // Fix-Runde 1 (Befund 1): dieser Zweig dismisst NICHT -- der
+                // `confirmationDialog` unten kann durch Wegtippen (ausserhalb,
+                // ohne Confirm/Cancel-Button) geschlossen werden, ohne dass
+                // `dismiss()` je aufgerufen wird. Ohne dieses Reset bliebe der
+                // Speichern-Haken dann fuer immer deaktiviert.
+                isSaving = false
+                return
+            }
         }
         dismiss()
     }
 
-    /// Nur nicht-leere Plaene zaehlen — leere haben nichts anzupassen
-    /// (identische Filterung wie `PlanEnvironmentMigrator.migrateAll`).
-    private func hasAnyPlanWithEquipmentGap(against newProfile: UserEquipmentProfile) -> Bool {
-        plans.contains { plan in
-            guard plan.days.contains(where: { !$0.activeExercises.isEmpty }) else { return false }
-            return !PlanEquipmentAdaptationApplier.check(plan: plan, against: newProfile).isAvailable
+    /// Pre-compute adaptation draft info für den Dialog — keine Mutation.
+    private func computeAdaptationPreview(
+        against newProfile: UserEquipmentProfile
+    ) -> (haGap: Bool, unresolvedNames: [String]) {
+        let context = SubstitutionContext(goal: profile.trainingGoal, experienceTrack: profile.experienceTrack)
+        var haGap = false
+        var unresolvedNames: [String] = []
+        for plan in plans where plan.days.contains(where: { !$0.activeExercises.isEmpty }) {
+            guard !PlanEquipmentAdaptationApplier.check(plan: plan, against: newProfile).isAvailable else { continue }
+            haGap = true
+            let draft = PlanEquipmentAdaptationApplier.preview(plan: plan, against: newProfile, context: context)
+            unresolvedNames += draft.unresolved.map { $0.exerciseName }
         }
+        return (haGap, unresolvedNames)
+    }
+
+    private var adaptationPreviewMessage: String {
+        var msg = String(localized: "profile.equipmentSwap.message", bundle: .module)
+        if !adaptationPreviewUnresolved.isEmpty {
+            msg += "\n\n" + String(localized: "profile.equipmentAdaptation.preview.conflict", bundle: .module)
+                + " " + adaptationPreviewUnresolved.joined(separator: ", ")
+        }
+        return msg
     }
 
     /// Nach einem Env-Dialog: Equipment-Gap-Prüfung, die `save()` wegen des
     /// frühen Returns nicht mehr erreicht hat.
     private func checkAndHandleEquipmentGap() {
+        guard equipmentChangedOnSave else { dismiss(); return }
         let resolvedProfile = profile.equipmentProfile
-        if equipmentChangedOnSave, hasAnyPlanWithEquipmentGap(against: resolvedProfile) {
+        let previewResult = computeAdaptationPreview(against: resolvedProfile)
+        if previewResult.haGap {
+            adaptationPreviewUnresolved = previewResult.unresolvedNames
             pendingEquipmentAdaptation = resolvedProfile
         } else {
             dismiss()

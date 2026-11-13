@@ -64,7 +64,11 @@ enum CustomExerciseMediaStore {
         if ext != "gif" {
             let asset = AVURLAsset(url: url)
             let duration = asset.duration
-            if duration.isValid && !duration.isIndefinite && duration.seconds > maxVideoSeconds {
+            let secs = duration.seconds
+            guard duration.isValid, !duration.isIndefinite, secs.isFinite, secs > 0 else {
+                throw CustomMediaError.invalidDuration
+            }
+            if secs > maxVideoSeconds {
                 throw CustomMediaError.tooLong
             }
         }
@@ -83,13 +87,14 @@ enum CustomExerciseMediaStore {
 }
 
 enum CustomMediaError: LocalizedError {
-    case accessDenied, readFailed, fileTooLarge, tooLong
+    case accessDenied, readFailed, fileTooLarge, tooLong, invalidDuration
 
     var errorDescription: String? {
         switch self {
         case .accessDenied, .readFailed: return String(localized: "customExercise.media.importError", bundle: .module)
         case .fileTooLarge: return String(localized: "customExercise.media.fileTooLarge", bundle: .module)
         case .tooLong: return String(localized: "customExercise.media.videoTooLong", bundle: .module)
+        case .invalidDuration: return String(localized: "customExercise.media.invalidDuration", bundle: .module)
         }
     }
 }

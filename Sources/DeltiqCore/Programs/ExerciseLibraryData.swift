@@ -216,7 +216,8 @@ public enum ExerciseLibraryData {
                              systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.65, cnsDemandFactor: 0.45, axialLoadFactor: 0.10, technicalComplexityFactor: 0.45, recoveryClass: .medium,
                              localizationKey: "exercise.name.pullupStandard",
                              equipmentRequirement: .item(.pullUpBar)),
-        ExerciseTemplateSpec(name: "Australian Pull-ups",              equipment: .bodyweight, primaryMuscle: .back, localizationKey: "exercise.name.australianPullup"),
+        ExerciseTemplateSpec(name: "Australian Pull-ups",              equipment: .bodyweight, primaryMuscle: .back, localizationKey: "exercise.name.australianPullup",
+                             equipmentRequirement: .item(.pullUpBar)),
         ExerciseTemplateSpec(name: "Handtuch-Rudern (Türrahmen)",     equipment: .bodyweight, primaryMuscle: .back,      difficultyLevel: .beginner, localizationKey: "exercise.name.towelRowDoorframe",
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Liegestütze",                     equipment: .bodyweight, primaryMuscle: .chest,     difficultyLevel: .beginner, localizationKey: "exercise.name.pushup",
@@ -265,7 +266,8 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Beinheben (liegend)",              equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, localizationKey: "exercise.name.lyingLegRaise",
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Nordic Curls",                     equipment: .bodyweight, primaryMuscle: .hamstrings, difficultyLevel: .advanced, localizationKey: "exercise.name.nordicCurls",
-                             equipmentRequirement: .all([])),
+                             // shortcut: .pullUpBar als Proxy für "Fußfixierung" — kein passenderes EquipmentItem vorhanden
+                             equipmentRequirement: .item(.pullUpBar)),
 
         // ── BODYWEIGHT · CORE ──────────────────────────────────────────────
         // DEL-098: Iso-Core wie Plank / Seitstuetz = analog zu Wall Sit. Burpees
@@ -1121,7 +1123,8 @@ public enum ExerciseLibraryData {
         }
 
         guard let altName = alternatives[name]?[env],
-              let altSpec = all.first(where: { $0.name == altName })
+              let altSpec = all.first(where: { $0.name == altName }),
+              isCompatible(altSpec, with: env)
         else {
             return .keep
         }
@@ -1135,7 +1138,12 @@ public enum ExerciseLibraryData {
         _ spec: ExerciseTemplateSpec,
         with env: EnvironmentType
     ) -> Bool {
-        isEquipment(spec.equipment, compatibleWith: env)
+        guard isEquipment(spec.equipment, compatibleWith: env) else { return false }
+        // noEquipment hat keine Items — jede nicht-triviale equipmentRequirement schlägt fehl.
+        if case .noEquipment = env, let req = spec.equipmentRequirement, req != .all([]) {
+            return false
+        }
+        return true
     }
 
     /// Publiche Variante derselben Check — wird von der UI fuer Bottom-Up-
