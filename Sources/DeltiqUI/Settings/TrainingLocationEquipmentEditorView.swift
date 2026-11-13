@@ -198,7 +198,26 @@ struct TrainingLocationEquipmentEditorView: View {
             // Issue #11 P3: checkAndHandleEquipmentGap() nur nach erfolgreichem save().
             .sheet(isPresented: Binding(
                 get: { pendingEnvSwap != nil },
-                set: { if !$0 { pendingEnvSwap = nil } }
+                set: { isPresented in
+                    guard !isPresented else { return }
+                    // Button-Handler nullen pendingEnvSwap vor dem Dismiss;
+                    // non-nil hier ⟹ Swipe-Dismiss ohne Auswahl → rollback.
+                    if let swap = pendingEnvSwap {
+                        profile.environment = swap.oldEnv
+                        draftEnvironment = swap.oldEnv
+                        if let ep = preSaveEquipmentProfile {
+                            profile.equipmentProfile = ep
+                            draftEquipmentProfile = ep
+                        }
+                        if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
+                        if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
+                        do { try modelContext.save() } catch {
+                            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                        }
+                        dismiss()
+                    }
+                    pendingEnvSwap = nil
+                }
             )) {
                 if let swap = pendingEnvSwap {
                     EnvChangePreviewSheet(
@@ -235,7 +254,24 @@ struct TrainingLocationEquipmentEditorView: View {
             }
             .sheet(isPresented: Binding(
                 get: { pendingEnvRestore != nil },
-                set: { if !$0 { pendingEnvRestore = nil } }
+                set: { isPresented in
+                    guard !isPresented else { return }
+                    if let swap = pendingEnvRestore {
+                        profile.environment = swap.oldEnv
+                        draftEnvironment = swap.oldEnv
+                        if let ep = preSaveEquipmentProfile {
+                            profile.equipmentProfile = ep
+                            draftEquipmentProfile = ep
+                        }
+                        if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
+                        if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
+                        do { try modelContext.save() } catch {
+                            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                        }
+                        dismiss()
+                    }
+                    pendingEnvRestore = nil
+                }
             )) {
                 if let swap = pendingEnvRestore {
                     EnvChangePreviewSheet(
