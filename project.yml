@@ -110,8 +110,6 @@ targets:
 
 schemes:
   DeltiqCoreTests:
-    build:
-      parallelizeBuild: true
     test:
       config: Debug
       targets:
@@ -119,8 +117,6 @@ schemes:
             package: Deltiq
             target: DeltiqCoreTests
   DeltiqUITests:
-    build:
-      parallelizeBuild: true
     test:
       config: Debug
       targets:
