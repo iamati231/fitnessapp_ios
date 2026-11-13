@@ -107,3 +107,23 @@ targets:
         product: DeltiqCore
       - package: Deltiq
         product: DeltiqData
+
+schemes:
+  DeltiqCoreTests:
+    build:
+      parallelizeBuild: true
+    test:
+      config: Debug
+      targets:
+        - packageTarget:
+            package: Deltiq
+            target: DeltiqCoreTests
+  DeltiqUITests:
+    build:
+      parallelizeBuild: true
+    test:
+      config: Debug
+      targets:
+        - packageTarget:
+            package: Deltiq
+            target: DeltiqUITests
