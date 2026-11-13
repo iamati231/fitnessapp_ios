@@ -11,6 +11,7 @@ on:
 jobs:
   upload:
     runs-on: macos-latest
+    environment: appstore-release
     steps:
       - name: Download .ipa
         run: |
@@ -18,7 +19,7 @@ jobs:
           ls -lh app.ipa
 
       - name: Install codemagic-cli-tools
-        run: pip3 install codemagic-cli-tools
+        run: pip3 install --break-system-packages codemagic-cli-tools
 
       - name: Upload to TestFlight
         env:
