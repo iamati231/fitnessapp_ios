@@ -1,4 +1,3 @@
-#if canImport(SwiftUI) && canImport(SwiftData)
 import XCTest
 import DeltiqCore
 
@@ -50,4 +49,3 @@ final class NoEquipmentAlternativesCompatibilityTests: XCTestCase {
         }
     }
 }
-#endif

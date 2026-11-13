@@ -1,4 +1,3 @@
-#if canImport(SwiftUI) && canImport(SwiftData)
 import XCTest
 
 /// Regression guard: the 5 exercise localization keys that were missing from
@@ -50,4 +49,3 @@ final class ExerciseLocalizationKeysPresenceTests: XCTestCase {
         }
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if canImport(SwiftUI) && canImport(SwiftData)
 import XCTest
 
 /// Regression guard for the invisible list row bug in PlansListView.
@@ -37,4 +36,3 @@ final class PlansListViewScrollAnchorTests: XCTestCase {
             "scrollTo(\"plans-top\") anchor call must still be present for scroll-to-top to work")
     }
 }
-#endif
