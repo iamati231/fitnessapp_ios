@@ -116,9 +116,7 @@ public enum PlanEnvironmentMigrator {
             // Slot raus).
             let snapshot = day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
             for exercise in snapshot {
-                // Issue #12: Custom-Exercises (nicht im Systemkatalog) verwenden
-                // ihr eigenes equipment-Feld statt ExerciseLibraryData.
-                let isInCatalog = ExerciseLibraryData.byName[exercise.name] != nil
+                let isInCatalog = isSystemExercise(exercise, in: modelContext)
                 if isInCatalog {
                     switch ExerciseLibraryData.resolveAlternative(
                         forExerciseName: exercise.name,
@@ -302,7 +300,7 @@ public enum PlanEnvironmentMigrator {
             var archived: [String] = []
             for day in plan.days {
                 for exercise in day.activeExercises.sorted(by: { $0.orderIndex < $1.orderIndex }) {
-                    let isInCatalog = ExerciseLibraryData.byName[exercise.name] != nil
+                    let isInCatalog = isSystemExercise(exercise)
                     if isInCatalog {
                         switch ExerciseLibraryData.resolveAlternative(forExerciseName: exercise.name, targetEnvironment: newEnv) {
                         case .swap(let spec):
@@ -393,11 +391,9 @@ public enum PlanEnvironmentMigrator {
         _ exercise: Exercise,
         with env: EnvironmentType
     ) -> Bool {
-        if ExerciseLibraryData.byName[exercise.name] != nil {
-            // isCompatibleWith prüft auch equipmentRequirement, nicht nur equipment-Klasse.
+        if isSystemExercise(exercise) {
             return ExerciseLibraryData.isCompatibleWith(exerciseName: exercise.name, environment: env)
         }
-        // Custom-Exercise: eigenes equipment-Feld entscheidet.
         return exercise.equipment.map { ExerciseLibraryData.isEquipment($0, compatibleWith: env) } ?? false
     }
 
@@ -407,10 +403,26 @@ public enum PlanEnvironmentMigrator {
         _ exercise: Exercise,
         with env: EnvironmentType
     ) -> Bool {
-        if ExerciseLibraryData.byName[exercise.name] != nil {
+        if isSystemExercise(exercise) {
             return ExerciseLibraryData.isCompatibleWith(exerciseName: exercise.name, environment: env)
         }
         return exercise.equipment.map { ExerciseLibraryData.isEquipment($0, compatibleWith: env) } ?? false
+    }
+
+    /// Bestimmt ob eine Exercise eine System-Exercise (im Katalog) oder eine Custom-Exercise ist.
+    /// Primär: exerciseTemplateID → ExerciseTemplate.isCustom (korrekt auch bei Namenskollisionen).
+    /// Fallback: ExerciseLibraryData.byName (Legacy, wenn kein templateID vorhanden).
+    private static func isSystemExercise(_ exercise: Exercise, in context: ModelContext? = nil) -> Bool {
+        if let templateID = exercise.exerciseTemplateID {
+            let ctx = context ?? exercise.modelContext
+            if let ctx {
+                let desc = FetchDescriptor<ExerciseTemplate>(predicate: #Predicate { t in t.id == templateID })
+                if let tmpl = try? ctx.fetch(desc).first {
+                    return !tmpl.isCustom
+                }
+            }
+        }
+        return ExerciseLibraryData.byName[exercise.name] != nil
     }
 }
 #endif

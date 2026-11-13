@@ -281,5 +281,44 @@ final class PlanEnvironmentMigratorCustomExerciseTests: XCTestCase {
         let hasRestorable = PlanEnvironmentMigrator.hasAnyRestorableOriginals(plans: [plan], forEnvironment: .gym)
         XCTAssertTrue(hasRestorable, "hasAnyRestorableOriginals muss true sein wenn archivedByEnvironmentChange-Exercise vorhanden")
     }
+
+    /// Befund #4 (Audit): Custom-Exercise mit demselben Namen wie eine System-Exercise
+    /// muss über exerciseTemplateID.isCustom als Custom erkannt werden, nicht über byName.
+    func testCustomExerciseWithCatalogNameIsNotSwappedLikeSystemExercise() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        // "Bankdrücken" ist im Systemkatalog (barbell). Wir erstellen eine
+        // Custom-Variante mit bodyweight — beim Wechsel zu noEquipment muss sie
+        // als Custom (bodyweight → kompatibel) behandelt werden, nicht als
+        // System-Exercise (barbell → würde gswappt).
+        let customTemplate = ExerciseTemplate(
+            name: "Bankdrücken",
+            equipment: .bodyweight,
+            primaryMuscle: .chest,
+            isCustom: true
+        )
+        context.insert(customTemplate)
+
+        let plan = TrainingPlan(name: "Test", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "Tag 1", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        let exercise = Exercise(
+            name: "Bankdrücken",
+            orderIndex: 0,
+            equipment: .bodyweight,
+            day: day
+        )
+        exercise.exerciseTemplateID = customTemplate.id
+        context.insert(exercise)
+        try context.save()
+
+        let result = PlanEnvironmentMigrator.migrate(plan: plan, toEnvironment: .noEquipment, modelContext: context)
+
+        XCTAssertFalse(exercise.isArchived, "Custom-Bankdrücken (bodyweight) muss aktiv bleiben — nicht als System-Exercise gswappt werden")
+        XCTAssertEqual(result.compatible, 1, "bodyweight ist noEquipment-kompatibel")
+        XCTAssertEqual(result.swapped, 0, "Custom-Exercise darf nicht über resolveAlternative gswappt werden")
+    }
 }
 #endif
