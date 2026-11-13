@@ -94,11 +94,8 @@ public struct PlansListView: View {
 
             ScrollViewReader { proxy in
                 List {
-                    Color.clear.frame(height: 0)
-                        .listRowInsets(EdgeInsets())
-                        .listRowSeparator(.hidden)
-                        .id("plans-top")
                     plansContextRow
+                        .id("plans-top")
                     if let active = activeSessions.first {
                         activeSessionSection(active)
                     }

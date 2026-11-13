@@ -1,4 +1,4 @@
-import Foundation
+﻿import Foundation
 
 /// Seed library of exercise templates. `LibrarySeeder` (in `DeltiqData`) reads
 /// this list on first app launch and writes one `ExerciseTemplate` row per spec.
@@ -817,18 +817,18 @@ public enum ExerciseLibraryData {
         ],
         "Rumänisches Kreuzheben": [
             .homeGym:     "Rumänisches Kreuzheben (KH)",
-            .noEquipment: "Nordic Curls"
+            .noEquipment: "Hip Thrust (BW)"
         ],
         "Rudern vorgebeugt": [
             .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
         "Pendlay Row": [
             .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
         "Rudern einarmig (KH)": [
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
 
         // ── SHOULDERS ──────────────────────────────────────────────────────
@@ -878,7 +878,7 @@ public enum ExerciseLibraryData {
         ],
         "Good Morning": [
             .homeGym:     "Rumänisches Kreuzheben (KH)",
-            .noEquipment: "Nordic Curls"
+            .noEquipment: "Hip Thrust (BW)"
         ],
 
         // ── CALVES ─────────────────────────────────────────────────────────
@@ -890,7 +890,7 @@ public enum ExerciseLibraryData {
         // ── ARMS ───────────────────────────────────────────────────────────
         "Bizeps-Curl (LH)": [
             .homeGym:     "Band Curls",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Liegestütze"
         ],
         "Skull Crusher": [
             .homeGym:     "Diamant-Liegestütze",
@@ -918,15 +918,15 @@ public enum ExerciseLibraryData {
         // ── MACHINES / CABLES · BACK ────────────────────────────────────────
         "Latzug (breit)": [
             .homeGym:     "Klimmzüge (weit)",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
         "Latzug (eng)": [
             .homeGym:     "Klimmzüge (eng/Chin-up)",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
         "Rudern (Maschine)": [
             .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
 
         // ── MACHINES / CABLES · SHOULDERS ──────────────────────────────────
@@ -936,11 +936,11 @@ public enum ExerciseLibraryData {
         ],
         "Face Pulls": [
             .homeGym:     "Reverse Flyes (KH)",
-            .noEquipment: "Handtuch-Rudern (Türrahmen)"
+            .noEquipment: "Hyperextension"
         ],
         "Reverse Flys (Maschine)": [
             .homeGym:     "Reverse Flyes (KH)",
-            .noEquipment: "Handtuch-Rudern (Türrahmen)"
+            .noEquipment: "Hyperextension"
         ],
         "Schulterdrücken (Maschine)": [
             .homeGym:     "Schulterdrücken (KH)",
@@ -972,11 +972,11 @@ public enum ExerciseLibraryData {
         // ── MACHINES · LEGS (HAMSTRINGS / GLUTES) ──────────────────────────
         "Beinbeuger (sitzend)": [
             .homeGym:     "Rumänisches Kreuzheben (KH)",
-            .noEquipment: "Nordic Curls"
+            .noEquipment: "Hip Thrust (BW)"
         ],
         "Beinbeuger (liegend)": [
             .homeGym:     "Rumänisches Kreuzheben (KH)",
-            .noEquipment: "Nordic Curls"
+            .noEquipment: "Hip Thrust (BW)"
         ],
         "Hip Thrust (Maschine)": [
             .homeGym:     "Hip Thrust (BW)",
@@ -994,11 +994,11 @@ public enum ExerciseLibraryData {
         ],
         "Bizepscurls (Kabel)": [
             .homeGym:     "Hammer Curl",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Liegestütze"
         ],
         "Preacher Curls": [
             .homeGym:     "Konzentrations-Curl (KH)",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Liegestütze"
         ],
 
         // ── CABLES · CORE ──────────────────────────────────────────────────
@@ -1022,11 +1022,11 @@ public enum ExerciseLibraryData {
         // User landete im Urlaubs-Modus mit unveraenderten Kabel-Uebungen.
         "Kabelrudern sitzend": [
             .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
         "Face Pull": [
             .homeGym:     "Reverse Flyes (KH)",
-            .noEquipment: "Handtuch-Rudern (Türrahmen)"
+            .noEquipment: "Hyperextension"
         ],
         "Kabel Seitheben": [
             .homeGym:     "Seitheben",
@@ -1034,7 +1034,7 @@ public enum ExerciseLibraryData {
         ],
         "Kabel Curl": [
             .homeGym:     "Hammer Curl",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Liegestütze"
         ],
         "Trizepsdrücken (Kabel)": [
             .homeGym:     "Trizepskickback (KH)",
@@ -1058,17 +1058,17 @@ public enum ExerciseLibraryData {
         ],
         "Latzug (weit)": [
             .homeGym:     "Klimmzüge (weit)",
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
 
         // ── DEL-091: Symmetrische HomeGym → NoEquipment Pfade ──────────────
         // KH-Uebungen muessen einen klaren BW-Pfad haben, wenn der User
         // von HomeGym in den No-Equipment-Modus wechselt.
         "Hammer Curl": [
-            .noEquipment: "Klimmzüge (eng/Chin-up)"
+            .noEquipment: "Liegestütze"
         ],
         "Bizeps-Curl (KH)": [
-            .noEquipment: "Klimmzüge (eng/Chin-up)"
+            .noEquipment: "Liegestütze"
         ],
         "Schrägbankdrücken aufwärts (KH)": [
             .noEquipment: "Pike Liegestütze"
@@ -1077,16 +1077,16 @@ public enum ExerciseLibraryData {
             .noEquipment: "Breite Liegestütze"
         ],
         "Chest Supported Row (KH)": [
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
         "Pullover (KH)": [
-            .noEquipment: "Australian Pull-ups"
+            .noEquipment: "Hyperextension"
         ],
         "Reverse Flyes (KH)": [
-            .noEquipment: "Handtuch-Rudern (Türrahmen)"
+            .noEquipment: "Hyperextension"
         ],
         "Rumänisches Kreuzheben (KH)": [
-            .noEquipment: "Nordic Curls"
+            .noEquipment: "Hip Thrust (BW)"
         ],
         // (DEL-091: "Bulgarische Kniebeuge (KH)" steht bereits in
         // LEGS · QUADS oben — Dictionary-Duplikat vermieden.)
@@ -1097,16 +1097,23 @@ public enum ExerciseLibraryData {
             .noEquipment: "Wadenheben (BW)"
         ],
         "Konzentrations-Curl (KH)": [
-            .noEquipment: "Klimmzüge (eng/Chin-up)"
+            .noEquipment: "Liegestütze"
         ],
         "Schrägbank-Curl (KH)": [
-            .noEquipment: "Klimmzüge (eng/Chin-up)"
+            .noEquipment: "Liegestütze"
         ],
         "Trizepsstrecker über Kopf (KH)": [
             .noEquipment: "Diamant-Liegestütze"
         ],
         "Trizepskickback (KH)": [
             .noEquipment: "Diamant-Liegestütze"
+        ],
+        "Latzug (Kabel)": [
+            .homeGym:     "Klimmzüge (weit)",
+            .noEquipment: "Hyperextension"
+        ],
+        "Seitheben": [
+            .noEquipment: "Pike Liegestütze"
         ]
     ]
 
