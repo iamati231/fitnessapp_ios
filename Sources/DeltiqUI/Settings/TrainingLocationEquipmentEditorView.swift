@@ -590,6 +590,12 @@ private struct EnvChangePreviewSheet: View {
                                 .font(.subheadline)
                                 .foregroundStyle(Color.Deltiq.error)
                         }
+                        // Issue #12: .keep-archivierte Exercises, die beim Restore reaktiviert werden.
+                        ForEach(preview.restored, id: \.self) { name in
+                            Label(name, systemImage: "arrow.uturn.backward.circle")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.Deltiq.success)
+                        }
                     }
                 }
             }

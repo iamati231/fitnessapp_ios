@@ -65,6 +65,12 @@ public final class Exercise {
     /// Restore des letzten bekannten Arbeitsgewichts via Original-Logs.
     public var swappedFromOriginal: Exercise?
 
+    /// Issue #12: True wenn diese Uebung per `.keep`-Pfad (inkompatibel, keine
+    /// Alternative) archiviert wurde — also kein `swappedFromOriginal`-Link
+    /// existiert. Ermoeglicht Restore beim Rueckweg ohne dangling-Reference.
+    /// Default `false` → Lightweight-Migration fuer Bestand konfliktfrei.
+    public var archivedByEnvironmentChange: Bool = false
+
     // MARK: - DEL-052/053 Smart Auto-Progression
 
     /// Toggle pro Uebung — schaltet die automatische Gewichts-Steigerung an.
@@ -278,6 +284,7 @@ public final class Exercise {
         isCardio: Bool = false,
         isTimeBased: Bool = false,
         isArchived: Bool = false,
+        archivedByEnvironmentChange: Bool = false,
         swappedFromOriginal: Exercise? = nil,
         smartProgressionEnabled: Bool = true,
         progressionStep: Double = 2.5,
@@ -313,6 +320,7 @@ public final class Exercise {
         self.isCardio = isCardio
         self.isTimeBased = isTimeBased
         self.isArchived = isArchived
+        self.archivedByEnvironmentChange = archivedByEnvironmentChange
         self.swappedFromOriginal = swappedFromOriginal
         self.smartProgressionEnabled = smartProgressionEnabled
         self.progressionStep = progressionStep
