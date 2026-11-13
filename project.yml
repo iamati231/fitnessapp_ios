@@ -110,6 +110,9 @@ targets:
 
 schemes:
   DeltiqCoreTests:
+    build:
+      targets:
+        Deltiq: [test]
     test:
       config: Debug
       targets:
@@ -117,6 +120,9 @@ schemes:
             package: Deltiq
             target: DeltiqCoreTests
   DeltiqUITests:
+    build:
+      targets:
+        Deltiq: [test]
     test:
       config: Debug
       targets:
