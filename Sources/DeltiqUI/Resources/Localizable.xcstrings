@@ -52062,6 +52062,29 @@
         }
       }
     },
+    "profile.equipmentAdaptation.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungen ohne Ersatz entfernt:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercises removed (no substitute found):"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alternatif bulunamadığı için kaldırılan egzersizler:"
+          }
+        }
+      }
+    },
     "settings.periodicCheckIn.row": {
       "extractionState": "manual",
       "localizations": {

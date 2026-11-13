@@ -163,8 +163,11 @@ struct TrainingLocationEquipmentEditorView: View {
                 )
             ) {
                 Button {
+                    let archived: [String]
                     if let newProfile = pendingEquipmentAdaptation {
-                        applyEquipmentAdaptations(against: newProfile)
+                        archived = applyEquipmentAdaptations(against: newProfile)
+                    } else {
+                        archived = []
                     }
                     pendingEquipmentAdaptation = nil
                     // Task 5: `applyEquipmentAdaptations` mutiert/inserted
@@ -177,7 +180,13 @@ struct TrainingLocationEquipmentEditorView: View {
                     // Tausch sei uebernommen, waehrend er es nicht ist.
                     do {
                         try modelContext.save()
-                        dismiss()
+                        if archived.isEmpty {
+                            dismiss()
+                        } else {
+                            // Konflikt zeigen statt still zu dismissen (Issue-#7-Kommentar-4)
+                            saveErrorMessage = String(localized: "profile.equipmentAdaptation.conflict", bundle: .module)
+                                + " " + archived.joined(separator: ", ")
+                        }
                     } catch {
                         saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                     }
@@ -448,13 +457,22 @@ struct TrainingLocationEquipmentEditorView: View {
     /// nicht einen frei erfundenen Plan-Kontext — derselbe Wert, den
     /// `ProgramTemplatePickerView.instantiate`s eigener Veraltungs-Resolve-
     /// Pfad bereits nutzt (kein neu eingefuehrtes Muster).
-    private func applyEquipmentAdaptations(against newProfile: UserEquipmentProfile) {
+    ///
+    /// Gibt die Namen archivierter Uebungen zurueck (`.noApprovedSubstitute`),
+    /// damit die UI einen Konflikt-Hinweis zeigen kann statt still zu dismissen.
+    @discardableResult
+    private func applyEquipmentAdaptations(against newProfile: UserEquipmentProfile) -> [String] {
         let context = SubstitutionContext(goal: profile.trainingGoal, experienceTrack: profile.experienceTrack)
+        var allArchived: [String] = []
         for plan in plans where plan.days.contains(where: { !$0.activeExercises.isEmpty }) {
             let draft = PlanEquipmentAdaptationApplier.preview(plan: plan, against: newProfile, context: context)
-            guard !draft.replacements.isEmpty else { continue }
-            PlanEquipmentAdaptationApplier.apply(plan: plan, draft: draft, modelContext: modelContext)
+            if !draft.replacements.isEmpty {
+                PlanEquipmentAdaptationApplier.apply(plan: plan, draft: draft, modelContext: modelContext)
+            }
+            let archived = PlanEquipmentAdaptationApplier.archiveUnresolved(plan: plan, draft: draft, modelContext: modelContext)
+            allArchived.append(contentsOf: archived)
         }
+        return allArchived
     }
 
     private func applyEnvironmentSwapToAllPlans(newEnv: EnvironmentType) {

@@ -256,6 +256,16 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .all([])),
         ExerciseTemplateSpec(name: "Wadenheben (BW)",                  equipment: .bodyweight, primaryMuscle: .calves,    difficultyLevel: .beginner, localizationKey: "exercise.name.bodyweightCalfRaise",
                              equipmentRequirement: .all([])),
+        ExerciseTemplateSpec(name: "Kniebeuge (BW)",                   equipment: .bodyweight, primaryMuscle: .quads,     difficultyLevel: .beginner, localizationKey: "exercise.name.bodyweightSquat",
+                             equipmentRequirement: .all([])),
+        ExerciseTemplateSpec(name: "Pike Liegestütze",                 equipment: .bodyweight, primaryMuscle: .shoulders, difficultyLevel: .beginner, localizationKey: "exercise.name.pikePushup",
+                             equipmentRequirement: .all([])),
+        ExerciseTemplateSpec(name: "Hip Thrust (BW)",                  equipment: .bodyweight, primaryMuscle: .glutes,    difficultyLevel: .beginner, localizationKey: "exercise.name.bodyweightHipThrust",
+                             equipmentRequirement: .all([])),
+        ExerciseTemplateSpec(name: "Beinheben (liegend)",              equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, localizationKey: "exercise.name.lyingLegRaise",
+                             equipmentRequirement: .all([])),
+        ExerciseTemplateSpec(name: "Nordic Curls",                     equipment: .bodyweight, primaryMuscle: .hamstrings, difficultyLevel: .advanced, localizationKey: "exercise.name.nordicCurls",
+                             equipmentRequirement: .all([])),
 
         // ── BODYWEIGHT · CORE ──────────────────────────────────────────────
         // DEL-098: Iso-Core wie Plank / Seitstuetz = analog zu Wall Sit. Burpees
@@ -805,7 +815,7 @@ public enum ExerciseLibraryData {
         ],
         "Rudern vorgebeugt": [
             .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Klimmzüge"
+            .noEquipment: "Australian Pull-ups"
         ],
         "Pendlay Row": [
             .homeGym:     "Rudern einarmig (KH)",
@@ -839,7 +849,7 @@ public enum ExerciseLibraryData {
         ],
         "Front Squat": [
             .homeGym:     "Goblet Squat",
-            .noEquipment: "Bulgarische Kniebeuge (KH)"
+            .noEquipment: "Kniebeuge (BW)"
         ],
         "Goblet Squat": [
             .noEquipment: "Kniebeuge (BW)"
@@ -874,7 +884,7 @@ public enum ExerciseLibraryData {
         // ── ARMS ───────────────────────────────────────────────────────────
         "Bizeps-Curl (LH)": [
             .homeGym:     "Band Curls",
-            .noEquipment: "Klimmzüge (eng/Chin-up)"
+            .noEquipment: "Australian Pull-ups"
         ],
         "Skull Crusher": [
             .homeGym:     "Diamant-Liegestütze",
@@ -978,11 +988,11 @@ public enum ExerciseLibraryData {
         ],
         "Bizepscurls (Kabel)": [
             .homeGym:     "Hammer Curl",
-            .noEquipment: "Klimmzüge (eng/Chin-up)"
+            .noEquipment: "Australian Pull-ups"
         ],
         "Preacher Curls": [
             .homeGym:     "Konzentrations-Curl (KH)",
-            .noEquipment: "Klimmzüge (eng/Chin-up)"
+            .noEquipment: "Australian Pull-ups"
         ],
 
         // ── CABLES · CORE ──────────────────────────────────────────────────
@@ -1018,7 +1028,7 @@ public enum ExerciseLibraryData {
         ],
         "Kabel Curl": [
             .homeGym:     "Hammer Curl",
-            .noEquipment: "Klimmzüge (eng/Chin-up)"
+            .noEquipment: "Australian Pull-ups"
         ],
         "Trizepsdrücken (Kabel)": [
             .homeGym:     "Trizepskickback (KH)",
