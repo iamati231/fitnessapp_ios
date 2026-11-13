@@ -1,0 +1,30 @@
+name: Upload .ipa to TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: "Download-URL der .ipa (z.B. Appcircle Artifact URL)"
+        required: true
+        type: string
+
+jobs:
+  upload:
+    runs-on: macos-latest
+    steps:
+      - name: Download .ipa
+        run: |
+          curl -L "${{ github.event.inputs.ipa_url }}" -o app.ipa
+          ls -lh app.ipa
+
+      - name: Install codemagic-cli-tools
+        run: pip3 install codemagic-cli-tools
+
+      - name: Upload to TestFlight
+        env:
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          export PATH="$PATH:$(python3 -c 'import sysconfig; print(sysconfig.get_path("scripts"))')"
+          app-store-connect publish --path app.ipa
