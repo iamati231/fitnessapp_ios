@@ -109,6 +109,21 @@ targets:
         product: DeltiqData
 
 schemes:
+  Deltiq:
+    build:
+      targets:
+        Deltiq: all
+        DeltiqWidgets: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
   DeltiqCoreTests:
     build:
       targets:
