@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 @testable import DeltiqCore
 
 final class ExerciseMediaProviderTests: XCTestCase {
@@ -125,7 +125,7 @@ final class ExerciseMediaProviderTests: XCTestCase {
     func testRealOverrideFromDeepSearchResolves() {
         XCTAssertEqual(
             ExerciseMediaProvider.gifFileName(forExerciseName: "Kniebeuge"),
-            "1436-Gnfo4FM.gif"
+            "1436.gif"
         )
     }
 
@@ -136,9 +136,9 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// und exercise_gif_overrides.json).
     func testNewlyAddedExercisesResolveViaRealOverrides() {
         let expectations: [(name: String, gifFile: String)] = [
-            ("Power Clean", "0648-SiWCcTN.gif"),
-            ("Reverse Crunch", "0872-nCU1Ekp.gif"),
-            ("Burpee mit Kurzhanteln", "1201-0JtKWum.gif"),
+            ("Power Clean", "0648.gif"),
+            ("Reverse Crunch", "0872.gif"),
+            ("Burpee mit Kurzhanteln", "1201.gif"),
         ]
         for (name, gifFile) in expectations {
             XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile)
@@ -153,23 +153,22 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// FORCE_NO_GIF-Uebung haengte, bzw. ein frisch recherchierter Treffer.
     func testRound3PrecisionVariantsResolveViaRealOverrides() {
         let expectations: [(name: String, gifFile: String)] = [
-            ("Liegendes Bein-Hüft-Heben", "0865-9IxJdtC.gif"),
-            ("Innere Brustpresse (Maschine)", "1301-wDN97Ca.gif"),
-            ("Sitzender Kabel-Crunch", "0212-8xUv4J7.gif"),
-            ("Kabel Cross-Over (Variation)", "0155-0CXGHya.gif"),
-            ("Kettlebell Schulterdrücken sitzend", "0546-BkxB8LW.gif"),
-            ("Kettlebell Doppel-Push-Press", "0528-I4KkPdl.gif"),
-            ("Kettlebell Thruster", "0550-yWxMvB5.gif"),
-            ("Latzug an der Kabelstange", "0150-eYnzaCm.gif"),
-            ("Kettlebell Plyo-Liegestütze", "0545-ktf3nvW.gif"),
-            ("Kabel Reverse Fly liegend", "0240-PQcUlDi.gif"),
-            ("Schulterdrücken (Smith Machine)", "0766-903mzG8.gif"),
-            ("Sitzendes Trizepsstrecken (KH)", "2188-kont8Ut.gif"),
-            ("Kettlebell Turkish Get-Up (Squat-Stil)", "0551-Ha7SZ3y.gif"),
-            ("Sitzendes Wadenheben (KH)", "1379-r29jP7S.gif"),
-            ("Beincurl stehend (BW)", "0795-C5jncD2.gif"),
-            ("Renegade Row (Kettlebell)", "0521-b9kqlBy.gif"),
-            ("Latzug eng (Band)", "0974-DptumMx.gif"),
+            ("Liegendes Bein-Hüft-Heben", "0865.gif"),
+            ("Innere Brustpresse (Maschine)", "1301.gif"),
+            ("Sitzender Kabel-Crunch", "0212.gif"),
+            ("Kabel Cross-Over (Variation)", "0155.gif"),
+            ("Kettlebell Schulterdrücken sitzend", "0546.gif"),
+            ("Kettlebell Doppel-Push-Press", "0528.gif"),
+            ("Kettlebell Thruster", "0550.gif"),
+            ("Latzug an der Kabelstange", "0150.gif"),
+            ("Kettlebell Plyo-Liegestütze", "0545.gif"),
+            ("Kabel Reverse Fly liegend", "0240.gif"),
+            ("Schulterdrücken (Smith Machine)", "0766.gif"),
+            ("Sitzendes Trizepsstrecken (KH)", "2188.gif"),
+            ("Kettlebell Turkish Get-Up (Squat-Stil)", "0551.gif"),
+            ("Sitzendes Wadenheben (KH)", "1379.gif"),
+            ("Renegade Row (Kettlebell)", "0521.gif"),
+            ("Latzug eng (Band)", "0974.gif"),
         ]
         for (name, gifFile) in expectations {
             XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,
@@ -181,7 +180,7 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// aus der zweiten Volldatensatz-Suche (Abschnitt 3) — keine neue
     /// Uebung, nur ein Override auf den bestehenden Library-Eintrag.
     func testSkullCrusherResolvesViaRealOverride() {
-        XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: "Skull Crusher"), "0060-h8LFzo9.gif")
+        XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: "Skull Crusher"), "0060.gif")
     }
 
     /// GIF_OVERRIDES_TASK_2, Abschnitt 1: diese 16 Uebungen hatten bisher
@@ -212,12 +211,12 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// hat einen echten, per Bild gesichteten Datensatz-Treffer gefunden.
     func testRound4RevokedForceExcludesResolveViaRealOverrides() {
         let expectations: [(name: String, gifFile: String)] = [
-            ("Bulgarische Kniebeuge (KH)", "0410-qx4fgX7.gif"),
-            ("Brustdrücken (Maschine)", "0577-T0yTjgW.gif"),
-            ("Schulterdrücken (Maschine)", "0587-CggQhII.gif"),
-            ("Reverse Cable Fly", "0154-aqvSOQE.gif"),
-            ("Kabel Crunch", "0175-WW95auq.gif"),
-            ("Kabel Crossover", "1269-UKWTJWR.gif"),
+            ("Bulgarische Kniebeuge (KH)", "0410.gif"),
+            ("Brustdrücken (Maschine)", "0577.gif"),
+            ("Schulterdrücken (Maschine)", "0587.gif"),
+            ("Reverse Cable Fly", "0154.gif"),
+            ("Kabel Crunch", "0175.gif"),
+            ("Kabel Crossover", "1269.gif"),
         ]
         for (name, gifFile) in expectations {
             XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,
@@ -230,22 +229,22 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// beteiligt — waren vorher einfach ohne Treffer oder mehrdeutig).
     func testRound4ResolvedExistingExercisesResolveViaRealOverrides() {
         let expectations: [(name: String, gifFile: String)] = [
-            ("Chest Supported Row (KH)", "0327-7vG5o25.gif"),
-            ("Australian Pull-ups", "0499-bZGHsAZ.gif"),
-            ("Handgelenk-Curl", "0401-2dImyQ8.gif"),
-            ("Band Curls", "0968-3omWx6P.gif"),
-            ("Ausfallschritte (BW)", "3470-kMzUs9Y.gif"),
-            ("Seitstütz", "0705-RKjH6Lt.gif"),
-            ("Latzug (eng)", "0673-ecpY0rH.gif"),
-            ("Cable Woodchopper", "0862-fhZQPlV.gif"),
-            ("Plank", "3665-hCjGsRQ.gif"),
-            ("Freier Lauf", "0685-oLrKqDH.gif"),
-            ("Easy Run", "0685-oLrKqDH.gif"),
-            ("Long Run", "0685-oLrKqDH.gif"),
-            ("Tempo Run", "0685-oLrKqDH.gif"),
-            ("Intervalle", "0685-oLrKqDH.gif"),
-            ("Lauf-Intervall", "0685-oLrKqDH.gif"),
-            ("Laufband", "0684-y5p0H8a.gif"),
+            ("Chest Supported Row (KH)", "0327.gif"),
+            ("Australian Pull-ups", "0499.gif"),
+            ("Handgelenk-Curl", "0401.gif"),
+            ("Band Curls", "0968.gif"),
+            ("Ausfallschritte (BW)", "3470.gif"),
+            ("Seitstütz", "0705.gif"),
+            ("Latzug (eng)", "0673.gif"),
+            ("Cable Woodchopper", "0862.gif"),
+            ("Plank", "3665.gif"),
+            ("Freier Lauf", "0685.gif"),
+            ("Easy Run", "0685.gif"),
+            ("Long Run", "0685.gif"),
+            ("Tempo Run", "0685.gif"),
+            ("Intervalle", "0685.gif"),
+            ("Lauf-Intervall", "0685.gif"),
+            ("Laufband", "0684.gif"),
         ]
         for (name, gifFile) in expectations {
             XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,
@@ -257,14 +256,14 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// Alternativen") muessen ueber ihren Override auffindbar sein.
     func testRound4NewExercisesResolveViaRealOverrides() {
         let expectations: [(name: String, gifFile: String)] = [
-            ("Beinheben auf Flachbank", "0620-WhuFnR7.gif"),
-            ("Wand-Sitz mit Marschieren", "0624-sVQCCeG.gif"),
-            ("Gehen am Laufband (Steigung)", "3666-rjiM4L3.gif"),
-            ("Schulterdrücken stehend (LH, enger Griff)", "1456-wdRZISl.gif"),
-            ("Kettlebell Push Press einarmig", "0540-osdXT3K.gif"),
-            ("Kettlebell Schulterdrücken stehend (zwei Kettlebells)", "0553-blBXysN.gif"),
-            ("Floor Press einarmig (LH)", "0065-vtusOWT.gif"),
-            ("Kettlebell Clean & Jerk einarmig", "0537-vzAxBtt.gif"),
+            ("Beinheben auf Flachbank", "0620.gif"),
+            ("Wand-Sitz mit Marschieren", "0624.gif"),
+            ("Gehen am Laufband (Steigung)", "3666.gif"),
+            ("Schulterdrücken stehend (LH, enger Griff)", "1456.gif"),
+            ("Kettlebell Push Press einarmig", "0540.gif"),
+            ("Kettlebell Schulterdrücken stehend (zwei Kettlebells)", "0553.gif"),
+            ("Floor Press einarmig (LH)", "0065.gif"),
+            ("Kettlebell Clean & Jerk einarmig", "0537.gif"),
         ]
         for (name, gifFile) in expectations {
             XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,
@@ -287,8 +286,8 @@ final class ExerciseMediaProviderTests: XCTestCase {
     /// davon war die richtige Zuordnung).
     func testRound5ApprovedOverridesResolveViaRealOverrides() {
         let expectations: [(name: String, gifFile: String)] = [
-            ("Dip (assistiert)", "0009-PAgTVaK.gif"),
-            ("Schulterdrücken (stehend)", "1457-Kyd9Rz5.gif"),
+            ("Dip (assistiert)", "0009.gif"),
+            ("Schulterdrücken (stehend)", "1457.gif"),
         ]
         for (name, gifFile) in expectations {
             XCTAssertEqual(ExerciseMediaProvider.gifFileName(forExerciseName: name), gifFile,

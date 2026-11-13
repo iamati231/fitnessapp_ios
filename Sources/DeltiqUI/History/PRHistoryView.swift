@@ -405,20 +405,20 @@ private struct ExerciseTrophySection: View {
         let series = chartPoints
         if series.count >= 2 {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(PRKindStyle.shortLabel(chartKind)) - Verlauf")
+                Text("\(PRKindStyle.shortLabel(chartKind)) - \(String(localized: "trophy.chart.suffix", bundle: .module))")
                     .font(.caption)
                     .foregroundStyle(Color.Deltiq.textSecondary)
                 Chart {
                     ForEach(series) { point in
                         LineMark(
-                            x: .value("Datum", point.date),
+                            x: .value(String(localized: "chart.axis.date", bundle: .module), point.date),
                             y: .value(PRKindStyle.yAxisLabel(chartKind), point.value)
                         )
                         .interpolationMethod(.monotone)
                         .foregroundStyle(Color.deltiqOrange)
 
                         PointMark(
-                            x: .value("Datum", point.date),
+                            x: .value(String(localized: "chart.axis.date", bundle: .module), point.date),
                             y: .value(PRKindStyle.yAxisLabel(chartKind), point.value)
                         )
                         .foregroundStyle(Color.deltiqOrange)
@@ -500,10 +500,8 @@ private struct ExerciseTrophySection: View {
     }
 
     private var visibleEntries: [PersonalRecordEntry] {
-        if let selected = selectedKind {
-            return group.entries.filter { $0.kind == selected }
-        }
-        return group.entries
+        let kind = selectedKind ?? chartKind
+        return group.entries.filter { $0.kind == kind }
     }
 }
 

@@ -24,7 +24,7 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
             ("Schulterdrücken (stehend)",  "exercise.name.overheadpress"),
             ("Rudern vorgebeugt",          "exercise.name.barbellrow"),
             ("Klimmzüge (eng/Chin-up)",    "exercise.name.pullup"),
-            ("Latzug (weit)",              "exercise.name.latpulldown"),
+            ("Latzug (Kabel)",              "exercise.name.cablePulldown"),
             ("Bizeps-Curl (KH)",           "exercise.name.bicepcurl"),
             ("Beinpresse",                 "exercise.name.legpress"),
             ("Plank",                      "exercise.name.plank"),
@@ -52,9 +52,8 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
             ("Goblet Squat",                        "exercise.name.gobletSquat"),
             ("Liegestütze",                         "exercise.name.pushup"),
             ("Burpees",                             "exercise.name.burpee"),
-            ("Face Pull",                           "exercise.name.facePull"),
+            ("Reverse Cable Fly",                   "exercise.name.reverseCableFly"),
             ("Kettlebell Swing",                    "exercise.name.kettlebellSwing"),
-            ("Schwimmen",                           "exercise.name.swimming"),
             ("Rumänisches Kreuzheben",              "exercise.name.romanianDeadlift"),
         ]
 
@@ -158,7 +157,6 @@ final class ExerciseLibraryLocalizationTests: XCTestCase {
             ("Sitzendes Trizepsstrecken (KH)", "exercise.name.dumbbellSeatedTricepsExtension"),
             ("Kettlebell Turkish Get-Up (Squat-Stil)", "exercise.name.kettlebellTurkishGetUpSquatStyle"),
             ("Sitzendes Wadenheben (KH)", "exercise.name.dumbbellSeatedCalfRaise"),
-            ("Beincurl stehend (BW)", "exercise.name.standingSingleLegCurlBodyweight"),
             ("Renegade Row (Kettlebell)", "exercise.name.kettlebellRenegadeRow"),
             ("Latzug eng (Band)", "exercise.name.bandCloseGripPulldown"),
         ]

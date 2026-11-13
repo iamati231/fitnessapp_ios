@@ -63,6 +63,7 @@ public struct SettingsView: View {
 
     @State private var showingResetConfirm = false
     @State private var resetErrorMessage: String?
+    @State private var settingsScrollID: String?
 
     public init() {}
 
@@ -75,6 +76,7 @@ public struct SettingsView: View {
 
             ScrollView {
                 VStack(spacing: 18) {
+                    Color.clear.frame(height: 0).id("settings-top")
                     profileSection
                     progressSection
                     groupNavigationSection
@@ -88,6 +90,11 @@ public struct SettingsView: View {
             #if os(iOS)
             .scrollDismissesKeyboard(.interactively)
             #endif
+            .scrollPosition(id: $settingsScrollID, anchor: .top)
+            .onChange(of: navigation.scrollToTopTrigger[.settings]) { _, _ in
+                settingsScrollID = nil
+                Task { @MainActor in withAnimation(.smooth(duration: 0.5)) { settingsScrollID = "settings-top" } }
+            }
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)

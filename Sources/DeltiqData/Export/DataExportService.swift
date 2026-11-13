@@ -320,7 +320,7 @@ public enum DataExportService {
             "daily_carb_goal_g", "daily_fat_goal_g"
         ])
         for p in profiles {
-            w.appendRow([
+            var row: [String] = [
                 id(p),
                 CSVWriter.iso8601(p.birthDate),
                 CSVWriter.decimal(p.heightCm),
@@ -362,7 +362,8 @@ public enum DataExportService {
                 p.dailyProteinGoalG.map { CSVWriter.decimal($0) } ?? "",
                 p.dailyCarbGoalG.map { CSVWriter.decimal($0) } ?? "",
                 p.dailyFatGoalG.map { CSVWriter.decimal($0) } ?? ""
-            ])
+            ]
+            w.appendRow(row)
         }
         return w.data()
     }
@@ -804,7 +805,7 @@ public enum DataExportService {
             "content_snapshot_json", "content_snapshot_captured_at_utc"
         ])
         for s in items {
-            w.appendRow([
+            var row: [String] = [
                 id(s),
                 CSVWriter.iso8601(s.startTime),
                 CSVWriter.iso8601(s.endTime),
@@ -824,25 +825,26 @@ public enum DataExportService {
                 s.roundsCompleted.map(String.init) ?? "",
                 s.partialReps.map(String.init) ?? "",
                 s.partialRepsExerciseName ?? "",
-                s.finishTimeSeconds.map(String.init) ?? "",
-                s.forTimeCheckedRoundsRaw ?? "",
-                s.completedMinuteCount.map(String.init) ?? "",
-                s.circuitRoundsCompleted.map(String.init) ?? "",
-                s.circuitRestEndDate.map { CSVWriter.iso8601($0) } ?? "",
-                s.circuitCurrentRoundCheckedRaw ?? "",
-                CSVWriter.bool(s.completedTarget),
-                s.endurancePhase?.rawValue ?? "",
-                s.enduranceCurrentRoundNumber.map(String.init) ?? "",
-                s.enduranceRoundsCompleted.map(String.init) ?? "",
-                s.endurancePhaseEndDate.map { CSVWriter.iso8601($0) } ?? "",
-                s.endurancePausedRemainingSeconds.map(String.init) ?? "",
-                CSVWriter.bool(s.enduranceWarmupSkipped),
-                CSVWriter.bool(s.enduranceCooldownSkipped),
-                s.importSourceName ?? "",
-                s.healthKitSampleUUID ?? "",
-                s.contentSnapshotJSON ?? "",
-                s.contentSnapshotCapturedAt.map { CSVWriter.iso8601($0) } ?? ""
-            ])
+                s.finishTimeSeconds.map(String.init) ?? ""
+            ]
+            row.append(s.forTimeCheckedRoundsRaw ?? "")
+            row.append(s.completedMinuteCount.map(String.init) ?? "")
+            row.append(s.circuitRoundsCompleted.map(String.init) ?? "")
+            row.append(s.circuitRestEndDate.map { CSVWriter.iso8601($0) } ?? "")
+            row.append(s.circuitCurrentRoundCheckedRaw ?? "")
+            row.append(CSVWriter.bool(s.completedTarget))
+            row.append(s.endurancePhase?.rawValue ?? "")
+            row.append(s.enduranceCurrentRoundNumber.map(String.init) ?? "")
+            row.append(s.enduranceRoundsCompleted.map(String.init) ?? "")
+            row.append(s.endurancePhaseEndDate.map { CSVWriter.iso8601($0) } ?? "")
+            row.append(s.endurancePausedRemainingSeconds.map(String.init) ?? "")
+            row.append(CSVWriter.bool(s.enduranceWarmupSkipped))
+            row.append(CSVWriter.bool(s.enduranceCooldownSkipped))
+            row.append(s.importSourceName ?? "")
+            row.append(s.healthKitSampleUUID ?? "")
+            row.append(s.contentSnapshotJSON ?? "")
+            row.append(s.contentSnapshotCapturedAt.map { CSVWriter.iso8601($0) } ?? "")
+            w.appendRow(row)
         }
         return w.data()
     }

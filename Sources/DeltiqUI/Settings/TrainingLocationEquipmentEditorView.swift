@@ -10,11 +10,11 @@ import DeltiqData
 /// Reiner Profil-Editor: Speichern aendert ausschliesslich `profile.environment`/
 /// `equipmentProfile`/`equipmentProfileConfirmedComplete` — NIE bestehende
 /// Plaene direkt. Die Plan-Anpassung (`PlanEnvironmentMigrator` ueber die
-/// `envSwap`/`envRestore`-Dialoge) bleibt vollstaendig unveraendert in
-/// `ProfileEditorView.onChange(of: profile.environment)`: die feuert
-/// weiterhin genau einmal, sobald `save()` unten `profile.environment`
-/// tatsaechlich schreibt — eine separate, ausdruecklich vom User bestaetigte
-/// Aktion, keine neue Bulk-Logik in diesem Editor.
+/// `envSwap`/`envRestore`-Dialoge) lebt vollstaendig in DIESEM Editor: die
+/// `pendingEnvSwap`/`pendingEnvRestore`-Dialoge unten werden in `save()` gesetzt,
+/// sobald `profile.environment` tatsaechlich geschrieben wird — eine separate,
+/// ausdruecklich vom User bestaetigte Aktion. `ProfileEditorView` haelt keinen
+/// eigenen `onChange`-Handler mehr (waere ein Doppeltrigger desselben Dialogs).
 ///
 /// Lokaler Draft mit explizitem Speichern/Abbrechen (Vorgabe Punkt 3). Die
 /// bestehende `EquipmentProfileEditor`-Komponente (Phase 6, EINZIGE UI fuer
@@ -55,6 +55,31 @@ struct TrainingLocationEquipmentEditorView: View {
     /// Adaptations` (Plan-Uebungs-Tausch) darf erst feuern, NACHDEM dieser
     /// Save tatsaechlich bestaetigt ist — siehe `save()`.
     @State private var saveErrorMessage: String?
+    /// Analog `ProfileEditorView.pendingProfileEnvSwap`: non-nil zeigt den
+    /// Env-Wechsel-Dialog. Muss hier leben statt in `ProfileEditorView`,
+    /// weil `dismiss()` und `confirmationDialog` nicht gleichzeitig korrekt
+    /// funktionieren (Sheet-Dismiss-Animation blockiert neuen Dialog).
+    @State private var pendingEnvSwap: PendingEnvSwap?
+    @State private var pendingEnvRestore: PendingEnvSwap?
+    /// Zwischengespeichertes Flag aus `save()` — nach dem env-frühen Return
+    /// wissen die Dialog-Handler nicht mehr, ob Equipment auch geändert wurde.
+    @State private var equipmentChangedOnSave = false
+    /// Snapshots der drei Equipment-Felder vor dem letzten save() —
+    /// damit envSwap/envRestore-Abbrechen alle vier Felder wiederherstellt,
+    /// nicht nur profile.environment.
+    @State private var preSaveEquipmentProfile: UserEquipmentProfile? = nil
+    @State private var preSaveEquipmentConfirmed: Bool? = nil
+    @State private var preSaveEquipmentPreferences: Set<Equipment>? = nil
+    /// Vollständige Vorschau-Daten für EquipmentAdaptationPreviewSheet.
+    @State private var adaptationDrafts: [(planName: String, replacements: [(original: String, replacement: String)], unresolved: [String])] = []
+    /// Env-Swap/Restore-Previews — vor Mutation berechnet (Issue #11, P1).
+    @State private var envSwapPreviews: [EnvSwapPlanPreview] = []
+    @State private var envRestorePreviews: [EnvSwapPlanPreview] = []
+
+    private struct PendingEnvSwap: Equatable {
+        let oldEnv: EnvironmentType
+        let newEnv: EnvironmentType
+    }
 
     init(profile: UserBodyProfile) {
         self.profile = profile
@@ -109,16 +134,24 @@ struct TrainingLocationEquipmentEditorView: View {
             // Sheets ist sonst ein ungesicherter Verlassen-Weg am Discard-
             // Dialog vorbei. Ohne Aenderungen (`!isDirty`) bleibt es normal
             // moeglich (direktes Schliessen).
-            .interactiveDismissDisabled(isDirty)
+            .interactiveDismissDisabled(isDirty || pendingEquipmentAdaptation != nil || pendingEnvSwap != nil || pendingEnvRestore != nil)
             .onAppear {
                 if draftEnvironment == .gym, !profile.equipmentProfileConfirmedComplete {
                     equipmentTouched = true
                 }
             }
             .onChange(of: draftEnvironment) { _, newValue in
-                if newValue == .gym {
+                switch newValue {
+                case .gym:
                     draftEquipmentProfile = .gymFull
                     equipmentTouched = true
+                case .noEquipment:
+                    var bodyweight = UserEquipmentProfile()
+                    bodyweight.confirmRemainingAsUnavailable()
+                    draftEquipmentProfile = bodyweight
+                    equipmentTouched = true
+                case .homeGym:
+                    break
                 }
             }
             // P5.1: analog `ProfileEditorView`s `envSwap`-Dialog (siehe
@@ -127,55 +160,160 @@ struct TrainingLocationEquipmentEditorView: View {
             // nachdem `save()` das Profil bereits geschrieben hat — die
             // Equipment-Praeferenz selbst ist nie von dieser Entscheidung
             // abhaengig, nur die PLAN-Anpassung ist es.
-            .confirmationDialog(
-                Text("profile.equipmentSwap.title", bundle: .module),
-                isPresented: Binding(
-                    get: { pendingEquipmentAdaptation != nil },
-                    // Task 5: `dismiss()` wanderte aus diesem Setter heraus
-                    // in die beiden Buttons unten — sonst wuerde SwiftUIs
-                    // eigenes "Dialog schliesst sich nach Button-Tap"-
-                    // Verhalten den Editor IMMER verlassen, auch wenn der
-                    // Confirm-Button-Handler unten gerade einen fehl-
-                    // geschlagenen Save meldet (siehe dortiger Kommentar).
-                    set: { if !$0 { pendingEquipmentAdaptation = nil } }
-                )
-            ) {
-                Button {
-                    if let newProfile = pendingEquipmentAdaptation {
-                        applyEquipmentAdaptations(against: newProfile)
-                    }
-                    pendingEquipmentAdaptation = nil
-                    // Task 5: `applyEquipmentAdaptations` mutiert/inserted
-                    // direkt auf `modelContext`, ohne selbst zu speichern
-                    // (`PlanEquipmentAdaptationApplier.apply` speichert
-                    // nicht) — ohne diesen expliziten Save haengt der
-                    // Uebungs-Tausch an SwiftDatas implizitem Autosave. Bei
-                    // einem Fehler bleibt der Editor bewusst OFFEN (kein
-                    // `dismiss()`) — der Nutzer soll nicht glauben, der
-                    // Tausch sei uebernommen, waehrend er es nicht ist.
-                    do {
-                        try modelContext.save()
+            // Vollständiges Preview-Sheet vor der Bestätigung (Issue #11):
+            // zeigt konkrete Ersetzungen und zu archivierende Übungen je Plan.
+            .sheet(isPresented: Binding(
+                get: { pendingEquipmentAdaptation != nil },
+                set: { if !$0 { pendingEquipmentAdaptation = nil } }
+            )) {
+                EquipmentAdaptationPreviewSheet(
+                    drafts: adaptationDrafts,
+                    onConfirm: {
+                        let archived: [String]
+                        if let newProfile = pendingEquipmentAdaptation {
+                            archived = applyEquipmentAdaptations(against: newProfile)
+                        } else {
+                            archived = []
+                        }
+                        pendingEquipmentAdaptation = nil
+                        do {
+                            try modelContext.save()
+                            if archived.isEmpty {
+                                dismiss()
+                            } else {
+                                saveErrorMessage = String(localized: "profile.equipmentAdaptation.conflict", bundle: .module)
+                                    + " " + archived.joined(separator: ", ")
+                            }
+                        } catch {
+                            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                        }
+                    },
+                    onCancel: {
+                        pendingEquipmentAdaptation = nil
                         dismiss()
-                    } catch {
-                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                     }
-                } label: {
-                    Text("profile.envSwap.confirm", bundle: .module)
+                )
+            }
+            // Issue #11 P1: Env-Swap zeigt vollständige Vorschau VOR jeder Mutation.
+            // Issue #11 P3: checkAndHandleEquipmentGap() nur nach erfolgreichem save().
+            .sheet(isPresented: Binding(
+                get: { pendingEnvSwap != nil },
+                set: { isPresented in
+                    guard !isPresented else { return }
+                    // Button-Handler nullen pendingEnvSwap vor dem Dismiss;
+                    // non-nil hier ⟹ Swipe-Dismiss ohne Auswahl → rollback.
+                    if let swap = pendingEnvSwap { rollbackEnvChange(to: swap.oldEnv) }
+                    pendingEnvSwap = nil
                 }
-                Button(role: .cancel) {
-                    pendingEquipmentAdaptation = nil
-                    dismiss()
-                } label: {
-                    Text("profile.envSwap.keep", bundle: .module)
+            )) {
+                if let swap = pendingEnvSwap {
+                    EnvChangePreviewSheet(
+                        newEnv: swap.newEnv,
+                        previews: envSwapPreviews,
+                        mode: .swap,
+                        onConfirm: {
+                            applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                            pendingEnvSwap = nil
+                            do {
+                                try modelContext.save()
+                                checkAndHandleEquipmentGap()
+                            } catch {
+                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                            }
+                        },
+                        onSecondary: {
+                            pendingEnvSwap = nil
+                            checkAndHandleEquipmentGap()
+                        },
+                        onCancel: {
+                            let oldEnv = swap.oldEnv
+                            pendingEnvSwap = nil  // Sheet schließen; Binding.set findet nil → kein Rollback
+                            rollbackEnvChange(to: oldEnv)
+                        }
+                    )
                 }
-            } message: {
-                Text("profile.equipmentSwap.message", bundle: .module)
+            }
+            .sheet(isPresented: Binding(
+                get: { pendingEnvRestore != nil },
+                set: { isPresented in
+                    guard !isPresented else { return }
+                    if let swap = pendingEnvRestore { rollbackEnvChange(to: swap.oldEnv) }
+                    pendingEnvRestore = nil
+                }
+            )) {
+                if let swap = pendingEnvRestore {
+                    EnvChangePreviewSheet(
+                        newEnv: swap.newEnv,
+                        previews: envRestorePreviews,
+                        mode: .restore,
+                        onConfirm: {
+                            applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
+                            pendingEnvRestore = nil
+                            do {
+                                try modelContext.save()
+                                checkAndHandleEquipmentGap()
+                            } catch {
+                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                            }
+                        },
+                        onSecondary: {
+                            applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                            pendingEnvRestore = nil
+                            do {
+                                try modelContext.save()
+                                checkAndHandleEquipmentGap()
+                            } catch {
+                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                            }
+                        },
+                        onCancel: {
+                            let oldEnv = swap.oldEnv
+                            pendingEnvRestore = nil  // Sheet schließen; Binding.set findet nil → kein Rollback
+                            rollbackEnvChange(to: oldEnv)
+                        }
+                    )
+                }
             }
         }
     }
 
-    /// UI-Refactor (DeltiqHeader-Muster): `UserEquipmentProfile`/`EnvironmentType`
-    /// sind beide `Equatable` — reiner Wertevergleich gegen den Ausgangszustand.
+    /// Gemeinsamer Rollback für Swipe-Dismiss und Cancel-Button beider EnvChange-Sheets.
+    /// Stellt alle vier Profil-Felder und Draft-State auf oldEnv zurück und dismisst
+    /// nur bei erfolgreichem Save. Bei Save-Fehler werden Profil und Draft wieder auf den
+    /// persistierten Neu-Zustand gesetzt, damit In-Memory und Store konsistent bleiben.
+    private func rollbackEnvChange(to oldEnv: EnvironmentType) {
+        // Snap des tatsächlich gespeicherten (neuen) Zustands für den Fehlerfall.
+        let snapEnv = profile.environment
+        let snapEquipmentProfile = profile.equipmentProfile
+        let snapEquipmentConfirmed = profile.equipmentProfileConfirmedComplete
+        let snapEquipmentPreferences = profile.equipmentPreferences
+
+        profile.environment = oldEnv
+        draftEnvironment = oldEnv
+        if let ep = preSaveEquipmentProfile {
+            profile.equipmentProfile = ep
+            draftEquipmentProfile = ep
+        }
+        if let ec = preSaveEquipmentConfirmed { profile.equipmentProfileConfirmedComplete = ec }
+        if let prefs = preSaveEquipmentPreferences { profile.equipmentPreferences = prefs }
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            // Save gescheitert: In-Memory auf persistierten Neu-Stand zurücksetzen
+            // damit Speicher und Store konsistent bleiben (isDirty == false).
+            profile.environment = snapEnv
+            draftEnvironment = snapEnv
+            profile.equipmentProfile = snapEquipmentProfile
+            draftEquipmentProfile = snapEquipmentProfile
+            profile.equipmentProfileConfirmedComplete = snapEquipmentConfirmed
+            profile.equipmentPreferences = snapEquipmentPreferences
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
+    }
+
+    /// `UserEquipmentProfile`/`EnvironmentType` sind beide `Equatable` —
+    /// reiner Wertevergleich gegen den Draft-Ausgangszustand.
     private var isDirty: Bool {
         draftEnvironment != profile.environment || draftEquipmentProfile != profile.equipmentProfile
     }
@@ -202,7 +340,7 @@ struct TrainingLocationEquipmentEditorView: View {
             EquipmentProfileEditor(equipmentProfile: Binding(
                 get: { draftEquipmentProfile },
                 set: { draftEquipmentProfile = $0; equipmentTouched = true }
-            ))
+            ), showsCounts: draftEnvironment != .gym)
             .padding(.horizontal, 14)
             .padding(.bottom, 12)
         }
@@ -246,6 +384,11 @@ struct TrainingLocationEquipmentEditorView: View {
         let originalEquipmentProfileConfirmedComplete = profile.equipmentProfileConfirmedComplete
         let originalEquipmentPreferences = profile.equipmentPreferences
 
+        // Vor der Mutation snapshot für env-Dialog-Cancel-Handler.
+        preSaveEquipmentProfile = originalEquipmentProfile
+        preSaveEquipmentConfirmed = originalEquipmentProfileConfirmedComplete
+        preSaveEquipmentPreferences = originalEquipmentPreferences
+
         profile.environment = draftEnvironment
         profile.equipmentProfile = draftEquipmentProfile
         if equipmentTouched {
@@ -273,6 +416,28 @@ struct TrainingLocationEquipmentEditorView: View {
             return
         }
 
+        // Env-Wechsel-Dialog muss VOR dismiss() gezeigt werden — iOS kann
+        // keinen neuen Dialog zeigen, waehrend das Sheet-Dismiss animiert.
+        // Wenn der Env sich geaendert hat und es nicht-leere Plaene gibt,
+        // zeigen wir den envSwap/envRestore-Dialog hier (nicht in
+        // ProfileEditorView.onChange wie urspruenglich geplant).
+        let environmentChanged = originalEnvironment != draftEnvironment
+        if environmentChanged, plans.contains(where: { $0.days.contains(where: { !$0.activeExercises.isEmpty }) }) {
+            let pending = PendingEnvSwap(oldEnv: originalEnvironment, newEnv: draftEnvironment)
+            // Für die Dialog-Handler merken, ob Equipment ebenfalls geändert wurde —
+            // nach dem frühen Return ist `equipmentChanged` aus dem Dialog nicht mehr zugänglich.
+            equipmentChangedOnSave = equipmentChanged
+            if PlanEnvironmentMigrator.hasAnyRestorableOriginals(plans: plans, forEnvironment: draftEnvironment) {
+                envRestorePreviews = PlanEnvironmentMigrator.previewRestoreAll(plans: plans, toEnvironment: draftEnvironment)
+                pendingEnvRestore = pending
+            } else {
+                envSwapPreviews = PlanEnvironmentMigrator.previewMigrateAll(plans: plans, toEnvironment: draftEnvironment)
+                pendingEnvSwap = pending
+            }
+            isSaving = false
+            return
+        }
+
         // Ab hier IMMER `profile.equipmentProfile` verwenden, nie mehr den
         // lokalen `draftEquipmentProfile` — bei `equipmentTouched` hat
         // `confirmEquipmentProfileComplete()` oben jedes noch unberuehrte
@@ -286,25 +451,51 @@ struct TrainingLocationEquipmentEditorView: View {
         // dieselbe (noch unbestaetigte) Uebung erneut nur als "ungeklaert"
         // einstuft.
         let resolvedProfile = profile.equipmentProfile
-        if equipmentChanged, hasAnyPlanWithEquipmentGap(against: resolvedProfile) {
-            pendingEquipmentAdaptation = resolvedProfile
-            // Fix-Runde 1 (Befund 1): dieser Zweig dismisst NICHT -- der
-            // `confirmationDialog` unten kann durch Wegtippen (ausserhalb,
-            // ohne Confirm/Cancel-Button) geschlossen werden, ohne dass
-            // `dismiss()` je aufgerufen wird. Ohne dieses Reset bliebe der
-            // Speichern-Haken dann fuer immer deaktiviert.
-            isSaving = false
-            return
+        if equipmentChanged {
+            if computeAdaptationPreview(against: resolvedProfile) {
+                pendingEquipmentAdaptation = resolvedProfile
+                // Fix-Runde 1 (Befund 1): dieser Zweig dismisst NICHT -- der
+                // `confirmationDialog` unten kann durch Wegtippen (ausserhalb,
+                // ohne Confirm/Cancel-Button) geschlossen werden, ohne dass
+                // `dismiss()` je aufgerufen wird. Ohne dieses Reset bliebe der
+                // Speichern-Haken dann fuer immer deaktiviert.
+                isSaving = false
+                return
+            }
         }
         dismiss()
     }
 
-    /// Nur nicht-leere Plaene zaehlen — leere haben nichts anzupassen
-    /// (identische Filterung wie `PlanEnvironmentMigrator.migrateAll`).
-    private func hasAnyPlanWithEquipmentGap(against newProfile: UserEquipmentProfile) -> Bool {
-        plans.contains { plan in
-            guard plan.days.contains(where: { !$0.activeExercises.isEmpty }) else { return false }
-            return !PlanEquipmentAdaptationApplier.check(plan: plan, against: newProfile).isAvailable
+    /// Pre-compute adaptation drafts für das Preview-Sheet — keine Mutation.
+    /// Gibt `true` zurück, wenn mindestens ein Plan eine Equipment-Lücke hat.
+    @discardableResult
+    private func computeAdaptationPreview(against newProfile: UserEquipmentProfile) -> Bool {
+        let context = SubstitutionContext(goal: profile.trainingGoal, experienceTrack: profile.experienceTrack)
+        var haGap = false
+        var newDrafts: [(planName: String, replacements: [(original: String, replacement: String)], unresolved: [String])] = []
+        for plan in plans where plan.days.contains(where: { !$0.activeExercises.isEmpty }) {
+            guard !PlanEquipmentAdaptationApplier.check(plan: plan, against: newProfile).isAvailable else { continue }
+            haGap = true
+            let draft = PlanEquipmentAdaptationApplier.preview(plan: plan, against: newProfile, context: context)
+            newDrafts.append((
+                planName: plan.name,
+                replacements: draft.replacements.map { ($0.originalName, $0.replacementName) },
+                unresolved: draft.unresolved.map { $0.exerciseName }
+            ))
+        }
+        adaptationDrafts = newDrafts
+        return haGap
+    }
+
+    /// Nach einem Env-Dialog: Equipment-Gap-Prüfung, die `save()` wegen des
+    /// frühen Returns nicht mehr erreicht hat.
+    private func checkAndHandleEquipmentGap() {
+        guard equipmentChangedOnSave else { dismiss(); return }
+        let resolvedProfile = profile.equipmentProfile
+        if computeAdaptationPreview(against: resolvedProfile) {
+            pendingEquipmentAdaptation = resolvedProfile
+        } else {
+            dismiss()
         }
     }
 
@@ -312,13 +503,30 @@ struct TrainingLocationEquipmentEditorView: View {
     /// nicht einen frei erfundenen Plan-Kontext — derselbe Wert, den
     /// `ProgramTemplatePickerView.instantiate`s eigener Veraltungs-Resolve-
     /// Pfad bereits nutzt (kein neu eingefuehrtes Muster).
-    private func applyEquipmentAdaptations(against newProfile: UserEquipmentProfile) {
+    ///
+    /// Gibt die Namen archivierter Uebungen zurueck (`.noApprovedSubstitute`),
+    /// damit die UI einen Konflikt-Hinweis zeigen kann statt still zu dismissen.
+    @discardableResult
+    private func applyEquipmentAdaptations(against newProfile: UserEquipmentProfile) -> [String] {
         let context = SubstitutionContext(goal: profile.trainingGoal, experienceTrack: profile.experienceTrack)
+        var allArchived: [String] = []
         for plan in plans where plan.days.contains(where: { !$0.activeExercises.isEmpty }) {
             let draft = PlanEquipmentAdaptationApplier.preview(plan: plan, against: newProfile, context: context)
-            guard !draft.replacements.isEmpty else { continue }
-            PlanEquipmentAdaptationApplier.apply(plan: plan, draft: draft, modelContext: modelContext)
+            if !draft.replacements.isEmpty {
+                PlanEquipmentAdaptationApplier.apply(plan: plan, draft: draft, modelContext: modelContext)
+            }
+            let archived = PlanEquipmentAdaptationApplier.archiveUnresolved(plan: plan, draft: draft, modelContext: modelContext)
+            allArchived.append(contentsOf: archived)
         }
+        return allArchived
+    }
+
+    private func applyEnvironmentSwapToAllPlans(newEnv: EnvironmentType) {
+        _ = PlanEnvironmentMigrator.migrateAll(plans: plans, toEnvironment: newEnv, modelContext: modelContext)
+    }
+
+    private func applyEnvironmentRestoreToAllPlans(newEnv: EnvironmentType) {
+        _ = PlanEnvironmentMigrator.restoreAll(plans: plans, toEnvironment: newEnv, modelContext: modelContext)
     }
 
     /// Task 5: identisches Inline-Fehler-Muster wie `GearListView.gearCard`.
@@ -326,6 +534,128 @@ struct TrainingLocationEquipmentEditorView: View {
         Text(text)
             .font(.system(size: 13))
             .foregroundStyle(Color.Deltiq.error)
+    }
+}
+
+// MARK: - Preview-Sheet
+
+@available(iOS 17.0, macOS 14.0, *)
+private struct EquipmentAdaptationPreviewSheet: View {
+    let drafts: [(planName: String, replacements: [(original: String, replacement: String)], unresolved: [String])]
+    var onConfirm: () -> Void
+    var onCancel: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(drafts.indices, id: \.self) { i in
+                    let d = drafts[i]
+                    Section(d.planName) {
+                        ForEach(d.replacements.indices, id: \.self) { j in
+                            let r = d.replacements[j]
+                            HStack(spacing: 6) {
+                                Text(r.original).foregroundStyle(.secondary)
+                                Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
+                                Text(r.replacement)
+                            }
+                            .font(.subheadline)
+                        }
+                        ForEach(d.unresolved, id: \.self) { name in
+                            Label(name, systemImage: "archivebox")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.Deltiq.error)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(Text("profile.equipmentSwap.title", bundle: .module))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(role: .cancel, action: onCancel) {
+                        Text("common.cancel", bundle: .module)
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(action: onConfirm) {
+                        Text("profile.envSwap.confirm", bundle: .module)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Env-Change Preview-Sheet (Issue #11 P1)
+
+@available(iOS 17.0, macOS 14.0, *)
+private struct EnvChangePreviewSheet: View {
+    enum Mode { case swap, restore }
+
+    let newEnv: EnvironmentType
+    let previews: [EnvSwapPlanPreview]
+    let mode: Mode
+    var onConfirm: () -> Void
+    var onSecondary: () -> Void
+    var onCancel: () -> Void
+
+    private var confirmKey: LocalizedStringKey {
+        mode == .swap ? "profile.envSwap.confirm" : "profile.envRestore.confirm"
+    }
+    private var secondaryKey: LocalizedStringKey {
+        mode == .swap ? "profile.envSwap.keep" : "profile.envRestore.adjustNew"
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(previews) { preview in
+                    Section(preview.planName) {
+                        ForEach(preview.swaps, id: \.original) { swap in
+                            HStack(spacing: 6) {
+                                Text(swap.original).foregroundStyle(.secondary)
+                                Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
+                                Text(swap.replacement)
+                            }
+                            .font(.subheadline)
+                        }
+                        ForEach(preview.archived, id: \.self) { name in
+                            Label(name, systemImage: "archivebox")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.Deltiq.error)
+                        }
+                        // Issue #12: .keep-archivierte Exercises, die beim Restore reaktiviert werden.
+                        ForEach(preview.restored, id: \.self) { name in
+                            Label(name, systemImage: "arrow.uturn.backward.circle")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.Deltiq.success)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(mode == .swap
+                ? Text("profile.envSwap.title", bundle: .module)
+                : Text("profile.envRestore.title", bundle: .module))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(role: .cancel, action: onCancel) {
+                        Text("common.cancel", bundle: .module)
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(action: onConfirm) {
+                        Text(confirmKey, bundle: .module)
+                    }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                Button(action: onSecondary) {
+                    Text(secondaryKey, bundle: .module)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderless)
+                .padding()
+            }
+        }
     }
 }
 #endif

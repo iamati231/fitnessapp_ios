@@ -28,7 +28,6 @@ public struct MealPlannerView: View {
     @State private var showRegenerationError = false
     @State private var optimizationProposal: OptimizedPlanProposal? = nil
     @State private var isOptimizing = false
-    @State private var showOptimizationProtectedAlert = false
     @State private var showOptimizationNoGoalsAlert = false
 
     @Query private var allPlans: [DailyMealPlan]
@@ -143,14 +142,6 @@ public struct MealPlannerView: View {
         }
         .sheet(item: $optimizationProposal) { proposal in
             optimizationPreviewSheet(proposal)
-        }
-        .alert(
-            String(localized: "mealPlanner.optimize.protected.title", bundle: .module),
-            isPresented: $showOptimizationProtectedAlert
-        ) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("mealPlanner.optimize.protected.message", bundle: .module)
         }
         .alert(
             String(localized: "mealPlanner.optimize.noGoals", bundle: .module),
@@ -727,10 +718,6 @@ public struct MealPlannerView: View {
     @MainActor
     private func startOptimization() async {
         guard let plan = planForSelectedDate else { return }
-        guard !plan.isManuallyAdjusted else {
-            showOptimizationProtectedAlert = true
-            return
-        }
         let profile = userProfile
         guard profile?.dailyCalorieGoalKcal != nil
             || profile?.dailyProteinGoalG != nil

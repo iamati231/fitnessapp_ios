@@ -508,29 +508,6 @@
         }
       }
     },
-    "exercise.name.standingSingleLegCurlBodyweight": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beincurl stehend (BW)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Standing Single Leg Curl"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Standing Single Leg Curl"
-          }
-        }
-      }
-    },
     "exercise.name.kettlebellRenegadeRow": {
       "extractionState": "manual",
       "localizations": {
@@ -2093,6 +2070,102 @@
             "value": "Bileşik hareket"
           }
         }
+      }
+    },
+    "customExercise.section.media": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Anleitung / Medien" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Instructions / Media" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Talimatlar / Medya" } }
+      }
+    },
+    "customExercise.media.addVideo": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Video aus Dateien" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Video from Files" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dosyadan Video" } }
+      }
+    },
+    "customExercise.media.addGif": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "GIF aus Dateien" } },
+        "en": { "stringUnit": { "state": "translated", "value": "GIF from Files" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dosyadan GIF" } }
+      }
+    },
+    "customExercise.media.addYouTube": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "YouTube-Link" } },
+        "en": { "stringUnit": { "state": "translated", "value": "YouTube link" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "YouTube bağlantısı" } }
+      }
+    },
+    "customExercise.media.remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Entfernen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Remove" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kaldır" } }
+      }
+    },
+    "customExercise.media.openYouTube": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "In YouTube öffnen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Open in YouTube" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "YouTube'da aç" } }
+      }
+    },
+    "customExercise.media.youTubePromptTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "YouTube-URL eingeben" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Enter YouTube URL" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "YouTube URL'si girin" } }
+      }
+    },
+    "customExercise.media.youTubeInvalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nur YouTube-Shorts-URLs erlaubt (youtube.com/shorts/…)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Only YouTube Shorts URLs allowed (youtube.com/shorts/…)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yalnızca YouTube Shorts URL'leri izinli (youtube.com/shorts/…)" } }
+      }
+    },
+    "customExercise.media.importError": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Import fehlgeschlagen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Import failed" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İçe aktarma başarısız" } }
+      }
+    },
+    "customExercise.media.fileTooLarge": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Datei zu groß (max. 100 MB)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "File too large (max. 100 MB)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dosya çok büyük (maks. 100 MB)" } }
+      }
+    },
+    "customExercise.media.videoTooLong": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Video zu lang (max. 15 Sekunden)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Video too long (max. 15 seconds)" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Video çok uzun (maks. 15 saniye)" } }
+      }
+    },
+    "customExercise.media.invalidDuration": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Video-Dauer konnte nicht gelesen werden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Video duration could not be read" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Video süresi okunamadı" } }
       }
     },
     "common.yes": {
@@ -10393,7 +10466,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Snatch (Koparma)"
+            "value": "Snatch"
           }
         }
       }
@@ -10416,7 +10489,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clean & Jerk (Silkme)"
+            "value": "Clean & Jerk"
           }
         }
       }
@@ -10513,29 +10586,6 @@
         }
       }
     },
-    "exercise.name.meadowsRow": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Meadows Row"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Meadows Row"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Meadows Row"
-          }
-        }
-      }
-    },
     "exercise.name.renegadeRow": {
       "extractionState": "manual",
       "localizations": {
@@ -10623,30 +10673,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable Woodchopper (Odun Kesme)"
-          }
-        }
-      }
-    },
-    "exercise.name.bayesianCurl": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bayesian Curl"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bayesian Curl"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bayesian Curl"
+            "value": "Cable Woodchopper"
           }
         }
       }
@@ -10669,7 +10696,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ters Cable Fly"
+            "value": "Reverse Cable Fly"
           }
         }
       }
@@ -10686,13 +10713,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Neutral-Grip Lat Pulldown"
+            "value": "Cable Lat Pulldown Neutral Grip"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nötr Tutuş Lat Çekiş"
+            "value": "Cable Lat Pulldown Neutral Grip"
           }
         }
       }
@@ -10715,7 +10742,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oturarak Bacak Curl"
+            "value": "Seated Leg Curl"
           }
         }
       }
@@ -10738,7 +10765,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayakta Bacak Curl"
+            "value": "Standing Leg Curl"
           }
         }
       }
@@ -10755,13 +10782,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calf Press (Leg Press)"
+            "value": "Leg Press Calf Raise"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baldır Press (Leg Press)"
+            "value": "Leg Press Calf Raise"
           }
         }
       }
@@ -10784,7 +10811,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Destekli Barfiks"
+            "value": "Assisted Pull-Up"
           }
         }
       }
@@ -10807,7 +10834,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Destekli Dip"
+            "value": "Assisted Dip"
           }
         }
       }
@@ -10858,29 +10885,6 @@
         }
       }
     },
-    "exercise.name.reverseNordicCurl": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reverse Nordic Curl"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reverse Nordic Curl"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ters Nordic Curl"
-          }
-        }
-      }
-    },
     "exercise.name.medicineBallSlam": {
       "extractionState": "manual",
       "localizations": {
@@ -10899,7 +10903,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sağlık Topu Slam"
+            "value": "Medicine Ball Slam"
           }
         }
       }
@@ -10945,7 +10949,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bilek Curl"
+            "value": "Wrist Curl"
           }
         }
       }
@@ -10968,7 +10972,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ters Bilek Curl"
+            "value": "Reverse Wrist Curl"
           }
         }
       }
@@ -10991,7 +10995,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Boyun Curl"
+            "value": "Neck Curl"
           }
         }
       }
@@ -11014,7 +11018,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Boyun Ekstansiyonu"
+            "value": "Neck Extension"
           }
         }
       }
@@ -11129,7 +11133,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kum Torbası Taşıma"
+            "value": "Sandbag Carry"
           }
         }
       }
@@ -11152,7 +11156,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kızak İtme"
+            "value": "Sled Push"
           }
         }
       }
@@ -11175,7 +11179,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kızak Çekme"
+            "value": "Sled Pull"
           }
         }
       }
@@ -11198,7 +11202,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Battle Ropes (Halat)"
+            "value": "Battle Ropes"
           }
         }
       }
@@ -11284,13 +11288,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bent-Over Row"
+            "value": "Barbell Bent-Over Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bent-Over Row"
+            "value": "Barbell Bent-Over Row"
           }
         }
       }
@@ -11313,7 +11317,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Barfiks (Chin-Up)"
+            "value": "Chin-Up"
           }
         }
       }
@@ -11336,30 +11340,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Barfiks"
-          }
-        }
-      }
-    },
-    "exercise.name.latpulldown": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Latzug (weit)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wide-Grip Lat Pulldown"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wide-Grip Lat Pulldown"
+            "value": "Pull-Up"
           }
         }
       }
@@ -11474,7 +11455,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu"
+            "value": "Outdoor Run"
           }
         }
       }
@@ -11617,29 +11598,6 @@
         }
       }
     },
-    "exercise.name.pushPress": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Push Press"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Push Press"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Push Press"
-          }
-        }
-      }
-    },
     "exercise.name.behindNeckPress": {
       "extractionState": "manual",
       "localizations": {
@@ -11755,29 +11713,6 @@
         }
       }
     },
-    "exercise.name.barbellHipThrust": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hip Thrust (LH)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Barbell Hip Thrust"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Barbell Hip Thrust"
-          }
-        }
-      }
-    },
     "exercise.name.barbellLunge": {
       "extractionState": "manual",
       "localizations": {
@@ -11836,13 +11771,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standing Calf Raise (Barbell)"
+            "value": "Barbell Standing Calf Raise"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standing Calf Raise"
+            "value": "Barbell Standing Calf Raise"
           }
         }
       }
@@ -11951,13 +11886,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Dumbbell Bench Press"
+            "value": "Dumbbell Incline Bench Press"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Dumbbell Bench Press"
+            "value": "Dumbbell Incline Bench Press"
           }
         }
       }
@@ -11974,13 +11909,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Flat Dumbbell Fly"
+            "value": "Dumbbell Flat Fly"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Flat Dumbbell Fly"
+            "value": "Dumbbell Flat Fly"
           }
         }
       }
@@ -11997,13 +11932,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Dumbbell Fly"
+            "value": "Dumbbell Incline Fly"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incline Dumbbell Fly"
+            "value": "Dumbbell Incline Fly"
           }
         }
       }
@@ -12020,13 +11955,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-Arm Dumbbell Row"
+            "value": "Dumbbell One-Arm Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-Arm Dumbbell Row"
+            "value": "Dumbbell One-Arm Row"
           }
         }
       }
@@ -12376,52 +12311,6 @@
         }
       }
     },
-    "exercise.name.dumbbellHipThrust": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hip Thrust (KH)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dumbbell Hip Thrust"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dumbbell Hip Thrust"
-          }
-        }
-      }
-    },
-    "exercise.name.dumbbellCalfRaise": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wadenheben (KH)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dumbbell Calf Raise"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dumbbell Calf Raise"
-          }
-        }
-      }
-    },
     "exercise.name.hammerCurl": {
       "extractionState": "manual",
       "localizations": {
@@ -12487,29 +12376,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Concentration Curl"
-          }
-        }
-      }
-    },
-    "exercise.name.dumbbellOverheadTricepExtension": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trizepsstrecker über Kopf (KH)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Overhead Dumbbell Triceps Extension"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Overhead Dumbbell Triceps Extension"
           }
         }
       }
@@ -12601,7 +12467,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Towel Row"
+            "value": "Towel Row (Doorframe)"
           }
         }
       }
@@ -12624,7 +12490,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Şınav"
+            "value": "Push-Up"
           }
         }
       }
@@ -12647,7 +12513,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diz Üstü Şınav"
+            "value": "Knee Push-Up"
           }
         }
       }
@@ -12744,29 +12610,6 @@
         }
       }
     },
-    "exercise.name.pikePushup": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pike Liegestütze"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pike Push-Up"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pike Push-Up"
-          }
-        }
-      }
-    },
     "exercise.name.handstandPushup": {
       "extractionState": "manual",
       "localizations": {
@@ -12809,29 +12652,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Back Widow"
-          }
-        }
-      }
-    },
-    "exercise.name.bodyweightSquat": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kniebeuge (BW)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bodyweight Squat"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bodyweight Squat"
           }
         }
       }
@@ -12905,52 +12725,6 @@
         }
       }
     },
-    "exercise.name.boxJump": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Box Jump"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Box Jump"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Box Jump"
-          }
-        }
-      }
-    },
-    "exercise.name.wallSit": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wall Sit"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wall Sit"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wall Sit"
-          }
-        }
-      }
-    },
     "exercise.name.sissySquat": {
       "extractionState": "manual",
       "localizations": {
@@ -12974,29 +12748,6 @@
         }
       }
     },
-    "exercise.name.nordicCurl": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nordic Curls"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nordic Curl"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nordic Curl"
-          }
-        }
-      }
-    },
     "exercise.name.gluteBridge": {
       "extractionState": "manual",
       "localizations": {
@@ -13016,29 +12767,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Glute Bridge"
-          }
-        }
-      }
-    },
-    "exercise.name.bodyweightHipThrust": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hip Thrust (BW)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bodyweight Hip Thrust"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bodyweight Hip Thrust"
           }
         }
       }
@@ -13153,30 +12881,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mekik"
-          }
-        }
-      }
-    },
-    "exercise.name.lyingLegRaise": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beinheben (liegend)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lying Leg Raise"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lying Leg Raise"
+            "value": "Crunches"
           }
         }
       }
@@ -13354,13 +13059,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Close-Grip Lat Pulldown"
+            "value": "Reverse Grip Machine Lat Pulldown"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Close-Grip Lat Pulldown"
+            "value": "Reverse Grip Machine Lat Pulldown"
           }
         }
       }
@@ -13377,13 +13082,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seated Cable Row"
+            "value": "Cable Seated Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seated Cable Row"
+            "value": "Cable Seated Row"
           }
         }
       }
@@ -13407,29 +13112,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cable Lateral Raise"
-          }
-        }
-      }
-    },
-    "exercise.name.facePull": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Face Pull"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Face Pull"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Face Pull"
           }
         }
       }
@@ -13779,29 +13461,6 @@
         }
       }
     },
-    "exercise.name.turkishGetUp": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turkish Get-Up"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turkish Get-Up"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Türk Kalkışı"
-          }
-        }
-      }
-    },
     "exercise.name.kettlebellGobletSquat": {
       "extractionState": "manual",
       "localizations": {
@@ -13871,29 +13530,6 @@
         }
       }
     },
-    "exercise.name.kettlebellHalo": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Halo"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Halo"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Halo"
-          }
-        }
-      }
-    },
     "exercise.name.kettlebellFloorPress": {
       "extractionState": "manual",
       "localizations": {
@@ -13906,13 +13542,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kettlebell Floor Press"
+            "value": "Kettlebell One Arm Floor Press"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kettlebell Floor Press"
+            "value": "Kettlebell One Arm Floor Press"
           }
         }
       }
@@ -13935,122 +13571,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kettlebell Tek Kol Row"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellRDL": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell RDL"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell RDL"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell RDL"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellPushPress": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Push Press"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Push Press"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Push Press"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellSuitcaseCarry": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Suitcase Carry"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Suitcase Carry"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Bavul Taşıma"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellDeadlift": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Kreuzheben"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Deadlift"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Deadlift"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellOverheadPress": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Overhead Press"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Overhead Press"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Overhead Press"
+            "value": "Kettlebell Single-Arm Row"
           }
         }
       }
@@ -14078,52 +13599,6 @@
         }
       }
     },
-    "exercise.name.kettlebellSnatchLeft": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Snatch (Links)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Snatch (Left)"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Snatch (Sol)"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellSnatchRight": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Snatch (Rechts)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Snatch (Right)"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Snatch (Sağ)"
-          }
-        }
-      }
-    },
     "exercise.name.treadmill": {
       "extractionState": "manual",
       "localizations": {
@@ -14142,7 +13617,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu Bandı"
+            "value": "Treadmill"
           }
         }
       }
@@ -14165,7 +13640,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bisiklet"
+            "value": "Outdoor Cycling"
           }
         }
       }
@@ -14188,30 +13663,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Egzersiz Bisikleti"
-          }
-        }
-      }
-    },
-    "exercise.name.rowingMachine": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rudermaschine"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rowing Machine"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kürek Ergometresi"
+            "value": "Exercise Bike"
           }
         }
       }
@@ -14234,7 +13686,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eliptik"
+            "value": "Elliptical"
           }
         }
       }
@@ -14257,30 +13709,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stepper"
-          }
-        }
-      }
-    },
-    "exercise.name.swimming": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schwimmen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Swimming"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Yüzme"
+            "value": "Stair Stepper"
           }
         }
       }
@@ -15315,7 +14744,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kolay Koşu"
+            "value": "Easy Run"
           }
         }
       }
@@ -15338,7 +14767,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uzun Koşu"
+            "value": "Long Run"
           }
         }
       }
@@ -15361,7 +14790,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tempo Koşusu"
+            "value": "Tempo Run"
           }
         }
       }
@@ -15384,7 +14813,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "İnterval"
+            "value": "Intervals"
           }
         }
       }
@@ -15407,7 +14836,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Koşu İnterval"
+            "value": "Run Interval"
           }
         }
       }
@@ -15430,7 +14859,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bisiklet İnterval"
+            "value": "Cycling Interval"
           }
         }
       }
@@ -15453,7 +14882,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Isınma Yürüyüşü"
+            "value": "Warm-Up Walk"
           }
         }
       }
@@ -22289,7 +21718,7 @@
         }
       }
     },
-    "settings.group.appExperience":  {
+    "settings.group.appExperience": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -46669,144 +46098,6 @@
         }
       }
     },
-    "exercise.name.kettlebellCleanToFrontSquat": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Clean to Front Squat"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Clean to Front Squat"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Clean to Front Squat"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellThrusterSingleArm": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Thruster einarmig"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Single-Arm Thruster"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tek Kollu Kettlebell Thruster"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellSitUpOverhead": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Sit-Up (Overhead-Halten)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Sit-Up (Overhead Hold)"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Mekik (Overhead Tutuş)"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellPushup": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Liegestütze auf Kettlebell"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Push-Up on Kettlebell"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Üzerinde Şınav"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellUppercutRotation": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Uppercut Rotation"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Uppercut Rotation"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Uppercut Rotasyonu"
-          }
-        }
-      }
-    },
-    "exercise.name.kettlebellPullover": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Pullover"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Pullover"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kettlebell Pullover"
-          }
-        }
-      }
-    },
     "plan.template.kettlebellComplexes.name": {
       "extractionState": "manual",
       "localizations": {
@@ -52787,6 +52078,37 @@
         }
       }
     },
+    "profile.equipmentAdaptation.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungen ohne Ersatz entfernt:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercises removed (no substitute found):"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alternatif bulunamadığı için kaldırılan egzersizler:"
+          }
+        }
+      }
+    },
+    "profile.equipmentAdaptation.preview.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Werden archiviert (kein Ersatz):" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Will be archived (no substitute):" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Arşivlenecek (alternatif yok):" } }
+      }
+    },
     "settings.periodicCheckIn.row": {
       "extractionState": "manual",
       "localizations": {
@@ -55597,6 +54919,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "Şimdi değil"
+          }
+        }
+      }
+    },
+    "dashboard.recent.minutesShort": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Min."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dk"
+          }
+        }
+      }
+    },
+    "dashboard.recent.sets.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Satz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld set"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld set"
+          }
+        }
+      }
+    },
+    "dashboard.recent.sets.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Sätze"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sets"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld set"
           }
         }
       }
@@ -60322,19 +59713,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KI-Analyse"
+            "value": "Ernährungscoach"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "AI insights"
+            "value": "Nutrition coach"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yapay zeka analizi"
+            "value": "Beslenme koçu"
           }
         }
       }
@@ -60937,7 +60328,7 @@
         }
       }
     },
-    "settings.foodLookup.toggle.footer.off":  {
+    "settings.foodLookup.toggle.footer.off": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -60960,7 +60351,7 @@
         }
       }
     },
-    "settings.foodLookup.toggle.footer.on":  {
+    "settings.foodLookup.toggle.footer.on": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -61075,7 +60466,7 @@
         }
       }
     },
-    "settings.credits.onlineFoodLookup.copyright":  {
+    "settings.credits.onlineFoodLookup.copyright": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -61098,7 +60489,7 @@
         }
       }
     },
-    "nutrition.addMeal.onlineSearch.attribution":  {
+    "nutrition.addMeal.onlineSearch.attribution": {
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -61857,22 +61248,22 @@
         }
       }
     },
-    "planBuilder.exerciseLibrary.action":  {
+    "planBuilder.exerciseLibrary.action": {
       "extractionState": "manual",
       "localizations": {
-        "de":  {
+        "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Übungsbibliothek"
           }
         },
-        "en":  {
+        "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Exercise Library"
           }
         },
-        "tr":  {
+        "tr": {
           "stringUnit": {
             "state": "translated",
             "value": "Hareket Kütüphanesi"
@@ -68884,13 +68275,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable EZ Row"
+            "value": "Cable Seated Wide-Grip Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable EZ Row"
+            "value": "Cable Seated Wide-Grip Row"
           }
         }
       }
@@ -68947,19 +68338,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kabelzug Baissrudern"
+            "value": "Kabelzug Tiefrudern"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable Low Row"
+            "value": "Cable Low Seated Row"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cable Low Row"
+            "value": "Cable Low Seated Row"
           }
         }
       }
@@ -69029,29 +68420,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cable Standing Row"
-          }
-        }
-      }
-    },
-    "exercise.name.inclineDumbbellRow": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schrägbankrudern (KH)"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Incline Dumbbell Row"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Incline Dumbbell Row"
           }
         }
       }
@@ -69466,6 +68834,2810 @@
           "stringUnit": {
             "state": "translated",
             "value": "3/4 Sit-Up"
+          }
+        }
+      }
+    },
+    "exercise.name.cableLowFly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kabelzug Flyes unten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Low Fly"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Low Fly"
+          }
+        }
+      }
+    },
+    "exercise.name.cableStandingFly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kabelzug Flyes stehend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Standing Fly"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Standing Fly"
+          }
+        }
+      }
+    },
+    "exercise.name.declinePushUp": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liegestütz abwärts"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decline Push-Up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decline Push-Up"
+          }
+        }
+      }
+    },
+    "exercise.name.inclinePushUp": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liegestütz aufwärts"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incline Push-Up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incline Push-Up"
+          }
+        }
+      }
+    },
+    "exercise.name.chestDipBar": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dips Brust (Stange)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chest Dip (Bar)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chest Dip (Bar)"
+          }
+        }
+      }
+    },
+    "exercise.name.wideGripChestDip": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dips weiter Griff (Brust)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wide-Grip Chest Dip"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wide-Grip Chest Dip"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellOneArmBentOverRow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rudern einarmig vorgebeugt (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell One-Arm Bent-Over Row"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell One-Arm Bent-Over Row"
+          }
+        }
+      }
+    },
+    "exercise.name.cableLatPulldownFull": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latzug voll (Kabel)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Lat Pulldown (Full ROM)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Lat Pulldown (Full ROM)"
+          }
+        }
+      }
+    },
+    "exercise.name.cablePulldown": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latzug (Kabel)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Pulldown"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Pulldown"
+          }
+        }
+      }
+    },
+    "exercise.name.reverseGripPullUp": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klimmzug Supinationsgriff"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse-Grip Pull-Up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse-Grip Pull-Up"
+          }
+        }
+      }
+    },
+    "exercise.name.suspendedRow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TRX Rudern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspended Row (TRX)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspended Row (TRX)"
+          }
+        }
+      }
+    },
+    "exercise.name.leverFrontPulldown": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latzug vorn (Maschine)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Machine Front Pulldown"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Machine Front Pulldown"
+          }
+        }
+      }
+    },
+    "exercise.name.hyperextension": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hyperextension"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hyperextension"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hyperextension"
+          }
+        }
+      }
+    },
+    "exercise.name.smithStandingMilitaryPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smith Press stehend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smith Machine Standing Press"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smith Machine Standing Press"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellOneArmLateralRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seitheben einarmig (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell One-Arm Lateral Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell One-Arm Lateral Raise"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellRearFly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinteres Seitheben (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Rear Delt Fly"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Rear Delt Fly"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellInclineRearLateralRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse Flyes Schräg (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Incline Rear Lateral Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Incline Rear Lateral Raise"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellSingleArmOverheadCarry": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einarmiges Overhead Carry (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Single-Arm Overhead Carry"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Single-Arm Overhead Carry"
+          }
+        }
+      }
+    },
+    "exercise.name.leverSeatedReverseFly": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverse Flyes Maschine"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Machine Reverse Fly"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Machine Reverse Fly"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellAlternateBicepsCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bizeps-Curl alternierend (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Alternating Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Alternating Curl"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellProneInclineCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bizeps-Curl Schräg vorgebeugt (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Prone Incline Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Prone Incline Curl"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellAlternateBicepsCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bizeps-Curl alternierend (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Alternating Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Alternating Curl"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellSeatedBicepCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bizeps-Curl sitzend (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Seated Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Seated Curl"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellCrossBodyHammerCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cross-Body Hammer Curl (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Cross-Body Hammer Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Cross-Body Hammer Curl"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellSkullCrusherCloseGrip": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skull Crusher enger Griff (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Close-Grip Skull Crusher"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Close-Grip Skull Crusher"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellSeatedTricepsExtension": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trizeps Overhead Extension sitzend (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Seated Overhead Triceps Extension"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Seated Overhead Triceps Extension"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellStandingTricepsExtension": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trizeps Overhead Extension stehend (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Standing Overhead Triceps Extension"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Standing Overhead Triceps Extension"
+          }
+        }
+      }
+    },
+    "exercise.name.cablePushdownBar": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trizepsdrücken Stange (Kabel)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Pushdown (Bar)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Pushdown (Bar)"
+          }
+        }
+      }
+    },
+    "exercise.name.cablePushdownRope": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trizepsdrücken Seil (Kabel)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Pushdown (Rope)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Pushdown (Rope)"
+          }
+        }
+      }
+    },
+    "exercise.name.cableOverheadTricepsExtRope": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trizeps Overhead Seil (Kabel)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Overhead Triceps Ext. (Rope)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cable Overhead Triceps Ext. (Rope)"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellStandingTricepsExt": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trizeps Extension stehend (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Standing Triceps Extension"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Standing Triceps Extension"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellLyingTricepsExt": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skull Crusher (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Lying Triceps Extension"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Lying Triceps Extension"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellOneArmWristCurl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Handgelenk-Curl einarmig (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell One-Arm Wrist Curl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell One-Arm Wrist Curl"
+          }
+        }
+      }
+    },
+    "exercise.name.wristRoller": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Handgelenk-Roller"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wrist Roller"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wrist Roller"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellFullSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kniebeuge tief (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Full Squat"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Full Squat"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellCleanGripFrontSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Front-Kniebeuge Clean-Griff (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Clean-Grip Front Squat"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Clean-Grip Front Squat"
+          }
+        }
+      }
+    },
+    "exercise.name.walkingLunge": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking Ausfallschritt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking Lunge"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walking Lunge"
+          }
+        }
+      }
+    },
+    "exercise.name.splitSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Split Squat"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Split Squat"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Split Squat"
+          }
+        }
+      }
+    },
+    "exercise.name.sled45LegPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beinpresse 45°"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45° Leg Press"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45° Leg Press"
+          }
+        }
+      }
+    },
+    "exercise.name.sled45LegWidePress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beinpresse 45° weiter Stand"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45° Wide-Stance Leg Press"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45° Wide-Stance Leg Press"
+          }
+        }
+      }
+    },
+    "exercise.name.gluteBridgeBench": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glute Bridge (auf Bank)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glute Bridge (on Bench)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glute Bridge (on Bench)"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellSingleLegDeadlift": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einbeiniges Kreuzheben (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Single-Leg Deadlift"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Single-Leg Deadlift"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellStraightLegDeadlift": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steifbeiniges Kreuzheben (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Straight-Leg Deadlift"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Straight-Leg Deadlift"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellOverheadSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overhead Kniebeuge (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Overhead Squat"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Overhead Squat"
+          }
+        }
+      }
+    },
+    "exercise.name.dumbbellStiffLegDeadlift": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steifbeiniges Kreuzheben (KH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Stiff-Leg Deadlift"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dumbbell Stiff-Leg Deadlift"
+          }
+        }
+      }
+    },
+    "exercise.name.suspendedSplitSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TRX Split Squat"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspended Split Squat"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspended Split Squat"
+          }
+        }
+      }
+    },
+    "exercise.name.stairCaseCalfRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wadenheben (Stufe)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calf Raise (Staircase)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calf Raise (Staircase)"
+          }
+        }
+      }
+    },
+    "exercise.name.sled45CalfPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wadenpresse 45°"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45° Calf Press"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45° Calf Press"
+          }
+        }
+      }
+    },
+    "exercise.name.sledCalfPressLegPress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wadenpresse Beinpresse"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leg Press Calf Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leg Press Calf Raise"
+          }
+        }
+      }
+    },
+    "exercise.name.donkeyCalfRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wadenheben Esel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donkey Calf Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donkey Calf Raise"
+          }
+        }
+      }
+    },
+    "exercise.name.deadBug": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dead Bug"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dead Bug"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dead Bug"
+          }
+        }
+      }
+    },
+    "exercise.name.weightedRussianTwist": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Russian Twist (gewichtet)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weighted Russian Twist"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weighted Russian Twist"
+          }
+        }
+      }
+    },
+    "exercise.name.hangingStraightLegRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beinheben gestreckt (hängend)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hanging Straight Leg Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hanging Straight Leg Raise"
+          }
+        }
+      }
+    },
+    "exercise.name.verticalLegRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beinheben senkrecht (Dips-Stange)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vertical Leg Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vertical Leg Raise"
+          }
+        }
+      }
+    },
+    "exercise.name.captainsChairStraightLegRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beinheben gestreckt (Stütz)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captain's Chair Straight Leg Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captain's Chair Straight Leg Raise"
+          }
+        }
+      }
+    },
+    "exercise.name.frontPlankWithTwist": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plank mit Rotation"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plank with Twist"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plank with Twist"
+          }
+        }
+      }
+    },
+    "exercise.name.inclineSidePlank": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schräger Seitstütz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incline Side Plank"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incline Side Plank"
+          }
+        }
+      }
+    },
+    "exercise.name.weightedFrontPlank": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plank (gewichtet)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weighted Plank"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weighted Plank"
+          }
+        }
+      }
+    },
+    "exercise.name.crossBodyCrunch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crunch schräg"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cross-Body Crunch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cross-Body Crunch"
+          }
+        }
+      }
+    },
+    "exercise.name.bandBicycleCrunch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fahrradcrunch (Band)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band Bicycle Crunch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band Bicycle Crunch"
+          }
+        }
+      }
+    },
+    "exercise.name.jackknifeSitUp": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jackknife Sit-up"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jackknife Sit-Up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jackknife Sit-Up"
+          }
+        }
+      }
+    },
+    "exercise.name.standingWheelRollout": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rollout stehend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standing Wheel Rollout"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standing Wheel Rollout"
+          }
+        }
+      }
+    },
+    "exercise.name.barbellRollout": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rollout (LH)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Rollout"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barbell Rollout"
+          }
+        }
+      }
+    },
+    "exercise.name.rollerBodySaw": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body Saw (Rolle)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Roller Body Saw"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Roller Body Saw"
+          }
+        }
+      }
+    },
+    "exercise.name.buttUps": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Butt-Ups"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Butt-Ups"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Butt-Ups"
+          }
+        }
+      }
+    },
+    "exercise.name.seatedLegRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beinheben sitzend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seated Leg Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seated Leg Raise"
+          }
+        }
+      }
+    },
+    "exercise.name.hangingPike": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hängender Pike"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hanging Pike"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hanging Pike"
+          }
+        }
+      }
+    },
+    "exercise.name.suspendedAbdominalFallout": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TRX Fallout"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspended Abdominal Fallout"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspended Abdominal Fallout"
+          }
+        }
+      }
+    },
+    "exercise.name.jumpRope": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seilspringen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jump Rope"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jump Rope"
+          }
+        }
+      }
+    },
+    "exercise.name.cycleCrossTrainer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crosstrainer (Rad)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cross Trainer (Cycling)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cross Trainer (Cycling)"
+          }
+        }
+      }
+    },
+    "exercise.name.stationaryBikeWalk": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ergometer leicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stationary Bike (Easy)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stationary Bike (Easy)"
+          }
+        }
+      }
+    },
+    "exercise.name.bearCrawl": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bärenkrabbeln"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bear Crawl"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bear Crawl"
+          }
+        }
+      }
+    },
+    "exercise.name.skaterHops": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skater-Sprünge"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skater Hops"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skater Hops"
+          }
+        }
+      }
+    },
+    "exercise.name.starJump": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hampelmann"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Star Jump"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Star Jump"
+          }
+        }
+      }
+    },
+    "exercise.name.highKneeAgainstWall": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knieheben an der Wand"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High Knee Against Wall"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High Knee Against Wall"
+          }
+        }
+      }
+    },
+    "exercise.name.hamstringStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oberschenkel-Dehnung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hamstring Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hamstring Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.calfStretchWall": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wadendehnung (an der Wand)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calf Stretch (Wall)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calf Stretch (Wall)"
+          }
+        }
+      }
+    },
+    "exercise.name.calfPushStretchWall": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wadendehnung Schritt (an der Wand)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calf Push Stretch (Wall)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calf Push Stretch (Wall)"
+          }
+        }
+      }
+    },
+    "exercise.name.hipFlexorStretchBall": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hüftbeuger-Dehnung (Ball)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hip Flexor Stretch (Ball)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hip Flexor Stretch (Ball)"
+          }
+        }
+      }
+    },
+    "exercise.name.kneelingLatStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lat-Dehnung (kniend)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kneeling Lat Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kneeling Lat Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.chestStretchBall": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brust-Dehnung (Ball)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chest Stretch (Ball)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chest Stretch (Ball)"
+          }
+        }
+      }
+    },
+    "exercise.name.overheadTricepsStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trizeps-Dehnung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overhead Triceps Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overhead Triceps Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.neckSideStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nacken-Dehnung seitlich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neck Side Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neck Side Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.seatedPiriformisStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piriformis-Dehnung sitzend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seated Piriformis Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seated Piriformis Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.runnersStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läufer-Dehnung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runner's Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runner's Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.spineStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wirbelsäulen-Dehnung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spine Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spine Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.backPecStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brust-Rücken-Dehnung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back & Pec Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back & Pec Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.behindHeadChestStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brust-Dehnung hinter Kopf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behind-Head Chest Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behind-Head Chest Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.seatedLowerBackStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rücken-Dehnung sitzend"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seated Lower Back Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seated Lower Back Stretch"
+          }
+        }
+      }
+    },
+    "exercise.name.peronealsStretch": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peroneus-Dehnung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peroneals Stretch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peroneals Stretch"
+          }
+        }
+      }
+    },
+    "dayPicker.selectedCount": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d von %2$d ausgewählt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d of %2$d selected"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d / %2$d seçildi"
+          }
+        }
+      }
+    },
+    "trophy.chart.suffix": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlauf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geçmiş"
+          }
+        }
+      }
+    },
+    "unit.km.upper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KM"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KM"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KM"
+          }
+        }
+      }
+    },
+    "setRow.blocking.isRunning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" is already running"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@\" läuft bereits"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" zaten çalışıyor"
+          }
+        }
+      }
+    },
+    "setRow.blocking.otherRunning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another timed exercise is already running"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine andere zeitbasierte Übung läuft bereits"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başka bir zamanlı egzersiz zaten çalışıyor"
+          }
+        }
+      }
+    },
+    "setRow.blocking.suffix": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish the current exercise first."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beende die laufende Übung zuerst."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce mevcut egzersizi bitirin."
+          }
+        }
+      }
+    },
+    "planEditor.sync.plansCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d other plan(s) synced"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Pläne synchronisiert"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d plan senkronize edildi"
+          }
+        }
+      }
+    },
+    "planEditor.result.swapped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d replaced"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d ersetzt"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d değiştirildi"
+          }
+        }
+      }
+    },
+    "planEditor.result.restored": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d restored"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d wiederhergestellt"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d geri yüklendi"
+          }
+        }
+      }
+    },
+    "planEditor.result.noAlternative": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d without alternative"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d ohne Alternative"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d alternatif yok"
+          }
+        }
+      }
+    },
+    "planEditor.result.unchanged": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d unchanged"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d unverändert"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d değişmedi"
+          }
+        }
+      }
+    },
+    "planEditor.result.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No exercises to adjust"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Übungen zum Anpassen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarlanacak egzersiz yok"
+          }
+        }
+      }
+    },
+    "profile.sync.plansCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d plan(s)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Pläne"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d plan"
+          }
+        }
+      }
+    },
+    "profile.health.field.birthday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date of Birth"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geburtsdatum"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doğum Tarihi"
+          }
+        }
+      }
+    },
+    "profile.health.field.gender": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gender"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geschlecht"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cinsiyet"
+          }
+        }
+      }
+    },
+    "profile.health.field.height": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Height"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Größe"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boy"
+          }
+        }
+      }
+    },
+    "chart.axis.date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datum"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarih"
+          }
+        }
+      }
+    },
+    "chart.series": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seri"
+          }
+        }
+      }
+    },
+    "chart.series.actual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actual"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tatsächlich"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gerçek"
+          }
+        }
+      }
+    },
+    "chart.series.forecast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forecast"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prognose"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tahmin"
+          }
+        }
+      }
+    },
+    "chart.axis.goal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziel"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedef"
+          }
+        }
+      }
+    },
+    "chart.axis.week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Week"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woche"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hafta"
+          }
+        }
+      }
+    },
+    "chart.axis.volume": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume (kg)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen (kg)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hacim (kg)"
+          }
+        }
+      }
+    },
+    "chart.axis.pace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pace (min/km)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pace (min/km)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo (dak/km)"
+          }
+        }
+      }
+    },
+    "chart.series.run": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lauf"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu"
+          }
+        }
+      }
+    },
+    "chart.series.lift": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lift"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaldırış"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaldırış"
+          }
+        }
+      }
+    },
+    "chart.axis.today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün"
+          }
+        }
+      }
+    },
+    "exercise.name.bodyweightSquat": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kniebeuge (BW)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bodyweight Squat"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bodyweight Squat"
+          }
+        }
+      }
+    },
+    "exercise.name.bodyweightHipThrust": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hip Thrust (BW)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bodyweight Hip Thrust"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bodyweight Hip Thrust"
+          }
+        }
+      }
+    },
+    "exercise.name.lyingLegRaise": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beinheben (liegend)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lying Leg Raise"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lying Leg Raise"
+          }
+        }
+      }
+    },
+    "exercise.name.nordicCurls": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nordic Curls"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nordic Curls"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nordic Curls"
+          }
+        }
+      }
+    },
+    "exercise.name.pikePushup": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pike Liegestütze"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pike Push-up"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pike Push-up"
           }
         }
       }

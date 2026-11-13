@@ -130,4 +130,57 @@ final class MeasurementDoubleTapGuardTests: XCTestCase {
                 + "dauerhaft deaktiviert."
         )
     }
+
+    func testSwipeDismissRollbackDismissesOnlyOnSuccessfulSave() throws {
+        // Befund #2: Rollback für Swipe-Dismiss und Cancel ist in rollbackEnvChange(to:)
+        // zentralisiert. dismiss() steht dort im do-Block — kein stiller Zustandsbruch
+        // bei fehlgeschlagenem Rollback-Save. Beide EnvChange-Sheets müssen die Funktion
+        // für Swipe (Binding.set) und Cancel (onCancel) verwenden.
+        let source = try contents(of: "Settings/TrainingLocationEquipmentEditorView.swift")
+
+        // 1. Die Funktion existiert genau einmal.
+        XCTAssertTrue(
+            source.contains("private func rollbackEnvChange(to oldEnv: EnvironmentType)"),
+            "rollbackEnvChange(to:) muss als private func existieren"
+        )
+
+        // 2. Sie wird in beiden Binding.set-Closures aufgerufen (Swipe-Dismiss).
+        let swipeCallCount = source.components(separatedBy: "rollbackEnvChange(to: swap.oldEnv)").count - 1
+        XCTAssertGreaterThanOrEqual(swipeCallCount, 2,
+            "rollbackEnvChange(to: swap.oldEnv) muss in beiden Binding.set-Closures aufgerufen werden (envSwap + envRestore)")
+
+        // 3. Sie wird in beiden onCancel-Closures aufgerufen (Cancel-Button).
+        // Die onCancel-Handler übergeben oldEnv als lokale Kopie, daher "to: oldEnv".
+        let cancelCallCount = source.components(separatedBy: "rollbackEnvChange(to: oldEnv)").count - 1
+        XCTAssertGreaterThanOrEqual(cancelCallCount, 2,
+            "rollbackEnvChange(to: oldEnv) muss in beiden onCancel-Closures aufgerufen werden (envSwap + envRestore)")
+
+        // 4. dismiss() steht INNERHALB der Funktion im do-Block, nicht nach dem catch.
+        // Positiv: "try modelContext.save()\n            dismiss()" muss in der Funktion vorkommen.
+        XCTAssertTrue(
+            source.contains("try modelContext.save()\n            dismiss()"),
+            "In rollbackEnvChange: dismiss() muss direkt nach try modelContext.save() im do-Block stehen"
+        )
+
+        // 5. Kein dismiss() direkt nach dem catch-Block der Funktion (schlechtes altes Muster).
+        XCTAssertFalse(
+            source.contains("saveErrorMessage = String(localized: \"day.editor.save.failed\", bundle: .module)\n        }\n        dismiss()"),
+            "rollbackEnvChange: dismiss() darf nicht ausserhalb des do-Blocks stehen"
+        )
+
+        // 6. Bei Save-Fehler werden Profil und Draft auf den persistierten Neu-Zustand zurückgesetzt
+        // (snapEnv-Muster), damit In-Memory und Store konsistent bleiben.
+        XCTAssertTrue(
+            source.contains("let snapEnv = profile.environment"),
+            "rollbackEnvChange muss vor dem Rollback den aktuellen Zustand snappen"
+        )
+        XCTAssertTrue(
+            source.contains("profile.environment = snapEnv"),
+            "rollbackEnvChange muss bei Save-Fehler profile.environment auf snapEnv zurücksetzen"
+        )
+        XCTAssertTrue(
+            source.contains("draftEnvironment = snapEnv"),
+            "rollbackEnvChange muss bei Save-Fehler draftEnvironment auf snapEnv zurücksetzen"
+        )
+    }
 }

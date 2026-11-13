@@ -171,5 +171,34 @@ public enum PlanEquipmentAdaptationApplier {
 
         return appliedCount
     }
+
+    /// Archiviert Uebungen, fuer die kein genehmigter Ersatz existiert
+    /// (`.noApprovedSubstitute`). Gibt die archivierten Namen zurueck, damit
+    /// die UI einen Konflikt-Hinweis anzeigen kann statt still zu verschwinden.
+    @discardableResult
+    public static func archiveUnresolved(
+        plan: TrainingPlan,
+        draft: PlanAdaptationDraft,
+        modelContext: ModelContext
+    ) -> [String] {
+        let orderedDays = trainingDays(of: plan)
+        var archivedNames: [String] = []
+
+        for unresolved in draft.unresolved {
+            guard case .noApprovedSubstitute = unresolved.reason else { continue }
+            let dayIndex = unresolved.slot.dayIndex
+            let exerciseIndex = unresolved.slot.exerciseIndex
+            guard orderedDays.indices.contains(dayIndex) else { continue }
+            let day = orderedDays[dayIndex]
+            let activeSorted = day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
+            guard activeSorted.indices.contains(exerciseIndex) else { continue }
+            let exercise = activeSorted[exerciseIndex]
+            guard exercise.name == unresolved.exerciseName else { continue }
+            exercise.isArchived = true
+            archivedNames.append(exercise.name)
+        }
+
+        return archivedNames
+    }
 }
 #endif

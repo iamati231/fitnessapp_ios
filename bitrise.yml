@@ -1,0 +1,101 @@
+format_version: "26"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: ios
+
+# Bitrise CI/CD — Deltiq iOS App
+#
+# Workflow "deploy": XcodeGen → codemagic-cli-tools Signing → Build → TestFlight
+# Auto-increment: $BITRISE_BUILD_NUMBER (Bitrise erhöht bei jedem Build)
+#
+# Bitrise Secrets (Settings → Env Vars → app_store_credentials Gruppe):
+#   APP_STORE_CONNECT_KEY_IDENTIFIER
+#   APP_STORE_CONNECT_ISSUER_ID
+#   APP_STORE_CONNECT_PRIVATE_KEY
+#   APP_STORE_CONNECT_CERTIFICATE_KEY
+
+meta:
+  bitrise.io:
+    stack: osx-xcode-27.2.x
+    machine_type_id: g2.mac.large
+
+app:
+  envs:
+    - BITRISE_PROJECT_PATH: Deltiq.xcodeproj
+    - BITRISE_SCHEME: Deltiq
+    - BUNDLE_ID: com.deltiq.Deltiq
+    - WIDGET_BUNDLE_ID: com.deltiq.Deltiq.widgets
+
+workflows:
+  deploy:
+    steps:
+      - git-clone@8: {}
+
+      - script@1:
+          title: Install tools
+          inputs:
+            - content: |
+                set -e
+                pip3 install --break-system-packages codemagic-cli-tools
+                if ! command -v xcodegen >/dev/null 2>&1; then
+                  brew install xcodegen
+                fi
+
+      - script@1:
+          title: Set build number + marketing version
+          inputs:
+            - content: |
+                set -e
+                sed -i '' "s/CURRENT_PROJECT_VERSION: '[0-9]*'/CURRENT_PROJECT_VERSION: '$BITRISE_BUILD_NUMBER'/" project.yml
+                echo "Build number: $BITRISE_BUILD_NUMBER"
+                VERSION=$(printf '%s' "${BITRISE_GIT_TAG:-}" | sed -E 's/^v//' | grep -oE '^[0-9]+\.[0-9]+(\.[0-9]+)?' || true)
+                if [ -n "$VERSION" ]; then
+                  sed -i '' "s/MARKETING_VERSION: '[^']*'/MARKETING_VERSION: '$VERSION'/" project.yml
+                fi
+                grep -E "CURRENT_PROJECT_VERSION|MARKETING_VERSION" project.yml
+
+      - script@1:
+          title: Generate Xcode project
+          inputs:
+            - content: |
+                set -e
+                xcodegen generate
+
+      - script@1:
+          title: Code Signing
+          inputs:
+            - content: |
+                set -e
+                keychain initialize
+                app-store-connect fetch-signing-files "$BUNDLE_ID" \
+                  --type IOS_APP_STORE \
+                  --certificate-key=@env:APP_STORE_CONNECT_CERTIFICATE_KEY \
+                  --create
+                app-store-connect fetch-signing-files "$WIDGET_BUNDLE_ID" \
+                  --type IOS_APP_STORE \
+                  --certificate-key=@env:APP_STORE_CONNECT_CERTIFICATE_KEY \
+                  --create
+                keychain add-certificates
+                xcode-project use-profiles
+
+      - script@1:
+          title: Build .ipa
+          inputs:
+            - content: |
+                set -e
+                set -o pipefail
+                xcode-project build-ipa \
+                  --project "$BITRISE_PROJECT_PATH" \
+                  --scheme "$BITRISE_SCHEME" \
+                  --config Release \
+                  --archive-flags 'STRING_CATALOG_GENERATE_SYMBOLS=NO'
+
+      - script@1:
+          title: Upload to TestFlight
+          inputs:
+            - content: |
+                set -e
+                IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
+                echo "Uploading: $IPA_PATH"
+                app-store-connect publish --path "$IPA_PATH"
+
+      - deploy-to-bitrise-io@2: {}

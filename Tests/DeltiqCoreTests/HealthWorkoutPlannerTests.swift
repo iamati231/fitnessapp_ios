@@ -406,17 +406,9 @@ final class HealthWorkoutPlannerTests: XCTestCase {
     }
 
     func testMachinesAndSwimmingAndCustomExercisesAreMixedCardio() {
-        let rowing = plan(decide(candidate(logs: [cardioLog("Rudermaschine", seconds: 1200)])))
-        XCTAssertEqual(rowing?.activity, .mixedCardio)
-        XCTAssertEqual(rowing?.isIndoor, true)
-
         let elliptical = plan(decide(candidate(logs: [cardioLog("Crosstrainer", seconds: 1200)])))
         XCTAssertEqual(elliptical?.activity, .mixedCardio)
         XCTAssertEqual(elliptical?.isIndoor, true)
-
-        let swimming = plan(decide(candidate(logs: [cardioLog("Schwimmen", seconds: 1200)])))
-        XCTAssertEqual(swimming?.activity, .mixedCardio)
-        XCTAssertNil(swimming?.isIndoor, "Pool oder Freiwasser ist unbekannt")
 
         let custom = plan(decide(candidate(logs: [cardioLog("Mein eigenes Cardio", seconds: 1200)])))
         XCTAssertEqual(custom?.activity, .mixedCardio)
@@ -801,10 +793,8 @@ final class HealthWorkoutPlannerTests: XCTestCase {
             "exercise.name.cycling":         (.cycling, false),
             "exercise.name.cyclingInterval": (.cycling, nil),
             "exercise.name.stationaryBike":  (.cycling, true),
-            "exercise.name.rowingMachine":   (.mixedCardio, true),
             "exercise.name.elliptical":      (.mixedCardio, true),
             "exercise.name.stairStepper":    (.mixedCardio, true),
-            "exercise.name.swimming":        (.mixedCardio, nil),
         ]
         let cardioSpecs = ExerciseLibraryData.all.filter { $0.isCardio }
         XCTAssertEqual(

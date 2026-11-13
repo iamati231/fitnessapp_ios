@@ -91,7 +91,7 @@ final class ExerciseLibraryDataTests: XCTestCase {
                 .map(\.name)
         )
 
-        for required in ["Plank", "Seitstütz", "Wall Sit", "Mountain Climbers", "Burpees"] {
+        for required in ["Plank", "Seitstütz", "Mountain Climbers", "Burpees"] {
             XCTAssertTrue(timeBased.contains(required),
                           "Library spec '\(required)' should have isTimeBased = true")
         }
