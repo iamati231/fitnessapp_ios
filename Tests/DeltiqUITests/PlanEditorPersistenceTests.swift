@@ -320,5 +320,39 @@ final class PlanEnvironmentMigratorCustomExerciseTests: XCTestCase {
         XCTAssertEqual(result.compatible, 1, "bodyweight ist noEquipment-kompatibel")
         XCTAssertEqual(result.swapped, 0, "Custom-Exercise darf nicht über resolveAlternative gswappt werden")
     }
+
+    func testExerciseWithDeletedTemplateIsNotTreatedAsSystemExercise() throws {
+        // Regressions-Test für gelöschtes Template: exerciseTemplateID vorhanden,
+        // Template nicht mehr im Store → isSystemExercise muss false zurückgeben,
+        // nicht auf byName-Fallback zurückfallen (der die Übung fälschlich als System
+        // einordnen würde, wenn der Name im Katalog existiert).
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let deletedTemplateID = UUID()
+
+        let plan = TrainingPlan(name: "Test", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "Tag 1", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        // "Bankdrücken" ist im Systemkatalog (barbell). exerciseTemplateID zeigt
+        // auf ein Template, das nicht im Store existiert.
+        let exercise = Exercise(
+            name: "Bankdrücken",
+            orderIndex: 0,
+            equipment: .bodyweight,
+            day: day
+        )
+        exercise.exerciseTemplateID = deletedTemplateID
+        context.insert(exercise)
+        try context.save()
+
+        let result = PlanEnvironmentMigrator.migrate(plan: plan, toEnvironment: .noEquipment, modelContext: context)
+
+        XCTAssertFalse(exercise.isArchived,
+            "Übung mit gelöschtem Template (bodyweight) muss aktiv bleiben — defensiv als Custom behandelt, nicht als System via byName")
+        XCTAssertEqual(result.compatible, 1)
+        XCTAssertEqual(result.swapped, 0)
+    }
 }
 #endif

@@ -421,6 +421,8 @@ public enum PlanEnvironmentMigrator {
                     return !tmpl.isCustom
                 }
             }
+            // Template-ID vorhanden, Template gelöscht → defensiv als Custom
+            return false
         }
         return ExerciseLibraryData.byName[exercise.name] != nil
     }
