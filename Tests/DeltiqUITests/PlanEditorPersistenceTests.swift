@@ -354,5 +354,128 @@ final class PlanEnvironmentMigratorCustomExerciseTests: XCTestCase {
         XCTAssertEqual(result.compatible, 1)
         XCTAssertEqual(result.swapped, 0)
     }
+
+    // MARK: - Deleted-Template-Tests (previewMigrateAll / previewRestoreAll / hasAnyRestorableOriginals / restoreOriginals)
+    // HINWEIS: Tests vorhanden, noch nicht auf aktuellem Commit auf macbox ausgeführt (macbox-Sync-Bug).
+    // Diese Suite ist das Merge-Gate für Issue #12, sobald macbox synchronisiert.
+
+    /// Helper: Template einfügen, exerciseTemplateID setzen, Template danach löschen + speichern.
+    /// Simuliert eine gelöschte Custom-Vorlage bei weiterbestehendem Plan-Exercise.
+    private func makePlanWithDeletedTemplate(
+        exerciseEquipment: Equipment?,
+        exerciseName: String = "Bankdrücken",
+        in context: ModelContext
+    ) throws -> (plan: TrainingPlan, exercise: Exercise) {
+        let template = ExerciseTemplate(name: exerciseName, equipment: .bodyweight, primaryMuscle: .chest, isCustom: true)
+        context.insert(template)
+        let plan = TrainingPlan(name: "Test", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "Tag 1", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        let exercise = Exercise(name: exerciseName, orderIndex: 0, equipment: exerciseEquipment, day: day)
+        exercise.exerciseTemplateID = template.id
+        context.insert(exercise)
+        try context.save()
+        context.delete(template)
+        try context.save()
+        return (plan, exercise)
+    }
+
+    func testPreviewMigrateAllBodyweightDeletedTemplateProducesNoSwapNoArchived() throws {
+        // "Bankdrücken" ist Katalogname (barbell im System), aber Template gelöscht + bodyweight →
+        // isSystemExercise = false → Custom-Pfad → bodyweight kompatibel mit noEquipment → nichts archiviert.
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (plan, _) = try makePlanWithDeletedTemplate(exerciseEquipment: .bodyweight, in: context)
+
+        let previews = PlanEnvironmentMigrator.previewMigrateAll(plans: [plan], toEnvironment: .noEquipment)
+
+        XCTAssertTrue(previews.isEmpty,
+            "bodyweight + gelöschtes Template → kein Swap, kein Archived → leere Preview (kein Plan-Eintrag)")
+    }
+
+    func testPreviewMigrateAllBarbellDeletedTemplateAppearsInArchived() throws {
+        // Gleiche Namenskollision, aber barbell → Custom-Pfad → inkompatibel → archived.
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (plan, _) = try makePlanWithDeletedTemplate(exerciseEquipment: .barbell, in: context)
+
+        let previews = PlanEnvironmentMigrator.previewMigrateAll(plans: [plan], toEnvironment: .noEquipment)
+
+        XCTAssertEqual(previews.count, 1)
+        XCTAssertEqual(previews.first?.archived.count, 1,
+            "barbell + gelöschtes Template → isSystemExercise=false → Custom-Pfad → archived")
+        XCTAssertTrue(previews.first?.swaps.isEmpty ?? false,
+            "kein Swap — Custom-Exercises haben keine Alternativ-Mappings im System")
+    }
+
+    func testPreviewRestoreAllDeletedTemplateAppearsInRestored() throws {
+        // Migrate archiviert Barbell-Custom-Exercise mit archivedByEnvironmentChange=true.
+        // Template wird danach gelöscht. previewRestoreAll(.gym) muss archived[] trotzdem
+        // im restored-Feld zeigen (isArchivedExerciseCompatible → Custom-Pfad → barbell+gym → true).
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (plan, exercise) = try makePlanWithDeletedTemplate(exerciseEquipment: .barbell, in: context)
+
+        // Migrate archiviert die Exercise; Template ist zu diesem Zeitpunkt schon gelöscht.
+        PlanEnvironmentMigrator.migrate(plan: plan, toEnvironment: .noEquipment, modelContext: context)
+        XCTAssertTrue(exercise.archivedByEnvironmentChange, "Precondition: Exercise muss archiviert sein")
+        try context.save()
+
+        let previews = PlanEnvironmentMigrator.previewRestoreAll(plans: [plan], toEnvironment: .gym)
+
+        XCTAssertEqual(previews.count, 1)
+        XCTAssertEqual(previews.first?.restored.count, 1,
+            "gelöschtes Template + barbell + gym → isArchivedExerciseCompatible=true → restored")
+    }
+
+    func testRestoreOriginalsDeletedTemplateReactivatesExercise() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (plan, exercise) = try makePlanWithDeletedTemplate(exerciseEquipment: .barbell, in: context)
+
+        PlanEnvironmentMigrator.migrate(plan: plan, toEnvironment: .noEquipment, modelContext: context)
+        try context.save()
+        XCTAssertTrue(exercise.isArchived, "Precondition: archiviert")
+
+        let result = PlanEnvironmentMigrator.restoreOriginals(plan: plan, toEnvironment: .gym, modelContext: context)
+
+        XCTAssertFalse(exercise.isArchived, "Exercise mit gelöschtem Template muss nach Restore reaktiviert sein")
+        XCTAssertFalse(exercise.archivedByEnvironmentChange, "archivedByEnvironmentChange muss nach Restore gelöscht sein")
+        XCTAssertEqual(result.restored, 1)
+    }
+
+    func testHasAnyRestorableOriginalsReturnsTrueForDeletedTemplateBarbellInGym() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (plan, _) = try makePlanWithDeletedTemplate(exerciseEquipment: .barbell, in: context)
+
+        PlanEnvironmentMigrator.migrate(plan: plan, toEnvironment: .noEquipment, modelContext: context)
+        try context.save()
+
+        XCTAssertTrue(
+            PlanEnvironmentMigrator.hasAnyRestorableOriginals(plans: [plan], forEnvironment: .gym),
+            "hasAnyRestorableOriginals muss true sein wenn archivedByEnvironmentChange-Exercise mit barbell im Gym reaktivierbar ist")
+    }
+
+    func testLegacyNilTemplateIDWithSystemNameIsNotTreatedAsCustom() throws {
+        // Legacy-Schutz: exerciseTemplateID == nil → isSystemExercise nutzt byName-Fallback.
+        // "Bankdrücken" ist im Systemkatalog → kein archivedByEnvironmentChange (Custom-Pfad).
+        let container = try makeContainer()
+        let context = container.mainContext
+        let plan = TrainingPlan(name: "Test", programType: "custom", isActive: true)
+        context.insert(plan)
+        let day = TrainingDay(name: "Tag 1", weekday: 2, type: .chest, plan: plan)
+        context.insert(day)
+        let exercise = Exercise(name: "Bankdrücken", orderIndex: 0, equipment: .barbell, day: day)
+        // exerciseTemplateID bewusst nil lassen (Legacy-Eintrag)
+        context.insert(exercise)
+        try context.save()
+
+        PlanEnvironmentMigrator.migrate(plan: plan, toEnvironment: .noEquipment, modelContext: context)
+
+        XCTAssertFalse(exercise.archivedByEnvironmentChange,
+            "nil-templateID + Systemname → isSystemExercise via byName → System-Pfad, nicht Custom-Pfad")
+    }
 }
 #endif
