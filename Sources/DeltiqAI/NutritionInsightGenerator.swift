@@ -121,22 +121,20 @@ public struct NutritionInsightGenerator: Sendable {
     /// numbers (totals + any goals that were actually set) — a fabricated
     /// number is treated as a failed generation, never shown.
     public func generateInsight(for input: NutritionInsightInput) async throws -> String {
-        let text = try await service.generateText(instructions: Self.instructions(for: locale), prompt: Self.prompt(for: input, locale: locale))
-        guard Self.onlyContainsVerifiedNumbers(text, input: input) else {
+        let raw = try await service.generateText(instructions: Self.instructions(for: locale), prompt: Self.prompt(for: input, locale: locale))
+        guard Self.onlyContainsVerifiedNumbers(raw, input: input) else {
             throw NutritionAIError.generationFailed
         }
-        // Device-Bugreport ("KI-Analyse bleibt auf Englisch"): a one-line
-        // "Respond only in X" instruction (below) was reliably outweighed by
-        // an entire English-language prompt - see `prompt(for:locale:)`,
-        // which is now itself localized for exactly this reason. This is the
-        // remaining safety net: if the model still answers in the wrong
-        // language despite both fixes, reject it the same way a fabricated
-        // number is rejected above, instead of silently showing an
-        // English paragraph to a German/Turkish user.
-        guard Self.matchesRequestedLanguage(text, locale: locale) else {
+        // Device-Bugreport ("KI-Analyse bleibt auf Englisch"): reject wrong-language output.
+        guard Self.matchesRequestedLanguage(raw, locale: locale) else {
             throw NutritionAIError.generationFailed
         }
-        return text
+        // Rejects "over goal" language when no goal was actually exceeded (Cases A/B).
+        guard Self.matchesDirection(raw, input: input, locale: locale) else {
+            throw NutritionAIError.generationFailed
+        }
+        // Strip any residual markdown the model inserted despite instructions.
+        return Self.stripMarkdown(raw)
     }
 
     private static let baseInstructions = """
@@ -148,10 +146,14 @@ public struct NutritionInsightGenerator: Sendable {
     incomplete: never treat it as zero, never mention a number for it, never \
     claim the goal was reached or missed. \
     Goals marked "not set": never mention a number or outcome for them. \
-    When a progress line is marked "[EXCEEDED]", that goal was surpassed — \
-    state this positively and factually; NEVER say the goal has not been reached \
-    when the percentage is at or above 100. The phrase "over goal" after a \
-    number tells you exactly by how much. \
+    DIRECTION RULES (critical — read carefully): \
+    A line marked [NOT_MET] means the user is UNDER the target — they have NOT \
+    yet reached the goal. NEVER use "over goal", "exceeded", "above target", or \
+    any above-direction language for a [NOT_MET] line. \
+    A line marked [EXCEEDED] means the user is OVER the target — they consumed \
+    MORE than the goal. NEVER say "not reached" for an [EXCEEDED] line. \
+    The phrase after "over goal" tells you exactly by how much the goal was \
+    exceeded — repeat that number only. \
     When a progress line gives a percentage, that percentage — never your own \
     judgment — decides tone: below ~50% with meaningful amount remaining, \
     describe as in-progress; at/above 100% a positive tone is appropriate. \
@@ -162,9 +164,9 @@ public struct NutritionInsightGenerator: Sendable {
     1 to 3 sentences total. Do not list or repeat all four nutrient values in \
     sequence. Do not use phrases like "great job", "super", "excellent", \
     "fantastic", "amazing" for routine progress. \
-    No markdown (no bold, no bullets, no headers). Give only brief, general, \
-    non-medical observations. Never give a diagnosis, treatment recommendation, \
-    or any other medical advice.
+    No markdown — do not use **, *, #, ##, or any other markdown formatting. \
+    Give only brief, general, non-medical observations. Never give a diagnosis, \
+    treatment recommendation, or any other medical advice.
     """
 
     /// I2 fix: a plain "respond in the user's language" instruction left the
@@ -189,8 +191,11 @@ public struct NutritionInsightGenerator: Sendable {
     }
 
     static func languageDirective(for locale: Locale) -> String {
-        let languageName = Locale(identifier: "en_US").localizedString(forLanguageCode: targetLanguageCode(for: locale)) ?? "English"
-        return "Respond only in \(languageName)."
+        let code = targetLanguageCode(for: locale)
+        let languageName = Locale(identifier: "en_US").localizedString(forLanguageCode: code) ?? "English"
+        // For German: also enforce informal "du" — small on-device models default to "Sie".
+        let extra = code == "de" ? " Verwende 'du' (nicht 'Sie')." : ""
+        return "Respond only in \(languageName).\(extra)"
     }
 
     /// Device-Bugreport ("KI-Analyse bleibt auf Englisch"): robust, code-level
@@ -206,6 +211,31 @@ public struct NutritionInsightGenerator: Sendable {
         recognizer.processString(text)
         guard let detected = recognizer.dominantLanguage else { return true }
         return detected.rawValue == targetLanguageCode(for: locale)
+    }
+
+    // MARK: Direction guard — rejects "over goal" language for under-goal results
+
+    /// Returns false when the generated text uses exceeded-direction words (e.g.
+    /// "über Ziel") but no goal was actually exceeded. This catches the P0 regression
+    /// where the on-device model reversed the direction of an under-goal nutrient.
+    static func matchesDirection(_ text: String, input: NutritionInsightInput, locale: Locale) -> Bool {
+        let hasExceededGoal = [input.calorieGoalProgress, input.proteinGoalProgress,
+                               input.carbGoalProgress, input.fatGoalProgress]
+            .compactMap { $0 }.contains { $0.overage > 0 }
+        guard !hasExceededGoal else { return true }
+        let overGoalWord = PromptStrings.forLanguageCode(targetLanguageCode(for: locale)).overGoal
+        return !text.localizedCaseInsensitiveContains(overGoalWord)
+    }
+
+    /// Strips residual markdown that small on-device models occasionally insert
+    /// despite the "No markdown" instruction. Operates on the already-validated text.
+    static func stripMarkdown(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "**", with: "")
+            .replacingOccurrences(of: "*", with: "")
+            .replacingOccurrences(of: "###", with: "")
+            .replacingOccurrences(of: "##", with: "")
+            .replacingOccurrences(of: "# ", with: "")
     }
 
     // MARK: I5 — code-level check that no number was invented
@@ -265,6 +295,8 @@ public struct NutritionInsightGenerator: Sendable {
         // Status label appended to a progress line when the goal was exceeded
         // (percent >= 100) — makes the fact unambiguous for the model.
         let exceeded: String
+        // Symmetric counterpart to `exceeded` — appended when goal is NOT yet reached.
+        let notMet: String
         // Time-of-day context labels (no times/numbers — avoids allowedNumbers clash).
         let dayContextHeading, dayMorning, dayMidday, dayAfternoon, dayEvening: String
 
@@ -279,7 +311,7 @@ public struct NutritionInsightGenerator: Sendable {
                     progressHeading: "Fortschritt zu den Zielen:", of: "von", goalWord: "Ziel",
                     reached: "erreicht", remaining: "verbleibend", overGoal: "über Ziel",
                     unknown: "unbekannt", notSet: "nicht gesetzt",
-                    exceeded: "EXCEEDED",
+                    exceeded: "EXCEEDED", notMet: "NICHT_ERREICHT",
                     dayContextHeading: "Tageskontext:",
                     dayMorning: "Morgen — Tag noch in Gange",
                     dayMidday: "Mittag — Tag noch in Gange",
@@ -295,7 +327,7 @@ public struct NutritionInsightGenerator: Sendable {
                     progressHeading: "Hedeflere doğru ilerleme:", of: "/", goalWord: "hedef",
                     reached: "ulaşıldı", remaining: "kaldı", overGoal: "hedef üstünde",
                     unknown: "bilinmiyor", notSet: "belirlenmedi",
-                    exceeded: "EXCEEDED",
+                    exceeded: "EXCEEDED", notMet: "ULAŞILMADI",
                     dayContextHeading: "Gün bağlamı:",
                     dayMorning: "Sabah — gün devam ediyor",
                     dayMidday: "Öğle — gün devam ediyor",
@@ -311,7 +343,7 @@ public struct NutritionInsightGenerator: Sendable {
                     progressHeading: "Progress toward goals:", of: "of", goalWord: "goal",
                     reached: "reached", remaining: "remaining", overGoal: "over goal",
                     unknown: "unknown", notSet: "not set",
-                    exceeded: "EXCEEDED",
+                    exceeded: "EXCEEDED", notMet: "NOT_MET",
                     dayContextHeading: "Day context:",
                     dayMorning: "Morning — day still in progress",
                     dayMidday: "Midday — day still in progress",
@@ -388,7 +420,9 @@ public struct NutritionInsightGenerator: Sendable {
             let overageStr = progress.overage > 0 ? ", \(safeInt(progress.overage)) \(unit) \(strings.overGoal)" : ""
             return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached)\(overageStr)) [\(strings.exceeded)]"
         }
-        return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached), \(safeInt(progress.remaining)) \(unit) \(strings.remaining))"
+        // [NOT_MET] label is the symmetric counterpart to [EXCEEDED] — prevents the model
+        // from using "over goal" direction language for an under-goal line.
+        return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached), \(safeInt(progress.remaining)) \(unit) \(strings.remaining)) [\(strings.notMet)]"
     }
 
     private static func dayContextLabel(hour: Int, strings: PromptStrings) -> String {

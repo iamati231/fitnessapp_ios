@@ -582,7 +582,7 @@ public struct NutritionDayView: View {
         let prot = Int(ctx.total.proteinG.value ?? -1)
         let carb = Int(ctx.total.carbsG.value ?? -1)
         let fat  = Int(ctx.total.fatG.value ?? -1)
-        return "nut_insight_v2_\(day)_\(kcal)_\(prot)_\(carb)_\(fat)_\(ctx.calorieGoal ?? -1)_\(Int(ctx.proteinGoal ?? -1))_\(Int(ctx.carbGoal ?? -1))_\(Int(ctx.fatGoal ?? -1))"
+        return "nut_insight_v3_\(day)_\(kcal)_\(prot)_\(carb)_\(fat)_\(ctx.calorieGoal ?? -1)_\(Int(ctx.proteinGoal ?? -1))_\(Int(ctx.carbGoal ?? -1))_\(Int(ctx.fatGoal ?? -1))"
     }
 
     /// Computes the deterministic percent-of-goal/remaining fact for one
