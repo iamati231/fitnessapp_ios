@@ -368,16 +368,22 @@ final class PlanEnvironmentMigratorCustomExerciseTests: XCTestCase {
     ) throws -> (plan: TrainingPlan, exercise: Exercise) {
         let template = ExerciseTemplate(name: exerciseName, equipment: .bodyweight, primaryMuscle: .chest, isCustom: true)
         context.insert(template)
+        let deletedID = template.id
         let plan = TrainingPlan(name: "Test", programType: "custom", isActive: true)
         context.insert(plan)
         let day = TrainingDay(name: "Tag 1", weekday: 2, type: .chest, plan: plan)
         context.insert(day)
         let exercise = Exercise(name: exerciseName, orderIndex: 0, equipment: exerciseEquipment, day: day)
-        exercise.exerciseTemplateID = template.id
+        exercise.exerciseTemplateID = deletedID
         context.insert(exercise)
         try context.save()
         context.delete(template)
         try context.save()
+        // Vorbedingungen nach dem Löschen absichern.
+        let gone = try context.fetch(FetchDescriptor<ExerciseTemplate>(predicate: #Predicate { t in t.id == deletedID }))
+        XCTAssertTrue(gone.isEmpty, "Template muss nach delete nicht mehr fetchbar sein")
+        XCTAssertFalse(exercise.isArchived, "Exercise muss nach Setup noch aktiv sein")
+        XCTAssertEqual(exercise.exerciseTemplateID, deletedID, "exerciseTemplateID muss die gelöschte ID behalten")
         return (plan, exercise)
     }
 
@@ -460,7 +466,7 @@ final class PlanEnvironmentMigratorCustomExerciseTests: XCTestCase {
 
     func testLegacyNilTemplateIDWithSystemNameIsNotTreatedAsCustom() throws {
         // Legacy-Schutz: exerciseTemplateID == nil → isSystemExercise nutzt byName-Fallback.
-        // "Bankdrücken" ist im Systemkatalog → kein archivedByEnvironmentChange (Custom-Pfad).
+        // "Bankdrücken" ist im Systemkatalog → Swap-Pfad (Bankdrücken → Liegestütze), kein Custom-Keep.
         let container = try makeContainer()
         let context = container.mainContext
         let plan = TrainingPlan(name: "Test", programType: "custom", isActive: true)
@@ -472,10 +478,14 @@ final class PlanEnvironmentMigratorCustomExerciseTests: XCTestCase {
         context.insert(exercise)
         try context.save()
 
-        PlanEnvironmentMigrator.migrate(plan: plan, toEnvironment: .noEquipment, modelContext: context)
+        let result = PlanEnvironmentMigrator.migrate(plan: plan, toEnvironment: .noEquipment, modelContext: context)
 
+        XCTAssertEqual(result.swapped, 1, "nil-templateID + Systemname → byName-Fallback → Swap-Pfad")
+        XCTAssertTrue(exercise.isArchived, "Original gearchiviert (Swap-Pfad)")
         XCTAssertFalse(exercise.archivedByEnvironmentChange,
-            "nil-templateID + Systemname → isSystemExercise via byName → System-Pfad, nicht Custom-Pfad")
+            "archivedByEnvironmentChange=false → System-Swap-Pfad, nicht Custom-Keep-Pfad")
+        let replacement = day.exercises.first { $0.swappedFromOriginal === exercise && !$0.isArchived }
+        XCTAssertNotNil(replacement, "Aktive Ersatzübung mit swappedFromOriginal === exercise muss existieren")
     }
 }
 #endif
