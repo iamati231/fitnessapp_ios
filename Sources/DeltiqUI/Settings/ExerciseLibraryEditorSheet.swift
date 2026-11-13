@@ -212,14 +212,30 @@ struct ExerciseLibraryEditorSheet: View {
                 Text("customExercise.field.muscle", bundle: .module)
             }
             .listRowBackground(Color.Deltiq.surface)
-            if let secondaryMuscles = ExerciseSecondaryMuscles.byNormalizedName[ExerciseMediaProvider.normalizedKey(for: existing?.name ?? trimmedName)], !secondaryMuscles.isEmpty {
-                LabeledContent {
-                    Text(secondaryMuscles.map { String(localized: $0.localizedName) }.joined(separator: ", "))
-                        .multilineTextAlignment(.trailing)
-                } label: {
-                    Text("customExercise.field.secondaryMuscles", bundle: .module)
+            let secKey = ExerciseMediaProvider.normalizedKey(for: existing?.name ?? trimmedName)
+            let filteredSecondary = ExerciseSecondaryMuscles.filtered(for: secKey, excluding: muscle)
+            if !filteredSecondary.isEmpty {
+                let muscleText = filteredSecondary
+                    .map { String(localized: $0.localizedName) }
+                    .joined(separator: ", ")
+                if filteredSecondary.count <= 2 {
+                    LabeledContent {
+                        Text(muscleText)
+                            .minimumScaleFactor(0.85)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.trailing)
+                    } label: {
+                        Text("customExercise.field.secondaryMuscles", bundle: .module)
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("customExercise.field.secondaryMuscles", bundle: .module)
+                        Text(muscleText)
+                            .foregroundStyle(.secondary)
+                    }
+                    .listRowBackground(Color.Deltiq.surface)
                 }
-                .listRowBackground(Color.Deltiq.surface)
             }
             LabeledContent {
                 Text(equipment.localizedName)
