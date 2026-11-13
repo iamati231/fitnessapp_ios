@@ -135,17 +135,16 @@ struct ExerciseLibraryEditorSheet: View {
                     CustomMediaFullscreenSheet(filename: filename, title: trimmedName.isEmpty ? titleText : trimmedName)
                 }
             }
-            // Video file importer
+            // Einzelner fileImporter — iOS erlaubt nur einen pro View-Baum.
+            // showGifImporter bestimmt die erlaubten Typen; Video ist der Default.
             .fileImporter(
-                isPresented: $showVideoImporter,
-                allowedContentTypes: CustomExerciseMediaStore.videoTypes
-            ) { result in
-                handleImport(result: result)
-            }
-            // GIF file importer
-            .fileImporter(
-                isPresented: $showGifImporter,
-                allowedContentTypes: CustomExerciseMediaStore.gifTypes
+                isPresented: Binding(
+                    get: { showVideoImporter || showGifImporter },
+                    set: { if !$0 { showVideoImporter = false; showGifImporter = false } }
+                ),
+                allowedContentTypes: showGifImporter
+                    ? CustomExerciseMediaStore.gifTypes
+                    : CustomExerciseMediaStore.videoTypes
             ) { result in
                 handleImport(result: result)
             }
