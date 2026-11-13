@@ -1,3 +1,4 @@
+// Issue #12 regression suite — SwiftData in-memory integration tests for custom-exercise migration.
 #if canImport(SwiftUI) && canImport(SwiftData)
 import XCTest
 import SwiftData

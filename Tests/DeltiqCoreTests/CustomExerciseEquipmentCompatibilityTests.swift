@@ -1,3 +1,4 @@
+// Issue #12 regression suite — pure function tests for custom-exercise equipment compatibility.
 import XCTest
 @testable import DeltiqCore
 
