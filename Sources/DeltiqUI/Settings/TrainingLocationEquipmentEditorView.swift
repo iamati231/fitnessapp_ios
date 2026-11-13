@@ -277,12 +277,17 @@ struct TrainingLocationEquipmentEditorView: View {
         }
     }
 
-    /// UI-Refactor (DeltiqHeader-Muster): `UserEquipmentProfile`/`EnvironmentType`
-    /// sind beide `Equatable` — reiner Wertevergleich gegen den Ausgangszustand.
     /// Gemeinsamer Rollback für Swipe-Dismiss und Cancel-Button beider EnvChange-Sheets.
-    /// Stellt alle vier Profil-Felder und Draft-State auf oldEnv zurück, speichert und
-    /// dismisst den Editor nur bei erfolgreichem Save — kein stiller Zustandsbruch.
+    /// Stellt alle vier Profil-Felder und Draft-State auf oldEnv zurück und dismisst
+    /// nur bei erfolgreichem Save. Bei Save-Fehler werden Profil und Draft wieder auf den
+    /// persistierten Neu-Zustand gesetzt, damit In-Memory und Store konsistent bleiben.
     private func rollbackEnvChange(to oldEnv: EnvironmentType) {
+        // Snap des tatsächlich gespeicherten (neuen) Zustands für den Fehlerfall.
+        let snapEnv = profile.environment
+        let snapEquipmentProfile = profile.equipmentProfile
+        let snapEquipmentConfirmed = profile.equipmentProfileConfirmedComplete
+        let snapEquipmentPreferences = profile.equipmentPreferences
+
         profile.environment = oldEnv
         draftEnvironment = oldEnv
         if let ep = preSaveEquipmentProfile {
@@ -295,10 +300,20 @@ struct TrainingLocationEquipmentEditorView: View {
             try modelContext.save()
             dismiss()
         } catch {
+            // Save gescheitert: In-Memory auf persistierten Neu-Stand zurücksetzen
+            // damit Speicher und Store konsistent bleiben (isDirty == false).
+            profile.environment = snapEnv
+            draftEnvironment = snapEnv
+            profile.equipmentProfile = snapEquipmentProfile
+            draftEquipmentProfile = snapEquipmentProfile
+            profile.equipmentProfileConfirmedComplete = snapEquipmentConfirmed
+            profile.equipmentPreferences = snapEquipmentPreferences
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
         }
     }
 
+    /// `UserEquipmentProfile`/`EnvironmentType` sind beide `Equatable` —
+    /// reiner Wertevergleich gegen den Draft-Ausgangszustand.
     private var isDirty: Bool {
         draftEnvironment != profile.environment || draftEquipmentProfile != profile.equipmentProfile
     }

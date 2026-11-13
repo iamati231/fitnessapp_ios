@@ -167,5 +167,20 @@ final class MeasurementDoubleTapGuardTests: XCTestCase {
             source.contains("saveErrorMessage = String(localized: \"day.editor.save.failed\", bundle: .module)\n        }\n        dismiss()"),
             "rollbackEnvChange: dismiss() darf nicht ausserhalb des do-Blocks stehen"
         )
+
+        // 6. Bei Save-Fehler werden Profil und Draft auf den persistierten Neu-Zustand zurückgesetzt
+        // (snapEnv-Muster), damit In-Memory und Store konsistent bleiben.
+        XCTAssertTrue(
+            source.contains("let snapEnv = profile.environment"),
+            "rollbackEnvChange muss vor dem Rollback den aktuellen Zustand snappen"
+        )
+        XCTAssertTrue(
+            source.contains("profile.environment = snapEnv"),
+            "rollbackEnvChange muss bei Save-Fehler profile.environment auf snapEnv zurücksetzen"
+        )
+        XCTAssertTrue(
+            source.contains("draftEnvironment = snapEnv"),
+            "rollbackEnvChange muss bei Save-Fehler draftEnvironment auf snapEnv zurücksetzen"
+        )
     }
 }
