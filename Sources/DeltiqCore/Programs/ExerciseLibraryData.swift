@@ -218,8 +218,9 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .item(.pullUpBar)),
         ExerciseTemplateSpec(name: "Australian Pull-ups",              equipment: .bodyweight, primaryMuscle: .back, localizationKey: "exercise.name.australianPullup",
                              equipmentRequirement: .item(.pullUpBar)),
+        // shortcut: Türrahmen fehlt als EquipmentItem; .pullUpBar signalisiert "braucht Fixpunkt"
         ExerciseTemplateSpec(name: "Handtuch-Rudern (Türrahmen)",     equipment: .bodyweight, primaryMuscle: .back,      difficultyLevel: .beginner, localizationKey: "exercise.name.towelRowDoorframe",
-                             equipmentRequirement: .all([])),
+                             equipmentRequirement: .item(.pullUpBar)),
         ExerciseTemplateSpec(name: "Liegestütze",                     equipment: .bodyweight, primaryMuscle: .chest,     difficultyLevel: .beginner, localizationKey: "exercise.name.pushup",
                              equipmentRequirement: .all([])),
         // README 2.9 Phase 6: Knie-Regression fuer Cindy (Scaled) - genutzt
@@ -1144,6 +1145,13 @@ public enum ExerciseLibraryData {
             return false
         }
         return true
+    }
+
+    /// Cross-module wrapper (DeltiqData → DeltiqCore): prüft Exercise-Kompatibilität
+    /// inkl. `equipmentRequirement`, nicht nur `equipment`-Klasse.
+    public static func isCompatibleWith(exerciseName name: String, environment env: EnvironmentType) -> Bool {
+        guard let spec = all.first(where: { $0.name == name }) else { return false }
+        return isCompatible(spec, with: env)
     }
 
     /// Publiche Variante derselben Check — wird von der UI fuer Bottom-Up-

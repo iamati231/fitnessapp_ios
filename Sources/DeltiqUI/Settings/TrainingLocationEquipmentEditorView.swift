@@ -70,8 +70,8 @@ struct TrainingLocationEquipmentEditorView: View {
     @State private var preSaveEquipmentProfile: UserEquipmentProfile? = nil
     @State private var preSaveEquipmentConfirmed: Bool? = nil
     @State private var preSaveEquipmentPreferences: Set<Equipment>? = nil
-    /// Vorschau: unersetzbare Übungen aus der letzten Adaptation-Vorausberechnung.
-    @State private var adaptationPreviewUnresolved: [String] = []
+    /// Vollständige Vorschau-Daten für EquipmentAdaptationPreviewSheet.
+    @State private var adaptationDrafts: [(planName: String, replacements: [(original: String, replacement: String)], unresolved: [String])] = []
 
     private struct PendingEnvSwap: Equatable {
         let oldEnv: EnvironmentType
@@ -157,58 +157,39 @@ struct TrainingLocationEquipmentEditorView: View {
             // nachdem `save()` das Profil bereits geschrieben hat — die
             // Equipment-Praeferenz selbst ist nie von dieser Entscheidung
             // abhaengig, nur die PLAN-Anpassung ist es.
-            .confirmationDialog(
-                Text("profile.equipmentSwap.title", bundle: .module),
-                isPresented: Binding(
-                    get: { pendingEquipmentAdaptation != nil },
-                    // Task 5: `dismiss()` wanderte aus diesem Setter heraus
-                    // in die beiden Buttons unten — sonst wuerde SwiftUIs
-                    // eigenes "Dialog schliesst sich nach Button-Tap"-
-                    // Verhalten den Editor IMMER verlassen, auch wenn der
-                    // Confirm-Button-Handler unten gerade einen fehl-
-                    // geschlagenen Save meldet (siehe dortiger Kommentar).
-                    set: { if !$0 { pendingEquipmentAdaptation = nil } }
-                )
-            ) {
-                Button {
-                    let archived: [String]
-                    if let newProfile = pendingEquipmentAdaptation {
-                        archived = applyEquipmentAdaptations(against: newProfile)
-                    } else {
-                        archived = []
-                    }
-                    pendingEquipmentAdaptation = nil
-                    // Task 5: `applyEquipmentAdaptations` mutiert/inserted
-                    // direkt auf `modelContext`, ohne selbst zu speichern
-                    // (`PlanEquipmentAdaptationApplier.apply` speichert
-                    // nicht) — ohne diesen expliziten Save haengt der
-                    // Uebungs-Tausch an SwiftDatas implizitem Autosave. Bei
-                    // einem Fehler bleibt der Editor bewusst OFFEN (kein
-                    // `dismiss()`) — der Nutzer soll nicht glauben, der
-                    // Tausch sei uebernommen, waehrend er es nicht ist.
-                    do {
-                        try modelContext.save()
-                        if archived.isEmpty {
-                            dismiss()
+            // Vollständiges Preview-Sheet vor der Bestätigung (Issue #11):
+            // zeigt konkrete Ersetzungen und zu archivierende Übungen je Plan.
+            .sheet(isPresented: Binding(
+                get: { pendingEquipmentAdaptation != nil },
+                set: { if !$0 { pendingEquipmentAdaptation = nil } }
+            )) {
+                EquipmentAdaptationPreviewSheet(
+                    drafts: adaptationDrafts,
+                    onConfirm: {
+                        let archived: [String]
+                        if let newProfile = pendingEquipmentAdaptation {
+                            archived = applyEquipmentAdaptations(against: newProfile)
                         } else {
-                            // Konflikt zeigen statt still zu dismissen (Issue-#7-Kommentar-4)
-                            saveErrorMessage = String(localized: "profile.equipmentAdaptation.conflict", bundle: .module)
-                                + " " + archived.joined(separator: ", ")
+                            archived = []
                         }
-                    } catch {
-                        saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                        pendingEquipmentAdaptation = nil
+                        do {
+                            try modelContext.save()
+                            if archived.isEmpty {
+                                dismiss()
+                            } else {
+                                saveErrorMessage = String(localized: "profile.equipmentAdaptation.conflict", bundle: .module)
+                                    + " " + archived.joined(separator: ", ")
+                            }
+                        } catch {
+                            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                        }
+                    },
+                    onCancel: {
+                        pendingEquipmentAdaptation = nil
+                        dismiss()
                     }
-                } label: {
-                    Text("profile.envSwap.confirm", bundle: .module)
-                }
-                Button(role: .cancel) {
-                    pendingEquipmentAdaptation = nil
-                    dismiss()
-                } label: {
-                    Text("profile.envSwap.keep", bundle: .module)
-                }
-            } message: {
-                Text(adaptationPreviewMessage)
+                )
             }
             .confirmationDialog(
                 Text("profile.envSwap.title", bundle: .module),
@@ -443,9 +424,7 @@ struct TrainingLocationEquipmentEditorView: View {
         // einstuft.
         let resolvedProfile = profile.equipmentProfile
         if equipmentChanged {
-            let previewResult = computeAdaptationPreview(against: resolvedProfile)
-            if previewResult.haGap {
-                adaptationPreviewUnresolved = previewResult.unresolvedNames
+            if computeAdaptationPreview(against: resolvedProfile) {
                 pendingEquipmentAdaptation = resolvedProfile
                 // Fix-Runde 1 (Befund 1): dieser Zweig dismisst NICHT -- der
                 // `confirmationDialog` unten kann durch Wegtippen (ausserhalb,
@@ -459,29 +438,25 @@ struct TrainingLocationEquipmentEditorView: View {
         dismiss()
     }
 
-    /// Pre-compute adaptation draft info für den Dialog — keine Mutation.
-    private func computeAdaptationPreview(
-        against newProfile: UserEquipmentProfile
-    ) -> (haGap: Bool, unresolvedNames: [String]) {
+    /// Pre-compute adaptation drafts für das Preview-Sheet — keine Mutation.
+    /// Gibt `true` zurück, wenn mindestens ein Plan eine Equipment-Lücke hat.
+    @discardableResult
+    private func computeAdaptationPreview(against newProfile: UserEquipmentProfile) -> Bool {
         let context = SubstitutionContext(goal: profile.trainingGoal, experienceTrack: profile.experienceTrack)
         var haGap = false
-        var unresolvedNames: [String] = []
+        var newDrafts: [(planName: String, replacements: [(original: String, replacement: String)], unresolved: [String])] = []
         for plan in plans where plan.days.contains(where: { !$0.activeExercises.isEmpty }) {
             guard !PlanEquipmentAdaptationApplier.check(plan: plan, against: newProfile).isAvailable else { continue }
             haGap = true
             let draft = PlanEquipmentAdaptationApplier.preview(plan: plan, against: newProfile, context: context)
-            unresolvedNames += draft.unresolved.map { $0.exerciseName }
+            newDrafts.append((
+                planName: plan.name,
+                replacements: draft.replacements.map { ($0.originalName, $0.replacementName) },
+                unresolved: draft.unresolved.map { $0.exerciseName }
+            ))
         }
-        return (haGap, unresolvedNames)
-    }
-
-    private var adaptationPreviewMessage: String {
-        var msg = String(localized: "profile.equipmentSwap.message", bundle: .module)
-        if !adaptationPreviewUnresolved.isEmpty {
-            msg += "\n\n" + String(localized: "profile.equipmentAdaptation.preview.conflict", bundle: .module)
-                + " " + adaptationPreviewUnresolved.joined(separator: ", ")
-        }
-        return msg
+        adaptationDrafts = newDrafts
+        return haGap
     }
 
     /// Nach einem Env-Dialog: Equipment-Gap-Prüfung, die `save()` wegen des
@@ -489,9 +464,7 @@ struct TrainingLocationEquipmentEditorView: View {
     private func checkAndHandleEquipmentGap() {
         guard equipmentChangedOnSave else { dismiss(); return }
         let resolvedProfile = profile.equipmentProfile
-        let previewResult = computeAdaptationPreview(against: resolvedProfile)
-        if previewResult.haGap {
-            adaptationPreviewUnresolved = previewResult.unresolvedNames
+        if computeAdaptationPreview(against: resolvedProfile) {
             pendingEquipmentAdaptation = resolvedProfile
         } else {
             dismiss()
@@ -533,6 +506,54 @@ struct TrainingLocationEquipmentEditorView: View {
         Text(text)
             .font(.system(size: 13))
             .foregroundStyle(Color.Deltiq.error)
+    }
+}
+
+// MARK: - Preview-Sheet
+
+@available(iOS 17.0, macOS 14.0, *)
+private struct EquipmentAdaptationPreviewSheet: View {
+    let drafts: [(planName: String, replacements: [(original: String, replacement: String)], unresolved: [String])]
+    var onConfirm: () -> Void
+    var onCancel: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(drafts.indices, id: \.self) { i in
+                    let d = drafts[i]
+                    Section(d.planName) {
+                        ForEach(d.replacements.indices, id: \.self) { j in
+                            let r = d.replacements[j]
+                            HStack(spacing: 6) {
+                                Text(r.original).foregroundStyle(.secondary)
+                                Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
+                                Text(r.replacement)
+                            }
+                            .font(.subheadline)
+                        }
+                        ForEach(d.unresolved, id: \.self) { name in
+                            Label(name, systemImage: "archivebox")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.Deltiq.error)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(Text("profile.equipmentSwap.title", bundle: .module))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(role: .cancel, action: onCancel) {
+                        Text("common.cancel", bundle: .module)
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(action: onConfirm) {
+                        Text("profile.envSwap.confirm", bundle: .module)
+                    }
+                }
+            }
+        }
     }
 }
 #endif

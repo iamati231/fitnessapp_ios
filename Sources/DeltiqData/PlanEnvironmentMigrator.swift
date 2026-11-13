@@ -270,10 +270,9 @@ public enum PlanEnvironmentMigrator {
         _ exercise: Exercise,
         with env: EnvironmentType
     ) -> Bool {
-        guard let spec = ExerciseLibraryData.all.first(where: { $0.name == exercise.name }) else {
-            return false
-        }
-        return ExerciseLibraryData.isEquipment(spec.equipment, compatibleWith: env)
+        // isCompatibleWith prüft auch equipmentRequirement, nicht nur equipment-Klasse —
+        // verhindert, dass z.B. Australian Pull-ups als noEquipment-kompatibel gilt.
+        ExerciseLibraryData.isCompatibleWith(exerciseName: exercise.name, environment: env)
     }
 }
 #endif
