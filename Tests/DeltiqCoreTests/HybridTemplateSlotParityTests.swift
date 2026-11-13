@@ -151,13 +151,13 @@ final class HybridTemplateSlotParityTests: XCTestCase {
             ),
             DayExpectation(
                 dayIndex: 2, dayLabel: "Strength Ganzkörper B",
-                base: ["Rumänisches Kreuzheben", "Schulterdrücken (KH)", "Latzug (weit)", "Bizeps-Curl (KH)"],
+                base: ["Rumänisches Kreuzheben", "Schulterdrücken (KH)", "Latzug (Kabel)", "Bizeps-Curl (KH)"],
                 dumbbellOnly: ["Rumänisches Kreuzheben (KH)", "Schulterdrücken (KH)", "Chest Supported Row (KH)", "Bizeps-Curl (KH)"],
-                // "Bizeps-Curl (KH)" has no KB alternative → gap; resolver keeps
-                // the DEFAULT exercise name in the day output.
-                kettlebellOnly: ["Kettlebell RDL", "Kettlebell Push Press", "Kettlebell Row einarmig", "Bizeps-Curl (KH)"]
+                // "Rumänisches Kreuzheben" and "Bizeps-Curl (KH)" have no KB alternatives
+                // → gaps; resolver keeps the DEFAULT exercise name in the day output.
+                kettlebellOnly: ["Rumänisches Kreuzheben", "Kettlebell Schulterdrücken sitzend", "Kettlebell Row einarmig", "Bizeps-Curl (KH)"]
             )
-        ], expectedKettlebellGaps: ["Bizeps-Curl (KH)"])
+        ], expectedKettlebellGaps: ["Bizeps-Curl (KH)", "Rumänisches Kreuzheben"])
     }
 
     // MARK: - hybrid_balanced (5 Tage: Push, Easy Run, Pull, Long Run, Legs)
@@ -167,9 +167,9 @@ final class HybridTemplateSlotParityTests: XCTestCase {
             DayExpectation(
                 dayIndex: 0, dayLabel: "Strength Push",
                 base: ["Bankdrücken", "Schulterdrücken (stehend)", "Schrägbankdrücken (aufwärts)", "Trizepsdrücken (Kabel)"],
-                dumbbellOnly: ["Bankdrücken (KH)", "Schulterdrücken (KH)", "Schrägbankdrücken aufwärts (KH)", "Trizepsstrecker über Kopf (KH)"],
+                dumbbellOnly: ["Bankdrücken (KH)", "Schulterdrücken (KH)", "Schrägbankdrücken aufwärts (KH)", "Sitzendes Trizepsstrecken (KH)"],
                 // "Trizepsdrücken (Kabel)" has no KB alternative → gap; default name kept.
-                kettlebellOnly: ["Kettlebell Floor Press", "Kettlebell Push Press", "Kettlebell Clean & Press", "Trizepsdrücken (Kabel)"]
+                kettlebellOnly: ["Kettlebell Floor Press", "Kettlebell Schulterdrücken sitzend", "Kettlebell Clean & Press", "Trizepsdrücken (Kabel)"]
             ),
             DayExpectation(
                 dayIndex: 2, dayLabel: "Strength Pull",
@@ -177,16 +177,16 @@ final class HybridTemplateSlotParityTests: XCTestCase {
                 dumbbellOnly: ["Rumänisches Kreuzheben (KH)", "Rudern einarmig (KH)", "Chest Supported Row (KH)", "Bizeps-Curl (KH)"],
                 // "Rudern vorgebeugt" and "Bizeps-Curl (KH)" have no KB alternatives
                 // → gaps; default names kept in the resolved day.
-                kettlebellOnly: ["Kettlebell RDL", "Kettlebell Row einarmig", "Rudern vorgebeugt", "Bizeps-Curl (KH)"]
+                kettlebellOnly: ["Kreuzheben (konventionell)", "Kettlebell Row einarmig", "Rudern vorgebeugt", "Bizeps-Curl (KH)"]
             ),
             DayExpectation(
                 dayIndex: 4, dayLabel: "Strength Legs (Light)",
                 base: ["Bulgarische Kniebeuge (KH)", "Rumänisches Kreuzheben", "Wadenheben (stehend, LH)", "Plank"],
                 dumbbellOnly: ["Bulgarische Kniebeuge (KH)", "Rumänisches Kreuzheben (KH)", "Ausfallschritte (KH)", "Plank"],
                 // "Wadenheben (stehend, LH)" has no KB alternative → gap; default name kept.
-                kettlebellOnly: ["Kettlebell Goblet Squat", "Kettlebell RDL", "Wadenheben (stehend, LH)", "Plank"]
+                kettlebellOnly: ["Kettlebell Goblet Squat", "Rumänisches Kreuzheben", "Wadenheben (stehend, LH)", "Plank"]
             )
-        ], expectedKettlebellGaps: ["Trizepsdrücken (Kabel)", "Rudern vorgebeugt", "Bizeps-Curl (KH)", "Wadenheben (stehend, LH)"])
+        ], expectedKettlebellGaps: ["Trizepsdrücken (Kabel)", "Rudern vorgebeugt", "Bizeps-Curl (KH)", "Wadenheben (stehend, LH)", "Kreuzheben (konventionell)", "Rumänisches Kreuzheben"])
     }
 
     // MARK: - hybrid_performance (6 Tage: Push, Easy Run, Pull, Intervalle, Legs, Long Run)
@@ -197,10 +197,10 @@ final class HybridTemplateSlotParityTests: XCTestCase {
             DayExpectation(
                 dayIndex: 0, dayLabel: "Strength Push",
                 base: ["Bankdrücken", "Schulterdrücken (stehend)", "Schrägbankdrücken (aufwärts)", "Seitheben", "Trizepsdrücken (Kabel)"],
-                dumbbellOnly: ["Bankdrücken (KH)", "Schulterdrücken (KH)", "Schrägbankdrücken aufwärts (KH)", "Seitheben", "Trizepsstrecker über Kopf (KH)"],
+                dumbbellOnly: ["Bankdrücken (KH)", "Schulterdrücken (KH)", "Schrägbankdrücken aufwärts (KH)", "Seitheben", "Sitzendes Trizepsstrecken (KH)"],
                 // "Seitheben" and "Trizepsdrücken (Kabel)" have no KB alternatives → gaps;
                 // default names kept in the resolved day.
-                kettlebellOnly: ["Kettlebell Floor Press", "Kettlebell Push Press", "Kettlebell Clean & Press", "Seitheben", "Trizepsdrücken (Kabel)"]
+                kettlebellOnly: ["Kettlebell Floor Press", "Kettlebell Schulterdrücken sitzend", "Kettlebell Clean & Press", "Seitheben", "Trizepsdrücken (Kabel)"]
             ),
             DayExpectation(
                 dayIndex: 2, dayLabel: "Strength Legs",
@@ -210,16 +210,16 @@ final class HybridTemplateSlotParityTests: XCTestCase {
                 dumbbellOnly: ["Kettlebell Goblet Squat", "Rumänisches Kreuzheben (KH)", "Bulgarische Kniebeuge (KH)", "Farmer's Walk"],
                 // "Bulgarische Kniebeuge (KH)" and "Wadenheben (stehend, LH)" have no
                 // KB alternatives → gaps; default names kept.
-                kettlebellOnly: ["Kettlebell Goblet Squat", "Kettlebell RDL", "Bulgarische Kniebeuge (KH)", "Wadenheben (stehend, LH)"]
+                kettlebellOnly: ["Kettlebell Goblet Squat", "Rumänisches Kreuzheben", "Bulgarische Kniebeuge (KH)", "Wadenheben (stehend, LH)"]
             ),
             DayExpectation(
                 dayIndex: 3, dayLabel: "Strength Pull",
                 base: ["Kreuzheben (konventionell)", "Klimmzüge (weit)", "Rudern vorgebeugt", "Bizeps-Curl (KH)"],
                 dumbbellOnly: ["Rumänisches Kreuzheben (KH)", "Rudern einarmig (KH)", "Chest Supported Row (KH)", "Bizeps-Curl (KH)"],
                 // "Rudern vorgebeugt" and "Bizeps-Curl (KH)" have no KB alternatives → gaps.
-                kettlebellOnly: ["Kettlebell RDL", "Kettlebell Row einarmig", "Rudern vorgebeugt", "Bizeps-Curl (KH)"]
+                kettlebellOnly: ["Kreuzheben (konventionell)", "Kettlebell Row einarmig", "Rudern vorgebeugt", "Bizeps-Curl (KH)"]
             )
-        ], expectedKettlebellGaps: ["Seitheben", "Trizepsdrücken (Kabel)", "Bulgarische Kniebeuge (KH)", "Wadenheben (stehend, LH)", "Rudern vorgebeugt", "Bizeps-Curl (KH)"])
+        ], expectedKettlebellGaps: ["Seitheben", "Trizepsdrücken (Kabel)", "Bulgarische Kniebeuge (KH)", "Wadenheben (stehend, LH)", "Rudern vorgebeugt", "Bizeps-Curl (KH)", "Rumänisches Kreuzheben", "Kreuzheben (konventionell)"])
     }
 
     // MARK: - Cardio days stay untouched (no slots -> `days` passthrough)
@@ -310,7 +310,7 @@ final class HybridTemplateSlotParityTests: XCTestCase {
     /// `dumbbellOnlyProfile`: per `testHybridBalancedExhaustiveSlotParity`
     /// above, every slot resolves to a REVIEWED ALTERNATIVE (barbell
     /// unavailable) — "Bankdrücken (KH)", "Schulterdrücken (KH)",
-    /// "Schrägbankdrücken aufwärts (KH)", "Trizepsstrecker über Kopf (KH)".
+    /// "Schrägbankdrücken aufwärts (KH)", "Sitzendes Trizepsstrecken (KH)".
     /// Hand-traced against the template's own authored `targetRir` values
     /// (`ProgramTemplates.swift` "Strength Push" day, line ~729-732: 2.5,
     /// 2.5, 2.5, 1.0) and the OLD hand-authored `dumbbellOnly` equipment
@@ -324,7 +324,7 @@ final class HybridTemplateSlotParityTests: XCTestCase {
         }
         let pushDay = result.days[0]
         XCTAssertEqual(pushDay.exercises.map(\.name),
-                        ["Bankdrücken (KH)", "Schulterdrücken (KH)", "Schrägbankdrücken aufwärts (KH)", "Trizepsstrecker über Kopf (KH)"],
+                        ["Bankdrücken (KH)", "Schulterdrücken (KH)", "Schrägbankdrücken aufwärts (KH)", "Sitzendes Trizepsstrecken (KH)"],
                         "Vorbedingung: alle 4 Slots muessen auf eine Alternative aufgeloest werden")
         XCTAssertEqual(pushDay.exercises.map(\.targetRir), [2.5, 2.5, 2.5, 1.0],
                         "Eine aufgeloeste Alternative muss den targetRir des DEFAULT-Slots erben, nicht ExerciseSpec's generischen 2.0-Fallback")

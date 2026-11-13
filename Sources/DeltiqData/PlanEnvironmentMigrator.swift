@@ -3,6 +3,32 @@ import Foundation
 import SwiftData
 import DeltiqCore
 
+/// Vorschau-Daten für einen einzelnen Plan vor einem Env-Swap oder -Restore.
+/// Wird in der Preview-Sheet angezeigt, bevor irgendeine Mutation stattfindet.
+public struct EnvSwapPlanPreview: Identifiable, Sendable {
+    public struct Swap: Sendable {
+        public let original: String
+        public let replacement: String
+    }
+    public let id: UUID
+    public let planName: String
+    /// Für Swap: original→Ersatz. Für Restore: temp-Name→original-Name.
+    public let swaps: [Swap]
+    /// Übungen ohne kompatible Alternative — werden archiviert.
+    public let archived: [String]
+    /// Issue #12: Übungen, die beim Restore reaktiviert werden (archivedByEnvironmentChange).
+    public let restored: [String]
+    public var hasChanges: Bool { !swaps.isEmpty || !archived.isEmpty || !restored.isEmpty }
+
+    public init(id: UUID = UUID(), planName: String, swaps: [Swap], archived: [String], restored: [String] = []) {
+        self.id = id
+        self.planName = planName
+        self.swaps = swaps
+        self.archived = archived
+        self.restored = restored
+    }
+}
+
 /// Result-Tuple eines Environment-Swap-Laufs. UI nutzt die drei Zahlen fuer den
 /// Toast/Confirmation-Output ("3 ersetzt · 1 ohne Alternative · 2 unveraendert").
 public struct PlanEnvironmentSwapResult: Equatable, Sendable {
@@ -90,46 +116,66 @@ public enum PlanEnvironmentMigrator {
             // Slot raus).
             let snapshot = day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
             for exercise in snapshot {
-                switch ExerciseLibraryData.resolveAlternative(
-                    forExerciseName: exercise.name,
-                    targetEnvironment: newEnv
-                ) {
-                case .swap(let altSpec):
-                    // DEL-049 ARCHIVE: alte Uebung NICHT loeschen, sondern
-                    // zur Seite legen. Logs bleiben dran. Order-Index der
-                    // alten Uebung wandert auf die neue, damit die Anzeige-
-                    // Reihenfolge konsistent bleibt.
-                    let originalOrderIndex = exercise.orderIndex
-                    exercise.isArchived = true
+                let isInCatalog = isSystemExercise(exercise, in: modelContext)
+                if isInCatalog {
+                    switch ExerciseLibraryData.resolveAlternative(
+                        forExerciseName: exercise.name,
+                        targetEnvironment: newEnv
+                    ) {
+                    case .swap(let altSpec):
+                        // DEL-049 ARCHIVE: alte Uebung NICHT loeschen, sondern
+                        // zur Seite legen. Logs bleiben dran. Order-Index der
+                        // alten Uebung wandert auf die neue, damit die Anzeige-
+                        // Reihenfolge konsistent bleibt.
+                        let originalOrderIndex = exercise.orderIndex
+                        exercise.isArchived = true
 
-                    let newExercise = Exercise(
-                        name: altSpec.name,
-                        sets: exercise.sets,
-                        repsMin: exercise.repsMin,
-                        repsMax: exercise.repsMax,
-                        restSeconds: exercise.restSeconds,
-                        notes: exercise.notes,
-                        suggestedWeight: nil,   // andere Uebung → Last neu kalibrieren
-                        orderIndex: originalOrderIndex,
-                        targetRir: exercise.targetRir,
-                        weightReducedNote: exercise.weightReducedNote,
-                        // ExerciseTemplateSpec hat (noch) kein isCardio-Flag —
-                        // unsere Alternative-Mappings sind alle Strength-Lifts,
-                        // also hardcode false. Wenn das Mapping spaeter Cardio-
-                        // Substitutes bekommt, hier Detection via Name oder
-                        // dedicated Spec-Feld nachruesten.
-                        isCardio: false,
-                        isTimeBased: altSpec.isTimeBased,
-                        isArchived: false,
-                        swappedFromOriginal: exercise,
-                        day: day
-                    )
-                    modelContext.insert(newExercise)
-                    swapped += 1
-                case .keep:
-                    kept += 1
-                case .stayCompatible:
-                    compatible += 1
+                        let newExercise = Exercise(
+                            name: altSpec.name,
+                            sets: exercise.sets,
+                            repsMin: exercise.repsMin,
+                            repsMax: exercise.repsMax,
+                            restSeconds: exercise.restSeconds,
+                            notes: exercise.notes,
+                            suggestedWeight: nil,   // andere Uebung → Last neu kalibrieren
+                            orderIndex: originalOrderIndex,
+                            targetRir: exercise.targetRir,
+                            weightReducedNote: exercise.weightReducedNote,
+                            // ExerciseTemplateSpec hat (noch) kein isCardio-Flag —
+                            // unsere Alternative-Mappings sind alle Strength-Lifts,
+                            // also hardcode false. Wenn das Mapping spaeter Cardio-
+                            // Substitutes bekommt, hier Detection via Name oder
+                            // dedicated Spec-Feld nachruesten.
+                            isCardio: false,
+                            isTimeBased: altSpec.isTimeBased,
+                            isArchived: false,
+                            swappedFromOriginal: exercise,
+                            day: day
+                        )
+                        modelContext.insert(newExercise)
+                        swapped += 1
+                    case .keep:
+                        // Inkompatibel + keine Alternative → archivieren.
+                        // archivedByEnvironmentChange=true ermoeglicht Restore beim Rueckweg.
+                        exercise.isArchived = true
+                        exercise.archivedByEnvironmentChange = true
+                        kept += 1
+                    case .stayCompatible:
+                        compatible += 1
+                    }
+                } else {
+                    // Custom-Exercise: eigenes equipment-Feld entscheidet.
+                    // nil equipment → konservativ inkompatibel (kein Datenverlust-Risiko).
+                    let isCompatible = exercise.equipment.map {
+                        ExerciseLibraryData.isEquipment($0, compatibleWith: newEnv)
+                    } ?? false
+                    if isCompatible {
+                        compatible += 1
+                    } else {
+                        exercise.isArchived = true
+                        exercise.archivedByEnvironmentChange = true
+                        kept += 1
+                    }
                 }
             }
         }
@@ -191,6 +237,8 @@ public enum PlanEnvironmentMigrator {
         for day in plan.days {
             // Snapshot — wir modifizieren day.exercises in der Iteration.
             let snapshot = day.activeExercises
+
+            // Pfad A: Swap-Restore (swappedFromOriginal-Link vorhanden)
             for current in snapshot {
                 guard let original = current.swappedFromOriginal,
                       isOriginalCompatible(original, with: newEnv)
@@ -199,11 +247,18 @@ public enum PlanEnvironmentMigrator {
                 // ruecken (User-Reihenfolge bleibt stabil).
                 original.isArchived = false
                 original.orderIndex = current.orderIndex
-                // Loop-Cleanup: falls die Ersatz-Uebung selber ein Original
-                // hatte (Doppel-Swap), dranleihen — sonst dangling.
-                // (In der Praxis sollte chains nicht auftauchen, weil wir
-                // beim Swap die archived-Originale skipen.)
                 modelContext.delete(current)
+                restored += 1
+            }
+
+            // Pfad B: Issue #12 — .keep-archivierte Exercises reaktivieren.
+            // Kein swappedFromOriginal-Link, aber archivedByEnvironmentChange=true.
+            // Nur reaktivieren wenn jetzt kompatibel.
+            let archivedByEnv = day.archivedExercises.filter { $0.archivedByEnvironmentChange && $0.swappedFromOriginal == nil }
+            for exercise in archivedByEnv {
+                guard isArchivedExerciseCompatible(exercise, with: newEnv) else { continue }
+                exercise.isArchived = false
+                exercise.archivedByEnvironmentChange = false
                 restored += 1
             }
         }
@@ -232,20 +287,87 @@ public enum PlanEnvironmentMigrator {
         return (touched, aggregate)
     }
 
-    /// Schnell-Check: hat dieser Plan mindestens eine aktive Uebung mit einem
-    /// `swappedFromOriginal`, dessen Original im neuen Env wieder kompatibel
-    /// waere? Wird vom UI benutzt, um zwischen "anpassen?"- und
-    /// "wiederherstellen?"-Prompt zu entscheiden.
+    // MARK: - Dry-Run Previews (keine Mutation)
+
+    /// Berechnet was `migrateAll` täte, ohne etwas zu mutieren.
+    public static func previewMigrateAll(
+        plans: [TrainingPlan],
+        toEnvironment newEnv: EnvironmentType
+    ) -> [EnvSwapPlanPreview] {
+        plans.compactMap { plan -> EnvSwapPlanPreview? in
+            guard plan.days.contains(where: { !$0.activeExercises.isEmpty }) else { return nil }
+            var swaps: [EnvSwapPlanPreview.Swap] = []
+            var archived: [String] = []
+            for day in plan.days {
+                for exercise in day.activeExercises.sorted(by: { $0.orderIndex < $1.orderIndex }) {
+                    let isInCatalog = isSystemExercise(exercise)
+                    if isInCatalog {
+                        switch ExerciseLibraryData.resolveAlternative(forExerciseName: exercise.name, targetEnvironment: newEnv) {
+                        case .swap(let spec):
+                            swaps.append(.init(original: exercise.name, replacement: spec.name))
+                        case .keep:
+                            archived.append(exercise.name)
+                        case .stayCompatible:
+                            break
+                        }
+                    } else {
+                        // Issue #12: Custom-Exercise
+                        let compatible = exercise.equipment.map {
+                            ExerciseLibraryData.isEquipment($0, compatibleWith: newEnv)
+                        } ?? false
+                        if !compatible { archived.append(exercise.customName ?? exercise.name) }
+                    }
+                }
+            }
+            guard !swaps.isEmpty || !archived.isEmpty else { return nil }
+            return EnvSwapPlanPreview(planName: plan.name, swaps: swaps, archived: archived)
+        }
+    }
+
+    /// Berechnet was `restoreAll` täte, ohne etwas zu mutieren.
+    /// "swaps" = temporärer-Name → Original-Name; "restored" = reaktivierte .keep-Exercises.
+    public static func previewRestoreAll(
+        plans: [TrainingPlan],
+        toEnvironment newEnv: EnvironmentType
+    ) -> [EnvSwapPlanPreview] {
+        plans.compactMap { plan -> EnvSwapPlanPreview? in
+            var swaps: [EnvSwapPlanPreview.Swap] = []
+            var restored: [String] = []
+            for day in plan.days {
+                // Pfad A: Swap-Restore
+                for current in day.activeExercises {
+                    guard let original = current.swappedFromOriginal,
+                          isOriginalCompatible(original, with: newEnv) else { continue }
+                    swaps.append(.init(original: current.name, replacement: original.name))
+                }
+                // Pfad B: Issue #12 — .keep-archivierte reaktivierbar?
+                for exercise in day.archivedExercises where exercise.archivedByEnvironmentChange && exercise.swappedFromOriginal == nil {
+                    if isArchivedExerciseCompatible(exercise, with: newEnv) {
+                        restored.append(exercise.customName ?? exercise.name)
+                    }
+                }
+            }
+            guard !swaps.isEmpty || !restored.isEmpty else { return nil }
+            return EnvSwapPlanPreview(planName: plan.name, swaps: swaps, archived: [], restored: restored)
+        }
+    }
+
+    /// Schnell-Check: hat dieser Plan mindestens eine Uebung die beim Restore
+    /// reaktiviert werden könnte (Swap-Original oder .keep-archivierte)?
+    /// Wird vom UI benutzt, um zwischen "anpassen?"- und "wiederherstellen?"-Prompt zu entscheiden.
     public static func hasRestorableOriginals(
         plan: TrainingPlan,
         forEnvironment env: EnvironmentType
     ) -> Bool {
         for day in plan.days {
+            // Pfad A: Swap-Restore
             for current in day.activeExercises {
                 guard let original = current.swappedFromOriginal else { continue }
-                if isOriginalCompatible(original, with: env) {
-                    return true
-                }
+                if isOriginalCompatible(original, with: env) { return true }
+            }
+            // Pfad B: Issue #12 — .keep-archivierte reaktivierbar?
+            for exercise in day.archivedExercises where exercise.archivedByEnvironmentChange && exercise.swappedFromOriginal == nil {
+                if isArchivedExerciseCompatible(exercise, with: env) { return true }
             }
         }
         return false
@@ -262,18 +384,47 @@ public enum PlanEnvironmentMigrator {
 
     // MARK: - Helpers
 
-    /// Looked up via Library, sodass wir das Equipment des Original-Eintrags
-    /// kennen. Falls die Uebung nicht in der Library steht (Custom-Exercise),
-    /// nehmen wir konservativ "nicht kompatibel" an — der User soll dann
-    /// manuell entscheiden.
+    /// Prüft ob eine Swap-Original-Exercise im Ziel-Env kompatibel ist.
+    /// System-Exercises: ExerciseLibraryData (inkl. equipmentRequirement).
+    /// Custom-Exercises (Issue #12): eigenes equipment-Feld, konservativ nil→false.
     private static func isOriginalCompatible(
         _ exercise: Exercise,
         with env: EnvironmentType
     ) -> Bool {
-        guard let spec = ExerciseLibraryData.all.first(where: { $0.name == exercise.name }) else {
+        if isSystemExercise(exercise) {
+            return ExerciseLibraryData.isCompatibleWith(exerciseName: exercise.name, environment: env)
+        }
+        return exercise.equipment.map { ExerciseLibraryData.isEquipment($0, compatibleWith: env) } ?? false
+    }
+
+    /// Issue #12: Prüft ob eine via .keep archivierte Custom-/System-Exercise
+    /// im neuen Env reaktivierbar ist.
+    private static func isArchivedExerciseCompatible(
+        _ exercise: Exercise,
+        with env: EnvironmentType
+    ) -> Bool {
+        if isSystemExercise(exercise) {
+            return ExerciseLibraryData.isCompatibleWith(exerciseName: exercise.name, environment: env)
+        }
+        return exercise.equipment.map { ExerciseLibraryData.isEquipment($0, compatibleWith: env) } ?? false
+    }
+
+    /// Bestimmt ob eine Exercise eine System-Exercise (im Katalog) oder eine Custom-Exercise ist.
+    /// Primär: exerciseTemplateID → ExerciseTemplate.isCustom (korrekt auch bei Namenskollisionen).
+    /// Fallback: ExerciseLibraryData.byName (Legacy, wenn kein templateID vorhanden).
+    private static func isSystemExercise(_ exercise: Exercise, in context: ModelContext? = nil) -> Bool {
+        if let templateID = exercise.exerciseTemplateID {
+            let ctx = context ?? exercise.modelContext
+            if let ctx {
+                let desc = FetchDescriptor<ExerciseTemplate>(predicate: #Predicate { t in t.id == templateID })
+                if let tmpl = try? ctx.fetch(desc).first {
+                    return !tmpl.isCustom
+                }
+            }
+            // Template-ID vorhanden, Template gelöscht → defensiv als Custom
             return false
         }
-        return ExerciseLibraryData.isEquipment(spec.equipment, compatibleWith: env)
+        return ExerciseLibraryData.byName[exercise.name] != nil
     }
 }
 #endif

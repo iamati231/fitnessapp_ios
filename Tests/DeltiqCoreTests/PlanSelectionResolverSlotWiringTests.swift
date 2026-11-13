@@ -64,16 +64,17 @@ final class PlanSelectionResolverSlotWiringTests: XCTestCase {
 
     // MARK: - Outcome 2: .unavailable(gaps:) mit partiell angewandten Alternativen
 
-    // hybrid_beginner kettlebellOnly hat seit der KB-Alternativ-Bereinigung einen Gap:
-    // Bizeps-Curl (KH) hat keine KB-Alternative -> .unavailable(gaps: ["Bizeps-Curl (KH)"]).
+    // hybrid_beginner kettlebellOnly hat seit der KB-Alternativ-Bereinigung zwei Gaps:
+    // Bizeps-Curl (KH) und Rumänisches Kreuzheben haben keine KB-Alternative ->
+    // .unavailable(gaps: ["Bizeps-Curl (KH)", "Rumänisches Kreuzheben"]).
     // KB-Alternativen werden dennoch fuer alle anderen Slots angewandt (z.B. Kniebeuge ->
     // Kettlebell Goblet Squat), aber appliedAdaptation ist nil solange gaps vorhanden sind.
     func testKettlebellOnlyProfileResolvesAvailableViaAppliedAdaptation() {
         let selection = PlanSelectionResolver.resolve(template: template("hybrid_beginner"), profile: kettlebellOnlyProfile, context: hypertrophyContext)
         guard case let .unavailable(gaps) = selection.equipmentStatus else {
-            return XCTFail("KB-only auf hybrid_beginner: muss .unavailable sein (Gap: Bizeps-Curl (KH)), ist: \(selection.equipmentStatus)")
+            return XCTFail("KB-only auf hybrid_beginner: muss .unavailable sein (Gaps: Bizeps-Curl (KH), Rumänisches Kreuzheben), ist: \(selection.equipmentStatus)")
         }
-        XCTAssertEqual(gaps.map(\.exerciseName).sorted(), ["Bizeps-Curl (KH)"])
+        XCTAssertEqual(gaps.map(\.exerciseName).sorted(), ["Bizeps-Curl (KH)", "Rumänisches Kreuzheben"])
         XCTAssertFalse(selection.isAdapted, "Ein gemischtes Ergebnis (teils adaptiert, teils echter Gap) darf NIE als reines Adapted erscheinen")
         XCTAssertNil(selection.appliedAdaptation, "appliedAdaptation bleibt nil solange gaps vorhanden sind")
         // KB-Alternativen werden dennoch fuer aufgeloeste Slots gesetzt

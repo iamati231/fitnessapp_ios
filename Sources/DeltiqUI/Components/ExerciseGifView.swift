@@ -143,6 +143,8 @@ struct GifImageView: UIViewRepresentable {
         let imageView = UIImageView()
         imageView.contentMode = contentMode
         imageView.clipsToBounds = true
+        // UIImageView würde sonst SwiftUI-onTapGesture-Aufrufer blockieren
+        imageView.isUserInteractionEnabled = false
         return imageView
     }
 
@@ -192,6 +194,62 @@ struct GifImageView: UIViewRepresentable {
     }
 }
 #endif
+
+// MARK: - Custom-Media-Thumbnail (Custom-Uebungen: GIF erstes Frame oder Video-Standbild)
+
+#if canImport(AVFoundation)
+import AVFoundation
+#endif
+
+/// Zeigt ein Thumbnail fuer ein lokal gespeichertes Custom-Uebungsmedium —
+/// erstes GIF-Frame (via GifDecoder) oder erstes Video-Frame (via AVAssetImageGenerator).
+/// Platzhalter identisch zu ExerciseGifView, damit Listen visuell konsistent bleiben.
+struct CustomMediaThumbnailView: View {
+    let url: URL
+    let isGif: Bool
+    var cornerRadius: CGFloat = Deltiq.Radius.input
+
+    @State private var frame: CGImage?
+
+    var body: some View {
+        Group {
+            if let frame {
+                Image(decorative: frame, scale: 1)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                placeholder
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .task(id: url) {
+            let decoded = await Task.detached(priority: .userInitiated) {
+                isGif ? GifDecoder.loadFirstFrame(from: url) : videoFirstFrame(from: url)
+            }.value
+            if !Task.isCancelled { frame = decoded }
+        }
+    }
+
+    private var placeholder: some View {
+        ZStack {
+            Color.Deltiq.fill
+            Image(systemName: "figure.strengthtraining.traditional")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(Color.Deltiq.textTertiary)
+        }
+    }
+}
+
+private func videoFirstFrame(from url: URL) -> CGImage? {
+    #if canImport(AVFoundation)
+    let gen = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+    gen.appliesPreferredTrackTransform = true
+    return try? gen.copyCGImage(at: .zero, actualTime: nil)
+    #else
+    return nil
+    #endif
+}
 
 // MARK: - GIF-Dekodierung
 

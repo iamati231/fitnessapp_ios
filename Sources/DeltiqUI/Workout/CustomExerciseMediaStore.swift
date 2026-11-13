@@ -1,0 +1,109 @@
+#if canImport(SwiftUI)
+import Foundation
+import UniformTypeIdentifiers
+#if canImport(AVFoundation)
+import AVFoundation
+#endif
+
+/// Manages local media files for custom exercise demonstrations.
+/// Files live in `<app documents>/custom_exercise_media/<UUID>.<ext>`.
+/// Only for `isCustom` ExerciseTemplate entries — system exercises use bundle GIFs.
+enum CustomExerciseMediaStore {
+
+    /// Supported local media types for `fileImporter`.
+    static let videoTypes: [UTType] = [.movie]
+    static let gifTypes: [UTType] = [.gif]
+
+    /// Max allowed video duration in seconds.
+    static let maxVideoSeconds: Double = 15
+
+    // MARK: - File access
+
+    static var directory: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("custom_exercise_media", isDirectory: true)
+    }
+
+    /// Returns the absolute URL for a stored filename.
+    static func url(forFilename filename: String) -> URL {
+        directory.appendingPathComponent(filename)
+    }
+
+    static func fileExists(filename: String) -> Bool {
+        FileManager.default.fileExists(atPath: url(forFilename: filename).path)
+    }
+
+    // MARK: - Testable pure validation
+
+    #if canImport(AVFoundation)
+    /// Reines Boundary-Gate — kein I/O, direkt testbar mit CMTime-Werten.
+    static func validateDuration(_ duration: CMTime) throws {
+        let secs = duration.seconds
+        guard duration.isValid, !duration.isIndefinite, secs.isFinite, secs > 0 else {
+            throw CustomMediaError.invalidDuration
+        }
+        if secs > maxVideoSeconds {
+            throw CustomMediaError.tooLong
+        }
+    }
+    #endif
+
+    // MARK: - Write / Delete
+
+    static func delete(filename: String) {
+        try? FileManager.default.removeItem(at: url(forFilename: filename))
+    }
+
+    // MARK: - Import helper
+
+    /// Max allowed file size (100 MB).
+    static let maxBytes = 100_000_000
+
+    /// Opens security-scoped URL, copies file to storage, returns filename.
+    /// Throws `CustomMediaError` on failure.
+    static func `import`(from url: URL) throws -> String {
+        guard url.startAccessingSecurityScopedResource() else {
+            throw CustomMediaError.accessDenied
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+
+        // Size check via metadata — avoids loading the full file into RAM.
+        if let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > maxBytes {
+            throw CustomMediaError.fileTooLarge
+        }
+
+        let ext = url.pathExtension.lowercased().isEmpty ? "mp4" : url.pathExtension.lowercased()
+
+        // Duration check for video files (not GIFs).
+        #if canImport(AVFoundation)
+        if ext != "gif" {
+            let asset = AVURLAsset(url: url)
+            try validateDuration(asset.duration)
+        }
+        #endif
+
+        let dir = directory
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let filename = UUID().uuidString + "." + ext
+        do {
+            try FileManager.default.copyItem(at: url, to: dir.appendingPathComponent(filename))
+        } catch {
+            throw CustomMediaError.readFailed
+        }
+        return filename
+    }
+}
+
+enum CustomMediaError: LocalizedError {
+    case accessDenied, readFailed, fileTooLarge, tooLong, invalidDuration
+
+    var errorDescription: String? {
+        switch self {
+        case .accessDenied, .readFailed: return String(localized: "customExercise.media.importError", bundle: .module)
+        case .fileTooLarge: return String(localized: "customExercise.media.fileTooLarge", bundle: .module)
+        case .tooLong: return String(localized: "customExercise.media.videoTooLong", bundle: .module)
+        case .invalidDuration: return String(localized: "customExercise.media.invalidDuration", bundle: .module)
+        }
+    }
+}
+#endif

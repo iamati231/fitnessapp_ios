@@ -171,7 +171,7 @@ private func choiceRow<T: ChoiceOption>(_ option: T, isSelected: Bool, onSelect:
 /// Stueckzahl — gemeinsam genutzt vom vollen Editor (Gewichte/Weitere
 /// Ausstattung) UND der Kein-Equipment-Kurzfrage.
 @available(iOS 17.0, macOS 14.0, *)
-private func equipmentItemRow(_ item: EquipmentItem, profile: Binding<UserEquipmentProfile>) -> some View {
+private func equipmentItemRow(_ item: EquipmentItem, profile: Binding<UserEquipmentProfile>, showsCount: Bool = true) -> some View {
     let isSelected = profile.wrappedValue.availability(for: item) == .available
     return VStack(alignment: .leading, spacing: 8) {
         selectableRow(icon: item.iconName, title: Text(item.localizedName), isSelected: isSelected) {
@@ -181,7 +181,7 @@ private func equipmentItemRow(_ item: EquipmentItem, profile: Binding<UserEquipm
         // ist vorausgewaehlt — ein nie angetippter Chip bedeutet "Anzahl
         // unbekannt" (`UserEquipmentProfile.count(for:)` liefert dann
         // `nil`), nie "0" oder "1" per Default.
-        if isSelected, item.supportsCount {
+        if isSelected, item.supportsCount, showsCount {
             countPicker(for: item, profile: profile)
                 .padding(.leading, 46)
         }
@@ -308,6 +308,7 @@ private func bodyweightOnlyButton(titleKey: String, subtitleKey: String, profile
 @available(iOS 17.0, macOS 14.0, *)
 struct EquipmentProfileEditor: View {
     @Binding var equipmentProfile: UserEquipmentProfile
+    var showsCounts: Bool = true
 
     private static let weightItems: [EquipmentItem] = [.dumbbell, .kettlebell, .barbell, .resistanceBand]
     /// Abschnitt D ("Weitere Ausstattung"). Bewusst NUR Items mit echter
@@ -326,7 +327,7 @@ struct EquipmentProfileEditor: View {
 
             sectionHeader("equipmentEditor.section.weights")
             VStack(spacing: 10) {
-                ForEach(Self.weightItems, id: \.self) { equipmentItemRow($0, profile: $equipmentProfile) }
+                ForEach(Self.weightItems, id: \.self) { equipmentItemRow($0, profile: $equipmentProfile, showsCount: showsCounts) }
             }
 
             sectionHeader("equipmentEditor.section.bench")

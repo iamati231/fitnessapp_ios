@@ -107,7 +107,7 @@ final class PlanEquipmentCheckTests: XCTestCase {
         var profile = UserEquipmentProfile()
         profile.availability[.kettlebell] = .available
         profile.confirmRemainingAsUnavailable()
-        let status = PlanEquipmentChecker.check(days: day(["Kettlebell Swing", "Kettlebell Goblet Squat", "Kettlebell Halo"]), against: profile)
+        let status = PlanEquipmentChecker.check(days: day(["Kettlebell Swing", "Kettlebell Goblet Squat", "Kettlebell Windmill"]), against: profile)
         XCTAssertEqual(status, .available, "Alle drei Uebungen brauchen hoechstens EINE Kettlebell (Default-Stueckzahl 1)")
     }
 

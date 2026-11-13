@@ -275,7 +275,15 @@ struct MainTabView: View {
 
     var body: some View {
         @Bindable var navigation = navigation
-        TabView(selection: $navigation.selectedTab) {
+        TabView(selection: Binding(
+            get: { navigation.selectedTab },
+            set: { newTab in
+                if newTab == navigation.selectedTab {
+                    navigation.triggerScrollToTop(for: newTab)
+                }
+                navigation.selectedTab = newTab
+            }
+        )) {
             NavigationStack {
                 DashboardView()
             }

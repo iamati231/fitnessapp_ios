@@ -92,33 +92,40 @@ public struct PlansListView: View {
                 ]
             )
 
-            plansContextRow
+            ScrollViewReader { proxy in
+                List {
+                    plansContextRow
+                        .id("plans-top")
+                    if let active = activeSessions.first {
+                        activeSessionSection(active)
+                    }
 
-            List {
-                if let active = activeSessions.first {
-                    activeSessionSection(active)
+                    plansSection
                 }
-
-                plansSection
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                // plansContextRow lebt jetzt als erste scrollbare List-Row (wie im
+                // Dashboard) statt ausserhalb — der ehemals 95pt fixe Block
+                // (Header 52pt + Kontextzeile 43pt) schrumpft auf 52pt.
+                .contentMargins(.top, 0, for: .scrollContent)
+                // Unterer Einzug entspricht dem Dashboard-Standard (100pt), damit
+                // der scrollbare Inhalt nicht bündig an der Tab-Bar endet.
+                .contentMargins(.bottom, 100, for: .scrollContent)
+                // Der seitliche Einzug der List wird ebenfalls entfernt - Banner
+                // und Plan-Karten tragen ihre 16pt jetzt selbst ueber
+                // listRowInsets, ein zusaetzlicher List-Einzug wuerde beide
+                // Karten schmaeler als 16pt machen.
+                .contentMargins(.horizontal, 0, for: .scrollContent)
+                // CI-Fix: .listSectionSpacing ist iOS/tvOS/watchOS-only und auf
+                // macOS (dieses Target baut fuer beide, siehe Release-Gate) gar
+                // nicht deklariert - harter Compile-Error statt @available-Warnung.
+                #if os(iOS)
+                .listSectionSpacing(.compact)
+                #endif
+                .onChange(of: navigation.scrollToTopTrigger[.plan]) { _, _ in
+                    withAnimation(.smooth(duration: 0.5)) { proxy.scrollTo("plans-top", anchor: .top) }
+                }
             }
-            .scrollContentBackground(.hidden)
-            // Nachtrag 6. August (README 2.6): plansContextRow sass vorher als
-            // erste List-Row hier drin - 12pt eigener Top-Inset plus der
-            // Standard-Top-Einzug der List addierten sich zu ~60pt statt der
-            // ueblichen 12pt unter der Kopfzeile. Jetzt lebt die Kontextzeile
-            // ausserhalb der List (siehe oben), also muss deren Top-Einzug weg.
-            .contentMargins(.top, 0, for: .scrollContent)
-            // Der seitliche Einzug der List wird ebenfalls entfernt - Banner
-            // und Plan-Karten tragen ihre 16pt jetzt selbst ueber
-            // listRowInsets, ein zusaetzlicher List-Einzug wuerde beide
-            // Karten schmaeler als 16pt machen.
-            .contentMargins(.horizontal, 0, for: .scrollContent)
-            // CI-Fix: .listSectionSpacing ist iOS/tvOS/watchOS-only und auf
-            // macOS (dieses Target baut fuer beide, siehe Release-Gate) gar
-            // nicht deklariert - harter Compile-Error statt @available-Warnung.
-            #if os(iOS)
-            .listSectionSpacing(.compact)
-            #endif
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
         #if os(iOS)
@@ -164,8 +171,9 @@ public struct PlansListView: View {
                 activeName.map { DeltiqContextItem($0.uppercased(), style: .accent) },
                 DeltiqContextItem(pluralizedCount("plans.context.count", count: plans.count).uppercased(), style: .neutral)
             ].compactMap { $0 })
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 16))
         }
     }
 

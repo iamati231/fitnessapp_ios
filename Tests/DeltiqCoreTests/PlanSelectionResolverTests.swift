@@ -51,16 +51,16 @@ final class PlanSelectionResolverTests: XCTestCase {
 
         let selection = PlanSelectionResolver.resolve(template: template, profile: profile, context: hypertrophyContext)
 
-        // Nach KB-Alternativ-Bereinigung hat hybrid_balanced + kettlebellOnly 4 Gaps:
-        // Seitheben/Trizepsdrücken (Kabel) haben keine KB-Alt (Push-Tag),
+        // Nach KB-Alternativ-Bereinigung hat hybrid_balanced + kettlebellOnly 6 Gaps:
+        // Trizepsdrücken (Kabel) hat keine KB-Alt (Push-Tag),
         // Rudern vorgebeugt/Bizeps-Curl (KH) haben keine KB-Alt (Pull-Tag),
-        // Wadenheben (stehend, LH) hat keine KB-Alt (Legs-Tag).
+        // Wadenheben (stehend, LH)/Rumänisches Kreuzheben/Kreuzheben (konventionell) haben keine KB-Alt (Legs/Pull-Tag).
         // -> .unavailable, appliedAdaptation = nil (Mixed-Resolution-Regel).
         guard case let .unavailable(gaps) = selection.equipmentStatus else {
             return XCTFail("hybrid_balanced + KB-only muss .unavailable sein, ist: \(selection.equipmentStatus)")
         }
         let gapNames = gaps.map(\.exerciseName).sorted()
-        XCTAssertEqual(gapNames, ["Bizeps-Curl (KH)", "Rudern vorgebeugt", "Trizepsdrücken (Kabel)", "Wadenheben (stehend, LH)"])
+        XCTAssertEqual(gapNames, ["Bizeps-Curl (KH)", "Kreuzheben (konventionell)", "Rudern vorgebeugt", "Rumänisches Kreuzheben", "Trizepsdrücken (Kabel)", "Wadenheben (stehend, LH)"])
         XCTAssertNil(selection.variantProfile, "Slot-Resolution ist an kein einzelnes benanntes EquipmentProfile gebunden")
         XCTAssertFalse(selection.isAdapted, "Gaps verhindern reines Adapted-Ergebnis")
         XCTAssertNil(selection.appliedAdaptation, "appliedAdaptation bleibt nil solange gaps vorhanden sind")

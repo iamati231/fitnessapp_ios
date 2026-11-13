@@ -95,7 +95,7 @@ public struct DayPickerSheet: View {
             Text(String(format: String(localized: "dayPicker.prompt", bundle: .module), requiredDayCount))
                 .font(.callout)
                 .foregroundStyle(Color.Deltiq.textSecondary)
-            Text("\(selected.count) von \(requiredDayCount) ausgewählt")
+            Text(String(format: String(localized: "dayPicker.selectedCount", bundle: .module), selected.count, requiredDayCount))
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(selected.count == requiredDayCount ? Color.deltiqOrange : Color.Deltiq.textSecondary)
         }

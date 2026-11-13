@@ -288,6 +288,66 @@ final class NutritionInsightGeneratorTests: XCTestCase {
         XCTAssertTrue(instructions.contains("50%"))
     }
 
+    // MARK: Issue #8 — explicit [EXCEEDED] label when goal is surpassed
+
+    /// The main reported bug (Issue #8): protein 370 g vs goal 113 g (328%)
+    /// must produce an explicit "[EXCEEDED]" tag in the prompt so the model
+    /// can't hallucinate "goal not yet reached".
+    func testPrompt_exceededGoal_showsExceededLabel() {
+        let input = NutritionInsightInput(
+            totalKcal: 1850, totalProteinG: 370, totalCarbsG: 180, totalFatG: 60,
+            calorieGoalKcal: 2200, proteinGoalG: 113, carbGoalG: 220, fatGoalG: 70,
+            proteinGoalProgress: .init(percent: 328, remaining: 0)
+        )
+        let prompt = NutritionInsightGenerator.prompt(for: input, locale: en)
+        XCTAssertTrue(
+            prompt.contains("Protein: 370 g of 113 g goal (328% reached, 0 g remaining) [EXCEEDED]"),
+            "prompt:\n\(prompt)"
+        )
+    }
+
+    /// A goal below 100 % must NOT show [EXCEEDED].
+    func testPrompt_inProgressGoal_doesNotShowExceededLabel() {
+        let input = NutritionInsightInput(
+            totalKcal: 1850, totalProteinG: 40, totalCarbsG: 180, totalFatG: 60,
+            calorieGoalKcal: 2200, proteinGoalG: 150, carbGoalG: 220, fatGoalG: 70,
+            proteinGoalProgress: .init(percent: 27, remaining: 110)
+        )
+        let prompt = NutritionInsightGenerator.prompt(for: input, locale: en)
+        XCTAssertFalse(prompt.contains("[EXCEEDED]"), "prompt:\n\(prompt)")
+    }
+
+    /// Exactly 100% counts as reached and must also show [EXCEEDED].
+    func testPrompt_exactlyReachedGoal_showsExceededLabel() {
+        let input = NutritionInsightInput(
+            totalKcal: 2200, totalProteinG: 150, totalCarbsG: 220, totalFatG: 70,
+            calorieGoalKcal: 2200, proteinGoalG: 150, carbGoalG: 220, fatGoalG: 70,
+            calorieGoalProgress: .init(percent: 100, remaining: 0),
+            proteinGoalProgress: .init(percent: 100, remaining: 0)
+        )
+        let prompt = NutritionInsightGenerator.prompt(for: input, locale: en)
+        XCTAssertTrue(prompt.contains("[EXCEEDED]"), "prompt:\n\(prompt)")
+    }
+
+    /// Instructions must explicitly forbid "not reached" when percent >= 100.
+    func testInstructions_containExceededRule() {
+        let instructions = NutritionInsightGenerator.instructions(for: Locale(identifier: "en"))
+        XCTAssertTrue(instructions.contains("[EXCEEDED]"), "instructions:\n\(instructions)")
+        XCTAssertTrue(instructions.contains("NEVER say the goal has not been reached"))
+    }
+
+    /// Instructions must clarify that totals are ACTUAL consumed amounts.
+    func testInstructions_clarifyActualConsumedAmounts() {
+        let instructions = NutritionInsightGenerator.instructions(for: Locale(identifier: "en"))
+        XCTAssertTrue(instructions.contains("ACTUAL consumed"), "instructions:\n\(instructions)")
+    }
+
+    /// Instructions must ask the model to stay short and avoid repeating numbers.
+    func testInstructions_limitToFourSentences() {
+        let instructions = NutritionInsightGenerator.instructions(for: Locale(identifier: "en"))
+        XCTAssertTrue(instructions.contains("2 to 4 sentences"), "instructions:\n\(instructions)")
+    }
+
     // MARK: M1 — extreme/non-finite values never crash the prompt/verification
 
     func testExtremeValues_neverCrashPromptOrVerification() {

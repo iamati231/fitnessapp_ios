@@ -131,7 +131,7 @@ struct ComebackPromptSheet: View {
                 // Tabelle verwandeln.
                 ForEach(list.prefix(5), id: \.exerciseName) { change in
                     HStack {
-                        Text(change.exerciseName)
+                        Text(Exercise.resolvedDisplayName(forStoredName: change.exerciseName))
                             .font(.caption)
                             .lineLimit(1)
                         Spacer()

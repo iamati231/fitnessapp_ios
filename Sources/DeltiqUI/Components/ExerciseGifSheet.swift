@@ -45,6 +45,7 @@ struct ExerciseGifSheet: View {
                 Spacer(minLength: 0)
             }
             .padding(24)
+            .background(Color.Deltiq.background.ignoresSafeArea())
             .navigationTitle(Text(displayName))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

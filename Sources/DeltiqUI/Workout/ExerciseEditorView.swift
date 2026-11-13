@@ -234,7 +234,7 @@ public struct ExerciseEditorView: View {
 
             if sectionVisibility.suggestedWeight {
                 Section {
-                    TextField("kg",
+                    TextField(String(localized: "unit.kg.lower", bundle: .module),
                               value: Binding(
                                 get: { exercise.suggestedWeight },
                                 set: { exercise.suggestedWeight = $0 }
