@@ -143,6 +143,9 @@ public struct AddMealView: View {
     /// erfundenen Navigationspfads — gleiche Seite, die auch ueber
     /// Einstellungen > Daten & Verbindungen erreichbar ist.
     @State private var showingDataConnectionsSettings: Bool = false
+    @State private var mealItemUndoToast: String?
+    @State private var mealItemUndoAction: (() -> Void)?
+    @State private var mealItemDeleteTask: Task<Void, Never>?
 
     /// UX-Katalog-Erweiterung (Spec 2.5): kompakter Kategorie-Filter ueber den
     /// lokalen Katalog, zusaetzlich zum Suchtext — `nil` = kein Filter aktiv.
@@ -233,6 +236,24 @@ public struct AddMealView: View {
                 .scrollContentBackground(.hidden)
                 .keyboardDismissToolbar()
             }
+            .overlay(alignment: .bottom) {
+                if let msg = mealItemUndoToast {
+                    HStack(spacing: 8) {
+                        Text(msg)
+                        if let undo = mealItemUndoAction {
+                            Button(String(localized: "common.undo", bundle: .module)) { undo() }
+                                .bold()
+                                .foregroundStyle(Color.deltiqOrange)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: mealItemUndoToast)
             .background(Color.Deltiq.background.ignoresSafeArea())
             #if os(iOS)
             .toolbar(.hidden, for: .navigationBar)
@@ -1016,8 +1037,29 @@ public struct AddMealView: View {
             // einzelne Position wieder zu entfernen, weder im Neuanlage-
             // noch im Edit-Flow.
             .onDelete { offsets in
-                for index in offsets {
-                    draft.removeItem(id: draft.items[index].id)
+                let removed = offsets.map { draft.items[$0] }
+                for item in removed { draft.removeItem(id: item.id) }
+
+                mealItemDeleteTask?.cancel()
+                mealItemUndoAction = {
+                    mealItemDeleteTask?.cancel()
+                    mealItemDeleteTask = nil
+                    for item in removed {
+                        draft.addItem(catalogID: item.catalogID, nameSnapshot: item.nameSnapshot,
+                                      quantity: item.quantity, unit: item.unit, nutrients: item.nutrients)
+                    }
+                    mealItemUndoAction = nil
+                    mealItemUndoToast = nil
+                }
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    mealItemUndoToast = String(localized: "nutrition.addMeal.item.deleted", bundle: .module)
+                }
+                mealItemDeleteTask = Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(3))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.easeInOut(duration: 0.3)) { mealItemUndoToast = nil }
+                    mealItemUndoAction = nil
+                    mealItemDeleteTask = nil
                 }
             }
             }

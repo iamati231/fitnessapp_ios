@@ -1865,6 +1865,29 @@
         }
       }
     },
+    "common.undo": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rückgängig"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri al"
+          }
+        }
+      }
+    },
     "customExercise.title": {
       "extractionState": "manual",
       "localizations": {
@@ -45914,6 +45937,52 @@
         }
       }
     },
+    "day.delete.confirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingstag löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Training Day?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman günü silinsin mi?"
+          }
+        }
+      }
+    },
+    "day.delete.confirm.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Trainingstag wird unwiderruflich gelöscht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This training day will be permanently deleted."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu antrenman günü kalıcı olarak silinecek."
+          }
+        }
+      }
+    },
     "day.editor.exercise.delete.saveFailed": {
       "extractionState": "manual",
       "localizations": {
@@ -45933,6 +46002,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Silme işlemi kaydedilemedi. Lütfen tekrar deneyin."
+          }
+        }
+      }
+    },
+    "day.editor.exercise.deleted": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übung gelöscht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercise deleted"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Egzersiz silindi"
           }
         }
       }
@@ -53857,6 +53949,52 @@
         }
       }
     },
+    "plans.delete.confirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsplan löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Training Plan?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antrenman planı silinsin mi?"
+          }
+        }
+      }
+    },
+    "plans.delete.confirm.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Trainingsplan wird unwiderruflich gelöscht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This training plan will be permanently deleted."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu antrenman planı kalıcı olarak silinecek."
+          }
+        }
+      }
+    },
     "plans.delete.error.title": {
       "extractionState": "manual",
       "localizations": {
@@ -60140,6 +60278,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "örn. 100"
+          }
+        }
+      }
+    },
+    "nutrition.addMeal.item.deleted": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Position gelöscht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item removed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalem silindi"
           }
         }
       }
