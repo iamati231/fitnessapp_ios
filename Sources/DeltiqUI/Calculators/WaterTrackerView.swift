@@ -50,7 +50,7 @@ public struct WaterTrackerView: View {
                     // DeltiqHeaderAction-Initializern per Typ-Inferenz
                     // entscheiden, was bei einem View-liefernden Closure-Body
                     // unnoetig fragil waere.
-                    DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+                    DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
                         Button(role: .destructive) {
                             deleteTodayEntries()
                         } label: {

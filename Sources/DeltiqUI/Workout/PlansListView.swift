@@ -45,6 +45,7 @@ public struct PlansListView: View {
     /// Plan UND Session waren nach dem Neustart wieder da. Jetzt expliziter
     /// Save direkt nach dem Delete; non-nil zeigt den Alert unten.
     @State private var deletePlanErrorMessage: String?
+    @State private var pendingDeletePlanOffsets: IndexSet?
 
     public init() {}
 
@@ -60,7 +61,7 @@ public struct PlansListView: View {
                 eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
                 title: String(localized: "plans.list.title", bundle: .module),
                 actions: [
-                    DeltiqHeaderAction(systemImage: "plus", menu: {
+                    DeltiqHeaderAction(systemImage: "plus", accessibilityLabel: String(localized: "common.add", bundle: .module), menu: {
                         Button {
                             showingTemplatePicker = true
                         } label: {
@@ -153,6 +154,26 @@ public struct PlansListView: View {
             Button("OK") { deletePlanErrorMessage = nil }
         } message: {
             Text(deletePlanErrorMessage ?? "")
+        }
+        .confirmationDialog(
+            Text("plans.delete.confirm.title", bundle: .module),
+            isPresented: Binding(
+                get: { pendingDeletePlanOffsets != nil },
+                set: { if !$0 { pendingDeletePlanOffsets = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                if let offsets = pendingDeletePlanOffsets { deletePlans(at: offsets) }
+                pendingDeletePlanOffsets = nil
+            } label: {
+                Text("common.delete", bundle: .module)
+            }
+            Button(role: .cancel) { pendingDeletePlanOffsets = nil } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            Text("plans.delete.confirm.message", bundle: .module)
         }
     }
 
@@ -293,7 +314,7 @@ public struct PlansListView: View {
                     .tint(Color.deltiqOrange)
                 }
             }
-            .onDelete(perform: deletePlans)
+            .onDelete { pendingDeletePlanOffsets = $0 }
         }
     }
 

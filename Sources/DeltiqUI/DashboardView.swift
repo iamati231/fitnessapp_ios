@@ -214,7 +214,7 @@ public struct DashboardView: View {
                     // bessere Aktion existiert, lasse die Position lieber
                     // ohne Ersatzaktion"): dieselbe, weiterhin nuetzliche
                     // Aktion bleibt erhalten, nur das irrefuehrende Icon
-                    DeltiqHeaderAction(systemImage: "plus", menu: {
+                    DeltiqHeaderAction(systemImage: "plus", accessibilityLabel: String(localized: "common.add", bundle: .module), menu: {
                         Button {
                             startAdHocWorkout()
                         } label: {
@@ -251,7 +251,6 @@ public struct DashboardView: View {
             ScrollView(.vertical) {
                 // Signature-Geruest 1.1: Sektionsabstand 18 statt 16.
                 VStack(alignment: .leading, spacing: 18) {
-                    Color.clear.frame(height: 0).id("dashboard-top")
                     // Signature-Geruest 1.3: Kontextzeile mit aktivem Plan
                     // (Marke) + Wochen-Streak (neutral), plus Haarlinie.
                     dashboardContextRow
@@ -304,6 +303,7 @@ public struct DashboardView: View {
                         }
                     }
                 }
+                .id("dashboard-top")
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
                 .padding(.bottom, 100)

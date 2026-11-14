@@ -373,7 +373,7 @@ public struct ActiveWorkoutView: View {
     private var headerActions: [DeltiqHeaderAction] {
         var actions: [DeltiqHeaderAction] = []
         if session.isAdHoc, let day = session.day, !day.activeExercises.isEmpty {
-            actions.append(DeltiqHeaderAction(systemImage: "plus") {
+            actions.append(DeltiqHeaderAction(systemImage: "plus", accessibilityLabel: String(localized: "common.add", bundle: .module)) {
                 showingAdHocPicker = true
             })
         }
@@ -382,7 +382,7 @@ public struct ActiveWorkoutView: View {
         // (action: () -> Void vs. menu: () -> MenuContent) per Typ-Inferenz
         // entscheiden, was bei einem View-liefernden Closure-Body unnoetig
         // fragil waere.
-        actions.append(DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+        actions.append(DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
             Button(role: .destructive) {
                 showingDiscardConfirm = true
             } label: {

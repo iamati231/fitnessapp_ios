@@ -54,6 +54,7 @@ public struct PlanEditorView: View {
     /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
     /// wird, statt sofort zu schliessen.
     @State private var showingDiscardConfirm = false
+    @State private var pendingDeleteDayOffsets: IndexSet?
 
     /// UI-Refactor (Korrektur): deckt ALLE Felder dieses Formulars ab,
     /// inklusive `targetEnvironment` und `isActive` — "Verwerfen" muss die
@@ -305,6 +306,26 @@ public struct PlanEditorView: View {
             }
         } message: { swap in
             Text("planEditor.envRestore.message", bundle: .module)
+        }
+        .confirmationDialog(
+            Text("day.delete.confirm.title", bundle: .module),
+            isPresented: Binding(
+                get: { pendingDeleteDayOffsets != nil },
+                set: { if !$0 { pendingDeleteDayOffsets = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                if let offsets = pendingDeleteDayOffsets { deleteDays(at: offsets) }
+                pendingDeleteDayOffsets = nil
+            } label: {
+                Text("common.delete", bundle: .module)
+            }
+            Button(role: .cancel) { pendingDeleteDayOffsets = nil } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            Text("day.delete.confirm.message", bundle: .module)
         }
         .overlay(alignment: .bottom) {
             if let msg = swapResultToast {
@@ -655,7 +676,7 @@ public struct PlanEditorView: View {
         let isEditing = false
         let showsReorder = false
         #endif
-        return DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+        return DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
             if showsRecalculate {
                 Button {
                     recalculateFromGenerator()
@@ -951,7 +972,7 @@ public struct PlanEditorView: View {
                     .listRowBackground(Color.Deltiq.surface)
                 }
                 .onMove(perform: moveDays)
-                .onDelete(perform: deleteDays)
+                .onDelete { pendingDeleteDayOffsets = $0 }
             }
         } header: {
             HStack {

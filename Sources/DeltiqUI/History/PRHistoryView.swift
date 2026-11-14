@@ -57,7 +57,7 @@ public struct PRHistoryView: View {
                 title: String(localized: "dashboard.trophy.title", bundle: .module),
                 onBack: { dismiss() },
                 actions: [
-                    DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+                    DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
                         Button {
                             showRebuildConfirm = true
                         } label: {

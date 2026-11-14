@@ -475,7 +475,7 @@ public struct PlanBuilderView: View {
         // hier ausschliesslich der noch ungespeicherte `PlanDraft`). Bewusst
         // andere Icons/Label als dort, um beide Aktionen nicht zu verwechseln.
         if !(draft?.days.isEmpty ?? true) {
-            actions.append(DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+            actions.append(DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
                 Button {
                     redistributeWeek()
                 } label: {
@@ -519,7 +519,8 @@ public struct PlanBuilderView: View {
                     eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
                     title: String(localized: "planBuilder.title", bundle: .module),
                     onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
-                    actions: headerActions
+                    actions: headerActions,
+                    isModal: true
                 )
                 progressIndicator
                     .padding(.horizontal)

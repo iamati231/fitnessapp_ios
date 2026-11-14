@@ -531,31 +531,37 @@ public struct DeltiqHeader: View {
     public var title: String
     public var onBack: (() -> Void)?
     public var actions: [DeltiqHeaderAction]
+    /// true → modal sheet context: shows xmark instead of chevron.left, labels "Close" (F-04)
+    public var isModal: Bool
 
     public init(
         eyebrow: String,
         title: String,
         onBack: (() -> Void)? = nil,
-        actions: [DeltiqHeaderAction] = []
+        actions: [DeltiqHeaderAction] = [],
+        isModal: Bool = false
     ) {
         self.eyebrow = eyebrow
         self.title = title
         self.onBack = onBack
         self.actions = Array(actions.prefix(3))
+        self.isModal = isModal
     }
 
     public var body: some View {
         HStack(alignment: .center, spacing: 12) {
             if let onBack {
                 Button(action: onBack) {
-                    Image(systemName: "chevron.left")
+                    Image(systemName: isModal ? "xmark" : "chevron.left")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(Color.deltiqOrange)
                         .frame(width: 32, height: 32)
                         .background(Color.Deltiq.fill)
                         .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input, style: .continuous))
                 }
-                .accessibilityLabel(Text("common.back", bundle: .module))
+                .accessibilityLabel(isModal
+                    ? Text("common.close", bundle: .module)
+                    : Text("common.back", bundle: .module))
             }
 
             VStack(alignment: .leading, spacing: 2) {

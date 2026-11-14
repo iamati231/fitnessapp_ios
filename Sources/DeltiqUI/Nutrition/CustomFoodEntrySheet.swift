@@ -111,20 +111,36 @@ struct CustomFoodEntrySheet: View {
     // `draft.save` ueberhaupt zurueckkehrt.
     @State private var isSaving: Bool = false
     @State private var saveErrorMessage: String?
+    @State private var showingDiscardConfirm = false
+
+    private let initialName: String
 
     init(prefillName: String, onSave: @escaping (FoodCatalogEntry) -> Void, onCancel: @escaping () -> Void) {
         _draft = StateObject(wrappedValue: CustomFoodDraft(name: prefillName))
+        self.initialName = prefillName.trimmingCharacters(in: .whitespacesAndNewlines)
         self.onSave = onSave
         self.onCancel = onCancel
     }
 
+    private var isDirty: Bool {
+        draft.name.trimmingCharacters(in: .whitespacesAndNewlines) != initialName
+            || draft.kcalPer100g != nil
+            || draft.proteinPer100g != nil
+            || draft.carbsPer100g != nil
+            || draft.fatPer100g != nil
+            || draft.pieceWeightGrams != nil
+            || draft.densityGramsPerMl != nil
+    }
+
     var body: some View {
+        NavigationStack {
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
                 title: String(localized: "nutrition.customFood.title", bundle: .module),
-                onBack: { onCancel() },
-                actions: [DeltiqHeaderAction(systemImage: "checkmark", isDisabled: !draft.isValid || isSaving) { save() }]
+                onBack: { isDirty ? (showingDiscardConfirm = true) : onCancel() },
+                actions: [DeltiqHeaderAction(systemImage: "checkmark", isDisabled: !draft.isValid || isSaving, accessibilityLabel: String(localized: "common.save", bundle: .module)) { save() }],
+                isModal: true
             )
             Form {
                 Section {
@@ -159,6 +175,13 @@ struct CustomFoodEntrySheet: View {
             .keyboardDismissToolbar()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) { onCancel() }
+        .interactiveDismissDisabled(isDirty)
+        }
     }
 
     private func macroRow(_ labelKey: String, value: Binding<Double?>) -> some View {

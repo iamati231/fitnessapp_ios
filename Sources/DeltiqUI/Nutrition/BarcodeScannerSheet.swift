@@ -48,7 +48,8 @@ struct BarcodeScannerSheet: View {
                 DeltiqHeader(
                     eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
                     title: String(localized: "nutrition.barcode.scanAction", bundle: .module),
-                    onBack: onCancel
+                    onBack: onCancel,
+                    isModal: true
                 )
                 Text("nutrition.barcode.instructions", bundle: .module)
                     .font(.system(size: 13))

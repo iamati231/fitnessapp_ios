@@ -32,6 +32,11 @@ public struct DayEditorView: View {
     // sie hier zwischen und zeigen einen Confirmation-Dialog.
     @State private var pendingEquipmentConflict: PendingEquipmentConflict?
     @State private var swapResultToast: String?
+    @State private var undoAction: (() -> Void)?
+    @State private var pendingExerciseDeleteIDs: Set<PersistentIdentifier> = []
+    @State private var pendingExercisesToDelete: [Exercise] = []
+    @State private var pendingExerciseDeleteSnapshot: [Exercise] = []
+    @State private var pendingExerciseDeletionTask: Task<Void, Never>?
 
     private struct PendingEquipmentConflict: Equatable {
         let template: ExerciseTemplate
@@ -199,12 +204,23 @@ public struct DayEditorView: View {
         }
         .overlay(alignment: .bottom) {
             if let msg = swapResultToast {
-                Label(msg, systemImage: "arrow.triangle.2.circlepath")
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
-                    .padding(.bottom, 24)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                Group {
+                    if let undo = undoAction {
+                        HStack(spacing: 8) {
+                            Text(msg)
+                            Button(String(localized: "common.undo", bundle: .module)) { undo() }
+                                .bold()
+                                .foregroundStyle(Color.deltiqOrange)
+                        }
+                    } else {
+                        Label(msg, systemImage: "arrow.triangle.2.circlepath")
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                .padding(.bottom, 24)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .sheet(item: $exerciseToEdit) { exercise in
@@ -311,7 +327,7 @@ public struct DayEditorView: View {
     /// nur der Eintrag darin wechselt Label/Icon je nach `editMode`.
     private var reorderMenuAction: DeltiqHeaderAction {
         let isEditing = editMode?.wrappedValue.isEditing == true
-        return DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+        return DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
             Button {
                 withAnimation {
                     editMode?.wrappedValue = isEditing ? .inactive : .active
@@ -1030,7 +1046,9 @@ public struct DayEditorView: View {
     /// DEL-049: archivierte Snapshots (Urlaubs-Modus) sind aus der UI raus —
     /// nur aktive Uebungen anzeigen + sortieren.
     private var orderedExercises: [Exercise] {
-        day.activeExercises.sorted { $0.orderIndex < $1.orderIndex }
+        day.activeExercises
+            .filter { !pendingExerciseDeleteIDs.contains($0.persistentModelID) }
+            .sorted { $0.orderIndex < $1.orderIndex }
     }
 
     private var weekdayOptions: [Int] {
@@ -1340,9 +1358,47 @@ public struct DayEditorView: View {
     }
 
     private func deleteExercises(at offsets: IndexSet) {
+        // Commit any previously pending deletion immediately (user swiped again).
+        if !pendingExercisesToDelete.isEmpty {
+            pendingExerciseDeletionTask?.cancel()
+            commitExerciseDeletion(exercises: pendingExercisesToDelete, snapshot: pendingExerciseDeleteSnapshot)
+        }
+
         let arr = orderedExercises
-        for index in offsets {
-            let exercise = arr[index]
+        let toDelete = offsets.map { arr[$0] }
+        let snapshot = arr
+
+        // Hide visually; actual deletion is deferred so the user can undo.
+        for ex in toDelete { pendingExerciseDeleteIDs.insert(ex.persistentModelID) }
+        pendingExercisesToDelete = toDelete
+        pendingExerciseDeleteSnapshot = snapshot
+
+        undoAction = {
+            pendingExerciseDeletionTask?.cancel()
+            pendingExerciseDeletionTask = nil
+            for ex in toDelete { pendingExerciseDeleteIDs.remove(ex.persistentModelID) }
+            pendingExercisesToDelete = []
+            pendingExerciseDeleteSnapshot = []
+            undoAction = nil
+            swapResultToast = nil
+        }
+
+        showTransientToast(String(localized: "day.editor.exercise.deleted", bundle: .module))
+
+        let task = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            commitExerciseDeletion(exercises: toDelete, snapshot: snapshot)
+            pendingExercisesToDelete = []
+            pendingExerciseDeleteSnapshot = []
+            undoAction = nil
+        }
+        pendingExerciseDeletionTask = task
+    }
+
+    private func commitExerciseDeletion(exercises: [Exercise], snapshot: [Exercise]) {
+        let deletedIDs = Set(exercises.map(\.persistentModelID))
+        for exercise in exercises {
             // Original mit-cascaden (chain-cleanup, falls Doppel-Swap).
             var cur: Exercise? = exercise.swappedFromOriginal
             while let next = cur {
@@ -1352,19 +1408,12 @@ public struct DayEditorView: View {
             }
             modelContext.delete(exercise)
         }
-        // Re-index remaining exercises so orderIndex stays a contiguous 0..n-1.
-        // Bugfix (Crash DEL-Day-Editor-Swipe): NICHT erneut `orderedExercises`
-        // (liest `day.activeExercises` live) abfragen — SwiftData aktualisiert
-        // die In-Memory-Relationship nach `delete()` nicht garantiert synchron
-        // vor dem `save()`, wodurch die gerade geloeschte(n) Uebung(en) hier
-        // nochmal auftauchen konnten. Das Setzen von `orderIndex` auf einem
-        // bereits zum Loeschen vorgemerkten Objekt crasht den Prozess sofort
-        // (reproduziert 2/2 auf TestingBot, Block C). Stattdessen aus der
-        // bereits VOR dem Loeschen erfassten Momentaufnahme `arr` rechnen.
-        let remaining = Self.remainingAfterDeletion(arr, removing: offsets)
+        // Re-index from pre-delete snapshot to avoid SwiftData sync race (DEL-Day-Editor-Swipe crash).
+        let remaining = snapshot.filter { !deletedIDs.contains($0.persistentModelID) && !pendingExerciseDeleteIDs.contains($0.persistentModelID) }
         for (i, exercise) in remaining.enumerated() {
             exercise.orderIndex = i
         }
+        for id in deletedIDs { pendingExerciseDeleteIDs.remove(id) }
         do {
             try modelContext.save()
         } catch {

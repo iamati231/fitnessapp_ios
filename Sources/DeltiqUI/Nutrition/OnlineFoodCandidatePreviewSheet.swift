@@ -107,7 +107,8 @@ struct OnlineFoodCandidatePreviewSheet: View {
                 // gesetzt, kein negativer Wert, mindestens ein Wert
                 // bekannt" — der Grund fuer eine Sperre steht als Footer
                 // direkt darueber.
-                actions: [DeltiqHeaderAction(systemImage: "checkmark", isDisabled: pendingValues == nil) { confirm() }]
+                actions: [DeltiqHeaderAction(systemImage: "checkmark", isDisabled: pendingValues == nil, accessibilityLabel: String(localized: "common.save", bundle: .module)) { confirm() }],
+                isModal: true
             )
             Form {
                 Section {

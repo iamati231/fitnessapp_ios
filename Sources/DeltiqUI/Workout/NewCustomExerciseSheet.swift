@@ -41,6 +41,7 @@ struct NewCustomExerciseSheet: View {
     /// UI-Refactor (DeltiqHeader-Muster, Task 7 docs/superpowers/sdd/2026-10-22-ui-consistency):
     /// siehe `ExerciseLibraryEditorSheet`/`BodyDataEditorView` fuer dasselbe Muster.
     @State private var showingDiscardConfirm = false
+    @State private var isSaving = false
 
     /// Name beim Oeffnen (vorausgefuellt aus dem Picker-Suchtext) — Referenz
     /// fuer `isDirty`, damit ein unveraenderter Vorbelegungs-Name nicht faelschlich
@@ -86,18 +87,24 @@ struct NewCustomExerciseSheet: View {
                     actions: [
                         DeltiqHeaderAction(
                             systemImage: "checkmark",
-                            isDisabled: trimmedName.isEmpty,
+                            isDisabled: trimmedName.isEmpty || isSaving,
                             accessibilityLabel: String(localized: "customExercise.add", bundle: .module)
                         ) {
+                            guard !isSaving else { return }
+                            isSaving = true
                             onCommit(CustomExerciseDraft(
                                 name: trimmedName,
                                 primaryMuscle: primaryMuscle,
                                 equipment: equipment,
                                 isCompound: isCompound
                             ))
+                            // shortcut: dismiss() kann in SwiftUI nicht fehlschlagen;
+                            // falls künftig onCommit fehlbar wird, braucht es hier
+                            // isSaving = false im Fehlerpfad.
                             dismiss()
                         }
-                    ]
+                    ],
+                    isModal: true
                 )
                 Form {
                     Section {

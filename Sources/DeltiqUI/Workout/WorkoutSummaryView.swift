@@ -146,7 +146,7 @@ public struct WorkoutSummaryView: View {
                         }
                         isEditingHistory.toggle()
                     },
-                    DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+                    DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
                         Button(role: .destructive) {
                             showingDeleteSessionConfirm = true
                         } label: {
