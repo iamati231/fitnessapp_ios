@@ -133,6 +133,7 @@ struct CustomFoodEntrySheet: View {
     }
 
     var body: some View {
+        NavigationStack {
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
@@ -173,7 +174,13 @@ struct CustomFoodEntrySheet: View {
             .keyboardDismissToolbar()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) { onCancel() }
+        .interactiveDismissDisabled(isDirty)
+        }
     }
 
     private func macroRow(_ labelKey: String, value: Binding<Double?>) -> some View {
