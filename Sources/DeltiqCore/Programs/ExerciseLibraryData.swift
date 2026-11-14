@@ -917,11 +917,11 @@ public enum ExerciseLibraryData {
 
         // ── MACHINES / CABLES · BACK ────────────────────────────────────────
         "Latzug (breit)": [
-            .homeGym:     "Klimmzüge (weit)",
+            .homeGym:     "Rudern einarmig (KH)",
             .noEquipment: "Hyperextension"
         ],
         "Latzug (eng)": [
-            .homeGym:     "Klimmzüge (eng/Chin-up)",
+            .homeGym:     "Chest Supported Row (KH)",
             .noEquipment: "Hyperextension"
         ],
         "Rudern (Maschine)": [
@@ -1057,7 +1057,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Wadenheben (BW)"
         ],
         "Latzug (weit)": [
-            .homeGym:     "Klimmzüge (weit)",
+            .homeGym:     "Rudern einarmig (KH)",
             .noEquipment: "Hyperextension"
         ],
 
@@ -1109,7 +1109,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Diamant-Liegestütze"
         ],
         "Latzug (Kabel)": [
-            .homeGym:     "Klimmzüge (weit)",
+            .homeGym:     "Rudern einarmig (KH)",
             .noEquipment: "Hyperextension"
         ],
         "Seitheben": [
@@ -1150,10 +1150,11 @@ public enum ExerciseLibraryData {
         with env: EnvironmentType
     ) -> Bool {
         guard isEquipment(spec.equipment, compatibleWith: env) else { return false }
-        // noEquipment hat keine Items — jede nicht-triviale equipmentRequirement schlägt fehl.
-        if case .noEquipment = env, let req = spec.equipmentRequirement, req != .all([]) {
-            return false
-        }
+        // Spezialisierte Items (pullUpBar etc.) sind weder in noEquipment noch in
+        // homeGym standardmaessig vorhanden. Nur .gym darf davon ausgehen, dass
+        // beliebige Items bereitstehen.
+        if case .gym = env { return true }
+        if let req = spec.equipmentRequirement, req != .all([]) { return false }
         return true
     }
 
