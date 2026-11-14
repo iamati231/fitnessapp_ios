@@ -76,12 +76,12 @@ public struct SettingsView: View {
 
             ScrollView {
                 VStack(spacing: 18) {
-                    Color.clear.frame(height: 0).id("settings-top")
                     profileSection
                     progressSection
                     groupNavigationSection
                     dangerZoneSection
                 }
+                .id("settings-top")
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
                 .padding(.bottom, 100)
