@@ -99,7 +99,8 @@ public struct ExerciseEditorView: View {
                     ) {
                         dismiss()
                     }
-                ]
+                ],
+                isModal: true
             )
         Form {
             // DEL-062: Cardio + Zeit-basiert sind mutually-exclusive — der

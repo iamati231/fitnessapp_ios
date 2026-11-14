@@ -103,7 +103,8 @@ struct NewCustomExerciseSheet: View {
                             // isSaving = false im Fehlerpfad.
                             dismiss()
                         }
-                    ]
+                    ],
+                    isModal: true
                 )
                 Form {
                     Section {

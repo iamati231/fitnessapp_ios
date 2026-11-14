@@ -106,7 +106,8 @@ struct ExerciseLibraryEditorSheet: View {
                             ) {
                                 save()
                             }
-                          ]
+                          ],
+                    isModal: true
                 )
                 Form {
                     if isReadOnly {

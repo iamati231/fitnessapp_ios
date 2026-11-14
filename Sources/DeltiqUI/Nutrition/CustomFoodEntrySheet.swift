@@ -139,7 +139,8 @@ struct CustomFoodEntrySheet: View {
                 eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
                 title: String(localized: "nutrition.customFood.title", bundle: .module),
                 onBack: { isDirty ? (showingDiscardConfirm = true) : onCancel() },
-                actions: [DeltiqHeaderAction(systemImage: "checkmark", isDisabled: !draft.isValid || isSaving, accessibilityLabel: String(localized: "common.save", bundle: .module)) { save() }]
+                actions: [DeltiqHeaderAction(systemImage: "checkmark", isDisabled: !draft.isValid || isSaving, accessibilityLabel: String(localized: "common.save", bundle: .module)) { save() }],
+                isModal: true
             )
             Form {
                 Section {

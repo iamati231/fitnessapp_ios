@@ -197,7 +197,8 @@ public struct AddMealView: View {
                         ) {
                             saveMeal()
                         }
-                    ]
+                    ],
+                    isModal: true
                 )
                 Form {
                     detailsSection

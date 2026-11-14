@@ -61,7 +61,8 @@ public struct DayPickerSheet: View {
                 DeltiqHeader(
                     eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
                     title: String(localized: "dayPicker.title", bundle: .module),
-                    onBack: { isDirty ? (showingDiscardConfirm = true) : onCancel() }
+                    onBack: { isDirty ? (showingDiscardConfirm = true) : onCancel() },
+                    isModal: true
                 )
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {

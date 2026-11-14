@@ -519,7 +519,8 @@ public struct PlanBuilderView: View {
                     eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
                     title: String(localized: "planBuilder.title", bundle: .module),
                     onBack: { isDirty ? (showingDiscardConfirm = true) : dismiss() },
-                    actions: headerActions
+                    actions: headerActions,
+                    isModal: true
                 )
                 progressIndicator
                     .padding(.horizontal)
