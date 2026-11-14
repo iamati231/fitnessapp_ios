@@ -111,6 +111,8 @@ struct CustomFoodEntrySheet: View {
     // `draft.save` ueberhaupt zurueckkehrt.
     @State private var isSaving: Bool = false
     @State private var saveErrorMessage: String?
+    @State private var isDirty = false
+    @State private var showingDiscardConfirm = false
 
     init(prefillName: String, onSave: @escaping (FoodCatalogEntry) -> Void, onCancel: @escaping () -> Void) {
         _draft = StateObject(wrappedValue: CustomFoodDraft(name: prefillName))
@@ -123,7 +125,7 @@ struct CustomFoodEntrySheet: View {
             DeltiqHeader(
                 eyebrow: String(localized: "tab.nutrition", bundle: .module).uppercased(),
                 title: String(localized: "nutrition.customFood.title", bundle: .module),
-                onBack: { onCancel() },
+                onBack: { isDirty ? (showingDiscardConfirm = true) : onCancel() },
                 actions: [DeltiqHeaderAction(systemImage: "checkmark", isDisabled: !draft.isValid || isSaving) { save() }]
             )
             Form {
@@ -159,6 +161,8 @@ struct CustomFoodEntrySheet: View {
             .keyboardDismissToolbar()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
+        .onReceive(draft.objectWillChange) { _ in isDirty = true }
+        .discardChangesConfirmation(isPresented: $showingDiscardConfirm) { onCancel() }
     }
 
     private func macroRow(_ labelKey: String, value: Binding<Double?>) -> some View {
