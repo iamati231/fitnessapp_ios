@@ -108,7 +108,7 @@ public struct ExerciseLibraryView: View {
                     ) {
                         showingFilterSheet = true
                     },
-                    DeltiqHeaderAction(systemImage: "plus") {
+                    DeltiqHeaderAction(systemImage: "plus", accessibilityLabel: String(localized: "common.add", bundle: .module)) {
                         // DEL-210: Picker-Modus mit Draft-Callback → DEL-159-
                         // Flow (Caller baut Template + Exercise). Sonst der
                         // normale Library-Editor.

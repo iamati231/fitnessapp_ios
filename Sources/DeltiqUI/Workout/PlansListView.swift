@@ -60,7 +60,7 @@ public struct PlansListView: View {
                 eyebrow: String(localized: "tab.plan", bundle: .module).uppercased(),
                 title: String(localized: "plans.list.title", bundle: .module),
                 actions: [
-                    DeltiqHeaderAction(systemImage: "plus", menu: {
+                    DeltiqHeaderAction(systemImage: "plus", accessibilityLabel: String(localized: "common.add", bundle: .module), menu: {
                         Button {
                             showingTemplatePicker = true
                         } label: {

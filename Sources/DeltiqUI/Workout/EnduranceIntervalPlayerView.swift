@@ -403,7 +403,7 @@ struct EnduranceIntervalPlayerView: View {
 
     /// Punkte-Menue, identisches Muster zu `CircuitPlayerView.sessionMenuAction`.
     private var sessionMenuAction: DeltiqHeaderAction {
-        DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+        DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
             Button {
                 saveNow()
             } label: {

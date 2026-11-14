@@ -214,7 +214,7 @@ public struct DashboardView: View {
                     // bessere Aktion existiert, lasse die Position lieber
                     // ohne Ersatzaktion"): dieselbe, weiterhin nuetzliche
                     // Aktion bleibt erhalten, nur das irrefuehrende Icon
-                    DeltiqHeaderAction(systemImage: "plus", menu: {
+                    DeltiqHeaderAction(systemImage: "plus", accessibilityLabel: String(localized: "common.add", bundle: .module), menu: {
                         Button {
                             startAdHocWorkout()
                         } label: {

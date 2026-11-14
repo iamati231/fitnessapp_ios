@@ -96,7 +96,7 @@ struct ExerciseLibraryEditorSheet: View {
                     },
                     actions: isReadOnly
                         ? (existing?.isCustom == true ? [
-                            DeltiqHeaderAction(systemImage: "pencil") { isEditing = true }
+                            DeltiqHeaderAction(systemImage: "pencil", accessibilityLabel: String(localized: "common.edit", bundle: .module)) { isEditing = true }
                           ] : [])
                         : [
                             DeltiqHeaderAction(

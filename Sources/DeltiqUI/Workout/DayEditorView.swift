@@ -311,7 +311,7 @@ public struct DayEditorView: View {
     /// nur der Eintrag darin wechselt Label/Icon je nach `editMode`.
     private var reorderMenuAction: DeltiqHeaderAction {
         let isEditing = editMode?.wrappedValue.isEditing == true
-        return DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+        return DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
             Button {
                 withAnimation {
                     editMode?.wrappedValue = isEditing ? .inactive : .active

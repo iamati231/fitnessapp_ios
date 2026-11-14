@@ -655,7 +655,7 @@ public struct PlanEditorView: View {
         let isEditing = false
         let showsReorder = false
         #endif
-        return DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+        return DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
             if showsRecalculate {
                 Button {
                     recalculateFromGenerator()

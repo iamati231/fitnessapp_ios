@@ -787,7 +787,7 @@ private struct AMRAPPlayerView: View {
     /// "Speichern" sichert den aktuellen Stand jederzeit ohne Rueckfrage,
     /// "Verwerfen" bleibt destruktiv mit Bestaetigung wie bisher.
     private var sessionMenuAction: DeltiqHeaderAction {
-        DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+        DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
             Button {
                 saveNow()
             } label: {
@@ -1459,7 +1459,7 @@ private struct EMOMPlayerView: View {
     /// "Speichern" sichert den aktuellen Stand jederzeit ohne Rueckfrage,
     /// "Verwerfen" bleibt destruktiv mit Bestaetigung wie bisher.
     private var sessionMenuAction: DeltiqHeaderAction {
-        DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+        DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
             Button {
                 saveNow()
             } label: {
@@ -2082,7 +2082,7 @@ private struct ForTimePlayerView: View {
     /// "Speichern" sichert den aktuellen Stand jederzeit ohne Rueckfrage,
     /// "Verwerfen" bleibt destruktiv mit Bestaetigung wie bisher.
     private var sessionMenuAction: DeltiqHeaderAction {
-        DeltiqHeaderAction(systemImage: "ellipsis", menu: {
+        DeltiqHeaderAction(systemImage: "ellipsis", accessibilityLabel: String(localized: "common.moreOptions", bundle: .module), menu: {
             Button {
                 saveNow()
             } label: {
