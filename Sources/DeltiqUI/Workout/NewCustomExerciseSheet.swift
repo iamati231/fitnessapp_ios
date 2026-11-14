@@ -98,6 +98,9 @@ struct NewCustomExerciseSheet: View {
                                 equipment: equipment,
                                 isCompound: isCompound
                             ))
+                            // shortcut: dismiss() kann in SwiftUI nicht fehlschlagen;
+                            // falls künftig onCommit fehlbar wird, braucht es hier
+                            // isSaving = false im Fehlerpfad.
                             dismiss()
                         }
                     ]

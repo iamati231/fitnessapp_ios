@@ -111,13 +111,25 @@ struct CustomFoodEntrySheet: View {
     // `draft.save` ueberhaupt zurueckkehrt.
     @State private var isSaving: Bool = false
     @State private var saveErrorMessage: String?
-    @State private var isDirty = false
     @State private var showingDiscardConfirm = false
+
+    private let initialName: String
 
     init(prefillName: String, onSave: @escaping (FoodCatalogEntry) -> Void, onCancel: @escaping () -> Void) {
         _draft = StateObject(wrappedValue: CustomFoodDraft(name: prefillName))
+        self.initialName = prefillName.trimmingCharacters(in: .whitespacesAndNewlines)
         self.onSave = onSave
         self.onCancel = onCancel
+    }
+
+    private var isDirty: Bool {
+        draft.name.trimmingCharacters(in: .whitespacesAndNewlines) != initialName
+            || draft.kcalPer100g != nil
+            || draft.proteinPer100g != nil
+            || draft.carbsPer100g != nil
+            || draft.fatPer100g != nil
+            || draft.pieceWeightGrams != nil
+            || draft.densityGramsPerMl != nil
     }
 
     var body: some View {
@@ -161,7 +173,6 @@ struct CustomFoodEntrySheet: View {
             .keyboardDismissToolbar()
         }
         .background(Color.Deltiq.background.ignoresSafeArea())
-        .onReceive(draft.objectWillChange) { _ in isDirty = true }
         .discardChangesConfirmation(isPresented: $showingDiscardConfirm) { onCancel() }
     }
 
