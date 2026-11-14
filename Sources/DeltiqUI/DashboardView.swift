@@ -251,7 +251,6 @@ public struct DashboardView: View {
             ScrollView(.vertical) {
                 // Signature-Geruest 1.1: Sektionsabstand 18 statt 16.
                 VStack(alignment: .leading, spacing: 18) {
-                    Color.clear.frame(height: 0).id("dashboard-top")
                     // Signature-Geruest 1.3: Kontextzeile mit aktivem Plan
                     // (Marke) + Wochen-Streak (neutral), plus Haarlinie.
                     dashboardContextRow
@@ -304,6 +303,7 @@ public struct DashboardView: View {
                         }
                     }
                 }
+                .id("dashboard-top")
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
                 .padding(.bottom, 100)

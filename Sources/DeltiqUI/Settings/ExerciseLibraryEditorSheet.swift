@@ -424,12 +424,27 @@ struct ExerciseLibraryEditorSheet: View {
         Section {
             HStack {
                 Spacer()
-                Button { showGifSheet = true } label: {
-                    ExerciseGifView(exerciseName: existing?.name ?? trimmedName, displayName: titleText)
+                if existing?.isCustom == true,
+                   let filename = mediaFilename,
+                   CustomExerciseMediaStore.fileExists(filename: filename) {
+                    Button { showMediaFullscreen = true } label: {
+                        CustomMediaThumbnailView(
+                            url: CustomExerciseMediaStore.url(forFilename: filename),
+                            isGif: filename.lowercased().hasSuffix(".gif"),
+                            cornerRadius: Deltiq.Radius.card
+                        )
                         .frame(width: 140, height: 140)
                         .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                } else if existing?.isCustom != true {
+                    Button { showGifSheet = true } label: {
+                        ExerciseGifView(exerciseName: existing?.name ?? trimmedName, displayName: titleText)
+                            .frame(width: 140, height: 140)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 Spacer()
             }
             .listRowBackground(Color.clear)
@@ -664,7 +679,7 @@ private struct CustomMediaFullscreenSheet: View {
                 Spacer(minLength: 0)
             }
             .padding(24)
-            .background(Color.Deltiq.background.ignoresSafeArea())
+            .background(Color.Deltiq.surface.ignoresSafeArea())
             .navigationTitle(Text(title))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

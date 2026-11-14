@@ -76,8 +76,8 @@ final class ExerciseLibraryEditorSheetCustomDetailTests: XCTestCase {
     func testGifSheetHasBackgroundModifierToPreventBlackBackground() throws {
         let source = try gifSheetSource
         XCTAssertTrue(
-            source.contains("Color.Deltiq.background.ignoresSafeArea()"),
-            "ExerciseGifSheet must set a background color to avoid the black background regression"
+            source.contains("Color.Deltiq.surface.ignoresSafeArea()"),
+            "ExerciseGifSheet must use Color.Deltiq.surface (dark-gray) not .background (black) to avoid black background regression"
         )
     }
 }
