@@ -135,6 +135,8 @@ public struct DashboardView: View {
     /// Absenz-Rueckfrage — nie einen laufenden Deload.
     @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
     @AppStorage("pref_plateau_detection_enabled") private var plateauDetectionEnabled: Bool = true
+    // Unix-Timestamp wann der Plateau-Insight zuletzt angezeigt wurde (3-Tage-Cooldown).
+    @AppStorage("plateau_insight_last_shown_at") private var plateauInsightLastShownAt: Double = 0
 
     /// 3A: letztes Check-in-Datum — via .task geladen, nie per @Query (vermeidet Render-Schleife).
     @State private var lastCheckInDate: Date?
@@ -187,6 +189,8 @@ public struct DashboardView: View {
     /// aktualisiert, sodass die O(n·m)-Berechnung nur einmal pro Datenaenderung laeuft
     /// statt bis zu 4× pro SwiftUI-Render-Pass.
     @State private var cachedPlateauFinding: PlateauDetector.Finding?
+    // Verhindert, dass die Plateau-Card nach dem AppStorage-Rerender innerhalb der Session verschwindet.
+    @State private var plateauInsightShownThisSession = false
     @State private var dashScrollID: String?
 
     public init() {}
@@ -1532,6 +1536,11 @@ public struct DashboardView: View {
             deloadActiveBanner
         } else if let message = currentCoachingMessage {
             coachingInsightContent(message: message)
+                .onAppear {
+                    guard activeCoachingContext == .plateauDetected else { return }
+                    plateauInsightShownThisSession = true
+                    plateauInsightLastShownAt = Date().timeIntervalSince1970
+                }
         } else {
             coachingInsightEmptyContent
         }
@@ -2142,7 +2151,13 @@ public struct DashboardView: View {
                tone: profile.coachingTone,
                goal: profile.trainingGoal
            ).isEmpty {
-            return .plateauDetected
+            // 3-Tage-Cooldown: Plateau-Insight nicht täglich anzeigen.
+            // plateauInsightShownThisSession verhindert, dass die Card innerhalb
+            // der laufenden Session nach dem AppStorage-Write verschwindet.
+            let cooldownExpired = Date().timeIntervalSince1970 - plateauInsightLastShownAt >= 3 * 86_400
+            if cooldownExpired || plateauInsightShownThisSession {
+                return .plateauDetected
+            }
         }
         return nil
     }
