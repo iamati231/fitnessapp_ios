@@ -429,11 +429,17 @@ struct ExerciseLibraryEditorSheet: View {
                    let filename = mediaFilename,
                    CustomExerciseMediaStore.fileExists(filename: filename) {
                     Button { showMediaFullscreen = true } label: {
-                        CustomMediaThumbnailView(
-                            url: CustomExerciseMediaStore.url(forFilename: filename),
-                            isGif: filename.lowercased().hasSuffix(".gif"),
-                            cornerRadius: Deltiq.Radius.card
-                        )
+                        let url = CustomExerciseMediaStore.url(forFilename: filename)
+                        let isGif = filename.lowercased().hasSuffix(".gif")
+                        Group {
+                            if isGif {
+                                GifImageView(url: url, contentMode: .scaleAspectFill)
+                                    .aspectRatio(1, contentMode: .fit)
+                                    .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.card, style: .continuous))
+                            } else {
+                                CustomMediaThumbnailView(url: url, isGif: false, cornerRadius: Deltiq.Radius.card)
+                            }
+                        }
                         .frame(width: 140, height: 140)
                         .contentShape(Rectangle())
                     }
