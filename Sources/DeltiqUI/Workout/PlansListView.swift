@@ -360,20 +360,17 @@ public struct PlansListView: View {
                 Button {
                     createNewPlan()
                 } label: {
-                    Label {
-                        Text("plans.create.emptyShort", bundle: .module)
-                    } icon: {
-                        Image(systemName: "plus")
-                    }
+                    Text("plans.create.emptyShort", bundle: .module)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.deltiqOrange)
                 }
                 .buttonStyle(.plain)
-                .deltiqSecondaryButtonStyle()
             }
             .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .listRowBackground(Color.Deltiq.surface)
+        .listRowBackground(Color.clear)
         // Haelt die 16pt Seitenrand, jetzt wo .contentMargins(.horizontal, 0, ...)
         // den eigenen Einzug der List oben entfernt (siehe body).
         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
