@@ -273,6 +273,13 @@ struct MainTabView: View {
 
     @AppStorage("hasHandledInitialAppTour") private var hasHandledInitialAppTour: Bool = false
 
+    init() {
+        // Vor dem ersten Render konfigurieren — sonst wechselt iOS von
+        // Default-Appearance zu Custom beim onAppear und triggert ein
+        // Re-Layout, das den Content sichtbar nach oben springen lässt.
+        Self.configureTabBarAppearance()
+    }
+
     var body: some View {
         @Bindable var navigation = navigation
         TabView(selection: Binding(
@@ -390,7 +397,6 @@ struct MainTabView: View {
         // Path (Router-Set waehrend App schon laeuft) sauber gehandelt.
         .onAppear {
             applyPendingRouteIfAny()
-            configureTabBarAppearance()
             if !hasHandledInitialAppTour {
                 hasHandledInitialAppTour = true
                 navigation.tourStartsFromInvitation = true
@@ -454,7 +460,7 @@ struct MainTabView: View {
     /// untere Menuepunkte", abhaengig vom Farbschema. Fix: dieselbe
     /// hell/dunkel-Verzweigung wie `Color.init(deltiqLight:deltiqDark:)`
     /// oben im Theme, nicht die Oberflaechenfarbe selbst anfassen.
-    private func configureTabBarAppearance() {
+    private static func configureTabBarAppearance() {
         #if canImport(UIKit)
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()

@@ -39175,6 +39175,126 @@
         }
       }
     },
+    "coaching.lifestyle.analytical.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "2–3 Liter Wasser täglich verbessern Kraft, Konzentration und Erholung messbar." } },
+        "en": { "stringUnit": { "state": "translated", "value": "2–3 L of water daily measurably improves strength, focus and recovery." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Günlük 2–3 litre su; güç, odak ve toparlanmayı ölçülebilir biçimde artırır." } }
+      }
+    },
+    "coaching.lifestyle.analytical.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "7–9 Stunden Schlaf sind die stärkste anabole Phase des Tages — Wachstumshormon und Proteinsynthese laufen nachts auf Hochtouren." } },
+        "en": { "stringUnit": { "state": "translated", "value": "7–9 hours of sleep is the strongest anabolic phase of the day — growth hormone and protein synthesis peak at night." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "7–9 saat uyku, günün en güçlü anabolik fazıdır — büyüme hormonu ve protein sentezi geceleri zirveye ulaşır." } }
+      }
+    },
+    "coaching.lifestyle.analytical.3": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "1,6–2,2 g Protein pro kg Körpergewicht täglich — wissenschaftlicher Konsens für maximale Muskelsynthese." } },
+        "en": { "stringUnit": { "state": "translated", "value": "1.6–2.2 g protein per kg bodyweight daily — scientific consensus for maximum muscle synthesis." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Günlük 1,6–2,2 g/kg protein — maksimum kas sentezi için bilimsel konsensüs." } }
+      }
+    },
+    "coaching.lifestyle.analytical.4": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "5 Min Foam Rolling oder statisches Dehnen nach dem Training reduziert Muskelkater und verbessert die Folgesession." } },
+        "en": { "stringUnit": { "state": "translated", "value": "5 min foam rolling or static stretching post-workout reduces DOMS and improves your next session." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman sonrası 5 dk foam rolling veya statik germe, kas ağrısını azaltır ve sonraki seansı iyileştirir." } }
+      }
+    },
+    "coaching.lifestyle.analytical.5": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Superkompensation braucht Ruhephasen — ohne Recovery kein Leistungszuwachs. 48–72 Stunden zwischen harten Sessions sind optimal." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Supercompensation requires rest phases — no recovery, no performance gains. 48–72 hours between hard sessions is optimal." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Superkompansasyon dinlenme fazlarına ihtiyaç duyar — toparlanma olmadan performans artışı olmaz. Ağır seanslar arası 48–72 saat idealdir." } }
+      }
+    },
+    "coaching.lifestyle.motivating.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wasser ist dein bestes kostenloses Pre-Workout — bleib hydriert!" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Water is your best free pre-workout — stay hydrated!" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Su, en iyi ücretsiz antrenman öncesidir — susuz kalma!" } }
+      }
+    },
+    "coaching.lifestyle.motivating.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schlaf ist dein geheimes Trainings-Upgrade! Muskeln wachsen, wenn du dich ausruhst." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Sleep is your secret training upgrade! Muscles grow while you rest." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Uyku, gizli antrenman bonusundur! Kaslar dinlenirken büyür." } }
+      }
+    },
+    "coaching.lifestyle.motivating.3": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Protein nach dem Training ist wie Benzin für deinen Motor — vergiss es nicht!" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Post-workout protein is fuel for your engine — don't skip it!" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman sonrası protein, motorunun yakıtıdır — atlamayı unutma!" } }
+      }
+    },
+    "coaching.lifestyle.motivating.4": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kurz dehnen nach dem Workout — kleine Gewohnheit mit großem Effekt auf lange Sicht!" } },
+        "en": { "stringUnit": { "state": "translated", "value": "A quick stretch after training — small habit, big long-term payoff!" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman sonrası kısa bir germe — küçük alışkanlık, uzun vadede büyük fark!" } }
+      }
+    },
+    "coaching.lifestyle.motivating.5": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ruhetage sind Trainingstage. Dein Körper baut Muskeln, während du dich erholst!" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Rest days are training days. Your body builds muscle while you recover!" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dinlenme günleri antrenman günleridir. Vücudun toparlanırken kas inşa eder!" } }
+      }
+    },
+    "coaching.lifestyle.strict.1": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "2 Liter Minimum. Kein Wasser, keine Leistung. Kein Argument." } },
+        "en": { "stringUnit": { "state": "translated", "value": "2 liters minimum. No water, no performance. Non-negotiable." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Minimum 2 litre. Su yoksa performans yok. Tartışmasız." } }
+      }
+    },
+    "coaching.lifestyle.strict.2": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Weniger als 7 Stunden Schlaf? Deine Hormone tanken nicht auf. Schlaf ist kein Luxus." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Less than 7 hours of sleep? Your hormones can't refuel. Sleep is not a luxury." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "7 saatten az uyku mu? Hormonların dolmuyor. Uyku lüks değil, zorunluluk." } }
+      }
+    },
+    "coaching.lifestyle.strict.3": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Protein-Ziel verfehlt? Muskeln können nicht aufbauen, was nie ankommt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Missed your protein target? Muscles can't build what never arrives." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Protein hedefini kaçırdın mı? Gelmeyen malzemeyle kas inşa edilmez." } }
+      }
+    },
+    "coaching.lifestyle.strict.4": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dehnen ist kein Optional-Extra. 5 Minuten jetzt sparen Wochen Verletzungszeit." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Stretching isn't optional. 5 minutes now saves weeks of injury time." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Germe isteğe bağlı değil. Şimdi harcanan 5 dakika, haftalarca sakatlanmayı önler." } }
+      }
+    },
+    "coaching.lifestyle.strict.5": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ruhetage ignorieren ist Sabotage am eigenen Fortschritt. Einplanen, nicht verhandeln." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Skipping rest days is sabotage. Schedule them, not negotiable." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dinlenme günlerini atlamak ilerlemenize sabotajdır. Planla, pazarlık etme." } }
+      }
+    },
     "dashboard.deload.applyButton": {
       "extractionState": "manual",
       "localizations": {
