@@ -135,8 +135,13 @@ public struct DashboardView: View {
     /// Absenz-Rueckfrage — nie einen laufenden Deload.
     @AppStorage("pref_deload_enabled") private var deloadEnabled: Bool = true
     @AppStorage("pref_plateau_detection_enabled") private var plateauDetectionEnabled: Bool = true
-    // Unix-Timestamp wann der Plateau-Insight zuletzt angezeigt wurde (3-Tage-Cooldown).
-    @AppStorage("plateau_insight_last_shown_at") private var plateauInsightLastShownAt: Double = 0
+    // Rotation-Index: wächst bei jedem App-Start um 1 und treibt den Pool-Selektor.
+    @AppStorage("coaching_rotation_index") private var coachingRotationIndex: Int = 0
+    @State private var hasIncrementedRotation = false
+    // Plateau-Eligibility wird einmal pro Session geprüft und gecacht (3-Tage-Cooldown).
+    @State private var plateauEligibleThisSession = false
+    private static let plateauCooldownKey = "plateau_insight_last_shown_at"
+    private static let plateauCooldownSeconds: Double = 3 * 86_400
 
     /// 3A: letztes Check-in-Datum — via .task geladen, nie per @Query (vermeidet Render-Schleife).
     @State private var lastCheckInDate: Date?
@@ -189,8 +194,6 @@ public struct DashboardView: View {
     /// aktualisiert, sodass die O(n·m)-Berechnung nur einmal pro Datenaenderung laeuft
     /// statt bis zu 4× pro SwiftUI-Render-Pass.
     @State private var cachedPlateauFinding: PlateauDetector.Finding?
-    // Verhindert, dass die Plateau-Card nach dem AppStorage-Rerender innerhalb der Session verschwindet.
-    @State private var plateauInsightShownThisSession = false
     @State private var dashScrollID: String?
 
     public init() {}
@@ -386,6 +389,32 @@ public struct DashboardView: View {
             if OnboardingPlanCreationNotice.consumeIfPending() {
                 showingOnboardingPlanCreationFailedAlert = true
             }
+        }
+        // Rotation-Counter: einmalig pro Session-Erscheinen. Plateau-Eligibility
+        // wird hier mit einem einfachen UserDefaults-Read gecacht, damit der
+        // Pool während der Session stabil bleibt (kein @AppStorage → kein Re-Render).
+        .task {
+            guard !hasIncrementedRotation else { return }
+            hasIncrementedRotation = true
+            let now = Date().timeIntervalSince1970
+            let last = UserDefaults.standard.double(forKey: Self.plateauCooldownKey)
+            plateauEligibleThisSession = now - last >= Self.plateauCooldownSeconds
+            coachingRotationIndex += 1
+        }
+        // Wenn Plateau im Pool landet, Cooldown-Timestamp via plain UserDefaults
+        // schreiben — kein @AppStorage-Write, kein Re-Render-Trigger.
+        .task(id: coachingRotationIndex) {
+            guard plateauEligibleThisSession,
+                  plateauDetectionEnabled,
+                  cachedPlateauFinding != nil,
+                  let profile = profiles.first else { return }
+            let msg = CoachingMessageProvider.message(
+                for: .plateauDetected,
+                tone: profile.coachingTone,
+                goal: profile.trainingGoal
+            )
+            guard !msg.isEmpty else { return }
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Self.plateauCooldownKey)
         }
         // Plateau-Cache + Belastungsdichte-Cache: einmal beim Erscheinen und
         // bei jeder Session-Änderung neu berechnen (O(n) statt pro Render-Pass).
@@ -1536,11 +1565,6 @@ public struct DashboardView: View {
             deloadActiveBanner
         } else if let message = currentCoachingMessage {
             coachingInsightContent(message: message)
-                .onAppear {
-                    guard activeCoachingContext == .plateauDetected else { return }
-                    plateauInsightShownThisSession = true
-                    plateauInsightLastShownAt = Date().timeIntervalSince1970
-                }
         } else {
             coachingInsightEmptyContent
         }
@@ -1739,49 +1763,61 @@ public struct DashboardView: View {
     /// Liefert den aktuellen Coaching-Text — oder nil, wenn kein Trigger
     /// greift bzw. kein Profil existiert. Caller (`coachingInsightCard`)
     /// rendert dann den Empty-State.
+    ///
+    /// P1-Warnungen (CNS, Ruhetag) werden sofort zurückgegeben und NICHT
+    /// rotiert — sie sind zeitkritische Signale. Alles andere (Plateau,
+    /// Goal-Daily, Soft, Edu, Lifestyle) fließt in einen Pool, aus dem
+    /// `coachingRotationIndex` pro App-Start einen Eintrag auswählt.
     private var currentCoachingMessage: String? {
         guard let profile = profiles.first else { return nil }
-        // DEL-167: zweistufige Auswertung — P1 (echte Warnung) gewinnt vor
-        // P2 (Soft-Insight). Nur wenn beide leer sind, faellt die View auf
-        // den neutralen Empty-State zurueck.
+        let tone = profile.coachingTone
+        let goal = profile.trainingGoal
+
+        // P1: sofortige Warnungen gewinnen immer, keine Rotation.
         if let context = activeCoachingContext {
-            let msg = CoachingMessageProvider.message(
-                for: context,
-                tone: profile.coachingTone,
-                goal: profile.trainingGoal
-            )
+            let msg = CoachingMessageProvider.message(for: context, tone: tone, goal: goal)
+            if !msg.isEmpty { return msg }
+        }
+
+        // Rotation-Pool aufbauen: Plateau → Goal-Daily → Soft → Edu → Lifestyle.
+        var pool: [String] = []
+
+        // Plateau: nur wenn Cooldown beim Start dieser Session abgelaufen war.
+        if plateauEligibleThisSession,
+           plateauDetectionEnabled,
+           cachedPlateauFinding != nil {
+            let msg = CoachingMessageProvider.message(for: .plateauDetected, tone: tone, goal: goal)
             if !msg.isEmpty {
-                if context == .plateauDetected, let finding = activePlateauFinding {
-                    return "\(Exercise.resolvedDisplayName(forStoredName: finding.exerciseName)): \(msg)"
+                if let finding = activePlateauFinding {
+                    pool.append("\(Exercise.resolvedDisplayName(forStoredName: finding.exerciseName)): \(msg)")
+                } else {
+                    pool.append(msg)
                 }
-                return msg
             }
         }
-        // DEL-206: P1.5 — goal-basierte Tages-Empfehlung. Kreuzt den
-        // heutigen/gestrigen Workout-State mit dem TrainingGoal über die
-        // gleiche Matrix-Auflösung wie die P1-Warnungen. Rangiert UNTER
-        // den echten Warnungen (CNS-Overload schlägt "mach noch Cardio"),
-        // aber ÜBER den generischen Soft-Komplimenten.
+
+        // P1.5: goal-basierte Tages-Empfehlung.
         if let daily = activeGoalCoachingContext {
-            let msg = CoachingMessageProvider.message(
-                for: daily,
-                tone: profile.coachingTone,
-                goal: profile.trainingGoal
-            )
-            if !msg.isEmpty { return msg }
+            let msg = CoachingMessageProvider.message(for: daily, tone: tone, goal: goal)
+            if !msg.isEmpty { pool.append(msg) }
         }
+
+        // P2: Soft-Insight.
         if let soft = activeSoftCoachingContext {
-            let msg = CoachingMessageProvider.softMessage(
-                for: soft,
-                tone: profile.coachingTone
-            )
-            if !msg.isEmpty { return msg }
+            let msg = CoachingMessageProvider.softMessage(for: soft, tone: tone)
+            if !msg.isEmpty { pool.append(msg) }
         }
-        // DEL-168: P3 — Edu-Coaching-Tipp als Fallback, wenn weder Warnung
-        // noch datengetriebener Soft-Insight greift. Tag-stabil rotierend.
-        let eduMsg = CoachingMessageProvider.eduMessage(for: profile.coachingTone)
-        if !eduMsg.isEmpty { return eduMsg }
-        return nil
+
+        // P3: Edu-Tipp (tag-stabil rotierend).
+        let edu = CoachingMessageProvider.eduMessage(for: tone)
+        if !edu.isEmpty { pool.append(edu) }
+
+        // P4: Lifestyle-Blindtipp (index-rotierend, unabhängig von Edu).
+        let lifestyle = CoachingMessageProvider.lifestyleMessage(rotationIndex: coachingRotationIndex, tone: tone)
+        if !lifestyle.isEmpty { pool.append(lifestyle) }
+
+        guard !pool.isEmpty else { return nil }
+        return pool[coachingRotationIndex % pool.count]
     }
 
     // MARK: - DEL-206 Goal-Based Daily Coaching (StateAnalyzer)
@@ -2142,22 +2178,6 @@ public struct DashboardView: View {
         if let plan = activePlans.first, !plan.days.isEmpty {
             let day = nextScheduledDay(in: plan)
             if day.type == .rest { return .restDay }
-        }
-        if plateauDetectionEnabled,
-           cachedPlateauFinding != nil,
-           let profile = profiles.first,
-           !CoachingMessageProvider.message(
-               for: .plateauDetected,
-               tone: profile.coachingTone,
-               goal: profile.trainingGoal
-           ).isEmpty {
-            // 3-Tage-Cooldown: Plateau-Insight nicht täglich anzeigen.
-            // plateauInsightShownThisSession verhindert, dass die Card innerhalb
-            // der laufenden Session nach dem AppStorage-Write verschwindet.
-            let cooldownExpired = Date().timeIntervalSince1970 - plateauInsightLastShownAt >= 3 * 86_400
-            if cooldownExpired || plateauInsightShownThisSession {
-                return .plateauDetected
-            }
         }
         return nil
     }

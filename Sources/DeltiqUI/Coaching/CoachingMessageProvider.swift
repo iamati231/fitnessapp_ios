@@ -148,6 +148,31 @@ public enum CoachingMessageProvider {
         return ""
     }
 
+    /// Lifestyle-Blindtipp: wasser, schlaf, protein, dehnen, erholung.
+    /// `rotationIndex` kommt vom Dashboard-Rotation-Counter und wächst bei
+    /// jedem App-Start um 1 — keine Day-of-Year-Bindung, damit er sich
+    /// von `eduMessage` unterscheidet und beide nicht immer synchron laufen.
+    public static func lifestyleMessage(
+        rotationIndex: Int,
+        tone: CoachingTone
+    ) -> String {
+        let index = (rotationIndex % lifestyleTipCount) + 1
+        let primaryKey = "coaching.lifestyle.\(tone.rawValue).\(index)"
+        if let resolved = resolve(key: primaryKey) {
+            return resolved
+        }
+        if tone != .analytical {
+            let toneFallback = "coaching.lifestyle.analytical.\(index)"
+            if let resolved = resolve(key: toneFallback) {
+                return resolved
+            }
+        }
+        return ""
+    }
+
+    /// Anzahl der Lifestyle-Blindtipps pro Tonfall (Wasser/Schlaf/Protein/Dehnen/Erholung).
+    public static let lifestyleTipCount: Int = 5
+
     /// DEL-168: Anzahl der gepflegten Edu-Tipps pro Tonfall. Wenn du neue
     /// Eintraege im Catalog ergaenzt (`coaching.edu.<tone>.<n>`), diesen
     /// Wert mit dem hoechsten neuen Index updaten.
