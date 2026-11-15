@@ -325,6 +325,8 @@ public struct DashboardView: View {
             .scrollContentBackground(.hidden)
             .scrollPosition(id: $dashScrollID, anchor: .top)
             .onChange(of: navigation.scrollToTopTrigger[.dashboard]) { _, _ in
+                // Bereits oben → kein nil-Reset nötig (würde Cards kurz nach oben floaten lassen).
+                guard dashScrollID != "dashboard-top" else { return }
                 dashScrollID = nil
                 Task { @MainActor in withAnimation(.smooth(duration: 0.5)) { dashScrollID = "dashboard-top" } }
             }
