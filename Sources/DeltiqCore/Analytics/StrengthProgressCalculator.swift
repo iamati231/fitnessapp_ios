@@ -109,9 +109,8 @@ public enum StrengthProgressCalculator {
         public let rir: Float
         public let isTimeBased: Bool
 
-        // Stable ID derived from data; identical sets share an ID but
-        // are indistinguishable to the user anyway.
-        public var id: String { "\(sessionDate.timeIntervalSince1970)_\(weightKg)_\(reps)" }
+        // ID includes rpe+rir to reduce collisions; view uses enumerated offset for final uniqueness.
+        public var id: String { "\(sessionDate.timeIntervalSince1970)_\(weightKg)_\(reps)_\(rpe)_\(rir)" }
 
         public init(sessionDate: Date, weightKg: Double,
                     reps: Int, rpe: Double, rir: Float, isTimeBased: Bool) {
