@@ -358,6 +358,16 @@ struct MainTabView: View {
 
             NavigationStack(path: $navigation.progressPath) {
                 ProgressHomeView()
+                    .navigationDestination(for: ProgressRoute.self) { route in
+                        switch route {
+                        case .overview:
+                            ProgressOverviewView(eyebrowLocKey: "tab.progress")
+                        case .prHistory:
+                            PRHistoryView()
+                        case .workoutHistory:
+                            WorkoutHistoryView()
+                        }
+                    }
             }
             .tabItem {
                 Label {
@@ -440,6 +450,7 @@ struct MainTabView: View {
         case .measurement:
             navigation.selectedTab = .progress
             navigation.progressPath = NavigationPath()
+            navigation.progressPath.append(ProgressRoute.overview)
         }
     }
 

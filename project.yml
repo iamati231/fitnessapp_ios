@@ -108,6 +108,21 @@ targets:
       - package: Deltiq
         product: DeltiqData
 
+  # Xcode test bundle wrapping Tests/DeltiqCoreTests — avoids XcodeGen-2.46
+  # packageTarget/testPlans scheme bug (same fix as DeltiqUITestsRunner).
+  DeltiqCoreTestsRunner:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests/DeltiqCoreTests
+    dependencies:
+      - package: Deltiq
+        product: DeltiqCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.deltiq.DeltiqCoreTests
+        GENERATE_INFOPLIST_FILE: YES
+
   # Xcode test bundle wrapping Tests/DeltiqUITests — avoids XcodeGen-2.46
   # packageTarget/testPlans scheme bug (xcodebuild: "not configured for the
   # test action" / "test plan could not be read").
@@ -159,10 +174,8 @@ schemes:
   DeltiqCoreTests:
     build:
       targets:
-        Deltiq: [test]
+        DeltiqCoreTestsRunner: [test]
     test:
       config: Debug
       targets:
-        - packageTarget:
-            package: Deltiq
-            target: DeltiqCoreTests
+        - DeltiqCoreTestsRunner

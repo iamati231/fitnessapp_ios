@@ -72051,9 +72051,30 @@
     "progress.review.measurements": {
       "extractionState": "manual",
       "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Messungen" } },
-        "en": { "stringUnit": { "state": "translated", "value": "measurements" } },
-        "tr": { "stringUnit": { "state": "translated", "value": "ölçüm" } }
+        "de": {
+          "variations": {
+            "plural": {
+              "one":   { "stringUnit": { "state": "translated", "value": "%lld Messung" } },
+              "other": { "stringUnit": { "state": "translated", "value": "%lld Messungen" } }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one":   { "stringUnit": { "state": "translated", "value": "%lld measurement" } },
+              "other": { "stringUnit": { "state": "translated", "value": "%lld measurements" } }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one":   { "stringUnit": { "state": "translated", "value": "%lld ölçüm" } },
+              "other": { "stringUnit": { "state": "translated", "value": "%lld ölçüm" } }
+            }
+          }
+        }
       }
     },
     "progress.review.sessions": {

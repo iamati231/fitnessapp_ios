@@ -47,8 +47,8 @@ public enum ProgressPriorityResolver {
         case .hypertrophy: priority = [.strengthVolume, .personalRecords, .workoutFrequency]
         case .strength:    priority = [.personalRecords, .strengthVolume, .workoutFrequency]
         case .hybrid:      priority = [.strengthVolume, .cardioPerformance, .bodyComposition]
-        // weightLoss: Gewichtstrend + Krafterhalt-Proxy + Trainingsregelmäßigkeit
-        // shortcut: strengthVolume als Krafterhalt-Proxy; echte Krafterhalt-Analyse erst Phase 2
+        // weightLoss: Gewichtstrend + Trainingsvolumen + Trainingsregelmäßigkeit
+        // Phase 2: Krafterhalt-Analyse (Leistungsvergleich über Phasen) hier ergänzen
         case .weightLoss:  priority = [.bodyComposition, .strengthVolume, .workoutFrequency]
         case .functional:  priority = [.workoutFrequency, .cardioPerformance, .strengthVolume]
         case .endurance:   priority = [.cardioPerformance, .workoutFrequency, .bodyComposition]

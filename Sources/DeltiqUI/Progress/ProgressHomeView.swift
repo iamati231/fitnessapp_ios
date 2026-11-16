@@ -90,27 +90,32 @@ public struct ProgressHomeView: View {
                     systemImage: "chart.bar",
                     description: Text("progress.empty.subtitle", bundle: .module)
                 )
-            } else if sessionsInPeriod.isEmpty {
-                HStack {
-                    Label(
-                        "\(measurementsInPeriod.count) \(String(localized: "progress.review.measurements", bundle: .module))",
-                        systemImage: "figure.stand"
-                    )
-                    .font(.subheadline)
-                    .foregroundStyle(Color.Deltiq.textSecondary)
-                    Spacer()
-                }
             } else {
-                HStack {
-                    Label(
-                        "\(sessionsInPeriod.count) \(String(localized: "progress.review.sessions", bundle: .module))",
-                        systemImage: "figure.strengthtraining.traditional"
-                    )
-                    .font(.subheadline)
-                    .foregroundStyle(Color.Deltiq.textSecondary)
-                    Spacer()
+                if !sessionsInPeriod.isEmpty {
+                    HStack {
+                        Label(
+                            "\(sessionsInPeriod.count) \(String(localized: "progress.review.sessions", bundle: .module))",
+                            systemImage: "figure.strengthtraining.traditional"
+                        )
+                        .font(.subheadline)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        Spacer()
+                    }
                 }
-
+                if !measurementsInPeriod.isEmpty {
+                    HStack {
+                        Label(
+                            String.localizedStringWithFormat(
+                                NSLocalizedString("progress.review.measurements", bundle: .module, comment: ""),
+                                measurementsInPeriod.count
+                            ),
+                            systemImage: "figure.stand"
+                        )
+                        .font(.subheadline)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                        Spacer()
+                    }
+                }
                 if !priorityMetrics.isEmpty {
                     Text("progress.review.focus", bundle: .module)
                         .font(.caption)
