@@ -384,7 +384,7 @@ struct StrengthExerciseDetailView: View {
 
     private var bestSetsSection: some View {
         DeltiqSection(loc("strength.progress.section.bestSets").uppercased()) {
-            ForEach(Array(bestSets.enumerated()), id: \.offset) { index, set in
+            ForEach(Array(bestSets.enumerated()), id: \.element.id) { index, set in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(set.sessionDate, format: .dateTime.day().month(.abbreviated).year())

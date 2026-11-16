@@ -108,18 +108,20 @@ public enum StrengthProgressCalculator {
         public let rpe: Double
         public let rir: Float
         public let isTimeBased: Bool
+        /// 1-based position in the bestSets result; guarantees uniqueness even for identical sets.
+        public let rank: Int
 
-        // ID includes rpe+rir to reduce collisions; view uses enumerated offset for final uniqueness.
-        public var id: String { "\(sessionDate.timeIntervalSince1970)_\(weightKg)_\(reps)_\(rpe)_\(rir)" }
+        public var id: String { "\(sessionDate.timeIntervalSince1970)_\(weightKg)_\(reps)_\(rank)" }
 
         public init(sessionDate: Date, weightKg: Double,
-                    reps: Int, rpe: Double, rir: Float, isTimeBased: Bool) {
+                    reps: Int, rpe: Double, rir: Float, isTimeBased: Bool, rank: Int) {
             self.sessionDate = sessionDate
             self.weightKg = weightKg
             self.reps = reps
             self.rpe = rpe
             self.rir = rir
             self.isTimeBased = isTimeBased
+            self.rank = rank
         }
     }
 
@@ -252,10 +254,11 @@ public enum StrengthProgressCalculator {
                 return va > vb
             }
             .prefix(limit)
-            .map { log in
+            .enumerated()
+            .map { (i, log) in
                 SetDetail(sessionDate: log.sessionStartTime, weightKg: log.weightKg,
                           reps: log.reps, rpe: log.rpe, rir: log.rir,
-                          isTimeBased: log.isTimeBased)
+                          isTimeBased: log.isTimeBased, rank: i + 1)
             }
     }
 }

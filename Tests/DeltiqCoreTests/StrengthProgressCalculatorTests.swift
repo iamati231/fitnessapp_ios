@@ -8,14 +8,14 @@ struct StrengthProgressCalculatorTests {
     typealias Log = StrengthProgressCalculator.StrengthLog
     typealias Period = StrengthProgressCalculator.Period
 
-    static let now: Date = {
+    let now: Date = {
         var c = DateComponents()
         c.year = 2026; c.month = 11; c.day = 16
         return Calendar.current.date(from: c)!
     }()
 
-    static func makeLog(
-        sessionDate: Date = now,
+    func makeLog(
+        sessionDate: Date? = nil,
         name: String = "Squat",
         templateID: UUID? = nil,
         weightKg: Double = 100,
@@ -26,13 +26,13 @@ struct StrengthProgressCalculatorTests {
         isTimeBased: Bool = false,
         isPlaceholder: Bool = false
     ) -> Log {
-        Log(sessionStartTime: sessionDate, exerciseName: name, templateID: templateID,
+        Log(sessionStartTime: sessionDate ?? now, exerciseName: name, templateID: templateID,
             weightKg: weightKg, reps: reps, rpe: rpe, rir: rir,
             isCardio: isCardio, isTimeBased: isTimeBased, isPlaceholder: isPlaceholder)
     }
 
-    static func daysAgo(_ n: Int, from base: Date = now) -> Date {
-        Calendar.current.date(byAdding: .day, value: -n, to: base)!
+    func daysAgo(_ n: Int) -> Date {
+        Calendar.current.date(byAdding: .day, value: -n, to: now)!
     }
 
     // MARK: - overviewStats
@@ -182,6 +182,14 @@ struct StrengthProgressCalculatorTests {
         let sets = SPC.bestSets(logs: logs, exerciseName: "Squat", templateID: nil)
         // 60×10=600 > 100×5=500
         #expect(sets[0].weightKg == 60)
+    }
+
+    @Test func identicalSetsHaveUniqueIDs() {
+        // Two sets with same weight+reps in same session must not produce duplicate SwiftUI ids.
+        let logs = [makeLog(weightKg: 100, reps: 5), makeLog(weightKg: 100, reps: 5)]
+        let sets = SPC.bestSets(logs: logs, exerciseName: "Squat", templateID: nil)
+        #expect(sets.count == 2)
+        #expect(Set(sets.map { $0.id }).count == 2)
     }
 
     @Test func kgUnitsUnchangedInCore() {
