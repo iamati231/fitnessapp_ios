@@ -60,17 +60,29 @@ public struct StrengthProgressView: View {
         }
     }
 
+    // Logs filtered to the selected period — shared by overview, exercise list, and detail view.
+    private var filteredLogs: [StrengthProgressCalculator.StrengthLog] {
+        guard let cutoff = period.cutoff() else { return allLogs }
+        return allLogs.filter { $0.sessionStartTime >= cutoff }
+    }
+
     private var overviewStats: StrengthProgressCalculator.OverviewStats {
-        StrengthProgressCalculator.overviewStats(
+        // overviewStats filters internally; pass allLogs so it can apply its own cutoff.
+        let strengthPRs = prEntries.filter { entry in
+            guard entry.cardioEquipmentRaw == nil else { return false }
+            let kind = PersonalRecord.Kind(rawValue: entry.kindRaw)
+            return kind != .longestDistance && kind != .fastestPace
+        }
+        return StrengthProgressCalculator.overviewStats(
             logs: allLogs,
             strengthSessionDates: sessions.filter(\.containsStrengthWork).map(\.startTime),
-            prDates: prEntries.filter { $0.cardioEquipmentRaw == nil }.map(\.date),
+            prDates: strengthPRs.map(\.date),
             period: period
         )
     }
 
     private var exerciseSummaries: [StrengthProgressCalculator.ExerciseSummary] {
-        StrengthProgressCalculator.exerciseSummaries(logs: allLogs)
+        StrengthProgressCalculator.exerciseSummaries(logs: filteredLogs)
     }
 
     // MARK: - Body
@@ -176,7 +188,7 @@ public struct StrengthProgressView: View {
             ForEach(Array(exerciseSummaries.enumerated()), id: \.element.id) { index, summary in
                 NavigationLink {
                     StrengthExerciseDetailView(
-                        summary: summary, logs: allLogs, weightUnit: weightUnit)
+                        summary: summary, logs: filteredLogs, weightUnit: weightUnit)
                 } label: {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 2) {
@@ -324,7 +336,7 @@ struct StrengthExerciseDetailView: View {
                                         }
                                     }
                                 }
-                                .onEnded { _ in selectedPoint = nil }
+                                // No onEnded: callout stays visible until a new point is tapped.
                             )
                     }
                 }

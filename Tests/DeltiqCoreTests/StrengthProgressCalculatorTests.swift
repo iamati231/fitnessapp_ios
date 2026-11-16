@@ -95,11 +95,21 @@ struct StrengthProgressCalculatorTests {
 
     @Test func groupsByTemplateIDForRenamedExercise() {
         let id = UUID()
-        let logs = [makeLog(name: "Squat", templateID: id),
-                    makeLog(name: "Back Squat", templateID: id)]
+        // Different sessionDates so exerciseSummaries counts 2 unique sessions.
+        let logs = [makeLog(sessionDate: daysAgo(1), name: "Squat", templateID: id),
+                    makeLog(sessionDate: daysAgo(2), name: "Back Squat", templateID: id)]
         let summaries = SPC.exerciseSummaries(logs: logs)
         #expect(summaries.count == 1)
         #expect(summaries[0].sessionCount == 2)
+    }
+
+    @Test func multipleSetsSameSessionCountsOnce() {
+        let id = UUID()
+        let logs = [makeLog(name: "Squat", templateID: id, weightKg: 100, reps: 5),
+                    makeLog(name: "Squat", templateID: id, weightKg: 90, reps: 3)]
+        let summaries = SPC.exerciseSummaries(logs: logs)
+        #expect(summaries.count == 1)
+        #expect(summaries[0].sessionCount == 1)
     }
 
     @Test func groupsByNameWhenNoTemplateID() {

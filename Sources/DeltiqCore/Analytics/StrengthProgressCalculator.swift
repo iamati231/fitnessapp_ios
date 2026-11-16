@@ -80,7 +80,6 @@ public enum StrengthProgressCalculator {
     }
 
     public struct OneRMPoint: Identifiable, Equatable, Sendable {
-        public let id: UUID
         public let date: Date
         public let estimatedKg: Double
         public let weightKg: Double
@@ -88,9 +87,11 @@ public enum StrengthProgressCalculator {
         public let rpe: Double
         public let rir: Float
 
-        public init(id: UUID = .init(), date: Date, estimatedKg: Double,
+        // Stable ID: one point per session date, so date alone is unique.
+        public var id: TimeInterval { date.timeIntervalSince1970 }
+
+        public init(date: Date, estimatedKg: Double,
                     weightKg: Double, reps: Int, rpe: Double, rir: Float) {
-            self.id = id
             self.date = date
             self.estimatedKg = estimatedKg
             self.weightKg = weightKg
@@ -101,7 +102,6 @@ public enum StrengthProgressCalculator {
     }
 
     public struct SetDetail: Identifiable, Equatable, Sendable {
-        public let id: UUID
         public let sessionDate: Date
         public let weightKg: Double
         public let reps: Int
@@ -109,9 +109,12 @@ public enum StrengthProgressCalculator {
         public let rir: Float
         public let isTimeBased: Bool
 
-        public init(id: UUID = .init(), sessionDate: Date, weightKg: Double,
+        // Stable ID derived from data; identical sets share an ID but
+        // are indistinguishable to the user anyway.
+        public var id: String { "\(sessionDate.timeIntervalSince1970)_\(weightKg)_\(reps)" }
+
+        public init(sessionDate: Date, weightKg: Double,
                     reps: Int, rpe: Double, rir: Float, isTimeBased: Bool) {
-            self.id = id
             self.sessionDate = sessionDate
             self.weightKg = weightKg
             self.reps = reps
@@ -226,14 +229,9 @@ public enum StrengthProgressCalculator {
         }
 
         return bestPerSession.sorted { $0.key < $1.key }.map { date, pair in
-            OneRMPoint(
-                date: date,
-                estimatedKg: pair.est,
-                weightKg: pair.log.weightKg,
-                reps: pair.log.reps,
-                rpe: pair.log.rpe,
-                rir: pair.log.rir
-            )
+            OneRMPoint(date: date, estimatedKg: pair.est,
+                       weightKg: pair.log.weightKg, reps: pair.log.reps,
+                       rpe: pair.log.rpe, rir: pair.log.rir)
         }
     }
 
@@ -256,14 +254,9 @@ public enum StrengthProgressCalculator {
             }
             .prefix(limit)
             .map { log in
-                SetDetail(
-                    sessionDate: log.sessionStartTime,
-                    weightKg: log.weightKg,
-                    reps: log.reps,
-                    rpe: log.rpe,
-                    rir: log.rir,
-                    isTimeBased: log.isTimeBased
-                )
+                SetDetail(sessionDate: log.sessionStartTime, weightKg: log.weightKg,
+                          reps: log.reps, rpe: log.rpe, rir: log.rir,
+                          isTimeBased: log.isTimeBased)
             }
     }
 }
