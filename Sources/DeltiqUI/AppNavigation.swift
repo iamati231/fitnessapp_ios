@@ -27,6 +27,7 @@ public final class AppNavigation {
     /// Tab abzusetzen.
     public var toolsPath = NavigationPath()
     public var nutritionPath = NavigationPath()
+    public var progressPath = NavigationPath()
     public var showingTour: Bool = false
     public var tourStartsFromInvitation: Bool = false
     public var scrollToTopTrigger: [AppTab: UUID] = [:]
@@ -100,6 +101,7 @@ public enum CalculatorsRoute: Hashable, Sendable {
 @available(iOS 17.0, macOS 14.0, *)
 public enum ProgressRoute: Hashable, Sendable {
     case overview
+    case addMeasurement
     case prHistory
     case workoutHistory
     case strengthProgress
@@ -116,6 +118,7 @@ public enum AppTab: Hashable, Sendable {
     case dashboard
     case plan
     case nutrition
+    case progress
     case settings
 }
 

@@ -39,12 +39,18 @@ public struct ProgressOverviewView: View {
     /// identisches Pattern zu `NutritionDayView`s "Mahlzeit hinzufuegen".
     @State private var showingNewMeasurement = false
 
-    public init() {}
+    private let eyebrowLocKey: String
+
+    /// - Parameter eyebrowLocKey: Localization key for the small context label above the title.
+    ///   Defaults to "tab.more" (the Mehr tab). Pass "tab.progress" when opening from the Fortschritt tab.
+    public init(eyebrowLocKey: String = "tab.more") {
+        self.eyebrowLocKey = eyebrowLocKey
+    }
 
     public var body: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
-                eyebrow: String(localized: "tab.more", bundle: .module).uppercased(),
+                eyebrow: NSLocalizedString(eyebrowLocKey, bundle: .module, comment: "").uppercased(),
                 title: String(localized: "settings.group.progress", bundle: .module),
                 onBack: { dismiss() },
                 actions: [

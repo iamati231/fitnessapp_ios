@@ -209,13 +209,6 @@ public struct SettingsView: View {
                 DeltiqRow(
                     icon: "calendar.badge.clock",
                     label: String(localized: "widget.workoutHistory.name", bundle: .module),
-                    showsChevron: true
-                )
-            }
-            NavigationLink(value: ProgressRoute.strengthProgress) {
-                DeltiqRow(
-                    icon: "dumbbell.fill",
-                    label: String(localized: "strength.progress.settings.label", bundle: .module),
                     showsChevron: true,
                     showsDivider: false
                 )
@@ -584,6 +577,8 @@ public struct SettingsView: View {
                 switch route {
                 case .overview:
                     ProgressOverviewView()
+                case .addMeasurement:
+                    MeasurementView()
                 case .prHistory:
                     PRHistoryView()
                 case .workoutHistory:
@@ -614,6 +609,8 @@ public struct SettingsView: View {
                 switch route {
                 case .overview:
                     ProgressOverviewView()
+                case .addMeasurement:
+                    MeasurementView()
                 case .prHistory:
                     PRHistoryView()
                 case .workoutHistory:
