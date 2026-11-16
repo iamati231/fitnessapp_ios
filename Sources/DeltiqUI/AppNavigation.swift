@@ -102,6 +102,7 @@ public enum ProgressRoute: Hashable, Sendable {
     case overview
     case prHistory
     case workoutHistory
+    case strengthProgress
 }
 
 /// Vier Tabs (UI-Ticket "Tab-Leiste vereinfachen", 2026-11-06, loest den
