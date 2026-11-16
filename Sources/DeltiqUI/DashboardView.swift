@@ -1180,8 +1180,9 @@ public struct DashboardView: View {
                     description: "dashboard.trend.emptyDescription",
                     ctaTitle: "dashboard.empty.cta.addMeasurement",
                     ctaAction: {
-                        navigation.selectedTab = .progress
-                        navigation.progressPath = NavigationPath()
+                        navigation.selectedTab = .settings
+                        navigation.toolsPath = NavigationPath()
+                        navigation.toolsPath.append(ProgressRoute.overview)
                     }
                 )
             } else if measurements.count < 3 {

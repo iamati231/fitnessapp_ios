@@ -34,11 +34,9 @@ public struct ProgressHomeView: View {
 
     private var dataAvailability: ProgressPriorityResolver.DataAvailability {
         .init(
-            hasStrengthSessions: sessionsInPeriod.contains { session in
-                session.logs.contains { !$0.exerciseIsCardioSnapshot }
-            },
+            hasStrengthSessions: sessionsInPeriod.contains { $0.containsStrengthWork },
             hasCardioSessions: sessionsInPeriod.contains { session in
-                session.logs.contains { $0.exerciseIsCardioSnapshot }
+                session.loggedSets.contains { $0.resolvedIsCardio }
                     || session.enduranceRoundsCompleted != nil
             },
             hasBodyMeasurements: !measurementsInPeriod.isEmpty,
@@ -86,12 +84,22 @@ public struct ProgressHomeView: View {
             Text("progress.review.title", bundle: .module)
                 .font(.headline)
 
-            if sessionsInPeriod.isEmpty {
+            if sessionsInPeriod.isEmpty && measurementsInPeriod.isEmpty {
                 ContentUnavailableView(
                     String(localized: "progress.review.title", bundle: .module),
                     systemImage: "chart.bar",
                     description: Text("progress.empty.subtitle", bundle: .module)
                 )
+            } else if sessionsInPeriod.isEmpty {
+                HStack {
+                    Label(
+                        "\(measurementsInPeriod.count) \(String(localized: "progress.review.measurements", bundle: .module))",
+                        systemImage: "figure.stand"
+                    )
+                    .font(.subheadline)
+                    .foregroundStyle(Color.Deltiq.textSecondary)
+                    Spacer()
+                }
             } else {
                 HStack {
                     Label(

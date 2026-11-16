@@ -23,9 +23,9 @@ final class ProgressPriorityResolverTests: XCTestCase {
     }
 
     func test_weightLoss_fullData() {
-        // weightLoss: bodyComposition + cardioPerformance + workoutFrequency (calorieBalance = Phase 2)
+        // weightLoss: bodyComposition + strengthVolume (Krafterhalt-Proxy) + workoutFrequency
         XCTAssertEqual(Resolver.resolve(goal: .weightLoss, data: .full),
-                       [.bodyComposition, .cardioPerformance, .workoutFrequency])
+                       [.bodyComposition, .strengthVolume, .workoutFrequency])
     }
 
     func test_functional_fullData() {
@@ -66,13 +66,29 @@ final class ProgressPriorityResolverTests: XCTestCase {
                        [.strengthVolume, .personalRecords, .workoutFrequency])
     }
 
-    func test_weightLoss_onlyCardio_returnsCardioAndFrequency() {
-        // workoutFrequency available via cardio; bodyComposition filtered (no measurements)
+    func test_weightLoss_onlyCardio_returnsFrequencyOnly() {
+        // weightLoss priority: [bodyComposition, strengthVolume, workoutFrequency]
+        // cardio-only: bodyComposition + strengthVolume both unavailable
         let data = Availability(hasStrengthSessions: false, hasCardioSessions: true,
                                 hasBodyMeasurements: false, hasPersonalRecords: false,
                                 hasNutritionLogs: false)
+        XCTAssertEqual(Resolver.resolve(goal: .weightLoss, data: data), [.workoutFrequency])
+    }
+
+    func test_weightLoss_bodyMeasurementsOnly_returnsBodyCompositionOnly() {
+        // User with measurements but no workouts in period
+        let data = Availability(hasStrengthSessions: false, hasCardioSessions: false,
+                                hasBodyMeasurements: true, hasPersonalRecords: false,
+                                hasNutritionLogs: false)
+        XCTAssertEqual(Resolver.resolve(goal: .weightLoss, data: data), [.bodyComposition])
+    }
+
+    func test_weightLoss_bodyAndStrength_returnsAllThree() {
+        let data = Availability(hasStrengthSessions: true, hasCardioSessions: false,
+                                hasBodyMeasurements: true, hasPersonalRecords: false,
+                                hasNutritionLogs: false)
         XCTAssertEqual(Resolver.resolve(goal: .weightLoss, data: data),
-                       [.cardioPerformance, .workoutFrequency])
+                       [.bodyComposition, .strengthVolume, .workoutFrequency])
     }
 
     func test_endurance_onlyStrength_returnsFrequencyOnly() {
