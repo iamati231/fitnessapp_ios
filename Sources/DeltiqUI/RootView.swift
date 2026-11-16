@@ -368,6 +368,8 @@ struct MainTabView: View {
                             PRHistoryView()
                         case .workoutHistory:
                             WorkoutHistoryView()
+                        case .strengthProgress:
+                            StrengthProgressView()
                         }
                     }
             }
