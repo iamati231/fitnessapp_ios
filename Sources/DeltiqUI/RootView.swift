@@ -356,12 +356,18 @@ struct MainTabView: View {
             }
             .tag(AppTab.nutrition)
 
-            // UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): kein eigener
-            // Fortschritt-Tab mehr — `ProgressOverviewView` haengt wie
-            // `CalculatorsView` eine Ebene tief unter "Mehr" (siehe
-            // `ProgressRoute`-Doku in AppNavigation.swift). Beide
-            // `navigationDestination`-Registrierungen teilen sich denselben
-            // `toolsPath`, SwiftUI dispatcht pro Werttyp.
+            NavigationStack(path: $navigation.progressPath) {
+                ProgressHomeView()
+            }
+            .tabItem {
+                Label {
+                    Text("tab.progress", bundle: .module)
+                } icon: {
+                    Image(systemName: "chart.bar.fill")
+                }
+            }
+            .tag(AppTab.progress)
+
             NavigationStack(path: $navigation.toolsPath) {
                 SettingsView()
                     .navigationDestination(for: CalculatorsRoute.self) { route in
@@ -432,14 +438,8 @@ struct MainTabView: View {
             navigation.toolsPath = NavigationPath()
             navigation.toolsPath.append(CalculatorsRoute.waterTracker)
         case .measurement:
-            // UI-Ticket ("Tab-Leiste vereinfachen", 2026-11-06): kein eigener
-            // Tab mehr zum Umschalten — landet jetzt in der Fortschritts-
-            // uebersicht unter "Mehr", NICHT direkt im Formular fuer eine
-            // neue Messung (ausdrueckliche Vorgabe: der User soll in der
-            // Uebersicht ankommen und von dort aus erfassen).
-            navigation.selectedTab = .settings
-            navigation.toolsPath = NavigationPath()
-            navigation.toolsPath.append(ProgressRoute.overview)
+            navigation.selectedTab = .progress
+            navigation.progressPath = NavigationPath()
         }
     }
 

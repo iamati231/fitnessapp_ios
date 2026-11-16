@@ -27,6 +27,7 @@ public final class AppNavigation {
     /// Tab abzusetzen.
     public var toolsPath = NavigationPath()
     public var nutritionPath = NavigationPath()
+    public var progressPath = NavigationPath()
     public var showingTour: Bool = false
     public var tourStartsFromInvitation: Bool = false
     public var scrollToTopTrigger: [AppTab: UUID] = [:]
@@ -115,6 +116,7 @@ public enum AppTab: Hashable, Sendable {
     case dashboard
     case plan
     case nutrition
+    case progress
     case settings
 }
 
