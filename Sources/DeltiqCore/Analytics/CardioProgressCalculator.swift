@@ -22,19 +22,30 @@ public enum CardioProgressCalculator {
     }
 
     public struct OverviewStats: Equatable, Sendable {
+        /// Only running sessions (isRunning == true). Cross-training and ambiguous
+        /// cardio are excluded because distance/pace metrics are running-only.
         public let sessionCount: Int
         /// Sum of running distance in km. 0 when no distance data present.
         public let totalDistanceKm: Double
         public let longestRunKm: Double?
         /// Best (lowest) average pace in min/km; nil when no pace data available.
         public let bestPaceMinPerKm: Double?
+        /// Sessions that had cardio activity but were NOT classified as running.
+        /// Includes isCrossTrainingOnly and hasAmbiguousCardio sessions.
+        public let otherCardioSessionCount: Int
 
-        public init(sessionCount: Int, totalDistanceKm: Double,
-                    longestRunKm: Double?, bestPaceMinPerKm: Double?) {
+        public init(
+            sessionCount: Int,
+            totalDistanceKm: Double,
+            longestRunKm: Double?,
+            bestPaceMinPerKm: Double?,
+            otherCardioSessionCount: Int = 0
+        ) {
             self.sessionCount = sessionCount
             self.totalDistanceKm = totalDistanceKm
             self.longestRunKm = longestRunKm
             self.bestPaceMinPerKm = bestPaceMinPerKm
+            self.otherCardioSessionCount = otherCardioSessionCount
         }
     }
 
@@ -44,24 +55,26 @@ public enum CardioProgressCalculator {
     /// - Parameters:
     ///   - activities: All projected activities (all time). Filtered internally.
     ///   - period: The time window to aggregate.
-    ///   - now: Reference date for cutoff calculation.
+    ///   - now: Reference date for cutoff calculation and future-date exclusion.
     public static func overviewStats(
         activities: [TrainingActivity],
         period: Period,
         now: Date = .init()
     ) -> OverviewStats {
         let cutoff = period.cutoff(now: now)
+        // Both ends consistent: include [cutoff, now], exclude future-dated sessions.
         let inPeriod = activities.filter {
-            guard let c = cutoff else { return true }
-            return $0.date >= c
+            if let c = cutoff, $0.date < c { return false }
+            return $0.date <= now
         }
-        let cardio = inPeriod.filter { $0.isRunning || $0.isCrossTrainingOnly || $0.hasAmbiguousCardio }
+        let running = inPeriod.filter { $0.isRunning }
+        let otherCardio = inPeriod.filter { !$0.isRunning && ($0.isCrossTrainingOnly || $0.hasAmbiguousCardio) }
 
-        let totalDist = cardio.compactMap(\.runningDistanceKm).reduce(0, +)
-        let longest   = cardio.compactMap(\.runningDistanceKm).max()
+        let totalDist = running.compactMap(\.runningDistanceKm).reduce(0, +)
+        let longest   = running.compactMap(\.runningDistanceKm).filter { $0 > 0 }.max()
 
-        // Best pace: lowest min/km from sessions that have both distance and duration
-        let bestPace: Double? = cardio
+        // Best pace: lowest min/km from sessions that have both distance and duration.
+        let bestPace: Double? = running
             .compactMap { a -> Double? in
                 guard let dist = a.runningDistanceKm, let dur = a.runningDurationSeconds,
                       dist > 0, dur > 0 else { return nil }
@@ -70,23 +83,32 @@ public enum CardioProgressCalculator {
             .min()
 
         return OverviewStats(
-            sessionCount: cardio.count,
+            sessionCount: running.count,
             totalDistanceKm: totalDist,
             longestRunKm: longest,
-            bestPaceMinPerKm: bestPace
+            bestPaceMinPerKm: bestPace,
+            otherCardioSessionCount: otherCardio.count
         )
     }
 
     /// Weekly distance/pace buckets for the given period.
-    /// Delegates to `CardioVolumeOverTimeAggregator.aggregate`.
+    /// For `.allTime`, window starts at the earliest running activity — no silent 3-year cap.
     public static func weeklyPoints(
         activities: [TrainingActivity],
         period: Period,
         now: Date = .init(),
         calendar: Calendar = .current
     ) -> [CardioVolumeOverTimePoint] {
-        let windowStart = period.cutoff(now: now) ?? calendar.date(
-            byAdding: .year, value: -3, to: now) ?? now
+        let windowStart: Date
+        if let cutoff = period.cutoff(now: now) {
+            windowStart = cutoff
+        } else {
+            // allTime: anchor to earliest running activity so no data is silently dropped.
+            windowStart = activities
+                .filter { $0.isRunning }
+                .map(\.date)
+                .min() ?? now
+        }
         return CardioVolumeOverTimeAggregator.aggregate(
             sessions: activities.map(\.asCardioLoggedSession),
             windowStart: windowStart,

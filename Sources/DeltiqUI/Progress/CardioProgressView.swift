@@ -33,6 +33,8 @@ public struct CardioProgressView: View {
 
     private var distanceUnit: String { distanceUnitRaw == "mi" ? "mi" : "km" }
     private var distanceFactor: Double { distanceUnit == "mi" ? 0.621371 : 1.0 }
+    // Pace converts inversely: longer/km → shorter/mi for the same speed.
+    private var paceFactor: Double { distanceUnit == "mi" ? 1.609344 : 1.0 }
 
     private var allActivities: [TrainingActivity] {
         TrainingActivityExtractor.extract(from: sessions)
@@ -187,14 +189,14 @@ public struct CardioProgressView: View {
                     if let pace = point.averagePaceMinutesPerKm {
                         LineMark(
                             x: .value("Week", point.weekStart, unit: .weekOfYear),
-                            y: .value("Pace", pace)
+                            y: .value("Pace", pace * paceFactor)
                         )
                         .interpolationMethod(.catmullRom)
                         .foregroundStyle(Color.accentColor)
 
                         PointMark(
                             x: .value("Week", point.weekStart, unit: .weekOfYear),
-                            y: .value("Pace", pace)
+                            y: .value("Pace", pace * paceFactor)
                         )
                         .foregroundStyle(Color.accentColor)
                         .symbolSize(36)
@@ -239,9 +241,10 @@ public struct CardioProgressView: View {
     }
 
     private func formattedPace(_ minPerKm: Double) -> String {
-        let mins = Int(minPerKm)
-        let secs = Int((minPerKm - Double(mins)) * 60)
-        return String(format: "%d:%02d /km", mins, secs)
+        let val = minPerKm * paceFactor
+        let mins = Int(val)
+        let secs = Int((val - Double(mins)) * 60)
+        return String(format: "%d:%02d /%@", mins, secs, distanceUnit)
     }
 }
 
