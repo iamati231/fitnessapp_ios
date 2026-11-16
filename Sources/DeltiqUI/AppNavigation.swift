@@ -101,6 +101,7 @@ public enum CalculatorsRoute: Hashable, Sendable {
 @available(iOS 17.0, macOS 14.0, *)
 public enum ProgressRoute: Hashable, Sendable {
     case overview
+    case addMeasurement
     case prHistory
     case workoutHistory
 }

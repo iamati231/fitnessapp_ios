@@ -175,8 +175,8 @@ final class MainTabStructureTests: XCTestCase {
             "Measurement CTA must switch to AppTab.progress."
         )
         XCTAssertTrue(
-            ctaBlock.contains("navigation.progressPath.append(ProgressRoute.overview)"),
-            "Measurement CTA must push ProgressRoute.overview onto progressPath."
+            ctaBlock.contains("navigation.progressPath.append(ProgressRoute.addMeasurement)"),
+            "Measurement CTA must push ProgressRoute.addMeasurement (direct to MeasurementView), not overview."
         )
         XCTAssertFalse(
             ctaBlock.contains("navigation.toolsPath"),

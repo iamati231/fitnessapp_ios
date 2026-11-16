@@ -362,6 +362,8 @@ struct MainTabView: View {
                         switch route {
                         case .overview:
                             ProgressOverviewView(eyebrowLocKey: "tab.progress")
+                        case .addMeasurement:
+                            MeasurementView()
                         case .prHistory:
                             PRHistoryView()
                         case .workoutHistory:
@@ -392,6 +394,8 @@ struct MainTabView: View {
                         switch route {
                         case .overview:
                             ProgressOverviewView()
+                        case .addMeasurement:
+                            MeasurementView()
                         case .prHistory:
                             PRHistoryView()
                         case .workoutHistory:

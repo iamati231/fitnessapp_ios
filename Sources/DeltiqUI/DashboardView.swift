@@ -1182,7 +1182,7 @@ public struct DashboardView: View {
                     ctaAction: {
                         navigation.selectedTab = .progress
                         navigation.progressPath = NavigationPath()
-                        navigation.progressPath.append(ProgressRoute.overview)
+                        navigation.progressPath.append(ProgressRoute.addMeasurement)
                     }
                 )
             } else if measurements.count < 3 {
