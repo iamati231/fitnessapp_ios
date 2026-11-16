@@ -61,27 +61,28 @@ final class MainTabStructureTests: XCTestCase {
         )
     }
 
-    func testTabOrderIsHeuteTrainingErnaehrungMehr() throws {
+    func testTabOrderIsHeuteTrainingErnaehrungFortschrittMehr() throws {
         let source = try rootViewSource
         let tagsInOrder = [
             "AppTab.dashboard",   // Heute
             "AppTab.plan",        // Training
             "AppTab.nutrition",   // Ernährung
+            "AppTab.progress",    // Fortschritt
             "AppTab.settings"     // Mehr
         ]
         let positions = tagsInOrder.map { source.range(of: ".tag(\($0))") }
         XCTAssertTrue(
             positions.allSatisfy { $0 != nil },
-            "All four tabs must be present and tagged in RootView.MainTabView."
+            "All five tabs must be present and tagged in RootView.MainTabView."
         )
         let indices = positions.compactMap { $0?.lowerBound }
         XCTAssertEqual(
             indices, indices.sorted(),
-            "Tabs must appear in order: Heute, Training, Ernährung, Mehr."
+            "Tabs must appear in order: Heute, Training, Ernährung, Fortschritt, Mehr."
         )
-        // Genau vier `.tag(AppTab....)`-Treffer — kein fuenfter, verwaister Tab.
+        // Genau fünf `.tag(AppTab....)`-Treffer — kein sechster, verwaister Tab.
         let tagCount = source.components(separatedBy: ".tag(AppTab.").count - 1
-        XCTAssertEqual(tagCount, 4, "Exactly four tabs must be tagged in RootView.MainTabView.")
+        XCTAssertEqual(tagCount, 5, "Exactly five tabs must be tagged in RootView.MainTabView.")
     }
 
     func testNutritionTabHostsNutritionDayView() throws {

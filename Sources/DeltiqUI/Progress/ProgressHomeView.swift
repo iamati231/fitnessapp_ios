@@ -13,6 +13,8 @@ public struct ProgressHomeView: View {
         sort: \WorkoutSession.startTime, order: .reverse
     )
     private var allSessions: [WorkoutSession]
+    @Query(sort: \BodyMeasurement.date, order: .reverse)
+    private var allMeasurements: [BodyMeasurement]
 
     @State private var period: ProgressPeriod = .fourWeeks
 
@@ -25,11 +27,22 @@ public struct ProgressHomeView: View {
         return allSessions.filter { $0.startTime >= start }
     }
 
+    private var measurementsInPeriod: [BodyMeasurement] {
+        guard let start = period.startDate else { return allMeasurements }
+        return allMeasurements.filter { $0.date >= start }
+    }
+
     private var dataAvailability: ProgressPriorityResolver.DataAvailability {
         .init(
-            hasStrengthSessions: sessionsInPeriod.contains { $0.totalSets > 0 },
-            hasCardioSessions: sessionsInPeriod.contains { $0.importSourceName != nil },
-            hasBodyMeasurements: false, // Phase 2
+            hasStrengthSessions: sessionsInPeriod.contains { session in
+                session.logs.contains { !$0.exerciseIsCardioSnapshot }
+            },
+            hasCardioSessions: sessionsInPeriod.contains { session in
+                session.logs.contains { $0.exerciseIsCardioSnapshot }
+                    || session.enduranceRoundsCompleted != nil
+            },
+            hasBodyMeasurements: !measurementsInPeriod.isEmpty,
+            hasPersonalRecords: sessionsInPeriod.contains { !$0.personalRecords.isEmpty },
             hasNutritionLogs: false     // Phase 2
         )
     }
@@ -136,7 +149,7 @@ public struct ProgressHomeView: View {
             .buttonStyle(.plain)
 
             NavigationLink {
-                ProgressOverviewView()
+                ProgressOverviewView(eyebrowLocKey: "tab.progress")
             } label: {
                 DeltiqRow(icon: "figure.stand",
                           label: String(localized: "progress.section.body", bundle: .module),

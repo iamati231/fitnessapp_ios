@@ -23,8 +23,9 @@ final class ProgressPriorityResolverTests: XCTestCase {
     }
 
     func test_weightLoss_fullData() {
+        // weightLoss: bodyComposition + cardioPerformance + workoutFrequency (calorieBalance = Phase 2)
         XCTAssertEqual(Resolver.resolve(goal: .weightLoss, data: .full),
-                       [.bodyComposition, .calorieBalance, .cardioPerformance])
+                       [.bodyComposition, .cardioPerformance, .workoutFrequency])
     }
 
     func test_functional_fullData() {
@@ -48,25 +49,37 @@ final class ProgressPriorityResolverTests: XCTestCase {
 
     // MARK: - Partial data
 
-    func test_hypertrophy_onlyStrength_allThreeMetrics() {
-        // workoutFrequency requires strength OR cardio, so all 3 hypertrophy metrics resolve
+    func test_hypertrophy_strengthNoPRs_returnsVolumeAndFrequency() {
+        // personalRecords needs hasPersonalRecords, not just hasStrengthSessions
         let data = Availability(hasStrengthSessions: true, hasCardioSessions: false,
-                                hasBodyMeasurements: false, hasNutritionLogs: false)
+                                hasBodyMeasurements: false, hasPersonalRecords: false,
+                                hasNutritionLogs: false)
+        XCTAssertEqual(Resolver.resolve(goal: .hypertrophy, data: data),
+                       [.strengthVolume, .workoutFrequency])
+    }
+
+    func test_hypertrophy_strengthWithPRs_allThreeMetrics() {
+        let data = Availability(hasStrengthSessions: true, hasCardioSessions: false,
+                                hasBodyMeasurements: false, hasPersonalRecords: true,
+                                hasNutritionLogs: false)
         XCTAssertEqual(Resolver.resolve(goal: .hypertrophy, data: data),
                        [.strengthVolume, .personalRecords, .workoutFrequency])
     }
 
-    func test_weightLoss_onlyCardio_returnsOnlyCardio() {
+    func test_weightLoss_onlyCardio_returnsCardioAndFrequency() {
+        // workoutFrequency available via cardio; bodyComposition filtered (no measurements)
         let data = Availability(hasStrengthSessions: false, hasCardioSessions: true,
-                                hasBodyMeasurements: false, hasNutritionLogs: false)
+                                hasBodyMeasurements: false, hasPersonalRecords: false,
+                                hasNutritionLogs: false)
         XCTAssertEqual(Resolver.resolve(goal: .weightLoss, data: data),
-                       [.cardioPerformance])
+                       [.cardioPerformance, .workoutFrequency])
     }
 
     func test_endurance_onlyStrength_returnsFrequencyOnly() {
         // cardioPerformance filtered (no cardio), bodyComposition filtered (no body)
         let data = Availability(hasStrengthSessions: true, hasCardioSessions: false,
-                                hasBodyMeasurements: false, hasNutritionLogs: false)
+                                hasBodyMeasurements: false, hasPersonalRecords: false,
+                                hasNutritionLogs: false)
         XCTAssertEqual(Resolver.resolve(goal: .endurance, data: data), [.workoutFrequency])
     }
 
@@ -85,6 +98,7 @@ private extension ProgressPriorityResolver.DataAvailability {
         hasStrengthSessions: true,
         hasCardioSessions: true,
         hasBodyMeasurements: true,
+        hasPersonalRecords: true,
         hasNutritionLogs: true
     )
 }

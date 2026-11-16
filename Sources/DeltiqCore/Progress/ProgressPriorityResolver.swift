@@ -14,17 +14,21 @@ public enum ProgressPriorityResolver {
         public let hasStrengthSessions: Bool
         public let hasCardioSessions: Bool
         public let hasBodyMeasurements: Bool
+        /// True only when the period contains sessions that produced at least one PersonalRecordEntry.
+        public let hasPersonalRecords: Bool
         public let hasNutritionLogs: Bool
 
         public init(
             hasStrengthSessions: Bool,
             hasCardioSessions: Bool,
             hasBodyMeasurements: Bool,
+            hasPersonalRecords: Bool,
             hasNutritionLogs: Bool
         ) {
             self.hasStrengthSessions = hasStrengthSessions
             self.hasCardioSessions = hasCardioSessions
             self.hasBodyMeasurements = hasBodyMeasurements
+            self.hasPersonalRecords = hasPersonalRecords
             self.hasNutritionLogs = hasNutritionLogs
         }
 
@@ -32,6 +36,7 @@ public enum ProgressPriorityResolver {
             hasStrengthSessions: false,
             hasCardioSessions: false,
             hasBodyMeasurements: false,
+            hasPersonalRecords: false,
             hasNutritionLogs: false
         )
     }
@@ -42,7 +47,8 @@ public enum ProgressPriorityResolver {
         case .hypertrophy: priority = [.strengthVolume, .personalRecords, .workoutFrequency]
         case .strength:    priority = [.personalRecords, .strengthVolume, .workoutFrequency]
         case .hybrid:      priority = [.strengthVolume, .cardioPerformance, .bodyComposition]
-        case .weightLoss:  priority = [.bodyComposition, .calorieBalance, .cardioPerformance]
+        // weightLoss: Gewichtstrend + Trainingsregelmäßigkeit + Krafterhalt statt calorieBalance (Phase 2)
+        case .weightLoss:  priority = [.bodyComposition, .cardioPerformance, .workoutFrequency]
         case .functional:  priority = [.workoutFrequency, .cardioPerformance, .strengthVolume]
         case .endurance:   priority = [.cardioPerformance, .workoutFrequency, .bodyComposition]
         }
@@ -51,8 +57,10 @@ public enum ProgressPriorityResolver {
 
     private static func isAvailable(_ metric: ProgressMetric, data: DataAvailability) -> Bool {
         switch metric {
-        case .strengthVolume, .personalRecords:
+        case .strengthVolume:
             return data.hasStrengthSessions
+        case .personalRecords:
+            return data.hasPersonalRecords
         case .cardioPerformance:
             return data.hasCardioSessions
         case .bodyComposition:
