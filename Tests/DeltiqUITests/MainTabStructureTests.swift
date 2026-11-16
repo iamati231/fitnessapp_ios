@@ -61,27 +61,28 @@ final class MainTabStructureTests: XCTestCase {
         )
     }
 
-    func testTabOrderIsHeuteTrainingErnaehrungMehr() throws {
+    func testTabOrderIsHeuteTrainingErnaehrungFortschrittMehr() throws {
         let source = try rootViewSource
         let tagsInOrder = [
             "AppTab.dashboard",   // Heute
             "AppTab.plan",        // Training
             "AppTab.nutrition",   // Ernährung
+            "AppTab.progress",    // Fortschritt
             "AppTab.settings"     // Mehr
         ]
         let positions = tagsInOrder.map { source.range(of: ".tag(\($0))") }
         XCTAssertTrue(
             positions.allSatisfy { $0 != nil },
-            "All four tabs must be present and tagged in RootView.MainTabView."
+            "All five tabs must be present and tagged in RootView.MainTabView."
         )
         let indices = positions.compactMap { $0?.lowerBound }
         XCTAssertEqual(
             indices, indices.sorted(),
-            "Tabs must appear in order: Heute, Training, Ernährung, Mehr."
+            "Tabs must appear in order: Heute, Training, Ernährung, Fortschritt, Mehr."
         )
-        // Genau vier `.tag(AppTab....)`-Treffer — kein fuenfter, verwaister Tab.
+        // Genau fünf `.tag(AppTab....)`-Treffer — kein sechster, verwaister Tab.
         let tagCount = source.components(separatedBy: ".tag(AppTab.").count - 1
-        XCTAssertEqual(tagCount, 4, "Exactly four tabs must be tagged in RootView.MainTabView.")
+        XCTAssertEqual(tagCount, 5, "Exactly five tabs must be tagged in RootView.MainTabView.")
     }
 
     func testNutritionTabHostsNutritionDayView() throws {
@@ -125,6 +126,62 @@ final class MainTabStructureTests: XCTestCase {
         // Reihenfolge im body: profileSection, progressSection, groupNavigationSection.
         XCTAssertTrue(profileRange.lowerBound < progressRange.lowerBound)
         XCTAssertTrue(progressRange.lowerBound < groupRange.lowerBound)
+    }
+
+    // MARK: - Fortschritt-Tab ProgressRoute Navigation
+
+    func testProgressTabRegistersProgressRouteDestination() throws {
+        let source = try rootViewSource
+        // ProgressRoute must be registered inside the progress NavigationStack
+        // (before .tag(AppTab.progress)) so programmatic pushes via progressPath work.
+        guard let progressTagRange = source.range(of: ".tag(AppTab.progress)") else {
+            XCTFail("AppTab.progress tag not found in RootView.swift")
+            return
+        }
+        let beforeProgressTag = String(source[source.startIndex..<progressTagRange.lowerBound])
+        // The registration must appear after the progress NavStack opens
+        guard let navStackRange = beforeProgressTag.range(of: "progressPath)", options: .backwards) else {
+            XCTFail("progressPath NavigationStack not found before .tag(AppTab.progress)")
+            return
+        }
+        let progressNavSection = String(beforeProgressTag[navStackRange.upperBound...])
+        XCTAssertTrue(
+            progressNavSection.contains("ProgressRoute.self"),
+            "The progress NavigationStack must register ProgressRoute destinations so programmatic navigation via progressPath works."
+        )
+    }
+
+    func testProgressMeasurementCTAUsesProgressPath() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources/DeltiqUI/DashboardView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        // CTA must navigate to progress tab via progressPath, not settings/toolsPath
+        guard let ctaRange = source.range(of: "ctaAction:") else {
+            XCTFail("ctaAction not found in DashboardView.swift")
+            return
+        }
+        // Find the measurement CTA block (after the first ctaAction occurrence near dashboard.empty.cta.addMeasurement)
+        guard let ctaKeyRange = source.range(of: "dashboard.empty.cta.addMeasurement") else {
+            XCTFail("dashboard.empty.cta.addMeasurement not found")
+            return
+        }
+        let searchStart = min(ctaKeyRange.lowerBound, ctaRange.lowerBound)
+        let ctaBlock = String(source[searchStart...]).prefix(400)
+        XCTAssertTrue(
+            ctaBlock.contains("navigation.selectedTab = .progress"),
+            "Measurement CTA must switch to AppTab.progress."
+        )
+        XCTAssertTrue(
+            ctaBlock.contains("navigation.progressPath.append(ProgressRoute.addMeasurement)"),
+            "Measurement CTA must push ProgressRoute.addMeasurement (direct to MeasurementView), not overview."
+        )
+        XCTAssertFalse(
+            ctaBlock.contains("navigation.toolsPath"),
+            "Measurement CTA must not route through toolsPath (Mehr tab)."
+        )
     }
 
     func testCalculatorsViewUsesTwoColumnGrid() throws {

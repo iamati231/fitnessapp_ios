@@ -577,6 +577,8 @@ public struct SettingsView: View {
                 switch route {
                 case .overview:
                     ProgressOverviewView()
+                case .addMeasurement:
+                    MeasurementView()
                 case .prHistory:
                     PRHistoryView()
                 case .workoutHistory:
@@ -605,6 +607,8 @@ public struct SettingsView: View {
                 switch route {
                 case .overview:
                     ProgressOverviewView()
+                case .addMeasurement:
+                    MeasurementView()
                 case .prHistory:
                     PRHistoryView()
                 case .workoutHistory:

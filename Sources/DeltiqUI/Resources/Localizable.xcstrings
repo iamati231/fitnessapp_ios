@@ -71991,6 +71991,211 @@
           }
         }
       }
+    },
+    "tab.progress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fortschritt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Progress" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Gelişim" } }
+      }
+    },
+    "progress.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fortschritt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Progress" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Gelişim" } }
+      }
+    },
+    "progress.period.4weeks": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "4 Wo." } },
+        "en": { "stringUnit": { "state": "translated", "value": "4 Wks" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "4 Hf." } }
+      }
+    },
+    "progress.period.12weeks": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "12 Wo." } },
+        "en": { "stringUnit": { "state": "translated", "value": "12 Wks" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "12 Hf." } }
+      }
+    },
+    "progress.period.1year": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "1 Jahr" } },
+        "en": { "stringUnit": { "state": "translated", "value": "1 Year" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "1 Yıl" } }
+      }
+    },
+    "progress.period.alltime": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gesamt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "All Time" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Tümü" } }
+      }
+    },
+    "progress.review.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rückblick" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Review" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Özet" } }
+      }
+    },
+    "progress.review.measurements": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one":   { "stringUnit": { "state": "translated", "value": "%lld Messung" } },
+              "other": { "stringUnit": { "state": "translated", "value": "%lld Messungen" } }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one":   { "stringUnit": { "state": "translated", "value": "%lld measurement" } },
+              "other": { "stringUnit": { "state": "translated", "value": "%lld measurements" } }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one":   { "stringUnit": { "state": "translated", "value": "%lld ölçüm" } },
+              "other": { "stringUnit": { "state": "translated", "value": "%lld ölçüm" } }
+            }
+          }
+        }
+      }
+    },
+    "progress.review.sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Einheiten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "sessions" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "antrenman" } }
+      }
+    },
+    "progress.review.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schwerpunkte" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Focus areas" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Odak alanları" } }
+      }
+    },
+    "progress.empty.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainiere regelmäßig, um deinen Fortschritt zu sehen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Train regularly to see your progress here." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "İlerlemenizi görmek için düzenli antrenman yapın." } }
+      }
+    },
+    "progress.section.strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kraft & Muskelaufbau" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Strength & Muscle" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Güç & Kas" } }
+      }
+    },
+    "progress.section.cardio": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ausdauer" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Endurance" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Dayanıklılık" } }
+      }
+    },
+    "progress.section.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Körperentwicklung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Body Development" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Vücut Gelişimi" } }
+      }
+    },
+    "progress.section.records": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rekorde" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Records" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Rekorlar" } }
+      }
+    },
+    "progress.section.history": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingshistorie" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Workout History" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman Geçmişi" } }
+      }
+    },
+    "progress.placeholder.comingSoon": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Bald verfügbar" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Coming Soon" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Yakında" } }
+      }
+    },
+    "progress.metric.strengthVolume": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingsvolumen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Volume" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hacim" } }
+      }
+    },
+    "progress.metric.personalRecords": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Rekorde" } },
+        "en": { "stringUnit": { "state": "translated", "value": "PRs" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Rekorlar" } }
+      }
+    },
+    "progress.metric.cardioPerformance": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ausdauer" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cardio" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kardiyo" } }
+      }
+    },
+    "progress.metric.bodyComposition": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Körperzusammensetzung" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Body Comp" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Vücut Komp." } }
+      }
+    },
+    "progress.metric.workoutFrequency": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingsfrequenz" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Frequency" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sıklık" } }
+      }
+    },
+    "progress.metric.calorieBalance": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Kalorienbalance" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Calories" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kalori" } }
+      }
     }
   }
 }
