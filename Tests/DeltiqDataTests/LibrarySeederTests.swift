@@ -190,6 +190,100 @@ final class LibrarySeederTests: XCTestCase {
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<ExerciseTemplate>(predicate: #Predicate { $0.name == "Klimmzug" })), 1)
     }
 
+    // MARK: - Issue #29: backfillExerciseEnduranceSportKindIfNeeded
+
+    /// Kernszenario: Exercise mit exerciseTemplateID, die auf ein System-Template
+    /// mit gesetztem Running-Sporttyp zeigt, bekommt .running zugewiesen.
+    func testBackfillExerciseSportKindUsesTemplateIDForRunning() throws {
+        let template = ExerciseTemplate(
+            name: "Easy Run", equipment: .bodyweight, primaryMuscle: .quads,
+            isCardio: true, enduranceSportKind: .running, isSystemProvided: true
+        )
+        context.insert(template)
+        let day = TrainingDay(name: "Run", weekday: 1, type: .fullBody)
+        context.insert(day)
+        let exercise = Exercise(name: "Easy Run", exerciseTemplateID: template.id, isCardio: true, day: day)
+        context.insert(exercise)
+        try context.save()
+
+        let updated = LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: context)
+
+        XCTAssertEqual(updated, 1)
+        XCTAssertEqual(exercise.enduranceSportKind, .running)
+    }
+
+    /// Cycling-Template wird als .cycling klassifiziert, nicht als Running.
+    func testBackfillExerciseSportKindUsesTemplateIDForCycling() throws {
+        let template = ExerciseTemplate(
+            name: "Radfahren (outdoor)", equipment: .bodyweight, primaryMuscle: .quads,
+            isCardio: true, enduranceSportKind: .cycling, isSystemProvided: true
+        )
+        context.insert(template)
+        let day = TrainingDay(name: "Bike", weekday: 2, type: .fullBody)
+        context.insert(day)
+        let exercise = Exercise(name: "Radfahren (outdoor)", exerciseTemplateID: template.id, isCardio: true, day: day)
+        context.insert(exercise)
+        try context.save()
+
+        LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: context)
+
+        XCTAssertEqual(exercise.enduranceSportKind, .cycling)
+    }
+
+    /// Custom-Übung mit identischem Namen bleibt nil — kein Namensraten.
+    func testBackfillExerciseSportKindIgnoresCustomWithSameName() throws {
+        let customTemplate = ExerciseTemplate(
+            name: "Easy Run", equipment: .bodyweight, primaryMuscle: .quads,
+            isCustom: true, isCardio: true, isSystemProvided: false
+        )
+        context.insert(customTemplate)
+        let day = TrainingDay(name: "Run", weekday: 1, type: .fullBody)
+        context.insert(day)
+        let exercise = Exercise(name: "Easy Run", exerciseTemplateID: customTemplate.id, isCardio: true, day: day)
+        context.insert(exercise)
+        try context.save()
+
+        let updated = LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: context)
+
+        XCTAssertEqual(updated, 0, "Custom-Template ohne System-Sport-Tag darf nichts klassifizieren")
+        XCTAssertNil(exercise.enduranceSportKind)
+    }
+
+    /// Exercise ohne exerciseTemplateID bleibt nil — kein Raten aus Namen.
+    func testBackfillExerciseSportKindIgnoresExerciseWithoutTemplateID() throws {
+        let day = TrainingDay(name: "Run", weekday: 1, type: .fullBody)
+        context.insert(day)
+        let exercise = Exercise(name: "Easy Run", isCardio: true, day: day)
+        // exerciseTemplateID bleibt nil
+        context.insert(exercise)
+        try context.save()
+
+        let updated = LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: context)
+
+        XCTAssertEqual(updated, 0)
+        XCTAssertNil(exercise.enduranceSportKind)
+    }
+
+    /// Idempotenzprüfung: zweiter Aufruf verändert nichts mehr.
+    func testBackfillExerciseSportKindIsIdempotent() throws {
+        let template = ExerciseTemplate(
+            name: "Easy Run", equipment: .bodyweight, primaryMuscle: .quads,
+            isCardio: true, enduranceSportKind: .running, isSystemProvided: true
+        )
+        context.insert(template)
+        let day = TrainingDay(name: "Run", weekday: 1, type: .fullBody)
+        context.insert(day)
+        let exercise = Exercise(name: "Easy Run", exerciseTemplateID: template.id, isCardio: true, day: day)
+        context.insert(exercise)
+        try context.save()
+
+        LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: context)
+        let secondPass = LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: context)
+
+        XCTAssertEqual(secondPass, 0, "zweiter Aufruf darf nichts mehr aendern")
+        XCTAssertEqual(exercise.enduranceSportKind, .running)
+    }
+
     // MARK: - backfillCustomNamesIfNeeded (Plaene)
 
     /// Der frisch angelegte Leer-Plan ("Neuer Plan" + Katalog-Schluessel) ist

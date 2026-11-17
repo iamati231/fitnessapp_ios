@@ -189,9 +189,11 @@ public enum LibrarySeeder {
     }
 
     /// Issue #29: propagiert enduranceSportKind auf bestehende Plan-Exercises,
-    /// die vor dem DayEditorView-Fix angelegt wurden (deren enduranceSportKindRaw
-    /// daher nil ist). Ohne diesen Backfill bleiben historische Lauf-Einheiten
-    /// in TrainingActivityExtractor als "ambiguous" klassifiziert.
+    /// die vor dem DayEditorView-/ActiveWorkoutView-Fix angelegt wurden.
+    /// Konservativ: klassifiziert NUR Exercises, deren exerciseTemplateID auf
+    /// ein isSystemProvided-Template mit gesetztem Sporttyp zeigt.
+    /// Namensbasiertes Raten ist bewusst entfernt — Custom-Übungen mit dem
+    /// gleichen Namen wie eine Systemübung bleiben nil.
     /// Idempotent — Predicate filtert nur nil-Eintraege.
     @discardableResult
     public static func backfillExerciseEnduranceSportKindIfNeeded(in context: ModelContext) -> Int {
@@ -205,18 +207,26 @@ public enum LibrarySeeder {
             return 0
         }
         guard !exercises.isEmpty else { return 0 }
-        var sportKindByName: [String: String] = [:]
-        for spec in ExerciseLibraryData.all {
-            if let kind = spec.enduranceSportKind {
-                sportKindByName[spec.name] = kind.rawValue
+        // Lookup-Tabelle aus persistierten System-Templates aufbauen (nicht
+        // aus ExerciseLibraryData.all), damit nur tatsächlich vorhandene,
+        // eindeutig zugeordnete Templates als Quelle dienen.
+        let templateDescriptor = FetchDescriptor<ExerciseTemplate>(
+            predicate: #Predicate { $0.isSystemProvided == true }
+        )
+        let systemTemplates = (try? context.fetch(templateDescriptor)) ?? []
+        var sportKindByTemplateID: [UUID: String] = [:]
+        for t in systemTemplates {
+            if let raw = t.enduranceSportKindRaw {
+                sportKindByTemplateID[t.id] = raw
             }
         }
+        guard !sportKindByTemplateID.isEmpty else { return 0 }
         var updated = 0
         for exercise in exercises {
-            if let raw = sportKindByName[exercise.name] {
-                exercise.enduranceSportKindRaw = raw
-                updated += 1
-            }
+            guard let templateID = exercise.exerciseTemplateID,
+                  let raw = sportKindByTemplateID[templateID] else { continue }
+            exercise.enduranceSportKindRaw = raw
+            updated += 1
         }
         return updated
     }

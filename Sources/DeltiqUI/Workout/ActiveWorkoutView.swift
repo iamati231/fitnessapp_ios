@@ -1204,6 +1204,9 @@ public struct ActiveWorkoutView: View {
             day: day
         )
         modelContext.insert(exercise)
+        // Issue #29: Sportart aus dem Katalog-Template übernehmen, damit
+        // der Log-Snapshot sofort den korrekten Typ trägt — kein Raten aus Namen.
+        exercise.enduranceSportKind = template.enduranceSportKind
         // P8 Stufe-2: explizite In-Session-Änderung — hängt GENAU diese
         // Übung an den bestehenden Snapshot an, liest NICHT den ganzen
         // Live-Tag erneut.
