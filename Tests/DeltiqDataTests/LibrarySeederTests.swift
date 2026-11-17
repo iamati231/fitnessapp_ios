@@ -329,5 +329,39 @@ final class LibrarySeederTests: XCTestCase {
 
         XCTAssertEqual(plan.customName, TrainingPlan.blankPlanName)
     }
+
+    // MARK: - Issue #29: Migrationsketten-Reihenfolge
+
+    /// Stellt sicher, dass backfillExerciseEnduranceSportKindIfNeeded NACH
+    /// ExerciseTemplateIDBackfill laeuft: ohne Template-ID ist der Sport-
+    /// Backfill ein No-op; erst nach ID-Zuweisung erhaelt die Exercise .running.
+    func testBackfillSportKindRequiresTemplateIDToBeAssignedFirst() throws {
+        let template = ExerciseTemplate(
+            name: "Easy Run", equipment: .bodyweight, primaryMuscle: .quads,
+            isCardio: true, enduranceSportKind: .running, isSystemProvided: true
+        )
+        context.insert(template)
+        let day = TrainingDay(name: "Run", weekday: 1, type: .fullBody)
+        context.insert(day)
+        // Altbestand: Exercise ohne exerciseTemplateID (vor ExerciseTemplateIDBackfill)
+        let exercise = Exercise(name: "Easy Run", isCardio: true, day: day)
+        // exerciseTemplateID bleibt nil
+        context.insert(exercise)
+        try context.save()
+
+        // Schritt 1: Sport-Backfill laeuft fruehzeitig (altes Verhalten) → No-op
+        let firstPass = LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: context)
+        XCTAssertEqual(firstPass, 0, "ohne Template-ID kein Match moeglich")
+        XCTAssertNil(exercise.enduranceSportKind, "Sport bleibt nil bis ID-Backfill gelaufen ist")
+
+        // Schritt 2: ExerciseTemplateIDBackfill-Effekt simulieren
+        exercise.exerciseTemplateID = template.id
+        try context.save()
+
+        // Schritt 3: Sport-Backfill nochmal (korrekte Reihenfolge)
+        let secondPass = LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: context)
+        XCTAssertEqual(secondPass, 1)
+        XCTAssertEqual(exercise.enduranceSportKind, .running)
+    }
 }
 #endif
