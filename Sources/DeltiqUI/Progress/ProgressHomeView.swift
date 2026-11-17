@@ -162,6 +162,15 @@ public struct ProgressHomeView: View {
             .buttonStyle(.plain)
 
             NavigationLink {
+                MuscleVolumeProgressView()
+            } label: {
+                DeltiqRow(icon: "figure.strengthtraining.traditional",
+                          label: String(localized: "progress.section.muscleVolume", bundle: .module),
+                          showsChevron: true)
+            }
+            .buttonStyle(.plain)
+
+            NavigationLink {
                 ProgressOverviewView(eyebrowLocKey: "tab.progress")
             } label: {
                 DeltiqRow(icon: "figure.stand",

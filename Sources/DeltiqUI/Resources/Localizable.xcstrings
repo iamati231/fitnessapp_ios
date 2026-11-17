@@ -73689,6 +73689,214 @@
           }
         }
       }
+    },
+    "muscle.progress.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Muscle Volume" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingsvolumen" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kas Hacmi" } }
+      }
+    },
+    "muscle.progress.eyebrow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Volume & Muscle Groups" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Volumen & Muskelgruppen" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hacim & Kas Grupları" } }
+      }
+    },
+    "muscle.progress.emptyTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No Strength Workouts" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Keine Kraft-Einheiten" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kuvvet Antrenmanı Yok" } }
+      }
+    },
+    "muscle.progress.emptyDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Complete a strength workout to see your muscle volume progress." } },
+        "de": { "stringUnit": { "state": "translated", "value": "Schließe ein Krafttraining ab, um deinen Muskelvolumen-Fortschritt zu sehen." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kas hacmi ilerlemenizi görmek için bir kuvvet antrenmanı tamamlayın." } }
+      }
+    },
+    "muscle.progress.emptyMuscleTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No Muscle Data" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Keine Muskelzuordnung" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kas Verisi Yok" } }
+      }
+    },
+    "muscle.progress.emptyMuscleDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Your logged exercises don't have a primary muscle assigned yet." } },
+        "de": { "stringUnit": { "state": "translated", "value": "Deinen geloggten Übungen ist noch keine primäre Muskelgruppe zugeordnet." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kayıtlı egzersizlerinize henüz birincil kas grubu atanmamış." } }
+      }
+    },
+    "muscle.progress.section.overview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Training Overview" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingsüberblick" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Antrenman Özeti" } }
+      }
+    },
+    "muscle.progress.overview.totalSets": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Working Sets" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Arbeitssätze" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Çalışma Setleri" } }
+      }
+    },
+    "muscle.progress.overview.topMuscle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Most Trained" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Meisttrainiert" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "En Çok Çalışılan" } }
+      }
+    },
+    "muscle.progress.overview.busiestWeek": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Best Week" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Stärkste Woche" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "En İyi Hafta" } }
+      }
+    },
+    "muscle.progress.chart.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sets Per Week" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Sätze pro Woche" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Haftalık Set Sayısı" } }
+      }
+    },
+    "muscle.progress.section.muscles": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Muscle Groups" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Muskelgruppen" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kas Grupları" } }
+      }
+    },
+    "muscle.progress.sets.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%lld sets" } },
+        "de": { "stringUnit": { "state": "translated", "value": "%lld Sätze" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "%lld set" } }
+      }
+    },
+    "muscle.progress.detail.chart.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Weekly Sets" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Wöchentliche Sätze" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Haftalık Setler" } }
+      }
+    },
+    "muscle.progress.bucket.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Volume zones are orientation values based on common training guidelines, not individual recommendations." } },
+        "de": { "stringUnit": { "state": "translated", "value": "Volumen-Zonen sind Orientierungswerte aus gängigen Trainingsrichtlinien, keine individuellen Empfehlungen." } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hacim bölgeleri, bireysel öneriler değil, yaygın antrenman yönergelerine dayalı yönlendirme değerleridir." } }
+      }
+    },
+    "progress.section.muscleVolume": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Muscle Volume" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Trainingsvolumen" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kas Hacmi" } }
+      }
+    },
+    "muscle.group.chest": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Chest" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Brust" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Göğüs" } }
+      }
+    },
+    "muscle.group.back": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Back" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Rücken" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Sırt" } }
+      }
+    },
+    "muscle.group.shoulders": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Shoulders" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Schultern" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Omuzlar" } }
+      }
+    },
+    "muscle.group.biceps": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Biceps" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Bizeps" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Biceps" } }
+      }
+    },
+    "muscle.group.triceps": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Triceps" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Trizeps" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Triceps" } }
+      }
+    },
+    "muscle.group.quads": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Quadriceps" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Quadrizeps" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Quadriceps" } }
+      }
+    },
+    "muscle.group.hamstrings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Hamstrings" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Hamstrings" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Hamstring" } }
+      }
+    },
+    "muscle.group.glutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Glutes" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Gesäß" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Gluteus" } }
+      }
+    },
+    "muscle.group.calves": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Calves" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Waden" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Baldır" } }
+      }
+    },
+    "muscle.group.core": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Core" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Core" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Core" } }
+      }
     }
   }
 }
