@@ -73770,6 +73770,14 @@
         "tr": { "stringUnit": { "state": "translated", "value": "En İyi Hafta" } }
       }
     },
+    "muscle.progress.overview.unassignedSets": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No Muscle Tag" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Kein Muskel-Tag" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Kas Etiketi Yok" } }
+      }
+    },
     "muscle.progress.chart.title": {
       "extractionState": "manual",
       "localizations": {

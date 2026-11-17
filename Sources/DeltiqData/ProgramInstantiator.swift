@@ -270,6 +270,7 @@ public enum ProgramInstantiator {
         exercise.enduranceSportKind = spec.enduranceSportKind
         exercise.targetPaceMinutesPerKm = spec.targetPaceMinutesPerKm
         exercise.coachingRationale = spec.coachingRationale
+        exercise.primaryMuscle = librarySpec?.primaryMuscle
         return exercise
     }
 

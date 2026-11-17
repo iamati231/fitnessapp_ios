@@ -48,8 +48,8 @@ public struct MuscleVolumeProgressView: View {
         MuscleGroupProgressCalculator.muscleRanking(sets: allSets, period: period)
     }
 
-    private var hasStrengthLogs: Bool { !allSets.isEmpty }
-    private var hasMuscleData: Bool { overviewStats.totalWorkingSets > 0 }
+    private var hasStrengthLogs: Bool { overviewStats.totalWorkingSets > 0 }
+    private var hasMuscleData: Bool { overviewStats.totalWorkingSets - overviewStats.unassignedSetCount > 0 }
 
     // MARK: - Body
 
@@ -140,6 +140,10 @@ public struct MuscleVolumeProgressView: View {
                 }
                 statCell(value: "\(overviewStats.sessionCount)",
                          label: loc("strength.progress.overview.sessions"))
+                if overviewStats.unassignedSetCount > 0 {
+                    statCell(value: "\(overviewStats.unassignedSetCount)",
+                             label: loc("muscle.progress.overview.unassignedSets"))
+                }
             }
             .padding(16)
         }

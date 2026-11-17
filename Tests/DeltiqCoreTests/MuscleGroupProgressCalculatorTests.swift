@@ -146,8 +146,9 @@ final class MuscleGroupProgressCalculatorTests: XCTestCase {
             strengthSet(on: date(2024, 6, 5), muscle: .back),
         ]
         let stats = Calc.overviewStats(sets: sets, period: .allTime, now: now)
-        // nil muscle not counted
-        XCTAssertEqual(stats.totalWorkingSets, 1)
+        // total = assigned + unassigned
+        XCTAssertEqual(stats.totalWorkingSets, 2)
+        XCTAssertEqual(stats.unassignedSetCount, 1)
     }
 
     // MARK: - 10. mostTrainedMuscle reflects highest-volume group

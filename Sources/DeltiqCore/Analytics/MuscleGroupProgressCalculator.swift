@@ -64,16 +64,18 @@ public enum MuscleGroupProgressCalculator {
     /// High-level stats for the overview card.
     public struct OverviewStats: Equatable, Sendable {
         public let totalWorkingSets: Int
+        /// Sets in the period whose exercise had no muscle assigned.
+        public let unassignedSetCount: Int
         public let mostTrainedMuscle: MuscleGroup?
         public let mostTrainedMuscleSets: Int
         /// weekStart of the highest-volume week; nil when no sets logged.
         public let busiestWeekStart: Date?
         public let busiestWeekSets: Int
-        /// Sessions that had at least one classifiable working set.
         public let sessionCount: Int
 
         public init(
             totalWorkingSets: Int,
+            unassignedSetCount: Int,
             mostTrainedMuscle: MuscleGroup?,
             mostTrainedMuscleSets: Int,
             busiestWeekStart: Date?,
@@ -81,6 +83,7 @@ public enum MuscleGroupProgressCalculator {
             sessionCount: Int
         ) {
             self.totalWorkingSets = totalWorkingSets
+            self.unassignedSetCount = unassignedSetCount
             self.mostTrainedMuscle = mostTrainedMuscle
             self.mostTrainedMuscleSets = mostTrainedMuscleSets
             self.busiestWeekStart = busiestWeekStart
@@ -105,14 +108,16 @@ public enum MuscleGroupProgressCalculator {
 
         var totalByMuscle: [MuscleGroup: Int] = [:]
         var sessionTimestamps: Set<Date> = []
+        var unassigned = 0
         for s in inPeriod {
-            guard let m = s.muscleGroup else { continue }
-            totalByMuscle[m, default: 0] += 1
-            // Count distinct session start-times; two workouts on the same day stay distinct.
+            // All non-cardio sets count for session tracking.
             sessionTimestamps.insert(s.sessionTimestamp)
+            guard let m = s.muscleGroup else { unassigned += 1; continue }
+            totalByMuscle[m, default: 0] += 1
         }
 
-        let total = totalByMuscle.values.reduce(0, +)
+        let assigned = totalByMuscle.values.reduce(0, +)
+        let total = assigned + unassigned
         let top = totalByMuscle.max(by: { $0.value < $1.value })
 
         // Busiest week
@@ -126,6 +131,7 @@ public enum MuscleGroupProgressCalculator {
 
         return OverviewStats(
             totalWorkingSets: total,
+            unassignedSetCount: unassigned,
             mostTrainedMuscle: top?.key,
             mostTrainedMuscleSets: top?.value ?? 0,
             busiestWeekStart: busiest?.key,
