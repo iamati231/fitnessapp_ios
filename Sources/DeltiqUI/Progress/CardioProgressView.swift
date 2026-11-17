@@ -48,7 +48,10 @@ public struct CardioProgressView: View {
         CardioProgressCalculator.weeklyPoints(activities: allActivities, period: period)
     }
 
-    private var hasData: Bool { overviewStats.sessionCount > 0 }
+    private var hasRunData: Bool { overviewStats.sessionCount > 0 }
+    private var hasOtherCardioOnly: Bool {
+        overviewStats.sessionCount == 0 && overviewStats.otherCardioSessionCount > 0
+    }
 
     // MARK: - Body
 
@@ -62,7 +65,7 @@ public struct CardioProgressView: View {
 
             periodPicker
 
-            if hasData {
+            if hasRunData {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         overviewSection
@@ -73,6 +76,8 @@ public struct CardioProgressView: View {
                     }
                     .padding(.bottom, 32)
                 }
+            } else if hasOtherCardioOnly {
+                otherCardioOnlyState
             } else {
                 ScrollView {
                     DashboardEmptyState(
@@ -87,6 +92,30 @@ public struct CardioProgressView: View {
         }
         .deltiqScreen()
         .deltiqSwipeBackEnabled()
+    }
+
+    // MARK: - Other-cardio-only state
+
+    private var otherCardioOnlyState: some View {
+        ScrollView {
+            VStack(spacing: 10) {
+                Image(systemName: "figure.outdoor.cycle")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 8)
+                Text(loc("cardio.progress.noRunsTitle"))
+                    .font(.headline)
+                Text(String(format: loc("cardio.progress.noRunsDescription"),
+                            overviewStats.otherCardioSessionCount))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            }
+            .frame(maxWidth: .infinity)
+            .deltiqCardStyle()
+            .padding(.top, 18)
+        }
     }
 
     // MARK: - Period picker
@@ -213,7 +242,8 @@ public struct CardioProgressView: View {
                 AxisMarks { v in
                     AxisGridLine()
                     if let d = v.as(Double.self) {
-                        AxisValueLabel(formattedPace(d))
+                        // d is already in the display unit (pace * paceFactor); do NOT convert again.
+                        AxisValueLabel(formatPaceLabel(d))
                     }
                 }
             }
@@ -240,8 +270,14 @@ public struct CardioProgressView: View {
             : String(format: "%.1f %@", v, distanceUnit)
     }
 
+    /// Format a canonical min/km value, converting to the current unit.
     private func formattedPace(_ minPerKm: Double) -> String {
-        let val = minPerKm * paceFactor
+        formatPaceLabel(minPerKm * paceFactor)
+    }
+
+    /// Format a value that is already in the current pace unit (min/km or min/mi).
+    /// Used for Y-axis labels whose values come from chart data already multiplied by paceFactor.
+    private func formatPaceLabel(_ val: Double) -> String {
         let mins = Int(val)
         let secs = Int((val - Double(mins)) * 60)
         return String(format: "%d:%02d /%@", mins, secs, distanceUnit)

@@ -73643,6 +73643,52 @@
           }
         }
       }
+    },
+    "cardio.progress.noRunsTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Running Data"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Laufdaten"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşu Verisi Yok"
+          }
+        }
+      }
+    },
+    "cardio.progress.noRunsDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld other cardio session(s) logged — start a run to see endurance progress."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld andere Cardio-Einheit(en) erfasst – starte einen Lauf, um die Ausdauer-Entwicklung zu sehen."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld diğer kardiyo seansı kaydedildi – koşu antrenmanı takibini görmek için koşun."
+          }
+        }
+      }
     }
   }
 }
