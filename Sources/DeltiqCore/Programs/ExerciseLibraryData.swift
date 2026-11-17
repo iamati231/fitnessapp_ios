@@ -938,8 +938,7 @@ public enum ExerciseLibraryData {
             .homeGym:     "Reverse Flyes (KH)"
         ],
         "Reverse Flys (Maschine)": [
-            .homeGym:     "Reverse Flyes (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Reverse Flyes (KH)"
         ],
         "Schulterdrücken (Maschine)": [
             .homeGym:     "Schulterdrücken (KH)",
@@ -1080,9 +1079,7 @@ public enum ExerciseLibraryData {
         "Pullover (KH)": [
             .noEquipment: "Hyperextension"
         ],
-        "Reverse Flyes (KH)": [
-            .noEquipment: "Hyperextension"
-        ],
+
         "Rumänisches Kreuzheben (KH)": [
             .noEquipment: "Hip Thrust (BW)"
         ],

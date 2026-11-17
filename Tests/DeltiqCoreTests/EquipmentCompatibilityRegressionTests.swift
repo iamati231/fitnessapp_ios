@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 @testable import DeltiqCore
 
 /// Regressionstests für Issue #11: noEquipment-Kompatibilitäts-Validierung
@@ -144,6 +144,49 @@ final class EquipmentCompatibilityRegressionTests: XCTestCase {
     }
 }
 
+
+// MARK: - 6. Issue #34: Hyperextension-Audit – 11 Back-Exercises behalten, 2 Schulterübungen entfernt
+
+final class HyperextensionAuditRegressionTests: XCTestCase {
+
+    // 11 Back-Exercises → Hyperextension bleibt gültige noEquipment-Alternative
+    // (primaryMuscle: .back auf beiden Seiten)
+
+    private func assertSwapsToHyperextension(_ name: String, file: StaticString = #file, line: UInt = #line) {
+        guard case .swap(let spec) = ExerciseLibraryData.resolveAlternative(
+            forExerciseName: name, targetEnvironment: .noEquipment)
+        else { XCTFail("Erwartet .swap(Hyperextension) für \(name)", file: file, line: line); return }
+        XCTAssertEqual(spec.name, "Hyperextension", file: file, line: line)
+    }
+
+    func testRudernVorgebeugtSwapsToHyperextension() { assertSwapsToHyperextension("Rudern vorgebeugt") }
+    func testPendlayRowSwapsToHyperextension()        { assertSwapsToHyperextension("Pendlay Row") }
+    func testRudernEinarmigKHSwapsToHyperextension()  { assertSwapsToHyperextension("Rudern einarmig (KH)") }
+    func testLatzugBreitSwapsToHyperextension()       { assertSwapsToHyperextension("Latzug (breit)") }
+    func testLatzugEngSwapsToHyperextension()         { assertSwapsToHyperextension("Latzug (eng)") }
+    func testRudernMaschineSwapsToHyperextension()    { assertSwapsToHyperextension("Rudern (Maschine)") }
+    func testKabelrudernSitzendSwapsToHyperextension(){ assertSwapsToHyperextension("Kabelrudern sitzend") }
+    func testLatzugWeitSwapsToHyperextension()        { assertSwapsToHyperextension("Latzug (weit)") }
+    func testChestSupportedRowKHSwapsToHyperextension(){ assertSwapsToHyperextension("Chest Supported Row (KH)") }
+    func testPulloverKHSwapsToHyperextension()        { assertSwapsToHyperextension("Pullover (KH)") }
+    func testLatzugKabelSwapsToHyperextension()       { assertSwapsToHyperextension("Latzug (Kabel)") }
+
+    // 2 Schulterübungen → Hyperextension entfernt → .keep erwartet
+
+    func testReverseFlysaMaschineHasNoValidAlternativeForNoEquipment() {
+        XCTAssertEqual(
+            ExerciseLibraryData.resolveAlternative(forExerciseName: "Reverse Flys (Maschine)", targetEnvironment: .noEquipment),
+            .keep,
+            "Reverse Flys (Maschine) ist eine Schulterübung — darf keine Rücken-Alternative liefern")
+    }
+
+    func testReverseFlyesKHHasNoValidAlternativeForNoEquipment() {
+        XCTAssertEqual(
+            ExerciseLibraryData.resolveAlternative(forExerciseName: "Reverse Flyes (KH)", targetEnvironment: .noEquipment),
+            .keep,
+            "Reverse Flyes (KH) ist eine Schulterübung — darf keine Rücken-Alternative liefern")
+    }
+}
 // MARK: - Issue #12: Custom-Exercise Equipment Compatibility
 
 /// Issue #12: Equipment-Kompatibilitätsprüfung für Custom-Exercises.
