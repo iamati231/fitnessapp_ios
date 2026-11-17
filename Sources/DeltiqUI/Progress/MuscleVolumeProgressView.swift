@@ -217,6 +217,7 @@ public struct MuscleVolumeProgressView: View {
                             .foregroundStyle(.tertiary)
                     }
                     .padding(.vertical, 2)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("\(String(localized: entry.muscle.localizedName)), \(entry.totalSets) sets")
