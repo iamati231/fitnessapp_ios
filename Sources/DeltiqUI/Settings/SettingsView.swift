@@ -583,6 +583,8 @@ public struct SettingsView: View {
                     PRHistoryView()
                 case .workoutHistory:
                     WorkoutHistoryView()
+                case .strengthProgress:
+                    StrengthProgressView()
                 }
             }
     }
@@ -613,6 +615,8 @@ public struct SettingsView: View {
                     PRHistoryView()
                 case .workoutHistory:
                     WorkoutHistoryView()
+                case .strengthProgress:
+                    StrengthProgressView()
                 }
             }
     }

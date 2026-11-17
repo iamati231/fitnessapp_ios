@@ -38,6 +38,14 @@ public final class ExerciseTemplate {
     /// (Strength) bleiben unangetastet.
     public var isCardio: Bool = false
 
+    /// Issue #29: Sportart fuer Cardio-Uebungen. Nil fuer mehrdeutige
+    /// Geraete (Crosstrainer, Stepper). Lightweight-Migration: nil default.
+    public var enduranceSportKindRaw: String? = nil
+    public var enduranceSportKind: TrainingTypeKind? {
+        get { enduranceSportKindRaw.flatMap(TrainingTypeKind.init(rawValue:)) }
+        set { enduranceSportKindRaw = newValue?.rawValue }
+    }
+
     /// DEL-111: i18n-Lookup-Key fuer den Anzeige-Namen. Optional. Wenn
     /// non-nil, soll `displayName` den Catalog-Eintrag dieses Keys
     /// rendern; sonst faellt es auf das rohe `name`-Feld zurueck. Custom-
@@ -96,6 +104,7 @@ public final class ExerciseTemplate {
         isSystemCompound: Bool = false,
         isTimeBased: Bool = false,
         isCardio: Bool = false,
+        enduranceSportKind: TrainingTypeKind? = nil,
         systemicFatigueFactor: Double = 0.35,
         localMuscleDamageFactor: Double = 0.35,
         cnsDemandFactor: Double = 0.25,
@@ -114,6 +123,7 @@ public final class ExerciseTemplate {
         self.isSystemCompound = isSystemCompound
         self.isTimeBased = isTimeBased
         self.isCardio = isCardio
+        self.enduranceSportKindRaw = enduranceSportKind?.rawValue
         self.systemicFatigueFactor = systemicFatigueFactor
         self.localMuscleDamageFactor = localMuscleDamageFactor
         self.cnsDemandFactor = cnsDemandFactor

@@ -124,6 +124,9 @@ public struct RootView: View {
             // Bestandsnutzer dauerhaft unsichtbar im Bibliotheks-Picker.
             // Idempotent — Diff gegen bereits vorhandene System-Namen.
             LibrarySeeder.backfillNewLibraryEntriesIfNeeded(in: modelContext)
+            // Issue #29: schreibt enduranceSportKind auf bestehende System-
+            // Templates nach, die vor diesem Feld angelegt wurden. Idempotent.
+            LibrarySeeder.backfillEnduranceSportKindIfNeeded(in: modelContext)
             // DEL-051: Snapshot-Backfill fuer Pre-DEL-051-Logs. Idempotent —
             // FetchDescriptor filtert auf nil-Snapshot, also lauft das nach
             // dem ersten Erfolg leer durch.
@@ -149,6 +152,10 @@ public struct RootView: View {
             // sonst wuerden Fremdsprach-Namens-Snapshots faelschlich als
             // unaufloesbar durchfallen. Idempotent.
             ExerciseTemplateIDBackfill.runIfNeeded(in: modelContext)
+            // Issue #29: propagiert enduranceSportKind auf bestehende Exercises.
+            // MUSS NACH ExerciseTemplateIDBackfill laufen — nur dann sind
+            // exerciseTemplateIDs auf Altbestand vorhanden.
+            LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: modelContext)
             // DEL-150: Ad-Hoc-Workout-Titel-Repair. Spontane Sessions, deren
             // ephemerer TrainingDay noch ohne localizationKey gespeichert
             // wurde, bekommen `session.adHoc.dayName` nachgezogen — damit
@@ -368,6 +375,8 @@ struct MainTabView: View {
                             PRHistoryView()
                         case .workoutHistory:
                             WorkoutHistoryView()
+                        case .strengthProgress:
+                            StrengthProgressView()
                         }
                     }
             }
@@ -400,6 +409,8 @@ struct MainTabView: View {
                             PRHistoryView()
                         case .workoutHistory:
                             WorkoutHistoryView()
+                        case .strengthProgress:
+                            StrengthProgressView()
                         }
                     }
             }
