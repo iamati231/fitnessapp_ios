@@ -20,6 +20,13 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
     /// dazupacken kann.
     public let isCardio: Bool
 
+    /// Issue #29: Sportart fuer Cardio-Uebungen (Laufen vs. Radfahren).
+    /// Nil fuer mehrdeutige Geraete (Crosstrainer, Stepper). Wird vom
+    /// LibrarySeeder und DayEditor auf Exercise propagiert, damit
+    /// spontane Trainings dieselbe Klassifizierung erhalten wie
+    /// plan-generierte.
+    public let enduranceSportKind: TrainingTypeKind?
+
     // MARK: - DEL-098 Training-Intelligence-Metadaten
     //
     // Statische Pro-Uebung-Belastungsfaktoren. Werden in `LibrarySeeder` auf
@@ -83,6 +90,7 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         isSystemCompound: Bool = false,
         isTimeBased: Bool = false,
         isCardio: Bool = false,
+        enduranceSportKind: TrainingTypeKind? = nil,
         // DEL-098: defensive Defaults (moderate Isolationsuebung). Library-
         // Eintraege koennen jeden Faktor pro Eintrag ueberschreiben.
         systemicFatigueFactor: Double = 0.35,
@@ -101,6 +109,7 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         self.isSystemCompound = isSystemCompound
         self.isTimeBased = isTimeBased
         self.isCardio = isCardio
+        self.enduranceSportKind = enduranceSportKind
         self.systemicFatigueFactor = systemicFatigueFactor
         self.localMuscleDamageFactor = localMuscleDamageFactor
         self.cnsDemandFactor = cnsDemandFactor

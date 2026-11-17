@@ -19,7 +19,7 @@ private func loc(_ key: String.LocalizationValue) -> String {
 public struct CardioProgressView: View {
 
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("distance_unit") private var distanceUnitRaw: String = "km"
+    @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
 
     @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true && $0.isRestDay == false },
            sort: \WorkoutSession.startTime, order: .forward)
@@ -31,7 +31,7 @@ public struct CardioProgressView: View {
 
     // MARK: - Projections
 
-    private var distanceUnit: String { distanceUnitRaw == "mi" ? "mi" : "km" }
+    private var distanceUnit: String { weightUnitRaw == "lbs" ? "mi" : "km" }
     private var distanceFactor: Double { distanceUnit == "mi" ? 0.621371 : 1.0 }
     // Pace converts inversely: longer/km → shorter/mi for the same speed.
     private var paceFactor: Double { distanceUnit == "mi" ? 1.609344 : 1.0 }

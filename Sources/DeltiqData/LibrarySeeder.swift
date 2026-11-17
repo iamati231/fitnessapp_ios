@@ -58,6 +58,7 @@ public enum LibrarySeeder {
                 // Cardio-Einheiten (Freier Lauf, Radfahren, ...) korrekt
                 // klassifiziert in den Picker landen.
                 isCardio: spec.isCardio,
+                enduranceSportKind: spec.enduranceSportKind,
                 // DEL-098: Belastungsfaktoren aus der Spec uebernehmen,
                 // sodass der spaetere Recovery-Score schon vom ersten
                 // Workout an mit sinnvollen Werten rechnen kann.
@@ -134,6 +135,7 @@ public enum LibrarySeeder {
                 isSystemCompound: spec.isSystemCompound,
                 isTimeBased: spec.isTimeBased,
                 isCardio: spec.isCardio,
+                enduranceSportKind: spec.enduranceSportKind,
                 systemicFatigueFactor: spec.systemicFatigueFactor,
                 localMuscleDamageFactor: spec.localMuscleDamageFactor,
                 cnsDemandFactor: spec.cnsDemandFactor,
@@ -145,6 +147,76 @@ public enum LibrarySeeder {
             )
             context.insert(template)
             updated += 1
+        }
+        return updated
+    }
+
+    /// Issue #29: Backfill `enduranceSportKind` onto existing system templates.
+    ///
+    /// `seedIfNeeded`/`backfillNewLibraryEntriesIfNeeded` insert new templates
+    /// with the correct sport kind, but pre-existing templates got nil because
+    /// the field didn't exist yet. This one-shot pass writes the sport kind from
+    /// `ExerciseLibraryData.all` onto every system template where it is still nil.
+    /// Idempotent: after the first run all matched templates have a value, so the
+    /// filter finds nothing on subsequent launches.
+    @discardableResult
+    public static func backfillEnduranceSportKindIfNeeded(in context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<ExerciseTemplate>(
+            predicate: #Predicate { $0.isCustom == false && $0.enduranceSportKindRaw == nil }
+        )
+        let templates: [ExerciseTemplate]
+        do {
+            templates = try context.fetch(descriptor)
+        } catch {
+            return 0
+        }
+        guard !templates.isEmpty else { return 0 }
+        // Build name → sport kind map from the authoritative library spec.
+        var sportKindByName: [String: String] = [:]
+        for spec in ExerciseLibraryData.all {
+            if let kind = spec.enduranceSportKind {
+                sportKindByName[spec.name] = kind.rawValue
+            }
+        }
+        var updated = 0
+        for template in templates {
+            if let raw = sportKindByName[template.name] {
+                template.enduranceSportKindRaw = raw
+                updated += 1
+            }
+        }
+        return updated
+    }
+
+    /// Issue #29: propagiert enduranceSportKind auf bestehende Plan-Exercises,
+    /// die vor dem DayEditorView-Fix angelegt wurden (deren enduranceSportKindRaw
+    /// daher nil ist). Ohne diesen Backfill bleiben historische Lauf-Einheiten
+    /// in TrainingActivityExtractor als "ambiguous" klassifiziert.
+    /// Idempotent — Predicate filtert nur nil-Eintraege.
+    @discardableResult
+    public static func backfillExerciseEnduranceSportKindIfNeeded(in context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<Exercise>(
+            predicate: #Predicate { $0.isCardio == true && $0.enduranceSportKindRaw == nil }
+        )
+        let exercises: [Exercise]
+        do {
+            exercises = try context.fetch(descriptor)
+        } catch {
+            return 0
+        }
+        guard !exercises.isEmpty else { return 0 }
+        var sportKindByName: [String: String] = [:]
+        for spec in ExerciseLibraryData.all {
+            if let kind = spec.enduranceSportKind {
+                sportKindByName[spec.name] = kind.rawValue
+            }
+        }
+        var updated = 0
+        for exercise in exercises {
+            if let raw = sportKindByName[exercise.name] {
+                exercise.enduranceSportKindRaw = raw
+                updated += 1
+            }
         }
         return updated
     }

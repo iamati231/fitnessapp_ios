@@ -411,19 +411,19 @@ public enum ExerciseLibraryData {
         // DEL-098: Cardio = moderater systemic Cost (Kreislauf-Belastung),
         // niedriger CNS-Hit (kein neuronaler Stress wie schwere Compounds).
         // Rudermaschine bekommt etwas hoeheren local-Damage (Lat-/Beine-Mix).
-        ExerciseTemplateSpec(name: "Freier Lauf",                      equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
+        ExerciseTemplateSpec(name: "Freier Lauf",                      equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true, enduranceSportKind: .running,
                              systemicFatigueFactor: 0.55, localMuscleDamageFactor: 0.45, cnsDemandFactor: 0.30, axialLoadFactor: 0.20, technicalComplexityFactor: 0.10, recoveryClass: .medium,
                              localizationKey: "exercise.name.run",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Laufband",                         equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
+        ExerciseTemplateSpec(name: "Laufband",                         equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true, enduranceSportKind: .running,
                              systemicFatigueFactor: 0.55, localMuscleDamageFactor: 0.45, cnsDemandFactor: 0.30, axialLoadFactor: 0.20, technicalComplexityFactor: 0.10, recoveryClass: .medium,
                              localizationKey: "exercise.name.treadmill",
                              equipmentRequirement: .item(.machineStation)),
-        ExerciseTemplateSpec(name: "Radfahren (outdoor)",              equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
+        ExerciseTemplateSpec(name: "Radfahren (outdoor)",              equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true, enduranceSportKind: .cycling,
                              systemicFatigueFactor: 0.55, localMuscleDamageFactor: 0.35, cnsDemandFactor: 0.25, axialLoadFactor: 0.10, technicalComplexityFactor: 0.10, recoveryClass: .medium,
                              localizationKey: "exercise.name.cycling",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Fahrradergometer",                 equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
+        ExerciseTemplateSpec(name: "Fahrradergometer",                 equipment: .machine,    primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true, enduranceSportKind: .cycling,
                              systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.30, cnsDemandFactor: 0.20, axialLoadFactor: 0.05, technicalComplexityFactor: 0.05, recoveryClass: .medium,
                              localizationKey: "exercise.name.stationaryBike",
                              equipmentRequirement: .item(.machineStation)),
@@ -441,26 +441,26 @@ public enum ExerciseLibraryData {
         // ExerciseSpec(name:) Strings in Hybrid-Plan-Templates ohne Library-
         // Match — landeten als rohes DE in Exercise.name. Jetzt offiziell
         // im Catalog mit Multi-Locale-Display.
-        ExerciseTemplateSpec(name: "Easy Run",                         equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
+        ExerciseTemplateSpec(name: "Easy Run",                         equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true, enduranceSportKind: .running,
                              systemicFatigueFactor: 0.50, localMuscleDamageFactor: 0.40, cnsDemandFactor: 0.25, axialLoadFactor: 0.20, technicalComplexityFactor: 0.10, recoveryClass: .medium,
                              localizationKey: "exercise.name.easyRun",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Long Run",                         equipment: .bodyweight, primaryMuscle: .core,      isCardio: true,
+        ExerciseTemplateSpec(name: "Long Run",                         equipment: .bodyweight, primaryMuscle: .core,      isCardio: true, enduranceSportKind: .running,
                              systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.55, cnsDemandFactor: 0.35, axialLoadFactor: 0.25, technicalComplexityFactor: 0.10, recoveryClass: .high,
                              localizationKey: "exercise.name.longRun",
                              equipmentRequirement: .all([])),
         // DEL-PhaseA: eigene Uebung fuer die Tempo-Zone des Laufcoachings —
         // "Long Run" bleibt fuer Hybrid-Plan-Langlaeufe; neue Plaene nutzen
         // "Tempo Run" (→ "Tempolauf" DE) damit Name und Tages-Titel uebereinstimmen.
-        ExerciseTemplateSpec(name: "Tempo Run",                        equipment: .bodyweight, primaryMuscle: .core,      isCardio: true,
+        ExerciseTemplateSpec(name: "Tempo Run",                        equipment: .bodyweight, primaryMuscle: .core,      isCardio: true, enduranceSportKind: .running,
                              systemicFatigueFactor: 0.70, localMuscleDamageFactor: 0.55, cnsDemandFactor: 0.40, axialLoadFactor: 0.25, technicalComplexityFactor: 0.15, recoveryClass: .high,
                              localizationKey: "exercise.name.tempoRun",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Intervalle",                       equipment: .bodyweight, primaryMuscle: .core,      isCardio: true,
+        ExerciseTemplateSpec(name: "Intervalle",                       equipment: .bodyweight, primaryMuscle: .core,      isCardio: true, enduranceSportKind: .running,
                              systemicFatigueFactor: 0.75, localMuscleDamageFactor: 0.50, cnsDemandFactor: 0.55, axialLoadFactor: 0.20, technicalComplexityFactor: 0.20, recoveryClass: .high,
                              localizationKey: "exercise.name.intervals",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Gehen / Einlaufen",                equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true,
+        ExerciseTemplateSpec(name: "Gehen / Einlaufen",                equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner, isCardio: true, enduranceSportKind: .running,
                              systemicFatigueFactor: 0.15, localMuscleDamageFactor: 0.10, cnsDemandFactor: 0.05, axialLoadFactor: 0.05, technicalComplexityFactor: 0.05, recoveryClass: .low,
                              localizationKey: "exercise.name.warmupWalk",
                              equipmentRequirement: .all([])),
@@ -473,11 +473,11 @@ public enum ExerciseLibraryData {
         // mit einer Lauf-/Rad-Bewegung statt einer Kraft-Uebung. Faktoren an
         // "Intervalle"/"Radfahren (outdoor)" angelehnt, leicht haerter (Intervall-
         // Charakter).
-        ExerciseTemplateSpec(name: "Lauf-Intervall",                   equipment: .bodyweight, primaryMuscle: .core,      isTimeBased: true, isCardio: true,
+        ExerciseTemplateSpec(name: "Lauf-Intervall",                   equipment: .bodyweight, primaryMuscle: .core,      isTimeBased: true, isCardio: true, enduranceSportKind: .running,
                              systemicFatigueFactor: 0.75, localMuscleDamageFactor: 0.50, cnsDemandFactor: 0.55, axialLoadFactor: 0.20, technicalComplexityFactor: 0.20, recoveryClass: .high,
                              localizationKey: "exercise.name.runInterval",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Rad-Intervall",                    equipment: .bodyweight, primaryMuscle: .core,      isTimeBased: true, isCardio: true,
+        ExerciseTemplateSpec(name: "Rad-Intervall",                    equipment: .bodyweight, primaryMuscle: .core,      isTimeBased: true, isCardio: true, enduranceSportKind: .cycling,
                              systemicFatigueFactor: 0.65, localMuscleDamageFactor: 0.40, cnsDemandFactor: 0.35, axialLoadFactor: 0.10, technicalComplexityFactor: 0.15, recoveryClass: .high,
                              localizationKey: "exercise.name.cyclingInterval",
                              equipmentRequirement: .all([])),

@@ -1209,6 +1209,10 @@ public struct DayEditorView: View {
             day: day
         )
         modelContext.insert(exercise)
+        // Issue #29: Sportart aus dem Library-Template propagieren (analog
+        // ProgramInstantiator), damit spontane Cardio-Einheiten denselben
+        // resolvedEnduranceSportKind liefern wie plan-generierte.
+        exercise.enduranceSportKind = template.enduranceSportKind
         // Audit-Fix (Save-Fehler): dieser Screen ist laut Typ-Doku ein
         // "Autosave-Screen ohne eigenen Save-Schritt" - man verlaesst ihn
         // normal ueber den Zurueck-Chevron, nicht nur ueber "Fertig". Ohne

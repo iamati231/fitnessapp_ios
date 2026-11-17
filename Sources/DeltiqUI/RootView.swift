@@ -124,6 +124,12 @@ public struct RootView: View {
             // Bestandsnutzer dauerhaft unsichtbar im Bibliotheks-Picker.
             // Idempotent — Diff gegen bereits vorhandene System-Namen.
             LibrarySeeder.backfillNewLibraryEntriesIfNeeded(in: modelContext)
+            // Issue #29: schreibt enduranceSportKind auf bestehende System-
+            // Templates nach, die vor diesem Feld angelegt wurden. Idempotent.
+            LibrarySeeder.backfillEnduranceSportKindIfNeeded(in: modelContext)
+            // Issue #29: propagiert enduranceSportKind auf bestehende Plan-
+            // Exercises, die vor dem DayEditorView-Fix angelegt wurden. Idempotent.
+            LibrarySeeder.backfillExerciseEnduranceSportKindIfNeeded(in: modelContext)
             // DEL-051: Snapshot-Backfill fuer Pre-DEL-051-Logs. Idempotent —
             // FetchDescriptor filtert auf nil-Snapshot, also lauft das nach
             // dem ersten Erfolg leer durch.
