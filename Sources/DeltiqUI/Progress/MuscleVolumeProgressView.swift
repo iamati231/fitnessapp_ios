@@ -23,6 +23,7 @@ public struct MuscleVolumeProgressView: View {
     @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true && $0.isRestDay == false },
            sort: \WorkoutSession.startTime, order: .forward)
     private var sessions: [WorkoutSession]
+    @Query private var templates: [ExerciseTemplate]
 
     @State private var period: MuscleGroupProgressCalculator.Period = .twelveWeeks
     @State private var selectedMuscle: MuscleGroup? = nil
@@ -32,7 +33,7 @@ public struct MuscleVolumeProgressView: View {
     // MARK: - Projections
 
     private var allSets: [MuscleGroupProgressCalculator.MuscleLoggedSet] {
-        MuscleSetExtractor.extract(from: sessions)
+        MuscleSetExtractor.extract(from: sessions, templates: templates)
     }
 
     private var overviewStats: MuscleGroupProgressCalculator.OverviewStats {
@@ -96,7 +97,7 @@ public struct MuscleVolumeProgressView: View {
         .deltiqScreen()
         .deltiqSwipeBackEnabled()
         .navigationDestination(item: $selectedMuscle) { muscle in
-            MuscleGroupDetailView(muscle: muscle, allSets: allSets)
+            MuscleGroupDetailView(muscle: muscle, allSets: allSets, initialPeriod: period)
         }
     }
 
@@ -201,14 +202,9 @@ public struct MuscleVolumeProgressView: View {
                     selectedMuscle = entry.muscle
                 } label: {
                     HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(String(localized: entry.muscle.localizedName))
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                            Text(bucketLabel(for: entry.totalSets))
-                                .font(.caption)
-                                .foregroundStyle(bucketColor(for: entry.totalSets))
-                        }
+                        Text(String(localized: entry.muscle.localizedName))
+                            .font(.body)
+                            .foregroundStyle(.primary)
                         Spacer()
                         Text(String.localizedStringWithFormat(
                             NSLocalizedString("muscle.progress.sets.label",
@@ -228,21 +224,7 @@ public struct MuscleVolumeProgressView: View {
         }
     }
 
-    // MARK: - Volume bucket helpers
-    // shortcut: bucket colors duplicated from MuscleVolumeBucket; share if a 3rd consumer appears
-
-    private func bucketLabel(for sets: Int) -> String {
-        MuscleVolumeBucket(setsThisWeek: sets).label
-    }
-
-    private func bucketColor(for sets: Int) -> Color {
-        switch MuscleVolumeBucket(setsThisWeek: sets) {
-        case .untrained:    return .secondary
-        case .maintenance:  return Color.orange.opacity(0.8)
-        case .optimal:      return Color.deltiqOrange
-        case .overreaching: return .red
-        }
-    }
 }
+
 
 #endif

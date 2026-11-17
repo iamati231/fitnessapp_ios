@@ -16,12 +16,16 @@ public enum MuscleGroupProgressCalculator {
         /// Primary muscle group — nil when neither snapshot nor live-ref carries the data.
         public let muscleGroup: MuscleGroup?
         public let isCardio: Bool
+        /// startTime of the WorkoutSession this set belongs to — used for session counting
+        /// (two workouts on the same calendar day remain distinct sessions).
+        public let sessionTimestamp: Date
 
-        public init(date: Date, exerciseName: String, muscleGroup: MuscleGroup?, isCardio: Bool) {
+        public init(date: Date, exerciseName: String, muscleGroup: MuscleGroup?, isCardio: Bool, sessionTimestamp: Date) {
             self.date = date
             self.exerciseName = exerciseName
             self.muscleGroup = muscleGroup
             self.isCardio = isCardio
+            self.sessionTimestamp = sessionTimestamp
         }
     }
 
@@ -100,12 +104,12 @@ public enum MuscleGroupProgressCalculator {
         let inPeriod = filtered(sets: sets, period: period, now: now)
 
         var totalByMuscle: [MuscleGroup: Int] = [:]
-        var sessionDates: Set<Date> = []
+        var sessionTimestamps: Set<Date> = []
         for s in inPeriod {
             guard let m = s.muscleGroup else { continue }
             totalByMuscle[m, default: 0] += 1
-            // Count distinct calendar-days as a proxy for sessions.
-            sessionDates.insert(Calendar.current.startOfDay(for: s.date))
+            // Count distinct session start-times; two workouts on the same day stay distinct.
+            sessionTimestamps.insert(s.sessionTimestamp)
         }
 
         let total = totalByMuscle.values.reduce(0, +)
@@ -126,7 +130,7 @@ public enum MuscleGroupProgressCalculator {
             mostTrainedMuscleSets: top?.value ?? 0,
             busiestWeekStart: busiest?.key,
             busiestWeekSets: busiest?.value ?? 0,
-            sessionCount: sessionDates.count
+            sessionCount: sessionTimestamps.count
         )
     }
 

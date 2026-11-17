@@ -17,13 +17,14 @@ final class MuscleGroupProgressCalculatorTests: XCTestCase {
     private func strengthSet(
         on day: Date,
         muscle: MuscleGroup? = .chest,
-        name: String = "Bench Press"
+        name: String = "Bench Press",
+        session: Date? = nil
     ) -> Set {
-        .init(date: day, exerciseName: name, muscleGroup: muscle, isCardio: false)
+        .init(date: day, exerciseName: name, muscleGroup: muscle, isCardio: false, sessionTimestamp: session ?? day)
     }
 
     private func cardioSet(on day: Date) -> Set {
-        .init(date: day, exerciseName: "Running", muscleGroup: nil, isCardio: true)
+        .init(date: day, exerciseName: "Running", muscleGroup: nil, isCardio: true, sessionTimestamp: day)
     }
 
     // MARK: - 1. Cardio sets excluded
@@ -141,7 +142,7 @@ final class MuscleGroupProgressCalculatorTests: XCTestCase {
     func test_nilMuscleGroupDoesNotCrash() {
         let now = date(2024, 6, 10)
         let sets = [
-            Set(date: date(2024, 6, 5), exerciseName: "Unknown Exercise", muscleGroup: nil, isCardio: false),
+            Set(date: date(2024, 6, 5), exerciseName: "Unknown Exercise", muscleGroup: nil, isCardio: false, sessionTimestamp: date(2024, 6, 5)),
             strengthSet(on: date(2024, 6, 5), muscle: .back),
         ]
         let stats = Calc.overviewStats(sets: sets, period: .allTime, now: now)
@@ -268,7 +269,25 @@ final class MuscleGroupProgressCalculatorTests: XCTestCase {
         XCTAssertEqual(stats.totalWorkingSets, 1)
     }
 
-    // MARK: - 18. allTime weeklyPoints anchors at earliest log (> 3 years)
+    // MARK: - 18. Two workouts on the same calendar day count as 2 sessions
+
+    func test_twoWorkoutsSameDayCountAsTwoSessions() {
+        let now = date(2024, 6, 10)
+        let day = date(2024, 6, 5)
+        // Simulate two separate sessions on the same day (different startTimes)
+        let morning = day
+        var cal = Calendar(identifier: .iso8601)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let evening = cal.date(byAdding: .hour, value: 8, to: day)!
+        let sets = [
+            strengthSet(on: morning, muscle: .chest, session: morning),
+            strengthSet(on: evening, muscle: .back, session: evening),
+        ]
+        let stats = Calc.overviewStats(sets: sets, period: .allTime, now: now)
+        XCTAssertEqual(stats.sessionCount, 2)
+    }
+
+    // MARK: - 20. allTime weeklyPoints anchors at earliest log (> 3 years)
 
     func test_allTimeAnchorEarliestLog() {
         let now = date(2024, 6, 10)

@@ -20,11 +20,16 @@ public struct MuscleGroupDetailView: View {
     public let muscle: MuscleGroup
     public let allSets: [MuscleGroupProgressCalculator.MuscleLoggedSet]
 
-    @State private var period: MuscleGroupProgressCalculator.Period = .twelveWeeks
+    @State private var period: MuscleGroupProgressCalculator.Period
 
-    public init(muscle: MuscleGroup, allSets: [MuscleGroupProgressCalculator.MuscleLoggedSet]) {
+    public init(
+        muscle: MuscleGroup,
+        allSets: [MuscleGroupProgressCalculator.MuscleLoggedSet],
+        initialPeriod: MuscleGroupProgressCalculator.Period = .twelveWeeks
+    ) {
         self.muscle = muscle
         self.allSets = allSets
+        _period = State(initialValue: initialPeriod)
     }
 
     // MARK: - Projections
@@ -105,7 +110,7 @@ public struct MuscleGroupDetailView: View {
                     Text(bucketLabel)
                         .font(.title2.weight(.bold))
                         .foregroundStyle(bucketColor)
-                    Text(loc("muscle.progress.overview.busiestWeek"))
+                    Text(loc("muscle.progress.detail.currentWeek"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

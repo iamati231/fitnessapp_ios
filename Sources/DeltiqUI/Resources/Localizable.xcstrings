@@ -73802,6 +73802,14 @@
         "tr": { "stringUnit": { "state": "translated", "value": "Haftalık Setler" } }
       }
     },
+    "muscle.progress.detail.currentWeek": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This Week" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Diese Woche" } },
+        "tr": { "stringUnit": { "state": "translated", "value": "Bu Hafta" } }
+      }
+    },
     "muscle.progress.bucket.hint": {
       "extractionState": "manual",
       "localizations": {

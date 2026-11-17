@@ -6,30 +6,46 @@ import DeltiqCore
 /// SwiftData-Glue zwischen echten `WorkoutSession`/`ExerciseLog`-Objekten
 /// und dem reinen `MuscleGroupProgressCalculator` (DeltiqCore).
 ///
-/// Liefert einen `MuscleLoggedSet` pro geloggtem Kraft-Satz; Cardio-Logs und
-/// leere Platzhalter-Zeilen werden ausgeschlossen.
-/// Muscle-Group: `exercise?.primaryMuscle` live-first, Fallback auf das
-/// Template via `exercise?.primaryMuscleRaw`-Snapshot-Kette — wenn beides
-/// fehlt, bleibt `muscleGroup == nil` (kein Crash, Caller kennzeichnet als
-/// „nicht zugeordnet").
+/// Liefert einen `MuscleLoggedSet` pro Arbeitssatz (`.workingSet`-Rolle);
+/// Cardio-Logs, Warmups, Cooldowns und leere Platzhalter-Zeilen werden
+/// ausgeschlossen. Verwaiste Logs (exercise == nil) gelten konservativ als
+/// Arbeitssätze und werden einbezogen.
+/// Muscle-Group: (1) Exercise.primaryMuscle-Override (Custom), sonst
+/// (2) ExerciseTemplate.primaryMuscle via resolvedExerciseTemplateID.
+/// Wenn beides fehlt bleibt `muscleGroup == nil`.
 public enum MuscleSetExtractor {
 
-    public static func extract(from sessions: [WorkoutSession]) -> [MuscleGroupProgressCalculator.MuscleLoggedSet] {
-        sessions
+    /// - Parameters:
+    ///   - sessions: Abgeschlossene Workout-Sessions.
+    ///   - templates: Alle ExerciseTemplates – wird für den Muskel-Lookup
+    ///     bei System-Übungen gebraucht, bei denen Exercise.primaryMuscle nil ist.
+    public static func extract(
+        from sessions: [WorkoutSession],
+        templates: [ExerciseTemplate]
+    ) -> [MuscleGroupProgressCalculator.MuscleLoggedSet] {
+        let templateMap: [UUID: MuscleGroup] = Dictionary(
+            templates.map { ($0.id, $0.primaryMuscle) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        return sessions
             .filter(\.isRealWorkout)
             .flatMap { session in
                 session.loggedSets
                     .filter { !$0.resolvedIsCardio }
                     .compactMap { log -> MuscleGroupProgressCalculator.MuscleLoggedSet? in
                         guard let name = log.resolvedExerciseName, !name.isEmpty else { return nil }
-                        // Live-ref first; falls back to raw snapshot if live ref was nullified.
+                        // Skip warmup/cooldown; orphaned logs (exercise == nil) default to workingSet.
+                        let isWorking = log.exercise.map { $0.role == .workingSet } ?? true
+                        guard isWorking else { return nil }
+                        // Muscle lookup: custom-exercise override → template catalog → nil
                         let muscle: MuscleGroup? = log.exercise?.primaryMuscle
-                            ?? log.exercise.flatMap { MuscleGroup(rawValue: $0.primaryMuscleRaw ?? "") }
+                            ?? log.resolvedExerciseTemplateID.flatMap { templateMap[$0] }
                         return .init(
                             date: log.date,
                             exerciseName: name,
                             muscleGroup: muscle,
-                            isCardio: false
+                            isCardio: false,
+                            sessionTimestamp: session.startTime
                         )
                     }
             }
