@@ -288,6 +288,42 @@ final class MuscleGroupProgressCalculatorTests: XCTestCase {
         XCTAssertEqual(stats.sessionCount, 2)
     }
 
+    // MARK: - 19. Weekly totals consistent with overview (assigned + unassigned)
+
+    func test_weeklyTotalsConsistentWithOverview() {
+        let now = date(2024, 6, 10)
+        // Week A: 2 assigned (chest) + 2 unassigned
+        // Week B: 3 assigned (back)
+        let weekA = date(2024, 6, 3)
+        let weekB = date(2024, 5, 27)
+        let sets = [
+            strengthSet(on: weekA, muscle: .chest),
+            strengthSet(on: weekA, muscle: .chest),
+            Set(date: weekA, exerciseName: "Unknown", muscleGroup: nil, isCardio: false, sessionTimestamp: weekA),
+            Set(date: weekA, exerciseName: "Unknown", muscleGroup: nil, isCardio: false, sessionTimestamp: weekA),
+            strengthSet(on: weekB, muscle: .back),
+            strengthSet(on: weekB, muscle: .back),
+            strengthSet(on: weekB, muscle: .back),
+        ]
+        let stats = Calc.overviewStats(sets: sets, period: .allTime, now: now)
+        let points = Calc.weeklyPoints(sets: sets, period: .allTime, now: now)
+
+        XCTAssertEqual(stats.totalWorkingSets, 7)
+        XCTAssertEqual(stats.unassignedSetCount, 2)
+        // busiestWeek = week A (4 sets) — counts unassigned
+        XCTAssertEqual(stats.busiestWeekSets, 4, "busiestWeek must include unassigned sets")
+
+        // Invariant: sum of all weekly totals == overview total
+        let weeklySum = points.reduce(0) { $0 + $1.totalSets }
+        XCTAssertEqual(weeklySum, stats.totalWorkingSets, "weekly sum must match overview total")
+
+        // Invariant: ranking sum + unassigned == total
+        let rankingSum = Calc.muscleRanking(sets: sets, period: .allTime, now: now)
+            .reduce(0) { $0 + $1.totalSets }
+        XCTAssertEqual(rankingSum + stats.unassignedSetCount, stats.totalWorkingSets,
+                       "ranking + unassigned must equal total")
+    }
+
     // MARK: - 20. allTime weeklyPoints anchors at earliest log (> 3 years)
 
     func test_allTimeAnchorEarliestLog() {

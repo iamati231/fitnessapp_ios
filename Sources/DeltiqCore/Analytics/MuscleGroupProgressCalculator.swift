@@ -50,14 +50,17 @@ public enum MuscleGroupProgressCalculator {
         public let weekStart: Date
         /// Working-set count per muscle group for this week.
         public let setsByMuscle: [MuscleGroup: Int]
+        /// Sets whose exercise had no muscle assigned this week.
+        public let unassignedSets: Int
 
         public var id: Date { weekStart }
-        /// Total working sets across all muscles this week.
-        public var totalSets: Int { setsByMuscle.values.reduce(0, +) }
+        /// Total working sets (assigned + unassigned) this week.
+        public var totalSets: Int { setsByMuscle.values.reduce(0, +) + unassignedSets }
 
-        public init(weekStart: Date, setsByMuscle: [MuscleGroup: Int]) {
+        public init(weekStart: Date, setsByMuscle: [MuscleGroup: Int], unassignedSets: Int = 0) {
             self.weekStart = weekStart
             self.setsByMuscle = setsByMuscle
+            self.unassignedSets = unassignedSets
         }
     }
 
@@ -120,10 +123,9 @@ public enum MuscleGroupProgressCalculator {
         let total = assigned + unassigned
         let top = totalByMuscle.max(by: { $0.value < $1.value })
 
-        // Busiest week
+        // Busiest week — same total definition as chart bars (assigned + unassigned).
         var weekTotals: [Date: Int] = [:]
         for s in inPeriod {
-            guard s.muscleGroup != nil else { continue }
             let ws = weekStart(for: s.date, calendar: .current)
             weekTotals[ws, default: 0] += 1
         }
@@ -153,10 +155,14 @@ public enum MuscleGroupProgressCalculator {
         let inPeriod = filtered(sets: sets, period: period, now: now)
 
         var buckets: [Date: [MuscleGroup: Int]] = [:]
+        var unassignedBuckets: [Date: Int] = [:]
         for s in inPeriod {
-            guard let m = s.muscleGroup else { continue }
             let ws = weekStart(for: s.date, calendar: calendar)
-            buckets[ws, default: [:]][m, default: 0] += 1
+            if let m = s.muscleGroup {
+                buckets[ws, default: [:]][m, default: 0] += 1
+            } else {
+                unassignedBuckets[ws, default: 0] += 1
+            }
         }
 
         let windowStart: Date
@@ -173,7 +179,8 @@ public enum MuscleGroupProgressCalculator {
         while cursor <= upper {
             result.append(WeeklyMusclePoint(
                 weekStart: cursor,
-                setsByMuscle: buckets[cursor] ?? [:]
+                setsByMuscle: buckets[cursor] ?? [:],
+                unassignedSets: unassignedBuckets[cursor] ?? 0
             ))
             guard let next = calendar.date(byAdding: .weekOfYear, value: 1, to: cursor) else { break }
             cursor = next

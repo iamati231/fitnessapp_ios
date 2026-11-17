@@ -75,13 +75,16 @@ public struct MuscleVolumeProgressView: View {
                 }
             } else if !hasMuscleData {
                 ScrollView {
-                    DashboardEmptyState(
-                        icon: "questionmark.circle",
-                        title: "muscle.progress.emptyMuscleTitle",
-                        description: "muscle.progress.emptyMuscleDescription"
-                    )
-                    .deltiqCardStyle()
-                    .padding(.top, 18)
+                    VStack(alignment: .leading, spacing: 18) {
+                        overviewSection
+                        DashboardEmptyState(
+                            icon: "questionmark.circle",
+                            title: "muscle.progress.emptyMuscleTitle",
+                            description: "muscle.progress.emptyMuscleDescription"
+                        )
+                        .deltiqCardStyle()
+                    }
+                    .padding(.bottom, 32)
                 }
             } else {
                 ScrollView {
