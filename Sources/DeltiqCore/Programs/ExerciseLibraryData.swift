@@ -935,8 +935,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Pike Liegestütze"
         ],
         "Face Pulls": [
-            .homeGym:     "Reverse Flyes (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Reverse Flyes (KH)"
         ],
         "Reverse Flys (Maschine)": [
             .homeGym:     "Reverse Flyes (KH)",
@@ -1025,8 +1024,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Hyperextension"
         ],
         "Face Pull": [
-            .homeGym:     "Reverse Flyes (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Reverse Flyes (KH)"
         ],
         "Kabel Seitheben": [
             .homeGym:     "Seitheben",
