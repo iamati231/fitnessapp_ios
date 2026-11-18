@@ -1,0 +1,12 @@
+#!/bin/bash
+# Läuft auf dem Remote-Mac vor dem ersten Build und erneut wenn diese Datei geändert wurde.
+# Liest die von macbox_verify.sh geschriebene Marker-Datei (enthält lokalen HEAD-SHA),
+# damit macbox_verify.sh den korrekten Worktree-Sync nachweisen kann (Issue #25).
+#
+# HINWEIS: macbox synchronisiert kein .git, daher ist git rev-parse HEAD auf dem
+# Remote-Mac nicht auswertbar. Die SHA kommt stattdessen aus .macbox/sha_marker,
+# die der Wrapper vor der Synchronisierung schreibt.
+MARKER=".macbox/sha_marker"
+SHA_VALUE="$(cat "$MARKER" 2>/dev/null || echo 'missing')"
+echo "MACBOX_REMOTE_SHA: $SHA_VALUE"
+echo "MACBOX_REMOTE_BRANCH: $(cat .macbox/branch_marker 2>/dev/null || echo 'missing')"
