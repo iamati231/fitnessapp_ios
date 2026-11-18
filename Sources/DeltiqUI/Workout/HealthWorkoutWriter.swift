@@ -1,4 +1,4 @@
-#if canImport(SwiftData) && canImport(SwiftUI)
+#if canImport(SwiftData) && canImport(SwiftUI) && canImport(UIKit)
 import Foundation
 import SwiftData
 import DeltiqCore
