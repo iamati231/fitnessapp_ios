@@ -15,3 +15,7 @@ Package.resolved
 .scripts/.cache/
 __pycache__/
 
+# Auto-generiert von macbox_verify.sh vor jedem Build — nie committen
+.macbox/sha_marker
+.macbox/branch_marker
+

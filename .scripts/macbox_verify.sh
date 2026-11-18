@@ -2,11 +2,15 @@
 # macbox_verify.sh — Wrapper um macbox, der:
 #   1. --dir auf den aufrufenden Worktree setzt (Haupt-Fix für Issue #25)
 #   2. Quelle (dir, branch, sha) vor dem Build meldet
-#   3. Bei Remote-SHA "unknown" oder SHA-Mismatch hart abbricht (exit 1)
-#   4. Wenn kein SHA im Output: warnt, bricht aber nicht ab (--dir-Fix greift bereits)
+#   3. Dirty-Worktree meldet (uncommittete Änderungen ≠ HEAD-SHA)
+#   4. SHA-Mismatch blockiert, wenn macbox setup-Output zurückgibt (bei Fehlern)
 #
-# Verwendung: .scripts/macbox_verify.sh <macbox-befehl> [--dir /pfad] [weitere Optionen]
-# Beispiel:   .scripts/macbox_verify.sh build --scheme DeltiqApp
+# HINWEIS: macbox gibt setup-Output NUR bei Buildfehlern zurück, nicht bei Erfolg.
+# SHA-Verifikation greift daher nur bei Fehlern — bei Erfolg gilt: --dir gesetzt = korrekt.
+#
+# Verwendung: .scripts/macbox_verify.sh <macbox-befehl> [--dir /pfad] [opts]
+# Beispiel:   .scripts/macbox_verify.sh build --scheme Deltiq
+# Beispiel:   .scripts/macbox_verify.sh build --dir /pfad/zum/worktree --scheme Deltiq
 
 set -euo pipefail
 
@@ -55,12 +59,34 @@ if [ -f "$SOURCE_DIR/.git" ]; then
     IS_WORKTREE=true
 fi
 
+# Dirty-Worktree erkennen (uncommittete Änderungen sind im HEAD-SHA NICHT enthalten)
+DIRTY=""
+if ! git -C "$SOURCE_DIR" diff --quiet HEAD 2>/dev/null; then
+    DIRTY="$(git -C "$SOURCE_DIR" diff --stat HEAD | tail -1)"
+fi
+
 echo "=== macbox SHA-Verifikation (Issue #25) ==="
-echo "Quelle-Dir:     $SOURCE_DIR"
-echo "Branch:         $SOURCE_BRANCH"
-echo "Erwarteter SHA: $SOURCE_SHA"
-echo "Ist Worktree:   $IS_WORKTREE"
+echo "Quelle-Dir:        $SOURCE_DIR"
+echo "Branch:            $SOURCE_BRANCH"
+echo "Erwarteter SHA:    $SOURCE_SHA"
+echo "Ist Worktree:      $IS_WORKTREE"
 [ "$DIR_ADDED" = true ] && echo "→ --dir automatisch hinzugefügt"
+if [ -n "$DIRTY" ]; then
+    echo "⚠  Dirty Worktree:  uncommittete Änderungen vorhanden"
+    echo "   $DIRTY"
+    echo "   HINWEIS: git rev-parse HEAD bildet diese Änderungen NICHT ab."
+    echo "   macbox synchronisiert trotzdem alle Dateien."
+fi
+
+# SHA-Marker schreiben: macbox synchronisiert kein .git, daher schreiben wir die
+# lokale HEAD-SHA in eine Datei, die setup auf dem Remote-Mac lesen kann.
+MARKER_FILE="$SOURCE_DIR/.macbox/sha_marker"
+mkdir -p "$SOURCE_DIR/.macbox"
+printf '%s\n' "$SOURCE_SHA" > "$MARKER_FILE"
+printf '%s\n' "$SOURCE_BRANCH" > "$SOURCE_DIR/.macbox/branch_marker"
+ARGS+=("--include" ".macbox/sha_marker")
+echo "→ SHA-Marker geschrieben: $MARKER_FILE"
+
 echo ""
 echo "Ausführen: macbox ${ARGS[*]}"
 echo ""
@@ -72,36 +98,39 @@ EXIT_CODE=$?
 set -e
 echo "$MACBOX_OUTPUT"
 
-[ "$EXIT_CODE" -ne 0 ] && exit "$EXIT_CODE"
-
-# Remote-SHA aus macbox-Output (von .macbox/setup gesetzt)
+# Remote-SHA aus macbox-Output (von .macbox/setup gesetzt, wenn setup lief)
+# macbox gibt setup-Output NUR bei Buildfehlern zurück — nicht bei Erfolg.
 REMOTE_SHA=$(echo "$MACBOX_OUTPUT" | grep "^MACBOX_REMOTE_SHA:" | awk '{print $2}' | head -1 || true)
 
 echo ""
 
-if [ -z "$REMOTE_SHA" ]; then
-    # setup lief nicht (macbox-Verhalten: nur beim ersten Build/Änderung)
-    echo "⚠  Warnung: Remote-SHA nicht im Output — .macbox/setup lief vermutlich nicht."
-    echo "   --dir war gesetzt auf: $SOURCE_DIR"
-    echo "   Erwarteter SHA:        $SOURCE_SHA"
-    echo "   Verifikation nicht möglich; --dir-Parameter ist trotzdem gesetzt."
-    exit 0
-fi
-
-if [ "$REMOTE_SHA" = "unknown" ]; then
-    echo "✗ FEHLER: Remote-SHA ist 'unknown' — git war auf dem Remote-Mac nicht auswertbar." >&2
-    echo "   Erwarteter SHA: $SOURCE_SHA" >&2
-    exit 1
-fi
-
-echo "Remote-SHA:     $REMOTE_SHA"
-
-if [ "$SOURCE_SHA" = "$REMOTE_SHA" ]; then
-    echo "✓ SHA-Match: macbox hat den korrekten Worktree gebaut."
+if [ -n "$REMOTE_SHA" ]; then
+    # setup-Output liegt vor → SHA verifizieren (typisch bei Fehlern oder erstem Build)
+    if [ "$REMOTE_SHA" = "unknown" ] || [ "$REMOTE_SHA" = "missing" ]; then
+        echo "✗ FEHLER: Remote-SHA ist '$REMOTE_SHA' — Marker-Datei fehlte auf dem Remote-Mac." >&2
+        echo "   Erwarteter SHA: $SOURCE_SHA" >&2
+        echo "   .macbox/sha_marker wurde nicht korrekt synchronisiert." >&2
+        exit 1
+    fi
+    echo "Remote-SHA: $REMOTE_SHA"
+    if [ "$SOURCE_SHA" = "$REMOTE_SHA" ]; then
+        echo "✓ SHA-Match: macbox hat den korrekten Worktree synchronisiert."
+    else
+        echo "✗ SHA-MISMATCH — macbox synchronisierte NICHT den erwarteten Worktree!" >&2
+        echo "  Erwartet:  $SOURCE_SHA" >&2
+        echo "  Gebaut:    $REMOTE_SHA" >&2
+        echo "  Prüfe ob --dir korrekt gesetzt ist." >&2
+        exit 1
+    fi
 else
-    echo "✗ SHA-MISMATCH — macbox synchronisierte NICHT den erwarteten Worktree!" >&2
-    echo "  Erwartet:  $SOURCE_SHA" >&2
-    echo "  Gebaut:    $REMOTE_SHA" >&2
-    echo "  Prüfe ob --dir korrekt gesetzt ist." >&2
-    exit 1
+    # Kein SHA im Output: macbox gibt setup-Output nur bei Fehlern zurück.
+    # Bei erfolgreichem Build: --dir gesetzt = korrekte Synchronisierung.
+    if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "✓ Build erfolgreich."
+        echo "  --dir:          $SOURCE_DIR"
+        echo "  Erwarteter SHA: $SOURCE_SHA"
+        echo "  Remote-SHA:     nicht verfügbar (macbox gibt setup-Output nur bei Fehlern zurück)"
+    fi
 fi
+
+exit "$EXIT_CODE"
