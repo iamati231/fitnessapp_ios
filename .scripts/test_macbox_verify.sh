@@ -3,11 +3,11 @@
 #
 # Testet den echten Wrapper mit Fake-macbox im temporären PATH.
 # Die Fake-macbox zeichnet alle übergebenen Argumente auf;
-# die Tests verifizieren, dass --dir mit dem richtigen Pfad an macbox übergeben wurde.
+# die Tests verifizieren dass --dir und --include korrekt an macbox übergeben werden.
 #
 # HINWEIS: macbox gibt setup-Output (MACBOX_REMOTE_SHA:) nur bei Fehlern zurück, nicht
 # bei Erfolg. Der Wrapper akzeptiert daher erfolgreiche Builds ohne SHA-Output (exit 0).
-# SHA-Verifikation greift nur wenn MACBOX_REMOTE_SHA: im Output erscheint (Fehlerfall).
+# SHA-Verifikation greift nur wenn MACBOX_REMOTE_SHA: im Output erscheint.
 
 set -euo pipefail
 
@@ -29,7 +29,6 @@ export PATH="$TMPDIR_FAKE:$PATH"
 # Fake-macbox: zeichnet alle Argumente auf, gibt konfigurierten SHA aus
 make_fake() {
     local remote_sha="${1:-$LOCAL_SHA}"
-    # ARGS_FILE in Skript einbetten (nicht über Umgebungsvariable, für Portabilität)
     cat > "$FAKE_MACBOX" << HEREDOC
 #!/bin/bash
 printf '%s\n' "\$@" > "$ARGS_FILE"
@@ -55,20 +54,32 @@ HEREDOC
 dir_arg_was() {
     local expected_dir="$1"
     [ -f "$ARGS_FILE" ] || return 1
-    # Argumente sind zeilenweise gespeichert (printf '%s\n' "$@")
-    local found_dir=false
     local next_is_dir=false
     while IFS= read -r arg; do
         if [ "$next_is_dir" = true ]; then
-            if [ "$arg" = "$expected_dir" ]; then
-                found_dir=true
-            fi
+            [ "$arg" = "$expected_dir" ] && return 0
             next_is_dir=false
         elif [ "$arg" = "--dir" ]; then
             next_is_dir=true
         fi
     done < "$ARGS_FILE"
-    [ "$found_dir" = true ]
+    return 1
+}
+
+# Prüft ob --include <expected> in den Argumenten steht
+include_arg_was() {
+    local expected_val="$1"
+    [ -f "$ARGS_FILE" ] || return 1
+    local next_is_include=false
+    while IFS= read -r arg; do
+        if [ "$next_is_include" = true ]; then
+            [ "$arg" = "$expected_val" ] && return 0
+            next_is_include=false
+        elif [ "$arg" = "--include" ]; then
+            next_is_include=true
+        fi
+    done < "$ARGS_FILE"
+    return 1
 }
 
 run_test() {
@@ -99,12 +110,14 @@ run_test "verify-script ist ausführbar"  0  test -x "$VERIFY"
 run_test "setup-script existiert"        0  test -f "$REPO_ROOT/.macbox/setup"
 run_test "setup-script ist ausführbar"   0  test -x "$REPO_ROOT/.macbox/setup"
 
-# --- Szenario A: SHA-Match + --dir korrekt übergeben ---
+# --- Szenario A: SHA-Match + --dir + --include korrekt übergeben ---
 echo ""
-echo "--- Szenario A: SHA-Match → exit 0, --dir korrekt übergeben ---"
+echo "--- Szenario A: SHA-Match → exit 0, --dir + --include korrekt übergeben ---"
 make_fake "$LOCAL_SHA"
 run_test "SHA-Match → exit 0" 0  bash "$VERIFY" build --dir "$REPO_ROOT"
-run_test "--dir='$REPO_ROOT' wurde an macbox übergeben" 0  dir_arg_was "$REPO_ROOT"
+run_test "--dir='$REPO_ROOT' wurde übergeben" 0  dir_arg_was "$REPO_ROOT"
+run_test "--include .macbox/sha_marker übergeben" 0  include_arg_was ".macbox/sha_marker"
+run_test "--include .macbox/branch_marker übergeben" 0  include_arg_was ".macbox/branch_marker"
 
 # --- Szenario B: SHA-Mismatch → exit 1 ---
 echo ""
@@ -124,14 +137,13 @@ run_test "'missing' SHA → exit 1" 1  bash "$VERIFY" build --dir "$REPO_ROOT"
 # macbox gibt setup-Output nur bei Fehlern zurück, nicht bei Erfolg.
 # Erfolgreicher Build ohne SHA = normaler Folge-Build → Wrapper akzeptiert (--dir gesetzt).
 echo ""
-echo "--- Szenario D: Kein Remote-SHA + erfolgreicher Build → exit 0 (macbox-Verhalten) ---"
+echo "--- Szenario D: Kein Remote-SHA + erfolgreicher Build → exit 0 (UNVERIFIED) ---"
 make_fake_no_sha 0
 run_test "Kein SHA + Build erfolgreich → exit 0" 0  bash "$VERIFY" build --dir "$REPO_ROOT"
 
 # --- Szenario D2: Kein Remote-SHA + Build fehlgeschlagen → exit 1 (macbox-Fehler) ---
-# Der Wrapper propagiert den macbox-Exitcode; kein SHA im Fehlerfall ist OK.
 echo ""
-echo "--- Szenario D2: Kein Remote-SHA + fehlgeschlagener Build → exit 1 (macbox-Fehler) ---"
+echo "--- Szenario D2: Kein Remote-SHA + fehlgeschlagener Build → exit 1 ---"
 make_fake_no_sha 1
 run_test "Kein SHA + Build fehlgeschlagen → exit 1" 1  bash "$VERIFY" build --dir "$REPO_ROOT"
 
@@ -148,8 +160,10 @@ echo "--- Szenario F: build ohne --dir → --dir aus aufrufendem git-Toplevel --
 make_fake "$LOCAL_SHA"
 run_test "Auto-dir (SHA-Match) → exit 0" 0  bash -c "cd '$REPO_ROOT' && bash '$VERIFY' build"
 run_test "--dir='$REPO_ROOT' automatisch übergeben" 0  dir_arg_was "$REPO_ROOT"
+run_test "--include sha_marker automatisch übergeben" 0  include_arg_was ".macbox/sha_marker"
+run_test "--include branch_marker automatisch übergeben" 0  include_arg_was ".macbox/branch_marker"
 
-# --- Szenario G: Explizites --dir, --dir-Argument wird korrekt weitergegeben ---
+# --- Szenario G: Explizites --dir, korrekt weitergegeben ---
 echo ""
 echo "--- Szenario G: Explizites --dir → wird an macbox weitergegeben ---"
 make_fake "$LOCAL_SHA"
@@ -170,7 +184,6 @@ run_test "--dir mit Leerzeichen korrekt übergeben" 0  dir_arg_was "$TMPDIR_SPAC
 
 # --- Szenario I: Aufruf von unterschiedlichem Worktree ohne --dir ---
 # Testet: SHA-Quelle ist CWD des Aufrufers, NICHT Verzeichnis des Skripts.
-# Verwendet git worktree list --porcelain (parse-sicher für Pfade mit Leerzeichen).
 echo ""
 echo "--- Szenario I: Auto-dir aus anderem Worktree als Skript-Verzeichnis ---"
 
@@ -193,8 +206,6 @@ if [ -n "$OTHER_WORKTREE" ]; then
     make_fake "$OTHER_SHA_EXPECTED"
     run_test "Auto-dir aus anderem Worktree → exit 0" 0  bash -c "cd '$OTHER_WORKTREE' && bash '$VERIFY' build"
     run_test "--dir='$OTHER_WORKTREE' korrekt gesetzt" 0  dir_arg_was "$OTHER_WORKTREE"
-    # Verifikation dass der FALSCHE SHA erkannt wird:
-    # Wenn wir LOCAL_SHA als fake liefern aber aus OTHER_WORKTREE aufrufen → Mismatch
     if [ "$LOCAL_SHA" != "$OTHER_SHA_EXPECTED" ]; then
         make_fake "$LOCAL_SHA"
         run_test "Falscher Remote-SHA für anderen Worktree → exit 1" 1  bash -c "cd '$OTHER_WORKTREE' && bash '$VERIFY' build"
@@ -203,6 +214,31 @@ if [ -n "$OTHER_WORKTREE" ]; then
     fi
 else
     echo "⚠  Kein weiterer Worktree gefunden, Szenario I übersprungen"
+fi
+
+# --- Szenario J: Dirty-Worktree mit ungetrackter Datei → exit 0 mit Warnung ---
+# macbox synchronisiert auch neue ungetrackte Dateien; Dirty-Erkennung muss sie erfassen.
+# Ergebnis ist exit 0 (Warnung, kein Abbruch), aber der Text muss die Datei erwähnen.
+echo ""
+echo "--- Szenario J: Ungetrackte neue Datei → Dirty-Warnung im Output ---"
+TMPDIR_DIRTY="$TMPDIR_FAKE/dirty_repo"
+mkdir -p "$TMPDIR_DIRTY"
+git -C "$TMPDIR_DIRTY" init -q 2>/dev/null
+git -C "$TMPDIR_DIRTY" commit --allow-empty -m "init" --quiet 2>/dev/null || true
+DIRTY_SHA="$(git -C "$TMPDIR_DIRTY" rev-parse HEAD 2>/dev/null || echo 'none')"
+# Neue ungetrackte Datei hinzufügen (nicht gitignoriert)
+echo "untracked content" > "$TMPDIR_DIRTY/new_untracked.swift"
+make_fake "$DIRTY_SHA"
+# Der Wrapper muss exit 0 zurückgeben (Warnung, kein Abbruch)
+run_test "Ungetrackte Datei → exit 0 (Warnung)" 0  bash "$VERIFY" build --dir "$TMPDIR_DIRTY"
+# Warnung muss im Output erscheinen
+OUTPUT="$(bash "$VERIFY" build --dir "$TMPDIR_DIRTY" 2>&1 || true)"
+if echo "$OUTPUT" | grep -q "Dirty Worktree"; then
+    echo "✓ Dirty-Warnung erscheint im Output"
+    PASS=$((PASS + 1))
+else
+    echo "✗ Dirty-Warnung fehlt im Output"
+    FAIL=$((FAIL + 1))
 fi
 
 # --- Ergebnis ---
