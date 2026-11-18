@@ -201,4 +201,24 @@ struct StrengthProgressCalculatorTests {
         )
         #expect(stats.volumeKg == 500)
     }
+
+    // MARK: - isStrengthPRKind (Issue #24 regression)
+
+    @Test func strengthKindsAccepted() {
+        for raw in ["heaviestWeight", "bestSet", "estimated1RM",
+                    "maxReps", "maxHoldSeconds", "mostRounds", "fastestTime"] {
+            #expect(SPC.isStrengthPRKind(raw) == true, "Expected \(raw) to be a strength kind")
+        }
+    }
+
+    @Test func cardioKindsRejected() {
+        #expect(SPC.isStrengthPRKind("longestDistance") == false)
+        #expect(SPC.isStrengthPRKind("fastestPace") == false)
+    }
+
+    @Test func unknownKindRejected() {
+        // Legacy or future unknown rawValues must not inflate the strength PR count.
+        #expect(SPC.isStrengthPRKind("") == false)
+        #expect(SPC.isStrengthPRKind("someFutureKind") == false)
+    }
 }

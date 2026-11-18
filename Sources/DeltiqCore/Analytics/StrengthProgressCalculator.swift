@@ -137,6 +137,20 @@ public enum StrengthProgressCalculator {
 
     // MARK: - Public API
 
+    /// Returns true when `rawKind` maps to a strength or WOD PR kind.
+    /// Used by the view to filter `PersonalRecordEntry` rows before passing
+    /// `prDates` here — unknown / cardio raw values return `false` (conservative).
+    public static func isStrengthPRKind(_ rawKind: String) -> Bool {
+        guard let kind = PersonalRecord.Kind(rawValue: rawKind) else { return false }
+        switch kind {
+        case .heaviestWeight, .bestSet, .estimated1RM,
+             .maxReps, .maxHoldSeconds, .mostRounds, .fastestTime:
+            return true
+        case .longestDistance, .fastestPace:
+            return false
+        }
+    }
+
     /// Training overview for a given period.
     ///
     /// - Parameters:
