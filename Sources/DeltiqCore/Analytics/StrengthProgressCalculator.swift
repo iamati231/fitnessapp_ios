@@ -18,10 +18,14 @@ public enum StrengthProgressCalculator {
         public let isCardio: Bool
         public let isTimeBased: Bool
         public let isPlaceholder: Bool
+        /// Stable opaque identity of the source log entry (e.g. persistentModelID hash).
+        /// Passed through to SetDetail so its ID stays constant across re-sorts.
+        public let logID: String?
 
         public init(sessionStartTime: Date, exerciseName: String, templateID: UUID?,
                     weightKg: Double, reps: Int, rpe: Double, rir: Float,
-                    isCardio: Bool, isTimeBased: Bool, isPlaceholder: Bool) {
+                    isCardio: Bool, isTimeBased: Bool, isPlaceholder: Bool,
+                    logID: String? = nil) {
             self.sessionStartTime = sessionStartTime
             self.exerciseName = exerciseName
             self.templateID = templateID
@@ -32,6 +36,7 @@ public enum StrengthProgressCalculator {
             self.isCardio = isCardio
             self.isTimeBased = isTimeBased
             self.isPlaceholder = isPlaceholder
+            self.logID = logID
         }
     }
 
@@ -108,13 +113,18 @@ public enum StrengthProgressCalculator {
         public let rpe: Double
         public let rir: Float
         public let isTimeBased: Bool
-        /// 1-based position in the bestSets result; guarantees uniqueness even for identical sets.
+        /// 1-based position in the bestSets result; used only as tie-breaker when logID is nil.
         public let rank: Int
+        /// Opaque identity of the source log entry. When present, used as the SwiftUI id so
+        /// the item's identity stays constant even if the volume sort changes its rank.
+        public let logID: String?
 
-        public var id: String { "\(sessionDate.timeIntervalSince1970)_\(weightKg)_\(reps)_\(rank)" }
+        /// Prefer logID (stable across re-sorts) — fall back to composite only when absent.
+        public var id: String { logID ?? "\(sessionDate.timeIntervalSince1970)_\(weightKg)_\(reps)_\(rank)" }
 
         public init(sessionDate: Date, weightKg: Double,
-                    reps: Int, rpe: Double, rir: Float, isTimeBased: Bool, rank: Int) {
+                    reps: Int, rpe: Double, rir: Float, isTimeBased: Bool, rank: Int,
+                    logID: String? = nil) {
             self.sessionDate = sessionDate
             self.weightKg = weightKg
             self.reps = reps
@@ -122,6 +132,7 @@ public enum StrengthProgressCalculator {
             self.rir = rir
             self.isTimeBased = isTimeBased
             self.rank = rank
+            self.logID = logID
         }
     }
 
@@ -272,7 +283,7 @@ public enum StrengthProgressCalculator {
             .map { (i, log) in
                 SetDetail(sessionDate: log.sessionStartTime, weightKg: log.weightKg,
                           reps: log.reps, rpe: log.rpe, rir: log.rir,
-                          isTimeBased: log.isTimeBased, rank: i + 1)
+                          isTimeBased: log.isTimeBased, rank: i + 1, logID: log.logID)
             }
     }
 }

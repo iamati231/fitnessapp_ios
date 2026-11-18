@@ -24,11 +24,13 @@ struct StrengthProgressCalculatorTests {
         rir: Float = 2,
         isCardio: Bool = false,
         isTimeBased: Bool = false,
-        isPlaceholder: Bool = false
+        isPlaceholder: Bool = false,
+        logID: String? = nil
     ) -> Log {
         Log(sessionStartTime: sessionDate ?? now, exerciseName: name, templateID: templateID,
             weightKg: weightKg, reps: reps, rpe: rpe, rir: rir,
-            isCardio: isCardio, isTimeBased: isTimeBased, isPlaceholder: isPlaceholder)
+            isCardio: isCardio, isTimeBased: isTimeBased, isPlaceholder: isPlaceholder,
+            logID: logID)
     }
 
     func daysAgo(_ n: Int) -> Date {
@@ -220,5 +222,24 @@ struct StrengthProgressCalculatorTests {
         // Legacy or future unknown rawValues must not inflate the strength PR count.
         #expect(SPC.isStrengthPRKind("") == false)
         #expect(SPC.isStrengthPRKind("someFutureKind") == false)
+    }
+
+    // MARK: - SetDetail.id stability (Issue #24 regression)
+
+    @Test func setIDStableAfterResort() {
+        // Set A: 100kg×5 = volume 500 → initially rank 1
+        let logA = makeLog(sessionDate: daysAgo(10), weightKg: 100, reps: 5, logID: "log-A")
+        // Set B: 80kg×6  = volume 480 → rank 2
+        let logB = makeLog(sessionDate: daysAgo(5),  weightKg: 80,  reps: 6, logID: "log-B")
+
+        let sets1 = SPC.bestSets(logs: [logA, logB], exerciseName: "Squat", templateID: nil)
+        let idA_before = sets1.first(where: { $0.logID == "log-A" })!.id
+
+        // Set C: 100kg×6 = volume 600 → displaces A to rank 2
+        let logC = makeLog(sessionDate: daysAgo(1), weightKg: 100, reps: 6, logID: "log-C")
+        let sets2 = SPC.bestSets(logs: [logA, logB, logC], exerciseName: "Squat", templateID: nil)
+        let idA_after = sets2.first(where: { $0.logID == "log-A" })!.id
+
+        #expect(idA_before == idA_after, "SetDetail.id must not change when a heavier set enters and shifts rank")
     }
 }

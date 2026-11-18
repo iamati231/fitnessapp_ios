@@ -54,7 +54,8 @@ public struct StrengthProgressView: View {
                     rir: log.rir,
                     isCardio: log.resolvedIsCardio,
                     isTimeBased: log.resolvedIsTimeBased,
-                    isPlaceholder: log.isEmptyPlaceholder
+                    isPlaceholder: log.isEmptyPlaceholder,
+                    logID: log.persistentModelID.hashValue.description
                 )
             }
         }
