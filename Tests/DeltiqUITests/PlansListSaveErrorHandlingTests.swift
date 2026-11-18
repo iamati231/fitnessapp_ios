@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (dritter Follow-up-UI-Audit): `createNewPlan()` und
 /// `duplicatePlan(_:)` inserten einen neuen Plan (Fund 4) bzw. eine

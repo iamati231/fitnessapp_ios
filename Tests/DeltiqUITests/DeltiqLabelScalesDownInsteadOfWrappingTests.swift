@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Deltiq-Geraeteabnahme (Runde 8, docs/DELTIQ_DEVICE_ACCEPTANCE.md, E04): bei
 /// maximaler Bedienungshilfen-Textgroesse (AX5, per Geraete-Nachtest in

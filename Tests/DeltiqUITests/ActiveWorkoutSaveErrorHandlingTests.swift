@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (dritter Follow-up-UI-Audit, "ActiveWorkoutView.swift hat
 /// nirgends einen expliziten modelContext.save()"): finishWorkout/

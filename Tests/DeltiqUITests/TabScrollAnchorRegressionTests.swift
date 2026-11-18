@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Regression guard: keiner der vier Haupt-Tab-Root-Views darf eine
 /// `Color.clear.frame(height: 0)` als Scroll-Anker-Zeile verwenden.

@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (ponytail-audit UI, Save-Fehler in Live-Workouts): `finishTimedSession`/
 /// `discardTimedSession` (geteilt von AMRAP/EMOM/ForTime/Circuit/Endurance) sowie die

@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Regression guard: jede Eintraege in ExerciseLibraryData.alternatives muss
 /// ein Ziel-Exercise haben, dessen equipmentRequirement mit der Ziel-Umgebung

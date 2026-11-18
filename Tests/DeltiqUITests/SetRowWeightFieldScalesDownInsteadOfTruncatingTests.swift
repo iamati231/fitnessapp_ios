@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Deltiq-Geraeteabnahme (E04): bei der groessten Dynamic-Type-Einstellung
 /// (Accessibility-Textgroessen, per Geraete-Nachtest reproduziert) schnitt ein

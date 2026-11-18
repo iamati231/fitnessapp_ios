@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (ponytail-audit UI, Phase 2 des Save-Fehler-Tickets): drei unabhaengige
 /// diskrete Save-Aktionen in `DashboardView`/`PRHistoryView`/`ExerciseLibraryView`.

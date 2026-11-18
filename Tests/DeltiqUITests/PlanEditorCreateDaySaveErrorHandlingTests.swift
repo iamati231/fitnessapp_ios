@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (Follow-up-UI-Audit, "Adding a rest day to a plan is never
 /// saved"): `createNewDay(type:)` inserted den neuen Tag ohne Save - die

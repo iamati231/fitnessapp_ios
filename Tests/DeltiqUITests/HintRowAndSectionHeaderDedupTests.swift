@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (vierter Follow-up-UI-Audit, Fund 3+4): `hintRow(_:)` war
 /// byte-identisch in 17 Dateien dupliziert, `sectionHeader` in zwei

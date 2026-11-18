@@ -1,4 +1,4 @@
-#if canImport(SwiftUI) #if canImport(SwiftUI)#if canImport(SwiftUI) canImport(UIKit)
+﻿#if canImport(SwiftUI) && canImport(UIKit)
 import XCTest
 import DeltiqCore
 @testable import DeltiqUI

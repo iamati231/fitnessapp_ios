@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (fokussierter Onboarding-Audit, Fund 2): der Plan-uebernehmen-
 /// Button war an zwei Stellen hart auf Deutsch kodiert, unabhaengig von der

@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Regression guard for the invisible list row bug in PlansListView.
 /// `Color.clear.frame(height: 0)` as a List row still occupies default row

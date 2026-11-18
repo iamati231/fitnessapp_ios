@@ -1,5 +1,5 @@
-import XCTest
-#if canImport(SwiftUI) #if canImport(SwiftUI)#if canImport(SwiftUI) canImport(UIKit)
+﻿import XCTest
+#if canImport(SwiftUI) && canImport(UIKit)
 @testable import DeltiqUI
 
 /// UI-Ticket ("Tab-Leiste vereinfachen, Fortschritt unter Mehr integrieren,

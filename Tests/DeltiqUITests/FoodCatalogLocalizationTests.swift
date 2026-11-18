@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 @testable import DeltiqCore
 
 /// Task C (Nutrition-UI-Gaps-and-AI, 2026-10-21): verifiziert, dass

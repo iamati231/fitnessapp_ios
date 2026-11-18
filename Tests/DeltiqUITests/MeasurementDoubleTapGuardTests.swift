@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Fix-Runde 1 (docs/superpowers/sdd/2026-10-22-ui-consistency, finale
 /// Review-Runde, Befund 1): der vorherige Inhalt dieser Datei rief

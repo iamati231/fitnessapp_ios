@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// writing-block.md Punkt 4.1 ("Mahlzeittyp-Auswahl bricht in mehrere
 /// Zeilen um"): `DeltiqSegmentedPicker`'s label `Text` had no `.lineLimit`,

@@ -1,5 +1,5 @@
-import XCTest
-#if canImport(SwiftUI) #if canImport(SwiftUI)#if canImport(SwiftUI) canImport(UIKit)
+﻿import XCTest
+#if canImport(SwiftUI) && canImport(UIKit)
 @testable import DeltiqUI
 
 /// Final whole-branch review (fix round 1), Finding 1 (Important): since

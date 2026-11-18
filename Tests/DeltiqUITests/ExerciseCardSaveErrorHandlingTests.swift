@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (ponytail-audit UI, Save-Fehler in Satz-Logging): `logSet()`/`unlogSet()`
 /// nutzten `try? modelContext.save()` - der Doc-Kommentar beider Funktionen beschreibt

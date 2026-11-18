@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (fuenfter Follow-up-UI-Audit, Fund 1+2): `beginTimedAdHocWorkout`
 /// und `markRestDaySkipped` hingen am impliziten Autosave - Fund 2 ist ein

@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (dritter Follow-up-UI-Audit, Fund 6): `isBarbellExercise` war
 /// byte-identisch in `SetRow.swift` und `ExerciseCard.swift` dupliziert.

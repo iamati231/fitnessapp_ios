@@ -1,4 +1,4 @@
-#if canImport(AVFoundation) #if canImport(AVFoundation)#if canImport(AVFoundation) canImport(UIKit)
+﻿#if canImport(AVFoundation) && canImport(UIKit)
 import XCTest
 import AVFoundation
 @testable import DeltiqUI

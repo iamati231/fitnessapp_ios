@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Online-Food-Lookup (Task 3, docs/superpowers/sdd/2026-10-22-online-food-lookup):
 /// reiner Quelltext-Regressionstest (kein SwiftUI-Import noetig, laeuft auch

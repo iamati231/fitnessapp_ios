@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (ponytail-audit, Save-Fehler in Workout-Editoren): `DayEditorView`s
 /// "Speichern & neu starten"/"Verwerfen"-Aktionen fuer eine bereits offene Session
