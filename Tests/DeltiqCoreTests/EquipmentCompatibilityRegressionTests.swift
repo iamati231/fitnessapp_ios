@@ -144,6 +144,36 @@ final class EquipmentCompatibilityRegressionTests: XCTestCase {
     }
 }
 
+
+// MARK: - 6. Issue #34: Hyperextension-Audit – alle 13 Mappings entfernt (Bewegungsmuster inkompatibel)
+
+final class HyperextensionAuditRegressionTests: XCTestCase {
+
+    // Alle 13 noEquipment→Hyperextension-Mappings entfernt.
+    // primaryMuscle == .back reicht nicht: Zug-Muster ≠ Hüft-/Rumpfstreckung.
+
+    private func assertKeepForNoEquipment(_ name: String, file: StaticString = #file, line: UInt = #line) {
+        XCTAssertEqual(
+            ExerciseLibraryData.resolveAlternative(forExerciseName: name, targetEnvironment: .noEquipment),
+            .keep,
+            "\(name): kein gleichwertiger noEquipment-Ersatz → .keep erwartet",
+            file: file, line: line)
+    }
+
+    func testRudernVorgebeugtKeepsForNoEquipment()     { assertKeepForNoEquipment("Rudern vorgebeugt") }
+    func testPendlayRowKeepsForNoEquipment()           { assertKeepForNoEquipment("Pendlay Row") }
+    func testRudernEinarmigKHKeepsForNoEquipment()     { assertKeepForNoEquipment("Rudern einarmig (KH)") }
+    func testLatzugBreitKeepsForNoEquipment()          { assertKeepForNoEquipment("Latzug (breit)") }
+    func testLatzugEngKeepsForNoEquipment()            { assertKeepForNoEquipment("Latzug (eng)") }
+    func testRudernMaschineKeepsForNoEquipment()       { assertKeepForNoEquipment("Rudern (Maschine)") }
+    func testKabelrudernSitzendKeepsForNoEquipment()   { assertKeepForNoEquipment("Kabelrudern sitzend") }
+    func testLatzugWeitKeepsForNoEquipment()           { assertKeepForNoEquipment("Latzug (weit)") }
+    func testChestSupportedRowKHKeepsForNoEquipment()  { assertKeepForNoEquipment("Chest Supported Row (KH)") }
+    func testPulloverKHKeepsForNoEquipment()           { assertKeepForNoEquipment("Pullover (KH)") }
+    func testLatzugKabelKeepsForNoEquipment()          { assertKeepForNoEquipment("Latzug (Kabel)") }
+    func testReverseFlysaMaschineKeepsForNoEquipment() { assertKeepForNoEquipment("Reverse Flys (Maschine)") }
+    func testReverseFlyesKHKeepsForNoEquipment()       { assertKeepForNoEquipment("Reverse Flyes (KH)") }
+}
 // MARK: - Issue #12: Custom-Exercise Equipment Compatibility
 
 /// Issue #12: Equipment-Kompatibilitätsprüfung für Custom-Exercises.
