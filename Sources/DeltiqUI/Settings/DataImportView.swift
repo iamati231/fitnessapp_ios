@@ -18,7 +18,7 @@
 // jeder Datei-Phase, damit die ProgressView bei grosser Historie tatsaechlich
 // sichtbar mitlaeuft statt erst am Ende zu "springen".
 
-#if canImport(SwiftUI) && canImport(SwiftData)
+#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import SwiftUI
 import SwiftData
 import DeltiqCore

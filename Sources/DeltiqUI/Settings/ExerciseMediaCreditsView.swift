@@ -1,4 +1,4 @@
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) && canImport(UIKit)
 import SwiftUI
 
 /// Attribution fuer die Uebungs-GIFs. Quelle: `hasaneyldrm/exercises-dataset`

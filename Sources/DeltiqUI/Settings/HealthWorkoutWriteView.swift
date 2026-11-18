@@ -23,7 +23,7 @@
 // `WorkoutHealthExportService`; die Entscheidungen in Core
 // (`HealthWorkoutPlanner`). Diese View haelt nur den Zustand.
 
-#if canImport(SwiftUI) && canImport(SwiftData)
+#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import SwiftUI
 import SwiftData
 import DeltiqCore

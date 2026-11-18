@@ -13,7 +13,7 @@
 // das Fetchen + CSV-Serialisieren bei großen History-Dumps den Main-Thread
 // für mehrere Sekunden und die ProgressView friert ein.
 
-#if canImport(SwiftUI) && canImport(SwiftData)
+#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import SwiftUI
 import SwiftData
 import DeltiqCore
