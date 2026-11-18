@@ -1,5 +1,5 @@
 import XCTest
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) #if canImport(SwiftUI)#if canImport(SwiftUI) canImport(UIKit)
 
 /// Task 7 (docs/superpowers/sdd/2026-10-23-nutrition-ai-bugfixes): `AddMealView`
 /// used a blocking `.alert()` for a failed save/delete — the ONLY Form-based

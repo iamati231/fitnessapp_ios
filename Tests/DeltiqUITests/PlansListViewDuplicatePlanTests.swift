@@ -1,4 +1,4 @@
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) #if canImport(SwiftUI)#if canImport(SwiftUI) canImport(UIKit)
 import XCTest
 
 /// Phase B (Laufcoaching Dual-Path, Task 5): `PlansListView.duplicatePlan`'s

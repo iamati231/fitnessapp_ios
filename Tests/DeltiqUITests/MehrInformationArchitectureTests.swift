@@ -1,4 +1,4 @@
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) #if canImport(SwiftUI)#if canImport(SwiftUI) canImport(UIKit)
 import XCTest
 
 /// UI-Ticket ("Deltiq – Informationsarchitektur des Tabs 'Mehr'"): Werkzeuge

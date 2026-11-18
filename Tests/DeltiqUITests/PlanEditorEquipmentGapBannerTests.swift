@@ -1,4 +1,4 @@
-#if canImport(SwiftUI) && canImport(SwiftData)
+#if canImport(SwiftUI) #if canImport(SwiftUI) && canImport(SwiftData)#if canImport(SwiftUI) && canImport(SwiftData) canImport(SwiftData) #if canImport(SwiftUI) && canImport(SwiftData)#if canImport(SwiftUI) && canImport(SwiftData) canImport(UIKit)
 import XCTest
 
 /// Equipment-Vielfalt Phase 1 Task 4, Step 8: source-introspection (kein

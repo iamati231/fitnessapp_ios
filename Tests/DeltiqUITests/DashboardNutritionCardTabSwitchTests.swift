@@ -1,5 +1,5 @@
 import XCTest
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) #if canImport(SwiftUI)#if canImport(SwiftUI) canImport(UIKit)
 @testable import DeltiqUI
 
 /// Main-navigation plan (2026-10-22), Task 2: the dashboard's nutrition card

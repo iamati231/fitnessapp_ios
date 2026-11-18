@@ -1,4 +1,4 @@
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) #if canImport(SwiftUI)#if canImport(SwiftUI) canImport(UIKit)
 import XCTest
 
 /// UI-Ticket ("Plan Bauen Schritt 3: Template-Layout und
