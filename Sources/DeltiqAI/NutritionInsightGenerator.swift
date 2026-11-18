@@ -151,17 +151,17 @@ public struct NutritionInsightGenerator: Sendable {
     yet reached the goal. NEVER use "over goal", "exceeded", "above target", or \
     any above-direction language for a [NOT_MET] line. \
     A line marked [EXCEEDED] means the user is OVER the target — they consumed \
-    MORE than the goal. NEVER say "not reached" for an [EXCEEDED] line. \
+    MORE than the goal. NEVER say the goal has not been reached for an [EXCEEDED] line. \
     The phrase after "over goal" tells you exactly by how much the goal was \
     exceeded — repeat that number only. \
-    When a progress line gives a percentage, that percentage — never your own \
-    judgment — decides tone: below ~50% with meaningful amount remaining, \
+    Progress toward goals — when a percentage is given, that percentage — never \
+    your own judgment — decides tone: below ~50% with meaningful amount remaining, \
     describe as in-progress; at/above 100% a positive tone is appropriate. \
     If the prompt includes a "Day context" line saying the day is still in \
     progress (morning or afternoon), do not evaluate unmet goals as failures — \
     say "so far" or "at this point" instead of implying the day is over. \
     Give exactly 1 key observation and at most 2 short practical tips — \
-    1 to 3 sentences total. Do not list or repeat all four nutrient values in \
+    2 to 4 sentences total. Do not list or repeat all four nutrient values in \
     sequence. Do not use phrases like "great job", "super", "excellent", \
     "fantastic", "amazing" for routine progress. \
     No markdown — do not use **, *, #, ##, or any other markdown formatting. \
@@ -415,9 +415,9 @@ public struct NutritionInsightGenerator: Sendable {
     private static func progressLine(label: String, current: Int?, goal: Int?, unit: String, progress: NutritionInsightInput.GoalProgress?, strings: PromptStrings) -> String? {
         guard let current, let goal, let progress else { return nil }
         if progress.percent >= 100 {
-            // Show overage instead of "0 remaining" — the clamped `remaining`
-            // field is 0 by design for exceeded goals, which misleads the model.
-            let overageStr = progress.overage > 0 ? ", \(safeInt(progress.overage)) \(unit) \(strings.overGoal)" : ""
+            let overageStr = progress.overage > 0
+                ? ", \(safeInt(progress.overage)) \(unit) \(strings.overGoal)"
+                : ", \(safeInt(progress.remaining)) \(unit) \(strings.remaining)"
             return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached)\(overageStr)) [\(strings.exceeded)]"
         }
         // [NOT_MET] label is the symmetric counterpart to [EXCEEDED] — prevents the model
