@@ -1,6 +1,9 @@
 #!/bin/bash
-# Läuft auf dem Remote-Mac vor jedem macbox-Build.
-# Gibt Remote-SHA und Branch aus, damit macbox_verify.sh den korrekten
-# Worktree-Sync bestätigen kann (Issue #25).
+# Läuft auf dem Remote-Mac vor dem ersten Build und erneut wenn diese Datei geändert wurde.
+# Gibt Remote-SHA aus, damit macbox_verify.sh den Worktree-Sync prüfen kann (Issue #25).
+#
+# Hinweis: macbox führt dieses Skript NICHT vor jedem Build aus — nur beim ersten Mal
+# oder wenn die Datei geändert wurde. SHA-Verifikation ist daher "best effort".
+# Der --dir-Parameter in macbox_verify.sh ist der Haupt-Fix.
 echo "MACBOX_REMOTE_SHA: $(git rev-parse HEAD 2>/dev/null || echo 'unknown')"
 echo "MACBOX_REMOTE_BRANCH: $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')"

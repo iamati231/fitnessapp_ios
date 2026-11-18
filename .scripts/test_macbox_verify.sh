@@ -1,97 +1,122 @@
 #!/bin/bash
-# test_macbox_verify.sh — Tests für macbox_verify.sh (Issue #25)
+# test_macbox_verify.sh — Integrationstests für macbox_verify.sh (Issue #25)
 #
-# Testet beide Szenarien ohne macbox-Verbindung:
-#   Szenario A: korrekter Checkout → muss pass (exit 0)
-#   Szenario B: falscher Checkout (SHA-Mismatch) → muss blockieren (exit 1)
-#
-# Verwendung: .scripts/test_macbox_verify.sh
+# Testet den echten Wrapper mit Fake-macbox im temporären PATH.
+# Szenarien: SHA-Match, SHA-Mismatch, 'unknown', fehlender Marker,
+# ungültiges --dir, Auto-dir-Injection, explizites --dir.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERIFY="$SCRIPT_DIR/macbox_verify.sh"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 LOCAL_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
-VERIFY_SCRIPT="$SCRIPT_DIR/macbox_verify.sh"
+WRONG_SHA="0000000000000000000000000000000000000000"
 
 PASS=0
 FAIL=0
+TMPDIR_FAKE="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR_FAKE"' EXIT
 
-check() {
+FAKE_MACBOX="$TMPDIR_FAKE/macbox"
+export PATH="$TMPDIR_FAKE:$PATH"
+
+# Erstellt ein Fake-macbox das MACBOX_REMOTE_SHA ausgibt
+make_fake() {
+    local remote_sha="${1:-$LOCAL_SHA}"
+    printf '#!/bin/bash\necho "MACBOX_REMOTE_SHA: %s"\necho "MACBOX_REMOTE_BRANCH: test"\n' "$remote_sha" > "$FAKE_MACBOX"
+    chmod +x "$FAKE_MACBOX"
+}
+
+# Fake ohne SHA-Ausgabe (simuliert: setup lief nicht)
+make_fake_no_marker() {
+    printf '#!/bin/bash\necho "Build succeeded."\n' > "$FAKE_MACBOX"
+    chmod +x "$FAKE_MACBOX"
+}
+
+run_test() {
     local name="$1"
     local expected_exit="$2"
     shift 2
     local actual_exit=0
-    "$@" > /dev/null 2>&1 || actual_exit=$?
+    "$@" > /tmp/_mbv_test_$$.txt 2>&1 || actual_exit=$?
+    rm -f /tmp/_mbv_test_$$.txt
     if [ "$actual_exit" = "$expected_exit" ]; then
         echo "✓ $name"
         PASS=$((PASS + 1))
     else
-        echo "✗ $name (exit erwartet=$expected_exit, bekam=$actual_exit)"
+        echo "✗ $name (erwartet exit $expected_exit, bekam $actual_exit)"
         FAIL=$((FAIL + 1))
     fi
 }
 
-echo "=== macbox_verify.sh Unit-Tests (Issue #25) ==="
+echo "=== macbox_verify.sh Integrationstests (Issue #25) ==="
+echo "Repo:  $REPO_ROOT"
+echo "SHA:   $LOCAL_SHA"
 echo ""
 
 # --- Vorbedingungen ---
 echo "--- Vorbedingungen ---"
-check "verify-script existiert"      0  test -f "$VERIFY_SCRIPT"
-check "verify-script ist ausführbar" 0  test -x "$VERIFY_SCRIPT"
-check "setup-script existiert"       0  test -f "$REPO_ROOT/.macbox/setup"
-check "setup-script ist ausführbar"  0  test -x "$REPO_ROOT/.macbox/setup"
+run_test "verify-script existiert"      0  test -f "$VERIFY"
+run_test "verify-script ist ausführbar" 0  test -x "$VERIFY"
+run_test "setup-script existiert"       0  test -f "$REPO_ROOT/.macbox/setup"
+run_test "setup-script ist ausführbar"  0  test -x "$REPO_ROOT/.macbox/setup"
 
-# --- SHA-Vergleichs-Logik isoliert testen ---
-# Wir imitieren die Kern-Logik direkt im Test (kein macbox erforderlich).
-
-sha_compare() {
-    local expected="$1"
-    local remote="$2"
-    if [ "$expected" = "$remote" ]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
+# --- Szenario A: SHA-Match ---
 echo ""
-echo "--- Szenario A: Korrekter Checkout (SHA-Match) ---"
-check "SHA-Match → exit 0" 0  sha_compare "$LOCAL_SHA" "$LOCAL_SHA"
+echo "--- Szenario A: Korrekter Checkout (SHA-Match) → exit 0 ---"
+make_fake "$LOCAL_SHA"
+run_test "SHA-Match → exit 0" 0  bash "$VERIFY" build --dir "$REPO_ROOT"
 
+# --- Szenario B: SHA-Mismatch ---
 echo ""
-echo "--- Szenario B: Falscher Checkout (SHA-Mismatch) ---"
-WRONG_SHA="0000000000000000000000000000000000000000"
-check "SHA-Mismatch → exit 1" 1  sha_compare "$LOCAL_SHA" "$WRONG_SHA"
+echo "--- Szenario B: Falscher Checkout (SHA-Mismatch) → exit 1 ---"
+make_fake "$WRONG_SHA"
+run_test "SHA-Mismatch → exit 1" 1  bash "$VERIFY" build --dir "$REPO_ROOT"
 
-# --- Worktree-Erkennung ---
+# --- Szenario C: SHA 'unknown' (git auf Remote fehlgeschlagen) ---
 echo ""
-echo "--- Worktree-Erkennung ---"
-GIT_DIR_PATH="$(git -C "$REPO_ROOT" rev-parse --git-dir)"
-detect_worktree() {
-    if [ "$GIT_DIR_PATH" != "$REPO_ROOT/.git" ]; then
-        return 0  # Ist Worktree
-    else
-        return 1  # Kein Worktree
-    fi
-}
-check "Aktueller Kontext ist ein Worktree" 0  detect_worktree
+echo "--- Szenario C: Remote-SHA = 'unknown' → exit 1 ---"
+make_fake "unknown"
+run_test "'unknown' SHA → exit 1" 1  bash "$VERIFY" build --dir "$REPO_ROOT"
 
-# --- dir-Argument-Erkennung (simuliert) ---
+# --- Szenario D: Kein MACBOX_REMOTE_SHA (setup lief nicht) ---
 echo ""
-echo "--- --dir Argument-Erkennung ---"
+echo "--- Szenario D: Kein Remote-SHA-Marker → exit 0 (Warnung) ---"
+make_fake_no_marker
+run_test "Fehlender SHA-Marker → exit 0" 0  bash "$VERIFY" build --dir "$REPO_ROOT"
 
-has_dir_arg() {
-    for arg in "$@"; do
-        if [ "$arg" = "--dir" ]; then return 0; fi
-    done
-    return 1
-}
+# --- Szenario E: Ungültiges --dir ---
+echo ""
+echo "--- Szenario E: Ungültiges --dir → exit 1 ---"
+make_fake "$LOCAL_SHA"
+run_test "Nicht-existentes --dir → exit 1"  1  bash "$VERIFY" build --dir "/nonexistent/xyz_$$"
+run_test "Kein Git-Repo als --dir → exit 1" 1  bash "$VERIFY" build --dir "/tmp"
 
-check "build ohne --dir → kein dir-Flag gesetzt"      1  has_dir_arg build
-check "build --dir /x → dir-Flag erkannt"             0  has_dir_arg build --dir /x
-check "test --scheme X → kein dir-Flag"               1  has_dir_arg test --scheme DeltiqAppTests
-check "test --dir /y --scheme X → dir-Flag erkannt"   0  has_dir_arg test --dir /y --scheme DeltiqAppTests
+# --- Szenario F: Ohne --dir (auto-inject aus aufrufendem Verzeichnis) ---
+echo ""
+echo "--- Szenario F: Kein --dir → wird automatisch aus aufrufendem git-Toplevel gesetzt ---"
+make_fake "$LOCAL_SHA"
+# Aufruf aus REPO_ROOT: script soll git-Toplevel des CWD nehmen
+run_test "Auto-dir (SHA-Match) → exit 0" 0  bash -c "cd '$REPO_ROOT' && bash '$VERIFY' build"
+
+# --- Szenario G: Explizites --dir mit korrektem SHA ---
+echo ""
+echo "--- Szenario G: Explizites --dir zeigt auf Worktree ---"
+make_fake "$LOCAL_SHA"
+run_test "Explizites --dir + Match → exit 0" 0  bash "$VERIFY" test --dir "$REPO_ROOT" --scheme DeltiqAppTests
+
+# --- Szenario H: Pfad mit Leerzeichen ---
+echo ""
+echo "--- Szenario H: Pfad mit Leerzeichen ---"
+TMPDIR_SPACES="$TMPDIR_FAKE/path with spaces"
+mkdir -p "$TMPDIR_SPACES"
+# git init damit es als Repo erkannt wird
+git -C "$TMPDIR_SPACES" init -q 2>/dev/null
+git -C "$TMPDIR_SPACES" commit --allow-empty -m "init" --quiet 2>/dev/null || true
+SPACES_SHA="$(git -C "$TMPDIR_SPACES" rev-parse HEAD 2>/dev/null || echo 'none')"
+make_fake "$SPACES_SHA"
+run_test "Pfad mit Leerzeichen → exit 0" 0  bash "$VERIFY" build --dir "$TMPDIR_SPACES"
 
 # --- Ergebnis ---
 echo ""
@@ -99,6 +124,5 @@ echo "==============================="
 echo "Ergebnis: $PASS bestanden, $FAIL fehlgeschlagen"
 echo "==============================="
 
-if [ "$FAIL" -gt 0 ]; then
-    exit 1
-fi
+[ "$FAIL" -gt 0 ] && exit 1
+exit 0
