@@ -55,7 +55,7 @@ public struct StrengthProgressView: View {
                     isCardio: log.resolvedIsCardio,
                     isTimeBased: log.resolvedIsTimeBased,
                     isPlaceholder: log.isEmptyPlaceholder,
-                    logID: log.persistentModelID.hashValue.description
+                    logID: String(UInt(bitPattern: ObjectIdentifier(log)))
                 )
             }
         }

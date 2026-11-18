@@ -18,8 +18,8 @@ public enum StrengthProgressCalculator {
         public let isCardio: Bool
         public let isTimeBased: Bool
         public let isPlaceholder: Bool
-        /// Stable opaque identity of the source log entry (e.g. persistentModelID hash).
-        /// Passed through to SetDetail so its ID stays constant across re-sorts.
+        /// Stable opaque identity of the source log entry — e.g. ObjectIdentifier(log) while in ModelContext.
+        /// Passed through to SetDetail so its ID stays constant across re-sorts within a session.
         public let logID: String?
 
         public init(sessionStartTime: Date, exerciseName: String, templateID: UUID?,
