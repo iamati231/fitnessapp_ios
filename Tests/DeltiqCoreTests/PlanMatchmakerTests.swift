@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import DeltiqCore
 
 /// DEL-090: Tests fuer den Quiz-Score-Algorithmus.
