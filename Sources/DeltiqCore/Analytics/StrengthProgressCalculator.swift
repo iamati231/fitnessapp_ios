@@ -18,8 +18,8 @@ public enum StrengthProgressCalculator {
         public let isCardio: Bool
         public let isTimeBased: Bool
         public let isPlaceholder: Bool
-        /// Stable opaque identity of the source log entry — e.g. ObjectIdentifier(log) while in ModelContext.
-        /// Passed through to SetDetail so its ID stays constant across re-sorts within a session.
+        /// Stable-within-session identity of the source log entry — e.g. ObjectIdentifier(log) while
+        /// in ModelContext. Passed through to SetDetail so its SwiftUI id is constant across re-sorts.
         public let logID: String?
 
         public init(sessionStartTime: Date, exerciseName: String, templateID: UUID?,
@@ -115,8 +115,12 @@ public enum StrengthProgressCalculator {
         public let isTimeBased: Bool
         /// 1-based position in the bestSets result; used only as tie-breaker when logID is nil.
         public let rank: Int
-        /// Opaque identity of the source log entry. When present, used as the SwiftUI id so
-        /// the item's identity stays constant even if the volume sort changes its rank.
+        /// Opaque identity of the source log entry — e.g. `String(UInt(bitPattern: ObjectIdentifier(log)))`.
+        /// Guarantee: stable for the lifetime of the ModelContext (SwiftData keeps the same object
+        /// instance while @Query holds it). That is sufficient for SwiftUI ForEach identity: prevents
+        /// flicker/state-loss when a heavier set is added and changes the volume-sort rank.
+        /// Not persistent across app restarts — not needed for this use case.
+        /// If a persistent cross-launch identity is ever required, encode PersistentIdentifier via Codable.
         public let logID: String?
 
         /// Prefer logID (stable across re-sorts) — fall back to composite only when absent.
