@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 /// Seed library of exercise templates. `LibrarySeeder` (in `DeltiqData`) reads
 /// this list on first app launch and writes one `ExerciseTemplate` row per spec.
@@ -820,15 +820,10 @@ public enum ExerciseLibraryData {
             .noEquipment: "Hip Thrust (BW)"
         ],
         "Rudern vorgebeugt": [
-            .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Rudern einarmig (KH)"
         ],
         "Pendlay Row": [
-            .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Hyperextension"
-        ],
-        "Rudern einarmig (KH)": [
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Rudern einarmig (KH)"
         ],
 
         // ── SHOULDERS ──────────────────────────────────────────────────────
@@ -917,16 +912,13 @@ public enum ExerciseLibraryData {
 
         // ── MACHINES / CABLES · BACK ────────────────────────────────────────
         "Latzug (breit)": [
-            .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Rudern einarmig (KH)"
         ],
         "Latzug (eng)": [
-            .homeGym:     "Chest Supported Row (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Chest Supported Row (KH)"
         ],
         "Rudern (Maschine)": [
-            .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Rudern einarmig (KH)"
         ],
 
         // ── MACHINES / CABLES · SHOULDERS ──────────────────────────────────
@@ -1019,8 +1011,7 @@ public enum ExerciseLibraryData {
         // Diese Lifts waren bisher `.keep` (Sackgasse) im Migrator — der
         // User landete im Urlaubs-Modus mit unveraenderten Kabel-Uebungen.
         "Kabelrudern sitzend": [
-            .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Rudern einarmig (KH)"
         ],
         "Face Pull": [
             .homeGym:     "Reverse Flyes (KH)"
@@ -1054,8 +1045,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Wadenheben (BW)"
         ],
         "Latzug (weit)": [
-            .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Rudern einarmig (KH)"
         ],
 
         // ── DEL-091: Symmetrische HomeGym → NoEquipment Pfade ──────────────
@@ -1072,12 +1062,6 @@ public enum ExerciseLibraryData {
         ],
         "Flyes Schrägbank (KH)": [
             .noEquipment: "Breite Liegestütze"
-        ],
-        "Chest Supported Row (KH)": [
-            .noEquipment: "Hyperextension"
-        ],
-        "Pullover (KH)": [
-            .noEquipment: "Hyperextension"
         ],
 
         "Rumänisches Kreuzheben (KH)": [
@@ -1104,8 +1088,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Diamant-Liegestütze"
         ],
         "Latzug (Kabel)": [
-            .homeGym:     "Rudern einarmig (KH)",
-            .noEquipment: "Hyperextension"
+            .homeGym:     "Rudern einarmig (KH)"
         ],
         "Seitheben": [
             .noEquipment: "Pike Liegestütze"
