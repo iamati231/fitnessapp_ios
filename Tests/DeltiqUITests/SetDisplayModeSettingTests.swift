@@ -29,6 +29,7 @@ final class SetDisplayModeSettingTests: XCTestCase {
             .deletingLastPathComponent() // this file
             .deletingLastPathComponent() // DeltiqUITests
             .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // repo root
             .appendingPathComponent("Sources/DeltiqUI")
     }
 

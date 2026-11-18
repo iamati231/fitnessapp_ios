@@ -15,6 +15,7 @@ final class LocalizationCatalogParityTests: XCTestCase {
             .deletingLastPathComponent() // this file
             .deletingLastPathComponent() // DeltiqUITests
             .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // repo root
             .appendingPathComponent("Sources/DeltiqUI/Resources/Localizable.xcstrings")
         let data = try Data(contentsOf: url)
         let root = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -26,6 +27,7 @@ final class LocalizationCatalogParityTests: XCTestCase {
             .deletingLastPathComponent() // this file
             .deletingLastPathComponent() // DeltiqUITests
             .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // repo root
             .appendingPathComponent(subpath)
         guard let e = FileManager.default.enumerator(at: base, includingPropertiesForKeys: nil) else { return [] }
         return e.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }

@@ -31,6 +31,7 @@ final class MainTabStructureTests: XCTestCase {
                 .deletingLastPathComponent() // this file
                 .deletingLastPathComponent() // DeltiqUITests
                 .deletingLastPathComponent() // Tests
+                .deletingLastPathComponent() // repo root
                 .appendingPathComponent("Sources/DeltiqUI/RootView.swift")
             return try String(contentsOf: url, encoding: .utf8)
         }
