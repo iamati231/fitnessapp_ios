@@ -5,6 +5,10 @@ This project builds, tests, and runs on a remote Mac through macbox
 (https://api.macbox.build/guide/). Use the macbox CLI, or its MCP tools, for any
 xcodebuild, test, or simulator work, even when this machine can't run Xcode.
 
+- **In git worktrees, always use the wrapper instead of raw macbox:**
+  `.scripts/macbox_verify.sh build --scheme Deltiq` / `.scripts/macbox_verify.sh test --scheme DeltiqAppTests`
+  The wrapper auto-sets `--dir` to the calling worktree so macbox syncs the right branch (Issue #25 fix).
+  Raw `macbox build/test` without `--dir` syncs from the main checkout, not the active worktree.
 - `macbox build`, `macbox test`: exit 0 worked, 1 fix the code, 3 macbox's side (tell the user).
 - `macbox run` launches the app and prints a live link: give it to the user. Then
   `macbox ui describe` and `macbox ui tap --id X` to check it works; `macbox stop` ends it.
