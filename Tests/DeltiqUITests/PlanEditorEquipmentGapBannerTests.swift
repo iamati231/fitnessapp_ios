@@ -19,7 +19,6 @@ final class PlanEditorEquipmentGapBannerTests: XCTestCase {
                 .deletingLastPathComponent() // this file
                 .deletingLastPathComponent() // DeltiqUITests
                 .deletingLastPathComponent() // Tests
-                .deletingLastPathComponent() // repo root
                 .appendingPathComponent("Sources/DeltiqUI/Workout/PlanEditorView.swift")
             return try String(contentsOf: path, encoding: .utf8)
         }

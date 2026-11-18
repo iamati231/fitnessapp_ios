@@ -39,7 +39,6 @@ final class MeasurementDoubleTapGuardTests: XCTestCase {
             .deletingLastPathComponent() // this file
             .deletingLastPathComponent() // DeltiqUITests
             .deletingLastPathComponent() // Tests
-            .deletingLastPathComponent() // repo root
             .appendingPathComponent("Sources/DeltiqUI")
     }
 

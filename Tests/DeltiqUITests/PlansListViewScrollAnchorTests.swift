@@ -11,7 +11,6 @@ final class PlansListViewScrollAnchorTests: XCTestCase {
             let url = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent() // DeltiqUITests
                 .deletingLastPathComponent() // Tests
-                .deletingLastPathComponent() // repo root
                 .appendingPathComponent("Sources/DeltiqUI/Workout/PlansListView.swift")
             return try String(contentsOf: url, encoding: .utf8)
         }

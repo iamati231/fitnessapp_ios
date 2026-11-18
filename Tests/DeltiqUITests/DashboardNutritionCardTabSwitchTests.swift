@@ -21,7 +21,6 @@ final class DashboardNutritionCardTabSwitchTests: XCTestCase {
                 .deletingLastPathComponent() // this file
                 .deletingLastPathComponent() // DeltiqUITests
                 .deletingLastPathComponent() // Tests
-                .deletingLastPathComponent() // repo root
                 .appendingPathComponent("Sources/DeltiqUI/DashboardView.swift")
             return try String(contentsOf: url, encoding: .utf8)
         }

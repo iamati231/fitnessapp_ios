@@ -25,7 +25,6 @@ final class NutritionDayViewTabReentryResetTests: XCTestCase {
                 .deletingLastPathComponent() // this file
                 .deletingLastPathComponent() // DeltiqUITests
                 .deletingLastPathComponent() // Tests
-                .deletingLastPathComponent() // repo root
                 .appendingPathComponent("Sources/DeltiqUI/Nutrition/NutritionDayView.swift")
             return try String(contentsOf: url, encoding: .utf8)
         }

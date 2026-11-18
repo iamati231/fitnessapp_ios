@@ -74,7 +74,6 @@ final class MeasurementPersistenceTests: XCTestCase {
             .deletingLastPathComponent() // this file
             .deletingLastPathComponent() // DeltiqUITests
             .deletingLastPathComponent() // Tests
-            .deletingLastPathComponent() // repo root
             .appendingPathComponent(relativePath)
         return try String(contentsOf: url, encoding: .utf8)
     }

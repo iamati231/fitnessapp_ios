@@ -10,7 +10,6 @@ final class ExerciseAlternativeEquipmentTests: XCTestCase {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent() // DeltiqUITests
             .deletingLastPathComponent() // Tests
-            .deletingLastPathComponent() // repo root
             .appendingPathComponent("Sources/DeltiqCore/Programs/ExerciseLibraryData.swift")
         return try String(contentsOf: url, encoding: .utf8)
     }

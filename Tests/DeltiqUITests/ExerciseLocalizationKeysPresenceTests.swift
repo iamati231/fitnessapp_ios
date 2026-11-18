@@ -10,7 +10,6 @@ final class ExerciseLocalizationKeysPresenceTests: XCTestCase {
             let url = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent() // DeltiqUITests
                 .deletingLastPathComponent() // Tests
-                .deletingLastPathComponent() // repo root
                 .appendingPathComponent("Sources/DeltiqUI/Resources/Localizable.xcstrings")
             return try String(contentsOf: url, encoding: .utf8)
         }

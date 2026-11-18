@@ -14,7 +14,6 @@ final class TabScrollAnchorRegressionTests: XCTestCase {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent() // DeltiqUITests
             .deletingLastPathComponent() // Tests
-            .deletingLastPathComponent() // repo root
             .appendingPathComponent(path)
         return try String(contentsOf: url, encoding: .utf8)
     }
