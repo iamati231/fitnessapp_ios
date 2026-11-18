@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 @testable import DeltiqCore
 
 /// DEL-090: Tests fuer den Quiz-Score-Algorithmus.
@@ -337,13 +337,13 @@ final class PlanMatchmakerTests: XCTestCase {
     }
 
     /// Smart-Onboarding-Epic Phase 4: "auch im Fallback bestaetigte
-    /// Equipment-Grenzen respektieren". `crossfit_bodyweight_rx` ist zwar
-    /// `.noEquipment`-getaggt, braucht aber tatsaechlich eine Klimmzugstange
-    /// ("Klimmzüge") — sein eigenes Geschwister-Template
-    /// `crossfit_bodyweight_scaled` ersetzt genau diese Uebung durch
-    /// Handtuch-Rudern. Ein Nutzer mit bestaetigt FEHLENDER Klimmzugstange
-    /// darf `crossfit_bodyweight_rx` deshalb auch im Fallback-Pfad nicht
-    /// vorgeschlagen bekommen.
+    /// Equipment-Grenzen respektieren". Beide CrossFit-Bodyweight-Templates
+    /// benoetigen einen stabilen Fixpunkt: `crossfit_bodyweight_rx` braucht
+    /// eine Klimmzugstange ("Klimmzüge"), `crossfit_bodyweight_scaled`
+    /// ersetzt diese durch Handtuch-Rudern (Tuerrahmen) — das dieselbe
+    /// `.item(.pullUpBar)`-Anforderung traegt. Ein Nutzer mit bestaetigt
+    /// FEHLENDER Klimmzugstange darf keines der beiden Templates auch im
+    /// Fallback-Pfad vorgeschlagen bekommen.
     func testFallbackRespectsConfirmedMissingPullUpBarEvenForNoEquipmentTemplates() {
         var profile = UserEquipmentProfile()
         profile.confirmRemainingAsUnavailable()
@@ -354,13 +354,13 @@ final class PlanMatchmakerTests: XCTestCase {
         let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
         XCTAssertTrue(result.isFallback, "Vorbedingung: 1 Tag + Advanced ohne Track muss die Hard-Filter leerlaufen lassen")
         XCTAssertFalse(result.templates.contains { $0.id == "crossfit_bodyweight_rx" },
-                        "Braucht eine bestaetigt fehlende Klimmzugstange — darf auch im Fallback nicht erscheinen")
-        XCTAssertTrue(result.templates.contains { $0.id == "crossfit_bodyweight_scaled" },
-                       "Das klimmzugstangen-freie Geschwister-Template bleibt ein gueltiger Fallback-Kandidat")
+                        "Braucht Klimmzugstange — darf auch im Fallback nicht erscheinen")
+        XCTAssertFalse(result.templates.contains { $0.id == "crossfit_bodyweight_scaled" },
+                       "Handtuch-Rudern benoetigt denselben Fixpunkt — auch Scaled darf nicht erscheinen")
     }
 
     /// Gegenprobe: eine bestaetigt VORHANDENE Klimmzugstange laesst
-    /// `crossfit_bodyweight_rx` im selben Extremfilter weiterhin zu.
+    /// beide CrossFit-Bodyweight-Templates im selben Extremfilter weiterhin zu.
     func testFallbackAllowsPullUpBarTemplateWhenConfirmedAvailable() {
         var profile = UserEquipmentProfile()
         profile.availability[.pullUpBar] = .available
@@ -371,6 +371,8 @@ final class PlanMatchmakerTests: XCTestCase {
         )
         let result = PlanMatchmaker.rankPlansDetailed(for: answers, templates: allTemplates)
         XCTAssertTrue(result.templates.contains { $0.id == "crossfit_bodyweight_rx" })
+        XCTAssertTrue(result.templates.contains { $0.id == "crossfit_bodyweight_scaled" },
+                      "Fixpunkt bestaetigt — Scaled muss ebenfalls erlaubt sein")
     }
 
     /// Fallback: Extrem-Filter "Strength + No-Equipment + 2 Tage" wuerde
