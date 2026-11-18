@@ -584,7 +584,11 @@ public struct SettingsView: View {
                 case .workoutHistory:
                     WorkoutHistoryView()
                 case .strengthProgress:
+                    #if canImport(UIKit)
                     StrengthProgressView()
+                    #else
+                    EmptyView()
+                    #endif
                 }
             }
     }
@@ -616,7 +620,11 @@ public struct SettingsView: View {
                 case .workoutHistory:
                     WorkoutHistoryView()
                 case .strengthProgress:
+                    #if canImport(UIKit)
                     StrengthProgressView()
+                    #else
+                    EmptyView()
+                    #endif
                 }
             }
     }
