@@ -88,7 +88,7 @@ public struct StrengthProgressView: View {
     public var body: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
-                eyebrow: "",
+                eyebrow: loc("strength.progress.eyebrow"),
                 title: loc("strength.progress.title"),
                 onBack: { dismiss() }
             )
@@ -126,23 +126,18 @@ public struct StrengthProgressView: View {
     // MARK: - Period picker
 
     private var periodPicker: some View {
-        Picker("", selection: $period) {
-            ForEach(StrengthProgressCalculator.Period.allCases) { p in
-                Text(periodLabel(p)).tag(p)
-            }
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-    }
-
-    private func periodLabel(_ p: StrengthProgressCalculator.Period) -> String {
-        switch p {
-        case .fourWeeks:   return loc("strength.progress.period.4w")
-        case .twelveWeeks: return loc("strength.progress.period.12w")
-        case .oneYear:     return loc("strength.progress.period.1y")
-        case .allTime:     return loc("strength.progress.period.all")
-        }
+        DeltiqPeriodPicker(
+            items: StrengthProgressCalculator.Period.allCases,
+            label: { p in
+                switch p {
+                case .fourWeeks:   return loc("strength.progress.period.4w")
+                case .twelveWeeks: return loc("strength.progress.period.12w")
+                case .oneYear:     return loc("strength.progress.period.1y")
+                case .allTime:     return loc("strength.progress.period.all")
+                }
+            },
+            selection: $period
+        )
     }
 
     // MARK: - Overview section
@@ -288,6 +283,10 @@ struct StrengthExerciseDetailView: View {
             }
         }
         .deltiqScreen()
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
         .deltiqSwipeBackEnabled()
     }
 
