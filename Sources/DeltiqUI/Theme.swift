@@ -565,10 +565,12 @@ public struct DeltiqHeader: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(eyebrow)
-                    .font(.system(size: 10, weight: .heavy))
-                    .tracking(1.5)
-                    .foregroundStyle(Color.deltiqOrange)
+                if !eyebrow.isEmpty {
+                    Text(eyebrow)
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(1.5)
+                        .foregroundStyle(Color.deltiqOrange)
+                }
                 Text(title)
                     .font(.system(size: 24, weight: .heavy, design: .rounded))
                     .foregroundStyle(Color.primary)
