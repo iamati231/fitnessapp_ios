@@ -121,7 +121,7 @@ public enum MuscleGroupProgressCalculator {
 
         let assigned = totalByMuscle.values.reduce(0, +)
         let total = assigned + unassigned
-        let top = totalByMuscle.max(by: { $0.value < $1.value })
+        let top = totalByMuscle.max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key.rawValue > $1.key.rawValue) })
 
         // Busiest week — same total definition as chart bars (assigned + unassigned).
         var weekTotals: [Date: Int] = [:]
