@@ -165,7 +165,7 @@ public enum PlanEnvironmentMigrator {
                     }
                 } else {
                     // Custom-Exercise: eigenes equipment-Feld entscheidet.
-                    // nil equipment → konservativ inkompatibel (kein Datenverlust-Risiko).
+                    // nil equipment → konservativ inkompatibel (kein Equipment-Info → Archiv sicherer als stille Nutzung).
                     let isCompatible = exercise.equipment.map {
                         ExerciseLibraryData.isEquipment($0, compatibleWith: newEnv)
                     } ?? false
@@ -311,7 +311,7 @@ public enum PlanEnvironmentMigrator {
                             break
                         }
                     } else {
-                        // Issue #12: Custom-Exercise
+                        // Issue #12: Custom-Exercise. nil equipment → konservativ inkompatibel (konsistent mit migrate()).
                         let compatible = exercise.equipment.map {
                             ExerciseLibraryData.isEquipment($0, compatibleWith: newEnv)
                         } ?? false
@@ -394,7 +394,8 @@ public enum PlanEnvironmentMigrator {
         if isSystemExercise(exercise) {
             return ExerciseLibraryData.isCompatibleWith(exerciseName: exercise.name, environment: env)
         }
-        return exercise.equipment.map { ExerciseLibraryData.isEquipment($0, compatibleWith: env) } ?? false
+        // Issue #12: nil equipment = unbekannt → als kompatibel werten (kein stiller Datenverlust).
+        return exercise.equipment.map { ExerciseLibraryData.isEquipment($0, compatibleWith: env) } ?? true
     }
 
     /// Issue #12: Prüft ob eine via .keep archivierte Custom-/System-Exercise
@@ -406,7 +407,8 @@ public enum PlanEnvironmentMigrator {
         if isSystemExercise(exercise) {
             return ExerciseLibraryData.isCompatibleWith(exerciseName: exercise.name, environment: env)
         }
-        return exercise.equipment.map { ExerciseLibraryData.isEquipment($0, compatibleWith: env) } ?? false
+        // Issue #12: nil equipment = unbekannt → als kompatibel werten (Legacy-Archiv wiederherstellen).
+        return exercise.equipment.map { ExerciseLibraryData.isEquipment($0, compatibleWith: env) } ?? true
     }
 
     /// Bestimmt ob eine Exercise eine System-Exercise (im Katalog) oder eine Custom-Exercise ist.
