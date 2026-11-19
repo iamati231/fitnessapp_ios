@@ -76,6 +76,37 @@ struct StrengthProgressCalculatorTests {
         #expect(stats.sessionCount == 1)
     }
 
+    /// Four sessions at the four canonical test dates from Issue #26 QA.
+    /// now = Nov 16, 2026:
+    ///   daysAgo(0)   → within 4W (28 d cutoff)
+    ///   daysAgo(57)  → within 12W (84 d) but NOT 4W  → Sep 20, 2026
+    ///   daysAgo(168) → within 1Y (365 d) but NOT 12W → Jun 1, 2026
+    ///   daysAgo(411) → allTime only                   → Oct 1, 2025
+    /// Expected session counts: 4W=1, 12W=2, 1Y=3, All=4.
+    @Test func periodFilterAllFourPeriodsDistinctCounts() {
+        let d4W  = daysAgo(0)
+        let d12W = daysAgo(57)
+        let d1Y  = daysAgo(168)
+        let dAll = daysAgo(411)
+        let logs = [makeLog(sessionDate: d4W), makeLog(sessionDate: d12W),
+                    makeLog(sessionDate: d1Y),  makeLog(sessionDate: dAll)]
+        let sessionDates = [d4W, d12W, d1Y, dAll]
+
+        let s4W  = SPC.overviewStats(logs: logs, strengthSessionDates: sessionDates, prDates: [], period: .fourWeeks,   now: now)
+        let s12W = SPC.overviewStats(logs: logs, strengthSessionDates: sessionDates, prDates: [], period: .twelveWeeks, now: now)
+        let s1Y  = SPC.overviewStats(logs: logs, strengthSessionDates: sessionDates, prDates: [], period: .oneYear,     now: now)
+        let sAll = SPC.overviewStats(logs: logs, strengthSessionDates: sessionDates, prDates: [], period: .allTime,     now: now)
+
+        #expect(s4W.sessionCount  == 1)
+        #expect(s12W.sessionCount == 2)
+        #expect(s1Y.sessionCount  == 3)
+        #expect(sAll.sessionCount == 4)
+        #expect(s4W.workSetCount  == 1)
+        #expect(s12W.workSetCount == 2)
+        #expect(s1Y.workSetCount  == 3)
+        #expect(sAll.workSetCount == 4)
+    }
+
     @Test func prCountFilteredByPeriod() {
         let prDates = [daysAgo(5), daysAgo(50)]
         let stats = SPC.overviewStats(logs: [], strengthSessionDates: [], prDates: prDates,
@@ -171,6 +202,42 @@ struct StrengthProgressCalculatorTests {
         #expect(points.isEmpty)
     }
 
+    /// Pure-bodyweight exercise (weightKg=0, NOT time-based): no 1RM chart point.
+    /// Covers Issue #26 QA: "Reine Bodyweight-/Halteübung ohne 1RM".
+    @Test func oneRMHistoryEmptyForPureBodyweightExercise() {
+        let logs = [makeLog(name: "Pull-up", weightKg: 0, reps: 10, isTimeBased: false),
+                    makeLog(name: "Pull-up", weightKg: 0, reps: 8,  isTimeBased: false)]
+        let points = SPC.oneRMHistory(logs: logs, exerciseName: "Pull-up", templateID: nil)
+        #expect(points.isEmpty, "weightKg=0 sets must not produce 1RM chart points")
+    }
+
+    /// Mixed session: weighted and bodyweight sets for the same exercise.
+    /// 1RM history uses only the weighted sets; bodyweight sets still appear in bestSets.
+    @Test func oneRMHistoryIgnoresBodyweightSetsInMixedSession() {
+        let bw      = makeLog(name: "Pull-up", weightKg: 0,  reps: 10)
+        let weighted = makeLog(name: "Pull-up", weightKg: 10, reps: 5)  // 10kg added
+        let points = SPC.oneRMHistory(logs: [bw, weighted], exerciseName: "Pull-up", templateID: nil)
+        #expect(points.count == 1, "Only the weighted set contributes a 1RM point")
+        let sets = SPC.bestSets(logs: [bw, weighted], exerciseName: "Pull-up", templateID: nil)
+        #expect(sets.count == 2, "Both sets appear in Best Sets list")
+    }
+
+    /// Deleted exercise (no templateID, name via snapshot): still appears in summaries
+    /// with correct best1RMKg from its logs. Covers Issue #26 QA:
+    /// "Historische oder gelöschte Übung mit Snapshot".
+    @Test func deletedExerciseKeepsBest1RMFromSnapshotLogs() {
+        let id: UUID? = nil  // templateID gone — grouping falls back to name
+        let log = Log(sessionStartTime: now, exerciseName: "Old Exercise", templateID: id,
+                      weightKg: 100, reps: 5, rpe: 8, rir: 2,
+                      isCardio: false, isTimeBased: false, isPlaceholder: false)
+        let summaries = SPC.exerciseSummaries(logs: [log])
+        #expect(summaries.count == 1)
+        #expect(summaries[0].name == "Old Exercise")
+        #expect(summaries[0].best1RMKg != nil, "Deleted exercise must still expose estimated 1RM")
+        let expected = ExerciseCalculations.estimate1RMAverage(weightKg: 100, reps: 5)
+        #expect(abs(summaries[0].best1RMKg! - expected!) < 0.01)
+    }
+
     // MARK: - bestSets
 
     @Test func bestSetsLimitRespected() {
@@ -222,6 +289,27 @@ struct StrengthProgressCalculatorTests {
         // Legacy or future unknown rawValues must not inflate the strength PR count.
         #expect(SPC.isStrengthPRKind("") == false)
         #expect(SPC.isStrengthPRKind("someFutureKind") == false)
+    }
+
+    /// End-to-end: legacy cardio PRs (longestDistance/fastestPace) must not appear
+    /// in the strength PR count. Covers Issue #26 QA: "Legacy-Cardio-PR ohne Equipment-Snapshot".
+    ///
+    /// Flow mirrors StrengthProgressView: pre-filter prEntries with isStrengthPRKind,
+    /// then pass the remaining dates to overviewStats — cardio dates never enter.
+    @Test func cardioLegacyPRNotCountedInStrengthOverview() {
+        typealias Entry = (kind: String, date: Date)
+        let prEntries: [Entry] = [
+            ("longestDistance", now),     // cardio — must be excluded
+            ("fastestPace",     now),     // cardio — must be excluded
+            ("heaviestWeight",  now),     // strength — must be counted
+            ("estimated1RM",    daysAgo(5)), // strength — must be counted
+        ]
+        let strengthPRDates = prEntries
+            .filter { SPC.isStrengthPRKind($0.kind) }
+            .map(\.date)
+        let stats = SPC.overviewStats(logs: [], strengthSessionDates: [],
+                                      prDates: strengthPRDates, period: .allTime, now: now)
+        #expect(stats.prCount == 2, "longestDistance and fastestPace must not inflate strength PR count")
     }
 
     // MARK: - SetDetail.id stability (Issue #24 regression)
