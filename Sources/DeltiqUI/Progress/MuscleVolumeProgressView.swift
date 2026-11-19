@@ -56,7 +56,7 @@ public struct MuscleVolumeProgressView: View {
     public var body: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
-                eyebrow: loc("muscle.progress.eyebrow"),
+                eyebrow: "",
                 title: loc("muscle.progress.title"),
                 onBack: { dismiss() }
             )
@@ -98,6 +98,10 @@ public struct MuscleVolumeProgressView: View {
             }
         }
         .deltiqScreen()
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
         .deltiqSwipeBackEnabled()
         .navigationDestination(item: $selectedMuscle) { muscle in
             MuscleGroupDetailView(muscle: muscle, allSets: allSets, initialPeriod: period)

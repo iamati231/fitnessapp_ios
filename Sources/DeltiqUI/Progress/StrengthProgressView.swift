@@ -88,7 +88,7 @@ public struct StrengthProgressView: View {
     public var body: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
-                eyebrow: loc("strength.progress.eyebrow"),
+                eyebrow: "",
                 title: loc("strength.progress.title"),
                 onBack: { dismiss() }
             )
@@ -116,6 +116,10 @@ public struct StrengthProgressView: View {
             }
         }
         .deltiqScreen()
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
         .deltiqSwipeBackEnabled()
     }
 

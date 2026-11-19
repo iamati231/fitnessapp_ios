@@ -64,7 +64,9 @@ public struct ProgressHomeView: View {
         .scrollContentBackground(.hidden)
         .background(Color.Deltiq.background.ignoresSafeArea())
         .navigationTitle(String(localized: "progress.title", bundle: .module))
-        .navigationBarTitleDisplayMode(.large)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 
     // MARK: - Subviews

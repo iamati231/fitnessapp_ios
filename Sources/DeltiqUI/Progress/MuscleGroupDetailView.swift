@@ -47,7 +47,7 @@ public struct MuscleGroupDetailView: View {
     public var body: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
-                eyebrow: loc("muscle.progress.eyebrow"),
+                eyebrow: "",
                 title: String(localized: muscle.localizedName),
                 onBack: { dismiss() }
             )
@@ -64,6 +64,10 @@ public struct MuscleGroupDetailView: View {
             }
         }
         .deltiqScreen()
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
+        .navigationBarBackButtonHidden(true)
         .deltiqSwipeBackEnabled()
     }
 
