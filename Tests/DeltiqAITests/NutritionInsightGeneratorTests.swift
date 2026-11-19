@@ -297,11 +297,11 @@ final class NutritionInsightGeneratorTests: XCTestCase {
         let input = NutritionInsightInput(
             totalKcal: 1850, totalProteinG: 370, totalCarbsG: 180, totalFatG: 60,
             calorieGoalKcal: 2200, proteinGoalG: 113, carbGoalG: 220, fatGoalG: 70,
-            proteinGoalProgress: .init(percent: 328, remaining: 0)
+            proteinGoalProgress: .init(percent: 328, remaining: 0, overage: 257)
         )
         let prompt = NutritionInsightGenerator.prompt(for: input, locale: en)
         XCTAssertTrue(
-            prompt.contains("Protein: 370 g of 113 g goal (328% reached, 0 g remaining) [EXCEEDED]"),
+            prompt.contains("Protein: 370 g of 113 g goal (328% reached, 257 g over goal) [EXCEEDED]"),
             "prompt:\n\(prompt)"
         )
     }

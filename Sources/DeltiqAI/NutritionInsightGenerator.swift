@@ -417,7 +417,7 @@ public struct NutritionInsightGenerator: Sendable {
         if progress.percent >= 100 {
             let overageStr = progress.overage > 0
                 ? ", \(safeInt(progress.overage)) \(unit) \(strings.overGoal)"
-                : ", \(safeInt(progress.remaining)) \(unit) \(strings.remaining)"
+                : ""
             return "\(label): \(current) \(unit) \(strings.of) \(goal) \(unit) \(strings.goalWord) (\(progress.percent)% \(strings.reached)\(overageStr)) [\(strings.exceeded)]"
         }
         // [NOT_MET] label is the symmetric counterpart to [EXCEEDED] — prevents the model
