@@ -76,6 +76,37 @@ struct StrengthProgressCalculatorTests {
         #expect(stats.sessionCount == 1)
     }
 
+    /// Four sessions at the four canonical test dates from Issue #26 QA.
+    /// now = Nov 16, 2026:
+    ///   daysAgo(0)   → within 4W (28 d cutoff)
+    ///   daysAgo(57)  → within 12W (84 d) but NOT 4W  → Sep 20, 2026
+    ///   daysAgo(168) → within 1Y (365 d) but NOT 12W → Jun 1, 2026
+    ///   daysAgo(411) → allTime only                   → Oct 1, 2025
+    /// Expected session counts: 4W=1, 12W=2, 1Y=3, All=4.
+    @Test func periodFilterAllFourPeriodsDistinctCounts() {
+        let d4W  = daysAgo(0)
+        let d12W = daysAgo(57)
+        let d1Y  = daysAgo(168)
+        let dAll = daysAgo(411)
+        let logs = [makeLog(sessionDate: d4W), makeLog(sessionDate: d12W),
+                    makeLog(sessionDate: d1Y),  makeLog(sessionDate: dAll)]
+        let sessionDates = [d4W, d12W, d1Y, dAll]
+
+        let s4W  = SPC.overviewStats(logs: logs, strengthSessionDates: sessionDates, prDates: [], period: .fourWeeks,   now: now)
+        let s12W = SPC.overviewStats(logs: logs, strengthSessionDates: sessionDates, prDates: [], period: .twelveWeeks, now: now)
+        let s1Y  = SPC.overviewStats(logs: logs, strengthSessionDates: sessionDates, prDates: [], period: .oneYear,     now: now)
+        let sAll = SPC.overviewStats(logs: logs, strengthSessionDates: sessionDates, prDates: [], period: .allTime,     now: now)
+
+        #expect(s4W.sessionCount  == 1)
+        #expect(s12W.sessionCount == 2)
+        #expect(s1Y.sessionCount  == 3)
+        #expect(sAll.sessionCount == 4)
+        #expect(s4W.workSetCount  == 1)
+        #expect(s12W.workSetCount == 2)
+        #expect(s1Y.workSetCount  == 3)
+        #expect(sAll.workSetCount == 4)
+    }
+
     @Test func prCountFilteredByPeriod() {
         let prDates = [daysAgo(5), daysAgo(50)]
         let stats = SPC.overviewStats(logs: [], strengthSessionDates: [], prDates: prDates,
