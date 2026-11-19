@@ -202,6 +202,42 @@ struct StrengthProgressCalculatorTests {
         #expect(points.isEmpty)
     }
 
+    /// Pure-bodyweight exercise (weightKg=0, NOT time-based): no 1RM chart point.
+    /// Covers Issue #26 QA: "Reine Bodyweight-/Halteübung ohne 1RM".
+    @Test func oneRMHistoryEmptyForPureBodyweightExercise() {
+        let logs = [makeLog(name: "Pull-up", weightKg: 0, reps: 10, isTimeBased: false),
+                    makeLog(name: "Pull-up", weightKg: 0, reps: 8,  isTimeBased: false)]
+        let points = SPC.oneRMHistory(logs: logs, exerciseName: "Pull-up", templateID: nil)
+        #expect(points.isEmpty, "weightKg=0 sets must not produce 1RM chart points")
+    }
+
+    /// Mixed session: weighted and bodyweight sets for the same exercise.
+    /// 1RM history uses only the weighted sets; bodyweight sets still appear in bestSets.
+    @Test func oneRMHistoryIgnoresBodyweightSetsInMixedSession() {
+        let bw      = makeLog(name: "Pull-up", weightKg: 0,  reps: 10)
+        let weighted = makeLog(name: "Pull-up", weightKg: 10, reps: 5)  // 10kg added
+        let points = SPC.oneRMHistory(logs: [bw, weighted], exerciseName: "Pull-up", templateID: nil)
+        #expect(points.count == 1, "Only the weighted set contributes a 1RM point")
+        let sets = SPC.bestSets(logs: [bw, weighted], exerciseName: "Pull-up", templateID: nil)
+        #expect(sets.count == 2, "Both sets appear in Best Sets list")
+    }
+
+    /// Deleted exercise (no templateID, name via snapshot): still appears in summaries
+    /// with correct best1RMKg from its logs. Covers Issue #26 QA:
+    /// "Historische oder gelöschte Übung mit Snapshot".
+    @Test func deletedExerciseKeepsBest1RMFromSnapshotLogs() {
+        let id: UUID? = nil  // templateID gone — grouping falls back to name
+        let log = Log(sessionStartTime: now, exerciseName: "Old Exercise", templateID: id,
+                      weightKg: 100, reps: 5, rpe: 8, rir: 2,
+                      isCardio: false, isTimeBased: false, isPlaceholder: false)
+        let summaries = SPC.exerciseSummaries(logs: [log])
+        #expect(summaries.count == 1)
+        #expect(summaries[0].name == "Old Exercise")
+        #expect(summaries[0].best1RMKg != nil, "Deleted exercise must still expose estimated 1RM")
+        let expected = ExerciseCalculations.estimate1RMAverage(weightKg: 100, reps: 5)
+        #expect(abs(summaries[0].best1RMKg! - expected!) < 0.01)
+    }
+
     // MARK: - bestSets
 
     @Test func bestSetsLimitRespected() {
