@@ -165,10 +165,10 @@ public enum PlanEnvironmentMigrator {
                     }
                 } else {
                     // Custom-Exercise: eigenes equipment-Feld entscheidet.
-                    // nil equipment → unbekannt, NICHT archivieren (Issue #12: nie still archivieren).
+                    // nil equipment → konservativ inkompatibel (kein Equipment-Info → Archiv sicherer als stille Nutzung).
                     let isCompatible = exercise.equipment.map {
                         ExerciseLibraryData.isEquipment($0, compatibleWith: newEnv)
-                    } ?? true
+                    } ?? false
                     if isCompatible {
                         compatible += 1
                     } else {
@@ -311,10 +311,10 @@ public enum PlanEnvironmentMigrator {
                             break
                         }
                     } else {
-                        // Issue #12: Custom-Exercise; nil = unbekannt → nicht als archiviert anzeigen.
+                        // Issue #12: Custom-Exercise. nil equipment → konservativ inkompatibel (konsistent mit migrate()).
                         let compatible = exercise.equipment.map {
                             ExerciseLibraryData.isEquipment($0, compatibleWith: newEnv)
-                        } ?? true
+                        } ?? false
                         if !compatible { archived.append(exercise.customName ?? exercise.name) }
                     }
                 }
