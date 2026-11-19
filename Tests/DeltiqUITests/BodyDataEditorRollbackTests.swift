@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (zweiter Repo-Audit dieser Session): `BodyDataEditorView.save()`
 /// mutierte `profile.heightCm`/`profile.goalWeightKg` direkt auf das bereits

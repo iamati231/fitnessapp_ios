@@ -1,5 +1,5 @@
-import XCTest
-#if canImport(SwiftUI)
+﻿import XCTest
+#if canImport(SwiftUI) && canImport(UIKit)
 @testable import DeltiqUI
 
 /// Main-navigation plan (2026-10-22), Task 3: closes the gap Task 1 left open

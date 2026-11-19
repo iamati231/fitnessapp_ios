@@ -1,4 +1,4 @@
-#if canImport(SwiftUI) && canImport(SwiftData)
+#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import SwiftUI
 
 /// Hub for the utility calculators. Pure dispatcher — each tile pushes onto the

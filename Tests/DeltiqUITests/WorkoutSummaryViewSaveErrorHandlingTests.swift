@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (ponytail-audit, Save-Fehler in Workout-Editoren): `WorkoutSummaryView`s
 /// diskrete Speicher-Aktionen (Edit-Mode verlassen, Satz/Uebung hinzufuegen/entfernen,

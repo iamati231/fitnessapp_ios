@@ -1,4 +1,4 @@
-#if canImport(SwiftUI) && canImport(SwiftData)
+﻿#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import XCTest
 
 /// ponytail-audit (2026-10-26, zweiter Repo-Audit): `ExerciseLibraryEditorSheet.save()`s

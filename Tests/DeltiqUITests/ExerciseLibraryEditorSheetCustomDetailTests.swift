@@ -1,4 +1,4 @@
-#if canImport(SwiftUI) && canImport(SwiftData)
+﻿#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import XCTest
 
 /// DEL-xxx: Eigene Übungen müssen wie Systemübungen dargestellt werden.

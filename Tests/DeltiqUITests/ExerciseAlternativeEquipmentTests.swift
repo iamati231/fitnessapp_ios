@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Regression guard: jede Eintraege in ExerciseLibraryData.alternatives muss
 /// ein Ziel-Exercise haben, dessen equipmentRequirement mit der Ziel-Umgebung
@@ -10,6 +10,7 @@ final class ExerciseAlternativeEquipmentTests: XCTestCase {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent() // DeltiqUITests
             .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // repo root
             .appendingPathComponent("Sources/DeltiqCore/Programs/ExerciseLibraryData.swift")
         return try String(contentsOf: url, encoding: .utf8)
     }

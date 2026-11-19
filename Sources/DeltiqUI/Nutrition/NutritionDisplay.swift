@@ -1,4 +1,4 @@
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) && canImport(UIKit)
 import DeltiqCore
 
 /// OFF-01 (docs/AUDIT_2026-10-23_DELTIQ.md): Eine Stelle fuer die Anzeige von

@@ -11,7 +11,7 @@
 // versehentlich gewaehlter, zu alter Stand zurueckholbar — die Lehre aus dem
 // Datenverlust im Mai 2026, wo genau dieser Rueckweg fehlte.
 
-#if canImport(SwiftUI) && canImport(SwiftData)
+#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import SwiftUI
 import SwiftData
 import DeltiqCore

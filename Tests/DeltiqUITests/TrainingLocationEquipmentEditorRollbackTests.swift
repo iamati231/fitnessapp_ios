@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (zweiter Repo-Audit dieser Session): `TrainingLocationEquipmentEditorView.save()`
 /// mutierte `profile.environment`/`profile.equipmentProfile` direkt auf das bereits lebende

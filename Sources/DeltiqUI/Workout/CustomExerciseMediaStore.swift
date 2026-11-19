@@ -1,4 +1,4 @@
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) && canImport(UIKit)
 import Foundation
 import UniformTypeIdentifiers
 #if canImport(AVFoundation)

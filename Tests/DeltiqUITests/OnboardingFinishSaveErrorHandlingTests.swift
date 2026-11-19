@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (fokussierter Onboarding-Audit, Fund 1): `finishOnboarding()`
 /// speicherte Profil + initiale Messung bisher NUR innerhalb der beiden

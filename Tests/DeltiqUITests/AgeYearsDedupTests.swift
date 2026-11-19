@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (Follow-up-UI-Audit, "ageYears(for:) is copy-pasted
 /// identically into 4 files"): `TDEEView`, `MeasurementView`,

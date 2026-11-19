@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (ponytail-audit UI, Save-Fehler in Live-Workouts): dieselbe Bug-Klasse
 /// wie `TimedWorkoutPlayerSaveErrorHandlingTests`, hier fuer `CircuitWorkoutPlayerView.swift`

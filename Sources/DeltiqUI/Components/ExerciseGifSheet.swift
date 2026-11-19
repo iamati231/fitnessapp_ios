@@ -1,4 +1,4 @@
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) && canImport(UIKit)
 import SwiftUI
 
 /// Separates Sheet fuer das animierte Uebungs-GIF im aktiven Workout.

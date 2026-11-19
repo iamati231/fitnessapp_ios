@@ -1,4 +1,4 @@
-#if canImport(SwiftUI) && canImport(SwiftData)
+#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import SwiftUI
 import SwiftData
 import Charts
@@ -54,7 +54,8 @@ public struct StrengthProgressView: View {
                     rir: log.rir,
                     isCardio: log.resolvedIsCardio,
                     isTimeBased: log.resolvedIsTimeBased,
-                    isPlaceholder: log.isEmptyPlaceholder
+                    isPlaceholder: log.isEmptyPlaceholder,
+                    logID: String(UInt(bitPattern: ObjectIdentifier(log)))
                 )
             }
         }
@@ -67,11 +68,8 @@ public struct StrengthProgressView: View {
     }
 
     private var overviewStats: StrengthProgressCalculator.OverviewStats {
-        // overviewStats filters internally; pass allLogs so it can apply its own cutoff.
-        let strengthPRs = prEntries.filter { entry in
-            guard entry.cardioEquipmentRaw == nil else { return false }
-            let kind = PersonalRecord.Kind(rawValue: entry.kindRaw)
-            return kind != .longestDistance && kind != .fastestPace
+        let strengthPRs = prEntries.filter {
+            StrengthProgressCalculator.isStrengthPRKind($0.kindRaw)
         }
         return StrengthProgressCalculator.overviewStats(
             logs: allLogs,
@@ -176,6 +174,8 @@ public struct StrengthProgressView: View {
     }
 
     private func formattedVolume(_ kg: Double) -> String {
+        // Bodyweight-only sessions produce sets but zero external weight — show "—" not "0 kg".
+        if kg == 0 { return "—" }
         let v = weightUnit == "lbs" ? kg * 2.20462 : kg
         return v >= 1000
             ? String(format: "%.1f k%@", v / 1000, weightUnit)
@@ -421,9 +421,9 @@ struct StrengthExerciseDetailView: View {
     }
 
     private func setLabel(weightKg: Double, reps: Int, isTimeBased: Bool) -> String {
-        if isTimeBased { return "\(reps)s" }
+        if isTimeBased { return "\(reps) \(loc("unit.seconds.short"))" }
         if weightKg > 0 { return "\(displayWeightStr(weightKg)) × \(reps)" }
-        return "\(reps) reps"
+        return "\(reps) \(loc("unit.reps.short"))"
     }
 
     private func displayWeight(_ kg: Double) -> Double {

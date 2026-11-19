@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Parity guard: stellt sicher, dass (a) jeder im Swift-Code referenzierte
 /// Lokalisierungs-Key in Localizable.xcstrings vorhanden ist und (b) jeder

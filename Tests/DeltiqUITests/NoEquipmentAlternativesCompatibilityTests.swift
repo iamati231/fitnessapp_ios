@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 import DeltiqCore
 
 /// Regression guard: every noEquipment alternative in ExerciseLibraryData.alternatives

@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (sechster Follow-up-UI-Audit): `repairAll` schluckte einen
 /// fehlgeschlagenen `context.save()` mit `try?` - `runIfNeeded` setzte den

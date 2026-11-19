@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Regression guard: the 5 exercise localization keys that were missing from
 /// Localizable.xcstrings must all be present. Without them the UI shows raw key
@@ -10,6 +10,7 @@ final class ExerciseLocalizationKeysPresenceTests: XCTestCase {
             let url = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent() // DeltiqUITests
                 .deletingLastPathComponent() // Tests
+                .deletingLastPathComponent() // repo root
                 .appendingPathComponent("Sources/DeltiqUI/Resources/Localizable.xcstrings")
             return try String(contentsOf: url, encoding: .utf8)
         }

@@ -10,7 +10,7 @@
 // Prozentangabe — sie ist gleichzeitig der Ersatz fuer den fehlenden
 // "laeuft"-Zustand, weil der Nutzer daran erkennt, ob die Reduktion greift.
 
-#if canImport(SwiftUI) && canImport(SwiftData)
+#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import SwiftUI
 import SwiftData
 import DeltiqCore

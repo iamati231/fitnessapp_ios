@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Deltiq-Geraeteabnahme (Runde 10, docs/DELTIQ_DEVICE_ACCEPTANCE.md, Punkt 2+3):
 /// reine Quelltext-Regressionstests (kein SwiftUI-Import noetig, laeuft auch

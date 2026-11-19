@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Regression guard for the invisible list row bug in PlansListView.
 /// `Color.clear.frame(height: 0)` as a List row still occupies default row
@@ -11,6 +11,7 @@ final class PlansListViewScrollAnchorTests: XCTestCase {
             let url = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent() // DeltiqUITests
                 .deletingLastPathComponent() // Tests
+                .deletingLastPathComponent() // repo root
                 .appendingPathComponent("Sources/DeltiqUI/Workout/PlansListView.swift")
             return try String(contentsOf: url, encoding: .utf8)
         }

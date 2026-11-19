@@ -1,4 +1,4 @@
-#if canImport(SwiftUI) && canImport(SwiftData)
+#if canImport(SwiftUI) && canImport(SwiftData) && canImport(UIKit)
 import SwiftUI
 import SwiftData
 import DeltiqCore
@@ -584,7 +584,11 @@ public struct SettingsView: View {
                 case .workoutHistory:
                     WorkoutHistoryView()
                 case .strengthProgress:
+                    #if canImport(UIKit)
                     StrengthProgressView()
+                    #else
+                    EmptyView()
+                    #endif
                 }
             }
     }
@@ -616,7 +620,11 @@ public struct SettingsView: View {
                 case .workoutHistory:
                     WorkoutHistoryView()
                 case .strengthProgress:
+                    #if canImport(UIKit)
                     StrengthProgressView()
+                    #else
+                    EmptyView()
+                    #endif
                 }
             }
     }

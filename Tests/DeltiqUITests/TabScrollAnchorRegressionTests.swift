@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Regression guard: keiner der vier Haupt-Tab-Root-Views darf eine
 /// `Color.clear.frame(height: 0)` als Scroll-Anker-Zeile verwenden.
@@ -14,6 +14,7 @@ final class TabScrollAnchorRegressionTests: XCTestCase {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent() // DeltiqUITests
             .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // repo root
             .appendingPathComponent(path)
         return try String(contentsOf: url, encoding: .utf8)
     }

@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (vierter Follow-up-UI-Audit, Fund 1+2): `addExercise(from:)`/
 /// `addCustomExercise(_:)` und `markRestDaySkipped()` hingen am impliziten

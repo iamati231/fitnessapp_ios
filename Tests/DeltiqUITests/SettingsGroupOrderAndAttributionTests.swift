@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Settings-Restructure-Task (2026-10-23): reiner Quelltext-Regressionstest
 /// (kein SwiftUI-Import noetig, laeuft auch auf dem macOS-CI-Runner ohne

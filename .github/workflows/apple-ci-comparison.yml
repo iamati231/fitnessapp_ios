@@ -19,7 +19,12 @@ name: Apple CI Vergleichslauf (manuell)
 # möglicherweise veraltete Versionsnummer festzuschreiben.
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      upload_to_testflight:
+        description: 'TestFlight-Upload nach erfolgreichem Build auslösen'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -212,6 +217,7 @@ jobs:
   trigger-testflight:
     name: TestFlight-Build auslösen (gleicher Branch)
     needs: apple-build-and-test
+    if: inputs.upload_to_testflight == true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

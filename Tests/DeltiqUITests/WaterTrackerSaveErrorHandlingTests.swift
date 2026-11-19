@@ -1,4 +1,4 @@
-import XCTest
+﻿import XCTest
 
 /// Audit-Fund (dritter Follow-up-UI-Audit, Fund 5): addEntry/delete/
 /// deleteTodayEntries speicherten nie explizit. Quelltext-Pruefung, weil

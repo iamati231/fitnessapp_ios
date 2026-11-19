@@ -18,10 +18,14 @@ public enum StrengthProgressCalculator {
         public let isCardio: Bool
         public let isTimeBased: Bool
         public let isPlaceholder: Bool
+        /// Stable-within-session identity of the source log entry — e.g. ObjectIdentifier(log) while
+        /// in ModelContext. Passed through to SetDetail so its SwiftUI id is constant across re-sorts.
+        public let logID: String?
 
         public init(sessionStartTime: Date, exerciseName: String, templateID: UUID?,
                     weightKg: Double, reps: Int, rpe: Double, rir: Float,
-                    isCardio: Bool, isTimeBased: Bool, isPlaceholder: Bool) {
+                    isCardio: Bool, isTimeBased: Bool, isPlaceholder: Bool,
+                    logID: String? = nil) {
             self.sessionStartTime = sessionStartTime
             self.exerciseName = exerciseName
             self.templateID = templateID
@@ -32,6 +36,7 @@ public enum StrengthProgressCalculator {
             self.isCardio = isCardio
             self.isTimeBased = isTimeBased
             self.isPlaceholder = isPlaceholder
+            self.logID = logID
         }
     }
 
@@ -108,13 +113,22 @@ public enum StrengthProgressCalculator {
         public let rpe: Double
         public let rir: Float
         public let isTimeBased: Bool
-        /// 1-based position in the bestSets result; guarantees uniqueness even for identical sets.
+        /// 1-based position in the bestSets result; used only as tie-breaker when logID is nil.
         public let rank: Int
+        /// Opaque identity of the source log entry — e.g. `String(UInt(bitPattern: ObjectIdentifier(log)))`.
+        /// Guarantee: stable for the lifetime of the ModelContext (SwiftData keeps the same object
+        /// instance while @Query holds it). That is sufficient for SwiftUI ForEach identity: prevents
+        /// flicker/state-loss when a heavier set is added and changes the volume-sort rank.
+        /// Not persistent across app restarts — not needed for this use case.
+        /// If a persistent cross-launch identity is ever required, encode PersistentIdentifier via Codable.
+        public let logID: String?
 
-        public var id: String { "\(sessionDate.timeIntervalSince1970)_\(weightKg)_\(reps)_\(rank)" }
+        /// Prefer logID (stable across re-sorts) — fall back to composite only when absent.
+        public var id: String { logID ?? "\(sessionDate.timeIntervalSince1970)_\(weightKg)_\(reps)_\(rank)" }
 
         public init(sessionDate: Date, weightKg: Double,
-                    reps: Int, rpe: Double, rir: Float, isTimeBased: Bool, rank: Int) {
+                    reps: Int, rpe: Double, rir: Float, isTimeBased: Bool, rank: Int,
+                    logID: String? = nil) {
             self.sessionDate = sessionDate
             self.weightKg = weightKg
             self.reps = reps
@@ -122,6 +136,7 @@ public enum StrengthProgressCalculator {
             self.rir = rir
             self.isTimeBased = isTimeBased
             self.rank = rank
+            self.logID = logID
         }
     }
 
@@ -136,6 +151,20 @@ public enum StrengthProgressCalculator {
     }
 
     // MARK: - Public API
+
+    /// Returns true when `rawKind` maps to a strength or WOD PR kind.
+    /// Used by the view to filter `PersonalRecordEntry` rows before passing
+    /// `prDates` here — unknown / cardio raw values return `false` (conservative).
+    public static func isStrengthPRKind(_ rawKind: String) -> Bool {
+        guard let kind = PersonalRecord.Kind(rawValue: rawKind) else { return false }
+        switch kind {
+        case .heaviestWeight, .bestSet, .estimated1RM,
+             .maxReps, .maxHoldSeconds, .mostRounds, .fastestTime:
+            return true
+        case .longestDistance, .fastestPace:
+            return false
+        }
+    }
 
     /// Training overview for a given period.
     ///
@@ -258,7 +287,7 @@ public enum StrengthProgressCalculator {
             .map { (i, log) in
                 SetDetail(sessionDate: log.sessionStartTime, weightKg: log.weightKg,
                           reps: log.reps, rpe: log.rpe, rir: log.rir,
-                          isTimeBased: log.isTimeBased, rank: i + 1)
+                          isTimeBased: log.isTimeBased, rank: i + 1, logID: log.logID)
             }
     }
 }
