@@ -737,6 +737,8 @@ public struct DeltiqPeriodPicker<T: Hashable>: View {
                 } label: {
                     Text(label(item))
                         .font(.system(size: 13, weight: selection == item ? .semibold : .regular))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                         .foregroundStyle(selection == item ? Color.primary : Color.Deltiq.textSecondary)
                         .frame(maxWidth: .infinity)
                         .frame(height: 36)
