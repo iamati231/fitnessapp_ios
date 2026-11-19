@@ -291,6 +291,27 @@ struct StrengthProgressCalculatorTests {
         #expect(SPC.isStrengthPRKind("someFutureKind") == false)
     }
 
+    /// End-to-end: legacy cardio PRs (longestDistance/fastestPace) must not appear
+    /// in the strength PR count. Covers Issue #26 QA: "Legacy-Cardio-PR ohne Equipment-Snapshot".
+    ///
+    /// Flow mirrors StrengthProgressView: pre-filter prEntries with isStrengthPRKind,
+    /// then pass the remaining dates to overviewStats — cardio dates never enter.
+    @Test func cardioLegacyPRNotCountedInStrengthOverview() {
+        typealias Entry = (kind: String, date: Date)
+        let prEntries: [Entry] = [
+            ("longestDistance", now),     // cardio — must be excluded
+            ("fastestPace",     now),     // cardio — must be excluded
+            ("heaviestWeight",  now),     // strength — must be counted
+            ("estimated1RM",    daysAgo(5)), // strength — must be counted
+        ]
+        let strengthPRDates = prEntries
+            .filter { SPC.isStrengthPRKind($0.kind) }
+            .map(\.date)
+        let stats = SPC.overviewStats(logs: [], strengthSessionDates: [],
+                                      prDates: strengthPRDates, period: .allTime, now: now)
+        #expect(stats.prCount == 2, "longestDistance and fastestPace must not inflate strength PR count")
+    }
+
     // MARK: - SetDetail.id stability (Issue #24 regression)
 
     @Test func setIDStableAfterResort() {
