@@ -265,9 +265,8 @@ public struct RootView: View {
     }
 }
 
-/// Top-level container for the post-onboarding flow. Tab order (UI-Ticket
-/// "Tab-Leiste vereinfachen", 2026-11-06, loest main-navigation Plan
-/// 2026-10-22 Task 1 ab): Heute → Training → Ernaehrung → Mehr. Cross-tab
+/// Top-level container for the post-onboarding flow. Tab order (Issue #49,
+/// 2026-11-20): Heute → Training → Fortschritt → Ernaehrung → Mehr. Cross-tab
 /// navigation runs through `AppNavigation`.
 @available(iOS 17.0, macOS 14.0, *)
 struct MainTabView: View {
@@ -322,9 +321,35 @@ struct MainTabView: View {
                 }
                 .tag(AppTab.plan)
 
+            // Issue #49 (2026-11-20): Fortschritt vor Ernaehrung.
+            NavigationStack(path: $navigation.progressPath) {
+                ProgressHomeView()
+                    .navigationDestination(for: ProgressRoute.self) { route in
+                        switch route {
+                        case .overview:
+                            ProgressOverviewView(eyebrowLocKey: "tab.progress")
+                        case .addMeasurement:
+                            MeasurementView()
+                        case .prHistory:
+                            PRHistoryView()
+                        case .workoutHistory:
+                            WorkoutHistoryView()
+                        case .strengthProgress:
+                            StrengthProgressView()
+                        }
+                    }
+            }
+            .tabItem {
+                Label {
+                    Text("tab.progress", bundle: .module)
+                } icon: {
+                    Image(systemName: "chart.bar.fill")
+                }
+            }
+            .tag(AppTab.progress)
+
             // main-navigation Plan, 2026-10-22, Task 1: eigener Ernaehrungs-
-            // Tab zwischen Training und Fortschritt, statt nur ueber die
-            // Dashboard-Kachel erreichbar zu sein.
+            // Tab, statt nur ueber die Dashboard-Kachel erreichbar zu sein.
             // Phase 4.1 (2026-10-31): path-bound auf `nutritionPath` analog zu
             // `toolsPath`; navigationDestination leitet `.planner` → MealPlannerView.
             NavigationStack(path: $navigation.nutritionPath) {
@@ -362,32 +387,6 @@ struct MainTabView: View {
                 }
             }
             .tag(AppTab.nutrition)
-
-            NavigationStack(path: $navigation.progressPath) {
-                ProgressHomeView()
-                    .navigationDestination(for: ProgressRoute.self) { route in
-                        switch route {
-                        case .overview:
-                            ProgressOverviewView(eyebrowLocKey: "tab.progress")
-                        case .addMeasurement:
-                            MeasurementView()
-                        case .prHistory:
-                            PRHistoryView()
-                        case .workoutHistory:
-                            WorkoutHistoryView()
-                        case .strengthProgress:
-                            StrengthProgressView()
-                        }
-                    }
-            }
-            .tabItem {
-                Label {
-                    Text("tab.progress", bundle: .module)
-                } icon: {
-                    Image(systemName: "chart.bar.fill")
-                }
-            }
-            .tag(AppTab.progress)
 
             NavigationStack(path: $navigation.toolsPath) {
                 SettingsView()
