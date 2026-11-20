@@ -58,33 +58,54 @@ public enum ExerciseAlternativeFinder {
     }
 
     /// Issue #51 — Template-Adoption-Pfad: ersetzt eine durch `BaselineBands`
-    /// gesperrte Uebung durch eine zugaengliche Alternative (gleiche
-    /// Muskelgruppe, aus dem uebergebenen Equipment-Pool, kein sperreres
-    /// `baselineMinBand`). Gibt `spec` unveraendert zurueck, wenn:
-    ///   • die Uebung nicht in der Library steht,
-    ///   • kein `baselineMinBand` gesetzt ist (Uebung immer zugaenglich),
-    ///   • das User-Band die Schranke bereits erfuellt,
-    ///   • oder keine Alternativ-Uebung im Pool gefunden wird
-    ///     (lieber falsch-positive Uebung als leere Reihe).
+    /// gesperrte Uebung durch eine zugaengliche Alternative.
+    /// Gibt `spec` unveraendert zurueck (non-nil) wenn die Uebung nicht in der
+    /// Library steht, kein `baselineMinBand` gesetzt ist, oder das User-Band
+    /// die Schranke erfuellt — d.h. kein Konflikt vorliegt.
+    /// Gibt `nil` zurueck wenn die Uebung gesperrt IST und kein zugaenglicher
+    /// Ersatz gefunden werden konnte — kontrollierter Konflikt, die Uebung
+    /// wird vom Aufrufer uebersprungen (kein stilles Zurueckgeben einer
+    /// nachweislich ungeeigneten Uebung).
     public static func baselineSubstitute(
         _ spec: ExerciseSpec,
         bands: BaselineBands,
         equipmentPool: Set<Equipment>
-    ) -> ExerciseSpec {
+    ) -> ExerciseSpec? {
         guard let libSpec = ExerciseLibraryData.byName[spec.name],
               let minBand = libSpec.baselineMinBand,
               !bands.band(for: libSpec.primaryMuscle).meetsMinimum(minBand)
         else { return spec }
-        let alternative = ExerciseLibraryData.all.first {
-            $0.name != spec.name
-                && $0.primaryMuscle == libSpec.primaryMuscle
-                && equipmentPool.contains($0.equipment)
+        // Pass 1: same muscle group, equipment in pool, baseline-accessible
+        if let alt = findAccessibleAlternative(muscle: libSpec.primaryMuscle,
+                                               excluding: spec.name,
+                                               bands: bands,
+                                               equipment: equipmentPool) {
+            return adjustedSpec(replacing: spec, with: alt)
+        }
+        // Pass 2: bodyweight fallback — always physically accessible
+        if let alt = findAccessibleAlternative(muscle: libSpec.primaryMuscle,
+                                               excluding: spec.name,
+                                               bands: bands,
+                                               equipment: [.bodyweight]) {
+            return adjustedSpec(replacing: spec, with: alt)
+        }
+        return nil
+    }
+
+    private static func findAccessibleAlternative(
+        muscle: MuscleGroup,
+        excluding name: String,
+        bands: BaselineBands,
+        equipment: Set<Equipment>
+    ) -> ExerciseTemplateSpec? {
+        ExerciseLibraryData.all.first {
+            $0.name != name
+                && $0.primaryMuscle == muscle
+                && equipment.contains($0.equipment)
                 && !$0.isCardio
                 && ($0.baselineMinBand == nil
                     || bands.band(for: $0.primaryMuscle).meetsMinimum($0.baselineMinBand!))
         }
-        guard let alt = alternative else { return spec }
-        return adjustedSpec(replacing: spec, with: alt)
     }
 
     /// UI-Ticket Punkt 3: Saetze/Wdh./Pause der ORIGINAL-Uebung duerfen nicht

@@ -32,11 +32,23 @@ final class BaselinePlanFilterTests: XCTestCase {
         XCTAssertFalse(BaselineBand.low.meetsMinimum(.moderate))
     }
 
-    func testUnknownAlwaysPasses() {
-        for required in BaselineBand.allCases {
-            XCTAssertTrue(BaselineBand.unknown.meetsMinimum(required),
-                          "unknown should pass minimum \(required)")
-        }
+    func testUnknownBandConservativeBehavior() {
+        // .unknown now behaves like .low (conservative, not permissive)
+        XCTAssertTrue(BaselineBand.unknown.meetsMinimum(.veryLow))
+        XCTAssertTrue(BaselineBand.unknown.meetsMinimum(.low))
+        XCTAssertFalse(BaselineBand.unknown.meetsMinimum(.moderate),
+                       ".unknown must NOT pass .moderate — skipping the test should not unlock advanced exercises")
+        XCTAssertFalse(BaselineBand.unknown.meetsMinimum(.high))
+    }
+
+    func testConservativeBandsPassLowRequirement() {
+        // .conservative = push:.low — must pass a .low-gated exercise
+        XCTAssertTrue(BaselineBands.conservative.band(for: .chest).meetsMinimum(.low))
+    }
+
+    func testConservativeBandsBlockModerateRequirement() {
+        // .conservative = push:.low — must block a .moderate-gated exercise
+        XCTAssertFalse(BaselineBands.conservative.band(for: .chest).meetsMinimum(.moderate))
     }
 
     // MARK: - BaselineBands.band(for:)
@@ -152,16 +164,15 @@ final class BaselinePlanFilterTests: XCTestCase {
 
     // MARK: - P2: 7-day template recovery design
 
-    func testSevenDayTemplateLastDayIsLightCore() {
+    func testSevenDayTemplateLastDayIsRest() {
         guard let template = ProgramTemplates.all.first(where: { $0.daysPerWeek == 7 }) else {
             return XCTFail("No 7-day template found")
         }
         let day7 = template.days.first { $0.sequenceIndex == 7 }
         XCTAssertNotNil(day7, "Day 7 (sequenceIndex 7) must exist")
-        // Day 7 must be lighter than a full PPL day: at most 10 sets total
-        let totalSets = day7?.exercises.reduce(0) { $0 + $1.sets } ?? 0
-        XCTAssertLessThanOrEqual(totalSets, 10,
-            "Day 7 must be a light recovery day (≤10 sets), not a full strength session")
+        XCTAssertEqual(day7?.type, .rest,
+            "Day 7 must be a scheduled rest day — 9 core sets do not count as active recovery (Issue #51 P1)")
+        XCTAssertTrue(day7?.exercises.isEmpty ?? false, "Rest day must have no exercises")
     }
 
     func testSevenDayTemplateIsAdvancedOnly() {
@@ -198,7 +209,8 @@ final class BaselinePlanFilterTests: XCTestCase {
         let blocked = ExerciseSpec(name: "Liegestütze", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 60)
         let result = ExerciseAlternativeFinder.baselineSubstitute(
             blocked, bands: veryLowPush, equipmentPool: [.bodyweight])
-        XCTAssertNotEqual(result.name, "Liegestütze",
+        XCTAssertNotNil(result, "A blocked push-up with accessible bodyweight alternatives must substitute, not skip")
+        XCTAssertNotEqual(result?.name, "Liegestütze",
                           "Blocked push-up must be replaced for veryLow push band")
     }
 
@@ -208,7 +220,8 @@ final class BaselinePlanFilterTests: XCTestCase {
         let spec = ExerciseSpec(name: "Liegestütze", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 60)
         let result = ExerciseAlternativeFinder.baselineSubstitute(
             spec, bands: highBands, equipmentPool: [.bodyweight])
-        XCTAssertEqual(result.name, "Liegestütze",
+        XCTAssertNotNil(result, "Accessible exercise must be returned unchanged")
+        XCTAssertEqual(result?.name, "Liegestütze",
                        "Exercise accessible for high band must remain unchanged")
     }
 
@@ -218,8 +231,9 @@ final class BaselinePlanFilterTests: XCTestCase {
         let spec = ExerciseSpec(name: "Nicht-Existierende-Übung", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 60)
         let result = ExerciseAlternativeFinder.baselineSubstitute(
             spec, bands: veryLowPush, equipmentPool: [.bodyweight])
-        XCTAssertEqual(result.name, "Nicht-Existierende-Übung",
-                       "Exercise not in library must be returned unchanged (no crash)")
+        XCTAssertNotNil(result, "Exercise not in library must be returned unchanged (no crash)")
+        XCTAssertEqual(result?.name, "Nicht-Existierende-Übung",
+                       "Exercise not in library must be returned unchanged")
     }
 
     func testBaselineSubstituteAlternativePreservesSetCount() {
@@ -228,8 +242,23 @@ final class BaselinePlanFilterTests: XCTestCase {
         let blocked = ExerciseSpec(name: "Liegestütze", sets: 4, repsMin: 8, repsMax: 12, restSeconds: 90)
         let result = ExerciseAlternativeFinder.baselineSubstitute(
             blocked, bands: veryLowPush, equipmentPool: [.bodyweight])
-        // The alternative must preserve the original set count
-        XCTAssertEqual(result.sets, 4, "Substituted exercise must keep the original set count")
+        XCTAssertNotNil(result, "A blocked push-up with accessible bodyweight alternatives must substitute")
+        XCTAssertEqual(result?.sets, 4, "Substituted exercise must keep the original set count")
+    }
+
+    func testBaselineSubstituteNeverReturnsSilentlyBlockedExercise() {
+        // The critical invariant from Issue #51 P0: a blocked exercise must NEVER
+        // be returned unchanged. Either a valid substitute is returned, or nil.
+        let veryLowAll = BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow,
+                                       core: .veryLow, cardio: .unknown)
+        let blocked = ExerciseSpec(name: "Klimmzug", sets: 3, repsMin: 5, repsMax: 8, restSeconds: 120)
+        let result = ExerciseAlternativeFinder.baselineSubstitute(
+            blocked, bands: veryLowAll, equipmentPool: [])
+        if let r = result {
+            XCTAssertNotEqual(r.name, "Klimmzug",
+                              "A demonstrably blocked exercise must never be silently returned unchanged")
+        }
+        // nil is also valid — the caller skips the exercise (controlled conflict)
     }
 
     // MARK: - P3: Template frequency coverage

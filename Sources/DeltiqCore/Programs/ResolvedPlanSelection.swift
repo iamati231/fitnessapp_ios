@@ -57,6 +57,30 @@ public struct ResolvedPlanSelection: Sendable, Equatable {
     }
 }
 
+extension ResolvedPlanSelection {
+    /// Issue #51: returns a new selection with baseline-inaccessible exercises
+    /// replaced (or removed when no accessible alternative exists), so preview
+    /// and saved plan show the same exercises.
+    public func withBaselineSubstitution(bands: BaselineBands) -> ResolvedPlanSelection {
+        var pool = Set<Equipment>(days.flatMap { day in
+            day.exercises.compactMap { ExerciseLibraryData.byName[$0.name]?.equipment }
+        })
+        pool.insert(.bodyweight)
+        let adjustedDays = days.map { day in
+            day.withExercises(day.exercises.compactMap { spec in
+                ExerciseAlternativeFinder.baselineSubstitute(spec, bands: bands, equipmentPool: pool)
+            })
+        }
+        return ResolvedPlanSelection(
+            templateID: templateID, variantProfile: variantProfile,
+            days: adjustedDays, equipmentStatus: equipmentStatus,
+            appliedAdaptation: appliedAdaptation,
+            consideredButUnresolvedAdaptations: consideredButUnresolvedAdaptations,
+            ruleSetVersion: ruleSetVersion, equipmentSnapshot: equipmentSnapshot
+        )
+    }
+}
+
 /// Smart-Onboarding-Epic Phase 5.3: loest EIN Template gegen ein echtes
 /// `UserEquipmentProfile` auf — zuerst die unveraenderte Phase-4-Logik
 /// (vollstaendig passende Variante gewinnt IMMER, ohne jeden

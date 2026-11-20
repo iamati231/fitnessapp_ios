@@ -365,14 +365,9 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Beinstrecker",                     sets: 3, repsMin: 12, repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Wadenpresse (sitzend)",            sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
             ]),
-            // Tag 7 bewusst leicht (Core only): kein Arm-/Brust-/Rücken-Stress
-            // nach 6 schweren PPL-Einheiten — echte Aktiv-Regeneration statt
-            // 7. Kraft-Session.
-            DaySpec(name: "Core & Mobilität", localizationKey: "plan.day.armsAndCore", type: .custom, sequenceIndex: 7, exercises: [
-                ExerciseSpec(name: "Plank",             sets: 3, repsMin: 45, repsMax: 60,  restSeconds: 60),
-                ExerciseSpec(name: "Crunches (BW)",     sets: 3, repsMin: 15, repsMax: 20,  restSeconds: 45),
-                ExerciseSpec(name: "Beinheben (liegend)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60)
-            ])
+            // Tag 7: echter Ruhetag nach 6 schweren PPL-Einheiten.
+            // 9 Core-Sätze zählen nicht als Aktiv-Regeneration (Issue #51 P1).
+            DaySpec(name: "Ruhetag", localizationKey: "day.restDay.title", type: .rest, sequenceIndex: 7, exercises: [])
         ],
         targetEnvironment: .gym,
         iconSystemName: "figure.strengthtraining.functional",

@@ -184,12 +184,18 @@ public enum ProgramInstantiator {
             context.insert(day)
 
             for (orderIndex, exerciseSpec) in daySpec.exercises.enumerated() {
-                // Issue #51: Baseline-gesperrte Uebungen durch zugaengliche
-                // Alternativen ersetzen (falls Eingangstest vorhanden).
-                let effectiveSpec = baselineBands.map {
-                    ExerciseAlternativeFinder.baselineSubstitute(
-                        exerciseSpec, bands: $0, equipmentPool: equipmentPool)
-                } ?? exerciseSpec
+                // Issue #51: Baseline-gesperrte Uebungen ersetzen. Gibt
+                // baselineSubstitute nil zurueck (kein Ersatz), wird die
+                // Uebung uebersprungen — kein stilles Hinzufuegen einer
+                // gesperrten Uebung.
+                let effectiveSpec: ExerciseSpec?
+                if let bands = baselineBands {
+                    effectiveSpec = ExerciseAlternativeFinder.baselineSubstitute(
+                        exerciseSpec, bands: bands, equipmentPool: equipmentPool)
+                } else {
+                    effectiveSpec = exerciseSpec
+                }
+                guard let effectiveSpec else { continue }
                 // DEL-098: Wenn der Name in der Library bekannt ist, nehmen
                 // wir die handgepflegten Faktoren. Sonst greifen die
                 // Defaults aus `Exercise.init` ("moderate Isolation").

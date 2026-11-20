@@ -45,9 +45,11 @@ public struct BaselineBands: Sendable, Equatable, Codable, Hashable {
 }
 
 extension BaselineBand {
-    /// Issue #51: true when this band meets `required` (unknown always passes).
+    /// Issue #51: true when this band meets `required`.
+    /// `.unknown` is conservative: behaves like `.low` (passes .veryLow/.low,
+    /// fails .moderate/.high). Prevents unrestricted access when test was skipped.
     public func meetsMinimum(_ required: BaselineBand) -> Bool {
-        guard self != .unknown else { return true }
+        guard self != .unknown else { return 1 >= required.ordinal }
         return ordinal >= required.ordinal
     }
 
@@ -59,5 +61,13 @@ extension BaselineBand {
         case .high:    return 3
         case .unknown: return 4
         }
+    }
+}
+
+extension BaselineBands {
+    /// Conservative defaults for users who have not completed the baseline test.
+    /// Only blocks exercises gated at .moderate or higher — standard exercises pass.
+    public static var conservative: BaselineBands {
+        BaselineBands(push: .low, legs: .low, pull: .low, core: .low, cardio: .unknown)
     }
 }

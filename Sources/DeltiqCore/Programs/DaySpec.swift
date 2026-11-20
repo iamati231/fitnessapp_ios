@@ -101,3 +101,24 @@ public struct DaySpec: Sendable, Hashable {
         self.enduranceSportKind = enduranceSportKind
     }
 }
+
+extension DaySpec {
+    /// Returns a copy of this day with a different exercise list, preserving
+    /// all other fields (time format, circuit config, endurance params, etc.).
+    public func withExercises(_ newExercises: [ExerciseSpec]) -> DaySpec {
+        DaySpec(
+            name: name, localizationKey: localizationKey, type: type,
+            sequenceIndex: sequenceIndex, exercises: newExercises,
+            timeFormat: timeFormat, timeCapMinutes: timeCapMinutes,
+            circuitRounds: circuitRounds, circuitRestSeconds: circuitRestSeconds,
+            circuitMode: circuitMode,
+            enduranceWarmupDurationSeconds: enduranceWarmupDurationSeconds,
+            enduranceCooldownDurationSeconds: enduranceCooldownDurationSeconds,
+            enduranceIntervalRounds: enduranceIntervalRounds,
+            enduranceWorkDurationSeconds: enduranceWorkDurationSeconds,
+            enduranceWorkDistanceKm: enduranceWorkDistanceKm,
+            enduranceRestDurationSeconds: enduranceRestDurationSeconds,
+            enduranceSportKind: enduranceSportKind
+        )
+    }
+}
