@@ -11,7 +11,11 @@ final class ProgramTemplatesTests: XCTestCase {
         // Nutzer-Upload (13. August, zweite Runde): 19 → 20 (Kettlebell
         // Komplexe, neues .circuit-Zeitformat).
         // Phase 2 Catalog-Overhaul: 20 → 21 (full_body_3x_experienced).
-        XCTAssertEqual(ProgramTemplates.all.count, 21,
+        // Issue #51: 21 → 23 (push_pull_legs_7x, full_body_1x — schliesst
+        // die 1-/7-Tage-Luecke aus der Anforderung). Erst jetzt durch einen
+        // echten CI-Lauf entdeckt — vorher war kein Core-Test ausgefuehrt
+        // worden, siehe PR-Beschreibung.
+        XCTAssertEqual(ProgramTemplates.all.count, 23,
                        "Editing the catalog needs an explicit count update — fail-fast prevents silent template drops")
     }
 

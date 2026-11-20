@@ -65,8 +65,8 @@ final class ProgramTemplateCategoryTests: XCTestCase {
         }
     }
 
-    // Alle 21 Templates bleiben erhalten
+    // Alle 23 Templates bleiben erhalten (Issue #51: +push_pull_legs_7x, +full_body_1x)
     func testAllTemplatesPreserved() {
-        XCTAssertEqual(ProgramTemplates.all.count, 21)
+        XCTAssertEqual(ProgramTemplates.all.count, 23)
     }
 }
