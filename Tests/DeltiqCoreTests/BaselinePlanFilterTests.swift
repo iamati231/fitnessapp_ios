@@ -388,22 +388,29 @@ final class BaselinePlanFilterTests: XCTestCase {
     }
 
     /// P0: an empty-day conflict must set isCritical = true.
+    /// Minimal targeted case: one non-rest day with only a blocked exercise + empty pool → isCritical.
     func testCriticalConflictIsFlaggedOnEmptyDay() {
-        guard let template = ProgramTemplates.all.first(where: { $0.id == "push_pull_legs_7x" }) else {
-            return XCTFail("PPL 7x template not found")
-        }
+        // "Klimmzüge (weit)" has baselineMinBand: .low — blocked with veryLow pull.
+        // Empty equipment pool + no profile → no substitute found → day becomes empty → isCritical.
+        let blocked = ExerciseSpec(name: "Klimmzüge (weit)", sets: 3, repsMin: 5, repsMax: 8, restSeconds: 120)
+        let day = DaySpec(name: "Pull", type: .pull, sequenceIndex: 1, exercises: [blocked])
+        let profile = UserEquipmentProfile(availability: [:])
+        let selection = ResolvedPlanSelection(
+            templateID: "test-critical",
+            variantProfile: nil,
+            days: [day],
+            equipmentStatus: .available,
+            appliedAdaptation: nil,
+            consideredButUnresolvedAdaptations: [],
+            ruleSetVersion: "test",
+            equipmentSnapshot: profile
+        )
         let veryLowAll = BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow,
                                        core: .veryLow, cardio: .unknown)
-        let profile = UserEquipmentProfile(availability: [:])
-        let selection = PlanSelectionResolver.resolve(
-            template: template, profile: profile,
-            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
-        ).withBaselineSubstitution(bands: veryLowAll)
-        // With all bands at veryLow and no equipment, at least one day must become empty
-        // → that conflict must be flagged as critical.
-        let criticals = selection.baselineConflicts.filter(\.isCritical)
+        let result = selection.withBaselineSubstitution(bands: veryLowAll)
+        let criticals = result.baselineConflicts.filter(\.isCritical)
         XCTAssertFalse(criticals.isEmpty,
-            "veryLow bands + no equipment must produce at least one critical (empty-day) conflict")
+            "A day with only a blocked exercise and empty pool must produce a critical conflict")
     }
 
     /// P1: an individual exercise removal conflict must NOT be critical.

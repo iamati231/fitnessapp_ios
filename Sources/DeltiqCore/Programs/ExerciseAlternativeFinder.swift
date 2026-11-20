@@ -81,6 +81,7 @@ public enum ExerciseAlternativeFinder {
                                                excluding: spec.name,
                                                bands: bands,
                                                equipment: equipmentPool,
+                                               maxDifficultyLevel: libSpec.difficultyLevel,
                                                movementPattern: libSpec.movementPattern,
                                                profile: profile) {
             return adjustedSpec(replacing: spec, with: alt)
@@ -91,6 +92,7 @@ public enum ExerciseAlternativeFinder {
                                                bands: bands,
                                                equipment: [.bodyweight],
                                                strictBodyweight: true,
+                                               maxDifficultyLevel: libSpec.difficultyLevel,
                                                movementPattern: libSpec.movementPattern,
                                                profile: profile) {
             return adjustedSpec(replacing: spec, with: alt)
@@ -104,10 +106,12 @@ public enum ExerciseAlternativeFinder {
         bands: BaselineBands,
         equipment: Set<Equipment>,
         strictBodyweight: Bool = false,
+        maxDifficultyLevel: DifficultyLevel? = nil,
         movementPattern: MovementPattern? = nil,
         profile: UserEquipmentProfile? = nil
     ) -> ExerciseTemplateSpec? {
-        ExerciseLibraryData.all.first {
+        let allowed = maxDifficultyLevel.map(difficultiesAtOrBelow)
+        return ExerciseLibraryData.all.first {
             $0.name != name
                 && $0.primaryMuscle == muscle
                 && equipment.contains($0.equipment)
@@ -116,7 +120,8 @@ public enum ExerciseAlternativeFinder {
                     || bands.band(for: $0.primaryMuscle).meetsMinimum($0.baselineMinBand!))
                 && (!strictBodyweight
                     || ($0.equipmentRequirement.map(\.requiresNoPhysicalItem) ?? true))
-                && (movementPattern == nil || $0.movementPattern == nil || $0.movementPattern == movementPattern)
+                && (allowed == nil || allowed!.contains($0.difficultyLevel))
+                && (movementPattern == nil || $0.movementPattern == movementPattern)
                 && (profile == nil || $0.equipmentRequirement == nil
                     || $0.equipmentRequirement!.evaluate(against: profile!).isSatisfied)
         }

@@ -691,7 +691,7 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Kettlebell Alternating Hang Clean",         equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced,     localizationKey: "exercise.name.kettlebellAlternatingHangClean"),
         ExerciseTemplateSpec(name: "Kettlebell Alternating Press",              equipment: .kettlebell, primaryMuscle: .shoulders,                                  localizationKey: "exercise.name.kettlebellAlternatingPress"),
         ExerciseTemplateSpec(name: "Kettlebell Alternating Press Liegend",      equipment: .kettlebell, primaryMuscle: .chest,                                     localizationKey: "exercise.name.kettlebellAlternatingPressLying"),
-        ExerciseTemplateSpec(name: "Kettlebell Alternating Row",                equipment: .kettlebell, primaryMuscle: .back,                                      localizationKey: "exercise.name.kettlebellAlternatingRow"),
+        ExerciseTemplateSpec(name: "Kettlebell Alternating Row",                equipment: .kettlebell, primaryMuscle: .back,                                      localizationKey: "exercise.name.kettlebellAlternatingRow",           movementPattern: .horizontalPull),
         ExerciseTemplateSpec(name: "Kettlebell Bottoms-Up Clean",               equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced,     localizationKey: "exercise.name.kettlebellBottomsUpClean"),
         ExerciseTemplateSpec(name: "Kettlebell Double Hang Clean",              equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced,     localizationKey: "exercise.name.kettlebellDoubleHangClean",   equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
         ExerciseTemplateSpec(name: "Kettlebell Double Jerk",                    equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .advanced,     localizationKey: "exercise.name.kettlebellDoubleJerk",        equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
@@ -702,7 +702,8 @@ public enum ExerciseLibraryData {
         ExerciseTemplateSpec(name: "Kettlebell Lunge mit Durchreichen",         equipment: .kettlebell, primaryMuscle: .quads,     difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellLungePassing"),
         ExerciseTemplateSpec(name: "Kettlebell Seesaw Press",                   equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellSeesawPress",       equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
         ExerciseTemplateSpec(name: "Kettlebell Two Arm Clean",                  equipment: .kettlebell, primaryMuscle: .shoulders, difficultyLevel: .intermediate, localizationKey: "exercise.name.kettlebellTwoArmClean",       equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
-        ExerciseTemplateSpec(name: "Kettlebell Rudern (beide Arme)",            equipment: .kettlebell, primaryMuscle: .back,                                      localizationKey: "exercise.name.kettlebellRowBothArms",       equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
+        ExerciseTemplateSpec(name: "Kettlebell Rudern (beide Arme)",            equipment: .kettlebell, primaryMuscle: .back,                                      localizationKey: "exercise.name.kettlebellRowBothArms",       equipmentRequirement: .item(.kettlebell, minimumCount: 2),
+                             movementPattern: .horizontalPull),
         ExerciseTemplateSpec(name: "Kettlebell Schulterdrücken Sitzend (beide Arme)", equipment: .kettlebell, primaryMuscle: .shoulders,                           localizationKey: "exercise.name.kettlebellSeatedPressDoubleArm", equipmentRequirement: .item(.kettlebell, minimumCount: 2)),
 
         // Barbell
@@ -714,12 +715,15 @@ public enum ExerciseLibraryData {
 
         // Cable
         ExerciseTemplateSpec(name: "Hammer Curl Kabel (Seil)",                  equipment: .cable,      primaryMuscle: .biceps,    localizationKey: "exercise.name.cableRopeHammerCurl"),
-        ExerciseTemplateSpec(name: "Kabelzug Tiefrudern",                       equipment: .cable,      primaryMuscle: .back,      localizationKey: "exercise.name.cableLowRow"),
+        ExerciseTemplateSpec(name: "Kabelzug Tiefrudern",                       equipment: .cable,      primaryMuscle: .back,      localizationKey: "exercise.name.cableLowRow",
+                             movementPattern: .horizontalPull),
         ExerciseTemplateSpec(name: "Kabelzug Schulterdrücken",                  equipment: .cable,      primaryMuscle: .shoulders, localizationKey: "exercise.name.cableShoulderPress"),
-        ExerciseTemplateSpec(name: "Kabelzug Rudern (stehend)",                 equipment: .cable,      primaryMuscle: .back,      localizationKey: "exercise.name.cableStandingRow"),
+        ExerciseTemplateSpec(name: "Kabelzug Rudern (stehend)",                 equipment: .cable,      primaryMuscle: .back,      localizationKey: "exercise.name.cableStandingRow",
+                             movementPattern: .horizontalPull),
         ExerciseTemplateSpec(name: "Kabelzug Frontheben",                       equipment: .cable,      primaryMuscle: .shoulders, localizationKey: "exercise.name.cableFrontRaise"),
         ExerciseTemplateSpec(name: "Kabelzug Latissimus Strecken",              equipment: .cable,      primaryMuscle: .back,      localizationKey: "exercise.name.cableLatStretch"),
-        ExerciseTemplateSpec(name: "Kabelzug Rudern EZ",                        equipment: .cable,      primaryMuscle: .back,      localizationKey: "exercise.name.cableEZRow"),
+        ExerciseTemplateSpec(name: "Kabelzug Rudern EZ",                        equipment: .cable,      primaryMuscle: .back,      localizationKey: "exercise.name.cableEZRow",
+                             movementPattern: .horizontalPull),
 
         // Bodyweight / Plyometrics
         ExerciseTemplateSpec(name: "3/4 Sit-Up",                                 equipment: .bodyweight, primaryMuscle: .core,      difficultyLevel: .beginner,    localizationKey: "exercise.name.threeQuarterSitUp"),
