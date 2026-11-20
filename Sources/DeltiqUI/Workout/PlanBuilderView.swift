@@ -122,6 +122,10 @@ public struct PlanBuilderView: View {
     /// die Entscheidung stattdessen direkt selbst, siehe `adoptPlan()`.
     private let onEnduranceModalityChosen: (@MainActor (EnduranceModality?) -> Void)?
 
+    /// Issue #51: baseline bands evaluated from the onboarding assessment,
+    /// threaded into currentInput so the FIRST generated plan already respects them.
+    private let preseededBaselineBands: BaselineBands?
+
     /// Ticket "Gym: Alle Gewichte und Geraete standardmaessig beruecksichtigen":
     /// `equipmentPreferences` startet sonst leer (siehe dortige Doku) - ein
     /// Gym-Nutzer muesste sonst jede Ausstattung im Wizard einzeln antippen,
@@ -158,11 +162,13 @@ public struct PlanBuilderView: View {
         preseededEnduranceModality: EnduranceModality? = nil,
         preseededGoal: TrainingGoal? = nil,
         preseededDaysPerWeek: Int? = nil,
+        preseededBaselineBands: BaselineBands? = nil,
         onGenerated: (@MainActor (PlanGeneratorInput, PlanGenerator.Result) -> PlanBuilderHandoffOutcome)? = nil,
         onEnduranceModalityChosen: (@MainActor (EnduranceModality?) -> Void)? = nil
     ) {
         self.onGenerated = onGenerated
         self.onEnduranceModalityChosen = onEnduranceModalityChosen
+        self.preseededBaselineBands = preseededBaselineBands
         self.hasExplicitEquipmentPreferences = initialInput != nil
         if let initialInput {
             _selectedKinds = State(initialValue: initialInput.selections.map(\.kind))
@@ -1379,7 +1385,8 @@ public struct PlanBuilderView: View {
             equipmentPreferences: equipmentPreferences,
             usesFixedWeekdays: usesFixedWeekdays,
             fixedWeekdays: Array(fixedWeekdays),
-            trainingGoal: selectedTrainingGoal
+            trainingGoal: selectedTrainingGoal,
+            baselineBands: preseededBaselineBands
         )
     }
 

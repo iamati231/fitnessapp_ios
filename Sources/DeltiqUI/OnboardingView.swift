@@ -395,12 +395,9 @@ public struct OnboardingView: View {
                 ), preseededEnduranceModality: enduranceModality,
                 preseededGoal: trainingGoal,
                 preseededDaysPerWeek: weeklyGoal,
+                preseededBaselineBands: baselineAssessmentResult.map { BaselineAssessmentEvaluator.evaluate($0) },
                 onGenerated: { input, result in
-                    if let baseline = baselineAssessmentResult {
-                        customPlanInput = input.withBaselineBands(BaselineAssessmentEvaluator.evaluate(baseline))
-                    } else {
-                        customPlanInput = input
-                    }
+                    customPlanInput = input
                     customPlanResult = result
                     clearSelectedTemplate()
                     return .success
