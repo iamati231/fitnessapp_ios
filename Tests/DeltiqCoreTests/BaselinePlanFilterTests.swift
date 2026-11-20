@@ -132,10 +132,21 @@ final class BaselinePlanFilterTests: XCTestCase {
         XCTAssertEqual(copy.baselineBands, bands)
     }
 
-    // MARK: - ProgramTemplates 1-day coverage
+    // MARK: - ProgramTemplates day-count coverage
 
     func testOneDayTemplateExists() {
         let oneDayTemplates = ProgramTemplates.all.filter { $0.daysPerWeek == 1 }
         XCTAssertFalse(oneDayTemplates.isEmpty, "ProgramTemplates.all must include at least one 1-day template")
+    }
+
+    func testSevenDayTemplateExists() {
+        let sevenDayTemplates = ProgramTemplates.all.filter { $0.daysPerWeek == 7 }
+        XCTAssertFalse(sevenDayTemplates.isEmpty, "ProgramTemplates.all must include at least one 7-day template")
+    }
+
+    func testSevenDayTemplateHasSevenDays() {
+        let template = ProgramTemplates.all.first { $0.daysPerWeek == 7 }
+        XCTAssertNotNil(template)
+        XCTAssertEqual(template?.days.count, 7, "7-day template must contain exactly 7 DaySpecs")
     }
 }

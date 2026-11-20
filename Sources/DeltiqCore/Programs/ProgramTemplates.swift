@@ -299,7 +299,88 @@ public enum ProgramTemplates {
         targetGoals: [.hypertrophy, .strength]
     )
 
-    // MARK: - 6. Upper-Lower-Split (4 days)
+    // MARK: - 6. Push-Pull-Legs + Arme & Core (7 days)
+    //
+    // Echtes 7-Tage-Template: PPL-Doppel (6 Tage) plus ein dedizierter
+    // Arm- und Core-Tag — keine stille Reduktion auf 6 Tage (Issue #51).
+    // Ausschließlich für Fortgeschrittene mit nachweislicher Regenerations-
+    // fähigkeit; mittleres/hohes Volumen, RIR bewusst nicht fixiert.
+
+    private static let pushPullLegs7x = ProgramTemplate(
+        id: "push_pull_legs_7x",
+        name: "PPL + Arme & Core",
+        localizationKey: "plan.template.pushPullLegs7x.name",
+        tagline: "7 Tage · Maximum-Volumen",
+        taglineKey: "plan.template.pushPullLegs7x.tagline",
+        descriptionText: "7-Tage-Push-Pull-Legs: alle Muskelgruppen zweimal pro Woche plus ein dedizierter Arm- und Core-Tag. Höchstes Trainingsvolumen — nur für Fortgeschrittene mit guter Regenerationsfähigkeit.",
+        descriptionKey: "plan.template.pushPullLegs7x.description",
+        focus: "Hypertrophie",
+        focusKey: "plan.template.pushPullLegs7x.focus",
+        daysPerWeek: 7,
+        days: [
+            DaySpec(name: "Push A", localizationKey: "plan.day.pushA", type: .push, sequenceIndex: 1, exercises: [
+                ExerciseSpec(name: "Bankdrücken",                      sets: 4, repsMin: 4,  repsMax: 6,  restSeconds: 180),
+                ExerciseSpec(name: "Schulterdrücken (stehend)",        sets: 3, repsMin: 6,  repsMax: 8,  restSeconds: 120),
+                ExerciseSpec(name: "Schrägbankdrücken (aufwärts)",     sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Seitheben",                        sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Trizepsdrücken (Kabel)",           sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Sitzendes Trizepsstrecken (KH)",   sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75)
+            ]),
+            DaySpec(name: "Pull A", localizationKey: "plan.day.pullA", type: .pull, sequenceIndex: 2, exercises: [
+                ExerciseSpec(name: "Kreuzheben (konventionell)",       sets: 3, repsMin: 4,  repsMax: 6,  restSeconds: 180),
+                ExerciseSpec(name: "Rudern vorgebeugt",                sets: 4, repsMin: 6,  repsMax: 8,  restSeconds: 120),
+                ExerciseSpec(name: "Klimmzüge (weit)",                 sets: 3, repsMin: 6,  repsMax: 10, restSeconds: 120),
+                ExerciseSpec(name: "Reverse Cable Fly",                sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Bizeps-Curl (LH)",                 sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Hammer Curl",                      sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75)
+            ]),
+            DaySpec(name: "Beine A", localizationKey: "plan.day.legsA", type: .legs, sequenceIndex: 3, exercises: [
+                ExerciseSpec(name: "Kniebeuge",                        sets: 4, repsMin: 6,  repsMax: 8,  restSeconds: 180),
+                ExerciseSpec(name: "Rumänisches Kreuzheben",           sets: 4, repsMin: 8,  repsMax: 10, restSeconds: 120),
+                ExerciseSpec(name: "Bulgarische Kniebeuge (KH)",       sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Beinbeuger liegend",               sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90),
+                ExerciseSpec(name: "Wadenheben (stehend, LH)",         sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
+            ]),
+            DaySpec(name: "Push B", localizationKey: "plan.day.pushB", type: .push, sequenceIndex: 4, exercises: [
+                ExerciseSpec(name: "Schrägbankdrücken aufwärts (KH)", sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Schulterdrücken (KH)",             sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Pec Deck (Butterfly)",             sets: 3, repsMin: 12, repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Kabel Seitheben",                  sets: 4, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Trizepsstrecker über Kopf (Kabel)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Dips (Trizeps)",                   sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90)
+            ]),
+            DaySpec(name: "Pull B", localizationKey: "plan.day.pullB", type: .pull, sequenceIndex: 5, exercises: [
+                ExerciseSpec(name: "Latzug (Kabel)",                   sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Kabelrudern sitzend",              sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Rudern einarmig (KH)",             sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Reverse Flyes (KH)",               sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
+                ExerciseSpec(name: "Kabel Curl",                       sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Schrägbank-Curl (KH)",             sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75)
+            ]),
+            DaySpec(name: "Beine B", localizationKey: "plan.day.legsB", type: .legs, sequenceIndex: 6, exercises: [
+                ExerciseSpec(name: "Front Squat",                      sets: 4, repsMin: 6,  repsMax: 8,  restSeconds: 180),
+                ExerciseSpec(name: "Glute Bridge (auf Bank)",          sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Beinpresse",                       sets: 3, repsMin: 10, repsMax: 15, restSeconds: 90),
+                ExerciseSpec(name: "Beinbeuger liegend",               sets: 3, repsMin: 4,  repsMax: 8,  restSeconds: 120),
+                ExerciseSpec(name: "Beinstrecker",                     sets: 3, repsMin: 12, repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Wadenpresse (sitzend)",            sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
+            ]),
+            DaySpec(name: "Arme & Core", localizationKey: "plan.day.armsAndCore", type: .fullBody, sequenceIndex: 7, exercises: [
+                ExerciseSpec(name: "Bizeps-Curl (LH)",                 sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Hammer Curl",                      sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Trizepsdrücken (Kabel)",           sets: 4, repsMin: 10, repsMax: 15, restSeconds: 75),
+                ExerciseSpec(name: "Skull Crusher",                    sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Plank",                            sets: 3, repsMin: 45, repsMax: 60, restSeconds: 60),
+                ExerciseSpec(name: "Crunch",                           sets: 3, repsMin: 15, repsMax: 20, restSeconds: 45)
+            ])
+        ],
+        targetEnvironment: .gym,
+        iconSystemName: "figure.strengthtraining.functional",
+        targetExperience: [.advanced],
+        targetGoals: [.hypertrophy]
+    )
+
+    // MARK: - 7. Upper-Lower-Split (4 days)
 
     private static let upperLower = ProgramTemplate(
         id: "upper_lower",
@@ -1453,6 +1534,7 @@ public enum ProgramTemplates {
         homeGymHero,
         bodyweightMastery,
         pushPullLegs,
+        pushPullLegs7x,
         upperLower,
         arnoldSplit,
         broSplit,
