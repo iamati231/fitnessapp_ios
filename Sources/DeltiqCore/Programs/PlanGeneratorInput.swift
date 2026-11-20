@@ -130,18 +130,37 @@ public struct PlanGeneratorInput: Codable, Sendable, Hashable {
     /// decodiert automatisch zu `nil`, "Neu rechnen" bleibt ohne Migration.
     public let trainingGoal: TrainingGoal?
 
+    /// Issue #51: evaluated baseline bands from the onboarding assessment. `nil`
+    /// means no test was taken (existing plans, skipped assessment). Missing JSON
+    /// key decodes to `nil` automatically — backward compatible.
+    public let baselineBands: BaselineBands?
+
     public init(
         selections: [PlanGeneratorTypeSelection],
         equipmentPreferences: Set<Equipment>,
         usesFixedWeekdays: Bool,
         fixedWeekdays: [Int] = [],
-        trainingGoal: TrainingGoal? = nil
+        trainingGoal: TrainingGoal? = nil,
+        baselineBands: BaselineBands? = nil
     ) {
         self.selections = selections
         self.equipmentPreferences = equipmentPreferences
         self.usesFixedWeekdays = usesFixedWeekdays
         self.fixedWeekdays = fixedWeekdays
         self.trainingGoal = trainingGoal
+        self.baselineBands = baselineBands
+    }
+
+    /// Issue #51: returns a copy with baseline bands injected.
+    public func withBaselineBands(_ bands: BaselineBands?) -> PlanGeneratorInput {
+        PlanGeneratorInput(
+            selections: selections,
+            equipmentPreferences: equipmentPreferences,
+            usesFixedWeekdays: usesFixedWeekdays,
+            fixedWeekdays: fixedWeekdays,
+            trainingGoal: trainingGoal,
+            baselineBands: bands
+        )
     }
 
     public var totalDaysPerWeek: Int {

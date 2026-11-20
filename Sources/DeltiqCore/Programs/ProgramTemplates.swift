@@ -1401,6 +1401,34 @@ public enum ProgramTemplates {
         targetGoals: [.functional, .weightLoss]
     )
 
+    // MARK: - 23. Ganzkörper 1× (1 Tag / alle Erfahrungsstufen)
+
+    private static let fullBodyOnce = ProgramTemplate(
+        id: "full_body_1x",
+        name: "Ganzkörper 1×",
+        localizationKey: "plan.template.fullBody1x.name",
+        tagline: "1 Tag · Alles in einer Einheit",
+        taglineKey: "plan.template.fullBody1x.tagline",
+        descriptionText: "Eine vollständige Ganzkörper-Einheit pro Woche. Ideal für einen begrenzten Zeitplan — alle großen Muskelgruppen in einer Session.",
+        descriptionKey: "plan.template.fullBody1x.description",
+        focus: "Anfänger",
+        focusKey: "plan.template.fullBody1x.focus",
+        daysPerWeek: 1,
+        days: [
+            DaySpec(name: "Ganzkörper", localizationKey: "plan.day.fullBody1x", type: .fullBody, sequenceIndex: 1, exercises: [
+                ExerciseSpec(name: "Beinpresse",             sets: 3, repsMin: 10, repsMax: 15, restSeconds: 120),
+                ExerciseSpec(name: "Bankdrücken",           sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 120),
+                ExerciseSpec(name: "Kabelrudern sitzend",    sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Schulterdrücken (KH)",   sets: 2, repsMin: 8,  repsMax: 12, restSeconds: 90),
+                ExerciseSpec(name: "Bizeps-Curl (LH)",        sets: 2, repsMin: 10, repsMax: 15, restSeconds: 60)
+            ])
+        ],
+        targetEnvironment: .gym,
+        iconSystemName: "figure.strengthtraining.functional",
+        targetExperience: [.beginner, .intermediate, .advanced],
+        targetGoals: [.hypertrophy, .functional, .weightLoss]
+    )
+
     // MARK: - Display order
 
     /// Canonical section order for the picker. Sections not in this list sort last.
@@ -1442,6 +1470,7 @@ public enum ProgramTemplates {
         crossfitWeighted,
         kettlebellBeginner,
         kettlebellAdvanced,
-        kettlebellComplexes
+        kettlebellComplexes,
+        fullBodyOnce
     ]
 }

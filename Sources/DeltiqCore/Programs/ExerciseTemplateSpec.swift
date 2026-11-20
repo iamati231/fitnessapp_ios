@@ -82,6 +82,11 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
     /// separater, spaeterer Schritt — Audit Abschnitt 9).
     public let equipmentRequirement: ExerciseRequirement?
 
+    /// Issue #51: minimum baseline band required for this exercise. `nil` = no
+    /// restriction (accessible to all). Used by PlanGenerator to skip gated
+    /// exercises (e.g. standard push-ups) for users who scored veryLow.
+    public let baselineMinBand: BaselineBand?
+
     public init(
         name: String,
         equipment: Equipment,
@@ -100,7 +105,8 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         technicalComplexityFactor: Double = 0.30,
         recoveryClass: ExerciseRecoveryClass = .medium,
         localizationKey: String? = nil,
-        equipmentRequirement: ExerciseRequirement? = nil
+        equipmentRequirement: ExerciseRequirement? = nil,
+        baselineMinBand: BaselineBand? = nil
     ) {
         self.name = name
         self.equipment = equipment
@@ -118,5 +124,6 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         self.recoveryClass = recoveryClass
         self.localizationKey = localizationKey
         self.equipmentRequirement = equipmentRequirement
+        self.baselineMinBand = baselineMinBand
     }
 }

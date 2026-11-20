@@ -124,7 +124,7 @@ public enum PlanGenerator {
             if selection.kind.isCardio {
                 candidates.append(contentsOf: cardioCandidates(for: selection))
             } else {
-                candidates.append(contentsOf: strengthCandidates(for: selection, goal: input.trainingGoal ?? .functional, shuffle: shuffle))
+                candidates.append(contentsOf: strengthCandidates(for: selection, goal: input.trainingGoal ?? .functional, baselineBands: input.baselineBands, shuffle: shuffle))
             }
         }
 
@@ -198,7 +198,7 @@ public enum PlanGenerator {
 
         while alternatives.count < count, attempts < maxAttempts {
             attempts += 1
-            let candidates = strengthCandidates(for: selection, goal: input.trainingGoal ?? .functional, shuffle: true)
+            let candidates = strengthCandidates(for: selection, goal: input.trainingGoal ?? .functional, baselineBands: input.baselineBands, shuffle: true)
             guard let picked = candidates.randomElement() else { break }
             let pickedNames = Set(picked.exercises.map(\.name))
             guard !pickedNames.isEmpty, !seenExerciseSets.contains(pickedNames) else { continue }
@@ -262,12 +262,21 @@ public enum PlanGenerator {
         return []
     }
 
-    private static func strengthCandidates(for selection: PlanGeneratorTypeSelection, goal: TrainingGoal, shuffle: Bool) -> [Candidate] {
+    private static func strengthCandidates(for selection: PlanGeneratorTypeSelection, goal: TrainingGoal, baselineBands: BaselineBands?, shuffle: Bool) -> [Candidate] {
         let equipmentSet = strengthEquipmentPool(for: selection)
         guard !equipmentSet.isEmpty else { return [] }
         let allowedDifficulties = difficultiesAtOrBelow(selection.experience)
-        let pool = ExerciseLibraryData.all.filter {
+        let equipmentPool = ExerciseLibraryData.all.filter {
             equipmentSet.contains($0.equipment) && !$0.isCardio && allowedDifficulties.contains($0.difficultyLevel)
+        }
+        let pool: [ExerciseTemplateSpec]
+        if let bands = baselineBands {
+            pool = equipmentPool.filter { spec in
+                guard let minBand = spec.baselineMinBand else { return true }
+                return bands.band(for: spec.primaryMuscle).meetsMinimum(minBand)
+            }
+        } else {
+            pool = equipmentPool
         }
         guard !pool.isEmpty else { return [] }
 
