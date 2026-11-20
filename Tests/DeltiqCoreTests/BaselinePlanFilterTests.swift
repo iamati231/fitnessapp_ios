@@ -442,4 +442,68 @@ final class BaselinePlanFilterTests: XCTestCase {
         XCTAssertTrue(unknownExercises.isEmpty,
                       "These exercises in the 7-day template are not in ExerciseLibraryData: \(unknownExercises)")
     }
+
+    // MARK: - Issue #51 Punkt 2: effectiveBaselineMinBand (Sicherheitsnetz fuer unannotierte Uebungen)
+
+    func testEffectiveBaselineMinBandIsNilForBeginnerDifficultyWithoutExplicitAnnotation() {
+        let spec = ExerciseTemplateSpec(name: "Test", equipment: .bodyweight, primaryMuscle: .chest, difficultyLevel: .beginner)
+        XCTAssertNil(spec.effectiveBaselineMinBand)
+    }
+
+    func testEffectiveBaselineMinBandIsLowForIntermediateDifficultyWithoutExplicitAnnotation() {
+        let spec = ExerciseTemplateSpec(name: "Test", equipment: .bodyweight, primaryMuscle: .chest, difficultyLevel: .intermediate)
+        XCTAssertEqual(spec.effectiveBaselineMinBand, .low)
+    }
+
+    func testEffectiveBaselineMinBandIsLowForAdvancedDifficultyWithoutExplicitAnnotation() {
+        let spec = ExerciseTemplateSpec(name: "Test", equipment: .bodyweight, primaryMuscle: .back, difficultyLevel: .advanced)
+        XCTAssertEqual(spec.effectiveBaselineMinBand, .low,
+            "Advanced, unannotated exercises must require at least .low — must not sail through ungated for veryLow-tested users")
+    }
+
+    func testExplicitBaselineMinBandAlwaysWinsOverDerivedDefault() {
+        let spec = ExerciseTemplateSpec(name: "Test", equipment: .bodyweight, primaryMuscle: .chest,
+                                         difficultyLevel: .beginner, baselineMinBand: .moderate)
+        XCTAssertEqual(spec.effectiveBaselineMinBand, .moderate,
+            "An explicit, hand-calibrated baselineMinBand must never be overridden by the derived default")
+    }
+
+    func testRealAdvancedUnannotatedExerciseIsGatedForVeryLowTestedUser() {
+        // "Kreuzheben (konventionell)": .advanced, kein explizites baselineMinBand —
+        // genau der Fall aus der PR-Beschreibung ("besonders anspruchsvolle
+        // Uebungen ohne Baseline-Annotation duerfen nicht ungeprueft im
+        // Anfaengerplan landen").
+        guard let spec = ExerciseLibraryData.byName["Kreuzheben (konventionell)"] else {
+            return XCTFail("Kreuzheben (konventionell) missing from catalog")
+        }
+        XCTAssertNil(spec.baselineMinBand, "Precondition: this exercise has no explicit annotation")
+        let veryLowAll = BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow, core: .veryLow, cardio: .veryLow)
+        XCTAssertFalse(veryLowAll.band(for: spec.primaryMuscle).meetsMinimum(spec.effectiveBaselineMinBand!),
+            "An advanced, unannotated exercise must be gated for a user tested as veryLow on its movement family")
+    }
+
+    func testRealAdvancedUnannotatedExerciseRemainsAccessibleUnderConservativeDefaultBands() {
+        // Regressionsschutz: BaselineBands.conservative (der Pfad fuer
+        // uebersprungene Tests) muss unannotierte .advanced/.intermediate
+        // Uebungen weiterhin durchlassen — neu gesperrt werden nur
+        // tatsaechlich als veryLow GETESTETE Nutzer, nicht der haeufigste
+        // "Test uebersprungen"-Default.
+        guard let spec = ExerciseLibraryData.byName["Kreuzheben (konventionell)"] else {
+            return XCTFail("Kreuzheben (konventionell) missing from catalog")
+        }
+        XCTAssertTrue(BaselineBands.conservative.band(for: spec.primaryMuscle).meetsMinimum(spec.effectiveBaselineMinBand ?? .veryLow),
+            "Conservative (untested) default bands must still allow unannotated advanced exercises — no new regression for the most common path")
+    }
+
+    func testPlanGeneratorExcludesAdvancedUnannotatedExerciseForVeryLowTestedUser() {
+        let veryLowAll = BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow, core: .veryLow, cardio: .veryLow)
+        let selection = PlanGeneratorTypeSelection(kind: .barbell, daysPerWeek: 3, sessionDurationMinutes: 45, experience: .advanced)
+        let planInput = PlanGeneratorInput(
+            selections: [selection], equipmentPreferences: [.barbell], usesFixedWeekdays: false, baselineBands: veryLowAll
+        )
+        let result = PlanGenerator.generate(from: planInput)
+        let allNames = result.days.flatMap { $0.spec.exercises.map(\.name) }
+        XCTAssertFalse(allNames.contains("Kreuzheben (konventionell)"),
+            "veryLow-tested user must not receive the advanced, unannotated Kreuzheben")
+    }
 }

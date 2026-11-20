@@ -116,4 +116,35 @@ final class ExerciseAlternativeFinderTests: XCTestCase {
         XCTAssertEqual(adjusted.sets, 4)
         XCTAssertEqual(adjusted.restSeconds, 75)
     }
+
+    // MARK: - Issue #51 Punkt 2: baselineSubstitute — Ersatz-Schwierigkeit am tatsaechlichen Niveau
+
+    /// "Breite Liegestütze": explizites `baselineMinBand: .low`, Default-
+    /// Schwierigkeit `.intermediate`. Fuer einen push:.veryLow-Nutzer (ein
+    /// echter TEST-Befund, kein uebersprungener Test) durfte der Ersatz
+    /// VORHER bis zur ORIGINAL-Schwierigkeit (.intermediate) reichen — das
+    /// sagt nichts ueber das tatsaechliche Leistungsniveau dieses Nutzers
+    /// aus. Jetzt muss er auf das Band-abgeleitete Maximum (.beginner)
+    /// begrenzt sein.
+    func testBaselineSubstituteCapsReplacementDifficultyByActualBandNotOriginalDifficulty() {
+        let veryLowPush = BaselineBands(push: .veryLow, legs: .moderate, pull: .moderate,
+                                        core: .moderate, cardio: .unknown)
+        let blocked = ExerciseSpec(name: "Breite Liegestütze", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 60)
+        let result = ExerciseAlternativeFinder.baselineSubstitute(blocked, bands: veryLowPush, equipmentPool: [.bodyweight])
+        guard let substitute = result, let spec = ExerciseLibraryData.byName[substitute.name] else {
+            return XCTFail("Expected an accessible .beginner chest substitute for a veryLow push band")
+        }
+        XCTAssertEqual(spec.difficultyLevel, .beginner,
+            "Substitute for a veryLow-banded user must be capped at .beginner, not merely at the original's .intermediate difficultyLevel")
+    }
+
+    /// Gegenprobe: fuer einen high-gebandeten Nutzer darf derselbe Mechanismus
+    /// nicht unnoetig einschraenken — "Breite Liegestütze" selbst ist ja schon
+    /// zugaenglich (high erfuellt .low), die Funktion gibt sie unveraendert zurueck.
+    func testBaselineSubstituteDifficultyCapDoesNotAffectAlreadyAccessibleExercises() {
+        let highPush = BaselineBands(push: .high, legs: .high, pull: .high, core: .high, cardio: .high)
+        let spec = ExerciseSpec(name: "Breite Liegestütze", sets: 3, repsMin: 8, repsMax: 12, restSeconds: 60)
+        let result = ExerciseAlternativeFinder.baselineSubstitute(spec, bands: highPush, equipmentPool: [.bodyweight])
+        XCTAssertEqual(result?.name, "Breite Liegestütze", "Already-accessible exercises must pass through unchanged")
+    }
 }

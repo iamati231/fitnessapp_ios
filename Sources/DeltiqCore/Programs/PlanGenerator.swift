@@ -94,10 +94,13 @@ public enum PlanGenerator {
         /// kuenftiger Candidate-Erzeuger mal keinen Key beitragen kann -
         /// `DaySpec.localizationKey` ist schon lange optional.
         var localizationKey: String?
-        let exercises: [ExerciseSpec]
+        /// Issue #51 Punkt 1: `var` statt `let` — `ensureWeeklyMuscleCoverage`
+        /// ergaenzt hier gezielt eine Uebung fuer eine Woche-weit fehlende
+        /// Muskelgruppe, siehe dort.
+        var exercises: [ExerciseSpec]
         let timeFormat: WorkoutTimeFormat?
         let timeCapMinutes: Int?
-        let hardness: Double
+        var hardness: Double
         /// Primaeere Muskelgruppe des Tages (= pickedMuscles.first aus
         /// strengthCandidates). Bleibt durch spreadByHardness erhalten,
         /// sodass Tests und UI den Tagesfokus stabil lesen koennen.
@@ -272,7 +275,7 @@ public enum PlanGenerator {
         let pool: [ExerciseTemplateSpec]
         if let bands = baselineBands {
             pool = equipmentPool.filter { spec in
-                guard let minBand = spec.baselineMinBand else { return true }
+                guard let minBand = spec.effectiveBaselineMinBand else { return true }
                 return bands.band(for: spec.primaryMuscle).meetsMinimum(minBand)
             }
         } else {
@@ -361,7 +364,68 @@ public enum PlanGenerator {
                 focusMuscle: pickedMuscles.first
             ))
         }
+        result = ensureWeeklyMuscleCoverage(
+            result, pool: pool, goal: goal, experience: selection.experience,
+            sets: sets, repsMin: repsMin, repsMax: repsMax, restSeconds: restSeconds
+        )
         disambiguateDuplicateNames(&result)
+        return result
+    }
+
+    /// Issue #51 Punkt 1: der Pro-Tag-Rundlauf oben startet seinen
+    /// Muskel-Cursor bei `dayIndex` und waehlt genau `exerciseCount` (3-7)
+    /// von `MuscleGroup.allCases.count` (10) Gruppen — bei 1-2 Trainingstagen
+    /// und/oder kurzen Sessions deckt das die GANZE Woche ueber strukturell
+    /// nicht alle Gruppen ab (z.B. Beinbeuger/Gesaess/Core fehlen komplett,
+    /// wenn der Cursor nie bis dorthin kommt). Ergaenzt NACH der eigentlichen
+    /// Auswahl pro fehlender GROSSER Gruppe (`majorMuscleGroups`) GENAU EINE
+    /// zusaetzliche Uebung in den Tag mit den wenigsten Uebungen — der
+    /// bestehende Titel/Fokus (aus `pickedMuscles`) bleibt unveraendert, nur
+    /// die Uebungsliste waechst.
+    ///
+    /// Bewusst NUR die grossen Gruppen (chest/back/shoulders/quads/
+    /// hamstrings/glutes/core), NICHT `MuscleGroup.allCases` komplett: Arme
+    /// (Bizeps/Trizeps) und Waden sind klassische Isolations-/Beilaufarbeit,
+    /// die ohnehin als Sekundaer-Mover bei Rudern/Druecken/Kniebeugen
+    /// mittrainiert wird — Abdeckung ALLER 10 Gruppen haette eine 15-Minuten-
+    /// Kurzsession mit einem schlanken Pool (z.B. Kurzhantel: 9 von 10
+    /// Gruppen erreichbar) auf 9 statt 3 Uebungen aufgeblaeht und damit genau
+    /// die vom Epic ebenfalls geforderte "praktikable Trainingsdauer"
+    /// verletzt (siehe Issue #51 Anforderung 1, "1 Tag").
+    /// Respektiert `pool` (bereits equipment-/schwierigkeits-/baseline-
+    /// gefiltert) — ist fuer eine Gruppe dort nichts Zugaengliches uebrig,
+    /// wird sie uebersprungen statt eine unzugaengliche Uebung zu erzwingen
+    /// (dieselbe Konvention wie ueberall sonst in dieser Datei). EMOM-Tage
+    /// (fixe, zeitgetaktete Uebungszahl) sind nie Ziel der Ergaenzung.
+    private static let majorMuscleGroups: Set<MuscleGroup> = [.chest, .back, .shoulders, .quads, .hamstrings, .glutes, .core]
+
+    private static func ensureWeeklyMuscleCoverage(
+        _ candidates: [Candidate],
+        pool: [ExerciseTemplateSpec],
+        goal: TrainingGoal,
+        experience: DifficultyLevel,
+        sets: Int, repsMin: Int, repsMax: Int, restSeconds: Int
+    ) -> [Candidate] {
+        var result = candidates
+        let targets = result.indices.filter { result[$0].timeFormat == nil }
+        guard !targets.isEmpty else { return result }
+
+        var usedNames = Set(result.flatMap { $0.exercises.map(\.name) })
+        let coveredMuscles = Set(usedNames.compactMap { ExerciseLibraryData.byName[$0]?.primaryMuscle })
+        let byMuscle = Dictionary(grouping: pool, by: \.primaryMuscle)
+
+        for muscle in majorMuscleGroups where !coveredMuscles.contains(muscle) {
+            guard let available = byMuscle[muscle]?.filter({ !usedNames.contains($0.name) }), !available.isEmpty else { continue }
+            let best = available.max {
+                (goalFit($0, goal) - mediaPenalty(for: $0)) < (goalFit($1, goal) - mediaPenalty(for: $1))
+            }!
+            guard let targetIndex = targets.min(by: { result[$0].exercises.count < result[$1].exercises.count }) else { continue }
+            result[targetIndex].exercises.append(
+                ExerciseSpec(name: best.name, sets: sets, repsMin: repsMin, repsMax: repsMax, restSeconds: restSeconds)
+            )
+            result[targetIndex].hardness += strengthHardness(best, sets: sets, experience: experience)
+            usedNames.insert(best.name)
+        }
         return result
     }
 
@@ -496,7 +560,22 @@ public enum PlanGenerator {
         let cnsOverload = max(0, cnsLoadToday + spec.cnsDemandFactor - 2.0) * 0.20
         // F4 (10 % Strafe): Soft-Wochenwiederholung — bereits diese Woche genutzt
         let rp = weeklyNames.contains(spec.name) ? 0.10 : 0.0
-        return 0.50 + gf + ev - tp - cnsOverload - rp
+        return 0.50 + gf + ev - tp - cnsOverload - rp - mediaPenalty(for: spec)
+    }
+
+    /// Issue #51 Punkt 3: Uebungen ohne auflösbares GIF (die UI zeigt dann
+    /// nur einen Platzhalter) werden bei gleichwertigen Alternativen
+    /// nachrangig gewaehlt. Bewusst kein harter Ausschluss — 93 von 299
+    /// Katalog-Uebungen (ueberwiegend Dehn-/Mobility-Uebungen) haben aktuell
+    /// kein Mapping; ein harter Filter koennte einzelne schmale Equipment-/
+    /// Muskel-Pools komplett leeren und eine ganze Muskelgruppe NUR wegen
+    /// eines fehlenden Mediums ausfallen lassen — schlimmer als der heute
+    /// akzeptierte Platzhalter (siehe `ExerciseMediaProviderTests.
+    /// testPikePushupStillHasNoGif` fuer einen bereits bewusst akzeptierten
+    /// Fall). Dieser Malus ist klein genug, um bei echten Gleichstaenden zu
+    /// entscheiden, aber nie groesser als ein einzelner F1/F3-Term.
+    private static func mediaPenalty(for spec: ExerciseTemplateSpec) -> Double {
+        ExerciseMediaProvider.gifFileName(forExerciseName: spec.name) == nil ? 0.08 : 0.0
     }
 
     /// Ziel-Passgenauigkeit [0..~1] je Trainingsziel.

@@ -103,6 +103,36 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
     /// Movement pattern used for substitution category matching. See `MovementPattern`.
     public let movementPattern: MovementPattern?
 
+    /// Issue #51 R3: nur eine Handvoll Uebungen tragen ein explizites
+    /// `baselineMinBand` — alle anderen liefen bislang UNGEFILTERT durch
+    /// jede Baseline-Pruefung, auch objektiv anspruchsvolle
+    /// (`difficultyLevel: .advanced`, z.B. Kreuzheben/Pistol Squat/Muscle-Up).
+    /// Leitet fuer die restlichen Uebungen einen konservativen Mindest-Band
+    /// aus dem ohnehin fuer JEDE Uebung gepflegten `difficultyLevel` her,
+    /// statt eine nie vollstaendige manuelle Annotation jeder einzelnen
+    /// Uebung zu verlangen. Ein explizites `baselineMinBand` hat weiterhin
+    /// Vorrang (gezielt von Hand kalibriert, praeziser als diese grobe
+    /// Herleitung).
+    ///
+    /// Bewusst NUR zwei Stufen (`.beginner` → kein Gate, alles andere →
+    /// `.low`), nicht fein nach `.intermediate`/`.advanced` gestaffelt: eine
+    /// `.advanced`-Stufe, die `.moderate` verlangt, haette unter
+    /// `BaselineBands.conservative` (push/legs/pull/core alle `.low` — der
+    /// Default fuer uebersprungene Tests) ploetzlich auch fuer diesen bisher
+    /// unauffaelligen Pfad gegriffen (`.low` erfuellt `.moderate` nicht) und
+    /// damit potenziell ganze Tage ohne jede explizite Annotation leeren
+    /// koennen — nicht risikofrei pruefbar ueber alle 20 Templates ohne
+    /// lokalen Build/Test (siehe PR-Beschreibung). `.low` als Schranke
+    /// aendert am `.conservative`-Pfad NICHTS (`.low` erfuellt `.low`), haelt
+    /// aber `veryLow`-getestete Nutzer (das eigentliche Problem: "besonders
+    /// anspruchsvolle Uebungen duerfen nicht ungeprueft im Anfaengerplan
+    /// landen") weiterhin fern von jeder nicht als `.beginner` eingestuften
+    /// Uebung.
+    public var effectiveBaselineMinBand: BaselineBand? {
+        if let baselineMinBand { return baselineMinBand }
+        return difficultyLevel == .beginner ? nil : .low
+    }
+
     public init(
         name: String,
         equipment: Equipment,
