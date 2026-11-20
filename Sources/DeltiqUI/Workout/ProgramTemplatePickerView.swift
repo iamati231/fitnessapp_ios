@@ -359,6 +359,7 @@ public struct TemplatePreviewView: View {
             VStack(alignment: .leading, spacing: 18) {
                 heroCard
                 equipmentStatusBanner
+                baselineConflictBanner
                 ForEach(orderedDays, id: \.sequenceIndex) { day in
                     dayCard(day)
                 }
@@ -446,6 +447,32 @@ public struct TemplatePreviewView: View {
             title: String(localized: "picker.plan.equipment.gymAssumption.title", bundle: .module),
             detail: String(localized: "picker.plan.equipment.gymAssumption.detail", bundle: .module)
         )
+    }
+
+    /// Issue #51 P2: shown when baseline substitution removed exercises because
+    /// no accessible alternative was found. Adoption is still allowed — the user
+    /// sees exactly what plan they will get (preview = save contract).
+    @ViewBuilder
+    private var baselineConflictBanner: some View {
+        let conflicts = resolvedSelection.baselineConflicts
+        if !conflicts.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Label(
+                    "Einige Übungen wurden für dein Fitnesslevel angepasst",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.orange)
+                ForEach(Array(conflicts.enumerated()), id: \.offset) { _, conflict in
+                    Text("• \(conflict.dayName): \(conflict.exerciseName) entfernt")
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+            }
+            .padding(12)
+            .background(Color.orange.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
     }
 
     /// Smart-Onboarding-Epic Phase 5.5: "Adapted to your equipment" NUR nach

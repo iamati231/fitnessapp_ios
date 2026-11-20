@@ -1386,7 +1386,9 @@ public struct PlanBuilderView: View {
             usesFixedWeekdays: usesFixedWeekdays,
             fixedWeekdays: Array(fixedWeekdays),
             trainingGoal: selectedTrainingGoal,
-            baselineBands: preseededBaselineBands
+            // Issue #51 P2: use conservative bands when no baseline test was done,
+            // so an untested user does not silently receive .moderate-gated exercises.
+            baselineBands: preseededBaselineBands ?? .conservative
         )
     }
 

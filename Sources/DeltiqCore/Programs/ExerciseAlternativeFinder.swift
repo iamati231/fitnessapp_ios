@@ -82,11 +82,12 @@ public enum ExerciseAlternativeFinder {
                                                equipment: equipmentPool) {
             return adjustedSpec(replacing: spec, with: alt)
         }
-        // Pass 2: bodyweight fallback — always physically accessible
+        // Pass 2: strict bodyweight fallback — only exercises needing NO physical item
         if let alt = findAccessibleAlternative(muscle: libSpec.primaryMuscle,
                                                excluding: spec.name,
                                                bands: bands,
-                                               equipment: [.bodyweight]) {
+                                               equipment: [.bodyweight],
+                                               strictBodyweight: true) {
             return adjustedSpec(replacing: spec, with: alt)
         }
         return nil
@@ -96,8 +97,12 @@ public enum ExerciseAlternativeFinder {
         muscle: MuscleGroup,
         excluding name: String,
         bands: BaselineBands,
-        equipment: Set<Equipment>
+        equipment: Set<Equipment>,
+        strictBodyweight: Bool = false
     ) -> ExerciseTemplateSpec? {
+        // shortcut: equipmentRequirement is not checked for pass 1; broad pool categories
+        // are used as proxy. Pass 2 uses strictBodyweight to exclude pull-bar/-item exercises.
+        // To upgrade: thread UserEquipmentProfile here and call ExerciseRequirement.evaluate.
         ExerciseLibraryData.all.first {
             $0.name != name
                 && $0.primaryMuscle == muscle
@@ -105,6 +110,8 @@ public enum ExerciseAlternativeFinder {
                 && !$0.isCardio
                 && ($0.baselineMinBand == nil
                     || bands.band(for: $0.primaryMuscle).meetsMinimum($0.baselineMinBand!))
+                && (!strictBodyweight
+                    || ($0.equipmentRequirement.map(\.requiresNoPhysicalItem) ?? true))
         }
     }
 

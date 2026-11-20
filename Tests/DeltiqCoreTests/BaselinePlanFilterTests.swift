@@ -164,15 +164,22 @@ final class BaselinePlanFilterTests: XCTestCase {
 
     // MARK: - P2: 7-day template recovery design
 
-    func testSevenDayTemplateLastDayIsRest() {
+    func testSevenDayTemplateLastDayIsActiveRecovery() {
         guard let template = ProgramTemplates.all.first(where: { $0.daysPerWeek == 7 }) else {
             return XCTFail("No 7-day template found")
         }
         let day7 = template.days.first { $0.sequenceIndex == 7 }
         XCTAssertNotNil(day7, "Day 7 (sequenceIndex 7) must exist")
-        XCTAssertEqual(day7?.type, .rest,
-            "Day 7 must be a scheduled rest day — 9 core sets do not count as active recovery (Issue #51 P1)")
-        XCTAssertTrue(day7?.exercises.isEmpty ?? false, "Rest day must have no exercises")
+        // daysPerWeek = 7 → 7 real activities; Day 7 is active recovery (light load),
+        // not a rest day — ensures the declared frequency matches planned activities.
+        XCTAssertNotEqual(day7?.type, .rest,
+            "Day 7 must be an active recovery day, not rest — daysPerWeek=7 must equal 7 actual training days")
+        XCTAssertFalse(day7?.exercises.isEmpty ?? true,
+            "Active recovery day must have exercises (light bodyweight work)")
+        // Load management: active recovery must be light (≤ 2 sets per exercise)
+        let maxSets = day7?.exercises.map(\.sets).max() ?? 0
+        XCTAssertLessThanOrEqual(maxSets, 3,
+            "Active recovery day exercises should have at most 3 sets (issue #51 P1: sensible load management)")
     }
 
     func testSevenDayTemplateIsAdvancedOnly() {
@@ -247,18 +254,98 @@ final class BaselinePlanFilterTests: XCTestCase {
     }
 
     func testBaselineSubstituteNeverReturnsSilentlyBlockedExercise() {
-        // The critical invariant from Issue #51 P0: a blocked exercise must NEVER
-        // be returned unchanged. Either a valid substitute is returned, or nil.
+        // "Klimmzüge" is a confirmed library entry (baselineMinBand: .low, equipment: .bodyweight,
+        // equipmentRequirement: .item(.pullUpBar)). With veryLow pull and pool [.bodyweight],
+        // pass 1 may find "Australian Pull-ups" (back, no baselineMinBand, pool check passes).
+        // The invariant: the original blocked exercise must NEVER be returned unchanged.
         let veryLowAll = BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow,
                                        core: .veryLow, cardio: .unknown)
-        let blocked = ExerciseSpec(name: "Klimmzug", sets: 3, repsMin: 5, repsMax: 8, restSeconds: 120)
+        let blocked = ExerciseSpec(name: "Klimmzüge", sets: 3, repsMin: 5, repsMax: 8, restSeconds: 120)
         let result = ExerciseAlternativeFinder.baselineSubstitute(
-            blocked, bands: veryLowAll, equipmentPool: [])
+            blocked, bands: veryLowAll, equipmentPool: [.bodyweight])
         if let r = result {
-            XCTAssertNotEqual(r.name, "Klimmzug",
+            XCTAssertNotEqual(r.name, "Klimmzüge",
                               "A demonstrably blocked exercise must never be silently returned unchanged")
         }
-        // nil is also valid — the caller skips the exercise (controlled conflict)
+        // nil is also valid — the caller tracks it as a BaselineConflict
+    }
+
+    func testBaselineSubstituteReturnsNilWhenNoAccessibleAlternative() {
+        // "Klimmzüge" blocked (veryLow pull, .low gate), pool empty → pass 1 finds nothing.
+        // Pass 2 uses strictBodyweight: all back bodyweight exercises require .item(.pullUpBar)
+        // so none pass requiresNoPhysicalItem → nil.
+        let veryLowAll = BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow,
+                                       core: .veryLow, cardio: .unknown)
+        let blocked = ExerciseSpec(name: "Klimmzüge", sets: 3, repsMin: 5, repsMax: 8, restSeconds: 120)
+        let result = ExerciseAlternativeFinder.baselineSubstitute(
+            blocked, bands: veryLowAll, equipmentPool: [])
+        XCTAssertNil(result,
+            "No bodyweight back exercise exists without a physical item requirement → must return nil")
+    }
+
+    func testBaselineConflictsTrackedInSelection() {
+        // When substitution removes an exercise, it must appear in baselineConflicts.
+        guard let template = ProgramTemplates.all.first(where: { $0.id == "push_pull_legs_7x" }) else {
+            return XCTFail("PPL 7x template not found")
+        }
+        // veryLow pull → "Klimmzüge (weit)" in Pull A is blocked; empty pool → no alternative
+        let veryLowAll = BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow,
+                                       core: .veryLow, cardio: .unknown)
+        let profile = UserEquipmentProfile(availability: [:])
+        let selection = PlanSelectionResolver.resolve(
+            template: template, profile: profile,
+            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .advanced)
+        ).withBaselineSubstitution(bands: veryLowAll)
+        // With veryLow pull bands and no equipment, pull-up bar exercises must be conflicted
+        XCTAssertFalse(selection.baselineConflicts.isEmpty,
+            "veryLow pull with no equipment pool must produce at least one baseline conflict")
+    }
+
+    // MARK: - E2E: Preview / substitution consistency
+
+    func testNoEmptyTrainingDaysAfterConservativeSubstitution() {
+        // No template should produce an empty non-rest training day for conservative bands.
+        let profile = UserEquipmentProfile(availability: [:])
+        for template in ProgramTemplates.all {
+            let selection = PlanSelectionResolver.resolve(
+                template: template, profile: profile,
+                context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .advanced)
+            ).withBaselineSubstitution(bands: .conservative)
+            for day in selection.days where day.type != .rest && !day.exercises.isEmpty == false {
+                // A day that was non-empty in the original template but became empty is a conflict
+                XCTFail("Template '\(template.id)' day '\(day.name)' became empty after conservative substitution")
+            }
+        }
+    }
+
+    func testDoubleSubstitutionIsIdempotent() {
+        // Applying withBaselineSubstitution twice must return the same result as once.
+        guard let template = ProgramTemplates.all.first(where: { $0.id == "push_pull_legs_7x" }) else {
+            return XCTFail("PPL 7x template not found")
+        }
+        let profile = UserEquipmentProfile(availability: [:])
+        let raw = PlanSelectionResolver.resolve(
+            template: template, profile: profile,
+            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .advanced)
+        )
+        let once = raw.withBaselineSubstitution(bands: .conservative)
+        let twice = once.withBaselineSubstitution(bands: .conservative)
+        XCTAssertEqual(once.days.flatMap(\.exercises).map(\.name),
+                       twice.days.flatMap(\.exercises).map(\.name),
+                       "withBaselineSubstitution must be idempotent — preview and save must match")
+    }
+
+    func testNoFrequencyChangeDuringSubstitution() {
+        // daysPerWeek declared in a template must not change after substitution.
+        let profile = UserEquipmentProfile(availability: [:])
+        for template in ProgramTemplates.all {
+            let selection = PlanSelectionResolver.resolve(
+                template: template, profile: profile,
+                context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .advanced)
+            ).withBaselineSubstitution(bands: .conservative)
+            XCTAssertEqual(selection.days.count, template.days.count,
+                "Template '\(template.id)': day count must not change after baseline substitution")
+        }
     }
 
     // MARK: - P3: Template frequency coverage

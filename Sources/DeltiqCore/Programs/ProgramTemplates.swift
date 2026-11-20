@@ -310,9 +310,9 @@ public enum ProgramTemplates {
         id: "push_pull_legs_7x",
         name: "PPL + Arme & Core",
         localizationKey: "plan.template.pushPullLegs7x.name",
-        tagline: "7 Tage (6+1) · Kraft & Core",
+        tagline: "7 Tage · Kraft & Aktive Erholung",
         taglineKey: "plan.template.pushPullLegs7x.tagline",
-        descriptionText: "6-Tage-Push-Pull-Legs (alle Muskelgruppen 2× wöchentlich) plus ein leichter Core-Tag am 7. Tag — kein Ruhetag, daher nur für Fortgeschrittene mit guter Regenerationsfähigkeit.",
+        descriptionText: "6-Tage-Push-Pull-Legs (alle Muskelgruppen 2× wöchentlich) plus ein leichter Aktiv-Erholungstag am 7. Tag — nur für Fortgeschrittene mit nachgewiesener Regenerationsfähigkeit.",
         descriptionKey: "plan.template.pushPullLegs7x.description",
         focus: "Hypertrophie",
         focusKey: "plan.template.pushPullLegs7x.focus",
@@ -365,9 +365,13 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Beinstrecker",                     sets: 3, repsMin: 12, repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Wadenpresse (sitzend)",            sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
             ]),
-            // Tag 7: echter Ruhetag nach 6 schweren PPL-Einheiten.
-            // 9 Core-Sätze zählen nicht als Aktiv-Regeneration (Issue #51 P1).
-            DaySpec(name: "Ruhetag", localizationKey: "day.restDay.title", type: .rest, sequenceIndex: 7, exercises: [])
+            // Tag 7: Aktive Erholung — 3 Grundbewegungen (2 Sätze, leicht),
+            // kein Intensitätsziel; hält daysPerWeek = 7 kongruent zu 7 echten Tagen.
+            DaySpec(name: "Aktive Erholung", localizationKey: "plan.day.activeRecovery7x", type: .custom, sequenceIndex: 7, exercises: [
+                ExerciseSpec(name: "Kniebeuge (BW)",      sets: 2, repsMin: 15, repsMax: 20, restSeconds: 60),
+                ExerciseSpec(name: "Ausfallschritte (BW)", sets: 2, repsMin: 10, repsMax: 12, restSeconds: 60),
+                ExerciseSpec(name: "Glute Bridge (BW)",    sets: 2, repsMin: 15, repsMax: 20, restSeconds: 60)
+            ])
         ],
         targetEnvironment: .gym,
         iconSystemName: "figure.strengthtraining.functional",

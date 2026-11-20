@@ -5,6 +5,13 @@ import Foundation
 /// Vorschau UND Instanziierung gleichermassen verwenden (Erweiterung des
 /// bestehenden Phase-4-Datenflusses, siehe `ProgramTemplate.
 /// bestEquipmentCheckedVariant`, KEIN zweites, unabhaengiges Auswahlsystem).
+/// Issue #51 P2: exercise removed by baseline substitution because no accessible
+/// alternative was found. Surface these in the UI before the user adopts the plan.
+public struct BaselineConflict: Sendable, Equatable {
+    public let dayName: String
+    public let exerciseName: String
+}
+
 public struct ResolvedPlanSelection: Sendable, Equatable {
     public let templateID: String
     /// `nil` = Basis-Variante, sonst eine konkrete `EquipmentVariant`.
@@ -24,6 +31,9 @@ public struct ResolvedPlanSelection: Sendable, Equatable {
     /// Schnappschuss des Profils, gegen das aufgeloest wurde — Grundlage fuer
     /// die Phase-5.4-Veraltungs-Pruefung vor dem Speichern.
     public let equipmentSnapshot: UserEquipmentProfile
+    /// Issue #51 P2: exercises that were removed during baseline substitution
+    /// because no accessible alternative existed. Empty when no conflicts occurred.
+    public let baselineConflicts: [BaselineConflict]
 
     public init(
         templateID: String,
@@ -33,7 +43,8 @@ public struct ResolvedPlanSelection: Sendable, Equatable {
         appliedAdaptation: PlanAdaptationDraft?,
         consideredButUnresolvedAdaptations: [PlanAdaptationDraft],
         ruleSetVersion: String,
-        equipmentSnapshot: UserEquipmentProfile
+        equipmentSnapshot: UserEquipmentProfile,
+        baselineConflicts: [BaselineConflict] = []
     ) {
         self.templateID = templateID
         self.variantProfile = variantProfile
@@ -43,6 +54,7 @@ public struct ResolvedPlanSelection: Sendable, Equatable {
         self.consideredButUnresolvedAdaptations = consideredButUnresolvedAdaptations
         self.ruleSetVersion = ruleSetVersion
         self.equipmentSnapshot = equipmentSnapshot
+        self.baselineConflicts = baselineConflicts
     }
 
     public var isAdapted: Bool { appliedAdaptation != nil }
@@ -58,25 +70,37 @@ public struct ResolvedPlanSelection: Sendable, Equatable {
 }
 
 extension ResolvedPlanSelection {
-    /// Issue #51: returns a new selection with baseline-inaccessible exercises
-    /// replaced (or removed when no accessible alternative exists), so preview
-    /// and saved plan show the same exercises.
+    /// Issue #51 P0/P2: returns a new selection with baseline-inaccessible exercises
+    /// replaced (or removed when no accessible alternative exists).
+    /// Conflicts are tracked in `baselineConflicts` on the returned selection — a
+    /// non-rest day that loses all exercises is also recorded as a conflict.
     public func withBaselineSubstitution(bands: BaselineBands) -> ResolvedPlanSelection {
         var pool = Set<Equipment>(days.flatMap { day in
             day.exercises.compactMap { ExerciseLibraryData.byName[$0.name]?.equipment }
         })
         pool.insert(.bodyweight)
+        var conflicts: [BaselineConflict] = []
         let adjustedDays = days.map { day in
-            day.withExercises(day.exercises.compactMap { spec in
-                ExerciseAlternativeFinder.baselineSubstitute(spec, bands: bands, equipmentPool: pool)
-            })
+            let adjusted = day.exercises.compactMap { spec -> ExerciseSpec? in
+                let result = ExerciseAlternativeFinder.baselineSubstitute(spec, bands: bands, equipmentPool: pool)
+                if result == nil {
+                    conflicts.append(BaselineConflict(dayName: day.name, exerciseName: spec.name))
+                }
+                return result
+            }
+            // Validate: a non-rest training day must not become empty.
+            if day.type != .rest && !day.exercises.isEmpty && adjusted.isEmpty {
+                conflicts.append(BaselineConflict(dayName: day.name, exerciseName: "⚠️ Trainingstag leer nach Baseline-Filterung"))
+            }
+            return day.withExercises(adjusted)
         }
         return ResolvedPlanSelection(
             templateID: templateID, variantProfile: variantProfile,
             days: adjustedDays, equipmentStatus: equipmentStatus,
             appliedAdaptation: appliedAdaptation,
             consideredButUnresolvedAdaptations: consideredButUnresolvedAdaptations,
-            ruleSetVersion: ruleSetVersion, equipmentSnapshot: equipmentSnapshot
+            ruleSetVersion: ruleSetVersion, equipmentSnapshot: equipmentSnapshot,
+            baselineConflicts: conflicts
         )
     }
 }

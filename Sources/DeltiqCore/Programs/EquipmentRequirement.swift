@@ -160,6 +160,19 @@ public indirect enum ExerciseRequirement: Sendable, Hashable {
     case any([ExerciseRequirement])
 }
 
+extension ExerciseRequirement {
+    /// True when no physical equipment item is required — exercise is bodyweight-only.
+    /// Used by the baseline substitute pass 2 filter to avoid suggesting exercises
+    /// that need a pull-up bar or similar item when only bodyweight is available.
+    public var requiresNoPhysicalItem: Bool {
+        switch self {
+        case .item: return false
+        case .all(let reqs): return reqs.allSatisfy(\.requiresNoPhysicalItem)
+        case .any(let reqs): return reqs.isEmpty || reqs.contains(where: \.requiresNoPhysicalItem)
+        }
+    }
+}
+
 /// Grund, warum ein einzelnes `EquipmentItem` eine Anforderung (noch)
 /// nicht definitiv erfuellt — Baustein fuer die "konkreten Gruende", die
 /// die dreistufige Pruefung liefern soll.
