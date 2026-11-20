@@ -713,6 +713,54 @@ public struct DeltiqContextRow: View {
     }
 }
 
+// MARK: - 6.45 DeltiqPeriodPicker
+
+/// Einheitlicher Periodenfilter fuer alle Progress-Screens.
+/// Ersetzt `.pickerStyle(.segmented)` durch einen dunklen, abgerundeten
+/// Track im Deltiq-Stil mit klar erkennbarem aktivem Segment.
+public struct DeltiqPeriodPicker<T: Hashable>: View {
+    public let items: [T]
+    public let label: (T) -> String
+    @Binding public var selection: T
+
+    public init(items: [T], label: @escaping (T) -> String, selection: Binding<T>) {
+        self.items = items
+        self.label = label
+        self._selection = selection
+    }
+
+    public var body: some View {
+        HStack(spacing: 2) {
+            ForEach(items, id: \.self) { item in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { selection = item }
+                } label: {
+                    Text(label(item))
+                        .font(.system(size: 13, weight: selection == item ? .semibold : .regular))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .foregroundStyle(selection == item ? Color.primary : Color.Deltiq.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 36)
+                        .background {
+                            if selection == item {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.Deltiq.surface)
+                                    .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
+                            }
+                        }
+                        .accessibilityAddTraits(selection == item ? [.isSelected] : [])
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(Color.Deltiq.fill)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, 16)
+    }
+}
+
 // MARK: - 6.5 DeltiqSection + DeltiqCard (Abschnitt 1.4)
 
 /// Container-Variante "Sektion": Zeilenliste ohne Innenpadding, Header

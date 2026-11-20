@@ -51,33 +51,45 @@ public struct ProgressHomeView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                periodPicker
-                reviewCard
-                navigationSection
+        VStack(spacing: 0) {
+            DeltiqHeader(
+                eyebrow: String(localized: "strength.progress.eyebrow", bundle: .module),
+                title: String(localized: "progress.title", bundle: .module)
+            )
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    periodPicker
+                    reviewCard
+                    navigationSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 100)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 100)
+            .scrollContentBackground(.hidden)
         }
-        .scrollContentBackground(.hidden)
         .background(Color.Deltiq.background.ignoresSafeArea())
-        .navigationTitle(String(localized: "progress.title", bundle: .module))
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         #endif
     }
 
     // MARK: - Subviews
 
     private var periodPicker: some View {
-        Picker("", selection: $period) {
-            ForEach(ProgressPeriod.allCases, id: \.self) { p in
-                Text(LocalizedStringKey(p.rawValue), bundle: .module).tag(p)
-            }
-        }
-        .pickerStyle(.segmented)
+        DeltiqPeriodPicker(
+            items: ProgressPeriod.allCases,
+            label: { p in
+                switch p {
+                case .fourWeeks:   return String(localized: "strength.progress.period.4w", bundle: .module)
+                case .twelveWeeks: return String(localized: "strength.progress.period.12w", bundle: .module)
+                case .oneYear:     return String(localized: "strength.progress.period.1y", bundle: .module)
+                case .allTime:     return String(localized: "strength.progress.period.all", bundle: .module)
+                }
+            },
+            selection: $period
+        )
+        .padding(.horizontal, -16)
     }
 
     @ViewBuilder
