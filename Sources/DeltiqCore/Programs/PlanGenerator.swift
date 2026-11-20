@@ -366,6 +366,7 @@ public enum PlanGenerator {
         }
         result = ensureWeeklyMuscleCoverage(
             result, pool: pool, goal: goal, experience: selection.experience,
+            sessionDurationMinutes: selection.sessionDurationMinutes,
             sets: sets, repsMin: repsMin, repsMax: repsMax, restSeconds: restSeconds
         )
         disambiguateDuplicateNames(&result)
@@ -399,11 +400,17 @@ public enum PlanGenerator {
     /// (fixe, zeitgetaktete Uebungszahl) sind nie Ziel der Ergaenzung.
     private static let majorMuscleGroups: Set<MuscleGroup> = [.chest, .back, .shoulders, .quads, .hamstrings, .glutes, .core]
 
+    // Estimates seconds for one additional exercise: set work (30s/set) + rest + per-exercise overhead.
+    private static func estimatedAddSeconds(sets: Int, restSeconds: Int) -> Int {
+        sets * (restSeconds + 30) + 20
+    }
+
     private static func ensureWeeklyMuscleCoverage(
         _ candidates: [Candidate],
         pool: [ExerciseTemplateSpec],
         goal: TrainingGoal,
         experience: DifficultyLevel,
+        sessionDurationMinutes: Int,
         sets: Int, repsMin: Int, repsMax: Int, restSeconds: Int
     ) -> [Candidate] {
         var result = candidates
@@ -414,17 +421,37 @@ public enum PlanGenerator {
         let coveredMuscles = Set(usedNames.compactMap { ExerciseLibraryData.byName[$0]?.primaryMuscle })
         let byMuscle = Dictionary(grouping: pool, by: \.primaryMuscle)
 
+        let budget = sessionDurationMinutes * 60
+        let fullCost = estimatedAddSeconds(sets: sets, restSeconds: restSeconds)
+        let minCost = estimatedAddSeconds(sets: 2, restSeconds: restSeconds)
+        let isShortSession = sessionDurationMinutes <= 30
+
+        // Remaining seconds per target day; may start negative if base exercises already fill the slot.
+        var dayBudget: [Int: Int] = Dictionary(uniqueKeysWithValues: targets.map { idx in
+            (idx, budget - result[idx].exercises.count * fullCost)
+        })
+
         for muscle in majorMuscleGroups where !coveredMuscles.contains(muscle) {
             guard let available = byMuscle[muscle]?.filter({ !usedNames.contains($0.name) }), !available.isEmpty else { continue }
+            // Only target days that can still fit at least a 2-set add.
+            guard let targetIndex = targets
+                .filter({ (dayBudget[$0] ?? 0) >= minCost })
+                .min(by: { result[$0].exercises.count < result[$1].exercises.count })
+            else { continue }
+
+            let usedSets = (dayBudget[targetIndex] ?? 0) >= fullCost ? sets : 2
+            let compoundBonus: (ExerciseTemplateSpec) -> Double = isShortSession ? { $0.isSystemCompound ? 0.15 : 0.0 } : { _ in 0.0 }
             let best = available.max {
-                (goalFit($0, goal) - mediaPenalty(for: $0)) < (goalFit($1, goal) - mediaPenalty(for: $1))
+                (goalFit($0, goal) - mediaPenalty(for: $0) + compoundBonus($0))
+                < (goalFit($1, goal) - mediaPenalty(for: $1) + compoundBonus($1))
             }!
-            guard let targetIndex = targets.min(by: { result[$0].exercises.count < result[$1].exercises.count }) else { continue }
+
             result[targetIndex].exercises.append(
-                ExerciseSpec(name: best.name, sets: sets, repsMin: repsMin, repsMax: repsMax, restSeconds: restSeconds)
+                ExerciseSpec(name: best.name, sets: usedSets, repsMin: repsMin, repsMax: repsMax, restSeconds: restSeconds)
             )
-            result[targetIndex].hardness += strengthHardness(best, sets: sets, experience: experience)
+            result[targetIndex].hardness += strengthHardness(best, sets: usedSets, experience: experience)
             usedNames.insert(best.name)
+            dayBudget[targetIndex] = (dayBudget[targetIndex] ?? 0) - estimatedAddSeconds(sets: usedSets, restSeconds: restSeconds)
         }
         return result
     }
