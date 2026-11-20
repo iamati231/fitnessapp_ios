@@ -1153,17 +1153,22 @@ final class PlanGeneratorTests: XCTestCase {
     func testOneAndTwoDayPlansCoverEveryMajorMuscleGroupThePoolCanReach() {
         let kinds: [TrainingTypeKind] = [.bodyweight, .dumbbell, .barbell]
         let goals: [TrainingGoal] = [.hypertrophy, .strength, .weightLoss, .functional]
-        // 15/20 min: Budget erschöpft durch Basis → 0 top-ups (testTimeBudget*).
-        // 30 min: 1 top-up/Tag, aber der Pool lässt bis zu 4 Gruppen offen; bei
-        // 2 Tagen sind nur 2 top-ups verteilt → vollständige Abdeckung erst ab 45 min.
-        let durations = [45, 60]
+        // 45 min 1 Tag: MuscleGroup.allCases[0..5] = chest..quads in der Basis;
+        // bis zu 3 Gruppen fehlen (z.B. bodyweight: hamstrings/glutes/core), aber
+        // nur 1 top-up-Slot → vollständige Abdeckung erst mit 2 Tagen erreichbar.
+        // 60 min: exerciseCount=7, Basis deckt chest..hamstrings; nur core fehlt
+        // → 2 top-up-Slots, 1 Tag reicht bereits.
+        let durationDays: [(minutes: Int, days: [Int])] = [
+            (45, [2]),
+            (60, [1, 2])
+        ]
 
         for kind in kinds {
             guard let equipment = kind.equipmentFilter else { continue }
             let expected = coverableMajorMuscleGroups(equipment: [equipment], experience: .intermediate)
             for goal in goals {
-                for minutes in durations {
-                    for days in [1, 2] {
+                for (minutes, daysOptions) in durationDays {
+                    for days in daysOptions {
                         let planInput = PlanGeneratorInput(
                             selections: [selection(kind, days: days, minutes: minutes)],
                             equipmentPreferences: [equipment],
