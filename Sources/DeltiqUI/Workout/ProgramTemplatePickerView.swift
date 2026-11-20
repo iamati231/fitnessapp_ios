@@ -186,7 +186,8 @@ public struct ProgramTemplatePickerView: View {
         let plan = ProgramInstantiator.instantiate(
             template,
             in: modelContext,
-            resolvedSelection: freshSelection
+            resolvedSelection: freshSelection,
+            baselineBands: profiles.first?.baselineAssessment.map { BaselineAssessmentEvaluator.evaluate($0) }
         )
         // Audit-Fix (Save-Fehler): instantiate() inserted Plan+Tage+Uebungen,
         // hing bisher aber komplett am impliziten SwiftData-Autosave - ein

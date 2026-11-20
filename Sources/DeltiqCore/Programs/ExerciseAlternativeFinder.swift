@@ -57,6 +57,36 @@ public enum ExerciseAlternativeFinder {
         }
     }
 
+    /// Issue #51 — Template-Adoption-Pfad: ersetzt eine durch `BaselineBands`
+    /// gesperrte Uebung durch eine zugaengliche Alternative (gleiche
+    /// Muskelgruppe, aus dem uebergebenen Equipment-Pool, kein sperreres
+    /// `baselineMinBand`). Gibt `spec` unveraendert zurueck, wenn:
+    ///   • die Uebung nicht in der Library steht,
+    ///   • kein `baselineMinBand` gesetzt ist (Uebung immer zugaenglich),
+    ///   • das User-Band die Schranke bereits erfuellt,
+    ///   • oder keine Alternativ-Uebung im Pool gefunden wird
+    ///     (lieber falsch-positive Uebung als leere Reihe).
+    public static func baselineSubstitute(
+        _ spec: ExerciseSpec,
+        bands: BaselineBands,
+        equipmentPool: Set<Equipment>
+    ) -> ExerciseSpec {
+        guard let libSpec = ExerciseLibraryData.byName[spec.name],
+              let minBand = libSpec.baselineMinBand,
+              !bands.band(for: libSpec.primaryMuscle).meetsMinimum(minBand)
+        else { return spec }
+        let alternative = ExerciseLibraryData.all.first {
+            $0.name != spec.name
+                && $0.primaryMuscle == libSpec.primaryMuscle
+                && equipmentPool.contains($0.equipment)
+                && !$0.isCardio
+                && ($0.baselineMinBand == nil
+                    || bands.band(for: $0.primaryMuscle).meetsMinimum($0.baselineMinBand!))
+        }
+        guard let alt = alternative else { return spec }
+        return adjustedSpec(replacing: spec, with: alt)
+    }
+
     /// UI-Ticket Punkt 3: Saetze/Wdh./Pause der ORIGINAL-Uebung duerfen nicht
     /// blind uebernommen werden, wenn sie fuer die Ersatz-Uebung nicht passen.
     /// Saetze und Pause bleiben fuer jede Ersatz-Uebung gueltig (reine

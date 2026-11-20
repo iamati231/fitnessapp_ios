@@ -310,9 +310,9 @@ public enum ProgramTemplates {
         id: "push_pull_legs_7x",
         name: "PPL + Arme & Core",
         localizationKey: "plan.template.pushPullLegs7x.name",
-        tagline: "7 Tage · Maximum-Volumen",
+        tagline: "7 Tage (6+1) · Kraft & Core",
         taglineKey: "plan.template.pushPullLegs7x.tagline",
-        descriptionText: "7-Tage-Push-Pull-Legs: alle Muskelgruppen zweimal pro Woche plus ein dedizierter Arm- und Core-Tag. Höchstes Trainingsvolumen — nur für Fortgeschrittene mit guter Regenerationsfähigkeit.",
+        descriptionText: "6-Tage-Push-Pull-Legs (alle Muskelgruppen 2× wöchentlich) plus ein leichter Core-Tag am 7. Tag — kein Ruhetag, daher nur für Fortgeschrittene mit guter Regenerationsfähigkeit.",
         descriptionKey: "plan.template.pushPullLegs7x.description",
         focus: "Hypertrophie",
         focusKey: "plan.template.pushPullLegs7x.focus",
@@ -365,13 +365,13 @@ public enum ProgramTemplates {
                 ExerciseSpec(name: "Beinstrecker",                     sets: 3, repsMin: 12, repsMax: 15, restSeconds: 75),
                 ExerciseSpec(name: "Wadenpresse (sitzend)",            sets: 4, repsMin: 12, repsMax: 20, restSeconds: 60)
             ]),
-            DaySpec(name: "Arme & Core", localizationKey: "plan.day.armsAndCore", type: .fullBody, sequenceIndex: 7, exercises: [
-                ExerciseSpec(name: "Bizeps-Curl (LH)",                 sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Hammer Curl",                      sets: 3, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Trizepsdrücken (Kabel)",           sets: 4, repsMin: 10, repsMax: 15, restSeconds: 75),
-                ExerciseSpec(name: "Skull Crusher",                    sets: 3, repsMin: 8,  repsMax: 12, restSeconds: 90),
-                ExerciseSpec(name: "Plank",                            sets: 3, repsMin: 45, repsMax: 60, restSeconds: 60),
-                ExerciseSpec(name: "Crunch",                           sets: 3, repsMin: 15, repsMax: 20, restSeconds: 45)
+            // Tag 7 bewusst leicht (Core only): kein Arm-/Brust-/Rücken-Stress
+            // nach 6 schweren PPL-Einheiten — echte Aktiv-Regeneration statt
+            // 7. Kraft-Session.
+            DaySpec(name: "Core & Mobilität", localizationKey: "plan.day.armsAndCore", type: .custom, sequenceIndex: 7, exercises: [
+                ExerciseSpec(name: "Plank",             sets: 3, repsMin: 45, repsMax: 60,  restSeconds: 60),
+                ExerciseSpec(name: "Crunches (BW)",     sets: 3, repsMin: 15, repsMax: 20,  restSeconds: 45),
+                ExerciseSpec(name: "Beinheben (liegend)", sets: 3, repsMin: 10, repsMax: 15, restSeconds: 60)
             ])
         ],
         targetEnvironment: .gym,

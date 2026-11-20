@@ -2201,7 +2201,8 @@ public struct OnboardingView: View {
                 template,
                 in: modelContext,
                 selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
-                resolvedSelection: freshSelection
+                resolvedSelection: freshSelection,
+                baselineBands: baselineAssessmentResult.map { BaselineAssessmentEvaluator.evaluate($0) }
             )
             do {
                 try modelContext.save()

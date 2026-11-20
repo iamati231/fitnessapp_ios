@@ -88,7 +88,10 @@ public enum ProgramInstantiator {
         // das aktuelle Profil geprueft haben — der Instantiator selbst
         // validiert das nicht erneut (reine Materialisierung einer bereits
         // getroffenen, freigegebenen Entscheidung).
-        resolvedSelection: ResolvedPlanSelection? = nil
+        resolvedSelection: ResolvedPlanSelection? = nil,
+        // Issue #51: ersetzt gesperrte Uebungen durch zugaengliche Alternativen.
+        // `nil` = kein Eingangstest durchgefuehrt, kein Filter.
+        baselineBands: BaselineBands? = nil
     ) -> TrainingPlan {
         if let resolvedSelection {
             precondition(resolvedSelection.templateID == template.id,
@@ -136,6 +139,21 @@ public enum ProgramInstantiator {
             ?? userEquipmentProfile.map { template.bestEquipmentCheckedVariant(against: $0).days }
             ?? template.resolvedDays(forUserEquipment: userEquipment)
         let sortedDays = resolvedDays.sorted { $0.sequenceIndex < $1.sequenceIndex }
+
+        // Equipment-Pool fuer Baseline-Substitution: alle im Plan vorkommenden
+        // Equipment-Typen + Bodyweight als universeller Fallback.
+        let equipmentPool: Set<Equipment> = {
+            guard baselineBands != nil else { return [] }
+            var pool = Set<Equipment>()
+            for day in sortedDays {
+                for s in day.exercises {
+                    if let eq = specByName[s.name]?.equipment { pool.insert(eq) }
+                }
+            }
+            pool.insert(.bodyweight)
+            return pool
+        }()
+
         var workoutDayWeekdays = Set<Int>()
         for (idx, daySpec) in sortedDays.enumerated() {
             guard idx < normalized.count else { break }   // Defensive
@@ -166,11 +184,17 @@ public enum ProgramInstantiator {
             context.insert(day)
 
             for (orderIndex, exerciseSpec) in daySpec.exercises.enumerated() {
+                // Issue #51: Baseline-gesperrte Uebungen durch zugaengliche
+                // Alternativen ersetzen (falls Eingangstest vorhanden).
+                let effectiveSpec = baselineBands.map {
+                    ExerciseAlternativeFinder.baselineSubstitute(
+                        exerciseSpec, bands: $0, equipmentPool: equipmentPool)
+                } ?? exerciseSpec
                 // DEL-098: Wenn der Name in der Library bekannt ist, nehmen
                 // wir die handgepflegten Faktoren. Sonst greifen die
                 // Defaults aus `Exercise.init` ("moderate Isolation").
                 let exercise = makeExercise(
-                    from: exerciseSpec,
+                    from: effectiveSpec,
                     orderIndex: orderIndex,
                     timeBasedNames: timeBasedNames,
                     compoundNames: compoundNames,
