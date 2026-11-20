@@ -294,7 +294,7 @@ final class BaselinePlanFilterTests: XCTestCase {
         let profile = UserEquipmentProfile(availability: [:])
         let selection = PlanSelectionResolver.resolve(
             template: template, profile: profile,
-            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .advanced)
+            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
         ).withBaselineSubstitution(bands: veryLowAll)
         // With veryLow pull bands and no equipment, pull-up bar exercises must be conflicted
         XCTAssertFalse(selection.baselineConflicts.isEmpty,
@@ -309,7 +309,7 @@ final class BaselinePlanFilterTests: XCTestCase {
         for template in ProgramTemplates.all {
             let selection = PlanSelectionResolver.resolve(
                 template: template, profile: profile,
-                context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .advanced)
+                context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
             ).withBaselineSubstitution(bands: .conservative)
             for day in selection.days where day.type != .rest && !day.exercises.isEmpty == false {
                 // A day that was non-empty in the original template but became empty is a conflict
@@ -326,7 +326,7 @@ final class BaselinePlanFilterTests: XCTestCase {
         let profile = UserEquipmentProfile(availability: [:])
         let raw = PlanSelectionResolver.resolve(
             template: template, profile: profile,
-            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .advanced)
+            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
         )
         let once = raw.withBaselineSubstitution(bands: .conservative)
         let twice = once.withBaselineSubstitution(bands: .conservative)
@@ -341,7 +341,7 @@ final class BaselinePlanFilterTests: XCTestCase {
         for template in ProgramTemplates.all {
             let selection = PlanSelectionResolver.resolve(
                 template: template, profile: profile,
-                context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .advanced)
+                context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
             ).withBaselineSubstitution(bands: .conservative)
             XCTAssertEqual(selection.days.count, template.days.count,
                 "Template '\(template.id)': day count must not change after baseline substitution")
@@ -362,6 +362,65 @@ final class BaselinePlanFilterTests: XCTestCase {
                 XCTFail("No template for \(freq) training days/week — users will fall back to Plan Builder only. Consider adding a template.")
             }
         }
+    }
+
+    // MARK: - Issue #51 Review-Findings
+
+    /// P1: conflicts from a first substitution call must still be present after a second call.
+    func testBaselineConflictsAccumulateOnResubstitution() {
+        guard let template = ProgramTemplates.all.first(where: { $0.id == "push_pull_legs_7x" }) else {
+            return XCTFail("PPL 7x template not found")
+        }
+        let veryLowAll = BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow,
+                                       core: .veryLow, cardio: .unknown)
+        let profile = UserEquipmentProfile(availability: [:])
+        let raw = PlanSelectionResolver.resolve(
+            template: template, profile: profile,
+            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
+        )
+        let once = raw.withBaselineSubstitution(bands: veryLowAll)
+        let twice = once.withBaselineSubstitution(bands: veryLowAll)
+        // Every conflict from the first call must still be present in the second call.
+        for c in once.baselineConflicts {
+            XCTAssertTrue(twice.baselineConflicts.contains(c),
+                "Conflict '\(c.exerciseName)' in day '\(c.dayName)' was lost on resubstitution")
+        }
+    }
+
+    /// P0: an empty-day conflict must set isCritical = true.
+    func testCriticalConflictIsFlaggedOnEmptyDay() {
+        guard let template = ProgramTemplates.all.first(where: { $0.id == "push_pull_legs_7x" }) else {
+            return XCTFail("PPL 7x template not found")
+        }
+        let veryLowAll = BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow,
+                                       core: .veryLow, cardio: .unknown)
+        let profile = UserEquipmentProfile(availability: [:])
+        let selection = PlanSelectionResolver.resolve(
+            template: template, profile: profile,
+            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
+        ).withBaselineSubstitution(bands: veryLowAll)
+        // With all bands at veryLow and no equipment, at least one day must become empty
+        // → that conflict must be flagged as critical.
+        let criticals = selection.baselineConflicts.filter(\.isCritical)
+        XCTAssertFalse(criticals.isEmpty,
+            "veryLow bands + no equipment must produce at least one critical (empty-day) conflict")
+    }
+
+    /// P1: an individual exercise removal conflict must NOT be critical.
+    func testIndividualExerciseRemovalConflictIsNotCritical() {
+        guard let template = ProgramTemplates.all.first(where: { $0.id == "push_pull_legs_7x" }) else {
+            return XCTFail("PPL 7x template not found")
+        }
+        // conservative bands: some exercises blocked, but days should not become empty
+        let profile = UserEquipmentProfile(availability: [:])
+        let selection = PlanSelectionResolver.resolve(
+            template: template, profile: profile,
+            context: SubstitutionContext(goal: .hypertrophy, experienceTrack: .experienced)
+        ).withBaselineSubstitution(bands: .conservative)
+        // Conservative bands must not cause any critical conflicts
+        let criticals = selection.baselineConflicts.filter(\.isCritical)
+        XCTAssertTrue(criticals.isEmpty,
+            "Conservative substitution must not produce critical (empty-day) conflicts; got: \(criticals.map(\.dayName))")
     }
 
     // MARK: - P3: Exercise name validity

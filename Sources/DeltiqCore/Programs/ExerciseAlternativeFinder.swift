@@ -69,7 +69,8 @@ public enum ExerciseAlternativeFinder {
     public static func baselineSubstitute(
         _ spec: ExerciseSpec,
         bands: BaselineBands,
-        equipmentPool: Set<Equipment>
+        equipmentPool: Set<Equipment>,
+        profile: UserEquipmentProfile? = nil
     ) -> ExerciseSpec? {
         guard let libSpec = ExerciseLibraryData.byName[spec.name],
               let minBand = libSpec.baselineMinBand,
@@ -79,7 +80,9 @@ public enum ExerciseAlternativeFinder {
         if let alt = findAccessibleAlternative(muscle: libSpec.primaryMuscle,
                                                excluding: spec.name,
                                                bands: bands,
-                                               equipment: equipmentPool) {
+                                               equipment: equipmentPool,
+                                               movementPattern: libSpec.movementPattern,
+                                               profile: profile) {
             return adjustedSpec(replacing: spec, with: alt)
         }
         // Pass 2: strict bodyweight fallback — only exercises needing NO physical item
@@ -87,7 +90,9 @@ public enum ExerciseAlternativeFinder {
                                                excluding: spec.name,
                                                bands: bands,
                                                equipment: [.bodyweight],
-                                               strictBodyweight: true) {
+                                               strictBodyweight: true,
+                                               movementPattern: libSpec.movementPattern,
+                                               profile: profile) {
             return adjustedSpec(replacing: spec, with: alt)
         }
         return nil
@@ -98,11 +103,10 @@ public enum ExerciseAlternativeFinder {
         excluding name: String,
         bands: BaselineBands,
         equipment: Set<Equipment>,
-        strictBodyweight: Bool = false
+        strictBodyweight: Bool = false,
+        movementPattern: MovementPattern? = nil,
+        profile: UserEquipmentProfile? = nil
     ) -> ExerciseTemplateSpec? {
-        // shortcut: equipmentRequirement is not checked for pass 1; broad pool categories
-        // are used as proxy. Pass 2 uses strictBodyweight to exclude pull-bar/-item exercises.
-        // To upgrade: thread UserEquipmentProfile here and call ExerciseRequirement.evaluate.
         ExerciseLibraryData.all.first {
             $0.name != name
                 && $0.primaryMuscle == muscle
@@ -112,6 +116,9 @@ public enum ExerciseAlternativeFinder {
                     || bands.band(for: $0.primaryMuscle).meetsMinimum($0.baselineMinBand!))
                 && (!strictBodyweight
                     || ($0.equipmentRequirement.map(\.requiresNoPhysicalItem) ?? true))
+                && (movementPattern == nil || $0.movementPattern == nil || $0.movementPattern == movementPattern)
+                && (profile == nil || $0.equipmentRequirement == nil
+                    || $0.equipmentRequirement!.evaluate(against: profile!).isSatisfied)
         }
     }
 

@@ -10,6 +10,15 @@ import Foundation
 public struct BaselineConflict: Sendable, Equatable {
     public let dayName: String
     public let exerciseName: String
+    /// True when this conflict must block plan adoption (empty training day).
+    /// False for individual exercise removals (advisory warning only).
+    public let isCritical: Bool
+
+    public init(dayName: String, exerciseName: String, isCritical: Bool = false) {
+        self.dayName = dayName
+        self.exerciseName = exerciseName
+        self.isCritical = isCritical
+    }
 }
 
 public struct ResolvedPlanSelection: Sendable, Equatable {
@@ -79,10 +88,11 @@ extension ResolvedPlanSelection {
             day.exercises.compactMap { ExerciseLibraryData.byName[$0.name]?.equipment }
         })
         pool.insert(.bodyweight)
-        var conflicts: [BaselineConflict] = []
+        var conflicts = baselineConflicts
         let adjustedDays = days.map { day in
             let adjusted = day.exercises.compactMap { spec -> ExerciseSpec? in
-                let result = ExerciseAlternativeFinder.baselineSubstitute(spec, bands: bands, equipmentPool: pool)
+                let result = ExerciseAlternativeFinder.baselineSubstitute(
+                    spec, bands: bands, equipmentPool: pool, profile: equipmentSnapshot)
                 if result == nil {
                     conflicts.append(BaselineConflict(dayName: day.name, exerciseName: spec.name))
                 }
@@ -90,7 +100,10 @@ extension ResolvedPlanSelection {
             }
             // Validate: a non-rest training day must not become empty.
             if day.type != .rest && !day.exercises.isEmpty && adjusted.isEmpty {
-                conflicts.append(BaselineConflict(dayName: day.name, exerciseName: "⚠️ Trainingstag leer nach Baseline-Filterung"))
+                conflicts.append(BaselineConflict(
+                    dayName: day.name,
+                    exerciseName: "⚠️ Trainingstag leer nach Baseline-Filterung",
+                    isCritical: true))
             }
             return day.withExercises(adjusted)
         }

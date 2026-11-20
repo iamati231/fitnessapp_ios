@@ -1,5 +1,18 @@
 import Foundation
 
+/// Movement pattern for an exercise. Used in baseline substitution to prevent
+/// cross-category replacements (e.g. Hyperextension returned for Klimmzüge).
+/// nil = not annotated; substitution uses primaryMuscle match only.
+/// Only back exercises are currently annotated because that is the only muscle
+/// group with meaningfully different patterns in the same primaryMuscle bucket.
+public enum MovementPattern: String, Sendable, Codable, Hashable, CaseIterable {
+    case verticalPull    // pull-ups, lat pulldowns
+    case horizontalPull  // rows (barbell, dumbbell, cable, bodyweight)
+    case spinalExtension // hyperextension, good morning
+    case hipHinge        // deadlifts (axial spinal load from hip hinging)
+    case carry           // farmer's walk, suitcase carry
+}
+
 /// Pure-data spec for one exercise in the seed library. `LibrarySeeder` converts
 /// these into `ExerciseTemplate` @Model rows on first app launch. Duplicating the
 /// fields rather than referencing the @Model directly keeps Core SwiftData-free
@@ -87,6 +100,9 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
     /// exercises (e.g. standard push-ups) for users who scored veryLow.
     public let baselineMinBand: BaselineBand?
 
+    /// Movement pattern used for substitution category matching. See `MovementPattern`.
+    public let movementPattern: MovementPattern?
+
     public init(
         name: String,
         equipment: Equipment,
@@ -106,7 +122,8 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         recoveryClass: ExerciseRecoveryClass = .medium,
         localizationKey: String? = nil,
         equipmentRequirement: ExerciseRequirement? = nil,
-        baselineMinBand: BaselineBand? = nil
+        baselineMinBand: BaselineBand? = nil,
+        movementPattern: MovementPattern? = nil
     ) {
         self.name = name
         self.equipment = equipment
@@ -125,5 +142,6 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         self.localizationKey = localizationKey
         self.equipmentRequirement = equipmentRequirement
         self.baselineMinBand = baselineMinBand
+        self.movementPattern = movementPattern
     }
 }

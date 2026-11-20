@@ -452,17 +452,26 @@ public struct TemplatePreviewView: View {
     /// Issue #51 P2: shown when baseline substitution removed exercises because
     /// no accessible alternative was found. Adoption is still allowed — the user
     /// sees exactly what plan they will get (preview = save contract).
+    private var isCriticallyBlocked: Bool {
+        resolvedSelection.baselineConflicts.contains(where: \.isCritical)
+    }
+
     @ViewBuilder
     private var baselineConflictBanner: some View {
         let conflicts = resolvedSelection.baselineConflicts
         if !conflicts.isEmpty {
+            let hasCritical = conflicts.contains(where: \.isCritical)
             VStack(alignment: .leading, spacing: 6) {
                 Label(
-                    "Einige Übungen wurden für dein Fitnesslevel angepasst",
-                    systemImage: "exclamationmark.triangle.fill"
+                    hasCritical
+                        ? "Plan kann nicht übernommen werden – Trainingstag leer"
+                        : "Einige Übungen wurden für dein Fitnesslevel angepasst",
+                    systemImage: hasCritical
+                        ? "xmark.octagon.fill"
+                        : "exclamationmark.triangle.fill"
                 )
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.orange)
+                .foregroundStyle(hasCritical ? Color.red : Color.orange)
                 ForEach(Array(conflicts.enumerated()), id: \.offset) { _, conflict in
                     Text("• \(conflict.dayName): \(conflict.exerciseName) entfernt")
                         .font(.caption)
@@ -470,7 +479,7 @@ public struct TemplatePreviewView: View {
                 }
             }
             .padding(12)
-            .background(Color.orange.opacity(0.1))
+            .background((hasCritical ? Color.red : Color.orange).opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
@@ -690,6 +699,7 @@ public struct TemplatePreviewView: View {
             }
             .buttonStyle(.plain)
             .deltiqButtonStyle()
+            .disabled(isCriticallyBlocked)
 
             Text("picker.plan.adoptFootnote", bundle: .module)
                 .font(.footnote)
