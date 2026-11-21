@@ -107,10 +107,23 @@ public struct ProgressHomeView: View {
             } else {
                 if !sessionsInPeriod.isEmpty {
                     HStack {
-                        Label(
-                            "\(sessionsInPeriod.count) \(String(localized: "progress.review.sessions", bundle: .module))",
-                            systemImage: "figure.strengthtraining.traditional"
-                        )
+                        // Bug-Fix: "figure.strengthtraining.traditional" und
+                        // "figure.stand" haben unterschiedliche native
+                        // Seitenverhaeltnisse — beim bisherigen
+                        // Label(_:systemImage:) rendern sie trotz gleicher
+                        // Font-Groesse unterschiedlich hoch. `.resizable()` +
+                        // `.aspectRatio(.fit)` + fixer Frame gleicht beide auf
+                        // dieselbe Glyph-Hoehe an (gleiches Prinzip wie
+                        // `DeltiqAccentIconModifier.glyphSize`, hier ohne den
+                        // dortigen Akzent-Background).
+                        Label {
+                            Text("\(sessionsInPeriod.count) \(String(localized: "progress.review.sessions", bundle: .module))")
+                        } icon: {
+                            Image(systemName: "figure.strengthtraining.traditional")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 16, height: 16)
+                        }
                         .font(.subheadline)
                         .foregroundStyle(Color.Deltiq.textSecondary)
                         Spacer()
@@ -118,13 +131,17 @@ public struct ProgressHomeView: View {
                 }
                 if !measurementsInPeriod.isEmpty {
                     HStack {
-                        Label(
-                            String.localizedStringWithFormat(
+                        Label {
+                            Text(String.localizedStringWithFormat(
                                 NSLocalizedString("progress.review.measurements", bundle: .module, comment: ""),
                                 measurementsInPeriod.count
-                            ),
-                            systemImage: "figure.stand"
-                        )
+                            ))
+                        } icon: {
+                            Image(systemName: "figure.stand")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 16, height: 16)
+                        }
                         .font(.subheadline)
                         .foregroundStyle(Color.Deltiq.textSecondary)
                         Spacer()
