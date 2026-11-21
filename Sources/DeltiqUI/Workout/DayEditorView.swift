@@ -105,11 +105,20 @@ public struct DayEditorView: View {
     /// Save synchron `nil` — derselbe etablierte Gueltigkeits-Check.
     /// `internal` (nicht `private`), damit Tests dies ohne lebenden
     /// SwiftUI-Graph pruefen koennen (siehe `EditorDiscardSnapshotTests`).
-    internal let isDayStillValid: Bool
+    ///
+    /// PR #56 Review: war vorher ein `let`, einmalig in `init` erfasst — ein
+    /// `day`, der ZWISCHEN `init` und einem SPAETEREN `body`-Durchlauf
+    /// derselben View-Instanz geloescht wird, waere dadurch nicht erkannt
+    /// worden (ein `body`-Rerun, z.B. durch `@State` hier in der View, ruft
+    /// NICHT erneut `init` auf — SwiftUI haelt die Property-Wrapper-Storage
+    /// ueber die View-Identitaet hinweg und wertet nur `body` neu aus).
+    /// Jetzt eine computed Property, damit jeder `body`-Zugriff
+    /// `day.modelContext` frisch liest (identische Korrektur wie
+    /// `PlanEditorView.isPlanStillValid`, PR #54 Review).
+    internal var isDayStillValid: Bool { day.modelContext != nil }
 
     public init(day: TrainingDay) {
         self.day = day
-        isDayStillValid = day.modelContext != nil
         guard isDayStillValid else {
             _snapshot = State(initialValue: TrainingDaySnapshot(
                 customName: nil, weekday: 2, type: .custom, nextIntensity: .normal,
