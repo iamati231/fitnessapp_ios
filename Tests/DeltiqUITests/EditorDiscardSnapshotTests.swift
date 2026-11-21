@@ -281,6 +281,38 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         XCTAssertEqual(plan.targetEnvironment, .gym)
     }
 
+    /// TestFlight-Crash (0.1.0/38, 2026-11-15): Navigation+Delete-Race.
+    /// `WorkoutRootView`s `navigationDestination(for: TrainingPlan.self)`
+    /// kann `PlanEditorView(plan:)` mit einem bereits geloeschten+gesaveten
+    /// Plan aufrufen. Vor dem Fix crashte `init` reproduzierbar beim ersten
+    /// Lesezugriff auf eine Schema-Property (`PlanMetaSnapshot.capture` liest
+    /// `plan.targetEnvironment`) mit einem SwiftData-Fatal-Error. Regression:
+    /// `init` darf auf einem geloeschten Plan weder crashen noch
+    /// `isPlanStillValid` faelschlich `true` liefern.
+    func testPlanEditorViewOnDeletedPlanDoesNotCrash() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let plan = TrainingPlan(name: "Weg", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(plan)
+        try ctx.save()
+        ctx.delete(plan)
+        try ctx.save()
+
+        let view = PlanEditorView(plan: plan)
+        XCTAssertFalse(view.isPlanStillValid, "Ein geloeschter+gesaveter Plan muss als ungueltig erkannt werden")
+    }
+
+    /// Gegenprobe: ein normaler, eingefuegter Plan bleibt gueltig.
+    func testPlanEditorViewOnLivePlanIsValid() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let plan = TrainingPlan(name: "Da", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(plan)
+
+        let view = PlanEditorView(plan: plan)
+        XCTAssertTrue(view.isPlanStillValid)
+    }
+
     /// Korrektur V1 (PlanEditorView): reines Umsortieren der Tage (Wochentage
     /// rotiert, siehe `moveDays`) OHNE jede andere Aenderung muss als dirty
     /// erkannt und exakt zurueckgerollt werden.

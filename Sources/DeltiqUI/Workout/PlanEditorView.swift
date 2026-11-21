@@ -97,8 +97,35 @@ public struct PlanEditorView: View {
     /// ihren urspruenglichen Wochentag zurueckgesetzt.
     @State private var dayWeekdayAtOpen: [PersistentIdentifier: Int]
 
+    /// TestFlight-Crash (0.1.0/38, 2026-11-15): Navigation+Delete-Race —
+    /// `navigationDestination(for: TrainingPlan.self)` (siehe
+    /// `WorkoutRootView`) kann mit einem `plan` feuern, der zwischen Tap und
+    /// Push bereits geloescht+gesaved wurde. JEDER Lesezugriff auf eine
+    /// `@Attribute`/`@Relationship`-Property eines so invalidierten Models
+    /// (z.B. `plan.targetEnvironment` in `PlanMetaSnapshot.capture`) crasht
+    /// mit einem nicht per do/catch fangbaren SwiftData-Fatal-Error — exakt
+    /// dieselbe Fehlerklasse wie die bereits dokumentierten Crashes in
+    /// `PlansListView.deletePlans`. `modelContext` ist (anders als die
+    /// Schema-Properties) sicher lesbar und wird von SwiftData beim Delete+
+    /// Save synchron auf `nil` gesetzt — der etablierte, nicht-crashende
+    /// Gueltigkeits-Check. Einmalig in `init` erfasst, damit `body` bei
+    /// `false` ganz auf Plan-Lesezugriffe verzichtet (siehe dort).
+    /// `internal` (nicht `private`) aus demselben Grund wie `dayOrderIsDirty`
+    /// u.a. in dieser Datei — direkt pruefbar per `@testable import` ohne
+    /// lebenden SwiftUI-Graph (siehe `Tests/DeltiqUITests`).
+    internal let isPlanStillValid: Bool
+
     public init(plan: TrainingPlan) {
         self.plan = plan
+        isPlanStillValid = plan.modelContext != nil
+        guard isPlanStillValid else {
+            _snapshot = State(initialValue: PlanMetaSnapshot(
+                customName: nil, weeks: 1, progressionTargetRIROverride: nil,
+                targetEnvironment: .gym, isActive: false, activatedAt: nil
+            ))
+            _dayWeekdayAtOpen = State(initialValue: [:])
+            return
+        }
         _snapshot = State(initialValue: PlanMetaSnapshot.capture(from: plan))
         _dayWeekdayAtOpen = State(initialValue: Dictionary(
             uniqueKeysWithValues: plan.days.map { ($0.persistentModelID, $0.weekday) }
@@ -106,6 +133,17 @@ public struct PlanEditorView: View {
     }
 
     public var body: some View {
+        if isPlanStillValid {
+            validBody
+        } else {
+            // Kein Plan-Lesezugriff hier (siehe `isPlanStillValid`-Doc) — die
+            // View schliesst sich selbst, der User landet wieder auf der Liste.
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    @ViewBuilder
+    private var validBody: some View {
         // Signature-Geruest: eigene Kopfzone statt navigationTitle/Toolbar.
         // `List` bleibt Container (DEL-095: .onMove/.onDelete fuer die
         // Tage-Reihenfolge brauchen sie) - alle drei Sektionen bleiben
