@@ -313,6 +313,29 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         XCTAssertTrue(view.isPlanStillValid)
     }
 
+    /// PR #54 Review: deckt die Race ab, die ein einmalig in `init` gecachtes
+    /// `let` NICHT abgedeckt haette - `plan` wird ERST NACH der Konstruktion
+    /// dieser View geloescht (z.B. waehrend die View schon auf dem
+    /// Navigation-Stack liegt), ein spaeterer `body`-Durchlauf derselben
+    /// View-Instanz muss das trotzdem erkennen. `isPlanStillValid` ist dafuer
+    /// jetzt eine computed Property (siehe dortige Doku) - dieselbe
+    /// View-Instanz liest nach dem Delete+Save erneut `false`, ohne neu
+    /// konstruiert zu werden.
+    func testPlanEditorViewDetectsDeletionAfterConstruction() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let plan = TrainingPlan(name: "Weg", weeks: 8, isActive: false, targetEnvironment: .gym)
+        ctx.insert(plan)
+
+        let view = PlanEditorView(plan: plan)
+        XCTAssertTrue(view.isPlanStillValid, "beim Konstruieren noch gueltig")
+
+        ctx.delete(plan)
+        try ctx.save()
+
+        XCTAssertFalse(view.isPlanStillValid, "dieselbe View-Instanz muss die Loeschung bei einem spaeteren Zugriff noch erkennen")
+    }
+
     /// Korrektur V1 (PlanEditorView): reines Umsortieren der Tage (Wochentage
     /// rotiert, siehe `moveDays`) OHNE jede andere Aenderung muss als dirty
     /// erkannt und exakt zurueckgerollt werden.

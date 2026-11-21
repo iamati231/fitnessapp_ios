@@ -113,11 +113,23 @@ public struct PlanEditorView: View {
     /// `internal` (nicht `private`) aus demselben Grund wie `dayOrderIsDirty`
     /// u.a. in dieser Datei — direkt pruefbar per `@testable import` ohne
     /// lebenden SwiftUI-Graph (siehe `Tests/DeltiqUITests`).
-    internal let isPlanStillValid: Bool
+    ///
+    /// PR #54 Review: war vorher ein `let`, einmalig in `init` erfasst — ein
+    /// `plan`, der ZWISCHEN `init` und einem SPAETEREN `body`-Durchlauf
+    /// geloescht wird, haette diese Pruefung nicht mehr erneut gesehen. Ein
+    /// `body`-Rerun (z.B. durch `@Query allPlans`/`activePlans` oder jedes
+    /// `@State` hier in der View) ruft NICHT erneut `init` auf — SwiftUI
+    /// haelt die Property-Wrapper-Storage ueber die View-Identitaet hinweg
+    /// und wertet nur `body` neu aus (anders als eine echte Neukonstruktion
+    /// durch den Elternteil, z.B. `NavigationStack.navigationDestination`,
+    /// die `init` tatsaechlich erneut durchlaeuft). Jetzt eine computed
+    /// Property statt eines einmalig gecachten Werts: jeder `body`-Zugriff
+    /// liest `plan.modelContext` frisch, deckt also auch eine Loeschung
+    /// zwischen zwei `body`-Durchlaeufen derselben View-Instanz ab.
+    internal var isPlanStillValid: Bool { plan.modelContext != nil }
 
     public init(plan: TrainingPlan) {
         self.plan = plan
-        isPlanStillValid = plan.modelContext != nil
         guard isPlanStillValid else {
             _snapshot = State(initialValue: PlanMetaSnapshot(
                 customName: nil, weeks: 1, progressionTargetRIROverride: nil,
