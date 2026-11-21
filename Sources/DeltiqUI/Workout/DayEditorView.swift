@@ -92,8 +92,33 @@ public struct DayEditorView: View {
     /// Konzept (siehe `snapshot`-Doc oben).
     @State private var exerciseOrderIndexAtOpen: [PersistentIdentifier: Int]
 
+    /// Audit-Fund (identische Crash-Klasse wie der bereits gefixte
+    /// `PlanEditorView`, siehe dortige Doku an `isPlanStillValid`):
+    /// `WorkoutRootView.navigationDestination(for: TrainingDay.self)` sowie
+    /// mehrere `NavigationLink(value: day)`/`workoutPath.append(day)`-Stellen
+    /// (PlanEditorView, DashboardView) halten das `TrainingDay`-Model direkt
+    /// im Navigation-Path. Wird der Tag (z.B. ueber PlanEditorViews
+    /// Tag-Loeschen) zwischen Tap und Push geloescht+gesaved, crasht `init`
+    /// beim ersten Lesezugriff auf eine Schema-Property (`TrainingDaySnapshot.
+    /// capture`, `day.activeExercises`) mit einem nicht fangbaren SwiftData-
+    /// Fatal-Error. `modelContext` ist sicher lesbar und wird beim Delete+
+    /// Save synchron `nil` — derselbe etablierte Gueltigkeits-Check.
+    /// `internal` (nicht `private`), damit Tests dies ohne lebenden
+    /// SwiftUI-Graph pruefen koennen (siehe `EditorDiscardSnapshotTests`).
+    internal let isDayStillValid: Bool
+
     public init(day: TrainingDay) {
         self.day = day
+        isDayStillValid = day.modelContext != nil
+        guard isDayStillValid else {
+            _snapshot = State(initialValue: TrainingDaySnapshot(
+                customName: nil, weekday: 2, type: .custom, nextIntensity: .normal,
+                timeFormat: nil, timeCapMinutes: nil, circuitRounds: nil,
+                circuitRestSeconds: nil, circuitMode: nil
+            ))
+            _exerciseOrderIndexAtOpen = State(initialValue: [:])
+            return
+        }
         _snapshot = State(initialValue: TrainingDaySnapshot.capture(from: day))
         _exerciseOrderIndexAtOpen = State(initialValue: Dictionary(
             uniqueKeysWithValues: day.activeExercises.map { ($0.persistentModelID, $0.orderIndex) }
@@ -101,6 +126,17 @@ public struct DayEditorView: View {
     }
 
     public var body: some View {
+        if isDayStillValid {
+            validBody
+        } else {
+            // Kein Tag-Lesezugriff hier (siehe `isDayStillValid`-Doc) — die
+            // View schliesst sich selbst, der User landet wieder im Plan-Editor.
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    @ViewBuilder
+    private var validBody: some View {
         VStack(spacing: 0) {
             // Signature-Geruest 1.2: aus dem Plan-Tab gepusht - "alles im
             // Plan-Tab bekommt tab.plan" (OFFENE-VIEWS.md), auch wenn der
