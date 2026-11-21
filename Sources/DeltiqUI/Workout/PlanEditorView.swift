@@ -126,11 +126,20 @@ public struct PlanEditorView: View {
     /// Property statt eines einmalig gecachten Werts: jeder `body`-Zugriff
     /// liest `plan.modelContext` frisch, deckt also auch eine Loeschung
     /// zwischen zwei `body`-Durchlaeufen derselben View-Instanz ab.
+    ///
+    /// CI-Fund (Apple-Runner, nach der obigen Korrektur): `init` darf diese
+    /// computed Property NICHT lesen, bevor ALLE gespeicherten Properties
+    /// (hier `_snapshot`/`_dayWeekdayAtOpen`) gesetzt sind - Swifts Definite-
+    /// Initialization verbietet jeden `self`-Zugriff (auch ueber eine
+    /// computed Property) davor ("variable 'self.snapshot' used before
+    /// being initialized"). `init` prueft deshalb `plan.modelContext` direkt
+    /// ueber eine lokale Konstante statt ueber `isPlanStillValid`.
     internal var isPlanStillValid: Bool { plan.modelContext != nil }
 
     public init(plan: TrainingPlan) {
         self.plan = plan
-        guard isPlanStillValid else {
+        let isValid = plan.modelContext != nil
+        guard isValid else {
             _snapshot = State(initialValue: PlanMetaSnapshot(
                 customName: nil, weeks: 1, progressionTargetRIROverride: nil,
                 targetEnvironment: .gym, isActive: false, activatedAt: nil
