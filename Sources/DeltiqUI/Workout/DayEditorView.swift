@@ -115,11 +115,19 @@ public struct DayEditorView: View {
     /// Jetzt eine computed Property, damit jeder `body`-Zugriff
     /// `day.modelContext` frisch liest (identische Korrektur wie
     /// `PlanEditorView.isPlanStillValid`, PR #54 Review).
+    ///
+    /// CI-Fund (identischer Fund wie PR #54, Apple-Runner): `init` darf diese
+    /// computed Property NICHT lesen, bevor ALLE gespeicherten Properties
+    /// (hier `_snapshot`/`_exerciseOrderIndexAtOpen`) gesetzt sind - Swifts
+    /// Definite-Initialization verbietet jeden `self`-Zugriff davor. `init`
+    /// prueft deshalb `day.modelContext` direkt ueber eine lokale Konstante
+    /// statt ueber `isDayStillValid`.
     internal var isDayStillValid: Bool { day.modelContext != nil }
 
     public init(day: TrainingDay) {
         self.day = day
-        guard isDayStillValid else {
+        let isValid = day.modelContext != nil
+        guard isValid else {
             _snapshot = State(initialValue: TrainingDaySnapshot(
                 customName: nil, weekday: 2, type: .custom, nextIntensity: .normal,
                 timeFormat: nil, timeCapMinutes: nil, circuitRounds: nil,
