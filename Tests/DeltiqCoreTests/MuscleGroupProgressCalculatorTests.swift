@@ -166,6 +166,26 @@ final class MuscleGroupProgressCalculatorTests: XCTestCase {
         XCTAssertEqual(stats.mostTrainedMuscleSets, 3)
     }
 
+    // MARK: - 10b. busiestWeekStart tie-break is deterministic (sibling bug to Commit 069fa3a:
+    // `weekTotals.max(by:)` lacked the same tie-breaker already added to `top` there)
+
+    func test_busiestWeekTieBreakPicksLaterWeekDeterministically() {
+        let now = date(2024, 6, 10)
+        let earlierWeekSet = date(2024, 5, 27)   // 1 set in its own calendar week
+        let laterWeekSet = date(2024, 6, 3)      // 1 set, 1 week later — same count, genuine tie
+        let sets = [
+            strengthSet(on: earlierWeekSet, muscle: .quads),
+            strengthSet(on: laterWeekSet, muscle: .glutes),
+        ]
+        let expectedWeekStart = Calendar.current.dateInterval(of: .weekOfYear, for: laterWeekSet)!.start
+
+        for _ in 0..<5 {
+            let stats = Calc.overviewStats(sets: sets, period: .allTime, now: now)
+            XCTAssertEqual(stats.busiestWeekSets, 1)
+            XCTAssertEqual(stats.busiestWeekStart, expectedWeekStart)
+        }
+    }
+
     // MARK: - 11. weeklyPoints is gap-free (zero-weeks included)
 
     func test_weeklyPointsGapFree() {

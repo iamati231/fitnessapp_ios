@@ -129,7 +129,11 @@ public enum MuscleGroupProgressCalculator {
             let ws = weekStart(for: s.date, calendar: .current)
             weekTotals[ws, default: 0] += 1
         }
-        let busiest = weekTotals.max(by: { $0.value < $1.value })
+        // Gleiche nicht-deterministische Dictionary.max(by:)-Falle wie bei `top`
+        // oben (siehe Commit 069fa3a) - Tie-Breaker ueber das Datum ergaenzt,
+        // sonst flackert `busiestWeekStart` bei echtem Gleichstand zwischen
+        // zwei Wochen je nach Dictionary-Iterationsreihenfolge.
+        let busiest = weekTotals.max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key < $1.key) })
 
         return OverviewStats(
             totalWorkingSets: total,
