@@ -61,13 +61,13 @@ final class MainTabStructureTests: XCTestCase {
         )
     }
 
-    func testTabOrderIsHeuteTrainingErnaehrungFortschrittMehr() throws {
+    func testTabOrderIsHeuteTrainingFortschrittErnaehrungMehr() throws {
         let source = try rootViewSource
         let tagsInOrder = [
             "AppTab.dashboard",   // Heute
             "AppTab.plan",        // Training
+            "AppTab.progress",    // Fortschritt (Issue #49: vor Ernährung)
             "AppTab.nutrition",   // Ernährung
-            "AppTab.progress",    // Fortschritt
             "AppTab.settings"     // Mehr
         ]
         let positions = tagsInOrder.map { source.range(of: ".tag(\($0))") }
@@ -78,7 +78,7 @@ final class MainTabStructureTests: XCTestCase {
         let indices = positions.compactMap { $0?.lowerBound }
         XCTAssertEqual(
             indices, indices.sorted(),
-            "Tabs must appear in order: Heute, Training, Ernährung, Fortschritt, Mehr."
+            "Tabs must appear in order: Heute, Training, Fortschritt, Ernährung, Mehr."
         )
         // Genau fünf `.tag(AppTab....)`-Treffer — kein sechster, verwaister Tab.
         let tagCount = source.components(separatedBy: ".tag(AppTab.").count - 1
