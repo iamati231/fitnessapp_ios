@@ -1,5 +1,18 @@
 import Foundation
 
+/// Movement pattern for an exercise. Used in baseline substitution to prevent
+/// cross-category replacements (e.g. Hyperextension returned for Klimmzüge).
+/// nil = not annotated; substitution uses primaryMuscle match only.
+/// Only back exercises are currently annotated because that is the only muscle
+/// group with meaningfully different patterns in the same primaryMuscle bucket.
+public enum MovementPattern: String, Sendable, Codable, Hashable, CaseIterable {
+    case verticalPull    // pull-ups, lat pulldowns
+    case horizontalPull  // rows (barbell, dumbbell, cable, bodyweight)
+    case spinalExtension // hyperextension, good morning
+    case hipHinge        // deadlifts (axial spinal load from hip hinging)
+    case carry           // farmer's walk, suitcase carry
+}
+
 /// Pure-data spec for one exercise in the seed library. `LibrarySeeder` converts
 /// these into `ExerciseTemplate` @Model rows on first app launch. Duplicating the
 /// fields rather than referencing the @Model directly keeps Core SwiftData-free
@@ -82,6 +95,44 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
     /// separater, spaeterer Schritt — Audit Abschnitt 9).
     public let equipmentRequirement: ExerciseRequirement?
 
+    /// Issue #51: minimum baseline band required for this exercise. `nil` = no
+    /// restriction (accessible to all). Used by PlanGenerator to skip gated
+    /// exercises (e.g. standard push-ups) for users who scored veryLow.
+    public let baselineMinBand: BaselineBand?
+
+    /// Movement pattern used for substitution category matching. See `MovementPattern`.
+    public let movementPattern: MovementPattern?
+
+    /// Issue #51 R3: nur eine Handvoll Uebungen tragen ein explizites
+    /// `baselineMinBand` — alle anderen liefen bislang UNGEFILTERT durch
+    /// jede Baseline-Pruefung, auch objektiv anspruchsvolle
+    /// (`difficultyLevel: .advanced`, z.B. Kreuzheben/Pistol Squat/Muscle-Up).
+    /// Leitet fuer die restlichen Uebungen einen konservativen Mindest-Band
+    /// aus dem ohnehin fuer JEDE Uebung gepflegten `difficultyLevel` her,
+    /// statt eine nie vollstaendige manuelle Annotation jeder einzelnen
+    /// Uebung zu verlangen. Ein explizites `baselineMinBand` hat weiterhin
+    /// Vorrang (gezielt von Hand kalibriert, praeziser als diese grobe
+    /// Herleitung).
+    ///
+    /// Bewusst NUR zwei Stufen (`.beginner` → kein Gate, alles andere →
+    /// `.low`), nicht fein nach `.intermediate`/`.advanced` gestaffelt: eine
+    /// `.advanced`-Stufe, die `.moderate` verlangt, haette unter
+    /// `BaselineBands.conservative` (push/legs/pull/core alle `.low` — der
+    /// Default fuer uebersprungene Tests) ploetzlich auch fuer diesen bisher
+    /// unauffaelligen Pfad gegriffen (`.low` erfuellt `.moderate` nicht) und
+    /// damit potenziell ganze Tage ohne jede explizite Annotation leeren
+    /// koennen — nicht risikofrei pruefbar ueber alle 20 Templates ohne
+    /// lokalen Build/Test (siehe PR-Beschreibung). `.low` als Schranke
+    /// aendert am `.conservative`-Pfad NICHTS (`.low` erfuellt `.low`), haelt
+    /// aber `veryLow`-getestete Nutzer (das eigentliche Problem: "besonders
+    /// anspruchsvolle Uebungen duerfen nicht ungeprueft im Anfaengerplan
+    /// landen") weiterhin fern von jeder nicht als `.beginner` eingestuften
+    /// Uebung.
+    public var effectiveBaselineMinBand: BaselineBand? {
+        if let baselineMinBand { return baselineMinBand }
+        return difficultyLevel == .beginner ? nil : .low
+    }
+
     public init(
         name: String,
         equipment: Equipment,
@@ -100,7 +151,9 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         technicalComplexityFactor: Double = 0.30,
         recoveryClass: ExerciseRecoveryClass = .medium,
         localizationKey: String? = nil,
-        equipmentRequirement: ExerciseRequirement? = nil
+        equipmentRequirement: ExerciseRequirement? = nil,
+        baselineMinBand: BaselineBand? = nil,
+        movementPattern: MovementPattern? = nil
     ) {
         self.name = name
         self.equipment = equipment
@@ -118,5 +171,7 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         self.recoveryClass = recoveryClass
         self.localizationKey = localizationKey
         self.equipmentRequirement = equipmentRequirement
+        self.baselineMinBand = baselineMinBand
+        self.movementPattern = movementPattern
     }
 }

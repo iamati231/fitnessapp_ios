@@ -638,9 +638,11 @@ final class PlanGeneratorTests: XCTestCase {
         let longCount = longResult.days.first?.spec.exercises.count ?? 0
         XCTAssertGreaterThan(longCount, shortCount,
                               "a 100-minute intermediate session must get more exercises than a 15-minute one")
-        // The real library has 8 intermediate kettlebell exercises total — the
-        // long session's target (exerciseCount = 7) should now be fully
-        // reachable, and the short session's target (3) reachable as before.
+        // Issue #51 / Zeitbudget-Review: 15 Minuten (Budget 900s) werden von
+        // den 3 Basis-Exercises (3*380s=1140s) bereits erschöpft — kein Platz
+        // für top-ups (min 260s). Ergebnis: 3 Exercises, keine Gruppe ergänzt.
+        // Der 100-Minuten-Tag (exerciseCount=7, Puffer 3340s) trifft bereits
+        // alle erreichbaren Kettlebell-Gruppen und bleibt bei 7.
         XCTAssertEqual(shortCount, 3)
         XCTAssertEqual(longCount, 7)
     }
@@ -672,6 +674,12 @@ final class PlanGeneratorTests: XCTestCase {
 
     /// Existing intermediate/advanced duration-scaling behavior (already
     /// working per the bug report) must be unaffected by this fix.
+    ///
+    /// Issue #51 / Zeitbudget-Review: 15 Minuten (Budget 900s, Basis 1140s)
+    /// sind erschöpft — 0 top-ups, 3 Exercises. Der 100-Minuten-Tag
+    /// (exerciseCount=7, Puffer 3340s) trifft bereits chest/back/shoulders/
+    /// biceps/triceps/quads/hamstrings und ergänzt Core (7 → 8).
+    /// Grund-Garantie "länger = mehr Exercises" bleibt erhalten (3 < 8).
     func testIntermediateDumbbellDurationScalingIsUnaffected() {
         let shortResult = PlanGenerator.generate(from: input(
             [selection(.dumbbell, days: 1, minutes: 15, experience: .intermediate)]
@@ -680,7 +688,7 @@ final class PlanGeneratorTests: XCTestCase {
             [selection(.dumbbell, days: 1, minutes: 100, experience: .intermediate)]
         ))
         XCTAssertEqual(shortResult.days.first?.spec.exercises.count, 3)
-        XCTAssertEqual(longResult.days.first?.spec.exercises.count, 7)
+        XCTAssertEqual(longResult.days.first?.spec.exercises.count, 8)
     }
 
     // MARK: - Score-basierte Uebungsauswahl (F1–F4)
@@ -1106,6 +1114,180 @@ final class PlanGeneratorTests: XCTestCase {
         for _ in 0..<30 {
             let candidate = PlanGenerator.generate(from: input).days.map { $0.spec.exercises.map(\.name) }
             XCTAssertEqual(candidate, reference, "Unterschiedliche Uebungsreihenfolge bei identischem Input")
+        }
+    }
+
+    // MARK: - Issue #51 Punkt 1: woechentliche Muskelgruppen-Abdeckung bei 1-2 Tagen
+
+    /// Der Pro-Tag-Rundlauf in `strengthCandidates` startet seinen Muskel-
+    /// Cursor bei `dayIndex` und waehlt nur `exerciseCount` (3-7) von
+    /// `MuscleGroup.allCases.count` (10) Gruppen — bei 1-2 Trainingstagen
+    /// kann das die GANZE Woche ueber ganze Gruppen verfehlen (z.B.
+    /// Beinbeuger/Gesaess/Core). Erwartet wird, dass jede GROSSE Muskelgruppe
+    /// (dieselben sieben wie `PlanGenerator.majorMuscleGroups` — Arme/Waden
+    /// bewusst ausgenommen, siehe Kommentar dort), fuer die der equipment-/
+    /// schwierigkeits-gefilterte Pool ueberhaupt eine Uebung hat, am Ende in
+    /// der Woche auftaucht — als Teilmenge, nicht als exakte Gleichheit:
+    /// `covered` darf zusaetzlich inzidentelle Nicht-Major-Treffer (Bizeps/
+    /// Trizeps) enthalten, die der bestehende Rundlauf unabhaengig von
+    /// dieser Ergaenzung sowieso schon trifft.
+    private static let testMajorMuscleGroups: Set<MuscleGroup> = [.chest, .back, .shoulders, .quads, .hamstrings, .glutes, .core]
+
+    private func coveredMuscleGroups(_ result: PlanGenerator.Result) -> Set<MuscleGroup> {
+        Set(result.days.flatMap { $0.spec.exercises }.compactMap { ExerciseLibraryData.byName[$0.name]?.primaryMuscle })
+    }
+
+    private func coverableMajorMuscleGroups(equipment: Set<Equipment>, experience: DifficultyLevel) -> Set<MuscleGroup> {
+        let allowed: Set<DifficultyLevel>
+        switch experience {
+        case .beginner:     allowed = [.beginner]
+        case .intermediate: allowed = [.beginner, .intermediate]
+        case .advanced:     allowed = [.beginner, .intermediate, .advanced]
+        }
+        let reachable = Set(ExerciseLibraryData.all
+            .filter { equipment.contains($0.equipment) && !$0.isCardio && allowed.contains($0.difficultyLevel) }
+            .map(\.primaryMuscle))
+        return reachable.intersection(Self.testMajorMuscleGroups)
+    }
+
+    func testOneAndTwoDayPlansCoverEveryMajorMuscleGroupThePoolCanReach() {
+        let kinds: [TrainingTypeKind] = [.bodyweight, .dumbbell, .barbell]
+        let goals: [TrainingGoal] = [.hypertrophy, .strength, .weightLoss, .functional]
+        // 45 min 1 Tag: MuscleGroup.allCases[0..5] = chest..quads in der Basis;
+        // bis zu 3 Gruppen fehlen (z.B. bodyweight: hamstrings/glutes/core), aber
+        // nur 1 top-up-Slot → vollständige Abdeckung erst mit 2 Tagen erreichbar.
+        // 60 min: exerciseCount=7, Basis deckt chest..hamstrings; nur core fehlt
+        // → 2 top-up-Slots, 1 Tag reicht bereits.
+        let durationDays: [(minutes: Int, days: [Int])] = [
+            (45, [2]),
+            (60, [1, 2])
+        ]
+
+        for kind in kinds {
+            guard let equipment = kind.equipmentFilter else { continue }
+            let expected = coverableMajorMuscleGroups(equipment: [equipment], experience: .intermediate)
+            for goal in goals {
+                for (minutes, daysOptions) in durationDays {
+                    for days in daysOptions {
+                        let planInput = PlanGeneratorInput(
+                            selections: [selection(kind, days: days, minutes: minutes)],
+                            equipmentPreferences: [equipment],
+                            usesFixedWeekdays: false,
+                            trainingGoal: goal
+                        )
+                        let result = PlanGenerator.generate(from: planInput)
+                        let covered = coveredMuscleGroups(result)
+                        XCTAssertTrue(expected.isSubset(of: covered),
+                            "\(kind)/\(goal)/\(days)d/\(minutes)min: erwartete grosse Muskelgruppen \(expected), erhalten \(covered)")
+                    }
+                }
+            }
+        }
+    }
+
+    /// Gezielter Regressionsfall fuer den urspruenglichen Befund: 1 Tag
+    /// Koerpergewicht — Huefte (Beinbeuger/Gesaess) und Core duerfen nicht
+    /// fehlen, wenn das Zeitbudget top-ups erlaubt. 60 Minuten (Puffer 940s,
+    /// 2 volle top-ups moeglich) sind dafuer repraesentativ; 20 Minuten wuerden
+    /// das Budget vor top-ups bereits erschoepfen (siehe testTimeBudget*).
+    func testOneDayBodyweightSessionWithSufficientBudgetCoversHipExtensionAndCore() {
+        let result = PlanGenerator.generate(from: input([selection(.bodyweight, days: 1, minutes: 60)]))
+        let covered = coveredMuscleGroups(result)
+        XCTAssertTrue(covered.contains(.hamstrings) || covered.contains(.glutes),
+            "1 Tag Ganzkoerper (60 Min.) muss Huefte/Beinbeuger abdecken, erhalten: \(covered)")
+        XCTAssertTrue(covered.contains(.core), "1 Tag Ganzkoerper (60 Min.) muss Core abdecken, erhalten: \(covered)")
+    }
+
+    /// Die Ergaenzung darf bestehende Garantien nicht verletzen: weiterhin
+    /// die angeforderte Tagesanzahl, keine Uebung doppelt INNERHALB
+    /// desselben Tages, weiterhin nur Uebungen aus dem equipment-
+    /// gefilterten Pool. (Dieselbe Uebung auf ZWEI verschiedenen Tagen ist
+    /// hier bewusst nicht ausgeschlossen — das war schon vor dieser
+    /// Aenderung erlaubt, siehe `weeklyNames` als reiner Soft-Malus statt
+    /// Hard-Exclusion in `exerciseScore`.)
+    func testWeeklyMuscleCoverageTopUpPreservesExistingInvariants() {
+        let bodyweightPool = Set(ExerciseLibraryData.all.filter { $0.equipment == .bodyweight }.map(\.name))
+        let result = PlanGenerator.generate(from: input([selection(.bodyweight, days: 2, minutes: 20)]))
+        XCTAssertEqual(result.days.count, 2)
+        for day in result.days {
+            let names = day.spec.exercises.map(\.name)
+            XCTAssertEqual(Set(names).count, names.count, "Keine Uebung darf durch die Ergaenzung doppelt innerhalb desselben Tages auftauchen")
+        }
+        let allNames = Set(result.days.flatMap { $0.spec.exercises.map(\.name) })
+        XCTAssertTrue(allNames.isSubset(of: bodyweightPool), "Ergaenzte Uebungen muessen weiterhin aus dem gewaehlten Equipment-Pool stammen")
+    }
+
+    // MARK: - Zeitbudget-bewusste top-ups (Issue #51 Review)
+
+    /// TB-1: 15 und 20 Minuten — Zeitbudget ist durch die Basis-Exercises
+    /// erschöpft, keine top-ups.
+    /// 15 min: Budget 900s, 3 Basis-Exercises 3*380s=1140s (bereits darüber) → 0 top-ups.
+    /// 20 min: Budget 1200s, Puffer 60s — min top-up 2*120+20=260s > 60s → 0 top-ups.
+    func testTimeBudgetExhaustedAtFifteenAndTwentyMinutes() {
+        for minutes in [15, 20] {
+            for days in [1, 2] {
+                let result = PlanGenerator.generate(from: input(
+                    [selection(.dumbbell, days: days, minutes: minutes)]
+                ))
+                for day in result.days where day.spec.timeFormat == nil {
+                    XCTAssertEqual(day.spec.exercises.count, 3,
+                        "\(days)d/\(minutes)min: Zeitbudget erschöpft, kein top-up erwartet, erhalten \(day.spec.exercises.count)")
+                }
+            }
+        }
+    }
+
+    /// TB-2: 30 Minuten — 1 top-up mit reduzierten Sätzen (2 statt 3) passt ins Budget.
+    /// Budget 1800s, Basis 4*380=1520s, Puffer 280s, min top-up 260s ≤ 280s.
+    /// Vollständige Abdeckung ist bei 30 min nicht erreichbar (3 Gruppen fehlen in der Basis,
+    /// nur 1 top-up/Tag) — geprüft wird, dass mindestens 1 top-up tatsächlich stattfindet.
+    func testThirtyMinuteSessionAllowsOneTopUpForMissingMuscle() {
+        for days in [1, 2] {
+            let result = PlanGenerator.generate(from: input(
+                [selection(.dumbbell, days: days, minutes: 30)]
+            ))
+            let strengthDays = result.days.filter { $0.spec.timeFormat == nil }
+            let maxCount = strengthDays.map { $0.spec.exercises.count }.max() ?? 0
+            XCTAssertGreaterThan(maxCount, 4,
+                "dumbbell/\(days)d/30min: 1 top-up mit 2 Sätzen erwartet, kein Tag hat mehr als 4 Übungen (erhalten: \(maxCount))")
+        }
+    }
+
+    /// TB-3: Volle Abdeckung aller erreichbaren großen Muskelgruppen.
+    /// 45 min 1 Tag: MuscleGroup.allCases[0..5] deckt Basis (chest/back/shoulders/biceps/
+    /// triceps/quads) → hamstrings + core fehlen, aber nur 1 top-up-Slot (Budget 420s) →
+    /// nicht deterministisch welche der beiden Gruppen ergänzt wird.
+    /// 45 min 2 Tage: Tag 2 hat hamstrings in der Basis → nur core fehlt → 1 top-up reicht.
+    /// 60 min 1 Tag: exerciseCount=7 → Basis deckt muscles[0..6] inkl. hamstrings → nur
+    /// core fehlt → 2 top-up-Slots (Budget 940s), core wird ergänzt.
+    func testFortyFiveAndSixtyMinuteSessionsAchieveFullCoverage() {
+        let configs: [(minutes: Int, days: Int)] = [
+            (45, 2),   // 45 min: 2 Tage verteilen je 1 top-up → vollständig
+            (60, 1),   // 60 min: 2 top-up-Slots, nur 1 Gruppe fehlt → vollständig
+            (60, 2)
+        ]
+        for (minutes, days) in configs {
+            let result = PlanGenerator.generate(from: input(
+                [selection(.dumbbell, days: days, minutes: minutes)]
+            ))
+            let covered = coveredMuscleGroups(result)
+            let expected = coverableMajorMuscleGroups(equipment: [.dumbbell], experience: .intermediate)
+            XCTAssertTrue(expected.isSubset(of: covered),
+                "dumbbell/\(days)d/\(minutes)min: Gruppen \(expected) nicht vollständig, erhalten: \(covered)")
+        }
+    }
+
+    /// TB-4: Längere Einheiten (60 min) haben mehr Exercises als kürzere (15 min).
+    func testExerciseCountScalesWithDuration() {
+        for days in [1, 2] {
+            let count15 = PlanGenerator.generate(from: input(
+                [selection(.dumbbell, days: days, minutes: 15)]
+            )).days.first?.spec.exercises.count ?? 0
+            let count60 = PlanGenerator.generate(from: input(
+                [selection(.dumbbell, days: days, minutes: 60)]
+            )).days.first?.spec.exercises.count ?? 0
+            XCTAssertGreaterThan(count60, count15,
+                "\(days)d: 60-min-Einheit muss mehr Exercises haben als 15-min (\(count15) → \(count60))")
         }
     }
 }

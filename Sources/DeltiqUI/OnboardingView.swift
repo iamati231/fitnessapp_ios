@@ -294,7 +294,8 @@ public struct OnboardingView: View {
                         userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
                         goal: trainingGoal,
                         experienceTrack: resolvedExperienceTrack,
-                        isEquipmentAssumption: equipmentPlanningContext.isAssumption
+                        isEquipmentAssumption: equipmentPlanningContext.isAssumption,
+                        baselineBands: baselineAssessmentResult.map { BaselineAssessmentEvaluator.evaluate($0) }
                     ) { selection in
                         // DEL-088: Adopt finalisiert die Plan-Wahl noch nicht
                         // direkt — stattdessen oeffnet sich der DayPicker,
@@ -395,6 +396,7 @@ public struct OnboardingView: View {
                 ), preseededEnduranceModality: enduranceModality,
                 preseededGoal: trainingGoal,
                 preseededDaysPerWeek: weeklyGoal,
+                preseededBaselineBands: baselineAssessmentResult.map { BaselineAssessmentEvaluator.evaluate($0) },
                 onGenerated: { input, result in
                     customPlanInput = input
                     customPlanResult = result
@@ -2179,14 +2181,18 @@ public struct OnboardingView: View {
             // "veraltet" gelten (das rohe `equipmentProfile` enthaelt die
             // Annahme nicht, nur `equipmentPlanningContext.effectiveProfile`).
             let currentEffectiveProfile = equipmentPlanningContext.effectiveProfile
+            // Issue #51: baseline already applied to resolvedPlanSelection by
+            // TemplatePreviewView. For stale re-resolve, apply it here too.
+            // Pass baselineBands: nil to ProgramInstantiator to avoid double-substitution.
+            let bands = baselineAssessmentResult.map { BaselineAssessmentEvaluator.evaluate($0) }
             let freshSelection: ResolvedPlanSelection
             if let resolvedPlanSelection, !resolvedPlanSelection.isStale(comparedTo: currentEffectiveProfile) {
-                freshSelection = resolvedPlanSelection
+                freshSelection = resolvedPlanSelection  // already baseline-adjusted
             } else {
                 freshSelection = PlanSelectionResolver.resolve(
                     template: template, profile: currentEffectiveProfile,
                     context: SubstitutionContext(goal: trainingGoal, experienceTrack: resolvedExperienceTrack)
-                )
+                ).withBaselineSubstitution(bands: bands ?? .conservative)
             }
             // Audit-Fix (Save-Fehler): instantiate() hing bisher komplett am
             // impliziten Autosave - anders als der customPlanInput-Zweig
@@ -2200,7 +2206,8 @@ public struct OnboardingView: View {
                 template,
                 in: modelContext,
                 selectedWeekdays: selectedWeekdays.isEmpty ? nil : selectedWeekdays,
-                resolvedSelection: freshSelection
+                resolvedSelection: freshSelection,
+                baselineBands: nil  // baseline already applied to freshSelection
             )
             do {
                 try modelContext.save()

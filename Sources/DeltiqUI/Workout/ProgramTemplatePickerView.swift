@@ -56,7 +56,8 @@ public struct ProgramTemplatePickerView: View {
                                         userEquipmentProfile: equipmentPlanningContext.effectiveProfile,
                                         goal: profiles.first?.trainingGoal ?? .hybrid,
                                         experienceTrack: profiles.first?.experienceTrack,
-                                        isEquipmentAssumption: equipmentPlanningContext.isAssumption
+                                        isEquipmentAssumption: equipmentPlanningContext.isAssumption,
+                                        baselineBands: profiles.first?.baselineAssessment.map { BaselineAssessmentEvaluator.evaluate($0) }
                                     ) { selection in
                                         instantiate(template, selection: selection)
                                     }
@@ -176,17 +177,26 @@ public struct ProgramTemplatePickerView: View {
         // nicht gegen das rohe, individuelle Profil — sonst wuerde eine reine
         // Gym-Annahme bei jedem Adopt faelschlich als "veraltet" gelten.
         let currentEffectiveProfile = equipmentPlanningContext.effectiveProfile
-        let freshSelection = selection.isStale(comparedTo: currentEffectiveProfile)
-            ? PlanSelectionResolver.resolve(
+        // Issue #51: baseline already applied to `selection` by TemplatePreviewView.
+        // If stale, re-resolve AND re-apply baseline; pass baselineBands: nil to
+        // ProgramInstantiator to avoid double-substitution in both cases.
+        let bands = profiles.first?.baselineAssessment.map { BaselineAssessmentEvaluator.evaluate($0) }
+        let freshSelection: ResolvedPlanSelection
+        if selection.isStale(comparedTo: currentEffectiveProfile) {
+            let reresolved = PlanSelectionResolver.resolve(
                 template: template, profile: currentEffectiveProfile,
                 context: SubstitutionContext(goal: profiles.first?.trainingGoal ?? .hybrid, experienceTrack: profiles.first?.experienceTrack)
             )
-            : selection
+            freshSelection = reresolved.withBaselineSubstitution(bands: bands ?? .conservative)
+        } else {
+            freshSelection = selection
+        }
 
         let plan = ProgramInstantiator.instantiate(
             template,
             in: modelContext,
-            resolvedSelection: freshSelection
+            resolvedSelection: freshSelection,
+            baselineBands: nil  // baseline already applied to freshSelection
         )
         // Audit-Fix (Save-Fehler): instantiate() inserted Plan+Tage+Uebungen,
         // hing bisher aber komplett am impliziten SwiftData-Autosave - ein
@@ -298,6 +308,11 @@ public struct TemplatePreviewView: View {
     /// nicht belegte Aussage (Vorgabe: nie "Equipment bestätigt" für eine
     /// Annahme zeigen).
     public let isEquipmentAssumption: Bool
+    /// Issue #51: baseline bands for pre-filtering inaccessible exercises.
+    /// When non-nil, `resolvedSelection` applies baseline substitution so
+    /// preview and saved plan show identical exercises.
+    /// `nil` means no baseline test was done; conservative defaults apply.
+    public let baselineBands: BaselineBands?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -315,6 +330,7 @@ public struct TemplatePreviewView: View {
         goal: TrainingGoal = .hybrid,
         experienceTrack: ExperienceTrack? = nil,
         isEquipmentAssumption: Bool = false,
+        baselineBands: BaselineBands? = nil,
         onAdopt: @escaping (ResolvedPlanSelection) -> Void
     ) {
         self.template = template
@@ -323,6 +339,7 @@ public struct TemplatePreviewView: View {
         self.goal = goal
         self.experienceTrack = experienceTrack
         self.isEquipmentAssumption = isEquipmentAssumption
+        self.baselineBands = baselineBands
         self.onAdopt = onAdopt
     }
 
@@ -342,6 +359,7 @@ public struct TemplatePreviewView: View {
             VStack(alignment: .leading, spacing: 18) {
                 heroCard
                 equipmentStatusBanner
+                baselineConflictBanner
                 ForEach(orderedDays, id: \.sequenceIndex) { day in
                     dayCard(day)
                 }
@@ -368,10 +386,13 @@ public struct TemplatePreviewView: View {
     /// `ProgramInstantiator.instantiate(resolvedSelection:)` reicht (Punkt 6:
     /// Vorschau und Instanziierung duerfen nie auseinanderlaufen).
     private var resolvedSelection: ResolvedPlanSelection {
-        PlanSelectionResolver.resolve(
+        let raw = PlanSelectionResolver.resolve(
             template: template, profile: userEquipmentProfile,
             context: SubstitutionContext(goal: goal, experienceTrack: experienceTrack)
         )
+        // Issue #51 P0: baseline substitution applied HERE so preview and
+        // saved plan are always identical (conservative bands when no test).
+        return raw.withBaselineSubstitution(bands: baselineBands ?? .conservative)
     }
 
     /// Punkt 5/7/8: zeigt den tatsaechlichen Pruefstatus der oben gewaehlten
@@ -426,6 +447,41 @@ public struct TemplatePreviewView: View {
             title: String(localized: "picker.plan.equipment.gymAssumption.title", bundle: .module),
             detail: String(localized: "picker.plan.equipment.gymAssumption.detail", bundle: .module)
         )
+    }
+
+    /// Issue #51 P2: shown when baseline substitution removed exercises because
+    /// no accessible alternative was found. Adoption is still allowed — the user
+    /// sees exactly what plan they will get (preview = save contract).
+    private var isCriticallyBlocked: Bool {
+        resolvedSelection.baselineConflicts.contains(where: \.isCritical)
+    }
+
+    @ViewBuilder
+    private var baselineConflictBanner: some View {
+        let conflicts = resolvedSelection.baselineConflicts
+        if !conflicts.isEmpty {
+            let hasCritical = conflicts.contains(where: \.isCritical)
+            VStack(alignment: .leading, spacing: 6) {
+                Label(
+                    hasCritical
+                        ? "Plan kann nicht übernommen werden – Trainingstag leer"
+                        : "Einige Übungen wurden für dein Fitnesslevel angepasst",
+                    systemImage: hasCritical
+                        ? "xmark.octagon.fill"
+                        : "exclamationmark.triangle.fill"
+                )
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(hasCritical ? Color.red : Color.orange)
+                ForEach(Array(conflicts.enumerated()), id: \.offset) { _, conflict in
+                    Text("• \(conflict.dayName): \(conflict.exerciseName) entfernt")
+                        .font(.caption)
+                        .foregroundStyle(Color.Deltiq.textSecondary)
+                }
+            }
+            .padding(12)
+            .background((hasCritical ? Color.red : Color.orange).opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
     }
 
     /// Smart-Onboarding-Epic Phase 5.5: "Adapted to your equipment" NUR nach
@@ -643,6 +699,7 @@ public struct TemplatePreviewView: View {
             }
             .buttonStyle(.plain)
             .deltiqButtonStyle()
+            .disabled(isCriticallyBlocked)
 
             Text("picker.plan.adoptFootnote", bundle: .module)
                 .font(.footnote)
