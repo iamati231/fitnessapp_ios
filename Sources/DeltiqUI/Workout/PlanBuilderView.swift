@@ -396,12 +396,37 @@ public struct PlanBuilderView: View {
     /// Nachbesserung (dritte Korrekturrunde): `creationOperation.attempt(...)` kann nach einem
     /// ERFOLGREICHEN Speichervorgang trotzdem `.committedButUnresolved` liefern, wenn NUR die
     /// Rueckbindung scheitert - "Es wurde nichts geaendert" waere dann falsch. Steuert, welcher
-    /// Alert-Titel zu `adoptSaveErrorMessage` gezeigt wird UND (siehe `navigationBar`) ob der
-    /// Haupt-Button noch "Plan uebernehmen" oder nur noch "Erneut versuchen" anbietet - in
-    /// diesem Zustand darf NIE wieder `create()` aufgerufen werden (siehe `creationOperation`).
-    /// Gilt sowohl fuer den direkten `createPlan`-Pfad dieser View als auch fuer jeden ueber
-    /// `onGenerated` zurueckgemeldeten `.committedButUnresolved`-Fall.
-    @State private var adoptSaveErrorIsCreatedButUnresolved = false
+    /// Alert-Titel zu `adoptSaveErrorMessage` gezeigt wird - in diesem Zustand darf NIE wieder
+    /// `create()` aufgerufen werden (siehe `creationOperation`). Gilt sowohl fuer den direkten
+    /// `createPlan`-Pfad dieser View als auch fuer jeden ueber `onGenerated` zurueckgemeldeten
+    /// `.committedButUnresolved`-Fall.
+    ///
+    /// Audit-Fund (Device-Bugreport "Übungsalternative wird nicht übernommen", siehe
+    /// `applyExerciseAlternative`-Doku): `.nothingToCreate` deckt den Fall ab, dass `currentResult`
+    /// `nil` ist (z.B. `missingLoadLevel` via `try?`, oder ein generatorseitig leeres Ergebnis),
+    /// OBWOHL `draft` noch Tage enthaelt - der Haupt-Button pruefte das bisher nicht, ein Tap
+    /// landete dann lautlos in `adoptPlan()`s `guard let result = currentResult else { return }`.
+    private enum AdoptErrorKind {
+        case saveFailed
+        case createdButUnresolved
+        case nothingToCreate
+        /// PR #57 Review: eigener Fall statt `.nothingToCreate` fuer
+        /// `PlanAdoptionReadiness.missingLoadLevel` - "nichts zu erstellen"
+        /// waere hier irrefuehrend, der Draft hat ja Tage, nur fehlt einem
+        /// die Ladestufen-Zuordnung (siehe `resultStepView`s Banner, das
+        /// denselben Fall schon VOR jedem Tap sichtbar macht).
+        case missingLoadLevel
+    }
+    @State private var adoptErrorKind: AdoptErrorKind = .saveFailed
+
+    private var adoptErrorTitleKey: LocalizedStringKey {
+        switch adoptErrorKind {
+        case .saveFailed:           return "planBuilder.error.saveFailed.title"
+        case .createdButUnresolved: return "planBuilder.error.createdButUnresolved.title"
+        case .nothingToCreate:      return "planBuilder.result.empty.title"
+        case .missingLoadLevel:     return "planBuilder.result.missingLoadLevel.title"
+        }
+    }
 
     /// Nachbesserung (Task #197, dritte Korrekturrunde): der tatsaechliche Operationszustand
     /// fuer den EIGENEN, direkten `createPlan`-Pfad dieser View (NICHT fuer den
@@ -510,7 +535,7 @@ public struct PlanBuilderView: View {
             // akzeptiert" gelten - Uebernahme bleibt blockiert, bis der
             // Nutzer ueber die Tage- oder Ziel-/Ausdauerform-Auswahl aktiv
             // etwas aendert (beide bereits bestehende Schritte).
-            isDisabled: (draft?.days.isEmpty ?? true) || isAdopting || distributionConflict != nil,
+            isDisabled: (draft?.days.isEmpty ?? true) || isAdopting || distributionConflict != nil || currentResult == nil,
             accessibilityLabel: String(localized: isRetry ? "planBuilder.result.retryResolve" : "planBuilder.result.adopt", bundle: .module)
         ) {
             adoptPlan()
@@ -595,9 +620,7 @@ public struct PlanBuilderView: View {
             // Fehlerfall ab - "konnte nicht gespeichert werden" waere falsch, wenn der
             // Plan tatsaechlich bereits gespeichert wurde und nur die Rueckbindung scheiterte.
             .alert(
-                Text(adoptSaveErrorIsCreatedButUnresolved
-                     ? "planBuilder.error.createdButUnresolved.title"
-                     : "planBuilder.error.saveFailed.title", bundle: .module),
+                Text(adoptErrorTitleKey, bundle: .module),
                 isPresented: Binding(
                     get: { adoptSaveErrorMessage != nil },
                     set: { if !$0 { adoptSaveErrorMessage = nil } }
@@ -1491,17 +1514,17 @@ public struct PlanBuilderView: View {
     /// Nachbesserung: nutzt jetzt denselben `PlanDraftResultAdapter` (Core),
     /// den auch `PlanDraftResultAdapterTests` direkt prueft - vorher war
     /// dieselbe Rekonstruktion hier inline und fuer sich nicht testbar.
-    /// `try?`: heute sicher, weil `loadLevelByDayID` jeden Tag im Draft
-    /// abdeckt (siehe `generatePreviewIfNeeded`), der Adapter also nie
-    /// `missingLoadLevel` wirft - der Fehler ist absichtlich NICHT in einen
-    /// `.medium`-Fallback uebersetzt. Sobald P3 einen Weg einfuehrt, der
-    /// diese Abdeckung brechen kann, muss dieser Fehler sichtbar behandelt
-    /// werden statt in `nil` zu verschwinden (siehe Adapter-Doku).
-    private var currentResult: PlanGenerator.Result? {
-        guard let draft else { return nil }
-        return try? PlanDraftResultAdapter.makeResult(
-            from: draft, loadLevels: loadLevelByDayID, explanationKey: explanationKey
-        )
+    ///
+    /// PR #57 Review: delegiert jetzt an `PlanAdoptionReadiness.evaluate`
+    /// (Core, eigene Tests) statt selbst `try?` zu verwenden - der
+    /// `.missingLoadLevel`-Fall verschwindet dadurch nicht mehr stillschweigend
+    /// in `nil`, sondern bleibt ueber `adoptionReadiness` fuer `resultStepView`
+    /// und `adoptPlan()` unterscheidbar. `currentResult` bleibt als schmale
+    /// Fassade bestehen, damit sich am `onGenerated`-Vertrag nichts aendert.
+    private var currentResult: PlanGenerator.Result? { adoptionReadiness.result }
+
+    private var adoptionReadiness: PlanAdoptionReadiness {
+        .evaluate(draft: draft, loadLevels: loadLevelByDayID, explanationKey: explanationKey)
     }
 
     /// A12 (Paket 1, docs/DELTIQ_DEVICE_ACCEPTANCE.md): sichtbarer Hinweis
@@ -1547,6 +1570,33 @@ public struct PlanBuilderView: View {
                             ))
                             .font(.callout)
                             .foregroundStyle(.primary)
+                        }
+                        .listRowBackground(Color.red.opacity(0.1))
+                    }
+
+                    // PR #57 Review: vorher nur ein deaktivierter Checkmark
+                    // ohne sichtbaren Grund (der `missingLoadLevel`-Alert war
+                    // dadurch unerreichbar). Zeigt die Ursache jetzt direkt in
+                    // der Ergebnisliste + eine nachvollziehbare
+                    // Wiederherstellung - `requestFreshProposal()` ist
+                    // dieselbe Aktion wie im "..."-Menu (inkl. dessen
+                    // Fixierungs-Rueckfrage), kein zweiter Mechanismus.
+                    if case .missingLoadLevel = adoptionReadiness {
+                        Section {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("planBuilder.result.missingLoadLevel.title", bundle: .module)
+                                    .font(.callout.weight(.semibold))
+                                Text("planBuilder.result.missingLoadLevel.message", bundle: .module)
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                                Button {
+                                    requestFreshProposal()
+                                } label: {
+                                    Text("planBuilder.result.freshProposal.action", bundle: .module)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(Color.deltiqOrange)
+                            }
                         }
                         .listRowBackground(Color.red.opacity(0.1))
                     }
@@ -2252,10 +2302,31 @@ public struct PlanBuilderView: View {
         // wuerde ein zuvor per "Neu rechnen" gefundener, dem User
         // zusagender Plan beim Uebernehmen durch die urspruengliche
         // Variante ersetzt. `currentResult` rekonstruiert dafuer IMMER aus
-        // `draft` (P2.4 Punkt 8) - der Knopf ist disabled, solange `draft`
-        // leer/nil ist (siehe `navigationBar`), das `guard` hier ist die
-        // gemeinsame Absicherung fuer BEIDE Pfade unten.
-        guard let result = currentResult else { return }
+        // `draft` (P2.4 Punkt 8) - das `guard` hier ist die gemeinsame
+        // Absicherung fuer BEIDE Pfade unten.
+        //
+        // Audit-Fund (Device-Bugreport "Übungsalternative wird nicht
+        // übernommen", siehe `applyExerciseAlternative`-Doku): `draft` kann
+        // Tage enthalten, waehrend `currentResult` trotzdem `nil` ist (z.B.
+        // `missingLoadLevel`). Der Haupt-Button prueft das jetzt selbst
+        // (`isDisabled` oben) UND `resultStepView` zeigt den `missingLoadLevel`-
+        // Fall bereits VOR jedem Tap sichtbar an - dieser Guard blieb bisher
+        // ein stummer `return` fuer den seltenen Fall, dass er trotzdem
+        // erreicht wird (z.B. ein Tap kurz vor einem State-Update). Schaltet
+        // jetzt ueber `adoptionReadiness`, damit die Fehlermeldung auch hier
+        // die tatsaechliche Ursache nennt statt beide Faelle unter "leere
+        // Vorschau" zu buendeln (PR #57 Review).
+        let readiness = adoptionReadiness
+        guard let result = readiness.result else {
+            if case .missingLoadLevel = readiness {
+                adoptErrorKind = .missingLoadLevel
+                adoptSaveErrorMessage = String(localized: "planBuilder.result.missingLoadLevel.message", bundle: .module)
+            } else {
+                adoptErrorKind = .nothingToCreate
+                adoptSaveErrorMessage = String(localized: "planBuilder.result.empty.message", bundle: .module)
+            }
+            return
+        }
 
         // Nachbesserung (P2.3): Doppel-Tap-Schutz, siehe `isAdopting`-Doku.
         guard !isAdopting else { return }
@@ -2290,11 +2361,11 @@ public struct PlanBuilderView: View {
                 dismiss()
             case .failedBeforeCommit:
                 isAdopting = false
-                adoptSaveErrorIsCreatedButUnresolved = false
+                adoptErrorKind = .saveFailed
                 adoptSaveErrorMessage = String(localized: "planBuilder.error.saveFailed.message", bundle: .module)
             case .committedButUnresolved:
                 isAdopting = false
-                adoptSaveErrorIsCreatedButUnresolved = true
+                adoptErrorKind = .createdButUnresolved
                 externalHandoffIsCommittedButUnresolved = true
                 adoptSaveErrorMessage = String(localized: "planBuilder.error.createdButUnresolved.message", bundle: .module)
             }
@@ -2349,11 +2420,11 @@ public struct PlanBuilderView: View {
             // Nachbesserung (dritte Korrekturrunde, Punkt B/5): der Plan WURDE bereits
             // gespeichert - "Es wurde nichts geaendert" (der generische Text) waere hier
             // falsch - eigener Titel + eigene Nachricht, Button-Beschriftung aendert sich.
-            adoptSaveErrorIsCreatedButUnresolved = true
+            adoptErrorKind = .createdButUnresolved
             adoptSaveErrorMessage = String(localized: "planBuilder.error.createdButUnresolved.message", bundle: .module)
             isAdopting = false
         case .failedBeforeCommit:
-            adoptSaveErrorIsCreatedButUnresolved = false
+            adoptErrorKind = .saveFailed
             adoptSaveErrorMessage = String(localized: "planBuilder.error.saveFailed.message", bundle: .module)
             isAdopting = false
         }
