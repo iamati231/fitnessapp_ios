@@ -97,8 +97,56 @@ public struct PlanEditorView: View {
     /// ihren urspruenglichen Wochentag zurueckgesetzt.
     @State private var dayWeekdayAtOpen: [PersistentIdentifier: Int]
 
+    /// TestFlight-Crash (0.1.0/38, 2026-11-15): Navigation+Delete-Race —
+    /// `navigationDestination(for: TrainingPlan.self)` (siehe
+    /// `WorkoutRootView`) kann mit einem `plan` feuern, der zwischen Tap und
+    /// Push bereits geloescht+gesaved wurde. JEDER Lesezugriff auf eine
+    /// `@Attribute`/`@Relationship`-Property eines so invalidierten Models
+    /// (z.B. `plan.targetEnvironment` in `PlanMetaSnapshot.capture`) crasht
+    /// mit einem nicht per do/catch fangbaren SwiftData-Fatal-Error — exakt
+    /// dieselbe Fehlerklasse wie die bereits dokumentierten Crashes in
+    /// `PlansListView.deletePlans`. `modelContext` ist (anders als die
+    /// Schema-Properties) sicher lesbar und wird von SwiftData beim Delete+
+    /// Save synchron auf `nil` gesetzt — der etablierte, nicht-crashende
+    /// Gueltigkeits-Check. Einmalig in `init` erfasst, damit `body` bei
+    /// `false` ganz auf Plan-Lesezugriffe verzichtet (siehe dort).
+    /// `internal` (nicht `private`) aus demselben Grund wie `dayOrderIsDirty`
+    /// u.a. in dieser Datei — direkt pruefbar per `@testable import` ohne
+    /// lebenden SwiftUI-Graph (siehe `Tests/DeltiqUITests`).
+    ///
+    /// PR #54 Review: war vorher ein `let`, einmalig in `init` erfasst — ein
+    /// `plan`, der ZWISCHEN `init` und einem SPAETEREN `body`-Durchlauf
+    /// geloescht wird, haette diese Pruefung nicht mehr erneut gesehen. Ein
+    /// `body`-Rerun (z.B. durch `@Query allPlans`/`activePlans` oder jedes
+    /// `@State` hier in der View) ruft NICHT erneut `init` auf — SwiftUI
+    /// haelt die Property-Wrapper-Storage ueber die View-Identitaet hinweg
+    /// und wertet nur `body` neu aus (anders als eine echte Neukonstruktion
+    /// durch den Elternteil, z.B. `NavigationStack.navigationDestination`,
+    /// die `init` tatsaechlich erneut durchlaeuft). Jetzt eine computed
+    /// Property statt eines einmalig gecachten Werts: jeder `body`-Zugriff
+    /// liest `plan.modelContext` frisch, deckt also auch eine Loeschung
+    /// zwischen zwei `body`-Durchlaeufen derselben View-Instanz ab.
+    ///
+    /// CI-Fund (Apple-Runner, nach der obigen Korrektur): `init` darf diese
+    /// computed Property NICHT lesen, bevor ALLE gespeicherten Properties
+    /// (hier `_snapshot`/`_dayWeekdayAtOpen`) gesetzt sind - Swifts Definite-
+    /// Initialization verbietet jeden `self`-Zugriff (auch ueber eine
+    /// computed Property) davor ("variable 'self.snapshot' used before
+    /// being initialized"). `init` prueft deshalb `plan.modelContext` direkt
+    /// ueber eine lokale Konstante statt ueber `isPlanStillValid`.
+    internal var isPlanStillValid: Bool { plan.modelContext != nil }
+
     public init(plan: TrainingPlan) {
         self.plan = plan
+        let isValid = plan.modelContext != nil
+        guard isValid else {
+            _snapshot = State(initialValue: PlanMetaSnapshot(
+                customName: nil, weeks: 1, progressionTargetRIROverride: nil,
+                targetEnvironment: .gym, isActive: false, activatedAt: nil
+            ))
+            _dayWeekdayAtOpen = State(initialValue: [:])
+            return
+        }
         _snapshot = State(initialValue: PlanMetaSnapshot.capture(from: plan))
         _dayWeekdayAtOpen = State(initialValue: Dictionary(
             uniqueKeysWithValues: plan.days.map { ($0.persistentModelID, $0.weekday) }
@@ -106,6 +154,17 @@ public struct PlanEditorView: View {
     }
 
     public var body: some View {
+        if isPlanStillValid {
+            validBody
+        } else {
+            // Kein Plan-Lesezugriff hier (siehe `isPlanStillValid`-Doc) — die
+            // View schliesst sich selbst, der User landet wieder auf der Liste.
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    @ViewBuilder
+    private var validBody: some View {
         // Signature-Geruest: eigene Kopfzone statt navigationTitle/Toolbar.
         // `List` bleibt Container (DEL-095: .onMove/.onDelete fuer die
         // Tage-Reihenfolge brauchen sie) - alle drei Sektionen bleiben
