@@ -443,6 +443,59 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         XCTAssertEqual(added.orderIndex, 1, "Neu hinzugefuegte Uebungen bleiben beim Reorder-Revert unangetastet")
     }
 
+    /// Audit-Fund (identische Crash-Klasse wie der bereits gefixte
+    /// PlanEditorView, siehe `testPlanEditorViewOnDeletedPlanDoesNotCrash`):
+    /// `WorkoutRootView`s `navigationDestination(for: TrainingDay.self)` kann
+    /// `DayEditorView(day:)` mit einem bereits geloeschten+gesaveten Tag
+    /// aufrufen. Vor dem Fix crashte `init` reproduzierbar beim ersten
+    /// Lesezugriff auf eine Schema-Property (`TrainingDaySnapshot.capture`
+    /// liest `day.customName` etc., `day.activeExercises`) mit einem
+    /// SwiftData-Fatal-Error.
+    func testDayEditorViewOnDeletedDayDoesNotCrash() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let day = TrainingDay(name: "Weg", weekday: 2, type: .custom)
+        ctx.insert(day)
+        try ctx.save()
+        ctx.delete(day)
+        try ctx.save()
+
+        let view = DayEditorView(day: day)
+        XCTAssertFalse(view.isDayStillValid, "Ein geloeschter+gesaveter Tag muss als ungueltig erkannt werden")
+    }
+
+    /// Gegenprobe: ein normaler, eingefuegter Tag bleibt gueltig.
+    func testDayEditorViewOnLiveDayIsValid() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let day = TrainingDay(name: "Da", weekday: 2, type: .custom)
+        ctx.insert(day)
+
+        let view = DayEditorView(day: day)
+        XCTAssertTrue(view.isDayStillValid)
+    }
+
+    /// PR #56 Review: deckt dieselbe Race wie
+    /// `testPlanEditorViewDetectsDeletionAfterConstruction` ab, nur fuer
+    /// `DayEditorView` — `day` wird ERST NACH der Konstruktion geloescht,
+    /// ein spaeterer `body`-Durchlauf derselben View-Instanz muss das
+    /// trotzdem erkennen (`isDayStillValid` ist dafuer jetzt eine computed
+    /// Property, siehe dortige Doku).
+    func testDayEditorViewDetectsDeletionAfterConstruction() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let day = TrainingDay(name: "Weg", weekday: 2, type: .custom)
+        ctx.insert(day)
+
+        let view = DayEditorView(day: day)
+        XCTAssertTrue(view.isDayStillValid, "beim Konstruieren noch gueltig")
+
+        ctx.delete(day)
+        try ctx.save()
+
+        XCTAssertFalse(view.isDayStillValid, "dieselbe View-Instanz muss die Loeschung bei einem spaeteren Zugriff noch erkennen")
+    }
+
     /// Korrektur V3 — das eigentliche gemeldete Szenario: Plan A ist aktiv,
     /// User oeffnet den Editor fuer Plan B, schaltet B an (verdraengt A ueber
     /// `setActive(true)`) und wieder aus (`setActive(false)` reaktiviert

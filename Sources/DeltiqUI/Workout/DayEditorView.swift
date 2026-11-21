@@ -92,8 +92,50 @@ public struct DayEditorView: View {
     /// Konzept (siehe `snapshot`-Doc oben).
     @State private var exerciseOrderIndexAtOpen: [PersistentIdentifier: Int]
 
+    /// Audit-Fund (identische Crash-Klasse wie der bereits gefixte
+    /// `PlanEditorView`, siehe dortige Doku an `isPlanStillValid`):
+    /// `WorkoutRootView.navigationDestination(for: TrainingDay.self)` sowie
+    /// mehrere `NavigationLink(value: day)`/`workoutPath.append(day)`-Stellen
+    /// (PlanEditorView, DashboardView) halten das `TrainingDay`-Model direkt
+    /// im Navigation-Path. Wird der Tag (z.B. ueber PlanEditorViews
+    /// Tag-Loeschen) zwischen Tap und Push geloescht+gesaved, crasht `init`
+    /// beim ersten Lesezugriff auf eine Schema-Property (`TrainingDaySnapshot.
+    /// capture`, `day.activeExercises`) mit einem nicht fangbaren SwiftData-
+    /// Fatal-Error. `modelContext` ist sicher lesbar und wird beim Delete+
+    /// Save synchron `nil` — derselbe etablierte Gueltigkeits-Check.
+    /// `internal` (nicht `private`), damit Tests dies ohne lebenden
+    /// SwiftUI-Graph pruefen koennen (siehe `EditorDiscardSnapshotTests`).
+    ///
+    /// PR #56 Review: war vorher ein `let`, einmalig in `init` erfasst — ein
+    /// `day`, der ZWISCHEN `init` und einem SPAETEREN `body`-Durchlauf
+    /// derselben View-Instanz geloescht wird, waere dadurch nicht erkannt
+    /// worden (ein `body`-Rerun, z.B. durch `@State` hier in der View, ruft
+    /// NICHT erneut `init` auf — SwiftUI haelt die Property-Wrapper-Storage
+    /// ueber die View-Identitaet hinweg und wertet nur `body` neu aus).
+    /// Jetzt eine computed Property, damit jeder `body`-Zugriff
+    /// `day.modelContext` frisch liest (identische Korrektur wie
+    /// `PlanEditorView.isPlanStillValid`, PR #54 Review).
+    ///
+    /// CI-Fund (identischer Fund wie PR #54, Apple-Runner): `init` darf diese
+    /// computed Property NICHT lesen, bevor ALLE gespeicherten Properties
+    /// (hier `_snapshot`/`_exerciseOrderIndexAtOpen`) gesetzt sind - Swifts
+    /// Definite-Initialization verbietet jeden `self`-Zugriff davor. `init`
+    /// prueft deshalb `day.modelContext` direkt ueber eine lokale Konstante
+    /// statt ueber `isDayStillValid`.
+    internal var isDayStillValid: Bool { day.modelContext != nil }
+
     public init(day: TrainingDay) {
         self.day = day
+        let isValid = day.modelContext != nil
+        guard isValid else {
+            _snapshot = State(initialValue: TrainingDaySnapshot(
+                customName: nil, weekday: 2, type: .custom, nextIntensity: .normal,
+                timeFormat: nil, timeCapMinutes: nil, circuitRounds: nil,
+                circuitRestSeconds: nil, circuitMode: nil
+            ))
+            _exerciseOrderIndexAtOpen = State(initialValue: [:])
+            return
+        }
         _snapshot = State(initialValue: TrainingDaySnapshot.capture(from: day))
         _exerciseOrderIndexAtOpen = State(initialValue: Dictionary(
             uniqueKeysWithValues: day.activeExercises.map { ($0.persistentModelID, $0.orderIndex) }
@@ -101,6 +143,17 @@ public struct DayEditorView: View {
     }
 
     public var body: some View {
+        if isDayStillValid {
+            validBody
+        } else {
+            // Kein Tag-Lesezugriff hier (siehe `isDayStillValid`-Doc) — die
+            // View schliesst sich selbst, der User landet wieder im Plan-Editor.
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    @ViewBuilder
+    private var validBody: some View {
         VStack(spacing: 0) {
             // Signature-Geruest 1.2: aus dem Plan-Tab gepusht - "alles im
             // Plan-Tab bekommt tab.plan" (OFFENE-VIEWS.md), auch wenn der
