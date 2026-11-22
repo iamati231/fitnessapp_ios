@@ -80,6 +80,12 @@ struct CircuitPlayerView: View {
     /// schon abgehakt waren (`circuitCurrentRoundCheckedRaw`).
     init(session: WorkoutSession) {
         self.session = session
+        let isValid = session.modelContext != nil
+        guard isValid else {
+            prerollTotal = 0
+            _prerollRemaining = State(initialValue: 0)
+            return
+        }
         if let existingRounds = session.circuitRoundsCompleted {
             prerollTotal = 0
             _prerollRemaining = State(initialValue: 0)
@@ -99,6 +105,10 @@ struct CircuitPlayerView: View {
             _prerollRemaining = State(initialValue: stored)
         }
     }
+
+    /// Modul-3-Audit: gleiche Loeschungs-Race wie PlanEditorView/DayEditorView
+    /// (PR #54/#56).
+    internal var isSessionStillValid: Bool { session.modelContext != nil }
 
     /// Serialisiert, welche Uebungen der laufenden Runde abgehakt sind, als
     /// kommagetrennte `orderIndex`-Liste. P8 Stufe-2-Nachbesserung:
@@ -189,6 +199,14 @@ struct CircuitPlayerView: View {
     }
 
     var body: some View {
+        if isSessionStillValid {
+            validBody
+        } else {
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    private var validBody: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: pillLabel.uppercased(),

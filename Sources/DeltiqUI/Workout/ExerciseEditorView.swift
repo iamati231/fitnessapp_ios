@@ -50,8 +50,27 @@ public struct ExerciseEditorView: View {
 
     public init(exercise: Exercise) {
         self.exercise = exercise
+        let isValid = exercise.modelContext != nil
+        guard isValid else {
+            _snapshot = State(initialValue: ExerciseSnapshot(
+                customName: nil, isCardio: false, isTimeBased: false, sets: 0,
+                repsMin: 0, repsMax: 0, restSeconds: 0, targetRir: 0,
+                suggestedWeight: nil, targetDistanceKm: nil, targetDurationMinutes: nil,
+                cardioEquipmentRaw: nil, enduranceSportKindRaw: nil, notes: nil,
+                primaryMuscleRaw: nil, equipmentRaw: nil, isCompound: false,
+                smartProgressionEnabled: false, progressionStep: 0
+            ))
+            return
+        }
         _snapshot = State(initialValue: ExerciseSnapshot.capture(from: exercise))
     }
+
+    /// Modul-3-Audit: gleiche Loeschungs-Race wie PlanEditorView/DayEditorView
+    /// (PR #54/#56) - als Sheet aus ActiveWorkoutView UND DayEditorView
+    /// geoeffnet; DayEditorView selbst hat den Guard fuer den Day (PR #56),
+    /// aber die Exercise, die man aus genau diesem Day-Editor heraus
+    /// bearbeitet, hatte bisher keinen aequivalenten Guard.
+    internal var isExerciseStillValid: Bool { exercise.modelContext != nil }
 
     /// True wenn die Uebung zu einem Template-basierten Plan gehoert
     /// (`plan.isTemplate`). Struktur-Felder werden disabled — Trainings-
@@ -79,6 +98,14 @@ public struct ExerciseEditorView: View {
     }
 
     public var body: some View {
+        if isExerciseStillValid {
+            validBody
+        } else {
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    private var validBody: some View {
         VStack(spacing: 0) {
             // UI-Refactor (DeltiqHeader-Muster fuer Editoren): ersetzt das
             // vormals native "Fertig"-Toolbar. Autosave-Screen ohne eigenen

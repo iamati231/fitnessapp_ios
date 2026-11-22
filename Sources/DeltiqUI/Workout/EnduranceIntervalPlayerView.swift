@@ -54,6 +54,12 @@ struct EnduranceIntervalPlayerView: View {
     /// durchlaufen".
     init(session: WorkoutSession) {
         self.session = session
+        let isValid = session.modelContext != nil
+        guard isValid else {
+            prerollTotal = 0
+            _prerollRemaining = State(initialValue: 0)
+            return
+        }
         if let existingPhase = session.endurancePhase {
             prerollTotal = 0
             _prerollRemaining = State(initialValue: 0)
@@ -68,6 +74,10 @@ struct EnduranceIntervalPlayerView: View {
             _prerollRemaining = State(initialValue: stored)
         }
     }
+
+    /// Modul-3-Audit: gleiche Loeschungs-Race wie PlanEditorView/DayEditorView
+    /// (PR #54/#56).
+    internal var isSessionStillValid: Bool { session.modelContext != nil }
 
     // MARK: - Konfiguration (snapshot-first, siehe WorkoutSessionContentSnapshotFirst)
 
@@ -126,6 +136,14 @@ struct EnduranceIntervalPlayerView: View {
     }
 
     var body: some View {
+        if isSessionStillValid {
+            validBody
+        } else {
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    private var validBody: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: pillLabel.uppercased(),

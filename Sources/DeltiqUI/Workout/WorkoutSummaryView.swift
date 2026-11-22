@@ -84,8 +84,22 @@ public struct WorkoutSummaryView: View {
         isReadOnly && isEditingHistory
     }
 
+    /// Modul-3-Audit: gleiche Loeschungs-Race wie PlanEditorView/DayEditorView
+    /// (PR #54/#56) - zusaetzlich zum vorhandenen `isDeleted`-Flag (das nur
+    /// die In-View-Delete-Aktion dieses Screens selbst abdeckt, siehe
+    /// `deleteEntireSession()`), falls die Session EXTERN geloescht wird
+    /// (z.B. `DashboardView.discardOtherOpenSessionsAndStartNew()`), waehrend
+    /// dieser Screen gemountet bleibt.
+    internal var isSessionStillValid: Bool { session.modelContext != nil }
+
     public var body: some View {
-        if isDeleted { Color.clear } else { safeBody }
+        if isDeleted {
+            Color.clear
+        } else if !isSessionStillValid {
+            Color.clear.onAppear { dismiss() }
+        } else {
+            safeBody
+        }
     }
 
     @ViewBuilder private var safeBody: some View {

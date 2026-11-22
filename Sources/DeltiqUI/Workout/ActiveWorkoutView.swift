@@ -146,7 +146,21 @@ public struct ActiveWorkoutView: View {
         self.session = session
     }
 
+    /// Modul-3-Audit: gleiche Loeschungs-Race wie PlanEditorView/DayEditorView
+    /// (PR #54/#56) - `session` wird im init eingesammelt und in `body`
+    /// ungeprueft gelesen. Anders als dort leitet der init hier kein `@State`
+    /// aus `session` ab, daher genuegt der body-Split ohne Aenderung am init.
+    internal var isSessionStillValid: Bool { session.modelContext != nil }
+
     public var body: some View {
+        if isSessionStillValid {
+            validBody
+        } else {
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    private var validBody: some View {
         // DEL-039: paginierte Ansicht statt scrollbarer Single-Page-List.
         // Kopf oben fix, dann TabView mit einer Page pro Uebung + einer
         // finalen "Finish"-Page (Save/Discard). User swipt horizontal
