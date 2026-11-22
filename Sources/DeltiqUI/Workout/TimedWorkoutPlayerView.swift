@@ -39,6 +39,12 @@ public struct TimedWorkoutPlayerView: View {
         }
     }
 
+    // CI-Fix: `body` bekommt `@ViewBuilder` automatisch vom `View`-Protokoll,
+    // eine herausgeloeste Property wie `validBody` nicht - ohne das explizite
+    // Attribut haette der blanke `switch` unten verlangt, dass alle Cases
+    // denselben konkreten Typ liefern (daher "branches have mismatching
+    // types" fuer AMRAPPlayerView/EMOMPlayerView/etc. vs. EmptyView).
+    @ViewBuilder
     private var validBody: some View {
         // P8 Stufe-2-Nachbesserung (Geräteabnahme Block D): dieselbe
         // eingefrorene Quelle wie `WorkoutRootView`s Routing-Entscheidung —
