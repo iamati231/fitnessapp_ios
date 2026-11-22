@@ -135,9 +135,12 @@ public enum MealPlanGenerator {
             guard !preferences.excludedRecipeIDs.contains(recipe.id) else { return false }
             guard matchesDietaryStyle(recipe, style: preferences.dietaryStyle) else { return false }
 
-            // Halal: Schwein und Alkohol ausschließen. Kein Halal-Tag nötig.
             if preferences.requiresHalal {
-                guard !recipe.dietaryTags.contains(.containsPork),
+                // isHalalVerified=false → unbekannter Status → immer ausschließen
+                // (Modul-4-Audit: Tag-Abwesenheit allein reichte vorher, widersprach
+                // der Doku an Recipe.halalVerifiedBy/UserNutritionPreferences.requiresHalal).
+                guard recipe.isHalalVerified,
+                      !recipe.dietaryTags.contains(.containsPork),
                       !recipe.dietaryTags.contains(.containsAlcohol) else { return false }
             }
 

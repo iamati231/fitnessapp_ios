@@ -420,13 +420,14 @@ final class MealPlanGeneratorTests: XCTestCase {
         XCTAssertTrue(result.isEmpty)
     }
 
-    // MARK: - Phase 5.0: Halal-Filter (Schwein + Alkohol ausschließen)
-    // Halal = kein Schwein, kein Alkohol. Keine redaktionelle Verifikation nötig.
+    // MARK: - Phase 5.0: Halal-Filter (verifiziert + kein Schwein/Alkohol)
+    // Modul-4-Audit: eine unverifizierte Kennzeichnung ("kein Tag" != "verifiziert
+    // halal") darf den Filter nicht passieren, auch ohne Schwein/Alkohol-Tag.
 
-    private func makeRecipeWithTags(id: String, tags: [RecipeDietaryTag]) -> Recipe {
+    private func makeRecipeWithTags(id: String, tags: [RecipeDietaryTag], halalVerified: Bool = true) -> Recipe {
         Recipe(id: id, nameKey: "test.\(id)", mealTypes: [.lunch],
                dietaryTags: tags, allergens: [], allergenVerified: true,
-               halalVerifiedBy: nil, servings: 1, prepMinutes: 10,
+               halalVerifiedBy: halalVerified ? "redakteur_test" : nil, servings: 1, prepMinutes: 10,
                ingredients: [RecipeIngredient(ingredientID: "chicken_breast_cooked", amountGrams: 100)])
     }
 
@@ -434,6 +435,13 @@ final class MealPlanGeneratorTests: XCTestCase {
         let prefs = UserNutritionPreferences(requiresHalal: true)
         let chicken = makeRecipeWithTags(id: "chicken", tags: [])
         XCTAssertEqual(MealPlanGenerator.eligibleRecipes(in: [chicken], for: .lunch, preferences: prefs).count, 1)
+    }
+
+    func testHalal_unverified_excludedEvenWithoutPorkOrAlcoholTag() {
+        let prefs = UserNutritionPreferences(requiresHalal: true)
+        let unverified = makeRecipeWithTags(id: "chicken_unverified", tags: [], halalVerified: false)
+        XCTAssertTrue(MealPlanGenerator.eligibleRecipes(in: [unverified], for: .lunch, preferences: prefs).isEmpty,
+                      "Fehlende Halal-Verifikation (halalVerifiedBy == nil) darf den Filter nicht allein durch Tag-Abwesenheit passieren.")
     }
 
     func testHalal_containsPork_excluded() {
