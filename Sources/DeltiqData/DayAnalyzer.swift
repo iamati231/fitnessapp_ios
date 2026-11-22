@@ -313,9 +313,15 @@ public enum DayAnalyzer {
         }
         // Tier-Bucketing relativ zum Maximum:
         //   >= 70% → primary, >= 30% → secondary, sonst tertiary.
+        // Modul-3-Audit: gleiche Dictionary-Iterationsreihenfolge-Falle wie
+        // MuscleGroupProgressCalculator (Commit 069fa3a, PR #58/#59) -
+        // `perMuscle.map` iteriert ein Dictionary, der Tie-Breaker ueber den
+        // Muskelnamen verhindert, dass `muscleFocusRow` zwei Muskeln mit
+        // exakt gleicher Punktzahl je nach Dictionary-Iteration in
+        // wechselnder Reihenfolge anzeigt.
         let sorted = perMuscle
             .map { ($0.key, $0.value) }
-            .sorted { $0.1 > $1.1 }
+            .sorted { $0.1 != $1.1 ? $0.1 > $1.1 : $0.0.rawValue < $1.0.rawValue }
         return sorted.map { (muscle, points) in
             let ratio = points / maxPoints
             let tier: MuscleStimulus.Tier
