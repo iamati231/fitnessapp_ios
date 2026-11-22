@@ -244,6 +244,14 @@ public final class MealDraft: ObservableObject {
             guard let meal = context.model(for: originalMealID) as? MealEntry else {
                 return .failure(MealDraftError.originalMealMissing)
             }
+            // Modul-4-Audit: `model(for:)` liefert fuer eine extern bereits
+            // geloeschte Zeile kein nil/fehlschlagenden Cast, sondern ein
+            // invalidiertes Objekt - erst ein Property-Zugriff crasht. Deshalb
+            // zusaetzlich das projektweite Loeschungs-Race-Pattern pruefen,
+            // BEVOR irgendeine Property von `meal` gelesen wird.
+            guard meal.modelContext != nil else {
+                return .failure(MealDraftError.originalMealMissing)
+            }
 
             // NUT-01: Nur Datum/Typ werden VOR dem Save umgeschrieben (reine
             // Attribute, per Rollback exakt rueckgaengig zu machen). Die
