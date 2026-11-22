@@ -276,13 +276,20 @@ public struct MealTextExtractor: Sendable {
     static func matchCatalog(foodText: String, catalog: [MealTextCatalogEntry]) -> (matches: [MealTextCatalogEntry], isExact: Bool) {
         let exact = catalog.filter { isExactNameMatch($0.name, foodText) }
         if !exact.isEmpty { return (exact, true) }
-        let substring = catalog.filter {
-            $0.name.localizedCaseInsensitiveContains(foodText) || foodText.localizedCaseInsensitiveContains($0.name)
-        }
+        let substring = catalog.filter { isSubstringMatch($0.name, foodText) }
         return (substring, false)
     }
 
     private static func isExactNameMatch(_ lhs: String, _ rhs: String) -> Bool {
         lhs.compare(rhs, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+    }
+
+    // Modul-4-Audit: `localizedCaseInsensitiveContains` ist case- aber NICHT
+    // diacritic-insensitive, anders als `isExactNameMatch` oben - ein Katalogname
+    // mit Umlaut ("Hähnchenbrust") fand sonst keinen Substring-Treffer gegen
+    // diakritikfreien Text ("Hahnchenbrust").
+    private static func isSubstringMatch(_ lhs: String, _ rhs: String) -> Bool {
+        lhs.range(of: rhs, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+            || rhs.range(of: lhs, options: [.caseInsensitive, .diacriticInsensitive]) != nil
     }
 }

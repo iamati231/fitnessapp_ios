@@ -161,6 +161,20 @@ final class MealTextExtractorTests: XCTestCase {
         XCTAssertFalse(candidates[0].isAmbiguous)
     }
 
+    /// Substring fallback must be as diacritic-insensitive as the exact-match
+    /// path - a catalog entry with an umlaut ("Hähnchenbrust") must still be
+    /// found via substring against diacritic-free input ("Hahnchenbrust").
+    func testSubstringMatch_diacriticFreeInputVsUmlautCatalogEntry_stillMatches() async throws {
+        let (extractor, _) = extractor(candidates: [
+            MealTextCandidate(foodText: "Gebratene Hahnchenbrust", quantity: 150, unit: .gram, mealType: .dinner)
+        ])
+        let candidates = try await extractor.extractCandidates(from: "150g Gebratene Hahnchenbrust", catalog: catalog)
+
+        XCTAssertEqual(candidates.count, 1)
+        XCTAssertFalse(candidates[0].hasNoCatalogMatch, "diacritic-free substring input must still find the umlaut catalog entry")
+        XCTAssertEqual(candidates[0].matches.map(\.catalogID), ["chicken_breast_raw"])
+    }
+
     // MARK: No catalog hit -> empty matches, not a crash, not an auto-pick
 
     func testNoCatalogMatch_returnsEmptyMatches() async throws {
