@@ -203,6 +203,7 @@ final class MealPlanPortionEditIntegrationTests: XCTestCase {
         XCTAssertFalse(updated, "Generator darf manuell angepassten Plan nicht überschreiben")
         let fetched = try context.fetch(FetchDescriptor<PlannedMealAssignment>())
         XCTAssertTrue(fetched.contains { $0.portionMultiplier == changedPortion }, "Manuell angepasste Portion muss erhalten bleiben")
+        XCTAssertFalse(fetched.contains { $0.recipeID == "other_recipe" }, "Abgelehnte newAssignments dürfen nicht als Karteileiche im Store verbleiben")
     }
 
     // MARK: - 12. Tagebucheinträge bleiben unverändert
