@@ -84,6 +84,29 @@ final class MealDraftEditTests: XCTestCase {
         XCTAssertEqual(items.map(\.nameSnapshot), ["Original"], "Fehlgeschlagener Edit-Save darf die Original-Positionen nicht verlieren")
     }
 
+    /// Modul-4-Audit: die bearbeitete MealEntry wird extern geloescht, waehrend
+    /// der Entwurf noch offen ist (z.B. Sync, zweites Fenster). `save` muss das
+    /// erkennen und `.originalMealMissing` liefern, statt beim ersten
+    /// Property-Zugriff auf das invalidierte Objekt zu crashen.
+    func testSaveAfterOriginalMealDeletedExternally_returnsFailureInsteadOfCrashing() throws {
+        let meal = MealEntry(date: Date(), mealType: .lunch)
+        context.insert(meal)
+        context.insert(MealItem(catalogID: nil, nameSnapshot: "Original", quantity: 100, unit: .gram, nutrients: .zero, meal: meal))
+        try context.save()
+
+        let draft = MealDraft(editing: meal)
+        draft.addItem(catalogID: nil, nameSnapshot: "Neu", quantity: 50, unit: .gram, nutrients: .zero)
+
+        context.delete(meal)
+        try context.save()
+
+        let result = draft.save(into: context)
+        switch result {
+        case .success: XCTFail("Erwartet: .failure(.originalMealMissing)")
+        case .failure(let error): XCTAssertEqual(error as? MealDraftError, .originalMealMissing)
+        }
+    }
+
     // MARK: - NUT-01 (docs/AUDIT_2026-10-23_DELTIQ.md): Rollback innerhalb der Commit-Grenze
 
     /// NUT-01, Kernfall: nach einem fehlgeschlagenen Edit-Save darf ein
