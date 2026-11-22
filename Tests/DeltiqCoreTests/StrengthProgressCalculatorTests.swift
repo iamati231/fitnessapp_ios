@@ -178,6 +178,20 @@ struct StrengthProgressCalculatorTests {
         #expect(summaries[0].name == "Squat") // 3 sessions > 1 session
     }
 
+    /// Sibling bug to Commit 069fa3a / PR #58: `groups.values` iteration order is not
+    /// insertion-order-stable, so a genuine sessionCount tie needs an explicit tie-breaker.
+    @Test func sessionCountTieBreaksAlphabeticallyRegardlessOfInsertionOrder() {
+        let d1 = daysAgo(1)
+        let orderA = [makeLog(sessionDate: d1, name: "Bench Press"), makeLog(sessionDate: d1, name: "Squat")]
+        let orderB = [makeLog(sessionDate: d1, name: "Squat"), makeLog(sessionDate: d1, name: "Bench Press")]
+
+        let summariesA = SPC.exerciseSummaries(logs: orderA)
+        let summariesB = SPC.exerciseSummaries(logs: orderB)
+
+        #expect(summariesA.map(\.name) == ["Bench Press", "Squat"])
+        #expect(summariesB.map(\.name) == ["Bench Press", "Squat"])
+    }
+
     // MARK: - oneRMHistory
 
     @Test func bestPerSessionReturnsOnePointPerSession() {

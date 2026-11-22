@@ -233,7 +233,11 @@ public enum StrengthProgressCalculator {
                 sessionCount: sessions
             )
         }
-        .sorted { $0.sessionCount > $1.sessionCount }
+        // Gleiche nicht-deterministische Dictionary-Iterationsreihenfolge-Falle wie
+        // bei MuscleGroupProgressCalculator (Commit 069fa3a, PR #58) - Tie-Breaker
+        // ueber den Namen ergaenzt, sonst flackert die Reihenfolge bei echtem
+        // sessionCount-Gleichstand zwischen zwei Uebungen je nach Dictionary-Iteration.
+        .sorted { $0.sessionCount != $1.sessionCount ? $0.sessionCount > $1.sessionCount : $0.name < $1.name }
     }
 
     /// Best estimated 1RM per session for one exercise, chronologically sorted.
