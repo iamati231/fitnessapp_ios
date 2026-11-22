@@ -18,12 +18,34 @@ import DeltiqHealth
 @available(iOS 17.0, macOS 14.0, *)
 public struct TimedWorkoutPlayerView: View {
     @Bindable public var session: WorkoutSession
+    @Environment(\.dismiss) private var dismiss
 
     public init(session: WorkoutSession) {
         self.session = session
     }
 
+    /// Modul-3-Audit: gleiche Loeschungs-Race wie PlanEditorView/DayEditorView
+    /// (PR #54/#56) - `session` wird im init eingesammelt und in `body`
+    /// ungeprueft gelesen (bereits der Routing-Read `session.contentSnapshotTimeFormat`
+    /// unten). Anders als dort leitet der init hier kein `@State` aus `session`
+    /// ab, daher genuegt der body-Split ohne Aenderung am init.
+    internal var isSessionStillValid: Bool { session.modelContext != nil }
+
     public var body: some View {
+        if isSessionStillValid {
+            validBody
+        } else {
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    // CI-Fix: `body` bekommt `@ViewBuilder` automatisch vom `View`-Protokoll,
+    // eine herausgeloeste Property wie `validBody` nicht - ohne das explizite
+    // Attribut haette der blanke `switch` unten verlangt, dass alle Cases
+    // denselben konkreten Typ liefern (daher "branches have mismatching
+    // types" fuer AMRAPPlayerView/EMOMPlayerView/etc. vs. EmptyView).
+    @ViewBuilder
+    private var validBody: some View {
         // P8 Stufe-2-Nachbesserung (Geräteabnahme Block D): dieselbe
         // eingefrorene Quelle wie `WorkoutRootView`s Routing-Entscheidung —
         // sonst könnte ein externer Formatwechsel (z. B. Circuit -> AMRAP)
@@ -516,6 +538,12 @@ private struct AMRAPPlayerView: View {
     /// wiederhergestellt.
     init(session: WorkoutSession) {
         self.session = session
+        let isValid = session.modelContext != nil
+        guard isValid else {
+            prerollTotal = 0
+            _prerollRemaining = State(initialValue: 0)
+            return
+        }
         if let existingRounds = session.roundsCompleted {
             prerollTotal = 0
             _prerollRemaining = State(initialValue: 0)
@@ -526,6 +554,10 @@ private struct AMRAPPlayerView: View {
             _prerollRemaining = State(initialValue: stored)
         }
     }
+
+    /// Modul-3-Audit: gleiche Loeschungs-Race wie PlanEditorView/DayEditorView
+    /// (PR #54/#56).
+    private var isSessionStillValid: Bool { session.modelContext != nil }
 
     /// P8 Stufe-2 (Resume-Isolation): Mitgliedschaft/Reihenfolge/Identität
     /// kommen aus dem eingefrorenen Snapshot dieser Session, aufgelöst
@@ -606,6 +638,14 @@ private struct AMRAPPlayerView: View {
     }
 
     var body: some View {
+        if isSessionStillValid {
+            validBody
+        } else {
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    private var validBody: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: "AMRAP",
@@ -1165,6 +1205,12 @@ private struct EMOMPlayerView: View {
     /// wenn genau Minute 2 gerade laeuft.
     init(session: WorkoutSession) {
         self.session = session
+        let isValid = session.modelContext != nil
+        guard isValid else {
+            prerollTotal = 0
+            _prerollRemaining = State(initialValue: 0)
+            return
+        }
         if let existingCount = session.completedMinuteCount {
             prerollTotal = 0
             _prerollRemaining = State(initialValue: 0)
@@ -1179,6 +1225,10 @@ private struct EMOMPlayerView: View {
             _prerollRemaining = State(initialValue: stored)
         }
     }
+
+    /// Modul-3-Audit: gleiche Loeschungs-Race wie PlanEditorView/DayEditorView
+    /// (PR #54/#56).
+    private var isSessionStillValid: Bool { session.modelContext != nil }
 
     /// P8 Stufe-2 (Resume-Isolation): siehe `AMRAPPlayerView.resolvedExercises`
     /// für die volle Begründung — hier zusätzlich kritisch, weil
@@ -1250,6 +1300,14 @@ private struct EMOMPlayerView: View {
     private func remainingInMinute(elapsed: Int) -> Int { max(0, 60 - elapsed % 60) }
 
     var body: some View {
+        if isSessionStillValid {
+            validBody
+        } else {
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    private var validBody: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: "EMOM",
@@ -1766,6 +1824,12 @@ private struct ForTimePlayerView: View {
     /// nicht erlaubt.
     init(session: WorkoutSession) {
         self.session = session
+        let isValid = session.modelContext != nil
+        guard isValid else {
+            prerollTotal = 0
+            _prerollRemaining = State(initialValue: 0)
+            return
+        }
         if let raw = session.forTimeCheckedRoundsRaw {
             prerollTotal = 0
             _prerollRemaining = State(initialValue: 0)
@@ -1781,6 +1845,10 @@ private struct ForTimePlayerView: View {
             _prerollRemaining = State(initialValue: stored)
         }
     }
+
+    /// Modul-3-Audit: gleiche Loeschungs-Race wie PlanEditorView/DayEditorView
+    /// (PR #54/#56).
+    private var isSessionStillValid: Bool { session.modelContext != nil }
 
     /// Serialisiert `checkedRounds` (Schluessel: `Exercise.persistentModelID`,
     /// nicht selbst speicherbar) als "orderIndex=Anzahl"-Paare, kommagetrennt.
@@ -1906,6 +1974,14 @@ private struct ForTimePlayerView: View {
     }
 
     var body: some View {
+        if isSessionStillValid {
+            validBody
+        } else {
+            Color.clear.onAppear { dismiss() }
+        }
+    }
+
+    private var validBody: some View {
         VStack(spacing: 0) {
             DeltiqHeader(
                 eyebrow: pillLabel.uppercased(),

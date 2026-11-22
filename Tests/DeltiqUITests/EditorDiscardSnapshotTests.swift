@@ -637,5 +637,197 @@ final class EditorDiscardSnapshotTests: XCTestCase {
         ))
     }
 
+    // MARK: - Modul-3-Audit: Workout-Lifecycle Loeschungs-Race
+    //
+    // Gleiche Crash-Klasse wie PlanEditorView/DayEditorView (PR #54/#56,
+    // siehe oben): `WorkoutRootView`s `.navigationDestination(for:
+    // ActiveSessionRoute.self)` haelt ActiveWorkoutView/TimedWorkoutPlayerView
+    // ueber Tab-Wechsel am Leben, waehrend z.B. `DashboardView.
+    // discardOtherOpenSessionsAndStartNew()` oder `DayEditorView.
+    // discardOpenSessionAndStartNew()` die zugrunde liegende WorkoutSession
+    // extern loescht. Jede View bekommt denselben computed-property-Guard
+    // (`isSessionStillValid`/`isExerciseStillValid`), aus denselben zwei
+    // Gruenden wie beim Plan/Day-Fix: (1) darf beim Konstruieren auf einer
+    // bereits geloeschten Session/Exercise nicht crashen, (2) ein gecachtes
+    // `let` wuerde eine Loeschung NACH der Konstruktion (z.B. TimelineView-
+    // Tick) nicht erkennen - nur eine computed Property tut das zuverlaessig.
+
+    func testActiveWorkoutViewOnDeletedSessionDoesNotCrash() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+        try ctx.save()
+        ctx.delete(session)
+        try ctx.save()
+
+        let view = ActiveWorkoutView(session: session)
+        XCTAssertFalse(view.isSessionStillValid, "Eine geloeschte+gesavete Session muss als ungueltig erkannt werden")
+    }
+
+    func testActiveWorkoutViewDetectsDeletionAfterConstruction() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+
+        let view = ActiveWorkoutView(session: session)
+        XCTAssertTrue(view.isSessionStillValid, "beim Konstruieren noch gueltig")
+
+        ctx.delete(session)
+        try ctx.save()
+        XCTAssertFalse(view.isSessionStillValid, "dieselbe View-Instanz muss die Loeschung bei einem spaeteren Zugriff noch erkennen")
+    }
+
+    /// Deckt den Router selbst ab: `TimedWorkoutPlayerView.body` liest
+    /// `session.contentSnapshotTimeFormat` noch VOR jedem Format-Switch auf
+    /// AMRAPPlayerView/EMOMPlayerView/ForTimePlayerView/CircuitPlayerView/
+    /// EnduranceIntervalPlayerView - der Guard hier verhindert bereits, dass
+    /// irgendeiner der fuenf privaten Sub-Player je mit einer geloeschten
+    /// Session konstruiert wird.
+    func testTimedWorkoutPlayerViewOnDeletedSessionDoesNotCrash() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+        try ctx.save()
+        ctx.delete(session)
+        try ctx.save()
+
+        let view = TimedWorkoutPlayerView(session: session)
+        XCTAssertFalse(view.isSessionStillValid, "Eine geloeschte+gesavete Session muss als ungueltig erkannt werden")
+    }
+
+    func testTimedWorkoutPlayerViewDetectsDeletionAfterConstruction() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+
+        let view = TimedWorkoutPlayerView(session: session)
+        XCTAssertTrue(view.isSessionStillValid, "beim Konstruieren noch gueltig")
+
+        ctx.delete(session)
+        try ctx.save()
+        XCTAssertFalse(view.isSessionStillValid, "dieselbe View-Instanz muss die Loeschung bei einem spaeteren Zugriff noch erkennen")
+    }
+
+    func testCircuitPlayerViewOnDeletedSessionDoesNotCrash() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+        try ctx.save()
+        ctx.delete(session)
+        try ctx.save()
+
+        let view = CircuitPlayerView(session: session)
+        XCTAssertFalse(view.isSessionStillValid, "Eine geloeschte+gesavete Session muss als ungueltig erkannt werden")
+    }
+
+    func testCircuitPlayerViewDetectsDeletionAfterConstruction() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+
+        let view = CircuitPlayerView(session: session)
+        XCTAssertTrue(view.isSessionStillValid, "beim Konstruieren noch gueltig")
+
+        ctx.delete(session)
+        try ctx.save()
+        XCTAssertFalse(view.isSessionStillValid, "dieselbe View-Instanz muss die Loeschung bei einem spaeteren Zugriff noch erkennen")
+    }
+
+    func testEnduranceIntervalPlayerViewOnDeletedSessionDoesNotCrash() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+        try ctx.save()
+        ctx.delete(session)
+        try ctx.save()
+
+        let view = EnduranceIntervalPlayerView(session: session)
+        XCTAssertFalse(view.isSessionStillValid, "Eine geloeschte+gesavete Session muss als ungueltig erkannt werden")
+    }
+
+    func testEnduranceIntervalPlayerViewDetectsDeletionAfterConstruction() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+
+        let view = EnduranceIntervalPlayerView(session: session)
+        XCTAssertTrue(view.isSessionStillValid, "beim Konstruieren noch gueltig")
+
+        ctx.delete(session)
+        try ctx.save()
+        XCTAssertFalse(view.isSessionStillValid, "dieselbe View-Instanz muss die Loeschung bei einem spaeteren Zugriff noch erkennen")
+    }
+
+    /// `WorkoutSummaryView` hatte bereits ein `isDeleted`-Flag, aber nur fuer
+    /// die eigene In-View-Delete-Aktion (`deleteEntireSession()`) - dieser
+    /// Guard deckt zusaetzlich die EXTERNE Loeschung ab (z.B. waehrend der
+    /// Summary-Screen nach dem Finish noch offen ist und der User ueber einen
+    /// anderen Tab einen Session-Konflikt aufloest).
+    func testWorkoutSummaryViewOnDeletedSessionDoesNotCrash() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+        try ctx.save()
+        ctx.delete(session)
+        try ctx.save()
+
+        let view = WorkoutSummaryView(session: session)
+        XCTAssertFalse(view.isSessionStillValid, "Eine geloeschte+gesavete Session muss als ungueltig erkannt werden")
+    }
+
+    func testWorkoutSummaryViewDetectsDeletionAfterConstruction() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let session = WorkoutSession()
+        ctx.insert(session)
+
+        let view = WorkoutSummaryView(session: session)
+        XCTAssertTrue(view.isSessionStillValid, "beim Konstruieren noch gueltig")
+
+        ctx.delete(session)
+        try ctx.save()
+        XCTAssertFalse(view.isSessionStillValid, "dieselbe View-Instanz muss die Loeschung bei einem spaeteren Zugriff noch erkennen")
+    }
+
+    /// Als Sheet aus ActiveWorkoutView UND DayEditorView geoeffnet - anders
+    /// als bei den Session-Views liest `init` hier bereits VOR dem Fix
+    /// `ExerciseSnapshot.capture(from:)` (mehrere Schema-Property-Zugriffe)
+    /// unguarded, daher ist der Konstruktions-Crash hier besonders direkt.
+    func testExerciseEditorViewOnDeletedExerciseDoesNotCrash() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let exercise = Exercise(name: "Weg")
+        ctx.insert(exercise)
+        try ctx.save()
+        ctx.delete(exercise)
+        try ctx.save()
+
+        let view = ExerciseEditorView(exercise: exercise)
+        XCTAssertFalse(view.isExerciseStillValid, "Eine geloeschte+gesavete Uebung muss als ungueltig erkannt werden")
+    }
+
+    func testExerciseEditorViewDetectsDeletionAfterConstruction() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let exercise = Exercise(name: "Da")
+        ctx.insert(exercise)
+
+        let view = ExerciseEditorView(exercise: exercise)
+        XCTAssertTrue(view.isExerciseStillValid, "beim Konstruieren noch gueltig")
+
+        ctx.delete(exercise)
+        try ctx.save()
+        XCTAssertFalse(view.isExerciseStillValid, "dieselbe View-Instanz muss die Loeschung bei einem spaeteren Zugriff noch erkennen")
+    }
+
 }
 #endif
