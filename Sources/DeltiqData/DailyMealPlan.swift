@@ -59,7 +59,13 @@ public final class DailyMealPlan {
         let plan = try fetchOrCreate(for: date, in: context)
         // Empty plan has nothing to protect — reset so generator can fill it.
         if plan.assignments.isEmpty { plan.isManuallyAdjusted = false }
-        guard !plan.isManuallyAdjusted else { return false }
+        guard !plan.isManuallyAdjusted else {
+            // Modul-4-Audit: Caller inserted newAssignments into context already
+            // (so they can set `.plan` on success) - on rejection they'd otherwise
+            // leak as orphaned, never-attached rows.
+            newAssignments.forEach { context.delete($0) }
+            return false
+        }
         plan.assignments.forEach { context.delete($0) }
         plan.assignments = newAssignments
         plan.generatorWarning = warning
