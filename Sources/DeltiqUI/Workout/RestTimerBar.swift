@@ -42,6 +42,13 @@ struct RestTimerBar: View {
     /// Fertig-Ticken. Hier bislang unbemerkt, weil die Pause-Leiste meist
     /// nur wenige Sekunden lebt, aber dasselbe Risiko.
     @State private var hasFiredCompletionFeedback = false
+    /// Audit-Fix: ungenutzt gelassen floge der Auto-Dismiss-Block unten 3s
+    /// nach ablauf, auch wenn der User diese Leiste laengst per Skip
+    /// verlassen und schon eine NEUE Pause gestartet hat — der veraltete
+    /// Aufruf raeumt dann die neue Pause samt Live Activity weg. Jede
+    /// `RestTimerBar`-Instanz ist pro Pause frisch (fresh `@State`), ein
+    /// reines `cancel()` in `.onDisappear` genuegt also ohne Token/ID.
+    @State private var pendingAutoDismiss: DispatchWorkItem?
     private let tick = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
     /// DEL-041: User-Praeferenzen fuer Timer-Feedback. Werden in SettingsView
@@ -145,15 +152,16 @@ struct RestTimerBar: View {
             hasFiredCompletionFeedback = true
             triggerEndOfRestFeedback()
             // Auto-dismiss after 3s so the bar doesn't linger on screen.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                onDismiss(.completed)
-            }
+            let workItem = DispatchWorkItem { onDismiss(.completed) }
+            pendingAutoDismiss = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: workItem)
         }
         .onAppear {
             scheduleRestEndNotification()
         }
         .onDisappear {
             cancelRestEndNotification()
+            pendingAutoDismiss?.cancel()
         }
     }
 
