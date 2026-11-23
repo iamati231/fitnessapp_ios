@@ -204,9 +204,11 @@ public enum PersonalRecordSync {
     /// ohne Snapshot UND ohne Live-Exercise (sehr alte Orphans) werden
     /// uebersprungen, sonst nutzen wir entweder den persistierten Snapshot
     /// oder fallbacken auf die noch-lebende Exercise-Referenz.
+    /// Audit-Fix: Warmup-/Cooldown-Saetze duerfen nie einen PR setzen oder
+    /// verdecken (dieselbe Rollen-Pruefung wie `MuscleSetExtractor`, #79).
     private static func liftAttempts(from logs: [ExerciseLog]) -> [LiftAttempt] {
         logs.compactMap { log -> LiftAttempt? in
-            guard let name = log.resolvedExerciseName else { return nil }
+            guard let name = log.resolvedExerciseName, log.resolvedIsWorkingSet else { return nil }
             return LiftAttempt(
                 exerciseName: name,
                 // Settings-Epic Phase 6 (EXLIB-07/09): stabile ID durchreichen,

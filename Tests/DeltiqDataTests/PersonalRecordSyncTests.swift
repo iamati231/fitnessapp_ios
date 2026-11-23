@@ -804,5 +804,72 @@ final class PersonalRecordSyncTests: XCTestCase {
         XCTAssertEqual(session1PRsAfter.count, session1PRCount,
                        "session1's PR entries must survive deletion of session2")
     }
+
+    // MARK: - Audit-Fix: Warmup-/Cooldown-Saetze duerfen PR-Detection nie beeinflussen
+
+    /// Warmup-Saetze koennen legitim schwer sein (Ramp-Up, `WarmupRampCalculator`)
+    /// - ein Warmup-Satz darf trotzdem nie selbst einen PR setzen.
+    func testWarmupSetNeverProducesAPersonalRecord() throws {
+        let warmupExercise = Exercise(name: "Bankdruecken", role: .warmup)
+        context.insert(warmupExercise)
+        let session = WorkoutSession(
+            startTime: day(1), endTime: day(1), durationMinutes: 10,
+            exerciseCount: 1, totalSets: 1, totalVolumeKg: 200 * 3,
+            isCompleted: true, dayName: "Test"
+        )
+        context.insert(session)
+        context.insert(ExerciseLog(
+            date: day(1), setIndex: 0, weight: 200, reps: 3, rir: 4.0,
+            exercise: warmupExercise, session: session
+        ))
+        try context.save()
+
+        PersonalRecordSync.recordPRs(for: session, in: context)
+        try context.save()
+
+        XCTAssertTrue(try allPREs().isEmpty,
+                      "A warmup-role set must never itself set a PR, however heavy")
+    }
+
+    /// Ein schwerer Warmup-Satz darf nicht als Historie zaehlen: ein spaeterer,
+    /// echter Arbeitssatz mit niedrigerem Gewicht ist trotzdem der erste echte PR.
+    func testWarmupSetNeverBlocksALaterGenuineWorkingSetPR() throws {
+        let warmupExercise = Exercise(name: "Bankdruecken", role: .warmup)
+        context.insert(warmupExercise)
+        let warmupSession = WorkoutSession(
+            startTime: day(1), endTime: day(1), durationMinutes: 10,
+            exerciseCount: 1, totalSets: 1, totalVolumeKg: 200 * 3,
+            isCompleted: true, dayName: "Test"
+        )
+        context.insert(warmupSession)
+        context.insert(ExerciseLog(
+            date: day(1), setIndex: 0, weight: 200, reps: 3, rir: 4.0,
+            exercise: warmupExercise, session: warmupSession
+        ))
+
+        let workingExercise = Exercise(name: "Bankdruecken", role: .workingSet)
+        context.insert(workingExercise)
+        let workingSession = WorkoutSession(
+            startTime: day(2), endTime: day(2), durationMinutes: 30,
+            exerciseCount: 1, totalSets: 1, totalVolumeKg: 80 * 5,
+            isCompleted: true, dayName: "Test"
+        )
+        context.insert(workingSession)
+        context.insert(ExerciseLog(
+            date: day(2), setIndex: 0, weight: 80, reps: 5, rir: 2.0,
+            exercise: workingExercise, session: workingSession
+        ))
+        try context.save()
+
+        PersonalRecordSync.recordPRs(for: warmupSession, in: context)
+        PersonalRecordSync.recordPRs(for: workingSession, in: context)
+        try context.save()
+
+        let prs = try allPREs()
+        XCTAssertFalse(prs.isEmpty,
+                       "The genuine 80kg working set must still register as the first real PR")
+        XCTAssertTrue(prs.allSatisfy { $0.session?.persistentModelID == workingSession.persistentModelID },
+                      "No PR must ever be attributed to the warmup session")
+    }
 }
 #endif
