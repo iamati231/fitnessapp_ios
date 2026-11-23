@@ -41,4 +41,17 @@ public enum EMOMSignalSchedule {
             return EMOMSignal(minute: minute, delaySeconds: delay, isFinal: minute == totalMinutes)
         }
     }
+
+    /// Modul-1-Audit (P2): iOS erlaubt nur begrenzt viele pending
+    /// Notifications pro App (System-Limit, geteilt mit Wasser-/Mess-/
+    /// Rest-Timer-Remindern). Ein sehr langer EMOM darf das nicht
+    /// ueberschreiten - sonst verwirft iOS stillschweigend die ueberzaehligen
+    /// `center.add()`-Aufrufe. Behalten werden die SPAETESTEN `maxCount`
+    /// Signale (inkl. Abschluss-Signal): wer frueh im Lauf backgrounded, ist
+    /// eher noch aktiv dabei, als dass ausgerechnet "Lauf komplett" verloren
+    /// geht.
+    public static func capped(_ signals: [EMOMSignal], to maxCount: Int) -> [EMOMSignal] {
+        guard maxCount > 0, signals.count > maxCount else { return signals }
+        return Array(signals.suffix(maxCount))
+    }
 }

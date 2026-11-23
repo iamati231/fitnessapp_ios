@@ -155,6 +155,13 @@ public struct ExerciseTemplateSpec: Sendable, Hashable {
         baselineMinBand: BaselineBand? = nil,
         movementPattern: MovementPattern? = nil
     ) {
+        // Modul-2-Audit (P2, dormant): `.unknown` ist nur als Nutzer-Zustand
+        // sinnvoll (Test uebersprungen). Als REQUIRED-Seite wuerde es die
+        // Uebung fuer JEDEN Nutzer unerreichbar machen (`BaselineBand.
+        // meetsMinimum` erfuellt `.unknown` fuer niemanden, nicht mal fuer
+        // `.unknown` selbst). Katalog-Daten duerfen das nie setzen.
+        assert(baselineMinBand != .unknown,
+               "'\(name)': baselineMinBand must never be .unknown — that would make this exercise unreachable for every user")
         self.name = name
         self.equipment = equipment
         self.primaryMuscle = primaryMuscle

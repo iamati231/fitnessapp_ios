@@ -148,4 +148,17 @@ final class ExerciseLibraryDataTests: XCTestCase {
                            "Library has zero entries for muscle '\(muscle)'")
         }
     }
+
+    // MARK: Baseline band integrity (Modul-2-Audit, P2)
+
+    /// `.unknown` ist nur als Nutzer-Zustand sinnvoll (Test uebersprungen) —
+    /// als `baselineMinBand` wuerde es die Uebung fuer JEDEN Nutzer
+    /// unerreichbar machen (siehe `BaselinePlanFilterTests.
+    /// testUnknownAsRequiredBandIsUnreachableForEveryone`).
+    func testNoCatalogEntryRequiresAnUnknownBaselineBand() {
+        for spec in ExerciseLibraryData.all {
+            XCTAssertNotEqual(spec.baselineMinBand, .unknown,
+                              "'\(spec.name)' requires .unknown baseline band — unreachable for every user")
+        }
+    }
 }

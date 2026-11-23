@@ -46,4 +46,23 @@ final class EMOMSignalScheduleTests: XCTestCase {
         XCTAssertEqual(delays(-2, 10), [])
         XCTAssertEqual(delays(2, -30), [60, 120])
     }
+
+    // MARK: - capped(_:to:) — Modul-1-Audit (P2): Notification-Budget
+
+    /// Ueber dem Budget: nur die spaetesten `maxCount` Signale bleiben,
+    /// das Abschluss-Signal (Minute 100) muss darunter sein.
+    func testCappingKeepsTheLatestSignalsIncludingFinal() {
+        let signals = EMOMSignalSchedule.signals(totalMinutes: 100, elapsedSeconds: 0)
+        let result = EMOMSignalSchedule.capped(signals, to: 60)
+        XCTAssertEqual(result.count, 60)
+        XCTAssertEqual(result.first?.minute, 41)
+        XCTAssertEqual(result.last?.minute, 100)
+        XCTAssertEqual(result.last?.isFinal, true)
+    }
+
+    /// Unter dem Budget: no-op, nichts wird verworfen.
+    func testCappingIsANoOpWhenUnderBudget() {
+        let signals = EMOMSignalSchedule.signals(totalMinutes: 10, elapsedSeconds: 0)
+        XCTAssertEqual(EMOMSignalSchedule.capped(signals, to: 60), signals)
+    }
 }
