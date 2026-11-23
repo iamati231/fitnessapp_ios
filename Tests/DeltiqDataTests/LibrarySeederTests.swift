@@ -363,5 +363,59 @@ final class LibrarySeederTests: XCTestCase {
         XCTAssertEqual(secondPass, 1)
         XCTAssertEqual(exercise.enduranceSportKind, .running)
     }
+
+    // MARK: - Modul-7-Audit: backfillCustomExerciseMetadataIfNeeded darf nie ueber den Namen matchen
+
+    /// Eine pending SYSTEM-Exercise (`primaryMuscleRaw == nil`, ID-Backfill
+    /// bereits gelaufen → `exerciseTemplateID` zeigt korrekt auf das
+    /// SYSTEM-Template) darf nicht die Metadaten eines voellig unverwandten
+    /// CUSTOM-Templates bekommen, nur weil beide zufaellig denselben Namen
+    /// tragen ("Kreuzheben"). Vorher matchte die Funktion rein ueber den
+    /// Namen und haette hier faelschlich `.back`/`.barbell` ueberschrieben.
+    func testNameCollisionWithACustomTemplateNeverOverwritesAnUnrelatedSystemExercise() throws {
+        let systemTemplate = ExerciseTemplate(
+            name: "Kreuzheben", equipment: .barbell, primaryMuscle: .back, isSystemProvided: true
+        )
+        context.insert(systemTemplate)
+        let customTemplate = ExerciseTemplate(
+            name: "Kreuzheben", equipment: .dumbbell, primaryMuscle: .quads, isCustom: true, isSystemProvided: false
+        )
+        context.insert(customTemplate)
+        let day = TrainingDay(name: "Pull", weekday: 2, type: .pull)
+        context.insert(day)
+        // Altbestand: primaryMuscleRaw/equipmentRaw noch nicht nachgezogen,
+        // aber exerciseTemplateID zeigt (vom bereits gelaufenen ID-Backfill)
+        // korrekt auf das SYSTEM-Template, nicht auf das namensgleiche Custom.
+        let exercise = Exercise(name: "Kreuzheben", exerciseTemplateID: systemTemplate.id, day: day)
+        context.insert(exercise)
+        try context.save()
+
+        let updated = LibrarySeeder.backfillCustomExerciseMetadataIfNeeded(in: context)
+
+        XCTAssertEqual(updated, 0, "eine System-Exercise darf nie vom Metadaten-Backfill angefasst werden")
+        XCTAssertNil(exercise.primaryMuscle, "darf nicht faelschlich auf das Custom-Templates .quads gesetzt werden")
+        XCTAssertNil(exercise.equipment, "darf nicht faelschlich auf das Custom-Templates .dumbbell gesetzt werden")
+    }
+
+    /// Gegenprobe: eine Exercise, die TATSAECHLICH von einem Custom-Template
+    /// adoptiert wurde (ID stimmt ueberein), bekommt dessen Metadaten weiterhin
+    /// korrekt nachgezogen — der Haupt-Zweck der Funktion bleibt erhalten.
+    func testStillBackfillsMetadataForAnExerciseActuallyLinkedToItsCustomTemplate() throws {
+        let customTemplate = ExerciseTemplate(
+            name: "Mein Curl", equipment: .dumbbell, primaryMuscle: .biceps, isCustom: true, isSystemProvided: false
+        )
+        context.insert(customTemplate)
+        let day = TrainingDay(name: "Pull", weekday: 2, type: .pull)
+        context.insert(day)
+        let exercise = Exercise(name: "Mein Curl", exerciseTemplateID: customTemplate.id, day: day)
+        context.insert(exercise)
+        try context.save()
+
+        let updated = LibrarySeeder.backfillCustomExerciseMetadataIfNeeded(in: context)
+
+        XCTAssertEqual(updated, 1)
+        XCTAssertEqual(exercise.primaryMuscle, .biceps)
+        XCTAssertEqual(exercise.equipment, .dumbbell)
+    }
 }
 #endif
