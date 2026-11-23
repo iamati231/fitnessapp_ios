@@ -193,8 +193,15 @@ public enum CoachingContext: String, Sendable {
     /// Die Datenquelle fuer `newPR` liegt mit `PersonalRecordSync.recordPRs`
     /// bereits vor — Verdrahten ist die bessere Option als Loeschen.
     case newPR
-    /// Stagnation ueber mehrere Wochen erkannt. Siehe `newPR`: kein Emitter,
-    /// aber fertige Catalog-Keys und kein Audit-Netz.
+    /// Stagnation ueber mehrere Wochen erkannt.
+    ///
+    /// Modul-5-Audit: anders als `newPR` hat dieser Case SEHR WOHL einen
+    /// Emitter — `DashboardView.activeCoachingContext` waehlt ihn (Prioritaet
+    /// 3) sobald ein `cachedPlateauFinding` vorliegt, gesteuert ueber
+    /// `@AppStorage("pref_plateau_detection_enabled")` (Default: an). Der
+    /// fehlende Audit-Netz-Hinweis von `newPR` gilt hier trotzdem weiter:
+    /// `dead_catalog_v3.py` matcht nur das Praefix `coaching.`, erkennt also
+    /// auch diese Catalog-Keys nicht als in Gebrauch.
     case plateauDetected
 
     // MARK: - DEL-206 Goal-Based Daily Coaching (Matrix-Kontexte)
