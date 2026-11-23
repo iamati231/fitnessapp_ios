@@ -156,5 +156,44 @@ final class ExerciseTemplateIDBackfillTests: XCTestCase {
 
         XCTAssertEqual(exercise.exerciseTemplateID, survivor.id, "stale ID muss durch den eindeutigen Namens-Treffer ersetzt werden")
     }
+
+    /// Modul-7-Audit: der Konsistenz-Check koppelte die ID bisher zusaetzlich
+    /// an den AKTUELLEN Namen - das Gegenteil dessen, wofuer `exerciseTemplateID`
+    /// gebaut wurde ("bleibt stabil, auch wenn der User die Vorlage spaeter
+    /// umbenennt"). Ein Rename des Custom-Templates nach einer bereits
+    /// korrekt verknuepften ID durfte diese NICHT loeschen.
+    func testRenamingACustomTemplateNeverWipesAnAlreadyCorrectExerciseTemplateID() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let template = ExerciseTemplate(name: "Mein Curl", equipment: .dumbbell, primaryMuscle: .biceps, isCustom: true)
+        ctx.insert(template)
+        // Simuliert: ID-Backfill ist bereits erfolgreich gelaufen, ID ist korrekt gesetzt.
+        let exercise = Exercise(name: "Mein Curl", exerciseTemplateID: template.id, sets: 3)
+        ctx.insert(exercise)
+        let log = ExerciseLog(setIndex: 0, weight: 10, reps: 12, rir: 2, exercise: exercise)
+        ctx.insert(log)
+        let pr = PersonalRecordEntry(
+            date: Date(), exerciseName: "Mein Curl", exerciseTemplateID: template.id,
+            kindRaw: PersonalRecord.Kind.heaviestWeight.rawValue,
+            value: 10, previousValue: 8, weightKg: 10, reps: 12
+        )
+        ctx.insert(pr)
+        try ctx.save()
+        XCTAssertEqual(log.exerciseTemplateIDSnapshot, template.id)
+
+        // User benennt die Vorlage im Bibliotheks-Editor um - Exercise/Log/PR
+        // behalten bewusst ihren eingefrorenen Namens-Snapshot (by design).
+        template.name = "Mein Hammer Curl"
+        try ctx.save()
+
+        ExerciseTemplateIDBackfill.runIfNeeded(in: ctx)
+
+        XCTAssertEqual(exercise.exerciseTemplateID, template.id,
+                       "ein Rename darf eine bereits korrekte exerciseTemplateID niemals loeschen")
+        XCTAssertEqual(log.exerciseTemplateIDSnapshot, template.id,
+                       "Log-Snapshot-ID muss das Rename ebenfalls unbeschadet ueberstehen")
+        XCTAssertEqual(pr.exerciseTemplateID, template.id,
+                       "PR-ID muss das Rename ebenfalls unbeschadet ueberstehen")
+    }
 }
 #endif

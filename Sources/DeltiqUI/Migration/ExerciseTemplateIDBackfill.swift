@@ -62,13 +62,27 @@ public enum ExerciseTemplateIDBackfill {
 
         // Bugfix (Geraetetest): Konsistenz-Check statt blindem "ueberspringen,
         // wenn schon gesetzt". Eine bereits gesetzte ID, die zu KEINER
-        // Vorlage mit demselben Namen mehr gehoert (z.B. weil
+        // (noch existierenden) Vorlage mehr gehoert (z.B. weil
         // `LibrarySeeder.deduplicateTemplatesIfNeeded` genau die Vorlage
         // geloescht hat, auf die diese ID zeigte, oder durch eine fruehere
         // ID-Kollision), wird zurueckgesetzt und unten neu aufgeloest statt
         // dauerhaft falsch (oder ins Leere) zu zeigen.
-        func isConsistent(id: UUID, name: String) -> Bool {
-            templatesByName[name]?.contains { $0.id == id } ?? false
+        //
+        // Modul-7-Audit: vorher koppelte dieser Check die ID zusaetzlich an
+        // den AKTUELLEN Namen (`templatesByName[name]?.contains { $0.id ==
+        // id }`) — das genaue Gegenteil dessen, wofuer `exerciseTemplateID`
+        // laut eigener Typ-Doku gebaut wurde ("bleibt stabil, auch wenn der
+        // User die Vorlage spaeter umbenennt"). Benannte ein User ein
+        // bereits adoptiertes Custom-Template um, fand dieser Check beim
+        // naechsten App-Start unter dem (eingefrorenen) alten Namens-
+        // Snapshot kein Template mehr, setzte die korrekte ID auf `nil` -
+        // und der direkt folgende Re-Resolve-Versuch suchte erneut nur nach
+        // dem alten Namen, fand also ebenfalls nichts: die ID war dauerhaft
+        // und unheilbar verloren. Der Check darf nur fragen, ob IRGENDEINE
+        // Vorlage (unter IRGENDEINEM Namen) noch diese ID traegt.
+        let templateIDs = Set(templates.map(\.id))
+        func isConsistent(id: UUID) -> Bool {
+            templateIDs.contains(id)
         }
 
         var fixed = 0
@@ -76,7 +90,7 @@ public enum ExerciseTemplateIDBackfill {
         // ─── 1) Exercises ────────────────────────────────────────────
         let exercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
         for ex in exercises {
-            if let current = ex.exerciseTemplateID, !isConsistent(id: current, name: ex.name) {
+            if let current = ex.exerciseTemplateID, !isConsistent(id: current) {
                 ex.exerciseTemplateID = nil
             }
             guard ex.exerciseTemplateID == nil,
@@ -93,9 +107,7 @@ public enum ExerciseTemplateIDBackfill {
         // Live-`exercise`-Referenz zurueck, exakt wie `resolvedExerciseName`.
         let logs = (try? context.fetch(FetchDescriptor<ExerciseLog>())) ?? []
         for log in logs {
-            if let snap = log.exerciseNameSnapshot,
-               let current = log.exerciseTemplateIDSnapshot,
-               !isConsistent(id: current, name: snap) {
+            if let current = log.exerciseTemplateIDSnapshot, !isConsistent(id: current) {
                 log.exerciseTemplateIDSnapshot = nil
             }
             guard log.exerciseTemplateIDSnapshot == nil,
@@ -112,7 +124,7 @@ public enum ExerciseTemplateIDBackfill {
         // automatisch `nil`, keine Sonderbehandlung noetig.
         let prEntries = (try? context.fetch(FetchDescriptor<PersonalRecordEntry>())) ?? []
         for entry in prEntries {
-            if let current = entry.exerciseTemplateID, !isConsistent(id: current, name: entry.exerciseName) {
+            if let current = entry.exerciseTemplateID, !isConsistent(id: current) {
                 entry.exerciseTemplateID = nil
             }
             guard entry.exerciseTemplateID == nil,
