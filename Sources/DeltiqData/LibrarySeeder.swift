@@ -528,9 +528,20 @@ public enum LibrarySeeder {
     /// Brust/Koerpergewicht zurueck.
     ///
     /// Strategie: jede Exercise ohne Muskel-Override mit einem passenden
-    /// CUSTOM-Template (Match ueber Name) bekommt Muskel + Equipment aus dem
-    /// Template nachgezogen. System-Uebungen (kein Custom-Template-Match)
-    /// bleiben unangetastet — sie loesen ihren Muskel ueber den Library-Lookup.
+    /// CUSTOM-Template (Match ueber `exerciseTemplateID`) bekommt Muskel +
+    /// Equipment aus dem Template nachgezogen. System-Uebungen (kein
+    /// Custom-Template-Match) bleiben unangetastet — sie loesen ihren
+    /// Muskel ueber den Library-Lookup.
+    ///
+    /// Modul-7-Audit: vorher matchte diese Funktion nur ueber `exercise.name
+    /// == customTemplate.name` — OHNE die eigentlich vorhandene stabile
+    /// `exerciseTemplateID` zu pruefen. Legte ein User ein Custom-Template
+    /// mit demselben Namen wie eine bereits adoptierte, noch unbackfillte
+    /// System-Uebung an (keine Namens-Eindeutigkeits-Pruefung beim Anlegen),
+    /// bekam die SYSTEM-Uebung faelschlich die Muskel-/Equipment-Daten des
+    /// voellig unverwandten Custom-Templates uebergeschrieben — genau der
+    /// Fall, den der Docstring oben ("System-Uebungen bleiben unangetastet")
+    /// explizit ausschliessen wollte.
     ///
     /// Idempotent: filtert auf `primaryMuscleRaw == nil`. Nach erstem Erfolg
     /// laeuft die Funktion leer durch.
@@ -547,14 +558,15 @@ public enum LibrarySeeder {
         )
         let customTemplates = (try? context.fetch(tplDescriptor)) ?? []
         guard !customTemplates.isEmpty else { return 0 }
-        let byName = Dictionary(
-            customTemplates.map { ($0.name, $0) },
+        let byID = Dictionary(
+            customTemplates.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
         )
 
         var updated = 0
         for exercise in pending {
-            guard let template = byName[exercise.name] else { continue }
+            guard let templateID = exercise.exerciseTemplateID,
+                  let template = byID[templateID] else { continue }
             exercise.primaryMuscleRaw = template.primaryMuscle.rawValue
             exercise.equipmentRaw = template.equipment.rawValue
             updated += 1
