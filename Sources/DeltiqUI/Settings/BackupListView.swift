@@ -415,11 +415,21 @@ public struct BackupListView: View {
 
     /// Wiederherstellen = Replace-Import des gewaehlten ZIPs.
     ///
-    /// Reihenfolge ist bewusst: ZUERST der Restore-Point des jetzigen Stands,
-    /// dann der Import. Faellt der Import um, ist der Ausgangszustand
-    /// gesichert; waehlt der User versehentlich einen zu alten Stand, kann er
-    /// ueber die `preImport`-Generation zurueck. Der Importer selbst validiert
-    /// vor dem Wipe (DEL-183), ein kaputtes ZIP kann also nichts loeschen.
+    /// Reihenfolge ist bewusst: ZUERST die Ziel-Generation lesen, DANN der
+    /// Restore-Point des jetzigen Stands, DANN der Import. Faellt der Import
+    /// um, ist der Ausgangszustand gesichert; waehlt der User versehentlich
+    /// einen zu alten Stand, kann er ueber die `preImport`-Generation zurueck.
+    /// Der Importer selbst validiert vor dem Wipe (DEL-183), ein kaputtes ZIP
+    /// kann also nichts loeschen.
+    ///
+    /// Modul-6-Audit: das Lesen MUSS vor dem Anlegen der `preImport`-Sicherung
+    /// passieren, nicht danach — `createBackupAsync` rotiert intern auf
+    /// `maxGenerations` (siehe `BackupService.store`). Bei Rotation am Limit
+    /// UND Restore der aeltesten der `maxGenerations` Generationen (ein ganz
+    /// gewoehnlicher Anwendungsfall: genau dafuer gibt es mehrere
+    /// Generationen) wuerde die frisch angelegte `preImport`-Sicherung die
+    /// Ziel-Generation selbst aus der Rotation draengen, BEVOR sie gelesen
+    /// wird — 100% reproduzierbar, kein Timing-Zufall.
     private func restore(_ generation: BackupService.Generation) {
         operation = .restoring
         resultMessage = nil
@@ -427,11 +437,11 @@ public struct BackupListView: View {
         let ctx = modelContext
         Task {
             do {
-                try await BackupService.createBackupAsync(context: ctx, reason: .preImport)
                 // Reines Datei-I/O auf einer bereits abgeschlossenen ZIP —
                 // sicher per `Task.detached`, haelt den Main-Thread waehrend
                 // des Lesens einer potenziell grossen Generation responsiv.
                 let data = try await Task.detached { try Data(contentsOf: generation.url) }.value
+                try await BackupService.createBackupAsync(context: ctx, reason: .preImport)
                 let result = try await DataImportService.performImport(
                     zipData: data,
                     context: ctx,
@@ -461,6 +471,11 @@ public struct BackupListView: View {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.operation = .idle
+                    // Modul-6-Audit: ohne reload() zeigt die Liste bei einem
+                    // Fehlschlag weiter eine evtl. bereits rotierte/entfernte
+                    // Generation an - ein zweiter Versuch wuerde denselben
+                    // Mechanismus nochmal durchlaufen.
+                    self.reload()
                 }
             }
         }
