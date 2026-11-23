@@ -15,14 +15,19 @@ public enum BaselineAssessmentEvaluator {
 
     /// Leitet fuer jede Bewegungsfamilie unabhaengig ein Band her.
     ///
-    /// Sicherheitsabfrage zuerst: bei `safetyStatus == .flagged` lief kein
+    /// Sicherheitsabfrage zuerst: nur ein explizites `safetyStatus == .clear`
+    /// erlaubt die normale Band-Herleitung. Bei `.flagged` lief kein
     /// Belastungstest (Epic: "Ja/Unsicher -> keinen Belastungstest, direkt
-    /// zur Selbsteinschaetzung und konservativem Plan") — alle fuenf Baender
-    /// fallen dann auf `.veryLow`, UNABHAENGIG von eventuell trotzdem
-    /// vorhandenen Testwerten. Die UI soll bei `flagged` ohnehin keinen Test
-    /// anbieten, der Evaluator verlaesst sich darauf aber nicht selbst.
+    /// zur Selbsteinschaetzung und konservativem Plan"); `nil` ("Frage nie
+    /// gestellt", z.B. Einstieg ueber "Selbst einschaetzen") wird GENAUSO
+    /// behandelt — fail-safe statt fail-open (Modul-5-Audit: ein fehlender
+    /// Wert darf nie wie ein unauffaelliges Ergebnis durchgereicht werden).
+    /// In beiden Faellen fallen alle fuenf Baender auf `.veryLow`,
+    /// UNABHAENGIG von eventuell trotzdem vorhandenen Testwerten. Die UI soll
+    /// ohnehin keinen Test anbieten, der Evaluator verlaesst sich darauf aber
+    /// nicht selbst.
     public static func evaluate(_ assessment: BaselineAssessment) -> BaselineBands {
-        guard assessment.safetyStatus != .flagged else {
+        guard assessment.safetyStatus == .clear else {
             return BaselineBands(push: .veryLow, legs: .veryLow, pull: .veryLow, core: .veryLow, cardio: .veryLow)
         }
         return BaselineBands(

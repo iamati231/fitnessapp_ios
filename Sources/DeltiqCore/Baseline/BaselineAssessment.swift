@@ -20,6 +20,14 @@ public enum BaselineSource: String, Sendable, Codable, CaseIterable, Hashable {
 /// (siehe `BaselineAssessmentEvaluator.evaluate`) — die Abfrage selbst ist
 /// keine medizinische Diagnose, nur ein Sicherheits-Gate vor Tests bis zur
 /// Erschoepfung.
+///
+/// Dieser Typ selbst ist bewusst binaer — "nie gefragt" wird NICHT hier als
+/// dritter Fall modelliert, sondern dadurch, dass `BaselineAssessment.safetyStatus`
+/// optional ist. `nil` ("nie gefragt", z.B. Einstieg ueber "Selbst
+/// einschaetzen") muss vom Evaluator GENAUSO konservativ behandelt werden wie
+/// `.flagged` — niemals als `.clear` angenommen werden (Modul-5-Audit:
+/// vorher wurde ein fehlender Wert an der UI-Grenze stillschweigend zu
+/// `.clear`, siehe `BaselineAssessmentEvaluator.evaluate`).
 public enum SafetyStatus: String, Sendable, Codable, CaseIterable, Hashable {
     case clear
     case flagged
@@ -142,10 +150,13 @@ public enum FirstWeekIntensity: String, Sendable, Codable, CaseIterable, Hashabl
 // MARK: - Gesamtergebnis
 
 /// Ergebnis des optionalen Start-Checks "Wo stehst du heute?". ALLE Felder
-/// ausser `date`/`source`/`safetyStatus`/`version`/`desiredFirstWeekIntensity`
-/// sind optional — ein Ergebnis darf teilweise ausgefuellt sein (z.B. nur
-/// Push-up getestet, Rest uebersprungen). Liefert NIE eine medizinische
-/// Diagnose, keinen 1RM, keine Fitnessnote — nur Rohdaten fuer
+/// ausser `date`/`source`/`version`/`desiredFirstWeekIntensity` sind optional
+/// — ein Ergebnis darf teilweise ausgefuellt sein (z.B. nur Push-up
+/// getestet, Rest uebersprungen). `safetyStatus` ist `nil`, wenn die
+/// Sicherheitsfrage nie gestellt wurde (siehe `SafetyStatus`-Doc) — das ist
+/// KEIN fehlender/korrupter Wert, sondern ein eigener, vom Evaluator
+/// konservativ behandelter Zustand. Liefert NIE eine medizinische Diagnose,
+/// keinen 1RM, keine Fitnessnote — nur Rohdaten fuer
 /// `BaselineAssessmentEvaluator`.
 ///
 /// `version` ist fuer kuenftige Schema-Aenderungen an den Unterwerten
@@ -158,7 +169,7 @@ public struct BaselineAssessment: Sendable, Codable, Equatable {
 
     public var date: Date
     public var source: BaselineSource
-    public var safetyStatus: SafetyStatus
+    public var safetyStatus: SafetyStatus?
     public var version: Int
 
     public var pushUp: PushUpAssessment?
@@ -180,7 +191,7 @@ public struct BaselineAssessment: Sendable, Codable, Equatable {
     public init(
         date: Date,
         source: BaselineSource,
-        safetyStatus: SafetyStatus,
+        safetyStatus: SafetyStatus? = nil,
         version: Int = BaselineAssessment.currentVersion,
         pushUp: PushUpAssessment? = nil,
         chairSquat: ChairSquatAssessment? = nil,

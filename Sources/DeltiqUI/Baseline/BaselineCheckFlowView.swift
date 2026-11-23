@@ -1122,7 +1122,12 @@ struct BaselineCheckFlowView: View {
         return BaselineAssessment(
             date: Date(),
             source: entryMode == .guidedTest ? .guidedTest : .selfAssessment,
-            safetyStatus: safetyStatus ?? .clear,
+            // Modul-5-Audit: NIE auf `.clear` erzwingen - fuer den
+            // `.selfAssessment`-Einstieg wird die Sicherheitsfrage nie
+            // gestellt (siehe `rootContent`), `nil` muss das auch bleiben,
+            // sonst liest `BaselineAssessmentEvaluator` ein ungestelltes
+            // Sicherheits-Gate faelschlich als "unbedenklich".
+            safetyStatus: safetyStatus,
             pushUp: pushUp,
             chairSquat: chairSquat,
             pull: pull,
