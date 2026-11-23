@@ -204,9 +204,11 @@ public enum PersonalRecordSync {
     /// ohne Snapshot UND ohne Live-Exercise (sehr alte Orphans) werden
     /// uebersprungen, sonst nutzen wir entweder den persistierten Snapshot
     /// oder fallbacken auf die noch-lebende Exercise-Referenz.
+    /// Audit-Fix: Warmup-/Cooldown-Saetze duerfen nie einen PR setzen oder
+    /// verdecken (dieselbe Rollen-Pruefung wie `MuscleSetExtractor`, #79).
     private static func liftAttempts(from logs: [ExerciseLog]) -> [LiftAttempt] {
         logs.compactMap { log -> LiftAttempt? in
-            guard let name = log.resolvedExerciseName else { return nil }
+            guard let name = log.resolvedExerciseName, log.resolvedIsWorkingSet else { return nil }
             return LiftAttempt(
                 exerciseName: name,
                 // Settings-Epic Phase 6 (EXLIB-07/09): stabile ID durchreichen,
@@ -293,6 +295,10 @@ public enum PersonalRecordSync {
     ///
     /// Ergebnis wird am Ende nach Datum sortiert, um die vorherige
     /// Reihenfolge exakt zu erhalten.
+    ///
+    /// Bugfix (Audit): dieselbe `resolvedIsWorkingSet`-Pruefung wie in
+    /// `liftAttempts(from:)` - sonst zaehlt ein schwerer Warmup-/Cooldown-Satz
+    /// als Historie und verdeckt einen spaeteren echten Arbeitssatz-PR.
     private static func fetchHistoricalLifts(
         for sessionLifts: [LiftAttempt],
         excluding session: WorkoutSession,
@@ -357,6 +363,7 @@ public enum PersonalRecordSync {
             .sorted { $0.date < $1.date }
             .compactMap { log -> LiftAttempt? in
                 guard let name = log.resolvedExerciseName,
+                      log.resolvedIsWorkingSet,
                       let logSession = log.session,
                       logSession.isCompleted,
                       logSession.startTime < sessionStart

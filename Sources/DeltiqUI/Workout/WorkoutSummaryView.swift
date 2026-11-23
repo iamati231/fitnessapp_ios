@@ -935,9 +935,12 @@ public struct WorkoutSummaryView: View {
     /// DEL-051: snapshot-first. Logs ohne Snapshot UND ohne Live-Exercise
     /// werden uebersprungen, sonst greifen wir auf die persistierten Snapshot-
     /// Felder zu, sodass Plan-Side-Mutations die PR-Detection nicht stoeren.
+    /// Audit-Fix: Warmup-/Cooldown-Saetze raus, sonst zeigt dieses Vorschau-
+    /// Badge einen PR, den `PersonalRecordSync` (dieselbe Rollen-Pruefung,
+    /// gleicher Audit-Fund) nie persistiert.
     private var sessionLifts: [LiftAttempt] {
         session.logs.compactMap { log -> LiftAttempt? in
-            guard let name = log.resolvedExerciseName else { return nil }
+            guard let name = log.resolvedExerciseName, log.resolvedIsWorkingSet else { return nil }
             return LiftAttempt(
                 exerciseName: name,
                 // Settings-Epic Phase 6 (EXLIB-07/09): stabile ID durchreichen,
@@ -962,6 +965,7 @@ public struct WorkoutSummaryView: View {
         let thisSessionID = session.persistentModelID
         return allLogs.compactMap { log -> LiftAttempt? in
             guard let name = log.resolvedExerciseName,
+                  log.resolvedIsWorkingSet,
                   let logSession = log.session,
                   logSession.isCompleted,
                   logSession.persistentModelID != thisSessionID
