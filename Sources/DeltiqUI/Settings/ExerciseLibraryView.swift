@@ -441,19 +441,26 @@ public struct ExerciseLibraryView: View {
     }
 
     /// Loescht ein Custom-Template (System-Eintraege erreichen den Swipe nicht).
-    /// Safe: Exercise/Log halten keine Relationship aufs Template (Match by
-    /// name, Felder kopiert) — es wird nichts kaskadiert.
+    /// Safe: Exercise/Log/PersonalRecordEntry halten keine Relationship aufs
+    /// Template (Match by ID/Name, Felder kopiert bzw. Snapshot) — es wird
+    /// nichts kaskadiert.
+    ///
+    /// Modul-7-Audit: dieser Code loeschte vorher explizit auch alle
+    /// `PersonalRecordEntry`-Zeilen mit passender `exerciseTemplateID` -
+    /// das widersprach direkt der in `ExerciseTemplate.id` dokumentierten
+    /// harten Anforderung ("Loeschen einer Vorlage darf niemals Logs/PRs
+    /// mitloeschen"), dem eigenen (falschen) Kommentar hier ("nichts
+    /// kaskadiert") UND dem Lösch-Bestaetigungsdialog, der dem Nutzer
+    /// explizit "Bereits geloggte Trainings bleiben erhalten" verspricht.
+    /// `PRHistoryView` haelt eigens einen Namens-Fallback fuer genau den
+    /// Fall "Vorlage existiert nicht mehr" vor - PRs ueberleben jetzt
+    /// tatsaechlich, wie ueberall sonst in der App dokumentiert.
     private func deleteTemplate(_ template: ExerciseTemplate) {
         guard template.isCustom else { return }
         // Clean up local media file before deleting the template record
         if let filename = template.customMediaFilename {
             CustomExerciseMediaStore.delete(filename: filename)
         }
-        let tid = template.id
-        let prDesc = FetchDescriptor<PersonalRecordEntry>(
-            predicate: #Predicate { $0.exerciseTemplateID == tid }
-        )
-        ((try? modelContext.fetch(prDesc)) ?? []).forEach { modelContext.delete($0) }
         modelContext.delete(template)
         // Audit-Fix: `delete()` wirkt sofort auf den Live-Graphen (die Zeile
         // verschwindet also schon jetzt korrekt aus der `@Query`-Liste,
