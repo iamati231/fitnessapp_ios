@@ -41,6 +41,19 @@ final class BaselinePlanFilterTests: XCTestCase {
         XCTAssertFalse(BaselineBand.unknown.meetsMinimum(.high))
     }
 
+    /// Modul-2-Audit (P2, dormant): die Kehrseite von
+    /// `testUnknownBandConservativeBehavior`. `.unknown` ist nur als
+    /// Nutzer-Zustand sinnvoll — als REQUIRED-Seite erfuellt es niemand,
+    /// nicht mal ein Nutzer mit `.unknown` selbst (der ueber den
+    /// `self == .unknown`-Guard auf `.low` faellt). Ein Katalog-Eintrag mit
+    /// `baselineMinBand: .unknown` waere also fuer JEDEN Nutzer gesperrt.
+    func testUnknownAsRequiredBandIsUnreachableForEveryone() {
+        for band in BaselineBand.allCases {
+            XCTAssertFalse(band.meetsMinimum(.unknown),
+                           "\(band) must not meet a .unknown requirement — no band should ever satisfy it")
+        }
+    }
+
     func testConservativeBandsPassLowRequirement() {
         // .conservative = push:.low — must pass a .low-gated exercise
         XCTAssertTrue(BaselineBands.conservative.band(for: .chest).meetsMinimum(.low))

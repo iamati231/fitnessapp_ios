@@ -181,6 +181,11 @@ public enum ReminderScheduler {
     /// Identifier-Praefix fuer die EMOM-Minutentrigger (`emom.minute.01` ...).
     private static let emomIdentifierPrefix = "emom.minute."
 
+    /// Modul-1-Audit (P2): iOS' Pending-Notification-Limit ist 64 pro App,
+    /// geteilt mit Wasser-/Mess-/Rest-Timer-Remindern. Deutlich darunter
+    /// bleiben, statt das System bei sehr langen EMOMs ausreizen.
+    private static let maxScheduledEMOMSignals = 60
+
     /// Plant EIN Signal pro Minutenwechsel im Voraus, inklusive Abschluss-
     /// Signal fuer die letzte Minute.
     ///
@@ -217,7 +222,9 @@ public enum ReminderScheduler {
         await cancelEMOMSignals()
 
         let center = UNUserNotificationCenter.current()
-        for signal in EMOMSignalSchedule.signals(totalMinutes: totalMinutes, elapsedSeconds: elapsedSeconds) {
+        let allSignals = EMOMSignalSchedule.signals(totalMinutes: totalMinutes, elapsedSeconds: elapsedSeconds)
+        let signals = EMOMSignalSchedule.capped(allSignals, to: maxScheduledEMOMSignals)
+        for signal in signals {
             let content = UNMutableNotificationContent()
             content.title = signal.isFinal ? finishTitle : minuteTitle
             content.body = signal.isFinal ? finishBody : String(format: minuteBodyFormat, signal.minute + 1)
