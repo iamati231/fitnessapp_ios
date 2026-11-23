@@ -685,12 +685,19 @@ struct ExerciseCard: View {
     /// Mutation auf der Plan-/Ad-Hoc-Exercise ist gewollt: identisch zu dem,
     /// was der ExerciseEditor taete, nur ohne den Umweg.
     private func addSet() {
+        saveErrorMessage = nil
         exercise.sets += 1
         // P8 Stufe-2: "+ Satz" ist eine ausdrückliche Aktion DIESER laufenden
         // Session (gilt für jede Session, nicht nur Ad-hoc) — hält den
         // eigenen Inhaltsstand synchron, statt beim nächsten Resolve auf den
         // alten, eingefrorenen `sets`-Wert zurückzufallen.
-        TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: session, context: modelContext)
+        // Audit-Fix: Rueckgabewert jetzt geprueft — `content.sets` (nicht das
+        // live `exercise.sets`) treibt den ForEach oben, ein fehlgeschlagener
+        // Snapshot-Write liess den "+ Satz"-Tap bisher wirkungslos aussehen,
+        // ohne dass der User je einen Hinweis bekam.
+        if !TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: session, context: modelContext) {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
     }
 
     /// Entfernt den Satz an `index`: loescht dessen Log (falls vorhanden),
@@ -701,6 +708,7 @@ struct ExerciseCard: View {
     /// loeschbar (Caller gated via `exercise.sets > 1`).
     private func removeSet(at index: Int) {
         guard exercise.sets > 1 else { return }
+        saveErrorMessage = nil
         withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
             if let log = existingLog(forSetIndex: index) {
                 modelContext.delete(log)
@@ -709,7 +717,13 @@ struct ExerciseCard: View {
                 log.setIndex -= 1
             }
             exercise.sets -= 1
-            TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: session, context: modelContext)
+            // Audit-Fix: Rueckgabewert jetzt geprueft (kein Undo der Loeschung
+            // bei Fehlschlag — gleiches Prinzip wie `unlogSet` oben: die Row
+            // faellt bereits korrekt in den neuen Zustand, der Toast
+            // informiert nur ueber die Snapshot-Persistenz).
+            if !TrainingDayContentSnapshotWriter.recordSetCountChange(for: exercise, in: session, context: modelContext) {
+                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            }
             structureToken = UUID()
         }
     }

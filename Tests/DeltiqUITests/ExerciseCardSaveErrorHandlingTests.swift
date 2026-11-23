@@ -91,4 +91,41 @@ final class ExerciseCardSaveErrorHandlingTests: XCTestCase {
         XCTAssertTrue(body.contains("} catch {"), "unlogSet must use do/catch instead of try?")
         XCTAssertTrue(body.contains("saveErrorMessage = "), "a failed save must surface an error")
     }
+
+    /// Modul-8-Audit: `addSet()`/`removeSet()` riefen `TrainingDayContentSnapshotWriter.
+    /// recordSetCountChange` bisher ohne den `Bool`-Rueckgabewert zu pruefen - ein
+    /// fehlgeschlagener Snapshot-Write liess den "+ Satz"-Tap wirkungslos aussehen
+    /// (der ForEach rendert `content.sets`, nicht das live `exercise.sets`), ohne
+    /// dass der User je einen Hinweis bekam.
+    func testAddSetSurfacesAnErrorWhenRecordSetCountChangeFails() throws {
+        let cleaned = Self.stripLineComments(try source)
+        guard let funcStart = cleaned.range(of: "private func addSet() {") else {
+            return XCTFail("addSet() not found at the expected signature")
+        }
+        guard let funcEnd = cleaned.range(of: "\n    }", range: funcStart.upperBound..<cleaned.endIndex) else {
+            return XCTFail("addSet's end was not found")
+        }
+        let body = cleaned[funcStart.upperBound..<funcEnd.lowerBound]
+        XCTAssertTrue(body.contains("if !TrainingDayContentSnapshotWriter.recordSetCountChange("),
+                      "addSet must check recordSetCountChange's return value")
+        XCTAssertTrue(body.contains("saveErrorMessage = "), "a failed snapshot write must surface an error")
+    }
+
+    /// Wie oben, fuer `removeSet` - bewusst KEIN Undo der bereits angewandten
+    /// Mutationen (Log-Delete, Reindex, `exercise.sets -= 1`) bei Fehlschlag, gleiches
+    /// Prinzip wie `unlogSet`: die Row faellt bereits korrekt in den neuen Zustand, der
+    /// Toast informiert nur ueber die Snapshot-Persistenz.
+    func testRemoveSetSurfacesAnErrorWhenRecordSetCountChangeFails() throws {
+        let cleaned = Self.stripLineComments(try source)
+        guard let funcStart = cleaned.range(of: "private func removeSet(at index: Int) {") else {
+            return XCTFail("removeSet(at:) not found at the expected signature")
+        }
+        guard let funcEnd = cleaned.range(of: "\n    }\n}", range: funcStart.upperBound..<cleaned.endIndex) else {
+            return XCTFail("removeSet's end was not found")
+        }
+        let body = cleaned[funcStart.upperBound..<funcEnd.lowerBound]
+        XCTAssertTrue(body.contains("if !TrainingDayContentSnapshotWriter.recordSetCountChange("),
+                      "removeSet must check recordSetCountChange's return value")
+        XCTAssertTrue(body.contains("saveErrorMessage = "), "a failed snapshot write must surface an error")
+    }
 }

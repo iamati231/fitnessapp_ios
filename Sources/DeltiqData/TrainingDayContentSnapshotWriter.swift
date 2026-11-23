@@ -52,8 +52,10 @@ extension WorkoutSession {
 ///
 /// **Expliziter Save (Geräteabnahme-Befund, Stufe-2-Abnahme Block C):**
 /// jede Funktion hier ruft nach dem Setzen von `contentSnapshotJSON`/
-/// `.contentSnapshotCapturedAt` explizit `try? context.save()` auf, statt
-/// sich auf SwiftDatas impliziten Autosave zu verlassen. Ein echter
+/// `.contentSnapshotCapturedAt` explizit `context.save()` auf (seit
+/// Modul-8-Audit in einem do/catch, das bei einem echten Fehlschlag
+/// `false` zurueckgibt - vorher `try?`), statt sich auf SwiftDatas
+/// impliziten Autosave zu verlassen. Ein echter
 /// TestingBot-Gerätetest hat reproduziert, dass ein Ad-hoc-Edit + "+Satz"
 /// nach einem Prozess-Kill kurz danach spurlos verloren gingen, obwohl sie
 /// vor dem Kill live sichtbar bestätigt waren — der implizite Autosave
@@ -93,7 +95,14 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
-        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
+        // Audit-Fix: `try?` meldete einen fehlgeschlagenen Save hier bisher
+        // als Erfolg (`return true`) — kein Aufrufer konnte den Fehlschlag
+        // je bemerken, selbst wenn er den Rueckgabewert prueft.
+        do {
+            try context.save()
+        } catch {
+            return false
+        }
         return true
     }
 
@@ -135,7 +144,14 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
-        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
+        // Audit-Fix: `try?` meldete einen fehlgeschlagenen Save hier bisher
+        // als Erfolg (`return true`) — kein Aufrufer konnte den Fehlschlag
+        // je bemerken, selbst wenn er den Rueckgabewert prueft.
+        do {
+            try context.save()
+        } catch {
+            return false
+        }
         return true
     }
 
@@ -160,7 +176,14 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
-        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
+        // Audit-Fix: `try?` meldete einen fehlgeschlagenen Save hier bisher
+        // als Erfolg (`return true`) — kein Aufrufer konnte den Fehlschlag
+        // je bemerken, selbst wenn er den Rueckgabewert prueft.
+        do {
+            try context.save()
+        } catch {
+            return false
+        }
         return true
     }
 
@@ -204,7 +227,14 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
-        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
+        // Audit-Fix: `try?` meldete einen fehlgeschlagenen Save hier bisher
+        // als Erfolg (`return true`) — kein Aufrufer konnte den Fehlschlag
+        // je bemerken, selbst wenn er den Rueckgabewert prueft.
+        do {
+            try context.save()
+        } catch {
+            return false
+        }
         return true
     }
 
@@ -267,7 +297,14 @@ public enum TrainingDayContentSnapshotWriter {
 
         session.contentSnapshotJSON = json
         session.contentSnapshotCapturedAt = Date()
-        try? context.save()   // explizit, siehe Enum-Dokumentation oben.
+        // Audit-Fix: `try?` meldete einen fehlgeschlagenen Save hier bisher
+        // als Erfolg (`return true`) — kein Aufrufer konnte den Fehlschlag
+        // je bemerken, selbst wenn er den Rueckgabewert prueft.
+        do {
+            try context.save()
+        } catch {
+            return false
+        }
         return true
     }
 
