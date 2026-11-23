@@ -223,6 +223,30 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(try container.mainContext.fetchCount(FetchDescriptor<UserBodyProfile>()), 1)
     }
 
+    /// Modul-6-Audit: der Anker-Datei-Check in `extractAndValidate` prüfte
+    /// bisher nur die Byte-Länge der drei Anker-CSVs (`> 50`) statt ihrer
+    /// tatsächlichen Zeilenzahl — allein die Kopfzeile von `profile.csv`
+    /// (41 Spalten) überschreitet das schon ohne eine einzige Datenzeile.
+    /// Ein Export aus einem komplett leeren Context (kein Profil, kein Plan,
+    /// kein Workout) erzeugt genau das: drei Anker-Dateien, die nur ihre
+    /// Kopfzeile enthalten — das darf nicht als "brauchbares Backup" gelten.
+    func testImportRejectsAZipWhoseAnchorFilesAreHeaderOnly() async throws {
+        let emptySource = try makeContainer()
+        let bundle = try DataExportService.makeExport(context: emptySource.mainContext)
+
+        let target = try makeContainer()
+        do {
+            _ = try await DataImportService.performImport(
+                zipData: bundle.data,
+                context: target.mainContext,
+                strategy: .appendOnly
+            )
+            XCTFail("ein Backup ohne eine einzige Datenzeile in allen drei Anker-Dateien darf nicht als brauchbar gelten")
+        } catch {
+            // erwartet
+        }
+    }
+
     // MARK: - DEL-225
 
     /// Zwei Serien DERSELBEN Uebung in EINER Session — schwerer Hauptsatz

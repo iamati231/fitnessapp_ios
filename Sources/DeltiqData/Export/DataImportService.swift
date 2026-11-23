@@ -301,10 +301,19 @@ public enum DataImportService {
 
         // 3) Anchor-File-Check. Mindestens eine der drei zentralen
         //    CSV-Tabellen muss vorhanden UND non-empty sein.
+        //
+        // Modul-6-Audit: vorher genuegte `data.count > 50` (Byte-Laenge) als
+        // "non-empty" - allein die Kopfzeile von profile.csv (41 Spalten)
+        // ueberschreitet das schon ohne eine einzige Datenzeile. Ein ZIP mit
+        // drei nur-Kopfzeilen-Ankerdateien (z.B. durch eine abgebrochene
+        // Export-Erzeugung) bestand die Pruefung trotzdem, obwohl es
+        // effektiv nichts zum Wiederherstellen enthaelt.
         let anchors = ["profile.csv", "workouts.csv", "plans.csv"]
         let hasUsableData = anchors.contains { name in
-            guard let data = files[name] else { return false }
-            return data.count > 50
+            guard let data = files[name],
+                  let text = String(data: data, encoding: .utf8),
+                  let reader = try? CSVReader(text) else { return false }
+            return !reader.rows().isEmpty
         }
         guard hasUsableData else {
             throw ImportError.zipNotReadable
