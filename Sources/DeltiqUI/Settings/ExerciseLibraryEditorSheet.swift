@@ -550,6 +550,12 @@ struct ExerciseLibraryEditorSheet: View {
         let originalIsCompound: Bool?
         let originalMediaFilename: String?
         let originalYouTubeURL: String?
+        // Modul-7-Audit: Name der ALTEN Mediendatei, falls sie ersetzt/entfernt
+        // wird - die eigentliche Datei wird erst NACH bestaetigtem Save
+        // geloescht (siehe unten), sonst waere sie bei einem fehlgeschlagenen
+        // Save bereits weg, obwohl `existing.customMediaFilename` korrekt auf
+        // den alten Dateinamen zurueckgerollt wird.
+        var mediaFilenameToDeleteAfterSave: String?
 
         if let existing {
             originalName = existing.name
@@ -558,9 +564,8 @@ struct ExerciseLibraryEditorSheet: View {
             originalIsCompound = existing.isSystemCompound
             originalMediaFilename = existing.customMediaFilename
             originalYouTubeURL = existing.customYouTubeURL
-            // Delete old media file if replaced or removed
             if let old = existing.customMediaFilename, old != mediaFilename {
-                CustomExerciseMediaStore.delete(filename: old)
+                mediaFilenameToDeleteAfterSave = old
             }
             existing.name = trimmedName
             existing.primaryMuscle = muscle
@@ -600,6 +605,11 @@ struct ExerciseLibraryEditorSheet: View {
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
             isSaving = false
             return
+        }
+        // Modul-7-Audit: erst jetzt, nach bestaetigtem Save, die alte Datei
+        // wirklich von der Disk entfernen.
+        if let mediaFilenameToDeleteAfterSave {
+            CustomExerciseMediaStore.delete(filename: mediaFilenameToDeleteAfterSave)
         }
         if isCreate {
             isSaved = true
