@@ -88,5 +88,43 @@ final class ExerciseLibraryEditorSheetPersistenceTests: XCTestCase {
             "the create path's rollback (deleting the freshly inserted template) must still happen on a failed save"
         )
     }
+
+    /// Modul-7-Audit: die alte Mediendatei (Bild/Video) wurde bisher sofort
+    /// geloescht, sobald der User sie im Editor ersetzte/entfernte - lange
+    /// BEVOR `context.save()` lief. Bei einem fehlgeschlagenen Save wurde
+    /// `existing.customMediaFilename` zwar korrekt auf den alten Dateinamen
+    /// zurueckgerollt, aber die Datei, auf die dieser Name zeigt, existierte
+    /// bereits nicht mehr - ein stiller, nicht wiederherstellbarer Verlust.
+    func testOldMediaFileIsOnlyDeletedAfterASuccessfulSave() throws {
+        let source = try editorSource
+        guard let saveStart = source.range(of: "private func save() {") else {
+            return XCTFail("save() not found at the expected signature")
+        }
+        guard let tryCallRange = source.range(of: "try modelContext.save()", range: saveStart.lowerBound..<source.endIndex) else {
+            return XCTFail("the context.save() call was not found inside save()")
+        }
+        guard let errorMessageAssignment = source.range(
+            of: "saveErrorMessage = String(localized: \"day.editor.save.failed\"",
+            range: tryCallRange.upperBound..<source.endIndex
+        ) else {
+            return XCTFail("save()'s error-message assignment was not found")
+        }
+        guard let deleteCallRange = source.range(
+            of: "CustomExerciseMediaStore.delete(filename: mediaFilenameToDeleteAfterSave)",
+            range: saveStart.lowerBound..<source.endIndex
+        ) else {
+            return XCTFail("the deferred media-file delete call was not found")
+        }
+
+        XCTAssertTrue(
+            deleteCallRange.lowerBound > errorMessageAssignment.upperBound,
+            "the old media file must only be deleted AFTER the catch block (i.e. only on the success path), "
+                + "never unconditionally before modelContext.save() is even attempted"
+        )
+        XCTAssertFalse(
+            source[saveStart.lowerBound..<tryCallRange.lowerBound].contains("CustomExerciseMediaStore.delete(filename: old)"),
+            "the old, unconditional pre-save delete call must be gone, replaced by the deferred variable"
+        )
+    }
 }
 #endif
