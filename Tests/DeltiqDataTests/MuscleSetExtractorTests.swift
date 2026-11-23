@@ -112,6 +112,51 @@ final class MuscleSetExtractorTests: XCTestCase {
         XCTAssertEqual(result.first?.exerciseName, "Bench Press")
     }
 
+    // MARK: - 3b. Modul-7-Audit: a deleted warmup's orphaned log must stay excluded
+
+    /// Vorher fehlte `ExerciseLog` ein Snapshot fuer `Exercise.role` - ein
+    /// geloeschtes Warmup wurde danach (`exercise == nil`) faelschlich als
+    /// Arbeitssatz gezaehlt, obwohl die Rolle beim Loggen bekannt war.
+    func test_orphanedWarmupLogStaysExcludedAfterExerciseIsDeleted() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+
+        let plan = TrainingPlan(name: "P", programType: "custom", isActive: true)
+        ctx.insert(plan)
+        let day = TrainingDay(name: "Push", weekday: 2, type: .chest, plan: plan)
+        ctx.insert(day)
+
+        let warmup = Exercise(name: "Warmup Bench", orderIndex: 0, day: day)
+        warmup.role = .warmup
+        warmup.primaryMuscle = .chest
+        ctx.insert(warmup)
+
+        let working = Exercise(name: "Bench Press", orderIndex: 1, day: day)
+        working.primaryMuscle = .chest
+        ctx.insert(working)
+
+        let session = WorkoutSession(startTime: Date(), endTime: Date(), isCompleted: true, day: day)
+        ctx.insert(session)
+
+        let warmupLog = ExerciseLog(setIndex: 0, weight: 20, reps: 15, rir: 4, exercise: warmup, session: session)
+        ctx.insert(warmupLog)
+        ctx.insert(ExerciseLog(setIndex: 0, weight: 100, reps: 5, rir: 2, exercise: working, session: session))
+        try ctx.save()
+        XCTAssertEqual(warmupLog.exerciseRoleSnapshot, ExerciseRole.warmup.rawValue)
+
+        // Nutzer loescht die Warmup-Uebung manuell aus dem Plan - der Log
+        // ueberlebt als Orphan (DEL-051 `.nullify`), die Rolle-Snapshot bleibt.
+        ctx.delete(warmup)
+        try ctx.save()
+        XCTAssertNil(warmupLog.exercise)
+        XCTAssertEqual(warmupLog.exerciseRoleSnapshot, ExerciseRole.warmup.rawValue,
+                       "der Snapshot darf vom Delete nicht beruehrt werden")
+
+        let result = MuscleSetExtractor.extract(from: [session], templates: [])
+        XCTAssertEqual(result.count, 1, "das verwaiste Warmup-Log muss weiterhin ausgeschlossen bleiben")
+        XCTAssertEqual(result.first?.exerciseName, "Bench Press")
+    }
+
     // MARK: - 4. Orphaned log (exercise == nil) included with nil muscleGroup
 
     func test_orphanedLogIncludedWithNilMuscle() throws {
