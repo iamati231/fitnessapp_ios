@@ -107,7 +107,12 @@ public struct SettingsAppExperienceView: View {
 
     private var preferencesSection: some View {
         DeltiqSection(String(localized: "settings.section.preferences", bundle: .module).uppercased()) {
-            DeltiqControlRow(label: String(localized: "settings.preferences.units.label", bundle: .module)) {
+            // Modul-6-Audit: hintRow folgt direkt danach - ohne showsDivider:
+            // false stand hier eine verwaiste Trennlinie direkt ueber dem
+            // Footer-Hinweistext (genau das Muster, das laut
+            // docs/SETTINGS_UX_AUDIT.md bereits einmal in ProfileEditorView
+            // gefixt wurde).
+            DeltiqControlRow(label: String(localized: "settings.preferences.units.label", bundle: .module), showsDivider: false) {
                 Picker(selection: $weightUnitRaw) {
                     Text("settings.preferences.units.metric", bundle: .module).tag("kg")
                     Text("settings.preferences.units.imperial", bundle: .module).tag("lbs")
@@ -265,10 +270,16 @@ public struct SettingsAppExperienceView: View {
             }
             periodicCheckInRow
             fourWeekReviewRow
+            // Modul-6-Audit: die beiden showsDivider-Werte waren vertauscht.
+            // Die Plateau-Zeile folgt dem Deload-Toggle IMMER unbedingt -
+            // dessen Trennlinie darf also nie verschwinden. Ob NACH der
+            // Plateau-Zeile noch etwas folgt (der "Jetzt beenden"-Button
+            // bzw. die Erfolgsmeldung), haengt dagegen tatsaechlich von
+            // `pendingDeloadCount`/`deloadRestoreMessage` ab - die Bedingung
+            // gehoert hierhin, nicht an den Deload-Toggle.
             DeltiqControlRow(
                 icon: "arrow.down.heart",
-                label: String(localized: "settings.deload.toggle", bundle: .module),
-                showsDivider: pendingDeloadCount > 0 || deloadRestoreMessage != nil
+                label: String(localized: "settings.deload.toggle", bundle: .module)
             ) {
                 Toggle(isOn: $deloadEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
@@ -276,7 +287,8 @@ public struct SettingsAppExperienceView: View {
             }
             DeltiqControlRow(
                 icon: "chart.line.flattrend.xyaxis",
-                label: String(localized: "settings.plateau.toggle", bundle: .module)
+                label: String(localized: "settings.plateau.toggle", bundle: .module),
+                showsDivider: pendingDeloadCount > 0 || deloadRestoreMessage != nil
             ) {
                 Toggle(isOn: $plateauDetectionEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
@@ -329,10 +341,15 @@ public struct SettingsAppExperienceView: View {
     private var remindersSection: some View {
         DeltiqSection(String(localized: "settings.reminders.section", bundle: .module).uppercased()) {
             reminderPermissionStatusRow
+            // Modul-6-Audit: die Mess-Erinnerung-Zeile folgt IMMER unbedingt
+            // danach (direkt, oder nach der optionalen Frequenz-Picker-Zeile
+            // wenn `waterReminderEnabled`) - die Trennlinie darf also nie an
+            // `waterReminderEnabled` haengen, sonst verschwindet sie genau
+            // dann, wenn die Wasser-Erinnerung ausgeschaltet ist, obwohl die
+            // Mess-Erinnerung-Zeile weiterhin direkt folgt.
             DeltiqControlRow(
                 icon: "drop.fill",
-                label: String(localized: "settings.reminders.water", bundle: .module),
-                showsDivider: waterReminderEnabled
+                label: String(localized: "settings.reminders.water", bundle: .module)
             ) {
                 Toggle(isOn: $waterReminderEnabled) { EmptyView() }
                     .tint(Color.deltiqOrange)
