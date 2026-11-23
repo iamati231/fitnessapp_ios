@@ -96,5 +96,43 @@ final class BackupServiceFailurePathTests: XCTestCase {
         )
         XCTAssertThrowsError(try BackupService.delete(generation))
     }
+
+    /// Modul-6-Audit: dokumentiert den Mechanismus hinter dem Restore-Bug in
+    /// `BackupListView.restore()`. `store()` rotiert bei jedem Aufruf auf
+    /// `maxGenerations` (siehe dortiger Kommentar) — ist die Rotation bereits
+    /// am Limit, faellt bei der naechsten `store()`-Buchung automatisch die
+    /// AELTESTE Generation raus. Ein Caller, der eine bestimmte Generation
+    /// noch lesen will, MUSS das vor einem weiteren `store()`-Aufruf tun,
+    /// sonst kann genau diese Generation darunter verschwinden.
+    func testStoringANewGenerationAtRotationLimitDeletesTheOldestFile() throws {
+        try withTempBackupsDirectory { _ in
+            var oldest: BackupService.Generation?
+            for i in 0..<BackupService.maxGenerations {
+                let generation = try BackupService.store(
+                    bundle: makeBundle(),
+                    reason: .automatic,
+                    now: Date(timeIntervalSince1970: Double(i) * 100)
+                )
+                if i == 0 { oldest = generation }
+            }
+            guard let oldest else { return XCTFail("expected the first stored generation to be captured") }
+            XCTAssertTrue(FileManager.default.fileExists(atPath: oldest.url.path),
+                           "sanity check: the oldest generation must exist right after the rotation fills up")
+
+            // Eine weitere Buchung (z.B. die preImport-Sicherung vor einem
+            // Restore) bei bereits vollem Rotations-Limit.
+            _ = try BackupService.store(
+                bundle: makeBundle(),
+                reason: .preImport,
+                now: Date(timeIntervalSince1970: Double(BackupService.maxGenerations) * 100)
+            )
+
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: oldest.url.path),
+                "die aelteste Generation faellt aus der Rotation, sobald eine weitere Buchung am Limit dazukommt - "
+                    + "ein Caller darf eine Zielgeneration also nie ERST NACH einer solchen Buchung lesen"
+            )
+        }
+    }
 }
 #endif
