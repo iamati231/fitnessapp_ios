@@ -23,25 +23,48 @@ final class WorkoutSummaryViewSaveErrorHandlingTests: XCTestCase {
         }
     }
 
-    /// Scope-Grenze (Ticket): NUR die genannten diskreten Aktionen wurden umgestellt -
-    /// `deleteEntireSession()` ist bewusst unveraendert geblieben (nicht im Audit-Scope,
-    /// "offene Session" bezieht sich nicht auf eine bereits abgeschlossene History-Session).
-    /// Genau EIN `try?` darf also noch uebrig sein.
-    func testExactlyOneTryQuestionMarkSaveRemains() throws {
+    /// Modul-8-Audit: die ehemalige Ausnahme `deleteEntireSession()` (Scope-
+    /// Grenze eines frueheren Tickets) wurde geschlossen - eine fehlgeschlagene
+    /// Loeschung ist derselbe "stille Erfolg"-Fehler wie die anderen acht
+    /// Stellen. Kein `try?` darf mehr uebrig sein.
+    func testNoTryQuestionMarkSaveRemains() throws {
         let occurrences = try source.components(separatedBy: "try? modelContext.save()").count - 1
-        XCTAssertEqual(occurrences, 1, "only deleteEntireSession() should still use try? - all other discrete save sites must surface failures")
+        XCTAssertEqual(occurrences, 0, "all discrete save sites, including deleteEntireSession(), must surface failures")
     }
 
-    /// Die sieben umgestellten Save-Aufrufe: Edit-Mode-Exit (zwei Saves), onDisappear-Netz,
+    /// Die neun umgestellten Save-Aufrufe: Edit-Mode-Exit (zwei Saves), onDisappear-Netz,
     /// removeExerciseFromSession, addExerciseToSession, addCustomExerciseToSession,
-    /// assignGear, addSet.
+    /// assignGear, addSet, deleteEntireSession.
     func testDiscreteSaveSitesUseDoCatchAndSurfaceAToast() throws {
         let occurrences = try source.components(separatedBy: "try modelContext.save()").count - 1
-        XCTAssertEqual(occurrences, 8, "expected 8 non-optional try modelContext.save() call sites (2x edit-mode-exit, onDisappear, removeExercise, addExercise, addCustomExercise, assignGear, addSet)")
+        XCTAssertEqual(occurrences, 9, "expected 9 non-optional try modelContext.save() call sites (2x edit-mode-exit, onDisappear, removeExercise, addExercise, addCustomExercise, assignGear, addSet, deleteEntireSession)")
 
         // +1 for the `private func showSaveErrorToast()` definition itself.
         let showToastOccurrences = try source.components(separatedBy: "showSaveErrorToast()").count - 1
-        XCTAssertEqual(showToastOccurrences, 9, "every one of the 8 do/catch blocks must call showSaveErrorToast() in its catch, plus the one function definition")
+        XCTAssertEqual(showToastOccurrences, 10, "every one of the 9 do/catch blocks must call showSaveErrorToast() in its catch, plus the one function definition")
+    }
+
+    /// Schlaegt der Save in `deleteEntireSession()` fehl, darf der optimistische
+    /// `isDeleted = true`-Flip nicht stehen bleiben - sonst zeigt der Screen eine
+    /// leere Flaeche, obwohl die Session nie wirklich geloescht wurde.
+    func testDeleteEntireSessionResetsIsDeletedFlagOnSaveFailure() throws {
+        let cleaned = Self.stripLineComments(try source)
+        guard let funcStart = cleaned.range(of: "private func deleteEntireSession() {") else {
+            return XCTFail("deleteEntireSession() not found at expected signature")
+        }
+        guard let catchRange = cleaned.range(of: "} catch {", range: funcStart.upperBound..<cleaned.endIndex) else {
+            return XCTFail("deleteEntireSession() has no catch block")
+        }
+        guard let dismissRange = cleaned.range(of: "dismiss()", range: funcStart.upperBound..<cleaned.endIndex) else {
+            return XCTFail("deleteEntireSession() never calls dismiss()")
+        }
+        XCTAssertLessThan(catchRange.lowerBound, dismissRange.lowerBound,
+                          "the catch block must come before dismiss()")
+        let catchBody = cleaned[catchRange.upperBound..<dismissRange.lowerBound]
+        XCTAssertTrue(catchBody.contains("isDeleted = false"),
+                     "catch block must reset isDeleted before returning, so a failed delete doesn't blank the screen")
+        XCTAssertTrue(catchBody.contains("return"),
+                     "catch block must return before reaching dismiss()")
     }
 
     /// Kein pauschales `modelContext.rollback()` - bereits mutierte Objekte bleiben

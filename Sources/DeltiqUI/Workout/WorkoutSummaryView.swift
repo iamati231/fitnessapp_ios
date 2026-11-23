@@ -844,6 +844,11 @@ public struct WorkoutSummaryView: View {
     /// HealthKit-Write der Session wird NICHT zurueckgenommen — Apple
     /// Health ist eine separate Datenquelle, der User kann dort selbst
     /// Workouts loeschen via Health-App.
+    ///
+    /// Modul-8-Audit: frueher bewusst von der Save-Fehler-Sichtbarkeit
+    /// ausgenommen (siehe Git-Historie) — eine fehlgeschlagene Loeschung ist
+    /// aber genauso ein irrefuehrender "stiller Erfolg" wie die anderen
+    /// diskreten Saves hier, deshalb jetzt gleiches Muster.
     private func deleteEntireSession() {
         // Guard body before backing becomes invalid after save() (DEL-252).
         isDeleted = true
@@ -863,7 +868,18 @@ public struct WorkoutSummaryView: View {
         }
         // 2. Session selbst — PRs werden per Cascade-Delete mitgeloescht.
         modelContext.delete(session)
-        try? modelContext.save()
+        // Audit-Fix: sichtbarer Hinweis statt stillem `try?` - sonst sieht der
+        // User eine (durch `isDeleted` schon ausgeblendete) "geloeschte"
+        // Session, obwohl nichts gespeichert wurde. Bei Fehlschlag den
+        // optimistischen Flag-Flip zurücknehmen, damit die Session sichtbar
+        // bleibt und ein erneuter Tap es nochmal versuchen kann.
+        do {
+            try modelContext.save()
+        } catch {
+            isDeleted = false
+            showSaveErrorToast()
+            return
+        }
         // 3. View aufloesen.
         dismiss()
     }
