@@ -324,6 +324,22 @@ final class TrainingDensityAnalyzerTests: XCTestCase {
         XCTAssertEqual(result.trainingDaysLast14, 4)  // -10, -3, -2, -1
     }
 
+    /// Modul-5-Audit: ein 7-Tage-Rollfenster muss GENAU 7 Kalendertage
+    /// umfassen (heute + die letzten 6), nicht 8. Ein Aktivitaetstag am
+    /// 8.-aeltesten Tag (-7) darf nicht mehr mitgezaehlt werden.
+    func testTrainingDaysLast7ExcludesActivityExactlyEightDaysOut() {
+        let acts = [runActivity(-20), runActivity(-7), runActivity(-1)]
+        let result = TrainingDensityAnalyzer.analyze(input: input(activities: acts))
+        XCTAssertEqual(result.trainingDaysLast7, 1, "Tag -7 liegt ausserhalb eines echten 7-Tage-Fensters (-6...0)")
+    }
+
+    /// Spiegelbildlich fuer das 14-Tage-Fenster: Tag -14 darf nicht mitzaehlen.
+    func testTrainingDaysLast14ExcludesActivityExactlyFifteenDaysOut() {
+        let acts = [runActivity(-20), runActivity(-14), runActivity(-1)]
+        let result = TrainingDensityAnalyzer.analyze(input: input(activities: acts))
+        XCTAssertEqual(result.trainingDaysLast14, 1, "Tag -14 liegt ausserhalb eines echten 14-Tage-Fensters (-13...0)")
+    }
+
     // MARK: - 9. Strength gap
 
     func testStrengthGapComputedForTwoOrMoreStrengthActivities() {
