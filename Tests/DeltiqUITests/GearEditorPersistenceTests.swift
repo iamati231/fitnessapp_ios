@@ -116,5 +116,51 @@ final class GearEditorPersistenceTests: XCTestCase {
             )
         }
     }
+
+    // MARK: - Modul-6-Audit: currentDistanceKm hat einen zweiten, nebenlaeufigen Schreiber (GearOdometer)
+
+    /// `GearOdometer.book(...)` kann `gear.currentDistanceKm` aendern, waehrend
+    /// der Editor offen ist (z.B. ein Workout mit diesem Gear wird im
+    /// Hintergrund abgeschlossen). Ein unbedingtes Zurueckschreiben des beim
+    /// Oeffnen gelesenen Werts wuerde diese Buchung stillschweigend verwerfen
+    /// - `save()` darf `currentDistanceKm` im `.edit`-Zweig daher nur
+    /// schreiben, wenn der User das Feld selbst veraendert hat.
+    func testEditModeOnlyWritesCurrentDistanceWhenTheFieldWasActuallyTouched() throws {
+        let source = try gearListViewSource
+        guard let saveStart = source.range(of: "private func save() {") else {
+            return XCTFail("save() not found at the expected signature")
+        }
+        guard let editCaseStart = source.range(of: "case .edit(let gear):", range: saveStart.lowerBound..<source.endIndex) else {
+            return XCTFail(".edit branch not found in save()")
+        }
+        guard let editCaseEnd = source.range(of: "\n        }", range: editCaseStart.upperBound..<source.endIndex) else {
+            return XCTFail(".edit branch end not found")
+        }
+        let editBody = source[editCaseStart.upperBound..<editCaseEnd.lowerBound]
+
+        XCTAssertTrue(
+            editBody.contains("if currentDistance != loadedCurrentDistance {"),
+            "the .edit branch must gate the currentDistanceKm write on the field actually having changed from its loaded snapshot"
+        )
+        XCTAssertTrue(
+            editBody.contains("gear.currentDistanceKm = GearDistance.clamped(currentDistance).rounded(toDecimals: 2)"),
+            "the gated write must clamp (no negative km) and round to 2 decimals, same as every other currentDistanceKm writer"
+        )
+    }
+
+    func testNewModeClampsAndRoundsCurrentDistance() throws {
+        let source = try gearListViewSource
+        guard let newCaseStart = source.range(of: "case .new:") else {
+            return XCTFail(".new branch not found in save()")
+        }
+        guard let newCaseEnd = source.range(of: "case .edit", range: newCaseStart.upperBound..<source.endIndex) else {
+            return XCTFail(".edit branch not found after .new")
+        }
+        let newBody = source[newCaseStart.upperBound..<newCaseEnd.lowerBound]
+        XCTAssertTrue(
+            newBody.contains("currentDistanceKm: GearDistance.clamped(currentDistance).rounded(toDecimals: 2)"),
+            "a brand-new Gear must not be constructible with a negative or unrounded currentDistanceKm either"
+        )
+    }
 }
 #endif
