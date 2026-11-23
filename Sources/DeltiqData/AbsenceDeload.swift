@@ -196,7 +196,7 @@ public enum AbsenceDeload {
         defaults: UserDefaults = .standard
     ) throws -> Int {
         guard factor < 1.0 else { return 0 }
-        var changed = 0
+        var changed: [(exercise: Exercise, original: Double)] = []
         for exercise in adjustableExercises(in: context) {
             guard let current = exercise.suggestedWeight, current > 0 else { continue }
             let reduced = ComebackAdvisor.reducedWeight(
@@ -211,16 +211,30 @@ public enum AbsenceDeload {
             )
             guard reduced < current else { continue }
             exercise.suggestedWeight = reduced
-            changed += 1
+            changed.append((exercise, current))
         }
-        if changed > 0 {
+        guard !changed.isEmpty else { return 0 }
+        do {
             try context.save()
-            defaults.set(now.timeIntervalSince1970, forKey: lastAppliedKey)
-            // Eine angenommene Reduktion loescht eine fruehere Ablehnung —
-            // sonst blockiert sie den naechsten Fall mit.
-            defaults.removeObject(forKey: suppressedUntilGapKey)
+        } catch {
+            // Modul-9-Audit: `resolveComeback` schluckt diesen throw bewusst
+            // (Trainingsstart darf nicht blockieren) - in der Annahme, der
+            // User sehe dann "seine unveraenderten Gewichte". Ohne Rollback
+            // stimmt das nicht: die obigen Mutationen blieben live im
+            // ModelContext und koennten durch einen spaeteren, unabhaengigen
+            // Autosave doch noch persistiert werden, dann sogar OHNE den
+            // schuetzenden `lastAppliedKey`-Zeitstempel (Doppelreduktion beim
+            // naechsten Workout-Start).
+            for change in changed {
+                change.exercise.suggestedWeight = change.original
+            }
+            throw error
         }
-        return changed
+        defaults.set(now.timeIntervalSince1970, forKey: lastAppliedKey)
+        // Eine angenommene Reduktion loescht eine fruehere Ablehnung —
+        // sonst blockiert sie den naechsten Fall mit.
+        defaults.removeObject(forKey: suppressedUntilGapKey)
+        return changed.count
     }
 
     /// Merkt die Ablehnung. Erneut gefragt wird erst bei deutlich laengerer
