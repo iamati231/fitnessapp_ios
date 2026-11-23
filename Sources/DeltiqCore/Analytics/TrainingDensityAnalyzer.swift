@@ -240,14 +240,25 @@ public enum TrainingDensityAnalyzer {
         return maxStreak
     }
 
-    /// Anzahl distinct Trainingstage im Rollfenster `[now - days, now]`.
+    /// Anzahl distinct Trainingstage im Rollfenster der letzten `days`
+    /// Kalendertage (heute eingeschlossen).
     static func trainingDaysInWindow(_ sortedDays: [Date], days: Int, now: Date, calendar: Calendar) -> Int {
-        let windowStart = calendar.date(byAdding: .day, value: -days, to: calendar.startOfDay(for: now)) ?? now
+        // Modul-5-Audit: Fenster muss GENAU `days` Kalendertage umfassen -
+        // `-days` statt `-(days-1)` zaehlte bei beidseitig inklusivem Filter
+        // einen Tag zu viel (7-Tage-Fenster zaehlte tatsaechlich 8 Tage),
+        // was `sixPlusTrainingDaysInWeek` faelschlich zu frueh ausloeste.
+        let windowStart = calendar.date(byAdding: .day, value: -(days - 1), to: calendar.startOfDay(for: now)) ?? now
         return sortedDays.filter { $0 >= windowStart && $0 <= now }.count
     }
 
     /// Kürzester Abstand (in Stunden) zwischen aufeinanderfolgenden Daten.
     /// `nil` wenn weniger als 2 Daten vorhanden.
+    ///
+    /// Modul-5-Audit: `dates` MUSS aufsteigend sortiert sein — die Funktion
+    /// vergleicht nur benachbarte Paare und sortiert nicht selbst. Beide
+    /// heutigen Aufrufer (oben, `runActivities`/`strengthActivities`) liefern
+    /// bereits vorsortierten Input; ein neuer Aufrufer mit unsortierten
+    /// Daten bekaeme hier ein zu grosses, falsches Minimum ohne Fehlermeldung.
     static func minimumGapHours(between dates: [Date]) -> Double? {
         guard dates.count >= 2 else { return nil }
         var minGap = Double.infinity
