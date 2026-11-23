@@ -23,8 +23,21 @@ final class TrainingDayContentSnapshotWriterSaveErrorHandlingTests: XCTestCase {
         }
     }
 
+    /// Sucht auf kommentarbereinigtem Text - der Typ-Doc-Kommentar oben im
+    /// Quelltext zitiert `try? context.save()` selbst als Prosa (erklaert die
+    /// fruehere Konvention), gleiche Falle wie in
+    /// `WorkoutSummaryViewSaveErrorHandlingTests`.
     func testNoTryQuestionMarkSaveRemains() throws {
-        XCTAssertFalse(try source.contains("try? context.save()"))
+        XCTAssertFalse(Self.stripLineComments(try source).contains("try? context.save()"))
+    }
+
+    private static func stripLineComments(_ text: String) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line -> Substring in
+                guard let commentRange = line.range(of: "//") else { return line }
+                return line[line.startIndex..<commentRange.lowerBound]
+            }
+            .joined(separator: "\n")
     }
 
     /// All five `-> Bool` functions must now return `false` on a genuine save
