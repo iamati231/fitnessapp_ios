@@ -16,6 +16,20 @@ import DeltiqHealth
 @MainActor
 enum HealthWorkoutWriter {
 
+    /// Audit-Fix: `pushLive` ist bewusst nicht-blockierend (siehe dort) - das
+    /// oeffnet ein Fenster, in dem `session.healthKitExportedAt` noch `nil`
+    /// ist, obwohl ein Live-Schreiben fuer genau diese Session schon laeuft.
+    /// Ohne diesen Zusatz-Guard haelt `WorkoutHealthExportService.prepare()`
+    /// (Export frueherer Trainings) die Session in diesem Fenster faelschlich
+    /// fuer noch-nie-exportiert und schreibt sie EIN ZWEITES Mal nach Health -
+    /// ein doppelter Eintrag. Schluessel ist `startTime`, derselbe natuerliche
+    /// Schluessel wie ueberall sonst in dieser Datei-Familie.
+    private static var pendingLiveExportStartTimes: Set<Date> = []
+
+    static func isPendingLiveExport(startTime: Date) -> Bool {
+        pendingLiveExportStartTimes.contains(startTime)
+    }
+
     /// Wert-Snapshot einer Session fuer den Planer. SYNCHRON, ohne Suspension:
     /// nach einem `await` darf kein SwiftData-Modell mehr angefasst werden (die
     /// Session kann inzwischen geloescht sein), daher wird hier alles gelesen,
@@ -176,7 +190,9 @@ enum HealthWorkoutWriter {
         guard case .write(let plan) = decision else { return }
         let healthDraft = Self.draft(from: plan)
         let startTime = snapshot.startTime
+        pendingLiveExportStartTimes.insert(startTime)
         Task {
+            defer { pendingLiveExportStartTimes.remove(startTime) }
             let outcome = try? await healthKit.saveWorkout(healthDraft)
             guard case .written? = outcome else { return }
             WorkoutHealthExportService.markExported(startTime: startTime, in: context)

@@ -129,6 +129,13 @@ enum WorkoutHealthExportService {
         var preparation = Preparation()
         var eligible: [HealthWorkoutCandidate] = []
         for session in sessions {
+            // Audit-Fix: eine Session, fuer die gerade ein `pushLive` noch
+            // unbestaetigt laeuft, NICHT als "nie exportiert" einstufen - der
+            // Export-Marker kommt erst NACH dem bestaetigten Live-Schreiben
+            // (siehe `HealthWorkoutWriter.pushLive`). Sie wird beim naechsten
+            // Lauf korrekt erfasst (entweder schon markiert, oder - falls der
+            // Live-Push scheiterte - wieder regulaer eligible).
+            guard !HealthWorkoutWriter.isPendingLiveExport(startTime: session.startTime) else { continue }
             let candidate = HealthWorkoutWriter.candidate(for: session)
             switch HealthWorkoutPlanner.decide(candidate, enabledCategories: allCategories, now: now) {
             case .write:
