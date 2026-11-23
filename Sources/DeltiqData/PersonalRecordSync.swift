@@ -295,6 +295,10 @@ public enum PersonalRecordSync {
     ///
     /// Ergebnis wird am Ende nach Datum sortiert, um die vorherige
     /// Reihenfolge exakt zu erhalten.
+    ///
+    /// Bugfix (Audit): dieselbe `resolvedIsWorkingSet`-Pruefung wie in
+    /// `liftAttempts(from:)` - sonst zaehlt ein schwerer Warmup-/Cooldown-Satz
+    /// als Historie und verdeckt einen spaeteren echten Arbeitssatz-PR.
     private static func fetchHistoricalLifts(
         for sessionLifts: [LiftAttempt],
         excluding session: WorkoutSession,
@@ -359,6 +363,7 @@ public enum PersonalRecordSync {
             .sorted { $0.date < $1.date }
             .compactMap { log -> LiftAttempt? in
                 guard let name = log.resolvedExerciseName,
+                      log.resolvedIsWorkingSet,
                       let logSession = log.session,
                       logSession.isCompleted,
                       logSession.startTime < sessionStart
