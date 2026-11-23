@@ -831,8 +831,14 @@ final class PersonalRecordSyncTests: XCTestCase {
                       "A warmup-role set must never itself set a PR, however heavy")
     }
 
-    /// Ein schwerer Warmup-Satz darf nicht als Historie zaehlen: ein spaeterer,
-    /// echter Arbeitssatz mit niedrigerem Gewicht ist trotzdem der erste echte PR.
+    /// Ein schwerer Warmup-Satz darf nicht als Historie zaehlen: er darf einen
+    /// spaeteren echten Arbeitssatz-PR nicht verdecken, obwohl sein Gewicht
+    /// hoeher ist als die echte Bestleistung. Braucht eine GENUINE Baseline
+    /// (ein erster Arbeitssatz ohne jede Historie erzeugt nie einen PR - "you
+    /// can't beat nothing", siehe PRDetector-Doku) - sonst testet der leere
+    /// Vergleich nur den bereits durch `testWarmupSetNeverProducesAPersonalRecord`
+    /// abgedeckten Fall, nicht die Warmup-Ausschluss-Logik in
+    /// `fetchHistoricalLifts`.
     func testWarmupSetNeverBlocksALaterGenuineWorkingSetPR() throws {
         let warmupExercise = Exercise(name: "Bankdruecken", role: .warmup)
         context.insert(warmupExercise)
@@ -849,27 +855,39 @@ final class PersonalRecordSyncTests: XCTestCase {
 
         let workingExercise = Exercise(name: "Bankdruecken", role: .workingSet)
         context.insert(workingExercise)
-        let workingSession = WorkoutSession(
+        let baselineSession = WorkoutSession(
             startTime: day(2), endTime: day(2), durationMinutes: 30,
+            exerciseCount: 1, totalSets: 1, totalVolumeKg: 70 * 5,
+            isCompleted: true, dayName: "Test"
+        )
+        context.insert(baselineSession)
+        context.insert(ExerciseLog(
+            date: day(2), setIndex: 0, weight: 70, reps: 5, rir: 2.0,
+            exercise: workingExercise, session: baselineSession
+        ))
+
+        let laterSession = WorkoutSession(
+            startTime: day(3), endTime: day(3), durationMinutes: 30,
             exerciseCount: 1, totalSets: 1, totalVolumeKg: 80 * 5,
             isCompleted: true, dayName: "Test"
         )
-        context.insert(workingSession)
+        context.insert(laterSession)
         context.insert(ExerciseLog(
-            date: day(2), setIndex: 0, weight: 80, reps: 5, rir: 2.0,
-            exercise: workingExercise, session: workingSession
+            date: day(3), setIndex: 0, weight: 80, reps: 5, rir: 2.0,
+            exercise: workingExercise, session: laterSession
         ))
         try context.save()
 
         PersonalRecordSync.recordPRs(for: warmupSession, in: context)
-        PersonalRecordSync.recordPRs(for: workingSession, in: context)
+        PersonalRecordSync.recordPRs(for: baselineSession, in: context)
+        PersonalRecordSync.recordPRs(for: laterSession, in: context)
         try context.save()
 
         let prs = try allPREs()
         XCTAssertFalse(prs.isEmpty,
-                       "The genuine 80kg working set must still register as the first real PR")
-        XCTAssertTrue(prs.allSatisfy { $0.session?.persistentModelID == workingSession.persistentModelID },
-                      "No PR must ever be attributed to the warmup session")
+                       "80kg beats the genuine 70kg baseline and must register as a PR, even though a 200kg warmup set came first")
+        XCTAssertTrue(prs.allSatisfy { $0.session?.persistentModelID == laterSession.persistentModelID },
+                      "No PR must ever be attributed to the warmup or baseline session")
     }
 }
 #endif
