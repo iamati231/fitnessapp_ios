@@ -64,4 +64,22 @@ final class GearDistanceTests: XCTestCase {
         let reverted = GearDistance.booked(current: credited, delta: -12.4)
         XCTAssertEqual(reverted, start, accuracy: 0.0001)
     }
+
+    // MARK: clamped(_:)
+
+    func testClampedLeavesPositiveValueUntouched() {
+        XCTAssertEqual(GearDistance.clamped(123.45), 123.45, accuracy: 0.0001)
+    }
+
+    func testClampedFloorsNegativeValueAtZero() {
+        // Modul-6-Audit: der Gear-Editor nimmt den Kilometerstand direkt
+        // (nicht als Delta) entgegen - dieselbe Invariante wie `booked`
+        // muss trotzdem gelten, sonst wird `Gear.progress`/`needsReplacement`
+        // unsinnig (siehe `booked`-Doku oben).
+        XCTAssertEqual(GearDistance.clamped(-50), 0)
+    }
+
+    func testClampedZeroIsIdentity() {
+        XCTAssertEqual(GearDistance.clamped(0), 0)
+    }
 }

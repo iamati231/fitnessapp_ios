@@ -35,4 +35,11 @@ public enum GearDistance {
     public static func booked(current: Double, delta: Double) -> Double {
         max(0, current + delta)
     }
+
+    /// Klemmt einen direkt eingegebenen (nicht gebuchten) Kilometerstand auf
+    /// 0 — derselbe Clamp wie in `booked`, fuer den Gear-Editor, der den Wert
+    /// nicht per Delta sondern als absolute Zahl entgegennimmt.
+    public static func clamped(_ distanceKm: Double) -> Double {
+        max(0, distanceKm)
+    }
 }

@@ -240,6 +240,14 @@ private struct GearEditorView: View {
     @State private var type: GearType = .shoe
     @State private var maxDistance: Double = 800
     @State private var currentDistance: Double = 0
+    /// Modul-6-Audit: Schnappschuss von `currentDistanceKm` beim Oeffnen.
+    /// Anders als die uebrigen vier Felder hat dieses einen zweiten,
+    /// nebenlaeufigen Schreiber (`GearOdometer`, z.B. Workout-Abschluss mit
+    /// diesem Gear waehrend das Sheet offen bleibt) — `isDirty`/`save()`
+    /// vergleichen deshalb gegen diesen Ladewert statt gegen `gear.
+    /// currentDistanceKm` live, sonst wuerde eine zwischenzeitliche Buchung
+    /// beim Speichern stillschweigend wieder verworfen.
+    @State private var loadedCurrentDistance: Double = 0
     @State private var isActive: Bool = true
     @State private var didInit: Bool = false
     /// UI-Refactor (DeltiqHeader-Muster): siehe `BodyDataEditorView`.
@@ -357,6 +365,7 @@ private struct GearEditorView: View {
                 type = gear.type
                 maxDistance = gear.maxDistanceKm
                 currentDistance = gear.currentDistanceKm
+                loadedCurrentDistance = gear.currentDistanceKm
                 isActive = gear.isActive
             }
         }
@@ -377,7 +386,7 @@ private struct GearEditorView: View {
             return name != gear.name
                 || type != gear.type
                 || maxDistance != gear.maxDistanceKm
-                || currentDistance != gear.currentDistanceKm
+                || currentDistance != loadedCurrentDistance
                 || isActive != gear.isActive
         }
     }
@@ -401,7 +410,7 @@ private struct GearEditorView: View {
                 name: trimmed,
                 type: type,
                 maxDistanceKm: maxDistance,
-                currentDistanceKm: currentDistance,
+                currentDistanceKm: GearDistance.clamped(currentDistance).rounded(toDecimals: 2),
                 isActive: isActive
             )
             modelContext.insert(gear)
@@ -411,7 +420,12 @@ private struct GearEditorView: View {
             gear.name = trimmed
             gear.type = type
             gear.maxDistanceKm = maxDistance
-            gear.currentDistanceKm = currentDistance
+            // Modul-6-Audit: nur zurueckschreiben, wenn der User das Feld
+            // selbst angefasst hat - sonst wuerde eine zwischenzeitliche
+            // GearOdometer-Buchung hier stillschweigend wieder verworfen.
+            if currentDistance != loadedCurrentDistance {
+                gear.currentDistanceKm = GearDistance.clamped(currentDistance).rounded(toDecimals: 2)
+            }
             gear.isActive = isActive
         }
         // Task 5: vorher GAR kein `context.save()` hier — verliess sich
