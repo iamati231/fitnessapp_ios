@@ -411,15 +411,6 @@ public enum DataImportService {
                 errorBuffer.append(file: "profile.csv", errors: errs)
             }
         }
-        try await tick("settings.csv") {
-            if let csv = files["settings.csv"] {
-                // DEL-209: App-Einstellungen (Reminder, kg/lbs, Theme, ...).
-                // Whitelist-gefiltert in SettingsPortability — unbekannte
-                // Keys landen im skipped-Counter, nie in UserDefaults.
-                let (ok, dup) = importSettings(csv: csv)
-                imported["settings.csv"] = ok; skipped["settings.csv"] = dup
-            }
-        }
         try await tick("gear.csv") {
             if let csv = files["gear.csv"] {
                 let (ok, dup, errs) = try importGear(csv: csv, context: context, idMap: &idMap)
@@ -532,6 +523,26 @@ public enum DataImportService {
         // irgendetwas dazwischen fehl, ist das hier der einzige Punkt, an dem
         // ueberhaupt etwas dauerhaft wird.
         try context.save()
+
+        // Modul-6-Audit: `settings.csv` ERST NACH dem SwiftData-Save
+        // anwenden, nicht als Tick Nr. 2 von 16 wie zuvor. `SettingsPortability.
+        // apply` schreibt sofort und ungepuffert in UserDefaults - lief das
+        // vorher, waeren Reminder-/Einheiten-/Theme-Praeferenzen bereits
+        // dauerhaft auf den Backup-Stand umgeschrieben, selbst wenn der
+        // SwiftData-Teil (Workouts, Plaene) wegen eines spaeteren Fehlers
+        // (z.B. `context.save()` selbst) unveraendert auf dem alten Stand
+        // bleibt - ein inkonsistenter Mischzustand. `importSettings` haengt
+        // an keinem `idMap`/`context`, die Reihenfolge relativ zu den
+        // uebrigen 15 Dateien ist beliebig.
+        try await tick("settings.csv") {
+            if let csv = files["settings.csv"] {
+                // DEL-209: App-Einstellungen (Reminder, kg/lbs, Theme, ...).
+                // Whitelist-gefiltert in SettingsPortability — unbekannte
+                // Keys landen im skipped-Counter, nie in UserDefaults.
+                let (ok, dup) = importSettings(csv: csv)
+                imported["settings.csv"] = ok; skipped["settings.csv"] = dup
+            }
+        }
 
         let errorsCSV: Data? = errorBuffer.totalCount > 0 ? errorBuffer.toCSV() : nil
 
