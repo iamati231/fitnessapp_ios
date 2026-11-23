@@ -237,10 +237,30 @@ public enum TrainingLoadTrendAnalyzer {
             }
         }
 
+        // Modul-5-Audit: bei GLEICHER Schwere-Kategorie entscheidet die
+        // tatsaechliche Veraenderungsgroesse, nicht strukturell "Laufen
+        // zuerst" - sonst kann ein kleinerer Lauf-Prozentwert einen real
+        // groesseren Kraft-Anstieg in derselben Kategorie verdecken.
+        func magnitude(_ c: MetricTrendClassification) -> Double {
+            switch c {
+            case .significantlyIncreasing(let percent): return abs(percent)
+            case .increasing(let percent): return abs(percent)
+            case .declining(let percent): return abs(percent)
+            case .highlyVariable(let coefficientOfVariation): return coefficientOfVariation
+            case .stable, .notApplicable, .insufficientData: return 0
+            }
+        }
+
         let runningClass = running.classification
         let strengthClass = strength.classification
-        let winner = severity(runningClass) >= severity(strengthClass) ? runningClass : strengthClass
-        let loser = severity(runningClass) >= severity(strengthClass) ? strengthClass : runningClass
+        let runningFirst: Bool
+        if severity(runningClass) != severity(strengthClass) {
+            runningFirst = severity(runningClass) > severity(strengthClass)
+        } else {
+            runningFirst = magnitude(runningClass) >= magnitude(strengthClass)
+        }
+        let winner = runningFirst ? runningClass : strengthClass
+        let loser = runningFirst ? strengthClass : runningClass
 
         // Beide ohne verwertbares Signal -> insufficientData, NIE stable
         // erfinden (Ticket: "insufficientData" ist ein eigenstaendiges Ergebnis).

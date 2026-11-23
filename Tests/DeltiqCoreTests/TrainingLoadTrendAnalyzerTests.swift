@@ -153,6 +153,39 @@ final class TrainingLoadTrendAnalyzerTests: XCTestCase {
         XCTAssertEqual(trend.otherEndurance.weeklySessionCount.currentValue, 2)
     }
 
+    // MARK: - Modul-5-Audit: Tie-Break bei gleicher Schwere-Kategorie
+
+    /// Laufen (+30%) und Kraft (+45%) liegen beide in `.increasing` (gleiche
+    /// Schwere-Kategorie, severity 4) - der GROESSERE Prozentwert (Kraft)
+    /// muss im Ergebnis stehen, nicht strukturell immer Laufen.
+    func testCombineLoadDevelopmentTieBreaksOnLargerPercentNotRunningFirst() {
+        let starts = (0..<4).map { weekStart($0, from: base) }
+        let runKms = [20.0, 20.0, 20.0, 26.0]   // +30%
+        let volumes = [2000.0, 2000.0, 2000.0, 2900.0]  // +45%
+        let weeks = zip(starts, zip(runKms, volumes)).map {
+            week($0, runKm: $1.0, runSessions: 3, strengthSessions: 3, strengthSets: 15, strengthVolume: $1.1)
+        }
+        let now = weekStart(4, from: base)
+        let trend = TrainingLoadTrendAnalyzer.analyze(weeks: weeks, now: now, calendar: utc)
+
+        guard case .increasing(let runPercent) = trend.running.weeklyDistanceKm.classification else {
+            return XCTFail("expected running .increasing, got \(trend.running.weeklyDistanceKm.classification)")
+        }
+        guard case .increasing(let strengthPercent) = trend.strength.weeklyVolumeKg.classification else {
+            return XCTFail("expected strength .increasing, got \(trend.strength.weeklyVolumeKg.classification)")
+        }
+        XCTAssertEqual(runPercent, 0.30, accuracy: 0.01)
+        XCTAssertEqual(strengthPercent, 0.45, accuracy: 0.01)
+
+        guard case .moderateIncrease(let disciplines, let percent) = trend.loadDevelopment else {
+            return XCTFail("expected overall .moderateIncrease, got \(trend.loadDevelopment)")
+        }
+        XCTAssertTrue(disciplines.contains(.running))
+        XCTAssertTrue(disciplines.contains(.strength))
+        XCTAssertEqual(percent, 0.45, accuracy: 0.01,
+                       "Der groessere Anstieg (Kraft, +45%) darf nicht vom kleineren (Laufen, +30%) verdeckt werden")
+    }
+
     // MARK: - Testfall 9: mehrere Sportarten innerhalb einer Woche
 
     func testMultipleDisciplinesInOneWeekStayIsolated() {

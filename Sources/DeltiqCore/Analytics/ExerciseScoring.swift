@@ -7,8 +7,11 @@ import Foundation
 ///
 /// **Vertrag:**
 ///   * RIR 3 = Baseline (Multiplier 1.0). RIR 0 (Muskelversagen) = 1.45×,
-///     RIR ≥ 5 = floor 0.5×. Exponentieller-leichter Anstieg in Richtung
-///     Failure-Training — belohnt smartes Volumen, bestraft Junk-Sets.
+///     RIR 6 = 0.55×, harter Floor 0.5× ab RIR ≈7 (siehe `rirMultiplier`
+///     fuer die exakte Formel — Modul-5-Audit: dieser Absatz nannte vorher
+///     faelschlich "RIR ≥ 5 = floor 0.5×"). Exponentieller-leichter Anstieg
+///     in Richtung Failure-Training — belohnt smartes Volumen, bestraft
+///     Junk-Sets.
 ///   * Gewicht skaliert log10 — 100 kg Bankdruecken zaehlt NICHT 10× wie
 ///     10 kg Seitheben (den Unterschied faengt der Basis-Faktor pro Uebung
 ///     ab). Bodyweight (weight == 0) bekommt Multiplier 1.0.
