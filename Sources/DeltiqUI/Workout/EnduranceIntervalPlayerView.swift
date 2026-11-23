@@ -584,8 +584,15 @@ struct EnduranceIntervalPlayerView: View {
         return max(0, Int(phaseEndDate.timeIntervalSince(now).rounded(.up)))
     }
 
+    /// Audit-Fix: `!isFinished` zuerst, sonst feuert ein harmloses
+    /// Sperrbildschirm-Auf/Zu NACH dem natuerlichen Ende (`.onChange(of:
+    /// scenePhase)` unten hat keinen eigenen `isFinished`-Guard) erneut auf
+    /// den laengst vergangenen `phaseEndDate`-Anker und ruft `advancePhase`
+    /// ein zweites Mal - doppelter PersonalRecordEntry, doppelte
+    /// HealthKit-Schreibung, doppelte Summary-Route. Gleiches Muster wie
+    /// `TimedWorkoutPlayerView`s `checkCapReached()`/`resyncMinuteState()`.
     private func checkPhaseElapsed() {
-        guard pausedRemainingSeconds == nil, let remaining = remainingPhaseSeconds() else { return }
+        guard !isFinished, pausedRemainingSeconds == nil, let remaining = remainingPhaseSeconds() else { return }
         if remaining <= 0 {
             advancePhase(skipped: false)
         }
