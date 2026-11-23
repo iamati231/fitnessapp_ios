@@ -223,6 +223,59 @@ final class DataPortabilityRoundtripTests: XCTestCase {
         XCTAssertEqual(try container.mainContext.fetchCount(FetchDescriptor<UserBodyProfile>()), 1)
     }
 
+    /// Modul-6-Audit: der Non-Empty-Check in `extractAndValidate` prüfte
+    /// bisher nur die Byte-Länge dreier fest gewählter "Anker"-CSVs (`> 50`)
+    /// statt einer echten Zeilenzahl — allein die Kopfzeile von `profile.csv`
+    /// (41 Spalten) überschreitet das schon ohne eine einzige Datenzeile.
+    /// Ein Export aus einem komplett leeren Context (kein Profil, kein Plan,
+    /// kein Workout, keine Mahlzeiten, kein Custom-Exercise, ...) erzeugt
+    /// genau das: jede CSV-Datei im ZIP enthält nur ihre Kopfzeile — das darf
+    /// nicht als "brauchbares Backup" gelten.
+    func testImportRejectsAZipWhereEveryCSVFileIsHeaderOnly() async throws {
+        let emptySource = try makeContainer()
+        let bundle = try DataExportService.makeExport(context: emptySource.mainContext)
+
+        let target = try makeContainer()
+        do {
+            _ = try await DataImportService.performImport(
+                zipData: bundle.data,
+                context: target.mainContext,
+                strategy: .appendOnly
+            )
+            XCTFail("ein Backup ohne eine einzige Datenzeile in irgendeiner CSV-Datei darf nicht als brauchbar gelten")
+        } catch {
+            // erwartet
+        }
+    }
+
+    /// Gegenprobe zum obigen Test: ein Backup OHNE Profil/Plan/Workout, aber
+    /// MIT echten Daten in einer anderen Kategorie (hier: Mahlzeiten), ist
+    /// sehr wohl brauchbar und darf nicht abgelehnt werden. Eine erste
+    /// Fassung des Non-Empty-Checks verlangte Daten konkret in
+    /// profile.csv/workouts.csv/plans.csv und brach dadurch genau dieses
+    /// (bereits bestehende und ganz legitime) Szenario — siehe
+    /// `testMealsAndItemsSurviveExportImportRoundtrip` weiter unten, das
+    /// exakt so einen Context exportiert.
+    func testImportAcceptsAZipWithRealDataOnlyInNonAnchorFiles() async throws {
+        let source = try makeContainer()
+        let meal = MealEntry(date: Date(timeIntervalSince1970: 1_750_100_000), mealType: .lunch)
+        source.mainContext.insert(meal)
+        source.mainContext.insert(MealItem(
+            catalogID: "chicken_breast", nameSnapshot: "Haehnchenbrust", quantity: 150, unit: .gram,
+            nutrients: NutrientValues(kcal: 248, proteinG: 46.5, carbsG: 0, fatG: 5.4), meal: meal
+        ))
+        try source.mainContext.save()
+        let bundle = try DataExportService.makeExport(context: source.mainContext)
+
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+        XCTAssertEqual(result.errorRows, 0)
+        XCTAssertEqual(try target.mainContext.fetchCount(FetchDescriptor<MealEntry>()), 1,
+                       "ein Backup ohne Profil/Plan/Workout, aber mit echten Mahlzeiten, muss importierbar bleiben")
+    }
+
     // MARK: - DEL-225
 
     /// Zwei Serien DERSELBEN Uebung in EINER Session — schwerer Hauptsatz

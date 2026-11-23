@@ -299,12 +299,32 @@ public enum DataImportService {
         let meta = try JSONDecoder().decode(MetaPayload.self, from: metaData)
         try Self.validateFormatVersion(meta.formatVersion)
 
-        // 3) Anchor-File-Check. Mindestens eine der drei zentralen
-        //    CSV-Tabellen muss vorhanden UND non-empty sein.
-        let anchors = ["profile.csv", "workouts.csv", "plans.csv"]
-        let hasUsableData = anchors.contains { name in
-            guard let data = files[name] else { return false }
-            return data.count > 50
+        // 3) Non-Empty-Check. Mindestens EINE CSV-Tabelle im ZIP muss
+        //    vorhanden UND non-empty sein — sonst ist nichts zum
+        //    Wiederherstellen da.
+        //
+        // Modul-6-Audit, 2. Durchlauf: eine erste Fassung verlangte das
+        // konkret in profile.csv/workouts.csv/plans.csv - das brach mehrere
+        // bestehende Roundtrip-Tests (z.B. testMealsAndItemsSurviveExportImportRoundtrip,
+        // testCustomExerciseTemplateIDSurvivesExportImportRoundtrip), die ganz
+        // legitim NUR Mahlzeiten/Custom-Uebungen/Food-Catalog-Eintraege ohne
+        // Profil/Plan/Workout exportieren. Die drei "Anker" sind also KEIN
+        // verlaesslicher Indikator dafuer, ob ein Backup ueberhaupt Daten
+        // enthaelt - nur die Abwesenheit JEDER Datenzeile in JEDER Tabelle ist
+        // das (dieselbe Pruefung, die preview(zipData:) weiter oben ohnehin
+        // schon pro Datei durchfuehrt, hier nur als Existenzfrage).
+        //
+        // Vorher genuegte `data.count > 50` (Byte-Laenge) als "non-empty" -
+        // allein die Kopfzeile von profile.csv (41 Spalten) ueberschreitet das
+        // schon ohne eine einzige Datenzeile. Ein ZIP, in dem WIRKLICH jede
+        // einzelne CSV-Datei nur ihre Kopfzeile enthaelt (z.B. durch eine
+        // abgebrochene Export-Erzeugung), bestand die alte Pruefung trotzdem,
+        // obwohl es effektiv nichts zum Wiederherstellen enthaelt.
+        let hasUsableData = files.contains { name, data in
+            guard name.hasSuffix(".csv"),
+                  let text = String(data: data, encoding: .utf8),
+                  let reader = try? CSVReader(text) else { return false }
+            return !reader.rows().isEmpty
         }
         guard hasUsableData else {
             throw ImportError.zipNotReadable
