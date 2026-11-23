@@ -218,18 +218,22 @@ public final class UserBodyProfile {
     /// Setzt/liest den kompletten Start-Check in einem Schritt, auf Basis
     /// der flachen Einzelfelder oben. `nil` heisst "noch nie durchgefuehrt"
     /// (Bestandsnutzer, oder Nutzer hat "Spaeter machen" gewaehlt und noch
-    /// nicht nachgeholt) — die vier Pflichtfelder von `BaselineAssessment`
-    /// (`date`/`source`/`safetyStatus`/`desiredFirstWeekIntensity`) muessen
-    /// ALLE gueltig vorliegen, sonst gibt es keinen sinnvollen
-    /// teil-rekonstruierten Check.
+    /// nicht nachgeholt) — die drei Pflichtfelder von `BaselineAssessment`
+    /// (`date`/`source`/`desiredFirstWeekIntensity`) muessen ALLE gueltig
+    /// vorliegen, sonst gibt es keinen sinnvollen teil-rekonstruierten
+    /// Check. `safetyStatus` gehoert bewusst NICHT dazu (Modul-5-Audit):
+    /// `nil` ist dort ein legitimer Zustand ("Frage nie gestellt", z.B.
+    /// Selbsteinschaetzungs-Einstieg), kein Zeichen fuer einen unvollstaendig
+    /// gespeicherten Check — gleiches Muster wie `experienceTrack` oben.
     public var baselineAssessment: BaselineAssessment? {
         get {
             guard let baselineDate,
                   let sourceRaw = baselineSourceRaw, let source = BaselineSource(rawValue: sourceRaw),
-                  let safetyRaw = baselineSafetyStatusRaw, let safetyStatus = SafetyStatus(rawValue: safetyRaw),
                   let intensityRaw = baselineDesiredFirstWeekIntensityRaw,
                   let intensity = FirstWeekIntensity(rawValue: intensityRaw)
             else { return nil }
+
+            let safetyStatus = baselineSafetyStatusRaw.flatMap(SafetyStatus.init(rawValue:))
 
             let pushUp: PushUpAssessment? = baselinePushUpVariantRaw
                 .flatMap(PushUpVariant.init(rawValue:))
@@ -269,7 +273,7 @@ public final class UserBodyProfile {
         set {
             baselineDate = newValue?.date
             baselineSourceRaw = newValue?.source.rawValue
-            baselineSafetyStatusRaw = newValue?.safetyStatus.rawValue
+            baselineSafetyStatusRaw = newValue?.safetyStatus?.rawValue
             baselineVersion = newValue?.version
             baselineDesiredFirstWeekIntensityRaw = newValue?.desiredFirstWeekIntensity.rawValue
 

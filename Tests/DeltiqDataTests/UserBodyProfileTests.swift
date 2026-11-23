@@ -134,6 +134,30 @@ final class UserBodyProfileTests: XCTestCase {
         XCTAssertNil(profile.baselinePushUpCleanReps)
     }
 
+    /// Modul-5-Audit: `safetyStatus == nil` ("Frage nie gestellt", z.B.
+    /// Selbsteinschaetzungs-Einstieg) ist seit diesem Fix KEIN Pflichtfeld
+    /// mehr — die restlichen drei Pflichtfelder (date/source/intensity)
+    /// reichen fuer eine volle Rekonstruktion, inklusive bereits erfasster
+    /// Testwerte. Vorher wurde das faelschlich als "kein Check vorhanden"
+    /// behandelt und der GESAMTE Check (inkl. Push-up-Daten) verworfen.
+    func testBaselineAssessmentWithNilSafetyStatusStillReconstructsFully() throws {
+        let container = try makeContainer()
+        let profile = makeProfile(in: container.mainContext)
+
+        let assessment = BaselineAssessment(
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            source: .selfAssessment,
+            safetyStatus: nil,
+            pushUp: PushUpAssessment(variant: .standard, cleanReps: 12)
+        )
+        profile.baselineAssessment = assessment
+
+        XCTAssertEqual(profile.baselineAssessment, assessment)
+        XCTAssertNil(profile.baselineAssessment?.safetyStatus)
+        XCTAssertEqual(profile.baselineAssessment?.pushUp, PushUpAssessment(variant: .standard, cleanReps: 12),
+                       "Testwerte duerfen nicht verworfen werden, nur weil safetyStatus nil ist")
+    }
+
     /// Ein unbekannter Rohwert in EINEM Unterfeld (z.B. nach einem
     /// zukuenftigen Enum-Rename) darf nicht die anderen, gueltigen Felder
     /// mitreissen — nur das betroffene Unterergebnis wird `nil`.

@@ -8,7 +8,7 @@ import XCTest
 final class BaselineAssessmentEvaluatorTests: XCTestCase {
 
     private func makeAssessment(
-        safetyStatus: SafetyStatus = .clear,
+        safetyStatus: SafetyStatus? = .clear,
         pushUp: PushUpAssessment? = nil,
         chairSquat: ChairSquatAssessment? = nil,
         pull: PullAssessment? = nil,
@@ -69,6 +69,26 @@ final class BaselineAssessmentEvaluatorTests: XCTestCase {
         )
         let bands = BaselineAssessmentEvaluator.evaluate(assessment)
         XCTAssertEqual(bands.push, .veryLow)
+        XCTAssertEqual(bands.legs, .veryLow)
+        XCTAssertEqual(bands.pull, .veryLow)
+        XCTAssertEqual(bands.core, .veryLow)
+        XCTAssertEqual(bands.cardio, .veryLow)
+    }
+
+    /// Modul-5-Audit: `nil` ("Sicherheitsfrage nie gestellt", z.B. Einstieg
+    /// ueber "Selbst einschaetzen") darf NIE wie `.clear` behandelt werden —
+    /// fail-safe statt fail-open, exakt wie bei `.flagged` oben.
+    func testNilSafetyStatusForcesVeryLowEverywhereJustLikeFlagged() {
+        let assessment = makeAssessment(
+            safetyStatus: nil,
+            pushUp: PushUpAssessment(variant: .standard, cleanReps: 30),
+            chairSquat: ChairSquatAssessment(cleanReps: 20, durationSeconds: 30),
+            pull: PullAssessment(variant: .pullUp, cleanReps: 10),
+            plank: PlankAssessment(seconds: 60),
+            cardio: CardioBaseline(answer: .runsRegularly)
+        )
+        let bands = BaselineAssessmentEvaluator.evaluate(assessment)
+        XCTAssertEqual(bands.push, .veryLow, "Nie gestellte Sicherheitsfrage darf nicht wie 'unbedenklich' durchscheinen")
         XCTAssertEqual(bands.legs, .veryLow)
         XCTAssertEqual(bands.pull, .veryLow)
         XCTAssertEqual(bands.core, .veryLow)
