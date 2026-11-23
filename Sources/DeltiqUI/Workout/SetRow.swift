@@ -605,9 +605,17 @@ struct SetRow: View {
             // `PlateCalculator.maxTargetKg = 500.0` ist die kanonische
             // Konstante; wenn die jemals erhoeht wird, propagiert der
             // Cap automatisch.
+            // Audit-Fix: dieselbe Vertipper-Absicherung wie der 500-kg-Cap
+            // oben, nur fuer die andere Richtung — ein eingefuegtes/
+            // eingetipptes negatives Gewicht floss bisher ungeprueft in
+            // totalVolumeKg/e1RM/PR-History (kein canLog-Gate: Reps > 0
+            // schuetzt nur die Wiederholungen, nie das Gewicht).
             .onChange(of: weight) { _, newValue in
-                if let w = newValue, w > PlateCalculator.maxTargetKg {
+                guard let w = newValue else { return }
+                if w > PlateCalculator.maxTargetKg {
                     weight = PlateCalculator.maxTargetKg
+                } else if w < 0 {
+                    weight = 0
                 }
             }
     }
