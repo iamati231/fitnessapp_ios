@@ -84,4 +84,57 @@ final class DashboardViewSaveErrorHandlingTests: XCTestCase {
                       "a failed save must delete the just-inserted session")
         XCTAssertTrue(catchBody.contains("showTimedWorkoutSaveErrorToast"))
     }
+
+    // MARK: - Modul-9-Audit: Deload-Toggle (DEL-200)
+
+    /// `try?` liess einen Fehlschlag wie "0 Uebungen angepasst" aussehen -
+    /// ununterscheidbar vom legitimen No-Op-Fall, ohne jede Rueckmeldung.
+    func testApplyDeloadUsesDoCatchAndSurfacesToast() throws {
+        let cleaned = Self.stripLineComments(try source)
+        let body = try Self.body(of: "private func applyDeload() {", in: cleaned)
+
+        XCTAssertFalse(body.contains("try?"),
+                       "must not swallow DeloadManager.startDeload's error with try?")
+        guard let tryRange = body.range(of: "try DeloadManager.startDeload(in: modelContext)") else {
+            return XCTFail("must call DeloadManager.startDeload via do/catch")
+        }
+        guard let catchRange = body.range(of: "} catch {", range: tryRange.upperBound..<body.endIndex) else {
+            return XCTFail("catch block not found")
+        }
+        guard let catchEnd = body.range(of: "\n        }", range: catchRange.upperBound..<body.endIndex) else {
+            return XCTFail("catch block end not found")
+        }
+        let catchBody = body[catchRange.upperBound..<catchEnd.lowerBound]
+        XCTAssertTrue(catchBody.contains("showTimedWorkoutSaveErrorToast"))
+        XCTAssertTrue(catchBody.contains("return"))
+    }
+
+    /// Der Timer (`deloadUntil = 0`) darf nur NACH einem erfolgreichen Save
+    /// zurueckgesetzt werden - sonst sieht der User "beendet", obwohl die
+    /// Gewichte nie zurueckgestellt wurden.
+    func testEndDeloadUsesDoCatchAndSurfacesToast() throws {
+        let cleaned = Self.stripLineComments(try source)
+        let body = try Self.body(of: "private func endDeload() {", in: cleaned)
+
+        XCTAssertFalse(body.contains("try?"),
+                       "must not swallow DeloadManager.endDeload's error with try?")
+        guard let tryRange = body.range(of: "try DeloadManager.endDeload(in: modelContext)") else {
+            return XCTFail("must call DeloadManager.endDeload via do/catch")
+        }
+        guard let catchRange = body.range(of: "} catch {", range: tryRange.upperBound..<body.endIndex) else {
+            return XCTFail("catch block not found")
+        }
+        guard let catchEnd = body.range(of: "\n        }", range: catchRange.upperBound..<body.endIndex) else {
+            return XCTFail("catch block end not found")
+        }
+        let catchBody = body[catchRange.upperBound..<catchEnd.lowerBound]
+        XCTAssertTrue(catchBody.contains("showTimedWorkoutSaveErrorToast"))
+        XCTAssertTrue(catchBody.contains("return"))
+
+        guard let resetRange = body.range(of: "deloadUntil = 0", range: catchEnd.upperBound..<body.endIndex) else {
+            return XCTFail("deloadUntil = 0 must still happen on the success path")
+        }
+        XCTAssertTrue(resetRange.lowerBound > catchEnd.upperBound,
+                     "deloadUntil must only be cleared AFTER the catch block, i.e. only on a successful save")
+    }
 }

@@ -71,7 +71,7 @@ public enum DeloadManager {
         let plans = try context.fetch(
             FetchDescriptor<TrainingPlan>(predicate: #Predicate { $0.isActive == true })
         )
-        var adjusted = 0
+        var changed: [(exercise: Exercise, original: Double)] = []
         for plan in plans {
             for day in plan.days {
                 for exercise in day.activeExercises {
@@ -84,14 +84,24 @@ public enum DeloadManager {
                     exercise.deloadOriginalWeight = original
                     let reduced = (original * factor / 2.5).rounded() * 2.5
                     exercise.suggestedWeight = max(reduced, 2.5)
-                    adjusted += 1
+                    changed.append((exercise, original))
                 }
             }
         }
-        if adjusted > 0 {
+        guard !changed.isEmpty else { return 0 }
+        do {
             try context.save()
+        } catch {
+            // Modul-9-Audit: ohne Rollback blieben die obigen Mutationen live im
+            // ModelContext und koennten spaeter durch einen unabhaengigen Autosave
+            // trotzdem landen - ohne das zugehoerige Timer-Update beim Caller.
+            for change in changed {
+                change.exercise.deloadOriginalWeight = nil
+                change.exercise.suggestedWeight = change.original
+            }
+            throw error
         }
-        return adjusted
+        return changed.count
     }
 
     /// Stellt alle Deload-Snapshots wieder her (planübergreifend — falls
@@ -103,12 +113,23 @@ public enum DeloadManager {
         let pending = try context.fetch(
             FetchDescriptor<Exercise>(predicate: #Predicate { $0.deloadOriginalWeight != nil })
         )
+        guard !pending.isEmpty else { return 0 }
+        let originals = pending.map { (exercise: $0, suggestedWeight: $0.suggestedWeight, deloadOriginalWeight: $0.deloadOriginalWeight) }
         for exercise in pending {
             exercise.suggestedWeight = exercise.deloadOriginalWeight
             exercise.deloadOriginalWeight = nil
         }
-        if !pending.isEmpty {
+        do {
             try context.save()
+        } catch {
+            // Modul-9-Audit: wie in `startDeload` - sonst bleiben die
+            // zurueckgestellten Gewichte live im ModelContext, obwohl der Caller
+            // nie von einem erfolgreichen `endDeload` erfahren hat.
+            for original in originals {
+                original.exercise.suggestedWeight = original.suggestedWeight
+                original.exercise.deloadOriginalWeight = original.deloadOriginalWeight
+            }
+            throw error
         }
         return pending.count
     }

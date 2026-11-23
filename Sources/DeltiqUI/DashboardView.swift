@@ -1593,7 +1593,16 @@ public struct DashboardView: View {
     /// Ablaufdatum setzen. Bei 0 angepassten Übungen (kein aktiver Plan
     /// mit Gewichten) passiert nichts — kein Phantom-Deload-Banner.
     private func applyDeload() {
-        let adjusted = (try? DeloadManager.startDeload(in: modelContext)) ?? 0
+        let adjusted: Int
+        do {
+            adjusted = try DeloadManager.startDeload(in: modelContext)
+        } catch {
+            // Modul-9-Audit (Save-Fehler in Workout-Editoren): `try?` liess einen
+            // Fehlschlag wie "0 Uebungen angepasst" aussehen - ununterscheidbar
+            // vom legitimen No-Op-Fall unten, ohne jede Rueckmeldung an den User.
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+            return
+        }
         guard adjusted > 0 else { return }
         let until = Date().addingTimeInterval(
             TimeInterval(DeloadManager.defaultDurationDays * 24 * 3600)
@@ -1608,7 +1617,12 @@ public struct DashboardView: View {
         // Auto-Ablauf jetzt wirklich laeuft, wuerde ein fehlgeschlagener Save
         // sonst Snapshots ohne Timer zuruecklassen (Banner "bis 1970", und der
         // Auto-Ablauf versucht es nie wieder).
-        guard (try? DeloadManager.endDeload(in: modelContext)) != nil else { return }
+        do {
+            try DeloadManager.endDeload(in: modelContext)
+        } catch {
+            showTimedWorkoutSaveErrorToast($saveErrorMessage)
+            return
+        }
         deloadUntil = 0
     }
 
