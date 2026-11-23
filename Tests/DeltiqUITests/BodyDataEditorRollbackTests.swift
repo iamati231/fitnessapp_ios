@@ -86,4 +86,21 @@ final class BodyDataEditorRollbackTests: XCTestCase {
             "save() must restore the two fields individually, never via a blanket modelContext.rollback() that could discard unrelated pending changes"
         )
     }
+
+    // MARK: - Modul-6-Audit: negatives Zielgewicht darf canSave nicht passieren
+
+    func testCanSaveRejectsNonPositiveGoalWeight() throws {
+        let source = try source
+        guard let canSaveStart = source.range(of: "private var canSave: Bool {") else {
+            return XCTFail("canSave not found at the expected signature")
+        }
+        guard let canSaveEnd = source.range(of: "\n    }", range: canSaveStart.upperBound..<source.endIndex) else {
+            return XCTFail("canSave's closing brace was not found")
+        }
+        let body = source[canSaveStart.upperBound..<canSaveEnd.lowerBound]
+        XCTAssertTrue(
+            body.contains("let goal = draftGoalWeightKg, goal <= 0") && body.contains("return false"),
+            "canSave must reject a non-positive draftGoalWeightKg, symmetric to the existing draftWeightKg > 0 check"
+        )
+    }
 }

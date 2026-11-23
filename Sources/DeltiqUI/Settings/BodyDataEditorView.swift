@@ -253,6 +253,12 @@ struct BodyDataEditorView: View {
 
     private var canSave: Bool {
         guard Self.heightRange.contains(draftHeightCm) else { return false }
+        // Modul-6-Audit: das Zielgewicht-Feld hatte, anders als sein
+        // Schwesterfeld `draftWeightKg` direkt darueber, keine eigene
+        // Positiv-Pruefung - ein eingefuegter negativer Wert wurde
+        // klaglos gespeichert und erschien als Goal-Linie unterhalb der
+        // Chart-Achse im Dashboard.
+        if let goal = draftGoalWeightKg, goal <= 0 { return false }
         if weightTouched, let w = draftWeightKg { return w > 0 }
         return true
     }
