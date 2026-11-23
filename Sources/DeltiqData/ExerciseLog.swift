@@ -76,6 +76,16 @@ public final class ExerciseLog {
     /// Equipment.
     public var exerciseEnduranceSportKindSnapshot: String? = nil
 
+    /// Modul-7-Audit: Snapshot von `Exercise.role` (workingSet/warmup/
+    /// cooldown) zum Log-Zeitpunkt, analog den uebrigen Exercise-Snapshots.
+    /// Ohne diesen Snapshot wuerde ein geloeschtes Warmup/Cooldown nach dem
+    /// Delete (DEL-051 `.nullify`-Regel) faelschlich als Arbeitssatz in die
+    /// Muskel-Volumen-Auswertung einfliessen (`MuscleSetExtractor`), obwohl
+    /// die Rolle zum Logging-Zeitpunkt bekannt war - nur eben nicht
+    /// gespeichert wurde. `nil` heisst "unbekannt" (Alt-Log vor diesem Feld
+    /// ODER Log ohne Exercise-Bezug), NIE "Arbeitssatz" erraten.
+    public var exerciseRoleSnapshot: String? = nil
+
     /// DEL-058: Distanz in km fuer Cardio-Lifts (Easy Run, Long Run, ...).
     /// Nil fuer Strength + Time-Based. Wird im Workout direkt vom
     /// CardioSetRow ueberschrieben.
@@ -148,6 +158,7 @@ public final class ExerciseLog {
         self.exerciseEnduranceSportKindSnapshot = (exercise?.isCardio == true)
             ? exercise?.enduranceSportKindRaw
             : nil
+        self.exerciseRoleSnapshot = exercise?.role.rawValue
     }
 
     // MARK: - DEL-051 Snapshot Accessors
@@ -229,6 +240,19 @@ public final class ExerciseLog {
         if let exercise { return exercise.cardioEquipment }
         return exerciseCardioEquipmentSnapshot
             .flatMap(CardioEquipment.init(rawValue:)) ?? .none
+    }
+
+    /// Modul-7-Audit: Rolle (Working-Set/Warmup/Cooldown), LIVE-first wie
+    /// `resolvedCardioEquipment` — der User kann die Rolle einer Plan-Uebung
+    /// nachtraeglich aendern, und das soll sich auf bereits geloggte Saetze
+    /// auswirken. Nur wenn die Live-Referenz weg ist (orphan-Log), faellt es
+    /// auf den beim Loggen gezogenen Schnappschuss zurueck. Ein Log ganz ohne
+    /// Snapshot (Alt-Bestand vor diesem Feld) gilt weiterhin konservativ als
+    /// Arbeitssatz — vor diesem Feld gab es schlicht keine andere Information.
+    public var resolvedIsWorkingSet: Bool {
+        if let exercise { return exercise.role == .workingSet }
+        guard let raw = exerciseRoleSnapshot else { return true }
+        return raw == ExerciseRole.workingSet.rawValue
     }
 
     // MARK: - DEL-099 Scoring-Convenience
