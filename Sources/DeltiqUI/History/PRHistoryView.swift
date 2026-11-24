@@ -244,7 +244,9 @@ public struct PRHistoryView: View {
         let message: String
         do {
             try modelContext.save()
-            message = "\(inserted) Rekorde detektiert"
+            // Audit-Fix: war hartcodiert Deutsch statt lokalisiert - einziger
+            // Transient-Toast im ganzen Codebase ohne String(localized:).
+            message = String(format: String(localized: "trophy.rebuild.toast.result", bundle: .module), inserted)
         } catch {
             message = String(localized: "day.editor.save.failed", bundle: .module)
         }
@@ -349,7 +351,13 @@ private struct ExerciseTrophySection: View {
                         .clipShape(Capsule())
                     }
                 }
-                Text("\(group.entries.count) PR\(group.entries.count == 1 ? "" : "s") • zuletzt \(group.latestDate.formatted(date: .abbreviated, time: .omitted))")
+                // Audit-Fix: war hartcodiert Englisch+Deutsch gemischt
+                // ("PR"/"PRs" + "zuletzt") statt lokalisiert - EN/TR-Nutzer
+                // sahen dadurch permanent das deutsche Wort "zuletzt" auf
+                // jeder einzelnen Trophy-Karte.
+                Text(String(format: String(localized: "trophy.exercise.summary", bundle: .module),
+                            group.entries.count,
+                            group.latestDate.formatted(date: .abbreviated, time: .omitted)))
                     .font(.caption)
                     .foregroundStyle(Color.Deltiq.textSecondary)
             }
@@ -573,20 +581,35 @@ private struct PRHistoryRow: View {
         guard let kind = entry.kind else {
             return "\(entry.value.formattedWholeOrTwoDecimals)"
         }
+        // Audit-Fix: war komplett hartcodiert Deutsch (Wdh/vorher/Sek/
+        // kg-Vol) statt lokalisiert - Spiegelung von WorkoutSummaryView.
+        // detailLine (DEL-126), die fuer dieselbe Kind-basierte Textbildung
+        // bereits dieselben wiederverwendbaren Keys nutzt. "Runden" bleibt
+        // wie dort hartcodiert (Xcode-26-strict-Fall, nicht Teil dieses Funds).
+        let prev = String(localized: "pr.previousShort", bundle: .module)
+        let volSfx = String(localized: "pr.volumeSuffix", bundle: .module)
+        let secUnit = String(localized: "unit.seconds.short", bundle: .module)
+        let repUnit = String(localized: "unit.reps.short", bundle: .module)
         switch kind {
         case .maxReps:
-            return "\(entry.reps) Wdh (vorher \(Int(entry.previousValue.rounded())))"
+            // Audit-Fix (Fund 6): fehlte bisher die Einheit auf der
+            // "vorher"-Seite - jeder andere Fall in diesem Switch (und das
+            // WorkoutSummaryView-Vorbild) wiederholt die Einheit auf beiden
+            // Seiten.
+            let prevReps = Int(entry.previousValue.rounded())
+            return "\(entry.reps) \(repUnit) (\(prev) \(prevReps) \(repUnit))"
         case .maxHoldSeconds:
-            return "\(entry.reps) Sek (vorher \(Int(entry.previousValue.rounded())) Sek)"
+            let prevSec = Int(entry.previousValue.rounded())
+            return "\(entry.reps) \(secUnit) (\(prev) \(prevSec) \(secUnit))"
         case .heaviestWeight, .estimated1RM:
-            return "\(entry.value.formattedWholeOrTwoDecimals) kg (vorher \(entry.previousValue.formattedWholeOrTwoDecimals) kg)"
+            return "\(entry.value.formattedWholeOrTwoDecimals) kg (\(prev) \(entry.previousValue.formattedWholeOrTwoDecimals) kg)"
         case .bestSet:
-            return "\(entry.weightKg.formattedWholeOrTwoDecimals) kg × \(entry.reps) = \(entry.value.formattedWholeOrTwoDecimals) kg-Vol"
+            return "\(entry.weightKg.formattedWholeOrTwoDecimals) kg × \(entry.reps) = \(entry.value.formattedWholeOrTwoDecimals) \(volSfx)"
         // DEL-064 Cardio-PRs — Xcode-26-strict braucht alle Cases.
         case .longestDistance:
-            return "\(entry.value.formattedWholeOrTwoDecimals) km (vorher \(entry.previousValue.formattedWholeOrTwoDecimals) km)"
+            return "\(entry.value.formattedWholeOrTwoDecimals) km (\(prev) \(entry.previousValue.formattedWholeOrTwoDecimals) km)"
         case .fastestPace:
-            return "\(PaceCalculator.formatPace(entry.value)) (vorher \(PaceCalculator.formatPace(entry.previousValue)))"
+            return "\(PaceCalculator.formatPace(entry.value)) (\(prev) \(PaceCalculator.formatPace(entry.previousValue)))"
         // Zeitformate (README 2.9) — Xcode-26-strict braucht alle Cases.
         case .mostRounds:
             // Nutzer-Feedback (13. August, zweite Runde): `partialReps` wird
@@ -597,11 +620,11 @@ private struct PRHistoryRow: View {
             // trotzdem der richtige Guard, sonst stuende bei jeder Session
             // ohne angebrochene Runde faelschlich "+ 0 Wdh" dabei.
             guard entry.reps > 0 else {
-                return "\(Int(entry.value)) Runden (vorher \(Int(entry.previousValue)) Runden)"
+                return "\(Int(entry.value)) Runden (\(prev) \(Int(entry.previousValue)) Runden)"
             }
-            return "\(Int(entry.value)) Runden + \(entry.reps) Wdh (vorher \(Int(entry.previousValue)) Runden)"
+            return "\(Int(entry.value)) Runden + \(entry.reps) \(repUnit) (\(prev) \(Int(entry.previousValue)) Runden)"
         case .fastestTime:
-            return "\(PaceCalculator.formatDuration(Int(entry.value.rounded()))) (vorher \(PaceCalculator.formatDuration(Int(entry.previousValue.rounded()))))"
+            return "\(PaceCalculator.formatDuration(Int(entry.value.rounded()))) (\(prev) \(PaceCalculator.formatDuration(Int(entry.previousValue.rounded()))))"
         }
     }
 }
