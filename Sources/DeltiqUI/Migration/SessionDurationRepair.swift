@@ -67,12 +67,17 @@ public enum SessionDurationRepair {
         guard let sessions = try? context.fetch(descriptor) else { return nil }
 
         var repaired = 0
+        var originalDurations: [PersistentIdentifier: Int] = [:]
         for session in sessions {
             guard session.importSourceName == nil,
                   session.healthKitSampleUUID == nil,
                   session.timeFormatSnapshot == nil
             else { continue }
-            if session.repairDuration() { repaired += 1 }
+            let before = session.durationMinutes
+            if session.repairDuration() {
+                originalDurations[session.persistentModelID] = before
+                repaired += 1
+            }
         }
         // Audit-Fix: `try?` schluckte einen fehlgeschlagenen Save bisher
         // lautlos - `runIfNeeded` setzte `doneKey` trotzdem, weil `repaired`
@@ -84,6 +89,17 @@ public enum SessionDurationRepair {
             do {
                 try context.save()
             } catch {
+                // Audit-Fix: `repairDuration()` mutiert `durationMinutes`
+                // bereits VOR diesem Save-Versuch. `context.rollback()` ist
+                // projektweit verboten (reisst den gesamten geteilten
+                // ModelContext zurueck) - stattdessen nur die hier selbst
+                // beruehrten Sessions zuruecksetzen, damit ein spaeterer,
+                // unabhaengiger Save andernorts diese halb-fehlgeschlagene
+                // Reparatur nicht stillschweigend doch noch persistiert.
+                for session in sessions {
+                    guard let original = originalDurations[session.persistentModelID] else { continue }
+                    session.durationMinutes = original
+                }
                 return nil
             }
         }
