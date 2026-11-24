@@ -2030,15 +2030,29 @@ public enum DataImportService {
                 (idMap[raw] as? ExerciseTemplate)?.id ?? UUID(uuidString: raw)
             }
 
+            // Bugfix (Audit): alle vier Felder parsen jede Zahl, auch
+            // negative — ein PR kann nie einen negativen Wert/Gewicht/
+            // Wdh.-Zaehler haben. Ohne diesen Guard landete ein korrupter
+            // Wert unveraendert in PRHistoryView.detailLine (zeigt
+            // weightKg/reps/value direkt an, z.B. "-50.00 kg × -3 = ...").
+            let value = row.double("value") ?? 0
+            let previousValue = row.double("previous_value") ?? 0
+            let weightKg = row.double("weight_kg") ?? 0
+            let reps = row.int("reps") ?? 0
+            guard value >= 0, previousValue >= 0, weightKg >= 0, reps >= 0 else {
+                errors.append(.init(line: row.lineNumber, reason: "negative value/previous_value/weight_kg/reps"))
+                continue
+            }
+
             let p = PersonalRecordEntry(
                 date: date,
                 exerciseName: name,
                 exerciseTemplateID: exerciseTemplateID,
                 kindRaw: kind,
-                value: row.double("value") ?? 0,
-                previousValue: row.double("previous_value") ?? 0,
-                weightKg: row.double("weight_kg") ?? 0,
-                reps: row.int("reps") ?? 0,
+                value: value,
+                previousValue: previousValue,
+                weightKg: weightKg,
+                reps: reps,
                 cardioEquipmentRaw: row.optionalString("cardio_equipment"),
                 session: session
             )
