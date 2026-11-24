@@ -46,6 +46,9 @@ public struct SettingsAppExperienceView: View {
     @AppStorage("pref_plateau_detection_enabled") private var plateauDetectionEnabled: Bool = true
 
     @State private var deloadRestoreMessage: String?
+    /// Bugfix (Audit, Modul 11): `deloadRestoreMessage` wird fuer Erfolg
+    /// UND Fehlschlag genutzt — dieses Flag entscheidet nur die Farbe.
+    @State private var deloadRestoreFailed = false
 
     public init() {}
 
@@ -312,7 +315,7 @@ public struct SettingsAppExperienceView: View {
             if let deloadRestoreMessage {
                 Text(deloadRestoreMessage)
                     .font(.system(size: 13))
-                    .foregroundStyle(Color.Deltiq.success)
+                    .foregroundStyle(deloadRestoreFailed ? Color.Deltiq.error : Color.Deltiq.success)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
             }
@@ -332,10 +335,20 @@ public struct SettingsAppExperienceView: View {
     }
 
     private func restoreDeloadWeights() {
-        let restored = (try? DeloadManager.endDeload(in: modelContext)) ?? 0
-        guard restored > 0 else { return }
-        UserDefaults.standard.removeObject(forKey: "deload_until")
-        deloadRestoreMessage = String(localized: "settings.deload.endNow.done", bundle: .module)
+        // Bugfix (Audit, Modul 11): `try?` verschluckte den Fehler, den
+        // DeloadManager.endDeload seit PR #88 bei einem Save-Fehlschlag
+        // korrekt wirft (inkl. eigenem Rollback) — der Nutzer tippte
+        // "Jetzt beenden" und sah bei einem Fehlschlag rein gar nichts.
+        do {
+            let restored = try DeloadManager.endDeload(in: modelContext)
+            guard restored > 0 else { return }
+            UserDefaults.standard.removeObject(forKey: "deload_until")
+            deloadRestoreFailed = false
+            deloadRestoreMessage = String(localized: "settings.deload.endNow.done", bundle: .module)
+        } catch {
+            deloadRestoreFailed = true
+            deloadRestoreMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
     }
 
     private var remindersSection: some View {
