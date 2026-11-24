@@ -169,23 +169,19 @@ struct TrainingLocationEquipmentEditorView: View {
                 EquipmentAdaptationPreviewSheet(
                     drafts: adaptationDrafts,
                     onConfirm: {
-                        let archived: [String]
-                        if let newProfile = pendingEquipmentAdaptation {
-                            archived = applyEquipmentAdaptations(against: newProfile)
-                        } else {
-                            archived = []
+                        var archived: [String] = []
+                        let saved = saveOrRollbackPlanMutation {
+                            if let newProfile = pendingEquipmentAdaptation {
+                                archived = applyEquipmentAdaptations(against: newProfile)
+                            }
                         }
                         pendingEquipmentAdaptation = nil
-                        do {
-                            try modelContext.save()
-                            if archived.isEmpty {
-                                dismiss()
-                            } else {
-                                saveErrorMessage = String(localized: "profile.equipmentAdaptation.conflict", bundle: .module)
-                                    + " " + archived.joined(separator: ", ")
-                            }
-                        } catch {
-                            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+                        guard saved else { return }
+                        if archived.isEmpty {
+                            dismiss()
+                        } else {
+                            saveErrorMessage = String(localized: "profile.equipmentAdaptation.conflict", bundle: .module)
+                                + " " + archived.joined(separator: ", ")
                         }
                     },
                     onCancel: {
@@ -212,13 +208,12 @@ struct TrainingLocationEquipmentEditorView: View {
                         previews: envSwapPreviews,
                         mode: .swap,
                         onConfirm: {
-                            applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                            let saved = saveOrRollbackPlanMutation {
+                                applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                            }
                             pendingEnvSwap = nil
-                            do {
-                                try modelContext.save()
+                            if saved {
                                 checkAndHandleEquipmentGap()
-                            } catch {
-                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                             }
                         },
                         onSecondary: {
@@ -247,6 +242,10 @@ struct TrainingLocationEquipmentEditorView: View {
                         previews: envRestorePreviews,
                         mode: .restore,
                         onConfirm: {
+                            // Bugfix (Audit, Modul 11): bewusst OHNE
+                            // `saveOrRollbackPlanMutation` — restoreOriginals()
+                            // loescht bestehende Ersatz-Uebungen hart, siehe
+                            // dessen Doc-Kommentar fuer die Begruendung.
                             applyEnvironmentRestoreToAllPlans(newEnv: swap.newEnv)
                             pendingEnvRestore = nil
                             do {
@@ -257,13 +256,12 @@ struct TrainingLocationEquipmentEditorView: View {
                             }
                         },
                         onSecondary: {
-                            applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                            let saved = saveOrRollbackPlanMutation {
+                                applyEnvironmentSwapToAllPlans(newEnv: swap.newEnv)
+                            }
                             pendingEnvRestore = nil
-                            do {
-                                try modelContext.save()
+                            if saved {
                                 checkAndHandleEquipmentGap()
-                            } catch {
-                                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
                             }
                         },
                         onCancel: {
@@ -309,6 +307,87 @@ struct TrainingLocationEquipmentEditorView: View {
             profile.equipmentProfileConfirmedComplete = snapEquipmentConfirmed
             profile.equipmentPreferences = snapEquipmentPreferences
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
+    }
+
+    /// Bugfix (Audit, Modul 11): gemeinsamer Rollback-Rahmen fuer
+    /// Plan-Mutationen, die NUR Felder aendern + frische Uebungen einfuegen
+    /// (nie bestehende Objekte loeschen) — `applyEquipmentAdaptations` und
+    /// `applyEnvironmentSwapToAllPlans` liefen bisher ohne jeden Rollback:
+    /// schlug der Save danach fehl, blieben Uebungen archiviert + frische
+    /// Ersatz-Uebungen eingefuegt im geteilten Context haengen, bis ein
+    /// spaeterer, unabhaengiger Save sie stillschweigend mitgespuelt haette.
+    ///
+    /// Bewusst NICHT fuer `applyEnvironmentRestoreToAllPlans` genutzt: der
+    /// Restore-Pfad loescht bestehende (frueher committete) Ersatz-Uebungen
+    /// hart (`PlanEnvironmentMigrator.restoreOriginals`). Ein Delete
+    /// zurueckzurollen braucht `context.rollback()`, was in dieser Codebase
+    /// projektweit verboten ist (wuerde auch fremde unabhaengige Aenderungen
+    /// zerstoeren) — derselbe, bereits etablierte Fall wie
+    /// `DayEditorView.deleteExercises`/`PlansListView.deletePlans`: dort
+    /// bleibt ein gescheiterter Delete-Save ebenfalls unrollbackt, nur der
+    /// Fehler wird angezeigt, Retry ist sicher.
+    ///
+    /// Snapshot ist bewusst grosszuegig (ALLE Uebungen aller Plaene, nicht
+    /// nur die vom jeweiligen Migrator/Applier tatsaechlich angefassten) —
+    /// das macht die Logik unabhaengig von deren internem
+    /// Entscheidungs-Detail, auf Kosten ein paar harmloser No-Op-Zuweisungen
+    /// fuer unberuehrte Uebungen.
+    @discardableResult
+    private func saveOrRollbackPlanMutation(_ mutate: () -> Void) -> Bool {
+        struct ExerciseSnapshot {
+            let isArchived: Bool
+            let archivedByEnvironmentChange: Bool
+            let orderIndex: Int
+        }
+        var exerciseSnapshots: [PersistentIdentifier: ExerciseSnapshot] = [:]
+        var planEnvironments: [PersistentIdentifier: EnvironmentType] = [:]
+
+        for plan in plans {
+            planEnvironments[plan.persistentModelID] = plan.targetEnvironment
+            for day in plan.days {
+                for exercise in day.exercises {
+                    exerciseSnapshots[exercise.persistentModelID] = ExerciseSnapshot(
+                        isArchived: exercise.isArchived,
+                        archivedByEnvironmentChange: exercise.archivedByEnvironmentChange,
+                        orderIndex: exercise.orderIndex
+                    )
+                }
+            }
+        }
+
+        mutate()
+
+        do {
+            try modelContext.save()
+            return true
+        } catch {
+            var freshlyInserted: [Exercise] = []
+            for plan in plans {
+                if let oldEnv = planEnvironments[plan.persistentModelID] {
+                    plan.targetEnvironment = oldEnv
+                }
+                for day in plan.days {
+                    for exercise in day.exercises {
+                        if let snap = exerciseSnapshots[exercise.persistentModelID] {
+                            exercise.isArchived = snap.isArchived
+                            exercise.archivedByEnvironmentChange = snap.archivedByEnvironmentChange
+                            exercise.orderIndex = snap.orderIndex
+                        } else {
+                            // Kein Snapshot vorhanden -> von `mutate()` gerade erst
+                            // eingefuegt. Erst nach der Feld-Wiederherstellung
+                            // oben loeschen, nicht waehrend der Iteration ueber
+                            // `day.exercises`.
+                            freshlyInserted.append(exercise)
+                        }
+                    }
+                }
+            }
+            for exercise in freshlyInserted {
+                modelContext.delete(exercise)
+            }
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            return false
         }
     }
 
