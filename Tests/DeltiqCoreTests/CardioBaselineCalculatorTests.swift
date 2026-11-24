@@ -219,6 +219,27 @@ final class CardioBaselineCalculatorTests: XCTestCase {
             "Leere Wochen vor der Pause duerfen hist. Median nicht auf (0+10)/2=5 senken")
     }
 
+    func testClassifyReturningRunnerOneActiveWeekFallbackIgnoresOldOutlierOutsidePreWindow() {
+        let ref = Date()
+        let cal = Calendar.current
+        let daysAgo = { (n: Int) in cal.date(byAdding: .day, value: -n, to: ref)! }
+        // Letzter Lauf vor 45 Tagen (lastRunDate) → pauseWeeks=6, factor=0.60.
+        // Nur 1 aktive Woche vor der Pause (preWeeklyKm=[5,0,0,0], preActive=1) →
+        // Fallback-Zweig. Der 30-km-Lauf liegt 89-45=44 Tage VOR lastRunDate,
+        // also ausserhalb der 28-Tage-preWeeklyKm-Buckets - darf NICHT einfliessen.
+        // Fix: hist=(5+0+0+0)/4=1.25 → suggested=max(1.25*0.60,3.0)=3.0 (Floor)
+        // Fehler pre-fix: hist=(5+30)/4=8.75 (summierte volles 90-Tage-Fenster)
+        //                 → suggested=max(8.75*0.60,3.0)=5.25
+        let entries = [
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(45), distanceKm: 5),
+            CardioBaselineCalculator.TimestampedEntry(date: daysAgo(89), distanceKm: 30),
+        ]
+        let (cat, km) = CardioBaselineCalculator.classifyWeeklyVolume(entries: entries, referenceDate: ref)
+        XCTAssertEqual(cat, .returningRunner(pauseWeeks: 6))
+        XCTAssertEqual(km, CardioBaselineCalculator.beginnerDefaultKm, accuracy: 0.001,
+            "Ein alter Ausreisser-Lauf ausserhalb der 4 Wochen vor der Pause darf das vorgeschlagene Wiedereinstiegs-Volumen nicht erhoehen")
+    }
+
     // MARK: - isRunningEquipment (Lauffilter)
 
     func testRunningEquipmentIncludesOutdoorRun() {

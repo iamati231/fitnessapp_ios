@@ -186,7 +186,11 @@ public enum CardioBaselineCalculator {
                     ? (preActiveKm[preMid - 1] + preActiveKm[preMid]) / 2.0
                     : preActiveKm[preMid]
             } else {
-                historicalKm = windowEntries.reduce(0.0) { $0 + $1.distanceKm } / 4.0
+                // Audit-Fix: summierte zuvor `windowEntries` (volles 90-Tage-Fenster)
+                // statt `preWeeklyKm` (die 4 Wochen direkt vor der Pause) - ein
+                // einzelner alter Lauf weit vor der Pause konnte das vorgeschlagene
+                // Wiedereinstiegs-Volumen so kuenstlich erhoehen.
+                historicalKm = preWeeklyKm.reduce(0.0, +) / 4.0
             }
 
             let factor: Double
