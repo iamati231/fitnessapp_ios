@@ -143,7 +143,7 @@ public enum TrainingDensityAnalyzer {
 
         let spanDays = max(1, Int(input.now.timeIntervalSince(oldest) / 86_400))
         guard spanDays >= minimumSpanDays else {
-            return insufficientDataAssessment(activityCount: sorted.count)
+            return insufficientDataAssessment(activityCount: sorted.count, spanDays: spanDays)
         }
 
         // Distinct Trainingstage (Kalender-Tage mit mindestens einer Aktivität)
@@ -208,7 +208,11 @@ public enum TrainingDensityAnalyzer {
 
     // MARK: - Hilfsfunktionen (intern)
 
-    private static func insufficientDataAssessment(activityCount: Int) -> Assessment {
+    /// `spanDays`: die bereits berechnete Tagesspanne, falls vorhanden - Audit-
+    /// Fix, vorher hart auf 0 gesetzt, selbst wenn `analyze` die echte Spanne
+    /// (zu kurz, aber > 0) laengst kannte. `0` bleibt korrekt fuer den Aufrufer
+    /// ohne Aktivitaeten/Datum (zu wenige Aktivitaeten ueberhaupt).
+    private static func insufficientDataAssessment(activityCount: Int, spanDays: Int = 0) -> Assessment {
         Assessment(
             consecutiveTrainingDays: 0,
             trainingDaysLast7: 0,
@@ -216,9 +220,9 @@ public enum TrainingDensityAnalyzer {
             minimumRunningGapHours: nil,
             minimumStrengthGapHours: nil,
             concerns: [],
-            dataGaps: [.sessionFeelingUnavailable, .insufficientHistory(daysAvailable: 0)],
+            dataGaps: [.sessionFeelingUnavailable, .insufficientHistory(daysAvailable: spanDays)],
             outcome: .insufficientData,
-            analyzedPeriodDays: 0,
+            analyzedPeriodDays: spanDays,
             analyzedActivityCount: activityCount
         )
     }

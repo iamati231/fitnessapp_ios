@@ -91,6 +91,11 @@ final class TrainingDensityAnalyzerTests: XCTestCase {
         let acts = [runActivity(-6), runActivity(-4), runActivity(-2)]
         let result = TrainingDensityAnalyzer.analyze(input: input(activities: acts))
         XCTAssertEqual(result.outcome, .insufficientData)
+        // Audit-Fix: die bereits berechnete 6-Tage-Spanne darf nicht auf 0
+        // zurueckfallen - sonst meldet die UI "0 Tage Historie" statt der
+        // tatsaechlich vorhandenen 6 Tage.
+        XCTAssertEqual(result.analyzedPeriodDays, 6)
+        XCTAssertTrue(result.dataGaps.contains(.insufficientHistory(daysAvailable: 6)))
     }
 
     func testMinimumThreeActivitiesWithSufficientSpanDoesNotReturnInsufficientData() {
