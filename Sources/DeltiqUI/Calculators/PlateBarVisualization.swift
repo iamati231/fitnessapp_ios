@@ -187,10 +187,19 @@ public struct PlateBarVisualization: View {
         }
     }
 
+    /// Bugfix (Audit, Modul 10): Text war hartcodiert Deutsch, waehrend jedes
+    /// andere accessibilityLabel im Projekt lokalisiert ist — VoiceOver hoerte
+    /// deutschen Text unabhaengig von der Geraete-Sprache.
     private var accessibilityDescription: String {
-        guard !plates.isEmpty else { return "Stange ohne Plates" }
-        let parts = plates.map { "\($0.count) mal \(formattedWeight($0.weight)) \(unit.rawValue)" }
-        return "Beladung pro Seite: " + parts.joined(separator: ", ")
+        guard !plates.isEmpty else {
+            return String(localized: "calc.plate.barEmpty.a11y", bundle: .module)
+        }
+        let countTemplate = String(localized: "calc.plate.plateCount.a11y", bundle: .module)
+        let parts = plates.map {
+            String(format: countTemplate, $0.count, formattedWeight($0.weight), unit.rawValue)
+        }
+        return String(format: String(localized: "calc.plate.loadPerSide.a11y", bundle: .module),
+                       parts.joined(separator: ", "))
     }
 
     /// Bugfix (Audit): war `specifier: "%g"` ohne Locale, zeigte VoiceOver

@@ -5729,6 +5729,29 @@
         }
       }
     },
+    "calc.plate.barEmpty.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stange ohne Plates"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bar with no plates"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plakasız bar"
+          }
+        }
+      }
+    },
     "calc.plate.emptyHint.noBar": {
       "extractionState": "manual",
       "localizations": {
@@ -5913,6 +5936,29 @@
         }
       }
     },
+    "calc.plate.loadPerSide.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beladung pro Seite: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loaded per side: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarafa yüklenen: %@"
+          }
+        }
+      }
+    },
     "calc.plate.perSide": {
       "extractionState": "manual",
       "localizations": {
@@ -5932,6 +5978,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tarafa"
+          }
+        }
+      }
+    },
+    "calc.plate.plateCount.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld mal %2$@ %3$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld times %2$@ %3$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld kez %2$@ %3$@"
           }
         }
       }
