@@ -30,7 +30,14 @@ public struct PRHistoryView: View {
 
     /// Used by the empty-state CTA to know whether a backfill would actually
     /// produce anything.
-    @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true })
+    ///
+    /// Audit-Fix: fehlte bisher `isRestDay == false` - `PersonalRecordSync.
+    /// rebuild(in:)` selbst zaehlt Rest-Tag-Marker (skip-rest-day, persistiert
+    /// mit isCompleted=true) nie mit. Ein Nutzer, der bisher nur Rest-Tage
+    /// uebersprungen und noch nie wirklich trainiert hat, sah dadurch die
+    /// "Backfill verfuegbar"-CTA + aktivierten Rebuild-Button, obwohl ein Tap
+    /// darauf garantiert 0 Rekorde findet.
+    @Query(filter: #Predicate<WorkoutSession> { $0.isCompleted == true && $0.isRestDay == false })
     private var completedSessions: [WorkoutSession]
 
     /// Active filter chip — `nil` means "all kinds".
