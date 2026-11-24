@@ -72,14 +72,18 @@ final class DashboardPRLibrarySaveErrorHandlingTests: XCTestCase {
             return XCTFail("catch block not found")
         }
         let tryBranch = body[tryRange.upperBound..<catchRange.lowerBound]
-        XCTAssertTrue(tryBranch.contains("message = \"\\(inserted) Rekorde detektiert\""),
+        // Modul-12-Audit: Erfolgs-Toast ist jetzt lokalisiert (vorher
+        // hartcodiert "\(inserted) Rekorde detektiert") - die eigentliche
+        // Eigenschaft bleibt dieselbe: die Zuweisung mit dem
+        // "inserted"-Zaehler darf nur im try-Zweig passieren.
+        XCTAssertTrue(tryBranch.contains("message = String(format: String(localized: \"trophy.rebuild.toast.result\", bundle: .module), inserted)"),
                       "the success message must be assigned only in the try branch")
 
         guard let catchEnd = body.range(of: "\n        }", range: catchRange.upperBound..<body.endIndex) else {
             return XCTFail("catch block end not found")
         }
         let catchBranch = body[catchRange.upperBound..<catchEnd.lowerBound]
-        XCTAssertFalse(catchBranch.contains("Rekorde detektiert"),
+        XCTAssertFalse(catchBranch.contains("trophy.rebuild.toast.result"),
                        "a failed save must never claim records were detected/saved")
     }
 
