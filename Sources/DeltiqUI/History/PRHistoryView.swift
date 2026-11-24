@@ -237,7 +237,14 @@ public struct PRHistoryView: View {
                 latestDate: sorted.first?.date ?? .distantPast
             )
         }
-        .sorted { $0.latestDate > $1.latestDate }
+        // Audit-Fix: `byExercise` ist ein `Dictionary`, dessen Iterations-
+        // reihenfolge nicht stabil ist - zwei Gruppen mit exakt gleichem
+        // `latestDate` (z.B. mehrere PRs aus einem Rebuild-Lauf oder einer
+        // Backup-Wiederherstellung) konnten dadurch zwischen App-Starts die
+        // Reihenfolge wechseln. Gleiche Luecke wie bei StrengthProgress-
+        // Calculator/MuscleGroupProgressCalculator (PR #58/#59) - Tie-
+        // Breaker ueber die stabile Gruppen-`id` ergaenzt.
+        .sorted { $0.latestDate != $1.latestDate ? $0.latestDate > $1.latestDate : $0.id < $1.id }
     }
 
     // MARK: Actions
