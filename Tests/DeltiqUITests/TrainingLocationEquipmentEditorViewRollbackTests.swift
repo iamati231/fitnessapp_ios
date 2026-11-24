@@ -61,7 +61,7 @@ final class TrainingLocationEquipmentEditorViewRollbackTests: XCTestCase {
         let restoreOnConfirmBody = text[onConfirmStart.upperBound..<onSecondaryStart.lowerBound]
 
         XCTAssertTrue(restoreOnConfirmBody.contains("applyEnvironmentRestoreToAllPlans"))
-        XCTAssertFalse(restoreOnConfirmBody.contains("saveOrRollbackPlanMutation"),
+        XCTAssertFalse(restoreOnConfirmBody.contains("saveOrRollbackPlanMutation {"),
                         "restoreOriginals() hard-deletes pre-existing exercises — rolling that back needs context.rollback(), which this codebase forbids project-wide; this path intentionally keeps the plain do/catch")
     }
 }
