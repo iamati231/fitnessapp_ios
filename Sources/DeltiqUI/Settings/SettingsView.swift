@@ -57,6 +57,13 @@ public struct SettingsView: View {
     /// hat, mid-render crashen.
     @AppStorage("isResetting") private var isResetting: Bool = false
 
+    /// Bugfix (Audit, Modul 11): Gegenstueck zu `isResetting` fuer den
+    /// Fall, dass der eigentliche Delete-Save scheitert. SettingsView ist
+    /// dann schon durch `RootView.resettingPlaceholder` ersetzt — die
+    /// Fehlermeldung muss also dort (nicht hier lokal) angezeigt werden,
+    /// deshalb AppStorage statt @State.
+    @AppStorage("resetSaveFailureMessage") private var resetSaveFailureMessage: String = ""
+
     /// Nur noch fuer die Profil-Zusammenfassung (Groesse/Gewicht-Einheit)
     /// gebraucht — der editierbare Picker lebt in `SettingsAppExperienceView`.
     @AppStorage("weight_unit") private var weightUnitRaw: String = "kg"
@@ -513,22 +520,40 @@ public struct SettingsView: View {
                 // (siehe `DataImportService.wipeAllUserData`).
                 try UserDataWipe.deleteEach(of: ExerciseTemplate.self, in: self.modelContext)
                 try self.modelContext.save()
-                // Die System-Uebungsbibliothek gehoert zum frischen Zustand:
-                // RootView seedet sie nur beim App-START, ohne das blieben
-                // Bibliothek und Uebungs-Picker bis zum naechsten Neustart
-                // leer (auch im Onboarding direkt nach dem Reset). `try?`
-                // mit Absicht: Das Zuruecksetzen selbst ist gelungen, und
-                // scheitert nur das Speichern der Bibliothek, seedet
-                // RootView.task sie beim naechsten Start nach.
-                _ = LibrarySeeder.seedIfNeeded(in: self.modelContext)
-                try? self.modelContext.save()
             } catch {
-                self.resetErrorMessage = error.localizedDescription
+                // Bugfix (Audit, Modul 11): ab hier ist `isResetting` schon
+                // true, RootView hat SettingsView also bereits durch
+                // `resettingPlaceholder` ersetzt — ein hier gesetztes
+                // @State wie vorher `self.resetErrorMessage` sieht niemand
+                // mehr, die Fehlermeldung ging also bislang spurlos
+                // verloren. Schlimmer: die oben gequeueten Deletes bleiben
+                // im geteilten Context haengen, bis irgendein spaeterer,
+                // voellig unabhaengiger save() sie mitspuelt — stiller
+                // Totalverlust ohne jede Vorwarnung, nachdem der Nutzer
+                // dachte, nichts sei passiert. Kein `context.rollback()`
+                // (projektweite Regel, siehe PlansListView.deletePlans —
+                // wuerde auch fremde unabhaengige Aenderungen zerstoeren).
+                // Stattdessen bleibt `isResetting` bewusst auf true:
+                // RootView zeigt weiter die blockierende Placeholder-
+                // Ansicht (jetzt mit Fehlertext + Retry), bis der Save
+                // tatsaechlich gelingt oder die App beendet wird (dann ist
+                // nichts commitet, DEL-134-Recovery raeumt beim naechsten
+                // Start sicher auf).
+                self.resetSaveFailureMessage = error.localizedDescription
+                return
             }
-            // DEL-134: Release-Gate immer (Error-Pfad UND Success-Pfad).
-            // RootView swappt dann automatisch zur OnboardingView (weil
-            // profiles.isEmpty == true) oder zur ErrorView falls die
-            // Error-Message gesetzt wurde.
+            // Die System-Uebungsbibliothek gehoert zum frischen Zustand:
+            // RootView seedet sie nur beim App-START, ohne das blieben
+            // Bibliothek und Uebungs-Picker bis zum naechsten Neustart
+            // leer (auch im Onboarding direkt nach dem Reset). `try?`
+            // mit Absicht: Das Zuruecksetzen selbst ist gelungen, und
+            // scheitert nur das Speichern der Bibliothek, seedet
+            // RootView.task sie beim naechsten Start nach.
+            _ = LibrarySeeder.seedIfNeeded(in: self.modelContext)
+            try? self.modelContext.save()
+            // DEL-134: Release-Gate nur auf dem Erfolgspfad. RootView
+            // swappt dann automatisch zur OnboardingView (profiles.isEmpty
+            // == true).
             self.isResetting = false
         }
     }

@@ -34,11 +34,20 @@ public struct RootView: View {
     /// das auf true VOR der SwiftData-Deletion. Solange true, rendern
     /// wir eine sichere ProgressView statt MainTabView/OnboardingView —
     /// kein Sub-View kann waehrend der Deletion-Async-Phase auf stale
-    /// @Query-Refs zugreifen + crashen. Wenn `resetApp()` fertig ist
-    /// (Success oder Error), wird der Flag wieder auf false gesetzt
-    /// und RootView swappt automatisch zur passenden View (Onboarding
-    /// wenn profiles leer, sonst Main).
+    /// @Query-Refs zugreifen + crashen. Wenn `resetApp()` erfolgreich war,
+    /// wird der Flag wieder auf false gesetzt und RootView swappt
+    /// automatisch zur Onboarding-View (profiles leer). Bei einem
+    /// gescheiterten Delete-Save bleibt er bewusst auf true — siehe
+    /// `resetSaveFailureMessage`.
     @AppStorage("isResetting") private var isResetting: Bool = false
+
+    /// Bugfix (Audit, Modul 11): gesetzt von `SettingsView.resetApp()`, wenn
+    /// der Delete-Save nach dem Loeschen scheitert. Solange nicht leer,
+    /// bleibt `isResetting` bewusst auf true (siehe dortiger Kommentar) und
+    /// `resettingPlaceholder` zeigt statt des Spinners Fehlertext + Retry —
+    /// die bereits gequeueten Deletes duerfen nicht unbemerkt per
+    /// spaeterem, unabhaengigem Save verschwinden.
+    @AppStorage("resetSaveFailureMessage") private var resetSaveFailureMessage: String = ""
 
     /// Siehe SettingsView — Opt-in fuer den automatischen Import von Lauf-/
     /// Rad-Workouts aus Fremd-Apps via Apple Health.
@@ -81,7 +90,14 @@ public struct RootView: View {
             // nach `modelContext.save`), bleibt `isResetting=true` in
             // AppStorage stehen. Beim naechsten Launch wuerde RootView
             // dann auf der ProgressView haengen. Defensive reset.
-            if isResetting { isResetting = false }
+            if isResetting {
+                isResetting = false
+                // Bugfix (Audit, Modul 11): war der vorige Versuch im
+                // Fehler-Retry-Zustand haengen geblieben, ist das nach
+                // einem Neustart hinfaellig — nichts wurde commitet, siehe
+                // `resetSaveFailureMessage`-Doc-Kommentar oben.
+                resetSaveFailureMessage = ""
+            }
 
             // Eine Live Activity, die ein frueherer Prozess zurueckgelassen hat (App
             // waehrend eines AMRAP/EMOM/Auf-Zeit/Zirkel-Laufs beendet), hat keinen
@@ -239,18 +255,59 @@ public struct RootView: View {
     /// Alle @Query-basierten Sub-Views sind hier komplett ausgeklinkt —
     /// damit es keine dangling-pointer-crash mehr beim Reset gibt.
     /// Sobald SettingsView.resetApp() den isResetting-Flag wieder auf
-    /// false setzt (nach erfolgreichem oder gescheiterten save), swappt
-    /// RootView automatisch auf OnboardingView oder MainTabView.
+    /// false setzt, swappt RootView automatisch auf OnboardingView. Bei
+    /// einem gescheiterten Delete-Save (Bugfix, Audit Modul 11) bleibt der
+    /// Flag dagegen bewusst auf true — siehe `resetSaveFailureMessage`.
     private var resettingPlaceholder: some View {
         VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.4)
-            Text("root.resetting.label", bundle: .module)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            if resetSaveFailureMessage.isEmpty {
+                ProgressView()
+                    .scaleEffect(1.4)
+                Text("root.resetting.label", bundle: .module)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                // Bugfix (Audit, Modul 11): siehe `resetSaveFailureMessage`-
+                // Doc-Kommentar — Retry ist sicher, weil die Deletes bereits
+                // im Context stehen und `modelContext.save()` sie einfach
+                // erneut zu commiten versucht.
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.largeTitle)
+                    .foregroundStyle(.orange)
+                Text("root.resetting.failed.title", bundle: .module)
+                    .font(.headline)
+                Text(resetSaveFailureMessage)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                Button {
+                    retryFailedReset()
+                } label: {
+                    Text("root.resetting.failed.retry", bundle: .module)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.top, 8)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.Deltiq.background.ignoresSafeArea())
+    }
+
+    /// Bugfix (Audit, Modul 11): die beim ersten Versuch bereits gequeueten
+    /// Deletes stehen noch im Context — hier wird nur der Save erneut
+    /// versucht (idempotent), nichts erneut geloescht.
+    private func retryFailedReset() {
+        do {
+            try modelContext.save()
+        } catch {
+            resetSaveFailureMessage = error.localizedDescription
+            return
+        }
+        _ = LibrarySeeder.seedIfNeeded(in: modelContext)
+        try? modelContext.save()
+        resetSaveFailureMessage = ""
+        isResetting = false
     }
 
     /// Mappt den AppStorage-String auf SwiftUI's ColorScheme?. `nil` =
