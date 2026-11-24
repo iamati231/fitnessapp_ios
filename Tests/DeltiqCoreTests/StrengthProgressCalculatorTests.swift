@@ -25,12 +25,13 @@ struct StrengthProgressCalculatorTests {
         isCardio: Bool = false,
         isTimeBased: Bool = false,
         isPlaceholder: Bool = false,
+        isWorkingSet: Bool = true,
         logID: String? = nil
     ) -> Log {
         Log(sessionStartTime: sessionDate ?? now, exerciseName: name, templateID: templateID,
             weightKg: weightKg, reps: reps, rpe: rpe, rir: rir,
             isCardio: isCardio, isTimeBased: isTimeBased, isPlaceholder: isPlaceholder,
-            logID: logID)
+            isWorkingSet: isWorkingSet, logID: logID)
     }
 
     func daysAgo(_ n: Int) -> Date {
@@ -60,6 +61,30 @@ struct StrengthProgressCalculatorTests {
         let stats = SPC.overviewStats(logs: logs, strengthSessionDates: [now], prDates: [], period: .allTime, now: now)
         #expect(stats.workSetCount == 1)
         #expect(stats.volumeKg == 500)
+    }
+
+    // Audit-Fund (Modul 13): warmup/cooldown sets had no isWorkingSet field at
+    // all before this fix and leaked into workSetCount/volumeKg/exerciseSummaries/
+    // bestSets — the same gap `WorkoutSession.workingSetLogs` already closes
+    // for Dashboard/History.
+    @Test func warmupAndCooldownSetsExcludedFromOverviewStats() {
+        let logs = [makeLog(weightKg: 60, reps: 10, isWorkingSet: false), makeLog(weightKg: 100, reps: 5)]
+        let stats = SPC.overviewStats(logs: logs, strengthSessionDates: [now], prDates: [], period: .allTime, now: now)
+        #expect(stats.workSetCount == 1)
+        #expect(stats.volumeKg == 500)
+    }
+
+    @Test func warmupSetsExcludedFromExerciseSummariesAndBestSets() {
+        let logs = [
+            makeLog(weightKg: 140, reps: 3, isWorkingSet: false),
+            makeLog(weightKg: 100, reps: 5),
+        ]
+        let summaries = SPC.exerciseSummaries(logs: logs)
+        #expect(summaries.first?.best1RMKg == ExerciseCalculations.estimate1RMAverage(weightKg: 100, reps: 5))
+
+        let best = SPC.bestSets(logs: logs, exerciseName: "Squat", templateID: nil)
+        #expect(best.count == 1)
+        #expect(best.first?.weightKg == 100)
     }
 
     @Test func periodFilterFourWeeksCutsOldSets() {
