@@ -82,8 +82,12 @@ public extension WorkoutSession {
         // DEL-223: `loggedSets` statt `logs` — nie ausgefuellte Platzhalter-
         // Zeilen zaehlen nicht als Satz. Vorher blaehte jede nachgetragene,
         // aber leer gelassene Zeile `totalSets` dauerhaft auf.
+        // Audit-Fix: `workingSetLogs` statt `loggedSets` - sonst blaehen
+        // Warmup-/Cooldown-Saetze genau die Aggregate auf, die Dashboard-
+        // Wochenvolumen, Coach-Schwelle (5000 kg), DeloadAdvisor und
+        // Muskel-Heatmap lesen (siehe `SessionAggregator`-Header).
         let totals = SessionAggregator.totals(
-            for: loggedSets.map {
+            for: workingSetLogs.map {
                 SessionAggregator.LoggedSet(weightKg: $0.weight, reps: $0.reps)
             }
         )
