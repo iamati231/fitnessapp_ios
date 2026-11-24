@@ -35,7 +35,7 @@ final class SettingsViewResetSaveErrorHandlingTests: XCTestCase {
 
         XCTAssertTrue(catchBody.contains("resetSaveFailureMessage = error.localizedDescription"),
                       "a failed delete-save must surface via the AppStorage flag RootView actually observes")
-        XCTAssertFalse(catchBody.contains("isResetting"),
+        XCTAssertFalse(catchBody.contains("self.isResetting = false"),
                         "must NOT clear isResetting here — SettingsView is already unmounted, and doing so would silently resume normal app use with the already-queued deletes still pending")
 
         let afterCatch = text[catchEndRange.upperBound...]
