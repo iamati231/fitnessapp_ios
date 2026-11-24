@@ -2220,5 +2220,40 @@ final class DataPortabilityRoundtripTests: XCTestCase {
             "aus einer verworfenen Zeile darf kein Profil entstehen"
         )
     }
+
+    // MARK: - Modul-14-Audit: implausible meal-item quantity
+
+    /// Bugfix (Audit): eine negative `quantity` parste bisher erfolgreich und
+    /// wurde unveraendert uebernommen — der Live-Logging-Pfad
+    /// (`NutritionCalculations.nutrients`) verlangt `quantity > 0` und ist
+    /// dafuer getestet. Muss als Row-Error verworfen werden, die Mahlzeit
+    /// selbst (unabhaengige Zeile in meals.csv) bleibt davon unberuehrt.
+    func testImportRejectsNonPositiveMealItemQuantity() async throws {
+        let source = try makeContainer()
+        let meal = MealEntry(date: Date(timeIntervalSince1970: 1_750_000_000), mealType: .snack)
+        source.mainContext.insert(meal)
+        let item = MealItem(
+            catalogID: nil, nameSnapshot: "Verdorbene Zeile", quantity: -50, unit: .gram,
+            nutrients: NutrientValues(kcal: 100, proteinG: 10, carbsG: 10, fatG: 5), meal: meal
+        )
+        source.mainContext.insert(item)
+        try source.mainContext.save()
+        let bundle = try DataExportService.makeExport(context: source.mainContext)
+
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        XCTAssertEqual(result.errorRows, 1, "negative quantity muss als Row-Error verworfen werden")
+        XCTAssertEqual(
+            try target.mainContext.fetchCount(FetchDescriptor<MealItem>()), 0,
+            "aus einer verworfenen Zeile darf kein MealItem entstehen"
+        )
+        XCTAssertEqual(
+            try target.mainContext.fetchCount(FetchDescriptor<MealEntry>()), 1,
+            "die Mahlzeit selbst ist eine unabhaengige Zeile und muss trotzdem importiert werden"
+        )
+    }
 }
 #endif

@@ -1933,9 +1933,15 @@ public enum DataImportService {
 
         for row in reader.rows() {
             let meal = idMap[row["meal_id"]] as? MealEntry
+            // Bugfix (Audit): row.double("quantity") parst jede Zahl, auch
+            // 0 oder negativ — der Live-Logging-Pfad
+            // (NutritionCalculations.nutrients(for:quantity:unit:)) verlangt
+            // `quantity > 0` und ist dafuer getestet (negative Menge -> nil).
+            // Ohne denselben Guard hier konnte ein Import eine negative Menge
+            // uebernehmen, die die Tagessumme stillschweigend verfaelscht.
             guard let name = row.optionalString("name_snapshot"), !name.isEmpty,
-                  let quantity = row.double("quantity") else {
-                errors.append(.init(line: row.lineNumber, reason: "missing name_snapshot or quantity"))
+                  let quantity = row.double("quantity"), quantity > 0 else {
+                errors.append(.init(line: row.lineNumber, reason: "missing name_snapshot or invalid quantity"))
                 continue
             }
             let catalogID = row.optionalString("catalog_id")
