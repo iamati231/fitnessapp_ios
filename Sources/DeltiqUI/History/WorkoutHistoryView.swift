@@ -381,7 +381,11 @@ struct HistorySessionRow: View {
     }
 
     private var totalDistanceText: String {
-        let total = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        // Audit-Fix: zaehlte bisher rohe `logs` mit, inkl. Warmup-/Cooldown-
+        // Saetzen (DEL-087 `role`, bei Cardio-Uebungen ebenso moeglich wie bei
+        // Kraft) - dieselbe Luecke, die `workingSetLogs` fuer Dashboard/PR-
+        // Detection bereits schliesst (SessionAggregation.swift).
+        let total = session.workingSetLogs.compactMap(\.distanceKm).reduce(0.0, +)
         guard total > 0 else { return "—" }
         if total == total.rounded() {
             return "\(Int(total)) km"
@@ -390,8 +394,8 @@ struct HistorySessionRow: View {
     }
 
     private var averagePaceText: String {
-        let totalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
-        let totalSec = session.logs.compactMap(\.durationSeconds).reduce(0, +)
+        let totalKm = session.workingSetLogs.compactMap(\.distanceKm).reduce(0.0, +)
+        let totalSec = session.workingSetLogs.compactMap(\.durationSeconds).reduce(0, +)
         guard totalKm > 0, totalSec > 0,
               let pace = PaceCalculator.minutesPerKm(distanceKm: totalKm, durationSeconds: totalSec)
         else { return "—:——" }

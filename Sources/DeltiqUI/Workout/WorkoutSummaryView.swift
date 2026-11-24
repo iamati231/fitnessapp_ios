@@ -1308,7 +1308,11 @@ public struct WorkoutSummaryView: View {
     /// DEL-137: Gesamtdistanz aller Cardio-Sets in dieser Session. Format:
     /// "5 km" / "5,42 km" (Integer wenn ganzzahlig, sonst 2-Dezimal).
     private var formattedTotalDistance: String {
-        let total = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
+        // Audit-Fix: zaehlte bisher rohe `logs` mit, inkl. Warmup-/Cooldown-
+        // Saetzen (DEL-087 `role`, bei Cardio-Uebungen ebenso moeglich wie bei
+        // Kraft) - dieselbe Luecke, die `workingSetLogs` fuer Dashboard/PR-
+        // Detection bereits schliesst (SessionAggregation.swift).
+        let total = session.workingSetLogs.compactMap(\.distanceKm).reduce(0.0, +)
         guard total > 0 else { return "—" }
         if total == total.rounded() {
             return "\(Int(total)) km"
@@ -1319,8 +1323,8 @@ public struct WorkoutSummaryView: View {
     /// DEL-137: Durchschnitts-Pace ueber alle Cardio-Sets. "M:SS /km"
     /// via `PaceCalculator.minutesPerKm` — same Algo wie ActiveWorkoutView.
     private var formattedAvgPace: String {
-        let totalKm = session.logs.compactMap(\.distanceKm).reduce(0.0, +)
-        let totalSec = session.logs.compactMap(\.durationSeconds).reduce(0, +)
+        let totalKm = session.workingSetLogs.compactMap(\.distanceKm).reduce(0.0, +)
+        let totalSec = session.workingSetLogs.compactMap(\.durationSeconds).reduce(0, +)
         guard totalKm > 0, totalSec > 0,
               let pace = PaceCalculator.minutesPerKm(distanceKm: totalKm, durationSeconds: totalSec)
         else { return "—:——" }
