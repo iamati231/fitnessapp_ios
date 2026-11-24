@@ -66,16 +66,36 @@ enum ExerciseNameLookup {
     /// Baut die Reverse-Map durch Probing aller Library-Keys gegen alle
     /// unterstuetzten Locale-Bundles. Skipped die DE-Base-Translation (die
     /// ist ohnehin der Fast-Path-Match).
+    ///
+    /// Audit-Fix: zwei verschiedene Library-Eintraege koennen in EN/TR
+    /// dieselbe Translation tragen (z.B. "exercise.name.calfPressLegPress"
+    /// und "exercise.name.sledCalfPressLegPress" - beide EN/TR "Leg Press
+    /// Calf Raise"). Ein plattes `map[translation] = key` liess den zuletzt
+    /// verarbeiteten Eintrag die Map-Zeile gewinnen - ein Bestandsname wie
+    /// "Leg Press Calf Raise" wurde dadurch beim Backfill IMMER auf dieselbe,
+    /// moeglicherweise falsche Uebung umgeschrieben, ohne je zu erkennen,
+    /// dass der Treffer mehrdeutig war. Jetzt: eine Translation, die auf
+    /// zwei VERSCHIEDENE Keys zeigt, wird aus der Map entfernt statt geraten
+    /// - genau dasselbe sichere Fallback wie ein Custom-Name ohne
+    /// Library-Treffer (`nil` => kein Backfill fuer diesen Namen).
     private static func buildReverseLookupCache() -> [String: String] {
         var map: [String: String] = [:]
+        var ambiguous: Set<String> = []
         let locales = ["de", "en", "tr"]
         for entry in ExerciseLibraryData.all {
             guard let key = entry.localizationKey else { continue }
             for locale in locales {
                 guard let translation = lookupInLocale(key: key, locale: locale),
                       translation != entry.name else { continue }
+                if let existing = map[translation], existing != key {
+                    ambiguous.insert(translation)
+                    continue
+                }
                 map[translation] = key
             }
+        }
+        for translation in ambiguous {
+            map.removeValue(forKey: translation)
         }
         return map
     }
