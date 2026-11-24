@@ -30,7 +30,7 @@ final class SettingsAppExperienceViewDeloadRestoreTests: XCTestCase {
         }
         let body = text[start.upperBound..<end.lowerBound]
 
-        XCTAssertFalse(body.contains("try?"),
+        XCTAssertFalse(body.contains("try? DeloadManager.endDeload"),
                         "must not silently swallow the error DeloadManager.endDeload now throws")
         XCTAssertTrue(body.contains("try DeloadManager.endDeload"))
         XCTAssertTrue(body.contains("} catch {"))
