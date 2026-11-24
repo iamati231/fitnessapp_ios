@@ -20,6 +20,13 @@ public struct SettingsDataConnectionsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(HealthKitController.self) private var healthKit
+    /// Bugfix (Audit, Modul 11): ohne das hier unten war
+    /// `healthKit.authorizationStatus` nur der Stand vom App-Start
+    /// (RootView.task) — aenderte der Nutzer die Health-Berechtigung in
+    /// den iOS-Einstellungen und kehrte ohne App-Neustart hierher zurueck,
+    /// zeigte dieser Screen einen veralteten Status. Gleiches Muster wie
+    /// `HealthWorkoutWriteView`/`MeasurementView`.
+    @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage("pref_healthkit_workout_import") private var externalWorkoutImportEnabled: Bool = false
     @AppStorage(HealthWritePreferences.strengthEnabledKey)
@@ -61,6 +68,13 @@ public struct SettingsDataConnectionsView: View {
         #endif
         .navigationBarBackButtonHidden(true)
         .deltiqSwipeBackEnabled()
+        .task {
+            await healthKit.refreshAuthorizationStatus()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { await healthKit.refreshAuthorizationStatus() }
+        }
     }
 
     // MARK: Sections
