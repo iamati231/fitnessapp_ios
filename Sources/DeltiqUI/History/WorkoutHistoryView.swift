@@ -281,11 +281,16 @@ struct HistorySessionRow: View {
     @ViewBuilder
     private var statsLine: some View {
         if let format = session.timeFormatSnapshot {
+            // Audit-Fix: einziger der vier statsLine-Zweige ohne
+            // .accessibilityHidden(true) auf Icons/Bullet - VoiceOver las
+            // bisher "clock", "repeat"/"flag checkered"/..., "bullet" mit vor,
+            // waehrend pureCardio/mixed/pureStrength darunter das konsequent
+            // ausblenden.
             HStack(spacing: 6) {
-                Image(systemName: "clock")
+                Image(systemName: "clock").accessibilityHidden(true)
                 Text(durationText)
-                Text("•")
-                Image(systemName: timedFormatIcon(format))
+                Text("•").accessibilityHidden(true)
+                Image(systemName: timedFormatIcon(format)).accessibilityHidden(true)
                 Text(timedFormatValueText(format))
             }
             .font(.caption)
