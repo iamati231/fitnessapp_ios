@@ -189,9 +189,14 @@ public enum StrengthProgressCalculator {
         now: Date = .init()
     ) -> OverviewStats {
         let cutoff = period.cutoff(now: now)
-        let inPeriod: (Date) -> Bool = {
+        // Audit-Fix: schloss zukunftsdatierte Saetze bisher nicht aus (anders
+        // als der analoge Filter in MuscleGroupProgressCalculator.filtered()) -
+        // ein Log mit falsch gesetztem/verschobenem sessionStartTime floss so
+        // in jede Periode ein, auch .fourWeeks.
+        let inPeriod: (Date) -> Bool = { date in
+            guard date <= now else { return false }
             guard let cutoff else { return true }
-            return $0 >= cutoff
+            return date >= cutoff
         }
 
         let sets = strengthSets(from: logs).filter { inPeriod($0.sessionStartTime) }

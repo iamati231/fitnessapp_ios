@@ -101,6 +101,28 @@ struct StrengthProgressCalculatorTests {
         #expect(stats.sessionCount == 1)
     }
 
+    // Audit-Fund (Modul 13): inPeriod hatte keine Obergrenze - ein
+    // zukunftsdatiertes sessionStartTime (fehlerhafte Verlaufs-Bearbeitung,
+    // Zeitzonen-Sprung) floss so in jede Periode ein, auch .fourWeeks.
+    @Test func futureDatedSetExcludedFromEveryPeriod() {
+        let future = makeLog(sessionDate: daysAgo(-5))
+        let stats = SPC.overviewStats(
+            logs: [future],
+            strengthSessionDates: [daysAgo(-5)],
+            prDates: [],
+            period: .fourWeeks,
+            now: now
+        )
+        #expect(stats.workSetCount == 0)
+        #expect(stats.sessionCount == 0)
+
+        let allTime = SPC.overviewStats(
+            logs: [future], strengthSessionDates: [daysAgo(-5)], prDates: [], period: .allTime, now: now
+        )
+        #expect(allTime.workSetCount == 0)
+        #expect(allTime.sessionCount == 0)
+    }
+
     /// Four sessions at the four canonical test dates from Issue #26 QA.
     /// now = Nov 16, 2026:
     ///   daysAgo(0)   → within 4W (28 d cutoff)
