@@ -393,6 +393,18 @@ private struct ExerciseTrophySection: View {
             // Reihenfolge: PersonalRecord.Kind.displayOrder (DEL-218).
             chartKind = uniqueKinds.first ?? chartKind
         }
+        // Audit-Fix: ohne das hier blieb `chartKind` stehen, wenn der
+        // globale Filter-Chip bei bereits aufgeklappter Karte wechselte -
+        // `chartPoints` filtert `group.entries` (jetzt auf den neuen
+        // `selectedKind` eingeschraenkt) weiter nach dem veralteten
+        // `chartKind` und wurde leer, der Chart zeigte dann buchstaeblich
+        // nichts (kein Chart, kein "nur 1 Eintrag"-Hinweis). `uniqueKinds`
+        // kollabiert bei aktivem Filter zudem auf genau einen Eintrag, womit
+        // auch `kindPicker` verschwindet - der Nutzer haette ohne diesen
+        // Resync keine Moeglichkeit mehr gehabt, das selbst zu beheben.
+        .onChange(of: selectedKind) { _, _ in
+            chartKind = uniqueKinds.first ?? chartKind
+        }
     }
 
     @ViewBuilder
