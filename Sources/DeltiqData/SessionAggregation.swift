@@ -35,6 +35,15 @@ public extension WorkoutSession {
         logs.filter { !$0.isEmptyPlaceholder }
     }
 
+    /// Modul-9-Audit (Dashboard): `loggedSets`, zusaetzlich ohne Warmup-/
+    /// Cooldown-Saetze. Dashboard-Metriken/-Charts (Volumen, Muskel-Heatmap,
+    /// Compound-/Cardio-Trend) zaehlten bisher rohe `logs`/`loggedSets` mit —
+    /// dieselbe Luecke, die `PersonalRecordSync`/`ProgressionApplicator`/
+    /// `WorkoutSummaryView` bereits ueber `resolvedIsWorkingSet` schliessen.
+    var workingSetLogs: [ExerciseLog] {
+        loggedSets.filter(\.resolvedIsWorkingSet)
+    }
+
     /// DEL-236: Enthielt diese Session ueberhaupt Kraftarbeit?
     ///
     /// `isCardio` ist das einzige Ausschlusskriterium — TimeBased-Uebungen

@@ -1935,7 +1935,7 @@ public struct DashboardView: View {
         let now = Date()
         let logs = completedSessions
             .filter(\.isRealWorkout)
-            .flatMap(\.logs)
+            .flatMap(\.workingSetLogs)
             .map { log -> (date: Date, weightKg: Double, reps: Int, isCardio: Bool, isTimeBased: Bool) in
                 let when = log.session?.startTime ?? log.date
                 return (when, log.weight, log.reps, log.resolvedIsCardio, log.resolvedIsTimeBased)
@@ -2911,7 +2911,7 @@ public struct DashboardView: View {
             // sich Logs ueber `resolvedExerciseName` selbst, sodass der
             // Compound-Trend kontinuierlich bleibt.
             let liftLogs = completedSessions.flatMap { session in
-                session.logs.filter { log in
+                session.workingSetLogs.filter { log in
                     guard let logName = log.resolvedExerciseName else { return false }
                     return liftNames.contains(logName) && logName == name
                 }
@@ -3286,7 +3286,7 @@ public struct DashboardView: View {
         let startOfWeek = currentWeekStart()
         let weekLogs = completedSessions
             .filter { ($0.startTime) >= startOfWeek }
-            .flatMap(\.logs)
+            .flatMap(\.workingSetLogs)
         let volumeKg = weekLogs.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
         let distanceKm = weekLogs.compactMap(\.distanceKm).reduce(0.0, +)
 
@@ -3498,7 +3498,7 @@ public struct DashboardView: View {
         }()
         let logs = completedSessions
             .filter(\.isRealWorkout)
-            .flatMap(\.logs)
+            .flatMap(\.workingSetLogs)
             .map { log -> (date: Date, weightKg: Double, reps: Int, isCardio: Bool, isTimeBased: Bool) in
                 let when = log.session?.startTime ?? log.date
                 return (when, log.weight, log.reps, log.resolvedIsCardio, log.resolvedIsTimeBased)
@@ -3627,7 +3627,10 @@ public struct DashboardView: View {
             // Platzhalter-Zeilen (0/0 aus dem History-Nachtrag) zaehlten hier
             // als vollwertiger Satz und liessen die Woche trainierter
             // aussehen, als sie war.
-            .flatMap(\.loggedSets)
+            // Modul-9-Audit: `workingSetLogs` statt `loggedSets` — ein
+            // Warmup-/Cooldown-Satz liess die Heatmap ebenso trainierter
+            // aussehen, als er darstellt.
+            .flatMap(\.workingSetLogs)
             .compactMap { log -> (date: Date, exerciseName: String, isCardio: Bool)? in
                 guard let name = log.resolvedExerciseName else { return nil }
                 return (date: log.date, exerciseName: name, isCardio: log.resolvedIsCardio)
@@ -3661,7 +3664,7 @@ public struct DashboardView: View {
     private var cardioSeries: [CardioPaceSeries] {
         // Alle Cardio-Logs aus completed Sessions, gruppiert per Uebung.
         let allCardioLogs = completedSessions.flatMap { session in
-            session.logs.filter { $0.exerciseIsCardioSnapshot || ($0.exercise?.isCardio == true) }
+            session.workingSetLogs.filter { $0.exerciseIsCardioSnapshot || ($0.exercise?.isCardio == true) }
         }
         // DEL-156: Gruppierung nach (Name, Equipment) — eine Linie pro
         // Modalitaet. Laufband-Laeufe und Fahrradfahrten derselben Uebung
@@ -3724,7 +3727,7 @@ public struct DashboardView: View {
         let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date.distantPast
         let hasRecentCardio = completedSessions.contains { session in
             session.startTime >= thirtyDaysAgo
-                && session.logs.contains { $0.resolvedIsCardio && ($0.distanceKm ?? 0) > 0 }
+                && session.workingSetLogs.contains { $0.resolvedIsCardio && ($0.distanceKm ?? 0) > 0 }
         }
         if hasRecentCardio { return true }
         // Branch 2: aktiver Plan mit Cardio-Uebung?
