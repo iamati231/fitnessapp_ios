@@ -499,9 +499,15 @@ private struct ExerciseTrophySection: View {
             .map { PRChartPoint(id: $0.persistentModelID, date: $0.date, value: $0.value) }
     }
 
+    // Audit-Fix: filterte bisher zusaetzlich auf `chartKind` (das lokale
+    // Chart-Picker-Auswahl-State), wenn kein globaler Filter-Chip aktiv war -
+    // "prHistory.allRecords" darueber versprach dadurch "alle Rekorde",
+    // zeigte aber immer nur EINE Art (je nachdem, worauf der Chart gerade
+    // zeigt). `group.entries` ist bereits oben in `PRHistoryView.grouped`
+    // korrekt auf den globalen `selectedKind`-Filter eingeschraenkt - hier
+    // braucht es keine weitere Einschraenkung.
     private var visibleEntries: [PersonalRecordEntry] {
-        let kind = selectedKind ?? chartKind
-        return group.entries.filter { $0.kind == kind }
+        group.entries
     }
 }
 
