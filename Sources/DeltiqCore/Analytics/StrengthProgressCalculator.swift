@@ -291,7 +291,15 @@ public enum StrengthProgressCalculator {
         limit: Int = 5
     ) -> [SetDetail] {
         let targetKey = templateID?.uuidString ?? exerciseName
-        let sets = strengthSets(from: logs).filter { exerciseKey($0) == targetKey }
+        // Bugfix (Audit): anders als overviewStats/oneRMHistory fehlte hier
+        // der Guard gegen nicht-positives weightKg/reps (z.B. aus einem
+        // korrupten Import). Eine negative Menge mal negatives Gewicht ergibt
+        // ein positives Produkt, das in der Sortierung ganz oben landen und
+        // als "bester Satz" mit sichtbar negativem Gewicht/Wdh. angezeigt
+        // werden konnte.
+        let sets = strengthSets(from: logs).filter {
+            exerciseKey($0) == targetKey && ($0.isTimeBased ? $0.reps > 0 : ($0.weightKg > 0 && $0.reps > 0))
+        }
 
         return sets
             .sorted {

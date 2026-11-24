@@ -314,6 +314,31 @@ struct StrengthProgressCalculatorTests {
         #expect(sets[0].weightKg == 60)
     }
 
+    // Bugfix (Audit): negative weightKg × negative reps multiply to a
+    // positive, misleadingly high "volume" (e.g. a corrupted import) — unlike
+    // overviewStats/oneRMHistory, bestSets had no positivity guard and could
+    // rank + display such a set as the "best set" with negative weight/reps.
+    @Test func negativeWeightOrRepsExcludedFromBestSets() {
+        let logs = [
+            makeLog(weightKg: 100, reps: 5),
+            makeLog(weightKg: -50, reps: -3), // product = 150, would outrank a real 40kg×5 set
+            makeLog(weightKg: 40, reps: 5),
+        ]
+        let sets = SPC.bestSets(logs: logs, exerciseName: "Squat", templateID: nil)
+        #expect(sets.count == 2)
+        #expect(sets.allSatisfy { $0.weightKg > 0 && $0.reps > 0 })
+    }
+
+    @Test func nonPositiveDurationExcludedFromBestSetsForTimeBasedExercise() {
+        let logs = [
+            makeLog(weightKg: 0, reps: 30, isTimeBased: true),
+            makeLog(weightKg: 0, reps: -10, isTimeBased: true),
+        ]
+        let sets = SPC.bestSets(logs: logs, exerciseName: "Plank", templateID: nil)
+        #expect(sets.count == 1)
+        #expect(sets[0].reps == 30)
+    }
+
     @Test func identicalSetsHaveUniqueIDs() {
         // Two sets with same weight+reps in same session must not produce duplicate SwiftUI ids.
         let logs = [makeLog(weightKg: 100, reps: 5), makeLog(weightKg: 100, reps: 5)]
