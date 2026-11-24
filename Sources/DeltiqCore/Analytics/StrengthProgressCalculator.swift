@@ -18,6 +18,13 @@ public enum StrengthProgressCalculator {
         public let isCardio: Bool
         public let isTimeBased: Bool
         public let isPlaceholder: Bool
+        /// Audit-Fix: ohne dieses Feld zaehlten Warmup-/Cooldown-Saetze in
+        /// workSetCount/volumeKg, exerciseSummaries, oneRMHistory und bestSets
+        /// mit - dieselbe Luecke, die `WorkoutSession.workingSetLogs` an anderer
+        /// Stelle bereits schliesst. Default `true`: bestehende Call-Sites ohne
+        /// Rollen-Information (z.B. Tests) behandeln jeden Satz weiter als
+        /// Working Set, wie vor diesem Feld.
+        public let isWorkingSet: Bool
         /// Stable-within-session identity of the source log entry — e.g. ObjectIdentifier(log) while
         /// in ModelContext. Passed through to SetDetail so its SwiftUI id is constant across re-sorts.
         public let logID: String?
@@ -25,7 +32,7 @@ public enum StrengthProgressCalculator {
         public init(sessionStartTime: Date, exerciseName: String, templateID: UUID?,
                     weightKg: Double, reps: Int, rpe: Double, rir: Float,
                     isCardio: Bool, isTimeBased: Bool, isPlaceholder: Bool,
-                    logID: String? = nil) {
+                    isWorkingSet: Bool = true, logID: String? = nil) {
             self.sessionStartTime = sessionStartTime
             self.exerciseName = exerciseName
             self.templateID = templateID
@@ -36,6 +43,7 @@ public enum StrengthProgressCalculator {
             self.isCardio = isCardio
             self.isTimeBased = isTimeBased
             self.isPlaceholder = isPlaceholder
+            self.isWorkingSet = isWorkingSet
             self.logID = logID
         }
     }
@@ -143,7 +151,7 @@ public enum StrengthProgressCalculator {
     // MARK: - Private helpers
 
     private static func strengthSets(from logs: [StrengthLog]) -> [StrengthLog] {
-        logs.filter { !$0.isCardio && !$0.isPlaceholder }
+        logs.filter { !$0.isCardio && !$0.isPlaceholder && $0.isWorkingSet }
     }
 
     private static func exerciseKey(_ log: StrengthLog) -> String {
