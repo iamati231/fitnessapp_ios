@@ -469,7 +469,7 @@ public struct BackupListView: View {
                 await MainActor.run { self.reload() }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = error.localizedImportMessage
                     self.operation = .idle
                     // Modul-6-Audit: ohne reload() zeigt die Liste bei einem
                     // Fehlschlag weiter eine evtl. bereits rotierte/entfernte

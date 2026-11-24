@@ -74540,6 +74540,75 @@
           }
         }
       }
+    },
+    "settings.dataImport.error.zipNotReadable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv konnte nicht gelesen werden — beschädigte ZIP-Datei?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The archive could not be read — corrupted ZIP file?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arşiv okunamadı — bozuk ZIP dosyası mı?"
+          }
+        }
+      }
+    },
+    "settings.dataImport.error.missingMeta": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv enthält kein meta.json — falsches Format?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The archive does not contain a meta.json — wrong format?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arşivde meta.json yok — yanlış format mı?"
+          }
+        }
+      }
+    },
+    "settings.dataImport.error.unsupportedFormatVersion": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format-Version %@ wird von dieser App-Version nicht unterstützt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format version %@ is not supported by this app version."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ format sürümü bu uygulama sürümü tarafından desteklenmiyor."
+          }
+        }
+      }
     }
   }
 }

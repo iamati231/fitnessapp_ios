@@ -632,14 +632,22 @@ public enum DataImportService {
         case missingMeta
         case unsupportedFormatVersion(String)
 
+        // Bugfix (Audit): hartcodierte deutsche Strings ersetzt. `DeltiqData`
+        // hat kein Resource-Bundle (siehe Package.swift) und kann nicht
+        // lokalisieren — dieselbe Begruendung wie bei `ImportProgress.phase`
+        // oben: der Service bleibt sprachfest, die UI uebersetzt. Englisch als
+        // Fallback (analog `CSVReadError.errorDescription`), damit ein
+        // direkter `.localizedDescription`-Aufruf nie wieder deutschen Text an
+        // EN/TR-Nutzer zeigt. Die eigentliche Lokalisierung passiert in
+        // DeltiqUI ueber `Error.localizedImportMessage` (DataImportView.swift).
         public var errorDescription: String? {
             switch self {
             case .zipNotReadable:
-                return "Archiv konnte nicht gelesen werden — beschädigte ZIP-Datei?"
+                return "The archive could not be read — corrupted ZIP file?"
             case .missingMeta:
-                return "Archiv enthält kein meta.json — falsches Format?"
+                return "The archive does not contain a meta.json — wrong format?"
             case .unsupportedFormatVersion(let v):
-                return "Format-Version \(v) wird von dieser App-Version nicht unterstützt."
+                return "Format version \(v) is not supported by this app version."
             }
         }
     }

@@ -32,6 +32,30 @@ import UIKit
 import WidgetKit
 #endif
 
+// Bugfix (Audit): `DataImportService.ImportError.errorDescription` (DeltiqData)
+// hat kein Resource-Bundle und liefert nur einen englischen Fallback-Text —
+// die eigentliche Lokalisierung (DE/EN/TR) passiert hier, wo `Bundle.module`
+// existiert. Ersetzt `error.localizedDescription` an allen drei Call-Sites
+// (DataImportView, BackupListView, OnboardingView), die einen Fehler aus
+// `DataImportService.performImport` anzeigen.
+@available(iOS 17.0, macOS 14.0, *)
+extension Error {
+    var localizedImportMessage: String {
+        guard let importError = self as? DataImportService.ImportError else { return localizedDescription }
+        switch importError {
+        case .zipNotReadable:
+            return String(localized: "settings.dataImport.error.zipNotReadable", bundle: .module)
+        case .missingMeta:
+            return String(localized: "settings.dataImport.error.missingMeta", bundle: .module)
+        case .unsupportedFormatVersion(let version):
+            return String(
+                format: String(localized: "settings.dataImport.error.unsupportedFormatVersion", bundle: .module),
+                version
+            )
+        }
+    }
+}
+
 @available(iOS 17.0, macOS 14.0, *)
 public struct DataImportView: View {
 
@@ -772,7 +796,7 @@ public struct DataImportView: View {
                 }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = error.localizedImportMessage
                     self.phase = .ready
                     self.pickedURL = nil
                     self.importProgress = nil
