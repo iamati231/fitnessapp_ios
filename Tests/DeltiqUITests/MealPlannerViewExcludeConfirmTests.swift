@@ -42,7 +42,7 @@ final class MealPlannerViewExcludeConfirmTests: XCTestCase {
         guard let labelRange = cleaned.range(of: "mealPlanner.action.exclude\", bundle: .module), systemImage: \"nosign\")") else {
             return XCTFail("exclude button label not found")
         }
-        guard let buttonStart = cleaned.range(of: "Button {", range: cleaned.startIndex..<labelRange.lowerBound, options: .backwards) else {
+        guard let buttonStart = cleaned.range(of: "Button {", options: .backwards, range: cleaned.startIndex..<labelRange.lowerBound) else {
             return XCTFail("exclude button start not found")
         }
         let action = cleaned[buttonStart.upperBound..<labelRange.lowerBound]
