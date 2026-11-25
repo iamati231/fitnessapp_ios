@@ -71,7 +71,7 @@ public enum MealPlanOptimizer {
         }
 
         let recipeByID = Dictionary(uniqueKeysWithValues: recipeCatalog.map { ($0.id, $0) })
-        let assignedIDs = Set(assignments.map(\.recipeID))
+        var assignedIDs = Set(assignments.map(\.recipeID))
 
         // Schritt 1: Jeden Slot auflösen — Nährwerte berechnen, ggf. Rezeptalternative finden.
         struct ResolvedSlot {
@@ -114,6 +114,10 @@ public enum MealPlanOptimizer {
                         break
                     }
                 }
+                // Modul-17-Fix: frisch gewaehlten Swap sofort als belegt markieren,
+                // sonst schlagen zwei gleichzeitig unloesbare Slots desselben
+                // mealType dasselbe Ersatzrezept doppelt vor (vgl. MealPlanGenerator.generate()).
+                assignedIDs.insert(swapID)
                 resolvedSlots.append(ResolvedSlot(
                     originalRecipeID: a.recipeID, resolvedRecipeID: swapID,
                     mealType: a.mealType, originalMultiplier: a.portionMultiplier,
