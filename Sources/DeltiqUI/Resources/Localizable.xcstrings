@@ -74609,6 +74609,75 @@
           }
         }
       }
+    },
+    "equipmentEditor.bodyweightOnly.confirmTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment-Profil wirklich zurücksetzen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Really reset your equipment profile?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekipman profilini gerçekten sıfırlamak istiyor musun?"
+          }
+        }
+      }
+    },
+    "equipmentEditor.bodyweightOnly.confirmAction": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurücksetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sıfırla"
+          }
+        }
+      }
+    },
+    "equipmentEditor.bodyweightOnly.confirmMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle bisherigen Angaben zu Gewichten, Bank, Klimmzugstange und weiterer Ausstattung gehen verloren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All current entries for weights, bench, pull-up bar, and further equipment will be lost."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ağırlıklar, bank, barfiks ve diğer ekipmanlara dair tüm mevcut bilgiler kaybolacak."
+          }
+        }
+      }
     }
   }
 }
