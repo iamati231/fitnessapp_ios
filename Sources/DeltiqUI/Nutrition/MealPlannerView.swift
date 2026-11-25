@@ -756,6 +756,7 @@ public struct MealPlannerView: View {
             assignment.recipeID = change.proposedRecipeID
             assignment.portionMultiplier = change.proposedMultiplier
         }
+        plan.isManuallyAdjusted = true
         try? modelContext.save()
         optimizationProposal = nil
     }
