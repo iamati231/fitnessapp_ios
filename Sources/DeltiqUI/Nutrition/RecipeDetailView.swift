@@ -262,8 +262,13 @@ public struct RecipeDetailView: View {
         for ingredient in r.ingredients {
             let food = foodByID[ingredient.ingredientID]!
             let scaledGrams = ingredient.amountGrams * factor
-            let nutrients = NutritionCalculations.nutrients(for: food, quantity: scaledGrams, unit: .gram)
-                ?? NutrientValues(kcal: .unknown, proteinG: .unknown, carbsG: .unknown, fatG: .unknown)
+            guard let nutrients = NutritionCalculations.nutrients(for: food, quantity: scaledGrams, unit: .gram) else {
+                // Wie RecipeNutritionCalculator.nutrients: Menge <= 0 ist ein
+                // Datenfehler; Position ignorieren statt als Phantom-Eintrag
+                // mit unbekannten Naehrwerten ins Tagebuch zu schreiben
+                // (Audit-Fund Modul 17).
+                continue
+            }
             let name = String(localized: String.LocalizationValue(food.nameKey), bundle: .module)
             let item = MealItem(
                 catalogID: food.id,
