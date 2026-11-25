@@ -241,13 +241,32 @@ private func isBodyweightOnly(_ profile: UserEquipmentProfile) -> Bool {
     EquipmentItem.allCases.allSatisfy { profile.availability(for: $0) == .unavailable }
 }
 
+/// Bugfix (Audit): vorher die direkte Mutation in `bodyweightOnlyButton`s
+/// Button-Action — jetzt hinter einem `confirmationDialog` (siehe beide
+/// Call-Sites unten), ausgelagert, damit beide denselben Wipe nutzen.
+private func applyBodyweightOnly(to profile: Binding<UserEquipmentProfile>) {
+    var fresh = UserEquipmentProfile()
+    fresh.confirmRemainingAsUnavailable()
+    profile.wrappedValue = fresh
+}
+
 @available(iOS 17.0, macOS 14.0, *)
-private func bodyweightOnlyButton(titleKey: String, subtitleKey: String, profile: Binding<UserEquipmentProfile>) -> some View {
+private func bodyweightOnlyButton(
+    titleKey: String,
+    subtitleKey: String,
+    profile: Binding<UserEquipmentProfile>,
+    showingConfirm: Binding<Bool>
+) -> some View {
     let isSelected = isBodyweightOnly(profile.wrappedValue)
     return Button {
-        var fresh = UserEquipmentProfile()
-        fresh.confirmRemainingAsUnavailable()
-        profile.wrappedValue = fresh
+        // Bugfix (Audit): dieser Button sass bisher als ganz normale Zeile
+        // ganz oben in einer scrollbaren Liste optisch identischer Zeilen und
+        // loeschte bei einem einzigen Tap SOFORT das komplette
+        // Equipment-Profil (Gewichte, Bank, Klimmzugstange, weitere
+        // Ausstattung) — ohne Rueckfrage, ohne Undo. Analog zum bestehenden
+        // `settings.confirm.reset`-Dialog (SettingsView, "App zuruecksetzen")
+        // jetzt erst eine Bestaetigung zeigen, bevor tatsaechlich gewischt wird.
+        showingConfirm.wrappedValue = true
     } label: {
         HStack(alignment: .center, spacing: 14) {
             Image(systemName: "figure.walk")
@@ -309,6 +328,7 @@ private func bodyweightOnlyButton(titleKey: String, subtitleKey: String, profile
 struct EquipmentProfileEditor: View {
     @Binding var equipmentProfile: UserEquipmentProfile
     var showsCounts: Bool = true
+    @State private var showingBodyweightOnlyConfirm = false
 
     private static let weightItems: [EquipmentItem] = [.dumbbell, .kettlebell, .barbell, .resistanceBand]
     /// Abschnitt D ("Weitere Ausstattung"). Bewusst NUR Items mit echter
@@ -322,7 +342,8 @@ struct EquipmentProfileEditor: View {
             bodyweightOnlyButton(
                 titleKey: "equipmentEditor.bodyweightOnly.title",
                 subtitleKey: "equipmentEditor.bodyweightOnly.subtitle",
-                profile: $equipmentProfile
+                profile: $equipmentProfile,
+                showingConfirm: $showingBodyweightOnlyConfirm
             )
 
             sectionHeader("equipmentEditor.section.weights")
@@ -364,6 +385,22 @@ struct EquipmentProfileEditor: View {
                 .font(.footnote)
                 .foregroundStyle(.tertiary)
         }
+        .confirmationDialog(
+            Text("equipmentEditor.bodyweightOnly.confirmTitle", bundle: .module),
+            isPresented: $showingBodyweightOnlyConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                applyBodyweightOnly(to: $equipmentProfile)
+            } label: {
+                Text("equipmentEditor.bodyweightOnly.confirmAction", bundle: .module)
+            }
+            Button(role: .cancel) {} label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            Text("equipmentEditor.bodyweightOnly.confirmMessage", bundle: .module)
+        }
     }
 
     private func sectionHeader(_ key: String) -> some View {
@@ -387,6 +424,7 @@ struct EquipmentProfileEditor: View {
 @available(iOS 17.0, macOS 14.0, *)
 struct NoEquipmentQuickEquipmentPicker: View {
     @Binding var equipmentProfile: UserEquipmentProfile
+    @State private var showingBodyweightOnlyConfirm = false
 
     private static let helperItems: [EquipmentItem] = [.dumbbell, .kettlebell, .resistanceBand]
     private static let furtherItems: [EquipmentItem] = [.rack, .cableStation, .machineStation]
@@ -400,7 +438,8 @@ struct NoEquipmentQuickEquipmentPicker: View {
             bodyweightOnlyButton(
                 titleKey: "equipmentEditor.bodyweightOnly.title",
                 subtitleKey: "equipmentEditor.bodyweightOnly.subtitle",
-                profile: $equipmentProfile
+                profile: $equipmentProfile,
+                showingConfirm: $showingBodyweightOnlyConfirm
             )
 
             DisclosureGroup {
@@ -419,6 +458,22 @@ struct NoEquipmentQuickEquipmentPicker: View {
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
             }
+        }
+        .confirmationDialog(
+            Text("equipmentEditor.bodyweightOnly.confirmTitle", bundle: .module),
+            isPresented: $showingBodyweightOnlyConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                applyBodyweightOnly(to: $equipmentProfile)
+            } label: {
+                Text("equipmentEditor.bodyweightOnly.confirmAction", bundle: .module)
+            }
+            Button(role: .cancel) {} label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            Text("equipmentEditor.bodyweightOnly.confirmMessage", bundle: .module)
         }
     }
 }
