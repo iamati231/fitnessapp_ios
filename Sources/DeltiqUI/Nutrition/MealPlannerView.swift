@@ -326,12 +326,12 @@ public struct MealPlannerView: View {
                         .foregroundStyle(Color.primary)
                     Spacer()
                     if let current = row.current.value {
-                        Text("\(current.truncated(to: 0).formattedTwoDecimals) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
+                        Text("\(current.truncated(to: 2).formattedTwoDecimals) / \(row.goal.truncated(to: 2).formattedTwoDecimals) \(row.unit)")
                             .font(.caption)
                             .foregroundStyle(Color.Deltiq.textSecondary)
                             .fitnessNumberStyle()
                     } else {
-                        Text("\(NutritionDisplay.unknownValue) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
+                        Text("\(NutritionDisplay.unknownValue) / \(row.goal.truncated(to: 2).formattedTwoDecimals) \(row.unit)")
                             .font(.caption)
                             .foregroundStyle(Color.Deltiq.textSecondary)
                             .fitnessNumberStyle()
