@@ -33075,6 +33075,52 @@
         }
       }
     },
+    "mealPlanner.optimize.failed.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für diesen Tag konnte keine Optimierung berechnet werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No optimization could be calculated for this day."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu gün için optimizasyon hesaplanamadı."
+          }
+        }
+      }
+    },
+    "mealPlanner.optimize.failed.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimierung nicht möglich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimization Not Possible"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimizasyon Mümkün Değil"
+          }
+        }
+      }
+    },
     "mealPlanner.optimize.noChange": {
       "extractionState": "manual",
       "localizations": {
