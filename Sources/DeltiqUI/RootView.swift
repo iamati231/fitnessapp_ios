@@ -486,7 +486,6 @@ struct MainTabView: View {
         .onAppear {
             applyPendingRouteIfAny()
             if !hasHandledInitialAppTour {
-                hasHandledInitialAppTour = true
                 navigation.tourStartsFromInvitation = true
                 navigation.showingTour = true
             }
@@ -497,7 +496,14 @@ struct MainTabView: View {
         .sheet(isPresented: Binding(
             get: { navigation.showingTour },
             set: { navigation.showingTour = $0 }
-        )) {
+        ), onDismiss: {
+            // Erst HIER als behandelt markieren (nicht schon im .onAppear oben) —
+            // sonst gilt die Einladung bereits als beantwortet, bevor der Nutzer
+            // das Sheet ueberhaupt gesehen hat (z.B. bei App-Kill/Crash direkt
+            // nach dem Onboarding verliert der Nutzer die Einladung dann
+            // permanent, ohne sie je gesehen zu haben).
+            hasHandledInitialAppTour = true
+        }) {
             AppTourSheet(showInvitation: navigation.tourStartsFromInvitation) {
                 navigation.showingTour = false
             }
