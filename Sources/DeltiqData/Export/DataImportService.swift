@@ -708,6 +708,14 @@ public enum DataImportService {
                 errors.append(.init(line: row.lineNumber, reason: "missing birth_date or height_cm"))
                 continue
             }
+            // Bugfix (Audit): ein zukuenftiges oder >125 Jahre altes birth_date
+            // parst erfolgreich, ist aber nicht plausibel — ohne diese Pruefung
+            // landete es unveraendert in UserBodyProfile.birthDate und liess
+            // `ageYears` negativ werden (siehe UserBodyProfile.isPlausibleBirthDate).
+            guard UserBodyProfile.isPlausibleBirthDate(birthDate) else {
+                errors.append(.init(line: row.lineNumber, reason: "birth_date out of plausible range"))
+                continue
+            }
             let profileEnum = BodyFormulaProfile(rawValue: row["profile"]) ?? .male
             let envEnum = EnvironmentType(rawValue: row["environment"]) ?? .gym
 

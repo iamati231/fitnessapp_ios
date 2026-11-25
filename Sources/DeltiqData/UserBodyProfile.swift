@@ -186,6 +186,18 @@ public final class UserBodyProfile {
         Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0
     }
 
+    /// Bugfix (Audit): plausibler Bereich fuer `birthDate` — niemand ist
+    /// aelter als ~125 Jahre oder in der Zukunft geboren. `OnboardingView`
+    /// erzwingt das schon ueber den DatePicker-Bound (`minBirthDate`), aber
+    /// `DataImportService.importProfile` konnte diese Grenze bisher umgehen
+    /// (ein Backup-Archiv ist kein UI-Formular) — ein zukuenftiges `birthDate`
+    /// liess `ageYears` oben negativ werden, was direkt in
+    /// `BodyCalculations.bmrMifflinStJeor` einfliesst.
+    public static func isPlausibleBirthDate(_ date: Date, now: Date = .init()) -> Bool {
+        guard let minDate = Calendar.current.date(byAdding: .year, value: -125, to: now) else { return true }
+        return date >= minDate && date <= now
+    }
+
     /// Convenience-Accessor mit Default-Fallback, falls jemand einen
     /// invaliden String reinschreibt.
     public var coachingTone: CoachingTone {

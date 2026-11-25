@@ -2192,5 +2192,33 @@ final class DataPortabilityRoundtripTests: XCTestCase {
             "Referenz muss auf die WIEDERVERWENDETE Vorlage zeigen, nicht auf die verwaiste Export-ID"
         )
     }
+
+    // MARK: - Modul-14-Audit: implausible birth_date
+
+    /// Bugfix (Audit): ein zukuenftiges `birth_date` parste bisher erfolgreich
+    /// und ueberschrieb/erzeugte das Profil trotzdem — `UserBodyProfile.ageYears`
+    /// wurde dann negativ (fliesst direkt in BMR/TDEE ein). Muss als Row-Error
+    /// verworfen werden, kein Profil darf daraus entstehen.
+    func testImportRejectsImplausibleFutureBirthDate() async throws {
+        let source = try makeContainer()
+        let futureBirthDate = try XCTUnwrap(Calendar.current.date(byAdding: .year, value: 5, to: Date()))
+        let profile = UserBodyProfile(
+            birthDate: futureBirthDate, heightCm: 180, profile: .male, environment: .gym
+        )
+        source.mainContext.insert(profile)
+        try source.mainContext.save()
+        let bundle = try DataExportService.makeExport(context: source.mainContext)
+
+        let target = try makeContainer()
+        let result = try await DataImportService.performImport(
+            zipData: bundle.data, context: target.mainContext, strategy: .appendOnly
+        )
+
+        XCTAssertEqual(result.errorRows, 1, "implausibles birth_date muss als Row-Error verworfen werden")
+        XCTAssertEqual(
+            try target.mainContext.fetchCount(FetchDescriptor<UserBodyProfile>()), 0,
+            "aus einer verworfenen Zeile darf kein Profil entstehen"
+        )
+    }
 }
 #endif
