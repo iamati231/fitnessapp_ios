@@ -30,6 +30,7 @@ public struct MealPlannerView: View {
     @State private var isOptimizing = false
     @State private var showOptimizationNoGoalsAlert = false
     @State private var showOptimizationFailedAlert = false
+    @State private var pendingExcludeAssignment: PlannedMealAssignment? = nil
 
     @Query private var allPlans: [DailyMealPlan]
     @Query private var profiles: [UserBodyProfile]
@@ -157,6 +158,34 @@ public struct MealPlannerView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("mealPlanner.optimize.failed.message", bundle: .module)
+        }
+        // Audit-Fund Modul 17: Ausschliessen war vorher ein ungesicherter Tap,
+        // der gleichzeitig eine globale Praeferenz UND die heutige Zuweisung
+        // aenderte - jetzt derselbe Bestaetigungs-Dialog wie an anderen
+        // destruktiven Stellen der App (z.B. BackupListView).
+        .confirmationDialog(
+            Text("mealPlanner.action.exclude.confirmTitle", bundle: .module),
+            isPresented: Binding(
+                get: { pendingExcludeAssignment != nil },
+                set: { if !$0 { pendingExcludeAssignment = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                if let assignment = pendingExcludeAssignment, let profile = userProfile {
+                    profile.mealPlanExcludedRecipeIDsRaw.append(assignment.recipeID)
+                    try? modelContext.save()
+                    removeAssignment(assignment)
+                }
+                pendingExcludeAssignment = nil
+            } label: {
+                Text("mealPlanner.action.exclude", bundle: .module)
+            }
+            Button(role: .cancel) { pendingExcludeAssignment = nil } label: {
+                Text("common.cancel", bundle: .module)
+            }
+        } message: {
+            Text("mealPlanner.action.exclude.confirmMessage", bundle: .module)
         }
     }
 
@@ -526,9 +555,7 @@ public struct MealPlannerView: View {
             if let profile = userProfile,
                !profile.mealPlanExcludedRecipeIDsRaw.contains(assignment.recipeID) {
                 Button {
-                    profile.mealPlanExcludedRecipeIDsRaw.append(assignment.recipeID)
-                    try? modelContext.save()
-                    removeAssignment(assignment)
+                    pendingExcludeAssignment = assignment
                 } label: {
                     Label(String(localized: "mealPlanner.action.exclude", bundle: .module), systemImage: "nosign")
                 }

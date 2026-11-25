@@ -32983,6 +32983,52 @@
         }
       }
     },
+    "mealPlanner.action.exclude.confirmMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Rezept wird aus dem heutigen Plan entfernt und dauerhaft von künftigen Vorschlägen ausgeschlossen. Du kannst es später in den Ernährungseinstellungen wiederherstellen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The recipe will be removed from today's plan and permanently excluded from future suggestions. You can restore it later in your nutrition preferences."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarif bugünkü plandan kaldırılacak ve gelecekteki önerilerden kalıcı olarak hariç tutulacak. Daha sonra beslenme tercihlerinden geri yükleyebilirsin."
+          }
+        }
+      }
+    },
+    "mealPlanner.action.exclude.confirmTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept wirklich ausschließen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Really Exclude Recipe?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarif gerçekten hariç tutulsun mu?"
+          }
+        }
+      }
+    },
     "mealPlanner.action.regenerate": {
       "extractionState": "manual",
       "localizations": {
