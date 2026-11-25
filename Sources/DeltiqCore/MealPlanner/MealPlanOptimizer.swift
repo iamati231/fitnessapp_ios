@@ -122,9 +122,14 @@ public enum MealPlanOptimizer {
             }
         }
 
-        // Schritt 2: Aktuelle Tagessumme aus berechenbaren Slots.
-        let knownNutrients = resolvedSlots.compactMap { $0.currentNutrients }
-        let currentTotals = NutrientValues.sum(knownNutrients)
+        // Schritt 2: Aktuelle Tagessumme aus allen Slots. Ein unaufloesbarer
+        // Slot (currentNutrients == nil) traegt als voll-unbekannter Platzhalter
+        // bei statt zu entfallen - sonst wuerde er stillschweigend wie 0 gezaehlt,
+        // was dem OFF-01-Vertrag oben widerspricht (Audit-Fund Modul 17).
+        let slotNutrients = resolvedSlots.map {
+            $0.currentNutrients ?? NutrientValues(kcal: .unknown, proteinG: .unknown, carbsG: .unknown, fatG: .unknown)
+        }
+        let currentTotals = NutrientValues.sum(slotNutrients)
         let hasUnresolvableSlots = resolvedSlots.contains { $0.currentNutrients == nil }
 
         // Schritt 3: Gewichteten Skalierungsfaktor berechnen.
@@ -199,8 +204,12 @@ public enum MealPlanOptimizer {
                case .success(let n) = RecipeNutritionCalculator.nutrients(
                    for: recipe, catalog: foodCatalog, portionMultiplier: proposed) {
                 proposedNutrients = n
-                proposedComponents.append(n)
             }
+            // Wie in Schritt 2: ein nicht aufloesbarer Slot traegt als
+            // voll-unbekannter Platzhalter bei statt zu entfallen (Modul 17).
+            proposedComponents.append(
+                proposedNutrients ?? NutrientValues(kcal: .unknown, proteinG: .unknown, carbsG: .unknown, fatG: .unknown)
+            )
 
             changes.append(OptimizedPlanProposal.SlotChange(
                 mealType: slot.mealType,
