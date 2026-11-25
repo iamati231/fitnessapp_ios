@@ -314,6 +314,42 @@ struct StrengthProgressCalculatorTests {
         #expect(sets[0].weightKg == 60)
     }
 
+    // Bugfix (Audit): negative weightKg × negative reps multiply to a
+    // positive, misleadingly high "volume" (e.g. a corrupted import) — unlike
+    // overviewStats/oneRMHistory, bestSets had no positivity guard and could
+    // rank + display such a set as the "best set" with negative weight/reps.
+    @Test func negativeWeightOrRepsExcludedFromBestSets() {
+        let logs = [
+            makeLog(weightKg: 100, reps: 5),
+            makeLog(weightKg: -50, reps: -3), // product = 150, would outrank a real 40kg×5 set
+            makeLog(weightKg: 40, reps: 5),
+        ]
+        let sets = SPC.bestSets(logs: logs, exerciseName: "Squat", templateID: nil)
+        #expect(sets.count == 2)
+        #expect(sets.allSatisfy { $0.weightKg > 0 && $0.reps > 0 })
+    }
+
+    /// Regression guard for the fix above: weightKg == 0 is a legitimate
+    /// bodyweight set (e.g. pull-ups) and must stay included — only a truly
+    /// negative weight is a corrupt value. See also
+    /// `oneRMHistoryIgnoresBodyweightSetsInMixedSession`, which already
+    /// asserts bodyweight sets belong in bestSets.
+    @Test func zeroWeightBodyweightSetStillIncludedInBestSets() {
+        let logs = [makeLog(name: "Pull-up", weightKg: 0, reps: 10)]
+        let sets = SPC.bestSets(logs: logs, exerciseName: "Pull-up", templateID: nil)
+        #expect(sets.count == 1)
+    }
+
+    @Test func nonPositiveDurationExcludedFromBestSetsForTimeBasedExercise() {
+        let logs = [
+            makeLog(name: "Plank", weightKg: 0, reps: 30, isTimeBased: true),
+            makeLog(name: "Plank", weightKg: 0, reps: -10, isTimeBased: true),
+        ]
+        let sets = SPC.bestSets(logs: logs, exerciseName: "Plank", templateID: nil)
+        #expect(sets.count == 1)
+        #expect(sets.first?.reps == 30)
+    }
+
     @Test func identicalSetsHaveUniqueIDs() {
         // Two sets with same weight+reps in same session must not produce duplicate SwiftUI ids.
         let logs = [makeLog(weightKg: 100, reps: 5), makeLog(weightKg: 100, reps: 5)]
