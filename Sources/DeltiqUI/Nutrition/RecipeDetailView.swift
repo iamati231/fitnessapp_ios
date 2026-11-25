@@ -91,7 +91,11 @@ public struct RecipeDetailView: View {
             HStack {
                 Spacer()
                 Button {
-                    if portionMultiplier > 0.5 { portionMultiplier = portionMultiplier - 0.5 }
+                    // Audit-Fund Modul 17: gegen das ERGEBNIS klemmen, nicht
+                    // gegen den Ausgangswert - sonst rutscht ein nicht auf
+                    // 0.5 gerastertes Startportion (z.B. von der
+                    // Ziel-Skalierung) unter die eigene 0.5-Untergrenze.
+                    portionMultiplier = max(portionMultiplier - 0.5, 0.5)
                 } label: {
                     Image(systemName: "minus")
                         .font(.system(size: 14, weight: .semibold))
@@ -109,7 +113,7 @@ public struct RecipeDetailView: View {
                     .multilineTextAlignment(.center)
 
                 Button {
-                    if portionMultiplier < 10.0 { portionMultiplier = portionMultiplier + 0.5 }
+                    portionMultiplier = min(portionMultiplier + 0.5, 10.0)
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 14, weight: .semibold))
