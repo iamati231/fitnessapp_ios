@@ -29,6 +29,7 @@ public struct MealPlannerView: View {
     @State private var optimizationProposal: OptimizedPlanProposal? = nil
     @State private var isOptimizing = false
     @State private var showOptimizationNoGoalsAlert = false
+    @State private var showOptimizationFailedAlert = false
 
     @Query private var allPlans: [DailyMealPlan]
     @Query private var profiles: [UserBodyProfile]
@@ -148,6 +149,14 @@ public struct MealPlannerView: View {
             isPresented: $showOptimizationNoGoalsAlert
         ) {
             Button("OK", role: .cancel) {}
+        }
+        .alert(
+            String(localized: "mealPlanner.optimize.failed.title", bundle: .module),
+            isPresented: $showOptimizationFailedAlert
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("mealPlanner.optimize.failed.message", bundle: .module)
         }
     }
 
@@ -742,8 +751,11 @@ public struct MealPlannerView: View {
             foodCatalog: foodCatalog,
             preferences: prefs
         )
-        if case .success(let proposal) = result {
+        switch result {
+        case .success(let proposal):
             optimizationProposal = proposal
+        case .failure:
+            showOptimizationFailedAlert = true
         }
     }
 
