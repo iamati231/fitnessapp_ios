@@ -158,7 +158,13 @@ public enum NutrientsImport {
         mask: Int
     ) -> KnownValue {
         guard (mask & bit) != 0 else { return .unknown }
-        guard let amount = row.double(key) else { return .unknown }
+        // Bugfix (Audit): ein negativer Wert parst erfolgreich, ist aber nie
+        // ein echter Naehrwert (kein Lebensmittel hat -500 kcal/100g) — dasselbe
+        // Pflichtfeld-Gate wie `CustomFoodDraft.isValid` beim manuellen Anlegen
+        // (`$0 >= 0`). Als `.unknown` behandelt statt als falscher Negativwert
+        // uebernommen, konsistent mit "fehlende Werte werden nie als 0/falscher
+        // Wert eingerechnet" oben in `sum(_:)`.
+        guard let amount = row.double(key), amount >= 0 else { return .unknown }
         return .known(amount)
     }
 }
