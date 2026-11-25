@@ -605,7 +605,7 @@ public struct OnboardingView: View {
                     } catch {
                         await MainActor.run {
                             backupImportRunning = false
-                            backupImportError = error.localizedDescription
+                            backupImportError = error.localizedImportMessage
                         }
                     }
                 }
