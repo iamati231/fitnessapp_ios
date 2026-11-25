@@ -29,6 +29,7 @@ public struct MealPlannerView: View {
     @State private var optimizationProposal: OptimizedPlanProposal? = nil
     @State private var isOptimizing = false
     @State private var showOptimizationNoGoalsAlert = false
+    @State private var showOptimizationFailedAlert = false
     @State private var pendingExcludeAssignment: PlannedMealAssignment? = nil
 
     @Query private var allPlans: [DailyMealPlan]
@@ -149,6 +150,14 @@ public struct MealPlannerView: View {
             isPresented: $showOptimizationNoGoalsAlert
         ) {
             Button("OK", role: .cancel) {}
+        }
+        .alert(
+            String(localized: "mealPlanner.optimize.failed.title", bundle: .module),
+            isPresented: $showOptimizationFailedAlert
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("mealPlanner.optimize.failed.message", bundle: .module)
         }
         // Audit-Fund Modul 17: Ausschliessen war vorher ein ungesicherter Tap,
         // der gleichzeitig eine globale Praeferenz UND die heutige Zuweisung
@@ -355,12 +364,12 @@ public struct MealPlannerView: View {
                         .foregroundStyle(Color.primary)
                     Spacer()
                     if let current = row.current.value {
-                        Text("\(current.truncated(to: 0).formattedTwoDecimals) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
+                        Text("\(current.truncated(to: 2).formattedTwoDecimals) / \(row.goal.truncated(to: 2).formattedTwoDecimals) \(row.unit)")
                             .font(.caption)
                             .foregroundStyle(Color.Deltiq.textSecondary)
                             .fitnessNumberStyle()
                     } else {
-                        Text("\(NutritionDisplay.unknownValue) / \(row.goal.truncated(to: 0).formattedTwoDecimals) \(row.unit)")
+                        Text("\(NutritionDisplay.unknownValue) / \(row.goal.truncated(to: 2).formattedTwoDecimals) \(row.unit)")
                             .font(.caption)
                             .foregroundStyle(Color.Deltiq.textSecondary)
                             .fitnessNumberStyle()
@@ -769,8 +778,11 @@ public struct MealPlannerView: View {
             foodCatalog: foodCatalog,
             preferences: prefs
         )
-        if case .success(let proposal) = result {
+        switch result {
+        case .success(let proposal):
             optimizationProposal = proposal
+        case .failure:
+            showOptimizationFailedAlert = true
         }
     }
 
@@ -783,6 +795,7 @@ public struct MealPlannerView: View {
             assignment.recipeID = change.proposedRecipeID
             assignment.portionMultiplier = change.proposedMultiplier
         }
+        plan.isManuallyAdjusted = true
         try? modelContext.save()
         optimizationProposal = nil
     }
