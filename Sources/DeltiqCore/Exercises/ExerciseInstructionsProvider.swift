@@ -9,11 +9,16 @@ public enum ExerciseInstructionsProvider {
         public let en: [String]
         public let tr: [String]
 
-        /// Gibt Schritte in der bevorzugten Sprache zurueck; Fallback: DE -> EN.
-        public func preferred() -> [String] {
-            let lang = Locale.current.language.languageCode?.identifier ?? "de"
+        /// Gibt Schritte in der bevorzugten Sprache zurueck; Fallback-Kette:
+        /// bevorzugte Sprache -> DE -> EN.
+        /// `languageCode`-Override fuer Tests; Default liest die System-Locale.
+        public func preferred(languageCode: String? = nil) -> [String] {
+            let lang = languageCode ?? Locale.current.language.languageCode?.identifier ?? "de"
             switch lang {
-            case "tr": return tr.isEmpty ? de : tr
+            // Audit-Fund Modul 18: TR fiel bei leerem TR+DE nicht weiter auf EN
+            // zurueck, obwohl EN gueltige Schritte haben kann (DE/EN sind
+            // dagegen bereits symmetrisch zueinander).
+            case "tr": return tr.isEmpty ? (de.isEmpty ? en : de) : tr
             case "en": return en.isEmpty ? de : en
             default:   return de.isEmpty ? en : de
             }
