@@ -122,7 +122,9 @@ public enum BodyCalculations {
     /// Linear-regression projection on the last up-to-6 measurements.
     /// Returns `nil` when:
     ///  - fewer than 3 measurements,
-    ///  - measurements span less than 1 day,
+    ///  - measurements span less than 3 weeks (Audit-Fund Modul 18: dieser
+    ///    Kommentar nannte faelschlich "less than 1 day" - der Code verlangt
+    ///    seit jeher 3 Wochen Spread, siehe `spanWeeks`-Guard unten),
     ///  - x-variance is degenerate (all measurements within microseconds),
     ///  - projected weight falls outside the plausible range 20-400 kg.
     public static func projectWeightTrend(
