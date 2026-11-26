@@ -1466,7 +1466,13 @@ public struct DayEditorView: View {
             modelContext.delete(exercise)
         }
         // Re-index from pre-delete snapshot to avoid SwiftData sync race (DEL-Day-Editor-Swipe crash).
-        let remaining = snapshot.filter { !deletedIDs.contains($0.persistentModelID) && !pendingExerciseDeleteIDs.contains($0.persistentModelID) }
+        // Audit-Fund Modul 21: nach orderIndex sortieren, nicht nach der im snapshot
+        // eingefrorenen Array-Position - sonst ueberschreibt ein Commit eine
+        // zwischenzeitliche Drag&Drop-Umsortierung (moveExercises) wieder mit der
+        // Reihenfolge von VOR dem Loeschen.
+        let remaining = snapshot
+            .filter { !deletedIDs.contains($0.persistentModelID) && !pendingExerciseDeleteIDs.contains($0.persistentModelID) }
+            .sorted { $0.orderIndex < $1.orderIndex }
         for (i, exercise) in remaining.enumerated() {
             exercise.orderIndex = i
         }
