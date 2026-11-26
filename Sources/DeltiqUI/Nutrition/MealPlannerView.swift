@@ -714,12 +714,22 @@ public struct MealPlannerView: View {
                 modelContext.insert(pa)
                 return pa
             }
-            try? DailyMealPlan.upsertGenerated(
-                date: selectedDate,
-                assignments: assignments,
-                warning: plan.insufficientSelectionWarning,
-                in: modelContext
-            )
+            do {
+                try DailyMealPlan.upsertGenerated(
+                    date: selectedDate,
+                    assignments: assignments,
+                    warning: plan.insufficientSelectionWarning,
+                    in: modelContext
+                )
+            } catch {
+                // upsertGenerated kann werfen, bevor es die eben eingefuegten
+                // Assignments einem Plan zuweist (z.B. fetchOrCreate) - sonst
+                // blieben sie als verwaiste PlannedMealAssignment-Objekte ohne
+                // Plan im Context haengen (Audit-Fund: try? verschluckte das
+                // komplett, ohne jede Rueckmeldung).
+                for pa in assignments { modelContext.delete(pa) }
+                generationError = String(localized: "day.editor.save.failed", bundle: .module)
+            }
         case .failure:
             generationError = String(localized: "nutrition.mealPlanner.generate.noRecipe", bundle: .module)
         }
