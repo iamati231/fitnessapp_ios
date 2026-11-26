@@ -606,7 +606,10 @@ public struct ActiveWorkoutView: View {
         let valueStr: String = (total == total.rounded())
             ? "\(Int(total))"
             : total.truncated(to: 2).formattedTwoDecimals
-        return stripUnit ? valueStr : "\(valueStr) km"
+        guard !stripUnit else { return valueStr }
+        // Audit-Fund Modul 19: Einheit gehoert in den Catalog, nicht hartcodiert
+        // ins Swift-Literal (Lokalisierung sonst nicht moeglich).
+        return String(format: String(localized: "active.finish.valueWithKm", bundle: .module), valueStr)
     }
 
     /// DEL-061: gewichtete Average-Pace ueber alle Cardio-Logs der Session.
@@ -1558,7 +1561,10 @@ private struct FinishWorkoutSheet: View {
                             Text(gear.name)
                                 .font(.body.weight(.medium))
                                 .foregroundStyle(.primary)
-                            Text("\(gear.currentDistanceKm.formattedWholeOrTwoDecimals) / \(gear.maxDistanceKm.formattedWholeOrTwoDecimals) km")
+                            Text(String(
+                                format: String(localized: "active.finish.valueWithKm", bundle: .module),
+                                "\(gear.currentDistanceKm.formattedWholeOrTwoDecimals) / \(gear.maxDistanceKm.formattedWholeOrTwoDecimals)"
+                            ))
                                 .font(.caption.monospacedDigit())
                                 .foregroundStyle(gear.needsReplacement ? Color.Deltiq.error : Color.Deltiq.textSecondary)
                         }
@@ -1604,7 +1610,7 @@ private struct FinishWorkoutSheet: View {
                                 value: avgPaceText)
                 case .mixed:
                     summaryStat(label: String(localized: "active.summary.volume", bundle: .module),
-                                value: "\(volumeText) kg")
+                                value: String(format: String(localized: "active.finish.valueWithKg", bundle: .module), volumeText))
                     Divider().frame(height: 32)
                     summaryStat(label: String(localized: "active.stats.distance", bundle: .module),
                                 value: distanceText)
@@ -1613,7 +1619,7 @@ private struct FinishWorkoutSheet: View {
                                 value: "\(setsCount)")
                     Divider().frame(height: 32)
                     summaryStat(label: String(localized: "active.summary.volume", bundle: .module),
-                                value: "\(volumeText) kg")
+                                value: String(format: String(localized: "active.finish.valueWithKg", bundle: .module), volumeText))
                 }
             }
             .padding(.vertical, 8)
