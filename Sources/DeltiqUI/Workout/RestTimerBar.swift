@@ -31,16 +31,7 @@ struct RestTimerBar: View {
     /// Bugfix (Audit): dient nur noch dem einmaligen Null-Uebergang-Check
     /// (Feedback + Auto-Dismiss) - der Redraw der sichtbaren Uhr haengt
     /// jetzt an `TimelineView` (siehe `body`), nicht mehr an einem
-    /// erzwungenen `@State`-Schreiben pro Tick. Genau dieses Muster
-    /// (unbedingter Pro-Tick-`now = $0`-Write nur um ein Redraw zu
-    /// erzwingen) war in `TimedWorkoutPlayerView.swift` bereits als Ursache
-    /// eines Vordergrund-Freeze-Bugs identifiziert: es zwingt `.onReceive`
-    /// dazu, seine Combine-Anmeldung bei jeder Rekonstruktion neu
-    /// aufzubauen (Timer-Publisher sind nicht `Equatable`), und
-    /// `.autoconnect()` bindet die Lebensdauer des Timers an genau DIESE
-    /// Anmeldung - eine staendig neu aufgebaute Anmeldung kommt nie zum
-    /// Fertig-Ticken. Hier bislang unbemerkt, weil die Pause-Leiste meist
-    /// nur wenige Sekunden lebt, aber dasselbe Risiko.
+    /// erzwungenen `@State`-Schreiben pro Tick.
     @State private var hasFiredCompletionFeedback = false
     /// Audit-Fix: ungenutzt gelassen floge der Auto-Dismiss-Block unten 3s
     /// nach ablauf, auch wenn der User diese Leiste laengst per Skip
@@ -49,7 +40,15 @@ struct RestTimerBar: View {
     /// `RestTimerBar`-Instanz ist pro Pause frisch (fresh `@State`), ein
     /// reines `cancel()` in `.onDisappear` genuegt also ohne Token/ID.
     @State private var pendingAutoDismiss: DispatchWorkItem?
-    private let tick = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
+    /// Audit-Fund Modul 19: war `let` statt `@State` - ein reiner
+    /// Stored-`let` mit Default-Ausdruck wird von SwiftUI NICHT ueber
+    /// Rekonstruktionen hinweg festgehalten. `RestTimerBar` haengt ohne
+    /// `.id()` konditional in `ActiveWorkoutView.safeAreaInset`; jedes
+    /// Re-Render des Eltern-Views erzeugte so einen neuen Timer und zwang
+    /// `.onReceive` zu einer neuen Combine-Anmeldung, an die
+    /// `.autoconnect()` die Timer-Lebensdauer bindet - exakt die in
+    /// `TimedWorkoutPlayerView.swift` dokumentierte Freeze-Bug-Klasse.
+    @State private var tick = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
     /// DEL-041: User-Praeferenzen fuer Timer-Feedback. Werden in SettingsView
     /// als Toggle gepflegt — Default beide ON.
