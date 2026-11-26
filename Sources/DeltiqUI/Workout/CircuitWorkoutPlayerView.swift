@@ -369,12 +369,16 @@ struct CircuitPlayerView: View {
                     Image(systemName: checked ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 22))
                         .foregroundStyle(checked ? Color.Deltiq.success : Color.Deltiq.textTertiary)
+                        .accessibilityHidden(true)
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            // Audit-Fund Modul 20: Icon trug den Abhak-Status, VoiceOver las nur den
+            // vom SF-Symbol-Namen generierten Text vor statt eines verlaesslichen Status.
+            .accessibilityAddTraits(checked ? .isSelected : [])
             if showsDivider {
                 Rectangle().fill(Color.Deltiq.divider).frame(height: 1)
             }
