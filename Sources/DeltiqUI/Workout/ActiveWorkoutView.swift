@@ -1234,6 +1234,12 @@ public struct ActiveWorkoutView: View {
             modelContext.delete(exercise)
             showTimedWorkoutSaveErrorToast($saveErrorMessage)
         }
+        // Audit-Fix (Modul 19): wie deleteAdHocExercise - exerciseCount sonst
+        // bis zum finishWorkout() um die hinzugefuegte(n) Uebung(en) zu
+        // niedrig. Bei gescheitertem Save ist der Insert oben schon
+        // rueckgaengig gemacht, resolvedExercises.count spiegelt dann den
+        // unveraenderten Stand.
+        session.recomputeTotals(exerciseCount: resolvedExercises.count)
     }
 
     /// Custom-Uebung im Ad-Hoc-Flow — analog zu `DayEditorView.addCustomExercise`.
@@ -1274,6 +1280,8 @@ public struct ActiveWorkoutView: View {
             modelContext.delete(template)
             showTimedWorkoutSaveErrorToast($saveErrorMessage)
         }
+        // Audit-Fix (Modul 19): siehe addAdHocExercise.
+        session.recomputeTotals(exerciseCount: resolvedExercises.count)
     }
 
     /// DEL-154: Entry-Point fuer das Entfernen einer Ad-Hoc-Uebung. Hat die
