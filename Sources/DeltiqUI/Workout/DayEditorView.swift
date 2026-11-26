@@ -1470,9 +1470,12 @@ public struct DayEditorView: View {
         for (i, exercise) in remaining.enumerated() {
             exercise.orderIndex = i
         }
-        for id in deletedIDs { pendingExerciseDeleteIDs.remove(id) }
         do {
             try modelContext.save()
+            // Audit-Fund Modul 21: erst nach erfolgreichem Save freigeben -
+            // sonst zeigt orderedExercises die Uebung bei einem Save-Fehlschlag
+            // sofort wieder an, obwohl sie im modelContext bereits geloescht ist.
+            for id in deletedIDs { pendingExerciseDeleteIDs.remove(id) }
         } catch {
             showTransientToast(String(localized: "day.editor.exercise.delete.saveFailed", bundle: .module))
         }
