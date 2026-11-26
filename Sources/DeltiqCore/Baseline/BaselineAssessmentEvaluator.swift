@@ -59,6 +59,12 @@ public enum BaselineAssessmentEvaluator {
         guard let chairSquat = assessment.chairSquat else {
             return band(forSelfAssessment: assessment.legsSelfAssessment)
         }
+        // Audit-Fund Modul 18: cleanReps war bisher IMMER gegen die fuer den
+        // vollen 30s-Lauf kalibrierten Schwellen bewertet, unabhaengig von der
+        // tatsaechlichen durationSeconds - ein verkuerzter/abgebrochener Test
+        // wurde so wie ein vollstaendiger gezaehlt (widerspricht dem Zweck von
+        // ChairSquatAssessment.durationSeconds, siehe dessen Doc-Kommentar).
+        guard chairSquat.durationSeconds == CoachConstants.chairSquatTestDurationSeconds else { return .unknown }
         if chairSquat.cleanReps <= CoachConstants.chairSquatVeryLowMaxReps { return .veryLow }
         if chairSquat.cleanReps <= CoachConstants.chairSquatLowMaxReps { return .low }
         if chairSquat.cleanReps <= CoachConstants.chairSquatModerateMaxReps { return .moderate }

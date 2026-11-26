@@ -29,6 +29,11 @@ public enum CoachConstants {
 
     // MARK: Stuhl-Kniebeuge (30 Sekunden, saubere Wiederholungen)
 
+    /// Die Reps-Schwellen unten sind auf exakt diese Testdauer kalibriert —
+    /// ein abweichender `ChairSquatAssessment.durationSeconds` macht
+    /// `cleanReps` gegen sie nicht vergleichbar (Audit-Fund Modul 18).
+    public static let chairSquatTestDurationSeconds = 30
+
     public static let chairSquatVeryLowMaxReps = 2
     public static let chairSquatLowMaxReps = 7
     public static let chairSquatModerateMaxReps = 14
