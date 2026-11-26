@@ -69,6 +69,15 @@ public enum WorkoutAchievementDetector {
         let weekSessions = realCompleted.filter { week.contains($0.startTime) }
         guard !weekSessions.isEmpty else { return [] }
 
+        // Audit-Fund Modul 19: muss VOR der Weekly-Milestone-Berechnung
+        // stehen, sonst wird ein Milestone fuer eine Session gezeigt, die
+        // selbst (per `now`) gar nicht Teil dieser Woche ist (Edge-Case:
+        // Mitternacht-Uebergang waehrend des Trainings).
+        let thisID = session.persistentModelID
+        let othersInWeek = weekSessions.filter { $0.persistentModelID != thisID }
+        let thisInWeek = weekSessions.contains { $0.persistentModelID == thisID }
+        guard thisInWeek else { return [] }
+
         var results: [Achievement] = []
 
         // ─── Weekly Milestone (≥3 in Woche) ─────────────────────────────
@@ -76,13 +85,7 @@ public enum WorkoutAchievementDetector {
             results.append(.init(kind: .weeklyMilestone(count: weekSessions.count)))
         }
 
-        // Helper: zähle nur "andere" Sessions als die aktuelle. Wenn die
-        // aktuelle Session nicht in der Woche ist (Edge-Case: Mitternacht-
-        // Übergang während des Trainings), wird sie ohnehin ignoriert.
-        let thisID = session.persistentModelID
-        let othersInWeek = weekSessions.filter { $0.persistentModelID != thisID }
-        let thisInWeek = weekSessions.contains { $0.persistentModelID == thisID }
-        guard thisInWeek, !othersInWeek.isEmpty else { return results }
+        guard !othersInWeek.isEmpty else { return results }
 
         // ─── Heaviest of Week (Volumen) ─────────────────────────────────
         // Nur für Strength/Mixed-Sessions sinnvoll — reine Cardio-Sessions
