@@ -345,6 +345,11 @@ public struct PlanBuilderView: View {
     /// damit die beiden Faelle optisch unterscheidbar bleiben.
     @State private var footerToastMessage: String?
     @State private var footerToastSystemImage = "pin.slash.fill"
+    /// Audit-Fund Modul 21: identifiziert, welcher `showFooterToast`-Aufruf
+    /// die aktuell sichtbare Nachricht gesetzt hat - ein aelterer, noch
+    /// laufender Dismiss-Task darf eine zwischenzeitlich neu gesetzte
+    /// Nachricht nicht vorzeitig loeschen.
+    @State private var footerToastToken: UUID?
 
     // P3.3: ausgewaehlter Tag + seine gerade angebotenen Alternativen fuer
     // den Alternativen-Dialog (siehe `presentAlternatives`/`.confirmationDialog`
@@ -1763,12 +1768,15 @@ public struct PlanBuilderView: View {
     }
 
     private func showFooterToast(_ message: String, systemImage: String) {
+        let token = UUID()
+        footerToastToken = token
         withAnimation {
             footerToastMessage = message
             footerToastSystemImage = systemImage
         }
         Task {
             try? await Task.sleep(nanoseconds: 2_500_000_000)
+            guard footerToastToken == token else { return }
             withAnimation { footerToastMessage = nil }
         }
     }
