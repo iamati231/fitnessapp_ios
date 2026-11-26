@@ -49,6 +49,11 @@ public struct PlanEditorView: View {
     /// mehrere aktive Plaene hat und EINEN davon umstellt.
     @State private var pendingGlobalSync: PendingEnvironmentSwap?
     @State private var swapResultToast: String?
+    /// Audit-Fix (Modul 21): jeder Toast-Aufruf erhoeht dies und merkt sich
+    /// seinen eigenen Wert - der verzoegerte Clear darf `swapResultToast`
+    /// nur loeschen, wenn seither kein neuerer Toast gesetzt wurde (sonst
+    /// loescht ein aelterer Clear-Task eine juengere, noch aktive Meldung).
+    @State private var swapResultToastGeneration = 0
 
     /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
     /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
@@ -477,14 +482,7 @@ public struct PlanEditorView: View {
         parts.append(String(format: String(localized: "planEditor.sync.plansCount", bundle: .module), outcome.plansTouched))
         if outcome.result.swapped > 0 { parts.append(String(format: String(localized: "planEditor.result.swapped", bundle: .module), outcome.result.swapped)) }
         let message = parts.joined(separator: " · ")
-        withAnimation(.easeOut(duration: 0.2)) {
-            swapResultToast = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            withAnimation(.easeIn(duration: 0.2)) {
-                swapResultToast = nil
-            }
-        }
+        showTransientToast(message)
     }
 
     // MARK: - README 2.20 "Plan bauen": neu rechnen
@@ -535,14 +533,7 @@ public struct PlanEditorView: View {
             // Erfolgsmeldung.
             message = String(localized: "planEditor.recalculate.toast.failed", bundle: .module)
         }
-        withAnimation(.easeOut(duration: 0.2)) {
-            swapResultToast = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            withAnimation(.easeIn(duration: 0.2)) {
-                swapResultToast = nil
-            }
-        }
+        showTransientToast(message)
     }
 
     // DEL-118: route durch die zentrale .localizedName-Extension.
@@ -1171,12 +1162,16 @@ public struct PlanEditorView: View {
 
     /// Gemeinsamer Helfer fuer die bestehende `swapResultToast`-Konvention
     /// (siehe `switchPlanEnvAndAdd`) — identisches Muster wie
-    /// `DayEditorView.showTransientToast`.
+    /// `DayEditorView.showTransientToast`. Einziger Ort, der `swapResultToast`
+    /// setzt/loescht (siehe `swapResultToastGeneration`-Doku).
     private func showTransientToast(_ message: String) {
+        swapResultToastGeneration += 1
+        let generation = swapResultToastGeneration
         withAnimation(.easeOut(duration: 0.2)) {
             swapResultToast = message
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            guard swapResultToastGeneration == generation else { return }
             withAnimation(.easeIn(duration: 0.2)) {
                 swapResultToast = nil
             }
@@ -1243,15 +1238,7 @@ public struct PlanEditorView: View {
         if result.kept > 0       { parts.append(String(format: String(localized: "planEditor.result.noAlternative", bundle: .module), result.kept)) }
         if result.compatible > 0 { parts.append(String(format: String(localized: "planEditor.result.unchanged", bundle: .module), result.compatible)) }
         let message = parts.isEmpty ? String(localized: "planEditor.result.none", bundle: .module) : parts.joined(separator: " · ")
-
-        withAnimation(.easeOut(duration: 0.2)) {
-            swapResultToast = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            withAnimation(.easeIn(duration: 0.2)) {
-                swapResultToast = nil
-            }
-        }
+        showTransientToast(message)
     }
 }
 
