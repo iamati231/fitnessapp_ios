@@ -1108,6 +1108,14 @@ public struct PlanEditorView: View {
     /// gleich Uebungen hinzufuegen kann. Ruhetage werden nur in der Liste
     /// gespeichert — kein Editor noetig.
     private func createNewDay(type: DayType) {
+        // Audit-Fix (Modul 21): ohne dieses Gate kollidiert der Wochentag-
+        // Fallback unten deterministisch mit einem bereits vorhandenen Tag,
+        // sobald alle 7 Wochentage vergeben sind - ein Plan hat nie mehr als
+        // einen Tag pro Wochentag.
+        guard plan.days.count < 7 else {
+            showTransientToast(String(localized: "planEditor.days.add.limitReached", bundle: .module))
+            return
+        }
         // Bugfix (Audit): ein numerisches max() ueber `weekday` behandelt
         // Sonntag (1) faelschlich als kleinsten statt letzten Wochentag
         // (siehe `PlanNavigator.sortByWeekdayMondayFirst`) - bei einem Plan
