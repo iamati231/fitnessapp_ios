@@ -1084,6 +1084,20 @@ public struct ActiveWorkoutView: View {
         // Checkmarks auf WorkoutSummaryView, der gleich erscheint.
         DeltiqHaptics.notify(.success)
 
+        // Audit-Fix Modul 19: Snapshot aller Felder, die dieser Aufruf unten
+        // mutiert, fuer einen gezielten Rollback bei gescheitertem Save.
+        // KEIN `modelContext.rollback()` - das wuerde auch unabhaengige,
+        // anderswo im Context pendente Aenderungen verwerfen (Konvention
+        // dieses Repos, siehe z.B. ExerciseCard.logSet/addAdHocExercise).
+        let priorStartTime = session.startTime
+        let priorEndTime = session.endTime
+        let priorDurationMinutes = session.durationMinutes
+        let priorTotalSets = session.totalSets
+        let priorTotalVolumeKg = session.totalVolumeKg
+        let priorExerciseCount = session.exerciseCount
+        let priorSuggestedWeights = (session.day?.activeExercises ?? []).map { ($0, $0.suggestedWeight) }
+        let priorInsertedIDs = Set(modelContext.insertedModelsArray.map(\.persistentModelID))
+
         // Ende und Dauer: live aufgezeichnet = Wanduhr; nachgetragen (z.B. ein Lauf,
         // der erst nach dem Laufen eingetragen wird) = eingetragene Cardio-Zeit
         // bzw. eine Schaetzung aus den Saetzen, dann mit zurueckgesetztem Beginn.
@@ -1129,6 +1143,25 @@ public struct ActiveWorkoutView: View {
         do {
             try modelContext.save()
         } catch {
+            // Audit-Fix Modul 19: gezielter Undo nur dessen, was DIESER
+            // Aufruf selbst mutiert/eingefuegt hat (siehe Snapshot oben) -
+            // sonst bleibt die Session nach einem gescheiterten Save als
+            // `isCompleted = true` im Speicher stehen, bis ein spaeterer
+            // impliziter Autosave sie lautlos genau so uebernimmt, ohne dass
+            // Health-Push, PR-Feier oder Summary-Navigation je liefen.
+            session.startTime = priorStartTime
+            session.endTime = priorEndTime
+            session.durationMinutes = priorDurationMinutes
+            session.totalSets = priorTotalSets
+            session.totalVolumeKg = priorTotalVolumeKg
+            session.exerciseCount = priorExerciseCount
+            session.isCompleted = false
+            for (exercise, weight) in priorSuggestedWeights {
+                exercise.suggestedWeight = weight
+            }
+            for inserted in modelContext.insertedModelsArray where !priorInsertedIDs.contains(inserted.persistentModelID) {
+                modelContext.delete(inserted)
+            }
             showTimedWorkoutSaveErrorToast($saveErrorMessage)
             return
         }
