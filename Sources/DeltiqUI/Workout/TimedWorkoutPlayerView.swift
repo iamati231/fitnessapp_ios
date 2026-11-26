@@ -857,6 +857,9 @@ private struct AMRAPPlayerView: View {
     /// 19e) - `partialReps`/`partialRepsExerciseID` haben dort noch ihren
     /// Default (0/nil), weil `finishBar` in diesem Pfad nie sichtbar wird.
     private func saveNow() {
+        // Audit-Fix Modul 20: das Menu ist auch waehrend des Vorlaufs aktiv,
+        // finishPreroll() hat den echten Start dann aber noch nicht gesetzt.
+        guard prerollRemaining == 0 else { return }
         session.roundsCompleted = roundsCompleted
         session.partialReps = partialReps
         session.partialRepsExerciseName = partialReps > 0 ? partialRepsExercise?.displayName : nil
@@ -1545,6 +1548,9 @@ private struct EMOMPlayerView: View {
     /// `Set(1...totalMinutes)` aufgefuellt) oder noch nicht (vorzeitig)
     /// erreicht war.
     private func saveNow() {
+        // Audit-Fix Modul 20: das Menu ist auch waehrend des Vorlaufs aktiv,
+        // finishPreroll() hat den echten Start dann aber noch nicht gesetzt.
+        guard prerollRemaining == 0 else { return }
         session.completedMinuteCount = completedMinutes.count
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .emom
@@ -2187,6 +2193,9 @@ private struct ForTimePlayerView: View {
     /// `PRDetector.detectTimedFormatPR` nutzt genau das, um zu verhindern
     /// dass ein frueh gespeicherter, kuerzerer Lauf als Bestzeit durchgeht.
     private func saveNow() {
+        // Audit-Fix Modul 20: das Menu ist auch waehrend des Vorlaufs aktiv,
+        // finishPreroll() hat den echten Start dann aber noch nicht gesetzt.
+        guard prerollRemaining == 0 else { return }
         session.finishTimeSeconds = resultElapsedSeconds
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .forTime
