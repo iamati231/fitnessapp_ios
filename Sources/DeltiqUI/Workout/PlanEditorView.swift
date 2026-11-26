@@ -587,6 +587,15 @@ public struct PlanEditorView: View {
         if let other = planToReactivateOnDiscard(otherActivePlanIDAtOpen: otherActivePlanIDAtOpen, amongCandidates: allPlans) {
             other.isActive = true
         }
+        // Audit-Fix Modul 21 (Nachtrag): ohne dies kann ein zwischenzeitlicher
+        // impliziter Autosave (siehe saveAndDismiss()-Doku) den eigentlich zu
+        // verwerfenden Zwischenstand schon persistiert haben - der Rueckbau
+        // hier muss also ebenso explizit gespeichert werden.
+        do {
+            try modelContext.save()
+        } catch {
+            showTransientToast(String(localized: "planEditor.save.failed", bundle: .module))
+        }
         dismiss()
     }
 
