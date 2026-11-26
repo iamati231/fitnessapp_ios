@@ -30,6 +30,15 @@ permissions:
   contents: read
   actions: write
 
+# GitHub erlaubt nur 5 gleichzeitige macOS-Jobs pro Account. Dieser Workflow
+# wird aus vielen parallelen Sessions heraus oft getriggert und frass damit
+# regelmaessig alle Slots, sodass der seltene testflight-release.yml-Lauf nie
+# einen Runner bekam und nach 24h in der Warteschlange verfiel. Fixe Gruppe
+# (nicht pro Branch) serialisiert alle Laeufe dieses Workflows auf 1 Slot.
+concurrency:
+  group: apple-ci-comparison-macos-pool
+  cancel-in-progress: false
+
 jobs:
   apple-build-and-test:
     name: Swift Package + iOS-App/Widget (Vergleichslauf)
