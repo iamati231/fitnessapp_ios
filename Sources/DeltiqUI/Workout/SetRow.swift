@@ -645,6 +645,14 @@ struct SetRow: View {
         return "BW"
     }
 
+    /// Audit-Fix (Modul 19): dieselbe Vertipper-Absicherung wie der 500-kg-
+    /// Cap auf `weightInput` — ohne Obergrenze floss ein Zahlenpad-Vertipper
+    /// (z.B. "100" statt "10") ungeprueft in Volumen-/PR-/Historien-
+    /// Auswertungen.
+    /// shortcut: 999 als Obergrenze, anheben falls echte Endurance-Saetze
+    /// (Seilspringen, Burpees) das je ueberschreiten.
+    private static let maxPlausibleReps = 999
+
     private var repsInput: some View {
         TextField("-", value: $reps, format: .number, prompt: Text("-"))
             #if os(iOS)
@@ -660,6 +668,13 @@ struct SetRow: View {
             .multilineTextAlignment(.center)
             .disabled(isCompleted)
             .opacity(isCompleted ? 0.6 : 1.0)
+            .onChange(of: reps) { _, newValue in
+                if newValue > Self.maxPlausibleReps {
+                    reps = Self.maxPlausibleReps
+                } else if newValue < 0 {
+                    reps = 0
+                }
+            }
     }
 
     private var checkmarkButton: some View {
