@@ -39,7 +39,10 @@ final class MealPlannerViewApplyOptimizationManuallyAdjustedTests: XCTestCase {
         XCTAssertTrue(body.contains("plan.isManuallyAdjusted = true"),
                       "applyOptimization must mark the plan as manually adjusted, otherwise a confirmed optimization can be silently wiped by the next 'generate plan' tap")
 
-        guard let saveRange = body.range(of: "try? modelContext.save()"),
+        // Audit-Folge-Fix (try?-Fehlerverschlucken): save() laeuft jetzt in
+        // einem do/catch statt per try? - die Reihenfolge-Garantie bleibt
+        // unveraendert, nur das literal gesuchte Save-Statement aendert sich.
+        guard let saveRange = body.range(of: "try modelContext.save()"),
               let flagRange = body.range(of: "plan.isManuallyAdjusted = true") else {
             return XCTFail("expected statements not found")
         }
