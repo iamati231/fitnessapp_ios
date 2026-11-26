@@ -96,6 +96,17 @@ struct CircuitPlayerView: View {
             // durchlaufen (siehe Guard dort).
             _isFinished = State(initialValue: existingRounds >= (session.contentSnapshotCircuitRounds ?? defaultCircuitRounds()))
             _restEndDate = State(initialValue: session.circuitRestEndDate)
+            // Audit-Fix (Modul 20): ohne das hier haetten beide Flags nach
+            // einem View-Neuaufbau waehrend einer laufenden Pause immer
+            // false, selbst wenn ihre Schwelle in der vorigen Instanz schon
+            // gefeuert hatte - checkRestElapsed() wuerde sie sofort erneut
+            // ausloesen (siehe deren identisches Gate restSeconds > 60/30).
+            if let end = session.circuitRestEndDate {
+                let remaining = max(0, Int(end.timeIntervalSinceNow.rounded(.up)))
+                let total = Self.restSeconds(for: session)
+                _hasFiredRest60 = State(initialValue: total > 60 && remaining <= 60)
+                _hasFiredRest30 = State(initialValue: total > 30 && remaining <= 30)
+            }
             if let raw = session.circuitCurrentRoundCheckedRaw {
                 // P8 Stufe-2: ueber die statische, snapshot-first
                 // Hilfsfunktion (self.resolvedExercises waere hier noch
@@ -187,7 +198,10 @@ struct CircuitPlayerView: View {
     // Rundenabschluss-Logik (`.toFailure` vs. `.fixedReps`), nicht nur die
     // Anzeige; `totalRounds`/`restSeconds` ebenso die Timer-/Abschlusslogik.
     private var totalRounds: Int { session.contentSnapshotCircuitRounds ?? defaultCircuitRounds() }
-    private var restSeconds: Int { session.contentSnapshotCircuitRestSeconds ?? defaultCircuitRestSeconds() }
+    private var restSeconds: Int { Self.restSeconds(for: session) }
+    private static func restSeconds(for session: WorkoutSession) -> Int {
+        session.contentSnapshotCircuitRestSeconds ?? defaultCircuitRestSeconds()
+    }
     private var circuitMode: CircuitRoundMode { session.contentSnapshotCircuitMode ?? .fixedReps }
 
     private var pillLabel: String {
