@@ -1129,6 +1129,15 @@ struct SetRow: View {
     private func stopHoldAndLog() {
         invalidateHoldTimer()
         guard case .holding(let elapsed) = holdState else { return }
+        // Audit-Fix (Modul 19): ein Tap direkt nach "GO!" (elapsed == 0, vor
+        // dem ersten Timer-Tick) ist ein Abbruch, kein abgeschlossener Satz
+        // mit 0 Sekunden - sonst belegt ein Fehl-Tap den Slot dauerhaft als
+        // erledigt. Lock trotzdem freigeben, sonst bleibt er verwaist haengen.
+        guard elapsed > 0 else {
+            holdState = .idle
+            releaseTimedExerciseLockIfHeld()
+            return
+        }
         // DEL-040: TimeBased speichert die Hold-Sekunden in `reps` —
         // historische Convention, bleibt fuer Backward-Compat erhalten.
         // DEL-060: ZUSAETZLICH `durationSeconds` setzen, sodass spaetere
