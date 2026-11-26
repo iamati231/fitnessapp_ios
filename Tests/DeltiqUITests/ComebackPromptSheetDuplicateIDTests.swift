@@ -33,10 +33,20 @@ final class ComebackPromptSheetDuplicateIDTests: XCTestCase {
             return XCTFail("end of previewSection not found")
         }
         let body = text[start.upperBound..<end.lowerBound]
+        // Modul-11-Pitfall: ein erklaerender Kommentar ueber dem ForEach
+        // erwaehnt die alte Identitaet woertlich - Code-Zeilen pruefen, nicht
+        // den rohen Text inklusive Kommentare.
+        let codeOnly = body
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line -> Substring in
+                guard let commentStart = line.range(of: "//") else { return line }
+                return line[line.startIndex..<commentStart.lowerBound]
+            }
+            .joined(separator: "\n")
 
-        XCTAssertFalse(body.contains("id: \\.exerciseName"),
+        XCTAssertFalse(codeOnly.contains("id: \\.exerciseName"),
                         "two Changes for the same exercise on different plan days share an exerciseName - using it as the ForEach identity drops one of them")
-        XCTAssertTrue(body.contains(".enumerated()"),
+        XCTAssertTrue(codeOnly.contains(".enumerated()"),
                       "previewSection must identify rows by something always-unique (e.g. index), not a value that can repeat across Changes")
     }
 }
