@@ -610,7 +610,9 @@ public struct PlanBuilderView: View {
                     set: { if !$0 { missingProfileErrorMessage = nil } }
                 )
             ) {
-                Button("OK") { missingProfileErrorMessage = nil }
+                Button { missingProfileErrorMessage = nil } label: {
+                    Text("common.ok", bundle: .module)
+                }
             } message: {
                 Text(missingProfileErrorMessage ?? "")
             }
@@ -626,7 +628,9 @@ public struct PlanBuilderView: View {
                     set: { if !$0 { adoptSaveErrorMessage = nil } }
                 )
             ) {
-                Button("OK") { adoptSaveErrorMessage = nil }
+                Button { adoptSaveErrorMessage = nil } label: {
+                    Text("common.ok", bundle: .module)
+                }
             } message: {
                 Text(adoptSaveErrorMessage ?? "")
             }
