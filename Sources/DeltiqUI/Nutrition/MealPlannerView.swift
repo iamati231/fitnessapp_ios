@@ -31,6 +31,7 @@ public struct MealPlannerView: View {
     @State private var showOptimizationNoGoalsAlert = false
     @State private var showOptimizationFailedAlert = false
     @State private var pendingExcludeAssignment: PlannedMealAssignment? = nil
+    @State private var saveErrorMessage: String?
 
     @Query private var allPlans: [DailyMealPlan]
     @Query private var profiles: [UserBodyProfile]
@@ -99,6 +100,12 @@ public struct MealPlannerView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     dateNavCard
+                    if let saveErrorMessage {
+                        Text(saveErrorMessage)
+                            .font(.caption)
+                            .foregroundStyle(Color.Deltiq.error)
+                            .padding(.horizontal, 14)
+                    }
                     weekOverviewButton
                     preferencesButton
                     if planForSelectedDate?.isManuallyAdjusted != true
@@ -174,7 +181,10 @@ public struct MealPlannerView: View {
             Button(role: .destructive) {
                 if let assignment = pendingExcludeAssignment, let profile = userProfile {
                     profile.mealPlanExcludedRecipeIDsRaw.append(assignment.recipeID)
-                    try? modelContext.save()
+                    // Ein Save genuegt - removeAssignment() speichert die
+                    // Zuweisungs-Loeschung UND diese Profil-Aenderung zusammen;
+                    // zwei getrennte Saves hiessen, dass der Ausschluss verloren
+                    // gehen kann, obwohl das Entfernen bereits durchkam (Audit-Fund).
                     removeAssignment(assignment)
                 }
                 pendingExcludeAssignment = nil
@@ -605,27 +615,45 @@ public struct MealPlannerView: View {
     private func adjustPortion(_ assignment: PlannedMealAssignment, by delta: Double) {
         let clamped = min(max(assignment.portionMultiplier + delta, 0.5), 5.0)
         guard clamped != assignment.portionMultiplier else { return }
+        saveErrorMessage = nil
         assignment.portionMultiplier = clamped
         if let plan = assignment.plan { plan.isManuallyAdjusted = true }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
     }
 
     private func swapAssignment(_ assignment: PlannedMealAssignment, to newRecipe: Recipe) {
+        saveErrorMessage = nil
         assignment.recipeID = newRecipe.id
         assignment.portionMultiplier = 1.0
         if let plan = assignment.plan { plan.isManuallyAdjusted = true }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
     }
 
     private func removeAssignment(_ assignment: PlannedMealAssignment) {
+        saveErrorMessage = nil
         if let plan = assignment.plan { plan.isManuallyAdjusted = true }
         modelContext.delete(assignment)
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            // Kein Undo des delete() (wirkt bereits auf den Live-Graphen) - nur
+            // sichtbarer Hinweis, analog PlansListView.deletePlans/ExerciseCard.unlogSet.
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
     }
 
     private func regenerateAssignment(_ assignment: PlannedMealAssignment) {
         guard regeneratingAssignment == nil else { return }
         regeneratingAssignment = assignment
+        saveErrorMessage = nil
         Task { @MainActor in
             defer { regeneratingAssignment = nil }
             let prefs = userProfile?.nutritionPreferences ?? UserNutritionPreferences()
@@ -643,7 +671,11 @@ public struct MealPlannerView: View {
             assignment.recipeID = alternative.id
             assignment.portionMultiplier = 1.0
             if let plan = assignment.plan { plan.isManuallyAdjusted = true }
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+            }
         }
     }
 
@@ -788,6 +820,7 @@ public struct MealPlannerView: View {
 
     private func applyOptimization(_ proposal: OptimizedPlanProposal) {
         guard let plan = planForSelectedDate else { return }
+        saveErrorMessage = nil
         for change in proposal.changes where change.hasChange {
             guard let assignment = plan.assignments.first(where: {
                 $0.mealType == change.mealType && $0.recipeID == change.currentRecipeID
@@ -796,7 +829,11 @@ public struct MealPlannerView: View {
             assignment.portionMultiplier = change.proposedMultiplier
         }
         plan.isManuallyAdjusted = true
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
+        }
         optimizationProposal = nil
     }
 
