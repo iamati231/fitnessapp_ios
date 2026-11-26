@@ -1067,7 +1067,14 @@ public struct WorkoutSummaryView: View {
         }
         return WorkoutAchievementDetector.detect(
             session: session,
-            history: history
+            history: history,
+            // Audit-Fund Modul 19: `now` NICHT implizit auf den Default
+            // (.now, bei jeder Neuauswertung dieser Computed Property frisch
+            // gezogen) belassen - sonst kann ein bereits gezeigtes Badge
+            // nach Mitternacht kommentarlos verschwinden, waehrend der User
+            // noch auf dem Summary-Screen ist. `endTime` ist der stabile,
+            // bei `finishWorkout()` einmalig eingefrorene Zeitpunkt.
+            now: session.endTime
         )
     }
 
