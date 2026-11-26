@@ -31,10 +31,20 @@ final class ComebackPromptSheetPercentLocalizationTests: XCTestCase {
             return XCTFail("end of label(for:) not found")
         }
         let body = text[start.upperBound..<end.lowerBound]
+        // Strip "//"-comments before checking: this function's own explanatory
+        // comment quotes the old hardcoded literal, which would otherwise make
+        // the .contains() check below a false positive against prose, not code.
+        let code = body
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line -> Substring in
+                guard let commentRange = line.range(of: "//") else { return line }
+                return line[line.startIndex..<commentRange.lowerBound]
+            }
+            .joined(separator: "\n")
 
-        XCTAssertFalse(body.contains("\"\\(percent) %\""),
+        XCTAssertFalse(code.contains("\"\\(percent) %\""),
                        "the non-recommended branch must no longer hardcode \"<percent> %\" - TR formats this differently (percent sign before the number)")
-        XCTAssertTrue(body.contains("comeback.prompt.percentOnly"),
+        XCTAssertTrue(code.contains("comeback.prompt.percentOnly"),
                       "the non-recommended branch must use a localized catalog key, matching the recommended branch's pattern")
     }
 
