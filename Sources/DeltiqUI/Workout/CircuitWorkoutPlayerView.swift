@@ -90,6 +90,11 @@ struct CircuitPlayerView: View {
             prerollTotal = 0
             _prerollRemaining = State(initialValue: 0)
             _roundsCompleted = State(initialValue: existingRounds)
+            // Audit-Fund Modul 20: ohne dies bleibt isFinished nach Resume
+            // faelschlich false, obwohl die letzte Runde schon persistiert
+            // ist - completeCurrentRound() koennte sonst ein zweites Mal
+            // durchlaufen (siehe Guard dort).
+            _isFinished = State(initialValue: existingRounds >= (session.contentSnapshotCircuitRounds ?? defaultCircuitRounds()))
             _restEndDate = State(initialValue: session.circuitRestEndDate)
             if let raw = session.circuitCurrentRoundCheckedRaw {
                 // P8 Stufe-2: ueber die statische, snapshot-first
@@ -550,6 +555,11 @@ struct CircuitPlayerView: View {
     /// auch keinen Grund fuer einen zusaetzlichen Review-Schritt vor dem
     /// Speichern.
     private func completeCurrentRound() {
+        // Audit-Fund Modul 20: ohne diesen Guard kann ein erneuter Aufruf
+        // (z.B. nach Resume mit stale isFinished, siehe init()) die letzte
+        // Runde ein zweites Mal abschliessen und finishTimedSession() samt
+        // PR-Erkennung/Summary-Navigation doppelt durchlaufen lassen.
+        guard roundsCompleted < totalRounds else { return }
         roundsCompleted += 1
         session.circuitRoundsCompleted = roundsCompleted
         // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): wie
