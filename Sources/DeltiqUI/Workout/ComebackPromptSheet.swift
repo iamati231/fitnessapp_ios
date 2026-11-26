@@ -129,7 +129,11 @@ struct ComebackPromptSheet: View {
             } else {
                 // Nur die ersten fuenf — die Liste soll den Start nicht in eine
                 // Tabelle verwandeln.
-                ForEach(list.prefix(5), id: \.exerciseName) { change in
+                // Audit-Fund Modul 19: dieselbe Uebung kann an mehreren
+                // Split-Tagen mit unterschiedlichem Progressionsstand
+                // vorkommen - id: \.exerciseName liess SwiftUI dann eine der
+                // beiden Zeilen verwerfen/recyceln. Index ist immer eindeutig.
+                ForEach(Array(list.prefix(5).enumerated()), id: \.offset) { _, change in
                     HStack {
                         Text(Exercise.resolvedDisplayName(forStoredName: change.exerciseName))
                             .font(.caption)
