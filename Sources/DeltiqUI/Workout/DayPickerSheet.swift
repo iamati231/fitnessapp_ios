@@ -142,6 +142,7 @@ public struct DayPickerSheet: View {
                     Image(systemName: "checkmark.circle.fill")
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(Color.deltiqOrange)
+                        .accessibilityHidden(true)
                 }
             }
             .padding(.horizontal, 12)
@@ -157,6 +158,10 @@ public struct DayPickerSheet: View {
         .buttonStyle(.plain)
         .disabled(!isSelected && selected.count >= requiredDayCount)
         .opacity(!isSelected && selected.count >= requiredDayCount ? 0.4 : 1.0)
+        // Audit-Fund Modul 20: Checkmark-Icon war fuer VoiceOver nicht
+        // ausgeblendet (las Icon-Namen statt Auswahlzustand vor) - gleiches
+        // Trait-Muster wie AddMealView.categoryChip.
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func toggle(_ weekday: Int) {
@@ -179,6 +184,7 @@ public struct DayPickerSheet: View {
             HStack {
                 Spacer()
                 Image(systemName: "checkmark.seal.fill")
+                    .accessibilityHidden(true)
                 Text("dayPicker.startPlan", bundle: .module)
                     .font(.headline)
                 Spacer()
