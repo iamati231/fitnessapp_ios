@@ -41,13 +41,19 @@ public enum ExerciseInstructionsProvider {
             _cache = [:]
             return
         }
-        _cache = raw.compactMapValues { dict in
-            guard
-                let de = dict["de"],
-                let en = dict["en"],
-                let tr = dict["tr"]
-            else { return nil }
-            return Steps(de: de, en: en, tr: tr)
-        }
+        _cache = raw.compactMapValues(Self.parseSteps)
+    }
+
+    // Audit-Fund Modul 18: ein fehlender (nicht nur leerer) Sprach-Key
+    // verwarf bisher den gesamten Eintrag inklusive der beiden anderen,
+    // vollstaendig vorhandenen Sprachen. Fehlender Key zaehlt jetzt wie ein
+    // leeres Array fuer GENAU diese Sprache; nur wenn alle drei leer sind,
+    // entfaellt der Eintrag.
+    static func parseSteps(from dict: [String: [String]]) -> Steps? {
+        let de = dict["de"] ?? []
+        let en = dict["en"] ?? []
+        let tr = dict["tr"] ?? []
+        guard !de.isEmpty || !en.isEmpty || !tr.isEmpty else { return nil }
+        return Steps(de: de, en: en, tr: tr)
     }
 }
