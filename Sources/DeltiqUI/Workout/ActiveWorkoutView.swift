@@ -92,6 +92,14 @@ public struct ActiveWorkoutView: View {
     /// Uebungs-Pages, Page N ist die "Finish"-Seite mit Save/Discard.
     @State private var currentPageIndex: Int = 0
 
+    /// Audit-Fund Modul 19: Schutz gegen einen laengst veralteten, per
+    /// `asyncAfter` verzoegerten `maybeAutoAdvance`-Seitenwechsel. Wird bei
+    /// jeder Aenderung von `currentPageIndex` erhoeht (manuelle Navigation
+    /// zaehlt genauso wie Auto-Advance selbst); ein verzoegerter Closure
+    /// darf nur dann noch feuern, wenn sich seit seiner Planung nichts
+    /// geaendert hat.
+    @State private var pageNavigationGeneration: Int = 0
+
     @State private var showingFinishConfirm = false
     @State private var showingDiscardConfirm = false
 
@@ -657,6 +665,7 @@ public struct ActiveWorkoutView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
+            .onChange(of: currentPageIndex) { _, _ in pageNavigationGeneration += 1 }
             #else
             // macOS-Preview-Fallback: keine paginierte TabView, klassische
             // ScrollView-Liste.
@@ -798,7 +807,15 @@ public struct ActiveWorkoutView: View {
         // Bereits auf der letzten Page? Naechste waere die Finish-Page —
         // advance ist hier OK (zeigt automatisch Save/Discard).
         let nextIndex = idx + 1
+        pageNavigationGeneration += 1
+        let expectedGeneration = pageNavigationGeneration
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            // Audit-Fund Modul 19: ohne diese beiden Checks ueberschreibt ein
+            // laengst veralteter Closure eine zwischenzeitliche manuelle
+            // Navigation, oder springt nach einer Loeschung auf eine
+            // inzwischen falsche/nicht mehr existente Seite.
+            guard pageNavigationGeneration == expectedGeneration else { return }
+            guard nextIndex <= resolvedExercises.count else { return }
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentPageIndex = nextIndex
             }
