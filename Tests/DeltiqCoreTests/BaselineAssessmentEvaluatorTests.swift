@@ -212,4 +212,18 @@ final class BaselineAssessmentEvaluatorTests: XCTestCase {
         let assessment = makeAssessment(plank: PlankAssessment(seconds: 60))
         XCTAssertEqual(BaselineAssessmentEvaluator.evaluate(assessment).core, .high)
     }
+
+    // MARK: Audit-Fund Modul 18 — chairSquat.durationSeconds muss gelesen werden
+
+    func testChairSquatShortenedTestYieldsUnknownInsteadOfBandingRepsAgainstFullRunThresholds() {
+        // 5 Reps in nur 10s (ein Drittel der Testzeit) waeren linear
+        // hochgerechnet auf 30s ein ganz anderes Band als 5 Reps in echten 30s.
+        let assessment = makeAssessment(chairSquat: ChairSquatAssessment(cleanReps: 5, durationSeconds: 10))
+        XCTAssertEqual(BaselineAssessmentEvaluator.evaluate(assessment).legs, .unknown)
+    }
+
+    func testChairSquatFullDurationRunStillBandsNormally() {
+        let assessment = makeAssessment(chairSquat: ChairSquatAssessment(cleanReps: 5, durationSeconds: 30))
+        XCTAssertEqual(BaselineAssessmentEvaluator.evaluate(assessment).legs, .low)
+    }
 }
