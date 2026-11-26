@@ -1293,6 +1293,20 @@ struct SetRow: View {
             if let s = log.durationSeconds, s > 0 {
                 cardioDurationText = PaceCalculator.formatDuration(s)
             }
+        } else if let seedLog {
+            // DEL-157: dynamisch hinzugefuegter Satz ohne eigene Historie —
+            // erbt Gewicht/Reps/RIR vom Satz direkt darueber in DIESER
+            // Session, sodass der User nicht von 0 anfangen muss.
+            //
+            // Geprueft VOR previousLog (Audit-Fix Modul 19): seedLog ist die
+            // spezifischere, aktuellere Quelle (derselbe Trainingstag, Satz
+            // direkt darueber) gegenueber einem previousLog-Zufallstreffer auf
+            // denselben rohen Index aus irgendeiner frueheren Session — sonst
+            // greift DEL-157s Vererbung nie, sobald fuer denselben Index
+            // irgendwann einmal ein historischer Log existiert.
+            weight = seedLog.weight > 0 ? seedLog.weight : exercise.suggestedWeight
+            reps = seedLog.reps
+            rir = seedLog.rir
         } else if let previousLog {
             // DEL-239: Das GEPLANTE Gewicht gewinnt, wenn es NIEDRIGER ist als
             // das letzte geloggte.
@@ -1327,13 +1341,6 @@ struct SetRow: View {
             // Placeholder zeigt die letzten Werte als Hint. Kein Pre-Fill
             // wuerde den User zwingen, das Feld zu loeschen, BEVOR er heute
             // tippt — bei Lauf-Logs nicht erwuenscht.
-        } else if let seedLog {
-            // DEL-157: dynamisch hinzugefuegter Satz ohne eigene Historie —
-            // erbt Gewicht/Reps/RIR vom Satz direkt darueber in DIESER
-            // Session, sodass der User nicht von 0 anfangen muss.
-            weight = seedLog.weight > 0 ? seedLog.weight : exercise.suggestedWeight
-            reps = seedLog.reps
-            rir = seedLog.rir
         } else {
             weight = exercise.suggestedWeight
             reps = midpoint(content.repsMin, content.repsMax)
