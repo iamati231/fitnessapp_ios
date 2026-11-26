@@ -129,17 +129,6 @@ func finishTimedSession(
         ? PRCelebration.make(from: detectedPR.map { [$0] } ?? [], tone: tone)
         : nil
 
-    // Nach Apple Health schreiben (Schalter + Klassifikation wie in
-    // ActiveWorkoutView.finishWorkout). Kein Set-/Volumen-Logging bei
-    // Zeitformaten - Dauer ist das aussagekraeftige Signal; ein Zeitformat-Tag
-    // aus reinen Cardio-Uebungen (Lauf-/Rad-Intervall) zaehlt als Cardio.
-    HealthWorkoutWriter.pushLive(session: session, healthKit: healthKit, context: modelContext)
-    if let celebration {
-        Task {
-            await prNotifications.scheduleCelebration(title: celebration.title, body: celebration.body)
-        }
-    }
-
     // TestingBot-Regressionscheck (Block B, Deltiq-Abnahme): dieselbe
     // Luecke wie bei den Live-Fortschritts-Schreibstellen (siehe
     // `completeRound()`-Doku) - ohne explizites Save ueberstehen weder der
@@ -149,6 +138,18 @@ func finishTimedSession(
         try modelContext.save()
     } catch {
         return false
+    }
+
+    // Audit-Fix (Modul 20): pushLive/Celebration sind externe, nicht
+    // wiederholbare Seiteneffekte - muessen NACH dem erfolgreichen Save
+    // laufen, sonst loest ein erneuter "Speichern"-Tap nach einem
+    // fehlgeschlagenen ersten Save (siehe Kommentar oben) HealthKit-Push
+    // und PR-Celebration ein zweites Mal aus.
+    HealthWorkoutWriter.pushLive(session: session, healthKit: healthKit, context: modelContext)
+    if let celebration {
+        Task {
+            await prNotifications.scheduleCelebration(title: celebration.title, body: celebration.body)
+        }
     }
 
     navigation.workoutPath.append(SummaryRoute(session: session))
