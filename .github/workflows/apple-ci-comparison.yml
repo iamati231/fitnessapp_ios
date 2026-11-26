@@ -33,10 +33,19 @@ permissions:
 # GitHub erlaubt nur 5 gleichzeitige macOS-Jobs pro Account. Dieser Workflow
 # wird aus vielen parallelen Sessions heraus oft getriggert und frass damit
 # regelmaessig alle Slots, sodass der seltene testflight-release.yml-Lauf nie
-# einen Runner bekam und nach 24h in der Warteschlange verfiel. Fixe Gruppe
-# (nicht pro Branch) serialisiert alle Laeufe dieses Workflows auf 1 Slot.
+# einen Runner bekam und nach 24h in der Warteschlange verfiel (siehe PR #132).
+# Eine EINZIGE fixe Gruppe serialisierte danach ALLE Laeufe auf 1 Slot - liess
+# zwar 4 Slots frei, aber GitHub haelt pro Gruppe nur 1 laufenden + 1
+# wartenden Lauf vor: bei mehreren parallelen Audit-PRs verdraengte jeder
+# weitere Trigger den bereits wartenden, mehrere PRs blieben ganz ohne
+# CI-Ergebnis (cancelled statt success/failure).
+# Fix: 4 feste Teil-Gruppen statt einer einzigen, verteilt nach der letzten
+# Hex-Ziffer des Commit-SHA (GitHub-Actions-Expressions kennen keinen
+# Modulo-Operator, daher ueber endsWith() gebucketet: 0-3/4-7/8-b/c-f). Belegt
+# maximal 4 der 5 Slots gleichzeitig, der 5. bleibt fuer testflight-release.yml
+# frei - gleiche Garantie wie zuvor, aber ohne die Warteschlangen-Verdraengung.
 concurrency:
-  group: apple-ci-comparison-macos-pool
+  group: "apple-ci-comparison-pool-${{ (endsWith(github.sha, '0') || endsWith(github.sha, '1') || endsWith(github.sha, '2') || endsWith(github.sha, '3')) && 'a' || (endsWith(github.sha, '4') || endsWith(github.sha, '5') || endsWith(github.sha, '6') || endsWith(github.sha, '7')) && 'b' || (endsWith(github.sha, '8') || endsWith(github.sha, '9') || endsWith(github.sha, 'a') || endsWith(github.sha, 'b')) && 'c' || 'd' }}"
   cancel-in-progress: false
 
 jobs:
