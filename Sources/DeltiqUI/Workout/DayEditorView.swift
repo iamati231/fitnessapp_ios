@@ -1167,8 +1167,16 @@ public struct DayEditorView: View {
 
         // Toast
         var parts: [String] = []
-        parts.append("Plan auf \(environmentLabel(conflict.requiredEnv))")
-        if r.swapped > 0 { parts.append("\(r.swapped) ersetzt") }
+        parts.append(
+            String(localized: "day.editor.switchPlan.toast.environment", bundle: .module)
+                .replacingOccurrences(of: "%1$@", with: environmentLabel(conflict.requiredEnv))
+        )
+        if r.swapped > 0 {
+            parts.append(
+                String(localized: "day.editor.switchPlan.toast.swapped", bundle: .module)
+                    .replacingOccurrences(of: "%1$lld", with: "\(r.swapped)")
+            )
+        }
         let message = parts.joined(separator: " · ")
         withAnimation(.easeOut(duration: 0.2)) {
             swapResultToast = message
