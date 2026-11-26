@@ -204,7 +204,12 @@ struct ComebackPromptSheet: View {
                 percent
             )
         }
-        return "\(percent) %"
+        // Audit-Fund Modul 19: war hartcodiert "\(percent) %" statt lokalisiert -
+        // TR setzt das Prozentzeichen vor die Zahl ("%15"), siehe comeback.prompt.recommended.
+        return String(
+            format: String(localized: "comeback.prompt.percentOnly", bundle: .module),
+            percent
+        )
     }
 
     private func formatted(_ weight: Double) -> String {
