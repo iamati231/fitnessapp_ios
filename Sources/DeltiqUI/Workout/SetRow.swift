@@ -1656,6 +1656,17 @@ private struct PlatePopoverContent: View {
         }
     }
 
+    /// Audit-Fund Modul 19: `targetWeight`/`effectiveBarWeight` sind kanonisch
+    /// kg (SetRow uebergibt immer die Speicher-Einheit), aber
+    /// `PlateCalculator.calculate(unit:)` und die Anzeige unten erwarten
+    /// beide bereits die GEWAEHLTE Anzeige-Einheit - ohne Konvertierung blieb
+    /// der Zahlenwert im lbs-Modus kg, nur das Label wechselte zu "lbs".
+    /// `WeightUnit` ist das etablierte kg<->lbs-Konvertierungs-Utility
+    /// (gleiche Konstante wie `SetRow.displayWeightBinding`).
+    private var displayUnit: WeightUnit { WeightUnit(rawSetting: unitRaw) }
+    private var targetWeightDisplay: Double { displayUnit.fromKg(targetWeight) }
+    private var effectiveBarWeightDisplay: Double { displayUnit.fromKg(effectiveBarWeight) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -1667,7 +1678,7 @@ private struct PlatePopoverContent: View {
                     .font(.headline)
                     .symbolRenderingMode(.hierarchical)
                 Spacer()
-                Text("\(targetWeight.formattedWholeOrTwoDecimals) \(unit.rawValue)")
+                Text("\(targetWeightDisplay.formattedWholeOrTwoDecimals) \(unit.rawValue)")
                     .font(.title3.bold().monospacedDigit())
                     .foregroundStyle(Color.deltiqOrange)
             }
@@ -1697,7 +1708,7 @@ private struct PlatePopoverContent: View {
 
             Text(String(
                 format: String(localized: "barbell.loading.barWeight", bundle: .module),
-                effectiveBarWeight.formattedWholeOrTwoDecimals, unit.rawValue
+                effectiveBarWeightDisplay.formattedWholeOrTwoDecimals, unit.rawValue
             ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -1706,9 +1717,9 @@ private struct PlatePopoverContent: View {
             // flaches `[PlateConfig]`, KEIN Wrapper-Struct mit `.plates` /
             // `.actualWeight`. `actualWeight` rechnen wir manuell (Stange +
             // 2× pro-Seite-Summe) — selbe Formel wie in PlateCalculatorView.
-            let plates = PlateCalculator.calculate(target: targetWeight, bar: effectiveBarWeight, unit: unit)
+            let plates = PlateCalculator.calculate(target: targetWeightDisplay, bar: effectiveBarWeightDisplay, unit: unit)
             let perSideLoaded = plates.reduce(0.0) { $0 + Double($1.count) * $1.weight }
-            let actualWeight = effectiveBarWeight + 2 * perSideLoaded
+            let actualWeight = effectiveBarWeightDisplay + 2 * perSideLoaded
 
             if plates.isEmpty {
                 Label {
@@ -1727,11 +1738,11 @@ private struct PlatePopoverContent: View {
                     .foregroundStyle(.secondary)
             }
 
-            if abs(actualWeight - targetWeight) > 0.01 {
+            if abs(actualWeight - targetWeightDisplay) > 0.01 {
                 Text(String(
                     format: String(localized: "barbell.loading.reachable", bundle: .module),
                     actualWeight.formattedWholeOrTwoDecimals, unit.rawValue,
-                    (actualWeight - targetWeight).formattedWholeOrTwoDecimals, unit.rawValue
+                    (actualWeight - targetWeightDisplay).formattedWholeOrTwoDecimals, unit.rawValue
                 ))
                     .font(.caption2)
                     .foregroundStyle(.orange)
