@@ -231,7 +231,7 @@ public struct PlansListView: View {
                 navigation.workoutPath.append(ActiveSessionRoute(session: session))
             } label: {
                 DeltiqCard(accentEdge: true) {
-                    ActiveSessionBanner(session: session)
+                    ActiveSessionBanner(content: ActiveSessionBannerContent(session))
                 }
             }
             .buttonStyle(.plain)
@@ -755,9 +755,35 @@ private struct PlanRow: View {
     }
 }
 
+/// Bugfix (Crash, TestFlight 0.1.0/175 — see `PlanRowContent` doc above for
+/// the full root-cause explanation): same fix, applied to the other view in
+/// this file that used to hold a live `@Model` reference. `ActiveSessionBanner`
+/// used to read `session.day`/`.dayName`/`.displayDayName`/`.startTime`
+/// directly inside `body` — the same Observation-dependency crash pattern.
+/// Concrete trigger here: `DashboardView.discardOtherOpenSessionsAndStartNew()`
+/// deletes every OTHER open session unconditionally while `PlansListView`
+/// (a permanently-mounted `TabView` sibling) can be showing exactly one of
+/// them in this banner.
+// `internal` (not `private`), same reason as `PlanRowContent` above: lets
+// `@testable import DeltiqUI` verify this extraction against a real
+// `WorkoutSession`.
+struct ActiveSessionBannerContent: Equatable {
+    let displayName: String
+    let startTime: Date
+
+    init(_ session: WorkoutSession) {
+        // DEL-128/129, siehe vorherige body-Fassung: Fallback-Logik bleibt
+        // identisch, nur jetzt einmalig hier statt bei jedem body-Aufruf.
+        displayName = session.day != nil || session.dayName != nil
+            ? session.displayDayName
+            : String(localized: "plans.active.fallbackName", bundle: .module)
+        startTime = session.startTime
+    }
+}
+
 @available(iOS 17.0, macOS 14.0, *)
 private struct ActiveSessionBanner: View {
-    let session: WorkoutSession
+    let content: ActiveSessionBannerContent
 
     var body: some View {
         HStack(spacing: 12) {
@@ -765,24 +791,14 @@ private struct ActiveSessionBanner: View {
                 .deltiqAccentIcon(size: 38, glyphSize: 16)
 
             VStack(alignment: .leading, spacing: 2) {
-                // DEL-128: "Gestartet %@"-Banner via xcstrings.
-                // DEL-129: displayDayName-Extension loest day.displayName
-                // -> snapshot -> Fallback-String in einer Source. Im TR-Mode
-                // sieht der User jetzt "Tüm Vücut A" statt "Ganzkörper A".
-                // Wenn day == nil UND snapshot == nil (sehr selten), faellt
-                // die Extension auf history.session.fallback zurueck —
-                // hier ueberschreiben wir mit dem aktiveren Banner-Fallback
-                // "Training läuft" / "Workout in progress" via Branch.
-                Text(session.day != nil || session.dayName != nil
-                     ? session.displayDayName
-                     : String(localized: "plans.active.fallbackName", bundle: .module))
+                Text(content.displayName)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.primary)
                 Text(
                     String(localized: "plans.active.startedAt", bundle: .module)
                         .replacingOccurrences(
                             of: "%@",
-                            with: session.startTime.formatted(.relative(presentation: .named))
+                            with: content.startTime.formatted(.relative(presentation: .named))
                         )
                 )
                     .font(.system(size: 12))
