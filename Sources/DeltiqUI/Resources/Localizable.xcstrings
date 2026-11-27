@@ -47611,6 +47611,52 @@
         }
       }
     },
+    "picker.plan.baselineConflict.titleCritical": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan kann nicht übernommen werden – Trainingstag leer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan can't be adopted – training day empty"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan alınamıyor – antrenman günü boş"
+          }
+        }
+      }
+    },
+    "picker.plan.baselineConflict.titleWarning": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einige Übungen wurden für dein Fitnesslevel angepasst"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some exercises were adapted for your fitness level"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bazı hareketler fitness seviyene göre uyarlandı"
+          }
+        }
+      }
+    },
     "picker.plan.equipment.adaptationAttemptedHint": {
       "extractionState": "manual",
       "localizations": {
