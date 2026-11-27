@@ -66,7 +66,8 @@ final class ExerciseEditorCheckmarkSaveBeforeDismissTests: XCTestCase {
         XCTAssertTrue(catalog.contains("\"editor.exercise.save.failed\""))
         for locale in ["\"de\"", "\"en\"", "\"tr\""] {
             guard let keyRange = catalog.range(of: "\"editor.exercise.save.failed\"") else { continue }
-            let window = catalog[keyRange.upperBound..<catalog.index(keyRange.upperBound, offsetBy: 600, limitedBy: catalog.endIndex) ?? catalog.endIndex]
+            let windowEnd = catalog.index(keyRange.upperBound, offsetBy: 600, limitedBy: catalog.endIndex) ?? catalog.endIndex
+            let window = catalog[keyRange.upperBound..<windowEnd]
             XCTAssertTrue(window.contains(locale), "editor.exercise.save.failed is missing a \(locale) translation")
         }
     }
