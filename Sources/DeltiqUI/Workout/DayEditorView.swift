@@ -1202,10 +1202,7 @@ public struct DayEditorView: View {
             // semantisch keinen Sinn.
             let id = current.supersetId!
             current.supersetId = nil
-            let remaining = arr.filter { $0.supersetId == id }
-            if remaining.count <= 1 {
-                remaining.forEach { $0.supersetId = nil }
-            }
+            Self.exercisesToUnlinkAfterSupersetSplit(arr, groupID: id).forEach { $0.supersetId = nil }
         } else {
             // Verbinden: gleicher supersetId wie previous (entweder dessen
             // existierende ID oder eine neu erstellte).
@@ -1417,6 +1414,20 @@ public struct DayEditorView: View {
         snapshot.enumerated()
             .filter { !offsets.contains($0.offset) }
             .map(\.element)
+    }
+
+    /// Audit-Fund Modul 21: bei 3+ Mitgliedern trennt das Loesen des
+    /// mittleren Elements die Gruppe in zwei nicht mehr benachbarte Teile —
+    /// reine Groessenpruefung (count <= 1) uebersieht das. `internal` und
+    /// ohne `modelContext`-Zugriff, daher direkt testbar — siehe
+    /// `remainingAfterDeletion` oben fuer dasselbe Muster.
+    internal static func exercisesToUnlinkAfterSupersetSplit(
+        _ ordered: [Exercise], groupID: UUID
+    ) -> [Exercise] {
+        let remainingIndices = ordered.indices.filter { ordered[$0].supersetId == groupID }
+        let isContiguous = remainingIndices.last.map { $0 - remainingIndices[0] + 1 == remainingIndices.count } ?? true
+        guard remainingIndices.count <= 1 || !isContiguous else { return [] }
+        return remainingIndices.map { ordered[$0] }
     }
 
     private func deleteExercises(at offsets: IndexSet) {
