@@ -19345,6 +19345,52 @@
         }
       }
     },
+    "day.editor.switchPlan.toast.environment": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan auf %1$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan switched to %1$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan %1$@ olarak değiştirildi"
+          }
+        }
+      }
+    },
+    "day.editor.switchPlan.toast.swapped": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld ersetzt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld replaced"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld değiştirildi"
+          }
+        }
+      }
+    },
     "day.editor.templateLocked.exercises": {
       "extractionState": "manual",
       "localizations": {
