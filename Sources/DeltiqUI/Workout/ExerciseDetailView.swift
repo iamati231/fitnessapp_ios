@@ -214,6 +214,9 @@ struct ExerciseDetailView: View {
                     Image(systemName: "trophy.fill")
                         .font(.caption)
                         .foregroundStyle(Color.deltiqOrange)
+                        // Audit-Fund Modul 22: Icon ist rein dekorativ, der Zeileninhalt
+                        // (Kind/Datum/Gewicht) traegt die Information bereits vollstaendig.
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(kindLabel(pr.kindRaw))
                             .font(.subheadline.weight(.medium))
@@ -272,6 +275,9 @@ struct ExerciseDetailView: View {
             Image(systemName: "chart.xyaxis.line")
                 .font(.system(size: 40))
                 .foregroundStyle(Color.Deltiq.textTertiary)
+                // Audit-Fund Modul 22: Hero-Icon ist rein dekorativ, der Text
+                // darunter traegt den Leerzustand bereits vollstaendig.
+                .accessibilityHidden(true)
             Text("exercise.detail.empty", bundle: .module)
                 .font(.callout)
                 .foregroundStyle(Color.Deltiq.textSecondary)
