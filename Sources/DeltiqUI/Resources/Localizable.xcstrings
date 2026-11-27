@@ -53821,6 +53821,29 @@
         }
       }
     },
+    "planEditor.days.add.limitReached": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Plan kann höchstens 7 Tage haben (ein Tag pro Wochentag)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A plan can have at most 7 days (one per weekday)."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir plan en fazla 7 gün içerebilir (haftanın her günü için bir gün)."
+          }
+        }
+      }
+    },
     "planEditor.days.add.training": {
       "extractionState": "manual",
       "localizations": {
