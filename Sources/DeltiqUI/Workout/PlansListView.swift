@@ -330,6 +330,7 @@ public struct PlansListView: View {
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.deltiqOrange.opacity(0.85))
                 .padding(.top, 4)
+                .accessibilityHidden(true)
 
             VStack(spacing: 6) {
                 Text("plans.empty.title", bundle: .module)
@@ -718,6 +719,7 @@ private struct PlanRow: View {
             // kommuniziert, nicht mehr doppelt ueber die Icon-Farbe.
             Image(systemName: "list.bullet.rectangle.portrait")
                 .deltiqAccentIcon()
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -751,6 +753,7 @@ private struct PlanRow: View {
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.Deltiq.textTertiary)
+                .accessibilityHidden(true)
         }
         .padding(.vertical, 4)
     }
@@ -780,6 +783,7 @@ private struct ActiveSessionBanner: View {
         HStack(spacing: 12) {
             Image(systemName: "figure.run.circle.fill")
                 .deltiqAccentIcon(size: 38, glyphSize: 16)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 // DEL-128: "Gestartet %@"-Banner via xcstrings.
@@ -809,6 +813,7 @@ private struct ActiveSessionBanner: View {
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.Deltiq.textTertiary)
+                .accessibilityHidden(true)
         }
     }
 }
