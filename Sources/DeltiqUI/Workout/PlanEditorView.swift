@@ -910,6 +910,7 @@ public struct PlanEditorView: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.title3)
                             .foregroundStyle(.orange)
+                            .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("planEditor.equipmentGap.title", bundle: .module)
                                 .font(.body.weight(.semibold))
