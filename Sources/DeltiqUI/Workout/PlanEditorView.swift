@@ -1302,12 +1302,9 @@ private struct DayRow: View {
         return symbols[weekday - 1]
     }
 
+    // Audit-Fund Modul 21: war hartcodiert Deutsch statt lokalisiert, siehe environmentLabel oben.
     private func intensityLabel(_ intensity: DayIntensity) -> String {
-        switch intensity {
-        case .normal: return "Normal"
-        case .light:  return "Leicht"
-        case .heavy:  return "Schwer"
-        }
+        String(localized: intensity.localizedName)
     }
 }
 
