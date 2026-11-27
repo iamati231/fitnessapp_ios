@@ -616,7 +616,9 @@ public struct ExerciseEditorView: View {
                 }
             )
             .tint(Color.deltiqOrange)
-            .disabled(isReadOnly)
+            // Audit-Fund Modul 22: Ziel-RIR ist ein Trainings-Parameter (siehe
+            // isReadOnly-Doc oben) und muss wie Suggested-Weight/Notiz auch in
+            // einem Template-Plan editierbar bleiben - kein .disabled(isReadOnly).
             .overlay(alignment: .top) {
                 RIRTooltipBloop(rir: exercise.targetRir,
                                 isVisible: rirTooltip.isVisible)
