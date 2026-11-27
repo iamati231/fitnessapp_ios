@@ -478,13 +478,7 @@ public struct ExerciseEditorView: View {
             .disabled(isReadOnly)
             .listRowBackground(Color.Deltiq.surface)
 
-            Toggle(isOn: Binding(
-                get: { exercise.isCompound },
-                set: { newValue in
-                    exercise.isCompound = newValue
-                    syncCustomTemplate { $0.isSystemCompound = newValue }
-                }
-            )) {
+            Toggle(isOn: compoundBinding) {
                 Text("customExercise.field.compound", bundle: .module)
             }
             .tint(Color.deltiqOrange)
@@ -494,6 +488,21 @@ public struct ExerciseEditorView: View {
             Text("customExercise.section.metadata", bundle: .module)
         }
         .listRowSeparatorTint(Color.Deltiq.divider)
+    }
+
+    /// DEL-163/AC2: Compound-Lift wird an zwei Stellen bearbeitet
+    /// (`customMetadataSection` + `progressionSection`) - beide muessen
+    /// dieselbe Custom-Template-Ruecksynchronisation ausloesen, sonst faellt
+    /// `progressionSection`s Toggle beim naechsten Bibliotheks-Reimport auf
+    /// den (dann stale) Template-Wert zurueck.
+    private var compoundBinding: Binding<Bool> {
+        Binding(
+            get: { exercise.isCompound },
+            set: { newValue in
+                exercise.isCompound = newValue
+                syncCustomTemplate { $0.isSystemCompound = newValue }
+            }
+        )
     }
 
     /// DEL-163: schreibt eine Metadaten-Aenderung auf das/die passende(n)
@@ -641,7 +650,7 @@ public struct ExerciseEditorView: View {
             .tint(Color.deltiqOrange)
             .listRowBackground(Color.Deltiq.surface)
             if exercise.smartProgressionEnabled {
-                Toggle(isOn: $exercise.isCompound) {
+                Toggle(isOn: compoundBinding) {
                     Text("editor.exercise.toggle.compoundLift", bundle: .module)
                 }
                 .tint(Color.deltiqOrange)
