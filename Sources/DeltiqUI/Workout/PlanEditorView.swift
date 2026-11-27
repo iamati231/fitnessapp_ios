@@ -49,6 +49,11 @@ public struct PlanEditorView: View {
     /// mehrere aktive Plaene hat und EINEN davon umstellt.
     @State private var pendingGlobalSync: PendingEnvironmentSwap?
     @State private var swapResultToast: String?
+    /// Audit-Fix (Modul 21): jeder Toast-Aufruf erhoeht dies und merkt sich
+    /// seinen eigenen Wert - der verzoegerte Clear darf `swapResultToast`
+    /// nur loeschen, wenn seither kein neuerer Toast gesetzt wurde (sonst
+    /// loescht ein aelterer Clear-Task eine juengere, noch aktive Meldung).
+    @State private var swapResultToastGeneration = 0
 
     /// UI-Refactor (DeltiqHeader-Muster): zeigt den Verwerfen-Dialog, wenn
     /// der Zurueck-Chevron bei vorhandenen Aenderungen (`isDirty`) angetippt
@@ -477,14 +482,7 @@ public struct PlanEditorView: View {
         parts.append(String(format: String(localized: "planEditor.sync.plansCount", bundle: .module), outcome.plansTouched))
         if outcome.result.swapped > 0 { parts.append(String(format: String(localized: "planEditor.result.swapped", bundle: .module), outcome.result.swapped)) }
         let message = parts.joined(separator: " · ")
-        withAnimation(.easeOut(duration: 0.2)) {
-            swapResultToast = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            withAnimation(.easeIn(duration: 0.2)) {
-                swapResultToast = nil
-            }
-        }
+        showTransientToast(message)
     }
 
     // MARK: - README 2.20 "Plan bauen": neu rechnen
@@ -535,14 +533,7 @@ public struct PlanEditorView: View {
             // Erfolgsmeldung.
             message = String(localized: "planEditor.recalculate.toast.failed", bundle: .module)
         }
-        withAnimation(.easeOut(duration: 0.2)) {
-            swapResultToast = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            withAnimation(.easeIn(duration: 0.2)) {
-                swapResultToast = nil
-            }
-        }
+        showTransientToast(message)
     }
 
     // DEL-118: route durch die zentrale .localizedName-Extension.
@@ -586,6 +577,15 @@ public struct PlanEditorView: View {
         // folgenloses No-Op.
         if let other = planToReactivateOnDiscard(otherActivePlanIDAtOpen: otherActivePlanIDAtOpen, amongCandidates: allPlans) {
             other.isActive = true
+        }
+        // Audit-Fix Modul 21 (Nachtrag): ohne dies kann ein zwischenzeitlicher
+        // impliziter Autosave (siehe saveAndDismiss()-Doku) den eigentlich zu
+        // verwerfenden Zwischenstand schon persistiert haben - der Rueckbau
+        // hier muss also ebenso explizit gespeichert werden.
+        do {
+            try modelContext.save()
+        } catch {
+            showTransientToast(String(localized: "planEditor.save.failed", bundle: .module))
         }
         dismiss()
     }
@@ -910,6 +910,7 @@ public struct PlanEditorView: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.title3)
                             .foregroundStyle(.orange)
+                            .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("planEditor.equipmentGap.title", bundle: .module)
                                 .font(.body.weight(.semibold))
@@ -1108,6 +1109,14 @@ public struct PlanEditorView: View {
     /// gleich Uebungen hinzufuegen kann. Ruhetage werden nur in der Liste
     /// gespeichert — kein Editor noetig.
     private func createNewDay(type: DayType) {
+        // Audit-Fix (Modul 21): ohne dieses Gate kollidiert der Wochentag-
+        // Fallback unten deterministisch mit einem bereits vorhandenen Tag,
+        // sobald alle 7 Wochentage vergeben sind - ein Plan hat nie mehr als
+        // einen Tag pro Wochentag.
+        guard plan.days.count < 7 else {
+            showTransientToast(String(localized: "planEditor.days.add.limitReached", bundle: .module))
+            return
+        }
         // Bugfix (Audit): ein numerisches max() ueber `weekday` behandelt
         // Sonntag (1) faelschlich als kleinsten statt letzten Wochentag
         // (siehe `PlanNavigator.sortByWeekdayMondayFirst`) - bei einem Plan
@@ -1171,12 +1180,16 @@ public struct PlanEditorView: View {
 
     /// Gemeinsamer Helfer fuer die bestehende `swapResultToast`-Konvention
     /// (siehe `switchPlanEnvAndAdd`) — identisches Muster wie
-    /// `DayEditorView.showTransientToast`.
+    /// `DayEditorView.showTransientToast`. Einziger Ort, der `swapResultToast`
+    /// setzt/loescht (siehe `swapResultToastGeneration`-Doku).
     private func showTransientToast(_ message: String) {
+        swapResultToastGeneration += 1
+        let generation = swapResultToastGeneration
         withAnimation(.easeOut(duration: 0.2)) {
             swapResultToast = message
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            guard swapResultToastGeneration == generation else { return }
             withAnimation(.easeIn(duration: 0.2)) {
                 swapResultToast = nil
             }
@@ -1243,15 +1256,7 @@ public struct PlanEditorView: View {
         if result.kept > 0       { parts.append(String(format: String(localized: "planEditor.result.noAlternative", bundle: .module), result.kept)) }
         if result.compatible > 0 { parts.append(String(format: String(localized: "planEditor.result.unchanged", bundle: .module), result.compatible)) }
         let message = parts.isEmpty ? String(localized: "planEditor.result.none", bundle: .module) : parts.joined(separator: " · ")
-
-        withAnimation(.easeOut(duration: 0.2)) {
-            swapResultToast = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            withAnimation(.easeIn(duration: 0.2)) {
-                swapResultToast = nil
-            }
-        }
+        showTransientToast(message)
     }
 }
 
@@ -1301,12 +1306,9 @@ private struct DayRow: View {
         return symbols[weekday - 1]
     }
 
+    // Audit-Fund Modul 21: war hartcodiert Deutsch statt lokalisiert, siehe environmentLabel oben.
     private func intensityLabel(_ intensity: DayIntensity) -> String {
-        switch intensity {
-        case .normal: return "Normal"
-        case .light:  return "Leicht"
-        case .heavy:  return "Schwer"
-        }
+        String(localized: intensity.localizedName)
     }
 }
 

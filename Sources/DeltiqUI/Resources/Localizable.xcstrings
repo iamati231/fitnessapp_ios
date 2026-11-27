@@ -19322,6 +19322,29 @@
         }
       }
     },
+    "day.editor.superset.linkIcon": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Superset"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Superset"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Süperset"
+          }
+        }
+      }
+    },
     "day.editor.switchPlan.toast.environment": {
       "extractionState": "manual",
       "localizations": {
@@ -53844,6 +53867,29 @@
         }
       }
     },
+    "planEditor.days.add.limitReached": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Plan kann höchstens 7 Tage haben (ein Tag pro Wochentag)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A plan can have at most 7 days (one per weekday)."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir plan en fazla 7 gün içerebilir (haftanın her günü için bir gün)."
+          }
+        }
+      }
+    },
     "planEditor.days.add.training": {
       "extractionState": "manual",
       "localizations": {
@@ -74882,6 +74928,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ağırlıklar, bank, barfiks ve diğer ekipmanlara dair tüm mevcut bilgiler kaybolacak."
+          }
+        }
+      }
+    },
+    "common.ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamam"
           }
         }
       }

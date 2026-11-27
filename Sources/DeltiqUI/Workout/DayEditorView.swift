@@ -1210,10 +1210,7 @@ public struct DayEditorView: View {
             // semantisch keinen Sinn.
             let id = current.supersetId!
             current.supersetId = nil
-            let remaining = arr.filter { $0.supersetId == id }
-            if remaining.count <= 1 {
-                remaining.forEach { $0.supersetId = nil }
-            }
+            Self.exercisesToUnlinkAfterSupersetSplit(arr, groupID: id).forEach { $0.supersetId = nil }
         } else {
             // Verbinden: gleicher supersetId wie previous (entweder dessen
             // existierende ID oder eine neu erstellte).
@@ -1332,6 +1329,11 @@ public struct DayEditorView: View {
     private func revertToSnapshot() {
         snapshot.apply(to: day)
         revertExerciseOrder(usingSnapshot: exerciseOrderIndexAtOpen)
+        // Audit-Fund Modul 21: ohne dies kann ein zwischenzeitlicher impliziter
+        // Autosave (App-Hintergrund) den verworfenen Wert ueberleben - best-
+        // effort speichern, aber den Dismiss nie wegen eines Save-Fehlers
+        // blockieren (der Nutzer hat den Discard bereits bestaetigt).
+        try? modelContext.save()
         dismiss()
     }
 
@@ -1420,6 +1422,20 @@ public struct DayEditorView: View {
         snapshot.enumerated()
             .filter { !offsets.contains($0.offset) }
             .map(\.element)
+    }
+
+    /// Audit-Fund Modul 21: bei 3+ Mitgliedern trennt das Loesen des
+    /// mittleren Elements die Gruppe in zwei nicht mehr benachbarte Teile —
+    /// reine Groessenpruefung (count <= 1) uebersieht das. `internal` und
+    /// ohne `modelContext`-Zugriff, daher direkt testbar — siehe
+    /// `remainingAfterDeletion` oben fuer dasselbe Muster.
+    internal static func exercisesToUnlinkAfterSupersetSplit(
+        _ ordered: [Exercise], groupID: UUID
+    ) -> [Exercise] {
+        let remainingIndices = ordered.indices.filter { ordered[$0].supersetId == groupID }
+        let isContiguous = remainingIndices.last.map { $0 - remainingIndices[0] + 1 == remainingIndices.count } ?? true
+        guard remainingIndices.count <= 1 || !isContiguous else { return [] }
+        return remainingIndices.map { ordered[$0] }
     }
 
     private func deleteExercises(at offsets: IndexSet) {
@@ -1772,7 +1788,7 @@ private struct ExerciseRow: View {
                 Image(systemName: "link")
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(Color.deltiqOrange)
-                    .accessibilityLabel("Superset")
+                    .accessibilityLabel(Text("day.editor.superset.linkIcon", bundle: .module))
             }
             if exercise.isCardio {
                 // Handoff: kein echter Apple-Health-Bezug (nur dekoratives

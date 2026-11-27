@@ -345,6 +345,11 @@ public struct PlanBuilderView: View {
     /// damit die beiden Faelle optisch unterscheidbar bleiben.
     @State private var footerToastMessage: String?
     @State private var footerToastSystemImage = "pin.slash.fill"
+    /// Audit-Fund Modul 21: identifiziert, welcher `showFooterToast`-Aufruf
+    /// die aktuell sichtbare Nachricht gesetzt hat - ein aelterer, noch
+    /// laufender Dismiss-Task darf eine zwischenzeitlich neu gesetzte
+    /// Nachricht nicht vorzeitig loeschen.
+    @State private var footerToastToken: UUID?
 
     // P3.3: ausgewaehlter Tag + seine gerade angebotenen Alternativen fuer
     // den Alternativen-Dialog (siehe `presentAlternatives`/`.confirmationDialog`
@@ -610,7 +615,9 @@ public struct PlanBuilderView: View {
                     set: { if !$0 { missingProfileErrorMessage = nil } }
                 )
             ) {
-                Button("OK") { missingProfileErrorMessage = nil }
+                Button { missingProfileErrorMessage = nil } label: {
+                    Text("common.ok", bundle: .module)
+                }
             } message: {
                 Text(missingProfileErrorMessage ?? "")
             }
@@ -626,7 +633,9 @@ public struct PlanBuilderView: View {
                     set: { if !$0 { adoptSaveErrorMessage = nil } }
                 )
             ) {
-                Button("OK") { adoptSaveErrorMessage = nil }
+                Button { adoptSaveErrorMessage = nil } label: {
+                    Text("common.ok", bundle: .module)
+                }
             } message: {
                 Text(adoptSaveErrorMessage ?? "")
             }
@@ -1763,12 +1772,15 @@ public struct PlanBuilderView: View {
     }
 
     private func showFooterToast(_ message: String, systemImage: String) {
+        let token = UUID()
+        footerToastToken = token
         withAnimation {
             footerToastMessage = message
             footerToastSystemImage = systemImage
         }
         Task {
             try? await Task.sleep(nanoseconds: 2_500_000_000)
+            guard footerToastToken == token else { return }
             withAnimation { footerToastMessage = nil }
         }
     }
@@ -2030,8 +2042,12 @@ public struct PlanBuilderView: View {
         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
+        // Audit-Fund Modul 21: war .combine - buendelte Kopfzeile, "..."-Menu
+        // UND jeden einzelnen "Alternative waehlen"-Uebungs-Button zu einem
+        // einzigen, nicht mehr individuell aktivierbaren Element. .contain
+        // gruppiert ohne die Kinder zu verschlucken; die zusammenfassende
+        // Ansage sitzt jetzt direkt auf dem statischen Kopfzeilen-Teil oben.
+        .accessibilityElement(children: .contain)
     }
 
     /// Name, Fixierungs-Badges, Belastungs-Badge und das Aktionen-Menu — die
@@ -2068,6 +2084,13 @@ public struct PlanBuilderView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            // Audit-Fund Modul 21: die zusammenfassende Ansage gehoert nur
+            // auf diesen statischen Kopfzeilen-Teil - stand sie frueher auf
+            // dem ganzen resultDayRow-Block (inkl. "..."-Menu und
+            // Uebungsliste), verschluckte .combine dort auch deren eigene,
+            // per Tap aktivierbare Accessibility-Elemente.
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
             Spacer()
             // Nachbesserung: `loadLevel == nil` ("nicht bewertet") bekommt
             // einen eigenen, neutralen Badge statt eine Haerte-Einordnung
