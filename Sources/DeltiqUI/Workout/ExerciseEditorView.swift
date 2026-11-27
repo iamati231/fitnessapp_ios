@@ -426,6 +426,11 @@ public struct ExerciseEditorView: View {
             template.equipment = snapshot.equipmentRaw.flatMap(Equipment.init(rawValue:)) ?? .bodyweight
             template.isSystemCompound = snapshot.isCompound
         }
+        // Audit-Fund Modul 22: ohne dies kann ein zwischenzeitlicher impliziter
+        // Autosave (App-Hintergrund) den verworfenen Wert ueberleben - best-
+        // effort speichern, aber den Dismiss nie wegen eines Save-Fehlers
+        // blockieren (der Nutzer hat den Discard bereits bestaetigt).
+        try? modelContext.save()
     }
 
     /// DEL-159: True wenn die Uebung KEINEN Library-Eintrag matcht — also
