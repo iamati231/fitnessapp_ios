@@ -1324,6 +1324,11 @@ public struct DayEditorView: View {
     private func revertToSnapshot() {
         snapshot.apply(to: day)
         revertExerciseOrder(usingSnapshot: exerciseOrderIndexAtOpen)
+        // Audit-Fund Modul 21: ohne dies kann ein zwischenzeitlicher impliziter
+        // Autosave (App-Hintergrund) den verworfenen Wert ueberleben - best-
+        // effort speichern, aber den Dismiss nie wegen eines Save-Fehlers
+        // blockieren (der Nutzer hat den Discard bereits bestaetigt).
+        try? modelContext.save()
         dismiss()
     }
 
