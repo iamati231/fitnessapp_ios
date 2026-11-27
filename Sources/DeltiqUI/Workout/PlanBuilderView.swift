@@ -172,7 +172,14 @@ public struct PlanBuilderView: View {
         self.hasExplicitEquipmentPreferences = initialInput != nil
         self.isPreSeededFlow = initialInput.map { !$0.selections.isEmpty } ?? false
         if let initialInput {
-            _selectedKinds = State(initialValue: initialInput.selections.map(\.kind))
+            // Audit-Fund Modul 21: selectedKinds muss genauso dedupliziert
+            // werden wie configByKind direkt darunter - sonst traegt
+            // ForEach(selectedKinds, id: \.self) bei zwei Selections
+            // desselben kind eine doppelt vergebene ID.
+            var seenKinds = Set<TrainingTypeKind>()
+            _selectedKinds = State(initialValue: initialInput.selections.compactMap { selection in
+                seenKinds.insert(selection.kind).inserted ? selection.kind : nil
+            })
             _configByKind = State(initialValue: Dictionary(
                 initialInput.selections.map { ($0.kind, $0) },
                 uniquingKeysWith: { _, latest in latest }
