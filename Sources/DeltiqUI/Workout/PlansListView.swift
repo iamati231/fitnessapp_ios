@@ -544,6 +544,11 @@ public struct PlansListView: View {
             // drei neuen Zirkel-Felder - ohne sie verlor ein dupliziertes
             // .circuit-Tag Rundenzahl/Pause/Modus und fiel stillschweigend
             // auf die generischen Defaults zurueck.
+            // Audit-Fund: dieselbe Luecke traf auch die sieben endurance*-
+            // Felder - ein dupliziertes .enduranceIntervals-Tag behielt das
+            // Zeitformat, verlor aber Runden/Warmup/Cooldown/Pause/Distanz/
+            // Sportart und fiel stillschweigend auf die generischen Defaults
+            // in EnduranceIntervalPlayerView zurueck.
             let dayCopy = TrainingDay(
                 name: day.name,
                 customName: day.customName,
@@ -557,6 +562,13 @@ public struct PlansListView: View {
                 circuitRounds: day.circuitRounds,
                 circuitRestSeconds: day.circuitRestSeconds,
                 circuitMode: day.circuitMode,
+                enduranceWarmupDurationSeconds: day.enduranceWarmupDurationSeconds,
+                enduranceCooldownDurationSeconds: day.enduranceCooldownDurationSeconds,
+                enduranceIntervalRounds: day.enduranceIntervalRounds,
+                enduranceWorkDurationSeconds: day.enduranceWorkDurationSeconds,
+                enduranceWorkDistanceKm: day.enduranceWorkDistanceKm,
+                enduranceRestDurationSeconds: day.enduranceRestDurationSeconds,
+                enduranceSportKind: day.enduranceSportKind,
                 // Phase B, Task 5: Herkunfts-Stempel wird dupliziert, nicht
                 // geraten - ein echter, unberuehrter Auto-Ruhetag bleibt nach
                 // dem Duplizieren eine eligible Einfuege-Stelle; ein bereits
