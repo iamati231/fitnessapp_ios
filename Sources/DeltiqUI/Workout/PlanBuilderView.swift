@@ -170,6 +170,7 @@ public struct PlanBuilderView: View {
         self.onEnduranceModalityChosen = onEnduranceModalityChosen
         self.preseededBaselineBands = preseededBaselineBands
         self.hasExplicitEquipmentPreferences = initialInput != nil
+        self.isPreSeededFlow = initialInput.map { !$0.selections.isEmpty } ?? false
         if let initialInput {
             _selectedKinds = State(initialValue: initialInput.selections.map(\.kind))
             _configByKind = State(initialValue: Dictionary(
@@ -282,7 +283,11 @@ public struct PlanBuilderView: View {
     /// Einstieg (Doc01 §3) - der Fall fuer `PlansListView`s "+" (kein Input)
     /// und `OnboardingView`s eingebetteten Builder (Input mit LEEREN
     /// `selections`, siehe dortige Doku).
-    private var isPreSeededFlow: Bool { !selectedKinds.isEmpty }
+    /// Audit-Fund Modul 21: war eine computed property auf `selectedKinds`,
+    /// kippte also live auf `false`, sobald der Nutzer im Handoff-Pfad alle
+    /// vorbefuellten Karten einzeln entfernte - jetzt wie
+    /// `hasExplicitEquipmentPreferences` einmalig im `init` gepinnt.
+    private let isPreSeededFlow: Bool
 
     // Schritt 1 (zielorientierter Pfad, Doc01 §3)
     @State private var selectedGoalCard: GoalCard?
