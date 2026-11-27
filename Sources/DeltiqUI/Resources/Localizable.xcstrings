@@ -21253,6 +21253,29 @@
         }
       }
     },
+    "environment.allFallback": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "alle"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "all"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tümü"
+          }
+        }
+      }
+    },
     "environment.gym": {
       "extractionState": "manual",
       "localizations": {

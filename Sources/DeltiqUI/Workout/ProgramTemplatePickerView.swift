@@ -154,7 +154,10 @@ public struct ProgramTemplatePickerView: View {
     }
 
     private var userEnvironmentLabel: String {
-        guard let env = profiles.first?.environment else { return "alle" }
+        // Audit-Fund Modul 22: war hartcodiertes Deutsch "alle" statt lokalisiert.
+        guard let env = profiles.first?.environment else {
+            return String(localized: "environment.allFallback", bundle: .module)
+        }
         // LocalizedStringResource → String via String(localized:) — Text-Inter-
         // polation wuerde es direkt nehmen, aber wir bauen hier einen reinen
         // String fuer die Section-Footer-Interpolation.
