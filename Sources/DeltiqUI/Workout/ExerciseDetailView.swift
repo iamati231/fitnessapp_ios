@@ -292,13 +292,13 @@ struct ExerciseDetailView: View {
     private func formatWeight(_ kg: Double) -> String {
         if weightUnitRaw == "lbs" {
             let lbs = WeightUnit.lbs.fromKg(kg)
-            return "\(lbs.truncated(to: 1).formatted(.number.precision(.fractionLength(0...1)))) lbs"
+            return "\(lbs.formattedWholeOrTwoDecimals) lbs"
         }
-        return "\(kg.truncated(to: 1).formatted(.number.precision(.fractionLength(0...1)))) kg"
+        return "\(kg.formattedWholeOrTwoDecimals) kg"
     }
 
     private func formatKm(_ km: Double) -> String {
-        "\(km.truncated(to: 1).formatted(.number.precision(.fractionLength(0...1)))) km"
+        "\(km.formattedWholeOrTwoDecimals) km"
     }
 
     private func formatDuration(_ seconds: Int) -> String {
