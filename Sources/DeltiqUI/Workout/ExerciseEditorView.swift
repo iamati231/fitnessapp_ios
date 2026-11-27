@@ -244,7 +244,7 @@ public struct ExerciseEditorView: View {
                 Section {
                     Stepper(value: $exercise.restSeconds, in: 0...600, step: 15) {
                         LabeledContent {
-                            Text("\(exercise.restSeconds)s")
+                            Text("\(exercise.restSeconds)" + String(localized: "unit.seconds.short", bundle: .module))
                         } label: {
                             Text("editor.exercise.rest", bundle: .module)
                         }
