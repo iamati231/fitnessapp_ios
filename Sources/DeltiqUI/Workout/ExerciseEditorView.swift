@@ -45,6 +45,13 @@ public struct ExerciseEditorView: View {
     /// Oeffnen des Sheets — siehe `ExerciseSnapshot` weiter unten.
     @State private var snapshot: ExerciseSnapshot
 
+    /// Audit-Fund Modul 22: der "Fertig"-Checkmark rief bisher nur `dismiss()`
+    /// auf, ohne vorher `modelContext.save()` aufzurufen - SwiftDatas
+    /// impliziter Autosave ist nicht garantiert vor einem direkt folgenden
+    /// Kaltstart/App-Kill gelaufen (gleiches Toast-Muster wie
+    /// `DayEditorView`/`PlanEditorView`s `showTransientToast`).
+    @State private var saveErrorToast: String?
+
     @AppStorage("showRirTooltips") private var showRirTooltips: Bool = true
     @State private var rirTooltip = RIRTooltipController()
 
@@ -124,7 +131,12 @@ public struct ExerciseEditorView: View {
                         systemImage: "checkmark",
                         accessibilityLabel: String(localized: "common.done", bundle: .module)
                     ) {
-                        dismiss()
+                        do {
+                            try modelContext.save()
+                            dismiss()
+                        } catch {
+                            showTransientToast(String(localized: "editor.exercise.save.failed", bundle: .module))
+                        }
                     }
                 ],
                 isModal: true
@@ -372,6 +384,16 @@ public struct ExerciseEditorView: View {
         } message: {
             Text("editor.exercise.deleteConfirmMessage", bundle: .module)
         }
+        .overlay(alignment: .bottom) {
+            if let msg = saveErrorToast {
+                Label(msg, systemImage: "exclamationmark.triangle")
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
     }
 
     /// DEL-160: Loescht die Custom-Uebung dauerhaft — die bearbeitete
@@ -410,6 +432,19 @@ public struct ExerciseEditorView: View {
         }
 
         dismiss()
+    }
+
+    /// Audit-Fund Modul 22: gleiche Toast-Konvention wie `DayEditorView`/
+    /// `PlanEditorView`s `showTransientToast` (eigener Helfer je Datei).
+    private func showTransientToast(_ message: String) {
+        withAnimation(.easeOut(duration: 0.2)) {
+            saveErrorToast = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                saveErrorToast = nil
+            }
+        }
     }
 
     /// UI-Refactor (DeltiqHeader-Muster): rollt alle Felder auf den Zustand

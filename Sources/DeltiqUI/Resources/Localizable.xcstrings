@@ -20701,6 +20701,29 @@
         }
       }
     },
+    "editor.exercise.save.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Änderungen konnten nicht gespeichert werden. Bitte erneut versuchen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save your changes. Please try again."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değişiklikler kaydedilemedi. Lütfen tekrar deneyin."
+          }
+        }
+      }
+    },
     "editor.exercise.section.cardioTarget": {
       "extractionState": "manual",
       "localizations": {
