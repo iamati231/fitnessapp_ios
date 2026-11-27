@@ -544,6 +544,10 @@ public struct TemplatePreviewView: View {
                 Image(systemName: icon)
                     .font(.title3)
                     .foregroundStyle(tint)
+                    // Audit-Fund Modul 22: Icon ist rein dekorativ, title
+                    // traegt den Status schon vollstaendig als Text (gleiches
+                    // Muster wie DayPickerSheet.swift:145/187).
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.body.weight(.semibold))
