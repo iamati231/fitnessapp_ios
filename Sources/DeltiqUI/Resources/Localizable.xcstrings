@@ -19322,6 +19322,29 @@
         }
       }
     },
+    "day.editor.superset.linkIcon": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Superset"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Superset"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Süperset"
+          }
+        }
+      }
+    },
     "day.editor.templateLocked.exercises": {
       "extractionState": "manual",
       "localizations": {

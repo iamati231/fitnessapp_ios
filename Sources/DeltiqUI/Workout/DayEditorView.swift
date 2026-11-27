@@ -1764,7 +1764,7 @@ private struct ExerciseRow: View {
                 Image(systemName: "link")
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(Color.deltiqOrange)
-                    .accessibilityLabel("Superset")
+                    .accessibilityLabel(Text("day.editor.superset.linkIcon", bundle: .module))
             }
             if exercise.isCardio {
                 // Handoff: kein echter Apple-Health-Bezug (nur dekoratives
