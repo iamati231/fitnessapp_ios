@@ -464,8 +464,8 @@ public struct TemplatePreviewView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Label(
                     hasCritical
-                        ? "Plan kann nicht übernommen werden – Trainingstag leer"
-                        : "Einige Übungen wurden für dein Fitnesslevel angepasst",
+                        ? String(localized: "picker.plan.baselineConflict.titleCritical", bundle: .module)
+                        : String(localized: "picker.plan.baselineConflict.titleWarning", bundle: .module),
                     systemImage: hasCritical
                         ? "xmark.octagon.fill"
                         : "exclamationmark.triangle.fill"
@@ -473,7 +473,14 @@ public struct TemplatePreviewView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(hasCritical ? Color.red : Color.orange)
                 ForEach(Array(conflicts.enumerated()), id: \.offset) { _, conflict in
-                    Text("• \(conflict.dayName): \(conflict.exerciseName) entfernt")
+                    // Audit-Fund Modul 22: ein kritischer Konflikt traegt in
+                    // `exerciseName` keinen Uebungsnamen, sondern bereits einen
+                    // vollstaendigen Hinweissatz (siehe ResolvedPlanSelection.
+                    // withBaselineSubstitution) - das Suffix " entfernt" wuerde
+                    // ihn unsinnig verdoppeln ("... leer entfernt").
+                    Text(conflict.isCritical
+                         ? "• \(conflict.dayName): \(conflict.exerciseName)"
+                         : "• \(conflict.dayName): \(conflict.exerciseName) entfernt")
                         .font(.caption)
                         .foregroundStyle(Color.Deltiq.textSecondary)
                 }
