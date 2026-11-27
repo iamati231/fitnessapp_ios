@@ -2042,8 +2042,12 @@ public struct PlanBuilderView: View {
         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
+        // Audit-Fund Modul 21: war .combine - buendelte Kopfzeile, "..."-Menu
+        // UND jeden einzelnen "Alternative waehlen"-Uebungs-Button zu einem
+        // einzigen, nicht mehr individuell aktivierbaren Element. .contain
+        // gruppiert ohne die Kinder zu verschlucken; die zusammenfassende
+        // Ansage sitzt jetzt direkt auf dem statischen Kopfzeilen-Teil oben.
+        .accessibilityElement(children: .contain)
     }
 
     /// Name, Fixierungs-Badges, Belastungs-Badge und das Aktionen-Menu — die
@@ -2080,6 +2084,13 @@ public struct PlanBuilderView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            // Audit-Fund Modul 21: die zusammenfassende Ansage gehoert nur
+            // auf diesen statischen Kopfzeilen-Teil - stand sie frueher auf
+            // dem ganzen resultDayRow-Block (inkl. "..."-Menu und
+            // Uebungsliste), verschluckte .combine dort auch deren eigene,
+            // per Tap aktivierbare Accessibility-Elemente.
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(resultDayRowAccessibilityLabel(spec: spec, day: day, loadLevel: loadLevel))
             Spacer()
             // Nachbesserung: `loadLevel == nil` ("nicht bewertet") bekommt
             // einen eigenen, neutralen Badge statt eine Haerte-Einordnung
