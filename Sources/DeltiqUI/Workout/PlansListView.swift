@@ -151,7 +151,11 @@ public struct PlansListView: View {
                 set: { if !$0 { deletePlanErrorMessage = nil } }
             )
         ) {
-            Button("OK") { deletePlanErrorMessage = nil }
+            Button {
+                deletePlanErrorMessage = nil
+            } label: {
+                Text("common.ok", bundle: .module)
+            }
         } message: {
             Text(deletePlanErrorMessage ?? "")
         }
