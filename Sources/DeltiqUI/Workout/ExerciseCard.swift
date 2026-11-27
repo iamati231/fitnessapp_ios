@@ -685,6 +685,9 @@ struct ExerciseCard: View {
     /// Mutation auf der Plan-/Ad-Hoc-Exercise ist gewollt: identisch zu dem,
     /// was der ExerciseEditor taete, nur ohne den Umweg.
     private func addSet() {
+        // Audit-Fund Modul 22: Obergrenze fehlte hier - ExerciseEditorView
+        // deckelt dasselbe Feld ueber Stepper(..., in: 1...20).
+        guard exercise.sets < 20 else { return }
         saveErrorMessage = nil
         exercise.sets += 1
         // P8 Stufe-2: "+ Satz" ist eine ausdrückliche Aktion DIESER laufenden
