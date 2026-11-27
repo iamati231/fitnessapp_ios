@@ -234,6 +234,7 @@ private struct ProgramRow: View {
                 .frame(width: 48, height: 48)
                 .background(Color.deltiqOrange.gradient)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
