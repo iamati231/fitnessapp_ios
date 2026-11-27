@@ -589,7 +589,7 @@ struct ExerciseCard: View {
         if step.isBarOnly {
             return String(localized: "warmup.ramp.emptyBar", bundle: .module)
         }
-        let unit = weightUnitRaw == "lbs" ? "lbs" : "kg"
+        let unit = String(localized: weightUnitRaw == "lbs" ? "unit.lbs.lower" : "unit.kg.lower", bundle: .module)
         let number = step.weightKg.formatted(.number.precision(.fractionLength(0...1)))
         return "\(number) \(unit)"
     }
