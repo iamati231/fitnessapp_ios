@@ -575,6 +575,7 @@ public struct PlansListView: View {
             for ex in day.activeExercises.sorted(by: { $0.orderIndex < $1.orderIndex }) {
                 let exCopy = Exercise(
                     name: ex.name,
+                    exerciseTemplateID: ex.exerciseTemplateID,
                     customName: ex.customName,
                     sets: ex.sets,
                     repsMin: ex.repsMin,
