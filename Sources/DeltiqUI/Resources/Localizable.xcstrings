@@ -73069,6 +73069,52 @@
         }
       }
     },
+    "warmup.ramp.expanded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "expanded"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ausgeklappt"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "genişletildi"
+          }
+        }
+      }
+    },
+    "warmup.ramp.collapsed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "collapsed"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "eingeklappt"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "daraltıldı"
+          }
+        }
+      }
+    },
     "water.goalReached": {
       "extractionState": "manual",
       "localizations": {

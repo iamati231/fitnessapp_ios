@@ -564,6 +564,12 @@ struct ExerciseCard: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            // Audit-Fund Modul 22: Icons wurden per VoiceOver einzeln mit
+            // ihrem SF-Symbol-Namen vorgelesen, der Auf-/Zu-Zustand war
+            // ausschliesslich ueber die Chevron-Richtung visuell codiert.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("warmup.ramp.title", bundle: .module))
+            .accessibilityValue(Text(rampExpanded ? "warmup.ramp.expanded" : "warmup.ramp.collapsed", bundle: .module))
 
             if rampExpanded {
                 ForEach(Array(ramp.enumerated()), id: \.offset) { _, step in
