@@ -672,7 +672,7 @@ public enum ExerciseLibraryData {
                              equipmentRequirement: .any([.item(.flatBench), .item(.adjustableBench)])),
         ExerciseTemplateSpec(name: "Wand-Sitz mit Marschieren", equipment: .bodyweight, primaryMuscle: .quads, difficultyLevel: .beginner, isTimeBased: true, localizationKey: "exercise.name.marchSitWall",
                              equipmentRequirement: .all([])),
-        ExerciseTemplateSpec(name: "Gehen am Laufband (Steigung)", equipment: .machine, primaryMuscle: .core, difficultyLevel: .beginner, isCardio: true, localizationKey: "exercise.name.walkingInclineTreadmill",
+        ExerciseTemplateSpec(name: "Gehen am Laufband (Steigung)", equipment: .machine, primaryMuscle: .core, difficultyLevel: .beginner, isCardio: true, enduranceSportKind: .running, localizationKey: "exercise.name.walkingInclineTreadmill",
                              equipmentRequirement: .item(.machineStation)),
         ExerciseTemplateSpec(name: "Schulterdrücken stehend (LH, enger Griff)", equipment: .barbell, primaryMuscle: .shoulders, localizationKey: "exercise.name.barbellStandingCloseGripMilitaryPress",
                              equipmentRequirement: .item(.barbell)),
