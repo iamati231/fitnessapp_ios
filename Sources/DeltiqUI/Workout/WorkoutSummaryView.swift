@@ -64,6 +64,13 @@ public struct WorkoutSummaryView: View {
     /// sie automatisch mit.
     @State private var saveErrorMessage: String?
 
+    /// Audit-Fund (Modul 23): ohne diesen Zaehler ueberschreibt der zuerst
+    /// geplante Dismiss-Timer eines frueheren Fehlers die Toast-Anzeige
+    /// eines zweiten, innerhalb desselben 3-Sekunden-Fensters fehlschlagenden
+    /// Saves vorzeitig - gleiches Muster wie `PlanEditorView.
+    /// swapResultToastGeneration`.
+    @State private var saveErrorToastGeneration = 0
+
     /// Guard against session backing becoming invalid after modelContext.delete+save
     /// (DEL-252: dismiss-transition still evaluates body after deletion).
     @State private var isDeleted: Bool = false
@@ -347,10 +354,13 @@ public struct WorkoutSummaryView: View {
     /// Audit-Fix (Save-Fehlerbehandlung): gleiches Toast-Muster wie
     /// `ProfileEditorView.showAggregateToast`/`DayEditorView.showTransientToast`.
     private func showSaveErrorToast() {
+        saveErrorToastGeneration += 1
+        let generation = saveErrorToastGeneration
         withAnimation(.easeOut(duration: 0.2)) {
             saveErrorMessage = String(localized: "day.editor.save.failed", bundle: .module)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            guard saveErrorToastGeneration == generation else { return }
             withAnimation(.easeIn(duration: 0.2)) {
                 saveErrorMessage = nil
             }
