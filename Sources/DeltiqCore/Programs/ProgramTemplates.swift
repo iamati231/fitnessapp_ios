@@ -213,7 +213,7 @@ public enum ProgramTemplates {
             DaySpec(name: "Pull & Beine", localizationKey: "plan.day.pullAndLegs", type: .fullBody, sequenceIndex: 2, exercises: [
                 ExerciseSpec(name: "Handtuch-Rudern (Türrahmen)", sets: 4, repsMin: 8,  repsMax: 12, restSeconds: 75),
                 ExerciseSpec(name: "Ausfallschritte (BW)",               sets: 4, repsMin: 15, repsMax: 20, restSeconds: 60),
-                ExerciseSpec(name: "Ausfallschritte (BW)",         sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60),
+                ExerciseSpec(name: "Hyperextension",               sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60),
                 ExerciseSpec(name: "Glute Bridge (auf Bank)",              sets: 3, repsMin: 15, repsMax: 20, restSeconds: 60),
                 ExerciseSpec(name: "Seitstütz",                   sets: 3, repsMin: 20, repsMax: 30, restSeconds: 60, targetRir: 3.0)
             ]),
