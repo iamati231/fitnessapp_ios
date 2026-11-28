@@ -1809,7 +1809,7 @@ public struct WorkoutSummaryView: View {
             let editable = !isReadOnly || isEditingHistory
             if editable {
                 ForEach(logs) { log in
-                    SetSummaryRow(log: log, isEditable: isEditingSets)
+                    SetSummaryRow(log: log, content: SetSummaryRowContent(log), isEditable: isEditingSets)
                 }
                 // .onDelete braucht DynamicViewContent (ForEach) - muss VOR
                 // .listRowBackground stehen, sonst erased letzteres bereits
@@ -1842,7 +1842,7 @@ public struct WorkoutSummaryView: View {
                 }
             } else {
                 ForEach(logs) { log in
-                    SetSummaryRow(log: log, isEditable: false)
+                    SetSummaryRow(log: log, content: SetSummaryRowContent(log), isEditable: false)
                 }
                 .listRowBackground(Color.Deltiq.surface)
             }
@@ -1934,7 +1934,7 @@ public struct WorkoutSummaryView: View {
         let name = Exercise.resolvedDisplayName(forStoredName: logs.first?.resolvedExerciseName ?? "?")
         return Section {
             ForEach(logs) { log in
-                SetSummaryRow(log: log, isEditable: false)
+                SetSummaryRow(log: log, content: SetSummaryRowContent(log), isEditable: false)
             }
             .listRowBackground(Color.Deltiq.surface)
         } header: {
@@ -2463,6 +2463,43 @@ private struct SummaryStat: View {
     }
 }
 
+/// Audit-Fix (Modul (e)): reiner Snapshot der von `readOnlyRow`/`rowText`
+/// angezeigten Felder — analog zu `PlanRowContent` (PlansListView.swift).
+/// `SetSummaryRow` haelt daneben weiterhin eine live `ExerciseLog`-Referenz
+/// fuer `editRow`s Zwei-Wege-Bindings (TextField/Stepper muessen direkt in
+/// das Model schreiben koennen), aber `readOnlyRow`/`rowText` lesen NUR
+/// noch diesen Snapshot. Damit registriert eine nicht editierte Row waehrend
+/// ihres `body`-Durchlaufs keine SwiftData-Observation-Abhaengigkeit auf
+/// das Log mehr — genau das Crash-Muster, das `PlanRowContent` oben
+/// dokumentiert (TestFlight 0.1.0/175: ein geloeschtes @Model, das noch
+/// beobachtet wird, re-invoked `body` ueber den Observation-Kanal, bevor
+/// die @Query-Diff die Row ueberhaupt entfernt hat — kein catchable Fehler).
+/// Ausloeser hier: `.onDelete { deleteSets(...) }` (exerciseSection) loescht
+/// genau das Log der geswipten Row, UND `removeExerciseFromSession`/
+/// `sweepEmptyPlaceholderLogs` koennen Logs loeschen, die eine andere,
+/// gerade sichtbare Row derselben Section rendert.
+private struct SetSummaryRowContent: Equatable {
+    let setIndex: Int
+    let weight: Double
+    let reps: Int
+    let rir: Float
+    let distanceKm: Double?
+    let durationSeconds: Int?
+    let resolvedIsCardio: Bool
+    let resolvedIsTimeBased: Bool
+
+    init(_ log: ExerciseLog) {
+        setIndex = log.setIndex
+        weight = log.weight
+        reps = log.reps
+        rir = log.rir
+        distanceKm = log.distanceKm
+        durationSeconds = log.durationSeconds
+        resolvedIsCardio = log.resolvedIsCardio
+        resolvedIsTimeBased = log.resolvedIsTimeBased
+    }
+}
+
 @available(iOS 17.0, macOS 14.0, *)
 /// P8 Stufe-2: braucht keine live `Exercise`-Referenz mehr — alle
 /// internen Verzweigungen (Cardio/TimeBased/Strength-Layout) laufen über
@@ -2473,6 +2510,9 @@ private struct SummaryStat: View {
 /// `exercisesWithLogs`).
 private struct SetSummaryRow: View {
     @Bindable var log: ExerciseLog
+    /// Nur fuer `editRow`s Zwei-Wege-Bindings gedacht — `readOnlyRow`/
+    /// `rowText` duerfen `log` NICHT lesen, siehe `SetSummaryRowContent`-Doc.
+    let content: SetSummaryRowContent
     /// DEL-032: im History-Edit-Mode wird die Row zu editierbaren TextFields.
     let isEditable: Bool
 
@@ -2487,7 +2527,7 @@ private struct SetSummaryRow: View {
     /// Anzeigemodus — gleicher Text wie vor DEL-032.
     private var readOnlyRow: some View {
         HStack(spacing: 8) {
-            Text(String(format: String(localized: "set.numberLabel", bundle: .module), log.setIndex + 1))
+            Text(String(format: String(localized: "set.numberLabel", bundle: .module), content.setIndex + 1))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.Deltiq.textSecondary)
                 .frame(width: 64, alignment: .leading)
@@ -2668,27 +2708,27 @@ private struct SetSummaryRow: View {
     }
 
     private var rowText: String {
-        if log.resolvedIsCardio {
+        if content.resolvedIsCardio {
             // DEL-058: Cardio-Set zeigt Distance / Duration / Pace statt
             // kg × reps. Auslassbar wenn keiner der Felder gefuellt.
             var parts: [String] = []
-            if let d = log.distanceKm, d > 0 {
+            if let d = content.distanceKm, d > 0 {
                 let dStr = d == d.rounded() ? "\(Int(d))" : d.truncated(to: 2).formattedTwoDecimals
                 parts.append("\(dStr) km")
             }
-            if let s = log.durationSeconds, s > 0 {
+            if let s = content.durationSeconds, s > 0 {
                 parts.append(PaceCalculator.formatDuration(s))
             }
-            if let d = log.distanceKm, let s = log.durationSeconds, d > 0, s > 0 {
+            if let d = content.distanceKm, let s = content.durationSeconds, d > 0, s > 0 {
                 parts.append(PaceCalculator.pace(distanceKm: d, durationSeconds: s))
             }
             return parts.isEmpty ? "—" : parts.joined(separator: " · ")
         }
-        if log.resolvedIsTimeBased {
+        if content.resolvedIsTimeBased {
             let secUnit = String(localized: "unit.seconds.short", bundle: .module)
-            return "\(log.reps) \(secUnit) (RIR \(log.rir.formattedRIR))"
+            return "\(content.reps) \(secUnit) (RIR \(content.rir.formattedRIR))"
         }
-        return "\(log.weight.formattedWholeOrTwoDecimals) kg × \(log.reps) (RIR \(log.rir.formattedRIR))"
+        return "\(content.weight.formattedWholeOrTwoDecimals) kg × \(content.reps) (RIR \(content.rir.formattedRIR))"
     }
 }
 
