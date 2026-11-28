@@ -73,6 +73,7 @@ public enum ExerciseAlternativeFinder {
         profile: UserEquipmentProfile? = nil
     ) -> ExerciseSpec? {
         guard let libSpec = ExerciseLibraryData.byName[spec.name],
+              !libSpec.isCardio,
               let minBand = libSpec.effectiveBaselineMinBand,
               !bands.band(for: libSpec.primaryMuscle).meetsMinimum(minBand)
         else { return spec }
