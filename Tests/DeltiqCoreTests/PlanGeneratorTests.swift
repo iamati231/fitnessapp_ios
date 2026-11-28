@@ -255,6 +255,31 @@ final class PlanGeneratorTests: XCTestCase {
         XCTAssertTrue(result.days.allSatisfy { $0.spec.exercises.allSatisfy { $0.enduranceSportKind == .cycling } })
     }
 
+    /// Bugfix (Audit): `generate(from:)` baute die `DaySpec` bisher OHNE
+    /// `enduranceSportKind:`, obwohl dasselbe Feld auf `ExerciseSpec`-Ebene
+    /// (siehe `testRunningThreeDaysCoversAllThreeZones` oben) laengst korrekt
+    /// gesetzt wird — `TrainingDay.enduranceSportKind` (ueber
+    /// `ProgramInstantiator`) blieb dadurch fuer jeden generierten Tag `nil`.
+    func testGeneratedDaySpecCarriesEnduranceSportKindForRunning() {
+        let result = PlanGenerator.generate(from: input([selection(.running, days: 3)]))
+        XCTAssertTrue(result.days.allSatisfy { $0.spec.enduranceSportKind == .running })
+    }
+
+    func testGeneratedDaySpecCarriesEnduranceSportKindForCycling() {
+        let result = PlanGenerator.generate(from: input([selection(.cycling, days: 2)]))
+        XCTAssertTrue(result.days.allSatisfy { $0.spec.enduranceSportKind == .cycling })
+    }
+
+    func testGeneratedDaySpecCarriesEnduranceSportKindForTimedCardio() {
+        let result = PlanGenerator.generate(from: input([selection(.running, days: 2, timeFormat: .emom)]))
+        XCTAssertTrue(result.days.allSatisfy { $0.spec.enduranceSportKind == .running })
+    }
+
+    func testGeneratedDaySpecHasNoEnduranceSportKindForStrengthDays() {
+        let result = PlanGenerator.generate(from: input([selection(.barbell, days: 3)]))
+        XCTAssertTrue(result.days.allSatisfy { $0.spec.enduranceSportKind == nil })
+    }
+
     // MARK: - DEL-098-Datentreue: keine erfundenen Uebungsnamen
 
     /// Regression: ein frueherer Entwurf dieses Generators benutzte erfundene

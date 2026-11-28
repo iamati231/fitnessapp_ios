@@ -106,6 +106,12 @@ public enum PlanGenerator {
         /// sodass Tests und UI den Tagesfokus stabil lesen koennen.
         /// `nil` fuer Cardio- und EMOM-Kandidaten ohne Muskelfokus.
         let focusMuscle: MuscleGroup?
+        /// Bugfix (Audit): Cardio-Kandidaten setzen dieses Feld analog zum
+        /// bereits auf `ExerciseSpec`-Ebene befuellten `enduranceSportKind`
+        /// (siehe `cardioCandidates`/`timedCardioCandidates`), damit es bis
+        /// zur generierten `DaySpec` durchgereicht wird. `nil` fuer Kraft-
+        /// und EMOM-Kandidaten.
+        let enduranceSportKind: TrainingTypeKind?
     }
 
     /// `shuffle`: Bugfix (Nutzer-Feedback) - `generate(from:)` war komplett
@@ -146,7 +152,8 @@ public enum PlanGenerator {
                     sequenceIndex: index + 1,
                     exercises: candidate.exercises,
                     timeFormat: candidate.timeFormat,
-                    timeCapMinutes: candidate.timeCapMinutes
+                    timeCapMinutes: candidate.timeCapMinutes,
+                    enduranceSportKind: candidate.enduranceSportKind
                 ),
                 loadLevel: levels[index],
                 focusMuscle: candidate.focusMuscle
@@ -362,7 +369,8 @@ public enum PlanGenerator {
                 timeFormat: nil,
                 timeCapMinutes: nil,
                 hardness: hardness,
-                focusMuscle: pickedMuscles.first
+                focusMuscle: pickedMuscles.first,
+                enduranceSportKind: nil
             ))
         }
         result = ensureWeeklyMuscleCoverage(
@@ -544,7 +552,8 @@ public enum PlanGenerator {
             // reinen Kraft-Score-Punkten eine Stufe milder eingeordnet
             // (die Pause steckt in der Minute) - hier grob mit 0.85 nachgebildet.
             hardness: hardness * 0.85,
-            focusMuscle: nil
+            focusMuscle: nil,
+            enduranceSportKind: nil
         )
     }
 
@@ -942,7 +951,8 @@ public enum PlanGenerator {
                     timeFormat: nil,
                     timeCapMinutes: nil,
                     hardness: 20 * durationFactor,
-                    focusMuscle: nil
+                    focusMuscle: nil,
+                    enduranceSportKind: .cycling
                 )
             }
             disambiguateDuplicateNames(&result)
@@ -989,7 +999,8 @@ public enum PlanGenerator {
                 timeFormat: nil,
                 timeCapMinutes: nil,
                 hardness: zone.baseHardness * durationFactor,
-                focusMuscle: nil
+                focusMuscle: nil,
+                enduranceSportKind: .running
             )
         }
         // Bugfix (Audit): der 3-Zonen-Zyklus wiederholt sich ab Tag 4 (z.B.
@@ -1061,7 +1072,8 @@ public enum PlanGenerator {
                 timeFormat: format,
                 timeCapMinutes: timeCapMinutes,
                 hardness: 30 * (Double(selection.sessionDurationMinutes) / 30.0),
-                focusMuscle: nil
+                focusMuscle: nil,
+                enduranceSportKind: selection.kind
             )
         }
         // Gleicher Bugfix wie beim uniformen Radfahren-Zweig oben: mehrere
