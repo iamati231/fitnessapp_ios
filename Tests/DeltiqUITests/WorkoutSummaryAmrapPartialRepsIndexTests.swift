@@ -32,10 +32,14 @@ final class WorkoutSummaryAmrapPartialRepsIndexTests: XCTestCase {
             return XCTFail("saveNow() no longer sets partialRepsExerciseName at the expected line")
         }
         let afterName = text[nameRange.upperBound...]
-        guard let nextLineEnd = afterName.range(of: "\n") else {
+        guard let firstNewline = afterName.range(of: "\n") else {
             return XCTFail("could not find end of line after partialRepsExerciseName assignment")
         }
-        let nextLine = afterName[afterName.startIndex..<nextLineEnd.lowerBound]
+        let afterFirstLine = afterName[firstNewline.upperBound...]
+        guard let secondNewline = afterFirstLine.range(of: "\n") else {
+            return XCTFail("could not find end of the following line")
+        }
+        let nextLine = afterFirstLine[afterFirstLine.startIndex..<secondNewline.lowerBound]
         XCTAssertTrue(nextLine.contains("session.partialRepsExerciseIndex = partialReps > 0 ? partialRepsExercise?.orderIndex : nil"),
                       "saveNow() must set partialRepsExerciseIndex on the very next line, mirroring the name snapshot")
     }
