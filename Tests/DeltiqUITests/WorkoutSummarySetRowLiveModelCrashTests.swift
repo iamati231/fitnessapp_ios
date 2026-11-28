@@ -49,15 +49,28 @@ final class WorkoutSummarySetRowLiveModelCrashTests: XCTestCase {
 
     func testReadOnlyRowAndRowTextNeverReadLiveLogDirectly() throws {
         let text = try source
-        guard let start = text.range(of: "private var readOnlyRow: some View {") else {
+        // readOnlyRow and rowText are checked SEPARATELY, excluding editRow's
+        // body in between (Zeilen dazwischen) - editRow deliberately keeps
+        // live $log.* two-way bindings for its TextField/Stepper, which would
+        // false-positive a single combined start-of-readOnlyRow..<end-of-file
+        // scan (caught by the calling session: the first version of this test
+        // included editRow's ~154 lines and failed on its own correct bindings).
+        guard let readOnlyStart = text.range(of: "private var readOnlyRow: some View {") else {
             return XCTFail("readOnlyRow not found at the expected signature")
         }
-        guard let rowTextStart = text.range(of: "private var rowText: String {", range: start.upperBound..<text.endIndex) else {
-            return XCTFail("rowText not found after readOnlyRow")
+        guard let editRowStart = text.range(of: "private var editRow: some View {", range: readOnlyStart.upperBound..<text.endIndex) else {
+            return XCTFail("editRow not found after readOnlyRow")
+        }
+        let readOnlyBody = stripComments(text[readOnlyStart.lowerBound..<editRowStart.lowerBound])
+
+        guard let rowTextStart = text.range(of: "private var rowText: String {", range: editRowStart.upperBound..<text.endIndex) else {
+            return XCTFail("rowText not found after editRow")
         }
         // rowText is the last computed property in SetSummaryRow - its closing
         // brace is the struct's own closing brace, so take the rest of the file.
-        let combined = stripComments(text[start.lowerBound..<text.endIndex])
+        let rowTextBody = stripComments(text[rowTextStart.lowerBound..<text.endIndex])
+
+        let combined = readOnlyBody + rowTextBody
         XCTAssertFalse(combined.contains("log.setIndex") || combined.contains("log.weight")
                        || combined.contains("log.reps") || combined.contains("log.rir")
                        || combined.contains("log.distanceKm") || combined.contains("log.durationSeconds")
@@ -65,7 +78,6 @@ final class WorkoutSummarySetRowLiveModelCrashTests: XCTestCase {
                        "readOnlyRow/rowText must read ONLY the frozen 'content' snapshot, never 'log' directly - that is the crash risk this fix removes")
         XCTAssertTrue(combined.contains("content.setIndex") && combined.contains("content.resolvedIsCardio"),
                       "readOnlyRow/rowText must read from 'content'")
-        _ = rowTextStart
     }
 
     func testEditRowStillHasLiveWriteBindingsForEditing() throws {
