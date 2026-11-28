@@ -291,6 +291,10 @@ public struct DeltiqIconBadgeModifier: ViewModifier {
             .background(tint.gradient)
             .clipShape(RoundedRectangle(cornerRadius: Deltiq.Radius.input))
             .innerLightStroke(cornerRadius: Deltiq.Radius.input)
+            // Audit-Fund (Modul e, WorkoutSummaryView): alle drei Aufrufstellen
+            // (PRBadge/AchievementBadge/ProgressionBadge) stellen das Icon rein
+            // dekorativ neben bereits vollstaendig beschreibendem Text dar.
+            .accessibilityHidden(true)
     }
 }
 
