@@ -162,6 +162,16 @@ final class ExerciseLibraryDataTests: XCTestCase {
         }
     }
 
+    // MARK: Category consistency (Modul Equipment-Substitution+Katalog)
+
+    /// "Beinstrecker liegend"/"Beinstrecker" sind dieselbe physische Maschine
+    /// (identische GIF-ID 0585) — muessen dieselbe Geraete-/Muskel-Klasse tragen.
+    func testLyingLegExtensionMatchesMachineLegExtensionCategory() throws {
+        let spec = try XCTUnwrap(ExerciseLibraryData.byName["Beinstrecker liegend"])
+        XCTAssertEqual(spec.equipment, .machine)
+        XCTAssertEqual(spec.primaryMuscle, .quads)
+    }
+
     // MARK: Endurance sport kind
 
     /// "Gehen am Laufband (Steigung)" ist ein Laufband (Treadmill), derselbe
