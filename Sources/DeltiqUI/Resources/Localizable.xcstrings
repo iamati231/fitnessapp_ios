@@ -73092,6 +73092,29 @@
         }
       }
     },
+    "unit.rounds.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rounds"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tur"
+          }
+        }
+      }
+    },
     "unit.seconds.short": {
       "extractionState": "manual",
       "localizations": {
