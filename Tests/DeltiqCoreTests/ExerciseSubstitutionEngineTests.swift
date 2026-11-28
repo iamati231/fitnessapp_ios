@@ -303,6 +303,36 @@ final class ExerciseSubstitutionEngineTests: XCTestCase {
         XCTAssertEqual(adapted.circuitMode, .fixedReps)
     }
 
+    // MARK: - Ersetzung in einem Tag darf Endurance-Metadaten eines anderen, unveraenderten Tages nicht loeschen
+
+    func testSubstitutionInOneDayPreservesEnduranceMetadataOfUntouchedDay() {
+        let strengthDay = day([spec("Bulgarische Kniebeuge (KH)")], sequenceIndex: 1)
+        let enduranceDay = DaySpec(
+            name: "Lauf-Intervalle", type: .cardio, sequenceIndex: 2,
+            exercises: [spec("Easy Run", isCardio: true)],
+            timeFormat: .enduranceIntervals,
+            enduranceWarmupDurationSeconds: 300,
+            enduranceCooldownDurationSeconds: 300,
+            enduranceIntervalRounds: 6,
+            enduranceWorkDurationSeconds: 180,
+            enduranceRestDurationSeconds: 90,
+            enduranceSportKind: .running
+        )
+        // 2 Kurzhanteln bestaetigt, Bank fehlt -> loest in Tag 1 eine echte Ersetzung aus.
+        let profile = fullyConfirmedProfile(available: [.dumbbell: 2])
+        let draft = ExerciseSubstitutionEngine.adapt(variant: variant([strengthDay, enduranceDay], against: profile), context: hypertrophyContext, profile: profile)
+
+        XCTAssertEqual(draft.replacements.count, 1, "Tag 1 muss ersetzt werden, sonst greift der globale Kurzschluss gar nicht erst")
+        let adaptedEnduranceDay = draft.adaptedDays[1]
+        XCTAssertEqual(adaptedEnduranceDay.timeFormat, .enduranceIntervals)
+        XCTAssertEqual(adaptedEnduranceDay.enduranceWarmupDurationSeconds, 300)
+        XCTAssertEqual(adaptedEnduranceDay.enduranceCooldownDurationSeconds, 300)
+        XCTAssertEqual(adaptedEnduranceDay.enduranceIntervalRounds, 6)
+        XCTAssertEqual(adaptedEnduranceDay.enduranceWorkDurationSeconds, 180)
+        XCTAssertEqual(adaptedEnduranceDay.enduranceRestDurationSeconds, 90)
+        XCTAssertEqual(adaptedEnduranceDay.enduranceSportKind, .running)
+    }
+
     // MARK: - 14. Quell-Equipment-Profil bleibt durch die Anpassung unveraendert
 
     func testSourceEquipmentProfileIsNeverMutatedByAdaptation() {
