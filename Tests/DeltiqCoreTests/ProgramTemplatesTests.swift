@@ -276,4 +276,30 @@ final class ProgramTemplatesTests: XCTestCase {
         }
         XCTAssertTrue(hasCooldownExercise, "Kein einziges Template erzeugt je eine Uebung mit role == .cooldown")
     }
+
+    /// Audit-Fund (Modul Equipment-Substitution+Katalog): `bodyweightMastery`s
+    /// Tag "Pull & Beine" listete "Ausfallschritte (BW)" zweimal mit
+    /// UNTERSCHIEDLICHEN Saetzen/Wdh. (Copy-Paste-Rest) — anders als die
+    /// etablierten, bewussten Links/Rechts-Duplikate (z.B. "Kettlebell Snatch"
+    /// bei kettlebellAdvanced), die immer identische Werte tragen. Ein
+    /// doppelter Name mit abweichenden Werten ist in keinem Tag plausibel und
+    /// wird hier app-weit ausgeschlossen.
+    func testNoExerciseNameRepeatsWithDifferingVolumeInTheSameDay() {
+        for template in ProgramTemplates.all {
+            for day in template.days {
+                var seen: [String: ExerciseSpec] = [:]
+                for exercise in day.exercises {
+                    if let first = seen[exercise.name] {
+                        let firstVolume = "\(first.sets)|\(first.repsMin)|\(first.repsMax)|\(first.restSeconds)"
+                        let currentVolume = "\(exercise.sets)|\(exercise.repsMin)|\(exercise.repsMax)|\(exercise.restSeconds)"
+                        XCTAssertEqual(
+                            firstVolume, currentVolume,
+                            "\(template.name) / \(day.name): '\(exercise.name)' kommt zweimal mit unterschiedlichen Saetzen/Wdh./Pause vor"
+                        )
+                    }
+                    seen[exercise.name] = exercise
+                }
+            }
+        }
+    }
 }
