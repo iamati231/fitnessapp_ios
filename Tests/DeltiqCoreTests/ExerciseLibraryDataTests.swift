@@ -171,4 +171,16 @@ final class ExerciseLibraryDataTests: XCTestCase {
         XCTAssertEqual(spec.equipment, .machine)
         XCTAssertEqual(spec.primaryMuscle, .quads)
     }
+
+    // MARK: Endurance sport kind
+
+    /// "Gehen am Laufband (Steigung)" ist ein Laufband (Treadmill), derselbe
+    /// Geraetetyp wie "Laufband"/"Gehen / Einlaufen" (beide .running) — fehlte
+    /// bisher, obwohl kein mehrdeutiges Geraet wie Crosstrainer/Stepper.
+    func testWalkingInclineTreadmillHasRunningSportKind() {
+        guard let spec = ExerciseLibraryData.byName["Gehen am Laufband (Steigung)"] else {
+            return XCTFail("'Gehen am Laufband (Steigung)' fehlt im Katalog")
+        }
+        XCTAssertEqual(spec.enduranceSportKind, .running)
+    }
 }
