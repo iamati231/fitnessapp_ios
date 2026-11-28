@@ -191,19 +191,9 @@ public enum ExerciseSubstitutionEngine {
                 replacements[ExerciseSlot(dayIndex: dayIndex, exerciseIndex: exerciseIndex)] ?? exercise
             }
             // Alle uebrigen DaySpec-Felder unveraendert uebernehmen (Vorgabe:
-            // "preserve ... every DaySpec field").
-            return DaySpec(
-                name: day.name,
-                localizationKey: day.localizationKey,
-                type: day.type,
-                sequenceIndex: day.sequenceIndex,
-                exercises: newExercises,
-                timeFormat: day.timeFormat,
-                timeCapMinutes: day.timeCapMinutes,
-                circuitRounds: day.circuitRounds,
-                circuitRestSeconds: day.circuitRestSeconds,
-                circuitMode: day.circuitMode
-            )
+            // "preserve ... every DaySpec field") - ueber den bestehenden
+            // Helper, der auch die endurance*-Felder mitnimmt.
+            return day.withExercises(newExercises)
         }
     }
 }

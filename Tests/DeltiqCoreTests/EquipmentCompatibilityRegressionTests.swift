@@ -132,12 +132,12 @@ final class EquipmentCompatibilityRegressionTests: XCTestCase {
         }
     }
 
-    func testTrizepsstreckkerUeberKopfKHAlternativeIsDiamantLiegestuetze() {
+    func testTrizepsExtensionStehendKHAlternativeIsDiamantLiegestuetze() {
         let result = ExerciseLibraryData.resolveAlternative(
-            forExerciseName: "Trizepsstrecker über Kopf (KH)", targetEnvironment: .noEquipment)
+            forExerciseName: "Trizeps Extension stehend (KH)", targetEnvironment: .noEquipment)
         if case .swap(let spec) = result {
             XCTAssertEqual(spec.name, "Diamant-Liegestütze",
-                           "Trizepsstrecker über Kopf (KH) → noEquipment muss 'Diamant-Liegestütze' sein")
+                           "Trizeps Extension stehend (KH) → noEquipment muss 'Diamant-Liegestütze' sein")
         } else {
             XCTFail("Erwartet .swap, got \(result)")
         }
