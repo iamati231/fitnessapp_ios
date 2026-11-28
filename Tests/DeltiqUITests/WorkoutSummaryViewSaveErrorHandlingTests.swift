@@ -32,16 +32,17 @@ final class WorkoutSummaryViewSaveErrorHandlingTests: XCTestCase {
         XCTAssertEqual(occurrences, 0, "all discrete save sites, including deleteEntireSession(), must surface failures")
     }
 
-    /// Die neun umgestellten Save-Aufrufe: Edit-Mode-Exit (zwei Saves), onDisappear-Netz,
+    /// Die zehn umgestellten Save-Aufrufe: Edit-Mode-Exit (zwei Saves), onDisappear-Netz,
     /// removeExerciseFromSession, addExerciseToSession, addCustomExerciseToSession,
-    /// assignGear, addSet, deleteEntireSession.
+    /// assignGear, addSet, deleteEntireSession, deleteSets (Modul (e): Satz-Loeschen
+    /// speicherte zuvor gar nicht).
     func testDiscreteSaveSitesUseDoCatchAndSurfaceAToast() throws {
         let occurrences = try source.components(separatedBy: "try modelContext.save()").count - 1
-        XCTAssertEqual(occurrences, 9, "expected 9 non-optional try modelContext.save() call sites (2x edit-mode-exit, onDisappear, removeExercise, addExercise, addCustomExercise, assignGear, addSet, deleteEntireSession)")
+        XCTAssertEqual(occurrences, 10, "expected 10 non-optional try modelContext.save() call sites (2x edit-mode-exit, onDisappear, removeExercise, addExercise, addCustomExercise, assignGear, addSet, deleteEntireSession, deleteSets)")
 
         // +1 for the `private func showSaveErrorToast()` definition itself.
         let showToastOccurrences = try source.components(separatedBy: "showSaveErrorToast()").count - 1
-        XCTAssertEqual(showToastOccurrences, 10, "every one of the 9 do/catch blocks must call showSaveErrorToast() in its catch, plus the one function definition")
+        XCTAssertEqual(showToastOccurrences, 11, "every one of the 10 do/catch blocks must call showSaveErrorToast() in its catch, plus the one function definition")
     }
 
     /// Schlaegt der Save in `deleteEntireSession()` fehl, darf der optimistische

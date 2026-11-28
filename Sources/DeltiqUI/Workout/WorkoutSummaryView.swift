@@ -2092,6 +2092,11 @@ public struct WorkoutSummaryView: View {
 
         // Update session-level aggregates (DEL-221: ein Schreiber).
         session.recomputeTotals()
+        do {
+            try modelContext.save()
+        } catch {
+            showSaveErrorToast()
+        }
     }
 }
 
