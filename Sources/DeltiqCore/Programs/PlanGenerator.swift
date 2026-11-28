@@ -398,7 +398,12 @@ public enum PlanGenerator {
     /// wird sie uebersprungen statt eine unzugaengliche Uebung zu erzwingen
     /// (dieselbe Konvention wie ueberall sonst in dieser Datei). EMOM-Tage
     /// (fixe, zeitgetaktete Uebungszahl) sind nie Ziel der Ergaenzung.
-    private static let majorMuscleGroups: Set<MuscleGroup> = [.chest, .back, .shoulders, .quads, .hamstrings, .glutes, .core]
+    // Bugfix (Audit): war `Set<MuscleGroup>` - Swifts Hasher nutzt einen
+    // zufaelligen Prozess-Seed, Set-Iterationsreihenfolge ist deshalb NICHT
+    // ueber zwei Prozesslaeufe hinweg garantiert gleich. Das widersprach dem
+    // deterministischen `shuffle: false`-Vertrag von `generate(from:)`, auf
+    // den sich u.a. `PlanGeneratorInstantiator.recalculate` verlaesst.
+    private static let majorMuscleGroups: [MuscleGroup] = [.chest, .back, .shoulders, .quads, .hamstrings, .glutes, .core]
 
     // Estimates seconds for one additional exercise: set work (30s/set) + rest + per-exercise overhead.
     private static func estimatedAddSeconds(sets: Int, restSeconds: Int) -> Int {
