@@ -2235,6 +2235,7 @@ private struct PRBadge: View {
         let volSfx = String(localized: "pr.volumeSuffix", bundle: .module)
         let secUnit = String(localized: "unit.seconds.short", bundle: .module)
         let repUnit = String(localized: "unit.reps.short", bundle: .module)
+        let roundsUnit = String(localized: "unit.rounds.short", bundle: .module)
         switch record.kind {
         case .maxReps:
             let prevReps = Int(record.previousValue.rounded())
@@ -2272,9 +2273,9 @@ private struct PRBadge: View {
             // Bugfix (Teil-Wiederholungen entfernt): siehe PRHistoryView.swift
             // fuer die Begruendung des reps > 0-Gates.
             guard record.reps > 0 else {
-                return "\(Int(record.newValue)) Runden (\(prev) \(prevRounds) Runden)"
+                return "\(Int(record.newValue)) \(roundsUnit) (\(prev) \(prevRounds) \(roundsUnit))"
             }
-            return "\(Int(record.newValue)) Runden + \(record.reps) \(repUnit) (\(prev) \(prevRounds) Runden)"
+            return "\(Int(record.newValue)) \(roundsUnit) + \(record.reps) \(repUnit) (\(prev) \(prevRounds) \(roundsUnit))"
         case .fastestTime:
             return "\(PaceCalculator.formatDuration(Int(record.newValue.rounded()))) (\(prev) \(PaceCalculator.formatDuration(Int(record.previousValue.rounded()))))"
         }
