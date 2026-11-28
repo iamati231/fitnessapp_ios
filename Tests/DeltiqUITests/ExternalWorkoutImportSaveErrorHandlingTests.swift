@@ -42,7 +42,8 @@ final class ExternalWorkoutImportSaveErrorHandlingTests: XCTestCase {
         guard let end = code.range(of: ") async", range: start.upperBound..<code.endIndex) else {
             return XCTFail("end of syncExternalWorkouts parameter list not found")
         }
-        let signatureTail = code[end.upperBound..<code.index(end.upperBound, offsetBy: 20, limitedBy: code.endIndex) ?? code.endIndex]
+        let tailEnd = code.index(end.upperBound, offsetBy: 20, limitedBy: code.endIndex) ?? code.endIndex
+        let signatureTail = code[end.upperBound..<tailEnd]
         XCTAssertTrue(signatureTail.contains("-> Bool"),
                       "syncExternalWorkouts must return Bool so callers can react to a save failure")
         XCTAssertTrue(code.contains("@discardableResult"),
