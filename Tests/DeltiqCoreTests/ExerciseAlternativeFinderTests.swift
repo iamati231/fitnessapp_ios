@@ -147,4 +147,60 @@ final class ExerciseAlternativeFinderTests: XCTestCase {
         let result = ExerciseAlternativeFinder.baselineSubstitute(spec, bands: highPush, equipmentPool: [.bodyweight])
         XCTAssertEqual(result?.name, "Breite Liegestütze", "Already-accessible exercises must pass through unchanged")
     }
+
+    // MARK: - Audit-Fund: nil equipmentRequirement darf im strict-bodyweight-
+    // und im profile-Pfad von findAccessibleAlternative nicht automatisch
+    // als "keine Anforderung" durchgehen (ExerciseTemplateSpec.swift: "nil =
+    // noch nicht erfasst — KEIN Hinweis auf 'keine Voraussetzung'").
+    // `findAccessibleAlternative` ist `private` und ueber den oeffentlichen
+    // `baselineSubstitute`-Pfad wegen der `.first`-Katalog-Reihenfolge nicht
+    // zuverlaessig isoliert testbar (mehrere unannotierte Bodyweight-
+    // Uebungen derselben Muskelgruppe stehen im Katalog VOR den hier
+    // zitierten Beispielen) - deshalb Source-Inspection, analog zum
+    // etablierten Muster fuer private Implementierungsdetails in dieser
+    // Codebase.
+    private var alternativeFinderSource: String {
+        get throws {
+            try String(
+                contentsOf: URL(fileURLWithPath: #filePath)
+                    .deletingLastPathComponent()
+                    .deletingLastPathComponent()
+                    .deletingLastPathComponent()
+                    .appendingPathComponent("Sources/DeltiqCore/Programs/ExerciseAlternativeFinder.swift"),
+                encoding: .utf8
+            )
+        }
+    }
+
+    func testFindAccessibleAlternativeDoesNotTreatNilEquipmentRequirementAsNoRequirement() throws {
+        let source = try alternativeFinderSource
+        guard let start = source.range(of: "private static func findAccessibleAlternative("),
+              let end = source.range(of: "\n    }", range: start.upperBound..<source.endIndex)
+        else {
+            return XCTFail("findAccessibleAlternative not found")
+        }
+        let body = source[start.upperBound..<end.lowerBound]
+
+        XCTAssertFalse(body.contains(".requiresNoPhysicalItem) ?? true"),
+            "strict-bodyweight check must not default an unannotated (nil) equipmentRequirement to 'needs no equipment'")
+        XCTAssertFalse(body.contains("equipmentRequirement == nil\n                    || $0.equipmentRequirement!.evaluate"),
+            "profile check must not let an unannotated (nil) equipmentRequirement bypass the actual evaluation")
+    }
+
+    /// Konkrete Katalog-Faelle, die den Fund ausgeloest haben (beide
+    /// `equipment: .bodyweight` klassifiziert, brauchen de facto ein
+    /// physisches Geraet, `equipmentRequirement` bislang nicht annotiert) -
+    /// Regressionsschutz, falls diese Eintraege kuenftig doch annotiert
+    /// werden sollten, ohne die Source-Inspection anzupassen.
+    func testKnownUnannotatedBodyweightEntriesActuallyNeedEquipment() {
+        for name in ["Medizinball-Slam", "Battle Ropes"] {
+            guard let spec = ExerciseLibraryData.byName[name] else {
+                XCTFail("\(name) missing from catalog")
+                continue
+            }
+            XCTAssertEqual(spec.equipment, .bodyweight)
+            XCTAssertNil(spec.equipmentRequirement,
+                "\(name) muesste bereits annotiert sein, falls dieser Test fehlschlaegt - Fix ggf. nicht mehr noetig")
+        }
+    }
 }

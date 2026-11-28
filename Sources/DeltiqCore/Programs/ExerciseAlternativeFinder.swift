@@ -141,11 +141,13 @@ public enum ExerciseAlternativeFinder {
                 && ($0.effectiveBaselineMinBand == nil
                     || bands.band(for: $0.primaryMuscle).meetsMinimum($0.effectiveBaselineMinBand!))
                 && (!strictBodyweight
-                    || ($0.equipmentRequirement.map(\.requiresNoPhysicalItem) ?? true))
+                    // nil = noch nicht annotiert, NIE "keine Anforderung"
+                    // (ExerciseTemplateSpec.swift equipmentRequirement-Doku)
+                    || ($0.equipmentRequirement.map(\.requiresNoPhysicalItem) ?? false))
                 && (allowedDifficulties == nil || allowedDifficulties!.contains($0.difficultyLevel))
                 && (movementPattern == nil || $0.movementPattern == movementPattern)
-                && (profile == nil || $0.equipmentRequirement == nil
-                    || $0.equipmentRequirement!.evaluate(against: profile!).isSatisfied)
+                && (profile == nil
+                    || ($0.equipmentRequirement != nil && $0.equipmentRequirement!.evaluate(against: profile!).isSatisfied))
         }
     }
 
