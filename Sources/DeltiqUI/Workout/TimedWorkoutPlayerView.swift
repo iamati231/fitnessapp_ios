@@ -864,6 +864,7 @@ private struct AMRAPPlayerView: View {
         session.roundsCompleted = roundsCompleted
         session.partialReps = partialReps
         session.partialRepsExerciseName = partialReps > 0 ? partialRepsExercise?.displayName : nil
+        session.partialRepsExerciseIndex = partialReps > 0 ? partialRepsExercise?.orderIndex : nil
         session.completedTarget = isFinished
         session.timeFormatSnapshot = .amrap
         if !finishTimedSession(

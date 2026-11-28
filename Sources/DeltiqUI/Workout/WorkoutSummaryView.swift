@@ -1752,16 +1752,23 @@ public struct WorkoutSummaryView: View {
     /// (schon fertig, bevor die Zeit ablief) und die angebrochene Station
     /// selbst hier stillschweigend unterzaehlt, waehrend die Hero-Zahl direkt
     /// darueber (`timedFormatHeroStat`) den vollen Stand korrekt zeigt.
-    /// Namens- statt ID-Abgleich fuer `currentIndex`, weil
-    /// `partialRepsExerciseName` ein Snapshot ist (gleiches Muster wie
-    /// `dayName`), keine live Relationship.
+    /// Audit-Fix: `partialRepsExerciseIndex` (Snapshot von `Exercise.
+    /// orderIndex` zum Speicherzeitpunkt, siehe WorkoutSession) ist der
+    /// primaere Abgleich - disambiguiert zwei gleichnamige Zirkel-Stationen,
+    /// wo `partialRepsExerciseName` allein die falsche traf. Namens-Abgleich
+    /// bleibt Fallback fuer Sessions von vor diesem Feld (Index `nil`).
     private func amrapExerciseTotals(_ exercises: [TimedFormatDisplayExercise]) -> [Int: Int]? {
         let rounds = session.roundsCompleted ?? 0
         let partial = session.partialReps ?? 0
         guard rounds > 0 || partial > 0 || session.partialRepsExerciseName != nil else { return nil }
-        let currentIndex = session.partialRepsExerciseName.flatMap { name in
-            exercises.firstIndex { $0.displayName == name }
-        }
+        let currentIndex: Int? = {
+            if let orderIndex = session.partialRepsExerciseIndex {
+                return exercises.firstIndex { $0.orderIndex == orderIndex }
+            }
+            return session.partialRepsExerciseName.flatMap { name in
+                exercises.firstIndex { $0.displayName == name }
+            }
+        }()
         var totals: [Int: Int] = [:]
         for (index, exercise) in exercises.enumerated() {
             var total = rounds * exercise.repsMin

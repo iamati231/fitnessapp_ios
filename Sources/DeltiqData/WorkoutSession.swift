@@ -67,6 +67,15 @@ public final class WorkoutSession {
     /// bearbeitet wird. `nil` wenn `partialReps` 0 ist (nichts zuzuordnen)
     /// oder bei Sessions von vor diesem Feature.
     public var partialRepsExerciseName: String?
+    /// AMRAP: `Exercise.orderIndex`-Snapshot zum Zeitpunkt des Speicherns,
+    /// zusaetzlich zum Namen. Anders als ein Index in den LIVE Tag (der bei
+    /// einer spaeteren Tag-Bearbeitung brechen wuerde) wird dieser Wert nur
+    /// gegen den fuer GENAU DIESE Session eingefrorenen Content-Snapshot
+    /// verglichen (`WorkoutSummaryView.timedFormatDisplayExercises`), der
+    /// sich nach dem Speichern nie wieder aendert - disambiguiert zwei
+    /// gleichnamige Zirkel-Stationen, wo der Name allein nicht reicht.
+    /// `nil` bei Sessions von vor diesem Feld (Namens-Abgleich als Fallback).
+    public var partialRepsExerciseIndex: Int?
     /// Auf Zeit: Gesamtzeit bis zum letzten Haekchen, in Sekunden.
     public var finishTimeSeconds: Int?
     /// Auf Zeit: Zwischenstand der pro Uebung abgehakten Runden, damit
@@ -259,6 +268,7 @@ public final class WorkoutSession {
         roundsCompleted: Int? = nil,
         partialReps: Int? = nil,
         partialRepsExerciseName: String? = nil,
+        partialRepsExerciseIndex: Int? = nil,
         finishTimeSeconds: Int? = nil,
         forTimeCheckedRoundsRaw: String? = nil,
         completedMinuteCount: Int? = nil,
@@ -293,6 +303,7 @@ public final class WorkoutSession {
         self.roundsCompleted = roundsCompleted
         self.partialReps = partialReps
         self.partialRepsExerciseName = partialRepsExerciseName
+        self.partialRepsExerciseIndex = partialRepsExerciseIndex
         self.finishTimeSeconds = finishTimeSeconds
         self.forTimeCheckedRoundsRaw = forTimeCheckedRoundsRaw
         self.completedMinuteCount = completedMinuteCount
