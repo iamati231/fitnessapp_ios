@@ -1122,6 +1122,7 @@ public struct WorkoutSummaryView: View {
                             x: 0, y: 0)
                     .scaleEffect(hasAppeared ? 1.0 : 0.4)
                     .opacity(hasAppeared ? 1.0 : 0.0)
+                    .accessibilityHidden(true)
                 Text(isEarlySaveTimedFormat ? "summary.hero.title.early" : "summary.hero.title", bundle: .module)
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.primary)
