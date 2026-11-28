@@ -308,7 +308,8 @@ public enum PlanGenerator {
                     pool: pool, muscleOrder: muscleOrder, kindLabel: kindLabel, kindKey: kindKey,
                     isMixedEquipment: isMixedEquipment,
                     sessionDurationMinutes: selection.sessionDurationMinutes,
-                    shuffle: shuffle
+                    shuffle: shuffle,
+                    experience: selection.experience
                 ))
                 continue
             }
@@ -516,7 +517,8 @@ public enum PlanGenerator {
         kindKey: String,
         isMixedEquipment: Bool,
         sessionDurationMinutes: Int,
-        shuffle: Bool
+        shuffle: Bool,
+        experience: DifficultyLevel
     ) -> Candidate {
         let byMuscle = groupedByMuscle(pool, shuffle: shuffle)
         var exercises: [ExerciseSpec] = []
@@ -530,7 +532,7 @@ public enum PlanGenerator {
             guard let group = byMuscle[muscle], let spec = group.first else { continue }
             if exercises.contains(where: { $0.name == spec.name }) { continue }
             exercises.append(ExerciseSpec(name: spec.name, sets: 1, repsMin: 12, repsMax: 12))
-            hardness += strengthHardness(spec, sets: 3, experience: .intermediate)
+            hardness += strengthHardness(spec, sets: 3, experience: experience)
         }
         return Candidate(
             name: isMixedEquipment ? fullBodyGermanLabel : "\(kindLabel) · \(fullBodyGermanLabel)",
