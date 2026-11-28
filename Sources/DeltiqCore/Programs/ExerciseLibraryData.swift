@@ -1022,7 +1022,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Diamant-Liegestütze"
         ],
         "Trizeps-Drücken über Kopf (Kabel)": [
-            .homeGym:     "Trizepsstrecker über Kopf (KH)",
+            .homeGym:     "Trizeps Extension stehend (KH)",
             .noEquipment: "Diamant-Liegestütze"
         ],
         "Bizepscurls (Kabel)": [
@@ -1072,7 +1072,7 @@ public enum ExerciseLibraryData {
             .noEquipment: "Diamant-Liegestütze"
         ],
         "Trizepsstrecker über Kopf (Kabel)": [
-            .homeGym:     "Trizepsstrecker über Kopf (KH)",
+            .homeGym:     "Trizeps Extension stehend (KH)",
             .noEquipment: "Diamant-Liegestütze"
         ],
         "Brustdrücken (Maschine)": [
@@ -1124,7 +1124,7 @@ public enum ExerciseLibraryData {
         "Schrägbank-Curl (KH)": [
             .noEquipment: "Liegestütze"
         ],
-        "Trizepsstrecker über Kopf (KH)": [
+        "Trizeps Extension stehend (KH)": [
             .noEquipment: "Diamant-Liegestütze"
         ],
         "Trizepskickback (KH)": [
