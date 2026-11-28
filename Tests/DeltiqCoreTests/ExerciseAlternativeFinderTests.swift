@@ -147,4 +147,16 @@ final class ExerciseAlternativeFinderTests: XCTestCase {
         let result = ExerciseAlternativeFinder.baselineSubstitute(spec, bands: highPush, equipmentPool: [.bodyweight])
         XCTAssertEqual(result?.name, "Breite Liegestütze", "Already-accessible exercises must pass through unchanged")
     }
+
+    /// "Long Run" ist `isCardio: true`, `primaryMuscle: .core` (Notbehelf-
+    /// Platzhalter), ohne explizites `difficultyLevel` also `.intermediate`
+    /// -> `effectiveBaselineMinBand == .low`. Ein `core: .veryLow`-Band
+    /// erfuellt `.low` nicht - vor dem Fix wurde dadurch eine unpassende
+    /// Core-Kraftuebung als Ersatz fuer einen Lauf vorgeschlagen.
+    func testBaselineSubstituteNeverReplacesACardioExerciseEvenWhenItsCoreBandIsGated() {
+        let veryLowCore = BaselineBands(push: .high, legs: .high, pull: .high, core: .veryLow, cardio: .high)
+        let longRun = ExerciseSpec(name: "Long Run", sets: 1, repsMin: 1, repsMax: 1, restSeconds: 0, isCardio: true)
+        let result = ExerciseAlternativeFinder.baselineSubstitute(longRun, bands: veryLowCore, equipmentPool: [.bodyweight])
+        XCTAssertEqual(result?.name, "Long Run", "Cardio exercises must never be routed through the muscle-based baseline substitution")
+    }
 }
