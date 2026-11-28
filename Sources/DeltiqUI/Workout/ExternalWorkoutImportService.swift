@@ -26,12 +26,20 @@ public enum ExternalWorkoutImportService {
     /// bestehenden Session ueberlappen (z.B. manuell nacherfasst), und legt
     /// fuer den Rest automatisch eine neue `WorkoutSession` an. Best-effort —
     /// wirft nie, HealthKit-Fehler landen bereits in `healthKit.lastError`.
+    /// Audit-Fix (Modul (e)): der abschliessende `context.save()` wird jetzt
+    /// abgefangen statt mit `try?` stillschweigend verschluckt zu werden —
+    /// ohne das blieben frisch eingefuegte Sessions/Exercises/Logs bei einem
+    /// Save-Fehlschlag bis zum naechsten App-Neustart unbemerkt im
+    /// `ModelContext` haengen. `@discardableResult`, da bisherige Aufrufer
+    /// (RootView, SettingsDataConnectionsView) das Ergebnis nicht auswerten
+    /// muessen — der Rueckgabewert steht fuer kuenftige Fehleranzeige bereit.
+    @discardableResult
     public static func syncExternalWorkouts(
         healthKit: HealthKitController,
         context: ModelContext
-    ) async {
+    ) async -> Bool {
         let samples = await healthKit.fetchExternalWorkouts(since: nil)
-        guard !samples.isEmpty else { return }
+        guard !samples.isEmpty else { return true }
 
         let existing = (try? context.fetch(FetchDescriptor<WorkoutSession>(
             predicate: #Predicate<WorkoutSession> { $0.isCompleted == true && $0.isRestDay == false }
@@ -72,7 +80,13 @@ public enum ExternalWorkoutImportService {
             existingWindows.append((start: sample.startDate, end: sample.endDate))
         }
 
-        try? context.save()
+        do {
+            try context.save()
+            return true
+        } catch {
+            print("[ExternalWorkoutImportService] context.save() fehlgeschlagen nach \(samples.count) Sample(s): \(error)")
+            return false
+        }
     }
 
     /// Bereits importierte, noch UNVERAENDERTE Einheit auf die richtige Laufzeit
